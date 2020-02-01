@@ -1,0 +1,24 @@
+
+choice
+	prompt "SO3 Execution mode"
+
+	config THREAD_ENV
+    	bool "Thread mode (no process)"
+    	select APP_DEFAULT
+    	
+    config PROC_ENV
+        bool "Process mode (looking for a init proc like a shell)"
+        depends on MMU
+            
+endchoice
+ 
+choice
+	prompt "SO3 Scheduling policy"
+
+	config SCHED_RR
+		bool "Sched policy Round-Robin (normal)"
+
+
+        config SCHED_PRIO
+		bool "Sched policy with a simple priority based"
+endchoice

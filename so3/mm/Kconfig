@@ -1,0 +1,7 @@
+
+config KERNEL_VIRT_ADDR
+	 
+	hex "Virtual base address of kernel space"
+	default 0xc0000000
+	
+ 

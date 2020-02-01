@@ -1,0 +1,5 @@
+libfdt imported from official dtc/libfdt git repository:
+
+git://git.kernel.org/pub/scm/utils/dtc/dtc.git
+
+On 6th October 2014 at commit id: 6a76a9d30c977c6c9cb18cf15ba3bd2c2e89db4c

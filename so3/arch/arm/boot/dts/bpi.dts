@@ -1,0 +1,74 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+#include "skeleton.dtsi"
+
+/ {
+	model = "SO3 banana pi m2 zero";
+	compatible = "arm,vexpress";
+
+	cpus@0 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a7";
+		reg = <0 0>;
+	};
+	
+	memory@40000000 {
+        device_type = "memory";
+        reg = <0x40000000 0x40000000>; /* 512MB DDR @ 0x40000000 */
+    };
+    
+	/* GIC interrupt controller */
+	gic:interrupt-controller@1c81000{
+		compatible = "intc,gic";
+		/*compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";*/
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		status = "ok";
+		reg = <0x01c81000 0x2000>;
+	};
+	
+	/* BPI console UART */
+	serial@1c28000 {
+		
+		compatible = "serial,ns16550";
+		reg = <0x01c28000 0x400>;
+		interrupt-parent = <&gic>;
+		interrupts = <33>;
+
+		status = "ok";
+	};
+
+	/* Sun4i timer clockevent */
+	periodic-timer@1c20c00 {
+		compatible = "sun4i-timer,periodic-timer";
+		reg = <0x01c20c00 0x300>;
+		interrupt-parent = <&gic>;
+		interrupts = <50>;
+		status = "ok";
+	};
+	
+	/* Free-running clocksource */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+
+};

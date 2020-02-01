@@ -1,0 +1,6 @@
+config RAM_BASE
+	depends on MERIDAv2
+	hex "RAM Memory physical base address"
+	default 0x40000000
+
+

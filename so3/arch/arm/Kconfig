@@ -1,0 +1,32 @@
+
+menu "Platform"
+
+choice
+	prompt "SO3 OS type"
+
+config STANDALONE
+        bool "Standalone OS"
+        
+endchoice
+
+choice
+  prompt "Target"
+	
+       	depends on STANDALONE
+	config VEXPRESS
+    		bool "Vexpress"
+	config MERIDAv2
+		bool "Merida V2"
+	config BPI
+		bool "BananaPi M2 Zero"
+        config RPI4
+        	bool "Raspberry Pi 4 B"
+        
+   
+endchoice
+
+source "arch/arm/vexpress/Kconfig"
+source "arch/arm/merida/Kconfig"
+source "arch/arm/bpi/Kconfig"
+source "arch/arm/rpi4/Kconfig"
+endmenu

@@ -1,0 +1,17 @@
+
+config DW_APB_UART
+	bool "DesignWare APB UART"
+
+config NS16550
+	bool "NS16550 UART"
+	depends on PINE64 || A20 || MERIDAv2 || BPI
+
+config PL011_UART
+	bool "PL011 UART serial interface"
+	depends on VEXPRESS
+
+config BCM283x_MU_UART
+	bool "BCM283x mini-UART"
+	depends on RPI4
+	
+	

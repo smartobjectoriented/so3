@@ -1,0 +1,71 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+#include "skeleton.dtsi"
+
+/ {
+	model = "SO3 Vexpress";
+	compatible = "arm,vexpress";
+
+	cpus@0 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a72";
+		reg = <0 0>;
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x10000000>; /* 256 MB */
+	};
+
+	/* GIC interrupt controller */
+	gic:interrupt-controller@ff841000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		
+		reg = <0xff841000 0x3000>;
+		status = "ok";
+	};
+	
+	/* RPi4 miniuart NS16550 console */
+	serial@fe215040 {
+		compatible = "serial,bcm283x-mu";
+		reg = <0xfe215040 0x1000>;
+		status = "ok";
+	};
+
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer@0 {
+		compatible = "arm,periodic-timer";
+		reg = <0 0>;
+		interrupt-parent = <&gic>;
+		interrupts = <27>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer@0 {
+		compatible = "arm,clocksource-timer";
+		reg = <0 0>;
+		status = "ok";
+	};
+	
+};

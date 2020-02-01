@@ -1,0 +1,52 @@
+/dts-v1/;
+#include "bcm2838.dtsi"
+
+/ {
+	compatible = "raspberrypi,4-model-b","brcm,bcm2838","brcm,bcm2837";
+	model = "Raspberry Pi 4 Model B";
+
+	memory {
+		reg = <0 0 0x40000000>;
+	};
+
+	leds {
+		act {
+			gpios = <&gpio 47 0>;
+		};
+	};
+};
+
+/* uart0 communicates with the BT module */
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_gpio32 &gpclk2_gpio43>;
+	status = "okay";
+};
+
+/* uart1 is mapped to the pin header */
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins>;
+	status = "okay";
+};
+
+&sdhci {
+	status = "disabled";
+};
+
+&sdhost {
+	status = "disabled";
+};
+
+&emmc2 {
+	compatible = "brcm,bcm2711-emmc2";
+	status = "okay";
+};
+
+&gpio {
+	uart1_pins: uart1_pins {                                                                                                                                                                                  
+        	brcm,pins;                                                                                                                                                                                        
+		brcm,function;                                                                                                                                                                                    
+		brcm,pull;                                                                                                                                                                                        
+	};
+};

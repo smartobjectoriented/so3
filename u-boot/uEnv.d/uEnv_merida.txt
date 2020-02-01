@@ -1,0 +1,7 @@
+fdt_high=ffffffff
+initrd_high=ffffffff
+fastboot_soo=bootm 0x52000000
+so3=fatload mmc 0 0x52000000 so3.itb; bootm 0x52000000
+start=run so3
+
+

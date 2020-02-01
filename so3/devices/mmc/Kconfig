@@ -1,0 +1,5 @@
+
+config MMC
+	bool "Driver MMC"
+
+

@@ -1,0 +1,27 @@
+
+menu "Filesystems"
+
+config FS_FAT
+        bool "FAT Filesystem"
+        depends on MMC || RAMDEV
+choice
+  prompt "Location of rootfs if any"
+	
+	config ROOTFS_NONE
+    	bool "No Root filesystem"
+	
+	config ROOTFS_MMC
+    	bool "Root filesystem in MMC"
+		select MMC
+	
+	config ROOTFS_RAMDEV
+		bool "Root filesystem in RAM (ramdev device)"
+		depends on MMU
+		select RAMDEV
+   
+endchoice
+
+endmenu
+        
+
+

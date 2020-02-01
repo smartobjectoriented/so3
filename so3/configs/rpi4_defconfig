@@ -1,0 +1,63 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Configuration
+#
+
+#
+# General
+#
+CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+
+#
+# Platform
+#
+CONFIG_STANDALONE=y
+# CONFIG_VEXPRESS is not set
+# CONFIG_MERIDAv2 is not set
+# CONFIG_BPI is not set
+CONFIG_RPI4=y
+CONFIG_RAM_BASE=0x00000000
+CONFIG_THREAD_ENV=y
+# CONFIG_PROC_ENV is not set
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+
+#
+# Drivers
+#
+CONFIG_UART=y
+# CONFIG_DW_APB_UART is not set
+CONFIG_BCM283x_MU_UART=y
+# CONFIG_MMC is not set
+# CONFIG_RAMDEV is not set
+CONFIG_ARM_TIMER=y
+# CONFIG_GIC is not set
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_TEST_MALLOC is not set
+CONFIG_APP_DEFAULT=y
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
+
+#
+# Filesystems
+#
+CONFIG_ROOTFS_NONE=y
+# CONFIG_ROOTFS_MMC is not set
+# CONFIG_ROOTFS_RAMDEV is not set
+
+#
+# IPC
+#
+# CONFIG_IPC_SIGNAL is not set
+# CONFIG_IPC_PIPE is not set
+# CONFIG_RTOS is not set
+CONFIG_MMU=y
+CONFIG_DEBUG_PRINTK=y
+
+#
+# Generated files
+#
+CONFIG_ELF=y
+CONFIG_BIN=y
