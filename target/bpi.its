@@ -29,7 +29,7 @@
 		kernel {
 			/*reg = <>; Make dtc happy ;-) */
 			description = "SO3 OS kernel";
-			data = /incbin/("../../../so3.bin");
+			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
 			arch = "arm";
 			os = "linux";
@@ -46,7 +46,7 @@
 		};
 		fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../boot/dts/bpi.dtb");
+			data = /incbin/("../so3/arch/arm/boot/dts/bpi.dtb");
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";
@@ -54,6 +54,18 @@
 				algo = "crc32";
 			};
 		};	
+/* Uncomment if ramdisk is used. */
+/* 
+                ramdisk {
+                        description = "SO3 environment minimal rootfs";
+                        data = /incbin/("../rootfs/board/bpi/initrd.fat");
+                        type = "ramdisk";
+                        arch = "arm";
+                        os = "linux";
+                        compression = "none";
+                        load = <0x84000000>;
+                };
+*/
 
     };
 	configurations {
@@ -62,7 +74,9 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "kernel";
 			fdt = "fdt";
-		    ramdisk = "ramdisk";
+/*
+                        ramdisk = "ramdisk";
+*/
 		};
 	};
 };

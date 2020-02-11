@@ -153,6 +153,6 @@ void ramdev_init(void) {
 	ramdev_size = get_ramdev((void *) _fdt_addr);
 
 	if (ramdev_size > 0)
-		printk("so3: rootfs in RAM detected (ramdev enabled)...\n");
+		printk("so3: rootfs in RAM detected (ramdev enabled) with size of %d bytes...\n", ramdev_size);
 }
 

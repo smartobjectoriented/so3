@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -54,16 +54,18 @@
 				algo = "crc32";
 			};
 		};	
-                
+/* Uncomment if ramdisk is used. */
+/* 
                 ramdisk {
                         description = "SO3 environment minimal rootfs";
-                        data = /incbin/("../rootfs/board/vexpress/initrd.cpio");
+                        data = /incbin/("../rootfs/board/vexpress/initrd.fat");
                         type = "ramdisk";
                         arch = "arm";
                         os = "linux";
                         compression = "none";
                         load = <0x84000000>;
                 };
+*/
 
     };
 	configurations {
@@ -72,7 +74,9 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "kernel";
 			fdt = "fdt";
+/*
                         ramdisk = "ramdisk";
+*/
 		};
 	};
 };

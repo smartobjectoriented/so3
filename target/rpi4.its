@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -22,11 +22,12 @@
 	description = "SO3 image containing so3 kernel and FDT blob";
 	#address-cells = <0>;
 	#size-cells = <0>;
-
+	
 	images {
 		#address-cells = <0>;
 		#size-cells = <0>;
-		so3 {
+		kernel {
+			/*reg = <>; Make dtc happy ;-) */
 			description = "SO3 OS kernel";
 			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
@@ -38,14 +39,13 @@
             
 			#address-cells = <0>;
 			#size-cells = <0>;
-
+			
 			hash {
 				algo = "crc32";
 			};
 		};
-			
-       fdt {
-			description = "Linux device tree blob";
+		fdt {
+			description = "Flattened Device Tree blob";
 			data = /incbin/("../so3/arch/arm/boot/dts/rpi4.dtb");
 			type = "flat_dt";
 			arch = "arm";
@@ -55,24 +55,30 @@
 			hash {
 				algo = "crc32";
 			};
-		};
-       ramdisk {
+		};	
+/* Uncomment if ramdisk is used. */
+/* 
+                ramdisk {
                         description = "SO3 environment minimal rootfs";
-                        data = /incbin/("../rootfs/board/rpi4/initrd.cpio");
+                        data = /incbin/("../rootfs/board/rpi4/initrd.fat");
                         type = "ramdisk";
                         arch = "arm";
                         os = "linux";
                         compression = "none";
                         load = <0x14000000>;
                 };
-	};
-	
+*/
+
+    };
 	configurations {
 		default = "conf";
 		conf {
-			description = "SO3 on vExpress";
-            kernel = "so3";
-            fdt = "fdt";
+			description = "SO3 kernel image including device tree";
+			kernel = "kernel";
+			fdt = "fdt";
+/*
+                        ramdisk = "ramdisk";
+*/
 		};
 	};
 };
