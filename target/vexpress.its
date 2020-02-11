@@ -57,13 +57,12 @@
                 
                 ramdisk {
                         description = "SO3 environment minimal rootfs";
-                        data = /incbin/("../usr/initrd");
+                        data = /incbin/("../rootfs/board/vexpress/initrd.cpio");
                         type = "ramdisk";
                         arch = "arm";
                         os = "linux";
                         compression = "none";
                         load = <0x84000000>;
-                        entry = <0x84000000>;
                 };
 
     };

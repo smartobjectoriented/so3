@@ -2,7 +2,7 @@
 
 if [ "$_PLATFORM" == "" ]; then
     if [ "$2" == "" ]; then
-        echo "_PLATFORM must be defined (vexpress, rpi4, bpi)"
+        echo "_PLATFORM must be defined (vexpress, rpi3, rpi4, bpi)"
         echo "You can invoke mount.sh <partition_nr> <platform>"
         exit 0
     fi
@@ -31,7 +31,7 @@ if [[ "$devname" = *[0-9] ]]; then
     export devname="${devname}p"
 fi
 
-if [ "$_PLATFORM" == "rpi4" -o "$_PLATFORM" == "bpi" ]; then
+if [ "$_PLATFORM" == "rpi3" -o "$_PLATFORM" == "bpi" -o "$_PLATFORM" == "rpi4" ]; then
     mkdir -p fs
     sudo mount /dev/"$devname"$1 fs
 fi

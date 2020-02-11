@@ -513,6 +513,7 @@ extern int soft_i2c_gpio_scl;
 #endif
 #endif /* 0 */
 
+#define CONFIG_FASTBOOTCOMMAND "env import 0x4b000000; run fastboot_soo"
 #define CONFIG_BOOTCOMMAND \
             "env import 0x4b000000; run start\0\0"
             

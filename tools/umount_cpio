@@ -1,0 +1,8 @@
+#!/bin/bash
+
+calldir=`dirname "$0"`
+cp -L $1 $1.backup
+cd initrd
+fakeroot -- /bin/bash ../${calldir}/umount_cpio_fakeroot $1
+cd ..
+rm -rf initrd

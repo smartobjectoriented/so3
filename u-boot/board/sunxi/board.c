@@ -937,6 +937,8 @@ static int enter_fastboot(void)
 	return ret;
 }
 
+#warning TODO detect if we are in FEL-mode and adapt the bootcmd command (which at the end will read the MMC !)
+
 /* SOO.tech */
 /* Adding a last stage init to prepare fastboot/JTAG to be used. */
 int last_stage_init(void)
@@ -944,7 +946,7 @@ int last_stage_init(void)
 	int fastboot;
 
 	/* Using the standard bootcmd. */
-	env_set("fastboot_bootcmd", "run bootcmd");
+	env_set("fastboot_bootcmd", CONFIG_FASTBOOTCOMMAND);
 
 #ifdef CONFIG_AUTO_JTAG
     volatile int *pb_cfg0_reg = (int *) PB_CFG0_REG_ADDR;
