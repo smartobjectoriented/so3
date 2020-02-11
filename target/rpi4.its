@@ -56,6 +56,15 @@
 				algo = "crc32";
 			};
 		};
+       ramdisk {
+                        description = "SO3 environment minimal rootfs";
+                        data = /incbin/("../rootfs/board/rpi4/initrd.cpio");
+                        type = "ramdisk";
+                        arch = "arm";
+                        os = "linux";
+                        compression = "none";
+                        load = <0x14000000>;
+                };
 	};
 	
 	configurations {
