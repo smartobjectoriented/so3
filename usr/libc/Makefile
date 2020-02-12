@@ -23,7 +23,6 @@ CFLAGS	+= -I$(LIBC_DIR)/include
 all: $(NLIB)
 
 $(NLIB): libc_root libc_subdirs
-
 	@$(AR) rv $@ *.o string/*.o stdio/*.o fcntl/*.o misc/*.o dirent/*.o math/*.o errno/*.o multibyte/*.o ctype/*.o thread/*.o exit/*.o stdlib/*.o unistd/*.o env/*.o malloc/*.o process/*.o prng/*.o signal/*.o time/*.o >  /dev/null 
 
 
@@ -50,13 +49,14 @@ libc_subdirs:
 	make -C signal
 	make -C time
 	make -C prng
-	
-%.o: %.c 
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
+crt.o: crt.S
+	$(CC) $(AFLAGS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 %.o: %.S
 	$(CC) $(AFLAGS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
+%.o: %.c 
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 clean:
 	make -C string clean
 	make -C stdio clean

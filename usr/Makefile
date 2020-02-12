@@ -11,7 +11,6 @@ LIBC_DIR = $(PWD)/libc
 
 LDFLAGS      = -T libc/arm.lds -N -warn-common -warn-constructors -warn-multiple-gp -L $(LIBGCC_PATH) -lgcc 
 
-.PHONY: all clean
 
 # Our source apps
 -include src/Makefile
@@ -21,30 +20,33 @@ export USR_DIR
 
 CFLAGS += -I$(LIBC_DIR)/include
 
+.PHONY: all clean
+
 # make executes the first rule it finds in the Makefiles, unless it is specified
 # on the comand line
-all: prepare_libc $(patsubst %,%.elf,$(TARGETS))
+all: $(patsubst %,out/%.elf,$(TARGETS))
 
-.SECONDARY: $(patsubst %,src/%.o,$(TARGETS))
+.SECONDARY:
 
-prepare_libc: $(LIBC_DIR/$(NLIB)
-	mkdir -p out
-	make -C libc all
-
-out/sh.elf:  src/sh.o libc/crt0.o libc/crt1.o $(LIBC_DIR)/$(NLIB)  
+out/sh.elf:  src/sh.o $(LIBC_DIR)/$(NLIB)  
 	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
 	
 src/%.o: src/%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 # In the following linker options, -lso3 appears twice because of cycle references
-%.elf: src/%.o libc/crt0.o libc/crt1.o $(LIBC_DIR)/$(NLIB)  
-	$(LD) -o out/$@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
+out/%.elf: src/%.o $(LIBC_DIR)/$(NLIB)  
+	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
 
+$(LIBC_DIR)/$(NLIB):
+	@echo Checking libc...
+	mkdir -p out
+	make -C libc all
+	
 # Generic targets
 clean: 
 	find . -name "*.o" | xargs rm
 	find . -name "*.a" | xargs rm
-	rm -rf out
+	rm out/*.elf
 	
 	
