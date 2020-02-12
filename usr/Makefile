@@ -20,13 +20,18 @@ export USR_DIR
 
 CFLAGS += -I$(LIBC_DIR)/include
 
-.PHONY: all clean
+.PHONY: all clean check_out_dir
 
 # make executes the first rule it finds in the Makefiles, unless it is specified
 # on the comand line
-all: $(patsubst %,out/%.elf,$(TARGETS))
+all: check_out_dir $(patsubst %,out/%.elf,$(TARGETS))
 
-.SECONDARY:
+check_out_dir:
+	@mkdir -p out
+	make -C libc all
+
+# Avoid make to use pre-defined rules and keep intermediate productions
+.SECONDARY: $(patsubst %,src/%.o,$(TARGETS))
 
 out/sh.elf:  src/sh.o $(LIBC_DIR)/$(NLIB)  
 	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
@@ -35,12 +40,11 @@ src/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 # In the following linker options, -lso3 appears twice because of cycle references
-out/%.elf: src/%.o $(LIBC_DIR)/$(NLIB)  
+out/%.elf: src/%.o $(LIBC_DIR)/$(NLIB) 
 	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
 
 $(LIBC_DIR)/$(NLIB):
 	@echo Checking libc...
-	mkdir -p out
 	make -C libc all
 	
 # Generic targets

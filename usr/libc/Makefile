@@ -23,8 +23,7 @@ CFLAGS	+= -I$(LIBC_DIR)/include
 all: $(NLIB)
 
 $(NLIB): libc_root libc_subdirs
-	@$(AR) rv $@ *.o string/*.o stdio/*.o fcntl/*.o misc/*.o dirent/*.o math/*.o errno/*.o multibyte/*.o ctype/*.o thread/*.o exit/*.o stdlib/*.o unistd/*.o env/*.o malloc/*.o process/*.o prng/*.o signal/*.o time/*.o >  /dev/null 
-
+	$(AR) rv $@ *.o string/*.o stdio/*.o fcntl/*.o misc/*.o dirent/*.o math/*.o errno/*.o multibyte/*.o ctype/*.o thread/*.o exit/*.o stdlib/*.o unistd/*.o env/*.o malloc/*.o process/*.o prng/*.o signal/*.o time/*.o >  /dev/null 
 
 libc_root: $(patsubst %,%.o,$(LIB))
 
