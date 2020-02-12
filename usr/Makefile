@@ -28,9 +28,10 @@ all: prepare_libc $(patsubst %,%.elf,$(TARGETS))
 .SECONDARY: $(patsubst %,src/%.o,$(TARGETS))
 
 prepare_libc: $(LIBC_DIR/$(NLIB)
+	mkdir -p out
 	make -C libc all
 
-sh.elf:  src/sh.o libc/crt0.o libc/crt1.o $(LIBC_DIR)/$(NLIB)  
+out/sh.elf:  src/sh.o libc/crt0.o libc/crt1.o $(LIBC_DIR)/$(NLIB)  
 	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
 	
 src/%.o: src/%.c 
@@ -38,9 +39,12 @@ src/%.o: src/%.c
 	
 # In the following linker options, -lso3 appears twice because of cycle references
 %.elf: src/%.o libc/crt0.o libc/crt1.o $(LIBC_DIR)/$(NLIB)  
-	$(LD) -o $@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
+	$(LD) -o out/$@ libc/crt0.o libc/crt1.o $< -L$(LIBC_DIR) -lso3 $(LDFLAGS) -L$(LIBC_DIR)/  -lso3
 
 # Generic targets
 clean: 
-	rm -f *.o *.elf 
+	find . -name "*.o" | xargs rm
+	find . -name "*.a" | xargs rm
+	rm -rf out
+	
 	
