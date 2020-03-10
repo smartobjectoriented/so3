@@ -7,5 +7,7 @@ obj-$(CONFIG_UART) += serial/
 
 obj-$(CONFIG_RAMDEV) += ramdev/
 
+obj-y += ethernet/
+
 obj-y += timer/
 obj-y += irq/

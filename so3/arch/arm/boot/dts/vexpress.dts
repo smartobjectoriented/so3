@@ -112,4 +112,18 @@
 
 		status = "ok";
 	};
+
+    /*
+        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
+        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
+    */
+    ethernet@0x1A000000 {
+        compatible = "smsc,smc91x";
+        reg = <0x1A000000 0x1000>;
+        interrupts = <47>;
+        switch = "br0";
+
+        status = "ok";
+    };
 };
+
