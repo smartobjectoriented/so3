@@ -367,7 +367,7 @@ ifeq ($(CONFIG_ELF),y)
 all: $(ELF)
 endif
 
-objs-y		:= kernel mm fs ipc arch/arm devices apps 
+objs-y		:= kernel mm fs ipc arch/arm devices apps net
 libs-y		:= lib
 libs-y 		+= lib/libfdt
 
