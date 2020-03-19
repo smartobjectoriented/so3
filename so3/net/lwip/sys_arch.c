@@ -449,9 +449,33 @@ void sys_mbox_free(sys_mbox_t *sys_mbox)
 
 }
 
-sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
-{
+struct _thread_function_adapter_data  {
+    void* arg;
+    lwip_thread_fn function;
+};
+typedef struct _thread_function_adapter_data _thread_function_adapter_data_t;
 
+
+int _thread_function_adapter(void *arg){
+    _thread_function_adapter_data_t *adapter_data = (_thread_function_adapter_data_t*)arg;
+
+    (*adapter_data->function)(adapter_data->arg);
+    return 1;
+}
+
+sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksize, int prio)
+{
+    sys_thread_t sys_thread;
+    _thread_function_adapter_data_t adapter_data;
+
+    LWIP_UNUSED_ARG(stacksize);
+
+    adapter_data.arg = arg;
+    adapter_data.function = function;
+
+    sys_thread.thread_handle = kernel_thread(_thread_function_adapter, name, &adapter_data, prio);
+
+    return sys_thread;
 }
 
 
