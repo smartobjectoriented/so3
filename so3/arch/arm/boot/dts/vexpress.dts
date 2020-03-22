@@ -119,7 +119,6 @@
 	clcd@1c1f0000 {
 		compatible = "arm,pl111";
 		reg = <0x1c1f0000 0x1000>;
-		interrupts = <48>;
 
 		status = "ok";
 	};
