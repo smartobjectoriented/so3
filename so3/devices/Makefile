@@ -9,3 +9,4 @@ obj-$(CONFIG_RAMDEV) += ramdev/
 
 obj-y += timer/
 obj-y += irq/
+obj-y += fb/
