@@ -112,4 +112,15 @@
 
 		status = "ok";
 	};
+
+	/* PL111 Color LCD Controller
+	 * Documentation: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0447j/Caccidgi.html
+	 */
+	clcd@1c1f0000 {
+		compatible = "arm,pl111";
+		reg = <0x1c1f0000 0x1000>;
+		interrupts = <48>;
+
+		status = "ok";
+	};
 };
