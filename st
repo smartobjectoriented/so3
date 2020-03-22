@@ -1,6 +1,6 @@
 #!/bin/sh
  sudo qemu/arm-softmmu/qemu-system-arm $@ \
-    -s \
+	-s \
   	-smp 4 \
 	-serial mon:stdio  \
 	-M vexpress-a15,secure=on  -cpu cortex-a15\
@@ -9,7 +9,5 @@
 	-semihosting-config enable,target=native \
 	-net user,tftp=. \
 	-net tap,script=tools/qemu-ifup,downscript=tools/qemu-ifdown -net nic \
-	-sd filesystem/sdcard.img \
-	-nographic 
-    
- 
+	-sd filesystem/sdcard.img
+
