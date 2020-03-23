@@ -64,7 +64,7 @@ static int pl111_init(dev_t *dev) {
 	// HBP: 00100111 39 0x27
 	// HFP: 00010111 23 0x17
 	// HSW: 01011111 95 0x5f
-	// PPL:   100111 39 0x27 => 16 * 39 + 1 = 625px horizontal
+	// PPL:   100111 39 0x27 => 16 * (39 + 1) = 640px horizontal
 	iowrite32(dev->base + CLCD_TIM0, 0x27175f9c);
 
 	// 00100000 00001011 00000101 11011111
