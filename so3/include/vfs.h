@@ -125,6 +125,7 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
+void *do_mmap(size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 
 /* VFS common interface */
