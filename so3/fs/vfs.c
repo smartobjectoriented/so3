@@ -32,6 +32,7 @@
 #include <dirent.h>
 
 #include <device/serial.h>
+#include <device/fb.h>
 #include <fat/fat.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -565,23 +566,39 @@ int do_write(int fd, void *buffer, int count)
 }
 
 /**
- * @brief This function opens a file (currently, only regular and dir are supported)
+ * @brief This function opens a file. Not all file types are supported.
  */
 int do_open(const char *filename, int flags)
 {
-	int fd, gfd;
-	int type;
+	int fd, gfd, type;
+	uint32_t fb_id;
 	struct file_operations *fops;
 
 	mutex_lock(&vfs_lock);
-  	/* FIXME: Should find the mounted point regarding the path */
-	/* At the moment... */
-	fops = registered_fs_ops[0];
 
-	if (flags & O_DIRECTORY)
-		type = VFS_TYPE_DIR;
-	else
-		type = VFS_TYPE_FILE;
+	/* Choose the proper fops and type based on the filename. */
+	if (!strncmp("fb.", filename, 3)) {
+
+		/* `fb.X' files are frame buffer devices. */
+		fb_id = (uint32_t) simple_strtoul(filename + 3, NULL, 10);
+		fops = get_fb_ops(fb_id);
+		if (!fops) {
+			/* TODO errmsg: not fb found */
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+
+		type = VFS_TYPE_FBDEV;
+	}
+	else {
+		/* FIXME: Should find the mounted point regarding the path */
+		fops = registered_fs_ops[0];
+
+		if (flags & O_DIRECTORY)
+			type = VFS_TYPE_DIR;
+		else
+			type = VFS_TYPE_FILE;
+	}
 
 	/* vfs_open is already clean fops and open_fds */
 	fd = vfs_open(fops, type);
@@ -599,7 +616,7 @@ int do_open(const char *filename, int flags)
 	vfs_set_open_mode(gfd, flags);
 
 	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (registered_fs_ops[0]->open(gfd, filename))
+	if (fops->open && fops->open(gfd, filename))
 		goto open_failed;
 
 	mutex_unlock(&vfs_lock);
@@ -880,4 +897,3 @@ void vfs_init(void)
 
 	vfs_gfd_init();
 }
-

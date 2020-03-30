@@ -68,10 +68,9 @@
 /* Types of entry */
 #define VFS_TYPE_FILE		0
 #define VFS_TYPE_DIR		1
-
 #define VFS_TYPE_PIPE		2
-/* stdin/stdout/stderr */
-#define VFS_TYPE_IO		3
+#define VFS_TYPE_IO		3	/* stdin/stdout/stderr */
+#define VFS_TYPE_FBDEV		4	/* framebuffer device */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
