@@ -16,45 +16,38 @@
  *
  */
 
-#if 1
-#define DEBUG
-#endif
-
-#include <memory.h>
-#include <device/driver.h>
+#include <vfs.h>
+#include <process.h>
 #include <asm/io.h>
+#include <asm/mmu.h>
+#include <device/driver.h>
+#include <device/fb.h>
 
 /* Register addresses */
-#define CLCD_TIM0			0x00000000
-#define CLCD_TIM1			0x00000004
-#define CLCD_TIM2			0x00000008
-#define CLCD_TIM3			0x0000000c
-#define CLCD_UBAS			0x00000010
-#define CLCD_LBAS 			0x00000014
-#define CLCD_PL111_CNTL		0x00000018
-#define CLCD_PL111_IENB		0x0000001c
+#define CLCD_TIM0	0x00000000
+#define CLCD_TIM1	0x00000004
+#define CLCD_TIM2	0x00000008
+#define CLCD_TIM3	0x0000000c
+#define CLCD_UBAS	0x00000010
+#define CLCD_LBAS	0x00000014
+#define CLCD_PL111_CNTL	0x00000018
+#define CLCD_PL111_IENB	0x0000001c
 
-#define MASK5 0x1f
-#define MASK6 0x3f
+#define VRAM_BASE	0x18000000
 
-static uint16_t create_px(uint16_t r, uint16_t g, uint16_t b) {
+void *mmap(int fd, uint32_t virt_addr, uint32_t page_count);
 
-	uint16_t px = 0;
+struct file_operations pl111_ops = {
+	.mmap = mmap
+};
 
-	// depends on the bpp mode, here for bgr565
-	px |= b & MASK5;
-	px |= (g & MASK6) << 5;
-	px |= (r & MASK5) << 11;
-	//DBG("px: 0x%08x\n");
 
-	return px;
-}
-
-/* Device initialisation. */
-static int pl111_init(dev_t *dev) {
-
-	uint32_t i, j, vram_addr;
-
+/*
+ * Initialisation of the PL111 CLCD Controller.
+ * References to the Linux driver (amba-clcd.c) are left for documentation.
+ */
+int pl111_init(dev_t *dev)
+{
 	/* amba-clcd.c:555 clcdfb_register: disable interrupts */
 	iowrite32(dev->base + CLCD_PL111_IENB, 0);
 
@@ -92,7 +85,6 @@ static int pl111_init(dev_t *dev) {
 	iowrite32(dev->base + CLCD_TIM3, 0);
 
 	/* amba-clcd.c:62 clcdfb_set_start: write_regs fb address */
-
 	iowrite32(dev->base + CLCD_UBAS, 0x18000000);
 	iowrite32(dev->base + CLCD_LBAS, 0x1804b000);
 
@@ -116,33 +108,29 @@ static int pl111_init(dev_t *dev) {
 	// LCDBW:     0 => color (unused for TFT)
 	// LCDBPP:  110 => 16 bits per pixel, 5:6:5 mode
 	// LCDEN:     1 => enabled
-	iowrite32(dev->base + CLCD_PL111_CNTL, 0x192d);
+	iowrite32(dev->base + CLCD_PL111_CNTL, 0x182d);
 
-	/* Testing code: write 160 lines of red, green and blue. */
-
-	vram_addr = io_map(0x18000000, sizeof(uint32_t) * 0x4b000);
-
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			iowrite16(vram_addr + j * 2 + i * 640 * 2, create_px(0xff, 0, 0));
-		}
-	}
-
-	vram_addr += 160 * 640 * 2;
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			iowrite16(vram_addr + j * 2 + i * 640 * 2, create_px(0, 0xff, 0));
-		}
-	}
-
-	vram_addr += 160 * 640 * 2;
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			iowrite16(vram_addr + j * 2 + i * 640 * 2, create_px(0, 0, 0xff));
-		}
+	if (register_fb_ops(&pl111_ops)) {
+		/* TODO print error message: device init but could not register. */
+		return -1;
 	}
 
 	return 0;
+}
+
+void *mmap(int fd, uint32_t virt_addr, uint32_t page_count)
+{
+	uint32_t i, page;
+	pcb_t *pcb = current()->pcb;
+
+	for (i = 0; i < page_count; i++) {
+		/* Map a process' virtual page to the physical one (here the VRAM). */
+		page = VRAM_BASE + i * PAGE_SIZE;
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+		add_page_to_proc(pcb, phys_to_page(page));
+	}
+
+	return virt_addr;
 }
 
 REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);
