@@ -1,1 +1,1 @@
-TARGETS := echo sh ls more cat fillfb
+TARGETS := echo sh ls more cat fillfb lvgl
