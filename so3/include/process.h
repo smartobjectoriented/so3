@@ -25,7 +25,7 @@
 #include <thread.h>
 #include <schedule.h>
 #include <elf-struct.h>
-#include <sync.h>
+#include <completion.h>
 #include <memory.h>
 #include <signal.h>
 #include <ptrace.h>

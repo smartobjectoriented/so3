@@ -21,6 +21,7 @@
 #include <vfs.h>
 #include <process.h>
 #include <delay.h>
+#include <semaphore.h>
 
 #include <device/timer.h>
 
@@ -33,11 +34,37 @@ char serial_getc(void);
 int serial_gets(char *buf, int len);
 int serial_puts(char *buf, int len);
 
+sem_t sem;
+
+int sem_test_fn(void *arg) {
+	char name[20];
+	int id = *((int *) arg);
+
+	sprintf(name, "thread_%d", id);
+
+	while (true) {
+
+		printk("## %s: entering...\n", name);
+		sem_down(&sem);
+
+		printk("## %s: doing some work during a certain time...\n", name);
+		msleep(50);
+		printk("## %s: finished.\n", name);
+		sem_up(&sem);
+		printk("## %s: left critical section.\n", name);
+
+		/* Consistency check */
+		printk("## %s: sem val: %d\n", name, sem.val);
+	}
+
+}
 
 int thread_fn1(void *arg)
 {
+	int i;
+
 	printk("%s: hello\n", __func__);
-	while (1); 
+
 #if 0
 	printk("acquiring lock for job %d\n", counter);
 	mutex_lock(&lock);
@@ -55,7 +82,7 @@ int thread_fn1(void *arg)
 #if 0
 	mutex_unlock(&lock);
 #endif
-#endif
+
 
 	return 0;
 }
@@ -143,9 +170,22 @@ int main_kernel(void *args)
 	}
 #endif
 
+#if 0
 	kernel_thread(fn1, "fn1", NULL, 0);
 	kernel_thread(fn2, "fn2", NULL, 0);
+#endif
+	{
+		int id[50], i;
 
+		sem_init(&sem);
+
+		for (i = 0; i < 20; i++) {
+			id[i] = i;
+			kernel_thread(sem_test_fn, "sem", &id[i], 0);
+		}
+
+		while (true);
+	}
 
 	return 0;
 }

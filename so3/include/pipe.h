@@ -21,7 +21,7 @@
 
 #include <memory.h>
 #include <mutex.h>
-#include <sync.h>
+#include <completion.h>
 
 #define PIPE_READER	0
 #define PIPE_WRITER	0
