@@ -16,13 +16,18 @@
  *
  */
 
+/*
+ * This implementation of mutex is inspired from Linux source code.
+ */
+
 #ifndef MUTEX_H
 #define MUTEX_H
 
 #include <list.h>
-#include <asm/atomic.h>
 #include <spinlock.h>
 #include <thread.h>
+
+#include <asm/atomic.h>
 
 struct mutex {
    /* 1: unlocked, 0: locked, negative: locked, possible waiters */
@@ -33,17 +38,9 @@ struct mutex {
    /* Allow to manage recursive locking */
    uint32_t 		   recursive_count;
 
-   struct list_head        waitqueue;
+   struct list_head        tcb_list;
 };
 typedef struct mutex mutex_t;
-
- /*
-  * List of waiters on a specific lock. This is an entry of the mutex waitqueue.
-  */
-struct mutex_waiter {
-  struct list_head list;
-  tcb_t *tcb;
-};
 
  /**
   * mutex_is_locked - is the mutex locked
