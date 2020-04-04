@@ -17,10 +17,12 @@
  */
 
 #include <vfs.h>
+#include <mutex.h>
 #include <device/fb.h>
 
 #define MAX_FB 4
 
+struct mutex fb_lock;
 static struct file_operations *registered_fb_ops[MAX_FB];
 
 /* Returns the fops associated with the fb device of the given id. */
@@ -37,9 +39,13 @@ struct file_operations *get_fb_ops(uint32_t id)
 int register_fb_ops(struct file_operations* fb_ops)
 {
 	uint32_t id = 0;
+
+	mutex_lock(&fb_lock);
 	while (id < MAX_FB && registered_fb_ops[id] != NULL) {
 		id++;
 	}
+
+	mutex_unlock(&fb_lock);
 
 	if (id == MAX_FB) {
 		return -1;
