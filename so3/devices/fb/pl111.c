@@ -111,7 +111,7 @@ int pl111_init(dev_t *dev)
 	iowrite32(dev->base + CLCD_PL111_CNTL, 0x182d);
 
 	if (register_fb_ops(&pl111_ops)) {
-		/* TODO print error message: device init but could not register. */
+		printk("%s: pl111 initialised but could not register fops.", __func__);
 		return -1;
 	}
 
@@ -130,7 +130,7 @@ void *mmap(int fd, uint32_t virt_addr, uint32_t page_count)
 		add_page_to_proc(pcb, phys_to_page(page));
 	}
 
-	return virt_addr;
+	return (void *) virt_addr;
 }
 
 REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);
