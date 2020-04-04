@@ -46,7 +46,7 @@ struct mutex vfs_lock;
 struct fd *open_fds[MAX_FDS];
 
 /* Registered file system operations - This is specific to a file system type. Currently, only FAT and pipe is used. */
-/* Pipe as its own fops which is not put in this table. */
+/* Pipe has its own fops which is not put in this table. */
 struct file_operations *registered_fs_ops[MAX_FS_REGISTERED];
 
 /*
@@ -624,10 +624,10 @@ int do_open(const char *filename, int flags)
 	return fd;
 
 open_failed:
-
 	free(open_fds[gfd]);
 	open_fds[gfd] = NULL;
 	mutex_unlock(&vfs_lock);
+
 	return -1;
 }
 
@@ -889,22 +889,20 @@ static void vfs_gfd_init(void)
 
 	open_fds[STDIN]->val = STDIN;
 	open_fds[STDIN]->type = VFS_TYPE_IO;
+	open_fds[STDIN]->fops = &console_fops;
 
 	open_fds[STDOUT]->val = STDOUT;
-	open_fds[STDOUT]->val = VFS_TYPE_IO;
+	open_fds[STDOUT]->type = VFS_TYPE_IO;
+	open_fds[STDOUT]->fops = &console_fops;
 
 	open_fds[STDERR]->val = STDERR;
-	open_fds[STDERR]->val = VFS_TYPE_IO;
-
-	open_fds[STDIN]->fops = &console_fops;
-	open_fds[STDOUT]->fops = &console_fops;
+	open_fds[STDERR]->type = VFS_TYPE_IO;
 	open_fds[STDERR]->fops = &console_fops;
 
 	/* Ref counter updated to 1 on init */
 	open_fds[STDERR]->ref_count = 1;
 	open_fds[STDIN]->ref_count = 1;
 	open_fds[STDOUT]->ref_count = 1;
-
 }
 
 void vfs_init(void)
