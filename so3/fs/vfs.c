@@ -583,7 +583,7 @@ int do_open(const char *filename, int flags)
 		fb_id = (uint32_t) simple_strtoul(filename + 3, NULL, 10);
 		fops = get_fb_ops(fb_id);
 		if (!fops) {
-			/* TODO errmsg: not fb found */
+			printk("%s: requested framebuffer not found.", __func__);
 			mutex_unlock(&vfs_lock);
 			return -1;
 		}
@@ -827,29 +827,41 @@ int do_stat(const char *path, struct stat *st)
 	return ret;
 }
 
-/* TODO err mgmt, mutex, page_count type */
 void *do_mmap(size_t length, int prot, int fd, off_t offset)
 {
 	int gfd;
+	uint32_t page_count, virt_addr;
 	struct file_operations* fops;
 	pcb_t* pcb;
-	uint32_t page_count, virt_addr;
-
-	mutex_lock(&vfs_lock);
 
 	/* Get the fops associated to the file descriptor. */
+
 	gfd = vfs_get_gfd(fd);
+	if (-1 == gfd) {
+		printk("%s: could not get global fd.", __func__);
+		return NULL;
+	}
+
+	mutex_lock(&vfs_lock);
 	fops = vfs_get_fops(gfd);
+	if (!fops) {
+		printk("%s: could not get the framebuffer fops.", __func__);
+		return NULL;
+	}
+
+	mutex_unlock(&vfs_lock);
 
 	/* Page count to allocate to the current process to be able to map the desired region. */
-	page_count = length / PAGE_SIZE + 1;
+	page_count = length / PAGE_SIZE;
+	if (length % PAGE_SIZE != 0) {
+		page_count++;
+	}
 
 	/* Get the process' virtual address base. */
 	pcb = current()->pcb;
 	virt_addr = pcb->stack_top - (pcb->page_count + page_count) * PAGE_SIZE;
 
 	/* Call the mmap fops that will do the actual mapping. */
-	mutex_unlock(&vfs_lock);
 	return fops->mmap(fd, virt_addr, page_count);
 }
 
