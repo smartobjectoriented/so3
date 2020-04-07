@@ -38,6 +38,8 @@
 
 #include <apps/main_thread.h>
 
+#include <network.h>
+
 #define SO3_KERNEL_VERSION "2019.3.0"
 
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
@@ -87,6 +89,7 @@ int rest_init(void *dummy) {
 	return 0;
 }
 
+
 void kernel_start(void) {
 
 	/* Basic low-level initialization */
@@ -101,7 +104,7 @@ void kernel_start(void) {
 	/* Memory manager subsystem initialization */
 	memory_init();
 
-	devices_init();
+    devices_init();
 
 	timer_init();
 
@@ -110,14 +113,19 @@ void kernel_start(void) {
 	/* Scheduler init */
 	scheduler_init();
 
+
 	local_irq_enable();
+
 	calibrate_delay();
 
-	/*
-	 * Perform the rest of bootstrap sequence in a separate thread, so that
-	 * we can rely on the scheduler for subsequent threads.
-	 * The priority is 2, above the idle thread priority (1).
-	 */
+    /* The network need timer and scheduler */
+    network_init();
+
+    /*
+     * Perform the rest of bootstrap sequence in a separate thread, so that
+     * we can rely on the scheduler for subsequent threads.
+     * The priority is 2, above the idle thread priority (1).
+     */
 	kernel_thread(rest_init, "so3_boot", NULL, 2);
 
 	/*

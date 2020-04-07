@@ -42,22 +42,24 @@
 #define DEFAULT_THREAD_STACKSIZE        200
 #define DEFAULT_THREAD_PRIO             1
 
-#define ETH_PAD_SIZE 					2
+#define ETH_PAD_SIZE 					0
+
+#define LWIP_DEBUG 1
 
 #define NOT_LWIP_DEBUG                  0
 #define DBG_TYPES_ON                    0x00
 #define LWIP_DBG_TYPES_ON               LWIP_DBG_OFF
 
-#define ETHARP_DEBUG                    LWIP_DBG_OFF
-#define NETIF_DEBUG                     LWIP_DBG_OFF
-#define PBUF_DEBUG                      LWIP_DBG_OFF
+#define ETHARP_DEBUG                    LWIP_DBG_ON
+#define NETIF_DEBUG                     LWIP_DBG_ON
+#define PBUF_DEBUG                      LWIP_DBG_ON
 #define API_LIB_DEBUG                   LWIP_DBG_OFF
 #define API_MSG_DEBUG                   LWIP_DBG_OFF
 #define SOCKETS_DEBUG                   LWIP_DBG_OFF
 #define ICMP_DEBUG                      LWIP_DBG_OFF
 #define IGMP_DEBUG                      LWIP_DBG_OFF
 #define INET_DEBUG                      LWIP_DBG_OFF
-#define IP_DEBUG                        LWIP_DBG_OFF
+#define IP_DEBUG                        LWIP_DBG_ON
 #define IP_REASS_DEBUG                  LWIP_DBG_OFF
 #define RAW_DEBUG                       LWIP_DBG_OFF
 #define MEM_DEBUG                       LWIP_DBG_OFF
@@ -76,7 +78,7 @@
 #define TCPIP_DEBUG                     LWIP_DBG_OFF
 #define PPP_DEBUG                       LWIP_DBG_OFF
 #define SLIP_DEBUG                      LWIP_DBG_OFF
-#define DHCP_DEBUG                      LWIP_DBG_OFF
+#define DHCP_DEBUG                      LWIP_DBG_ON
 #define AUTOIP_DEBUG                    LWIP_DBG_OFF
 #define SNMP_MSG_DEBUG                  LWIP_DBG_OFF
 #define SNMP_MIB_DEBUG                  LWIP_DBG_OFF
@@ -84,7 +86,7 @@
 #define LWIP_NOASSERT                   0
 
 #define ETHARP_TRUST_IP_MAC				0
-#define LWIP_UDP						0
+#define LWIP_UDP						1
 
 /**
  * SYS_LIGHTWEIGHT_PROT==1: if you want inter-task protection for certain
@@ -140,7 +142,7 @@
  * MEMP_NUM_SYS_TIMEOUT: the number of simulateously active timeouts.
  * (requires NO_SYS==0)
  */
-#define MEMP_NUM_SYS_TIMEOUT            5
+#define MEMP_NUM_SYS_TIMEOUT            20
 
 /**
  * MEMP_NUM_NETBUF: the number of struct netbufs.
@@ -233,7 +235,7 @@
 /**
  * LWIP_DHCP==1: Enable DHCP module.
  */
-#define LWIP_DHCP                       0
+#define LWIP_DHCP                       1
 
 
 #define LWIP_PROVIDE_ERRNO				0

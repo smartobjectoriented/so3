@@ -34,6 +34,8 @@
 #include <device/irq.h>
 #include <device/timer.h>
 #include <device/ramdev.h>
+#include <device/network.h>
+
 
 /*
  * Device status strings
@@ -171,6 +173,7 @@ void devices_init(void) {
 	/* Get possible ram device (aka initrd loaded from U-boot) */
 	ramdev_init();
 #endif
+
 
 	/* Pare the associated dtb to initialize all devices */
 	parse_dtb();

@@ -2,37 +2,41 @@
 // Created by julien on 3/25/20.
 //
 
-#ifndef SO3_NETWORK_H
-#define SO3_NETWORK_H
+#ifndef SO3__DEVICE_NETWORK_H
+#define SO3__DEVICE_NETWORK_H
 
 #include <types.h>
+#include <list.h>
+#include <device/device.h>
 
 
 #define ARP_HLEN 6
 
 
-struct eth_device {
+struct eth_dev {
+    struct list_head list;
 #define ETH_NAME_LEN 20
     char name[ETH_NAME_LEN];
     unsigned char enetaddr[ARP_HLEN];
     phys_addr_t iobase;
     int state;
 
-    int (*init)(struct eth_device *);
-    int (*send)(struct eth_device *, void *packet, int length);
-    int (*recv)(struct eth_device *);
-    void (*halt)(struct eth_device *);
-    int (*mcast)(struct eth_device *, const u8 *enetaddr, int join);
-    int (*write_hwaddr)(struct eth_device *);
-    struct eth_device *next;
-    int index;
+    int (*init)(struct eth_dev *);
+    int (*send)(struct eth_dev *, void *packet, int length);
+    int (*recv)(struct eth_dev *);
+    void (*halt)(struct eth_dev *);
+    int (*write_hwaddr)(struct eth_dev *);
     void *priv;
+
+    dev_t *dev;
+
+    struct eth_dev *next;
+
 };
+typedef struct eth_dev eth_dev_t;
 
+void network_devices_init(void);
 
-void network_init(void);
+void network_devices_register(eth_dev_t *eth_dev);
 
-extern struct eth_device eth_dev;
-
-
-#endif //SO3_NETWORK_H
+#endif //SO3__DEVICE_NETWORK_H

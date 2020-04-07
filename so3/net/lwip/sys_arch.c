@@ -43,20 +43,22 @@
 
 #include <delay.h>
 #include <mutex.h>
+#include <semaphore.h>
 #include <heap.h>
 #include <timer.h>
 
 
 
 
-mutex_t *light_protect_mutex;
+mutex_t light_protect_mutex;
 
 
 
 /* Initialize this module (see description in sys.h) */
 void sys_init(void)
 {
-    light_protect_mutex = (mutex_t*)malloc(sizeof(mutex_t));
+    mutex_init(&light_protect_mutex);
+    //light_protect_mutex = (mutex_t*)malloc(sizeof(mutex_t));
     // INIT mutex
 }
 
@@ -85,13 +87,13 @@ u32_t sys_jiffies(void)
 sys_prot_t sys_arch_protect(void)
 {
     // We can use mutex because SO3 mutexes support recursive calls
-    mutex_lock(light_protect_mutex);
+    mutex_lock(&light_protect_mutex);
     return 1;
 }
 
 void sys_arch_unprotect(sys_prot_t pval)
 {
-    mutex_unlock(light_protect_mutex);
+    mutex_unlock(&light_protect_mutex);
 }
 
 #endif /* SYS_LIGHTWEIGHT_PROT */
@@ -152,61 +154,40 @@ void sys_mutex_free(sys_mutex_t *mutex)
 
 err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
 {
-    mutex_t *so3_mutex;
+    int i = 0;
     LWIP_ASSERT("sem != NULL", sem != NULL);
-    LWIP_ASSERT("initial_count invalid (not 0 or 1)", (initial_count == 0) || (initial_count == 1));
+    LWIP_ASSERT("initial_count invalid (count >= 0)", (initial_count >= 0));
 
     // Alloc a new mutex
-    so3_mutex = (mutex_t*)malloc(sizeof(mutex_t));
+    sem->sem = (sem_t*)malloc(sizeof(sem_t));
 
-    mutex_init(so3_mutex);
-
-    sem->mutex = (void*)so3_mutex;
-    sem->counter = initial_count;
-
-    if(sem->counter == NULL  || sem->mutex == NULL) {
+    if(sem->sem == NULL) {
         return ERR_MEM;
     }
+
+
+    sem_init(sem->sem);
+
+    while(initial_count > i++){
+        sem_up(sem->sem);
+    }
+
     return ERR_OK;
 }
 
 void sys_sem_signal(sys_sem_t *sem)
 {
     LWIP_ASSERT("sem != NULL", sem != NULL);
-    LWIP_ASSERT("sem->mutex != NULL", sem->mutex != NULL);
+    LWIP_ASSERT("sem->sem != NULL", sem->sem != NULL);
 
-    mutex_lock(sem->mutex);
-    sem->counter++;
-    mutex_unlock(sem->mutex);
+    sem_up(sem->sem);
 }
 
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout_ms)
 {
-    u32_t start = (u32_t)(get_s_time() / 1000000ull);
+    // TODO add timeout support
 
-
-    LWIP_ASSERT("sem != NULL", sem != NULL);
-    LWIP_ASSERT("sem->mutex != NULL", sem->mutex != NULL);
-
-
-    mutex_lock(sem->mutex);
-
-    while(sem->counter <= 0)
-    {
-        mutex_unlock(sem->mutex);
-        msleep(2);
-        mutex_lock(sem->mutex);
-
-        if(timeout_ms && (u32_t)(get_s_time() / 1000000ull) - start >= timeout_ms)
-        {
-            mutex_unlock(sem->mutex);
-            return SYS_ARCH_TIMEOUT;
-        }
-    }
-
-    // Take ressource
-    sem->counter--;
-    mutex_unlock(sem->mutex);
+    sem_down(sem->sem);
 
     return 1;
 }
@@ -214,18 +195,18 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout_ms)
 void sys_sem_free(sys_sem_t *sem)
 {
     LWIP_ASSERT("sem != NULL", sem != NULL);
-    LWIP_ASSERT("sem->mut != NULL", sem->mut != NULL);
+    LWIP_ASSERT("sem->mut != NULL", sem->sem != NULL);
 
-    free(sem->mutex);
+    free(sem->sem);
 
-    sem->mutex = NULL;
+    sem->sem = NULL;
 }
 
 #define SYS_MBOX_SIZE 128
 struct _mbox  {
     u32_t first, last;
-    sys_sem_t *not_empty;
-    sys_sem_t *not_full;
+    sem_t *not_empty;
+    sem_t *not_full;
     void *mutex;
     int *wait_send;
     void *msgs[SYS_MBOX_SIZE];
@@ -237,14 +218,14 @@ typedef struct _mbox _mbox_t;
 err_t sys_mbox_new(sys_mbox_t *sys_mbox, int size)
 {
     _mbox_t *mbox;
-    sys_sem_t *not_empty;
-    sys_sem_t *not_full;
+    sem_t *not_empty;
+    sem_t *not_full;
     mutex_t *mutex;
     LWIP_UNUSED_ARG(size);
 
     mbox = (_mbox_t *)malloc(sizeof(_mbox_t));
-    not_empty = (sys_sem_t*)malloc(sizeof(sys_sem_t));
-    not_full = (sys_sem_t*)malloc(sizeof(sys_sem_t));
+    not_empty = (sem_t*)malloc(sizeof(sem_t));
+    not_full = (sem_t*)malloc(sizeof(sem_t));
     mutex = (mutex_t*)malloc(sizeof(mutex_t));
 
     if (mbox == NULL || not_empty == NULL || not_full == NULL || mutex == NULL) {
@@ -252,9 +233,9 @@ err_t sys_mbox_new(sys_mbox_t *sys_mbox, int size)
     }
 
 
-    if(sys_sem_new(not_empty, 0) == ERR_MEM || sys_sem_new(not_full, 0) == ERR_MEM){
-        return ERR_MEM;
-    }
+    sem_init(not_empty);
+    sem_init(not_full);
+
 
     mutex_init(mutex);
 
@@ -284,7 +265,7 @@ void sys_mbox_post(sys_mbox_t *sys_mbox, void *msg)
     while ((mbox->last + 1) >= (mbox->first + SYS_MBOX_SIZE)) {
         mbox->wait_send++;
         mutex_unlock(mbox->mutex);
-        sys_arch_sem_wait(mbox->not_full, 0);
+        sem_down(mbox->not_full);
         mutex_lock(mbox->mutex);
         mbox->wait_send--;
     }
@@ -300,7 +281,7 @@ void sys_mbox_post(sys_mbox_t *sys_mbox, void *msg)
     mbox->last++;
 
     if (first) {
-        sys_sem_signal(mbox->not_empty);
+        sem_up(mbox->not_empty);
     }
 
     mutex_unlock(mbox->mutex);
@@ -336,7 +317,7 @@ err_t sys_mbox_trypost(sys_mbox_t *sys_mbox, void *msg)
     mbox->last++;
 
     if (first) {
-        sys_sem_signal(mbox->not_empty);
+        sem_up(mbox->not_empty);
     }
 
     mutex_unlock(mbox->mutex);
@@ -369,13 +350,15 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
         /* We block while waiting for a mail to arrive in the mailbox. We
            must be prepared to timeout. */
         if (timeout_ms != 0) {
-            time_needed = sys_arch_sem_wait(mbox->not_empty, timeout_ms);
+            // TODO Add timeout
+            time_needed = 0;
+            sem_down(mbox->not_empty);
 
             if (time_needed == SYS_ARCH_TIMEOUT) {
                 return SYS_ARCH_TIMEOUT;
             }
         } else {
-            sys_arch_sem_wait(mbox->not_empty, 0);
+            sem_down(mbox->not_empty);
         }
 
         mutex_lock(mbox->mutex);
@@ -392,7 +375,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
     mbox->first++;
 
     if (mbox->wait_send) {
-        sys_sem_signal(mbox->not_full);
+        sem_up(mbox->not_full);
     }
 
     mutex_unlock(mbox->mutex);
@@ -425,7 +408,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *sys_mbox, void **msg)
     mbox->first++;
 
     if (mbox->wait_send) {
-        sys_sem_signal(mbox->not_full);
+        sem_up(mbox->not_full);
     }
 
     mutex_unlock(mbox->mutex);
@@ -440,8 +423,8 @@ void sys_mbox_free(sys_mbox_t *sys_mbox)
         _mbox_t *mbox = sys_mbox->mbox;
         SYS_STATS_DEC(mbox.used);
 
-        sys_sem_free(mbox->not_empty);
-        sys_sem_free(mbox->not_full);
+        free(mbox->not_empty);
+        free(mbox->not_full);
         free(mbox->mutex);
         mbox->not_empty = mbox->not_full = mbox->mutex = NULL;
         free(mbox);
@@ -459,21 +442,24 @@ typedef struct _thread_function_adapter_data _thread_function_adapter_data_t;
 int _thread_function_adapter(void *arg){
     _thread_function_adapter_data_t *adapter_data = (_thread_function_adapter_data_t*)arg;
 
-    (*adapter_data->function)(adapter_data->arg);
+    adapter_data->function(adapter_data->arg);
+    free(adapter_data);
     return 1;
 }
 
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksize, int prio)
 {
     sys_thread_t sys_thread;
-    _thread_function_adapter_data_t adapter_data;
+    _thread_function_adapter_data_t *adapter_data = malloc(sizeof(_thread_function_adapter_data_t));
 
     LWIP_UNUSED_ARG(stacksize);
 
-    adapter_data.arg = arg;
-    adapter_data.function = function;
+    adapter_data->arg = arg;
+    adapter_data->function = function;
 
-    sys_thread.thread_handle = kernel_thread(_thread_function_adapter, name, &adapter_data, prio);
+    //adapter_data->function(arg);
+
+    sys_thread.thread_handle = kernel_thread(_thread_function_adapter, name, adapter_data, prio);
 
     return sys_thread;
 }

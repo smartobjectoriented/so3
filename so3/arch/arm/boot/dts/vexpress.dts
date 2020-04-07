@@ -118,7 +118,7 @@
         https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
     */
     ethernet@0x1A000000 {
-        compatible = "smsc,smc91x";
+        compatible = "smsc,smc911x";
         reg = <0x1A000000 0x1000>;
         interrupts = <47>;
         switch = "br0";

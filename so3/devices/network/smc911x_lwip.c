@@ -53,32 +53,21 @@
 #include <delay.h>
 #include <device/network.h>
 
-#define ETHERNET_LAYER_2_MAX_LENGTH 1522
+#include "lwip/def.h"
+#include "lwip/mem.h"
+#include "lwip/pbuf.h"
+#include "lwip/stats.h"
+#include "lwip/snmp.h"
+#include "lwip/ethip6.h"
+#include "lwip/etharp.h"
+#include <lwip/init.h>
+#include <lwip/dhcp.h>
+#include <netif/ethernet.h>
+#include <lwip/tcpip.h>
 
-/* Generic MII registers. */
-#define MII_BMCR                0x00    /* Basic mode control register */
-#define MII_BMSR                0x01    /* Basic mode status register  */
-#define MII_PHYSID1             0x02    /* PHYS ID 1                   */
-#define MII_PHYSID2             0x03    /* PHYS ID 2                   */
-#define MII_ADVERTISE           0x04    /* Advertisement control reg   */
-#define MII_LPA                 0x05    /* Link partner ability reg    */
-#define MII_EXPANSION           0x06    /* Expansion register          */
-#define MII_CTRL1000            0x09    /* 1000BASE-T control          */
-#define MII_STAT1000            0x0a    /* 1000BASE-T status           */
-#define MII_MMD_CTRL            0x0d    /* MMD Access Control Register */
-#define MII_MMD_DATA            0x0e    /* MMD Access Data Register */
-#define MII_ESTATUS             0x0f    /* Extended Status             */
-#define MII_DCOUNTER            0x12    /* Disconnect counter          */
-#define MII_FCSCOUNTER          0x13    /* False carrier counter       */
-#define MII_NWAYTEST            0x14    /* N-way auto-neg test reg     */
-#define MII_RERRCOUNTER         0x15    /* Receive error counter       */
-#define MII_SREVISION           0x16    /* Silicon revision            */
-#define MII_RESV1               0x17    /* Reserved...                 */
-#define MII_LBRERROR            0x18    /* Lpback, rx, bypass error    */
-#define MII_PHYADDR             0x19    /* PHY address                 */
-#define MII_RESV2               0x1a    /* Reserved...                 */
-#define MII_TPISTATUS           0x1b    /* TPI status for 10mbps       */
-#define MII_NCONFIG             0x1c    /* Network interface config    */
+
+
+#define ETHERNET_LAYER_2_MAX_LENGTH 1522
 
 /* Basic mode control register. */
 #define BMCR_RESV		0x003f	/* Unused...                   */
@@ -113,9 +102,6 @@
 
 
 
-
-u32 **net_rx_packets;
-
 //struct eth_device *eth_dev;
 
 
@@ -138,12 +124,12 @@ u32 **net_rx_packets;
 
 
 
-u32 pkt_data_pull(struct eth_device *dev, u32 addr) \
+u32 pkt_data_pull(eth_dev_t *dev, u32 addr) \
 	__attribute__ ((weak, alias ("smc911x_reg_read")));
-void pkt_data_push(struct eth_device *dev, u32 addr, u32 val) \
+void pkt_data_push(eth_dev_t *dev, u32 addr, u32 val) \
 	__attribute__ ((weak, alias ("smc911x_reg_write")));
 
-static void smc911x_handle_mac_address(struct eth_device *dev)
+static void smc911x_handle_mac_address(eth_dev_t *dev)
 {
     unsigned long addrh, addrl;
     uchar *m = dev->enetaddr;
@@ -156,7 +142,7 @@ static void smc911x_handle_mac_address(struct eth_device *dev)
     printk(DRIVERNAME ": MAC %pM\n", m);
 }
 
-static int smc911x_eth_phy_read(struct eth_device *dev,u8 phy, u8 reg, u16 *val)
+static int smc911x_eth_phy_read(eth_dev_t *dev,u8 phy, u8 reg, u16 *val)
 {
     while (smc911x_get_mac_csr(dev, MII_ACC) & MII_ACC_MII_BUSY);
 
@@ -169,7 +155,7 @@ static int smc911x_eth_phy_read(struct eth_device *dev,u8 phy, u8 reg, u16 *val)
     return 0;
 }
 
-static int smc911x_eth_phy_write(struct eth_device *dev, u8 phy, u8 reg, u16  val)
+static int smc911x_eth_phy_write(eth_dev_t *dev, u8 phy, u8 reg, u16  val)
 {
     while (smc911x_get_mac_csr(dev, MII_ACC) & MII_ACC_MII_BUSY);
 
@@ -181,7 +167,7 @@ static int smc911x_eth_phy_write(struct eth_device *dev, u8 phy, u8 reg, u16  va
     return 0;
 }
 
-static int smc911x_phy_reset(struct eth_device *dev)
+static int smc911x_phy_reset(eth_dev_t *dev)
 {
     u32 reg;
 
@@ -190,12 +176,14 @@ static int smc911x_phy_reset(struct eth_device *dev)
     reg |= PMT_CTRL_PHY_RST;
     smc911x_reg_write(dev, PMT_CTRL, reg);
 
-    msleep(100);
+    //msleep(100);
+
+    udelay(100*1000);
 
     return 0;
 }
 
-static void smc911x_phy_configure(struct eth_device *dev)
+static void smc911x_phy_configure(eth_dev_t *dev)
 {
     int timeout;
     u16 status;
@@ -227,7 +215,7 @@ static void smc911x_phy_configure(struct eth_device *dev)
     printk(DRIVERNAME ": autonegotiation timed out\n");
 }
 
-static void smc911x_enable(struct eth_device *dev)
+static void smc911x_enable(eth_dev_t *dev)
 {
     /* Enable TX */
     smc911x_reg_write(dev, HW_CFG, 8 << 16 | HW_CFG_SF);
@@ -243,27 +231,10 @@ static void smc911x_enable(struct eth_device *dev)
 
 }
 
-static int smc911x_init(struct eth_device *dev)
+static int smc911x_send(eth_dev_t *dev, void *packet, int length)
 {
-    struct chip_id *id = dev->priv;
+    static int i = 0;
 
-    printk(DRIVERNAME ": detected %s controller\n", id->name);
-
-    smc911x_reset(dev);
-
-    /* Configure the PHY, initialize the link state */
-    smc911x_phy_configure(dev);
-
-    smc911x_handle_mac_address(dev);
-
-    /* Turn on Tx + Rx */
-    smc911x_enable(dev);
-
-    return 0;
-}
-
-static int smc911x_send(struct eth_device *dev, void *packet, int length)
-{
     u32 *data = (u32*)packet;
     u32 tmplen;
     u32 status;
@@ -275,7 +246,11 @@ static int smc911x_send(struct eth_device *dev, void *packet, int length)
     tmplen = (length + 3) / 4;
 
     while (tmplen--)
+    {
+        char *little = (char*)data;
+        printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
         pkt_data_push(dev, TX_DATA_FIFO, *data++);
+    }
 
     /* wait for transmission */
     while (!((smc911x_reg_read(dev, TX_FIFO_INF) &
@@ -287,6 +262,8 @@ static int smc911x_send(struct eth_device *dev, void *packet, int length)
     status = smc911x_reg_read(dev, TX_STATUS_FIFO) &
              (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
               TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
+
+    printk("\nSend %i\n", i++);
 
     if (!status)
         return 0;
@@ -301,20 +278,78 @@ static int smc911x_send(struct eth_device *dev, void *packet, int length)
     return -1;
 }
 
-static void smc911x_halt(struct eth_device *dev)
+static void smc911x_halt(eth_dev_t *dev)
 {
     smc911x_reset(dev);
     smc911x_handle_mac_address(dev);
 }
 
 
-static int smc911x_rx(struct eth_device *dev)
+static int smc911x_rx(struct netif *netif)
 {
+    eth_dev_t *dev = netif->state;
+
+
     static int i = 0;
     //printk("RX1 %d\n", i++);
-    u32 *data = (u32 *)net_rx_packets;
+    u32 *data = NULL;
     u32 pktlen, tmplen;
-    u32 status;
+    u32 status, mask;
+
+    mask = smc911x_reg_read(dev, INT_EN);
+    smc911x_reg_write(dev, INT_EN, 0);
+
+
+
+    status = smc911x_reg_read(dev, INT_STS);
+
+
+    //printk("0x%08x\n", status);
+
+
+    if (status & INT_STS_SW_INT) {
+        printk("STS_SW\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_SW_INT);
+    }
+    /* Handle various error conditions */
+    if (status & INT_STS_RXE) {
+        printk("STS_RXE\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RXE);
+    }
+    if (status & INT_STS_RXDFH_INT) {
+        printk("STS_RXDFH\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RXDFH_INT);
+    }
+    /* Undocumented interrupt-what is the right thing to do here? */
+    if (status & INT_STS_RXDF_INT) {
+        printk("STS_RXDF\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
+    }
+    if (status & INT_STS_RSFL) {
+        printk("STS_RSFL\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
+    }
+    /* Rx Data FIFO exceeds set level */
+    if (status & INT_STS_RDFL) {
+        printk("STS_RDFL\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RDFL);
+    }
+    if (status & INT_STS_RDFO) {
+        printk("STS_RDFO\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_RDFO);
+    }
+
+    if(status & (INT_STS_TSFL | INT_STS_GPT_INT)){
+        printk("STS_TSFL\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_TSFL | INT_STS_GPT_INT);
+    }
+
+    if(status & INT_STS_PHY_INT){
+        printk("PHY_INT\n", status);
+        smc911x_reg_write(dev, INT_STS, INT_STS_PHY_INT);
+    }
+
+    goto exit;
 
     if ((smc911x_reg_read(dev, RX_FIFO_INF) & RX_FIFO_INF_RXSUSED) >> 16) {
         status = smc911x_reg_read(dev, RX_STATUS_FIFO);
@@ -322,13 +357,13 @@ static int smc911x_rx(struct eth_device *dev)
 
         if(status & RX_STS_ES){
             printk("dropped bad packet. Status: 0x%08x\n", status);
-            return 0;
+            goto exit;
         }
 
 
         if(pktlen > ETHERNET_LAYER_2_MAX_LENGTH){
             printk("Dropped bad packet. Packet length can't exceed %d bytes, length was: %d bytes\n", ETHERNET_LAYER_2_MAX_LENGTH, pktlen);
-            return 0;
+            goto exit;
         }
 
         //printk("Len %d\n", pktlen);
@@ -338,164 +373,201 @@ static int smc911x_rx(struct eth_device *dev)
 
         tmplen = (pktlen + 3) / 4;
 
-        while (tmplen--)
-            *(data++) = pkt_data_pull(dev, RX_DATA_FIFO);
+        struct pbuf *buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
 
+        if(buf != NULL)
+        {
+            data = (u32)buf->payload;
+            printk("Buff %d\n", pktlen);
+        } else {
+
+            printk("No buff %d\n", pktlen);
+        }
+
+
+
+        while (tmplen--)
+        {
+            u32 pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
+
+            if(data != NULL){
+                *data = pulled_data;
+                data++;
+            }
+        }
+
+
+        if(buf != NULL)
+            netif->input(buf, netif);
 
         // TODO handle packet
 
-        printk("\npkt\n\n");
-
-        /*if (status & RX_STS_ES)
-            printk(DRIVERNAME
-                   ": dropped bad packet. Status: 0x%08x\n",
-                   status);
-        else
-            net_process_received_packet(net_rx_packets[0], pktlen);*/
     }
 
     //printk("Received");
 
+    exit:
+    smc911x_reg_write(dev, INT_EN, mask);
+
     return 0;
-}
-
-#if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
-/* wrapper for smc911x_eth_phy_read */
-static int smc911x_miiphy_read(struct mii_dev *bus, int phy, int devad,
-			       int reg)
-{
-	u16 val = 0;
-	struct eth_device *dev = eth_get_dev_by_name(bus->name);
-	if (dev) {
-		int retval = smc911x_eth_phy_read(dev, phy, reg, &val);
-		if (retval < 0)
-			return retval;
-		return val;
-	}
-	return -ENODEV;
-}
-/* wrapper for smc911x_eth_phy_write */
-static int smc911x_miiphy_write(struct mii_dev *bus, int phy, int devad,
-				int reg, u16 val)
-{
-	struct eth_device *dev = eth_get_dev_by_name(bus->name);
-	if (dev)
-		return smc911x_eth_phy_write(dev, phy, reg, val);
-	return -ENODEV;
-}
-#endif
-
-
-int smc911x_initialize(u8 dev_num, int base_addr, struct eth_device * dev)
-{
-    unsigned long addrl, addrh;
-    //struct eth_device *dev;
-
-
-    if (!dev) {
-        return -1;
-    }
-    memset(dev, 0, sizeof(*dev));
-
-    dev->iobase = base_addr;
-
-    /* Try to detect chip. Will fail if not present. */
-    if (smc911x_detect_chip(dev)) {
-        free(dev);
-        return 0;
-    }
-
-    addrh = smc911x_get_mac_csr(dev, ADDRH);
-    addrl = smc911x_get_mac_csr(dev, ADDRL);
-    if (!(addrl == 0xffffffff && addrh == 0x0000ffff)) {
-        /* address is obtained from optional eeprom */
-        dev->enetaddr[0] = addrl;
-        dev->enetaddr[1] = addrl >>  8;
-        dev->enetaddr[2] = addrl >> 16;
-        dev->enetaddr[3] = addrl >> 24;
-        dev->enetaddr[4] = addrh;
-        dev->enetaddr[5] = addrh >> 8;
-    }
-
-    dev->init = smc911x_init;
-    /*dev->halt = smc911x_halt;
-    dev->send = smc911x_send;
-    dev->recv = smc911x_rx;*/
-    //dev->name = "test_eth";
-    //sprintk(dev->name, "%s-%hu", DRIVERNAME, dev_num);
-
-    //eth_register(dev);
-
-#if defined(CONFIG_MII) || defined(CONFIG_CMD_MII)
-    int retval;
-	struct mii_dev *mdiodev = mdio_alloc();
-	if (!mdiodev)
-		return -ENOMEM;
-	strncpy(mdiodev->name, dev->name, MDIO_NAME_LEN);
-	mdiodev->read = smc911x_miiphy_read;
-	mdiodev->write = smc911x_miiphy_write;
-
-	retval = mdio_register(mdiodev);
-	if (retval < 0)
-		return retval;
-#endif
-
-    return 1;
 }
 
 
 static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 {
-    smc911x_rx(dummy);
+    struct netif* netif = (struct netif*)dummy;
+
+    smc911x_rx(netif);
+    //printk("m\n");
+    return IRQ_COMPLETED;
+
 }
 
-static int smc911x_so3_init(dev_t *dev) {
+static err_t smc911x_lwip_send(struct netif *netif, struct pbuf *p)
+{
+    struct pbuf *q;
 
-    net_rx_packets = malloc(ETHERNET_LAYER_2_MAX_LENGTH);
+    for (q = p; q != NULL; q = q->next) {
 
-    //eth_dev = malloc(sizeof(*eth_dev));
-
-    printk("----- START NET -----\n");
-
-    if(smc911x_initialize(0, dev->base, &eth_dev)){
-
-        //smc911x_init(eth_dev);
-
-        //irq_bind(dev->irq, smc911x_so3_interrupt, NULL, NULL);
-
-        //eth_dev->init(eth_dev);
-
-        //46:d4:cf:19:a3:01
-
-        // mac sender
-        /*uchar *ms = eth_dev->enetaddr;
-
-        printk("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",ms[0],ms[1],ms[2],ms[3],ms[4],ms[5]);
-
-        // mac dest
-        uchar md[6] = {0x46, 0xd4, 0xcf, 0x19, 0xa3, 0x01};
-
-
-        u32 b1 = md[0] | (md[1] << 8) | (md[2] << 16) | (md[3] << 24);
-        u32 b2 = (md[4]) | (md[5] << 8) | (ms[0] << 16) | (ms[1] << 24);
-        u32 b3 = (ms[2]) | (ms[3] << 8) | (ms[4] << 16) | (ms[5] << 24);
-
-        u32 data[100] = {b1,b2,b3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10,1,2,3,4,5,6,7,8,9,10};
-
-        int i = 0;
-
-
-        while(i++ < 40){
-            eth_dev->send(eth_dev, data,100);
-            printk("Send %d", i);
-            msleep(5000);
-        }*/
-
+        // TODO FIX on saute 2 bytes au début car sinon que de zéros
+        char* buff = (char*)q->payload;
+        smc911x_send(netif->state, buff, q->len);
     }
 
-    printk("----- END NET -----\n");
+
+    MIB2_STATS_NETIF_ADD(netif, ifoutoctets, p->tot_len);
+
+    LINK_STATS_INC(link.xmit);
+
+    return ERR_OK;
+}
+
+err_t smc911x_lwip_init(struct netif *netif)
+{
+    eth_dev_t *eth_dev = netif->state;
+    struct chip_id *id = eth_dev->priv;
+    int i = 0;
+
+    LWIP_ASSERT("netif != NULL", (netif != NULL));
+
+    MIB2_INIT_NETIF(netif, snmp_ifType_ethernet_csmacd, 1024*1024*10);
+
+    netif->name[0] = 'e';
+    netif->name[1] = 't';
+
+
+    netif->hwaddr_len = ARP_HLEN;
+
+    netif->mtu = 1500;
+    netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+
+#if LWIP_IPV4
+    netif->output = etharp_output;
+#endif
+
+    netif->linkoutput = smc911x_lwip_send;
+
+
+
+    printk(DRIVERNAME ": detected %s controller\n", id->name);
+
+    smc911x_reset(eth_dev);
+
+    /* Configure the PHY, initialize the link state */
+    smc911x_phy_configure(eth_dev);
+
+    smc911x_handle_mac_address(eth_dev);
+
+    /* Turn on Tx + Rx */
+    smc911x_enable(eth_dev);
+
+    while(i < 6){
+        netif->hwaddr[i] = eth_dev->enetaddr[i];
+        i++;
+    }
+
+
+    netif_set_default(netif);
+    netif_set_link_up(netif);
+    netif_set_up(netif);
+
+
+    u32 mask = INT_EN_TDFA_EN | INT_EN_TSFL_EN | INT_EN_RSFL_EN |
+                    INT_EN_GPT_INT_EN | INT_EN_RXDFH_INT_EN | INT_EN_RXE_EN |
+                    INT_EN_PHY_INT_EN;
+
+
+    smc911x_reg_write(eth_dev, INT_EN, 0);
+
+    printk("Conf: %04x\n", smc911x_reg_read(eth_dev, INT_EN));
+
+    smc911x_reg_write(eth_dev, INT_EN, mask);
+
+    printk("Conf: %08x\n", smc911x_reg_read(eth_dev, INT_EN));
+
+    irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
+
+    //err_t err = dhcp_start(netif);
+
+    return ERR_OK;
+}
+
+int smc911x_init(eth_dev_t * eth_dev)
+{
+    unsigned long addrl, addrh;
+    struct netif* netif;
+
+
+    if (!eth_dev) {
+        return -1;
+    }
+
+
+    /* Try to detect chip. Will fail if not present. */
+    if (smc911x_detect_chip(eth_dev)) {
+        free(eth_dev);
+        return 0;
+    }
+
+    addrh = smc911x_get_mac_csr(eth_dev, ADDRH);
+    addrl = smc911x_get_mac_csr(eth_dev, ADDRL);
+    if (!(addrl == 0xffffffff && addrh == 0x0000ffff)) {
+        /* address is obtained from optional eeprom */
+        eth_dev->enetaddr[0] = addrl;
+        eth_dev->enetaddr[1] = addrl >>  8;
+        eth_dev->enetaddr[2] = addrl >> 16;
+        eth_dev->enetaddr[3] = addrl >> 24;
+        eth_dev->enetaddr[4] = addrh;
+        eth_dev->enetaddr[5] = addrh >> 8;
+    }
+
+    netif = malloc(sizeof(struct netif));
+    netif_add(netif , NULL, NULL, NULL, eth_dev, smc911x_lwip_init, tcpip_input);
+    //irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
+
+
+    return 1;
+}
+
+
+
+static int smc911x_register(dev_t *dev) {
+
+    eth_dev_t *eth_dev = malloc(sizeof(eth_dev_t));
+    memset(eth_dev, 0, sizeof(*eth_dev));
+
+
+    eth_dev->dev = dev;
+    eth_dev->iobase = eth_dev->dev->base;
+
+
+    eth_dev->init = smc911x_init;
+    network_devices_register(eth_dev);
+
 
     return 0;
+
+
 }
 
 /*
@@ -504,4 +576,4 @@ err_t myif_init(struct netif *netif){
 }*/
 
 
-REGISTER_DRIVER_POSTCORE("smsc,smc911x", smc911x_so3_init);
+REGISTER_DRIVER_POSTCORE("smsc,smc911x", smc911x_register);
