@@ -24,6 +24,8 @@ typedef unsigned _Int64 uint64_t;
 typedef unsigned _Int64 u_int64_t;
 typedef unsigned _Int64 uintmax_t;
 
+typedef unsigned mode_t;
+
 typedef unsigned _Int64 ino_t;
 
 typedef uint16_t u_short;
