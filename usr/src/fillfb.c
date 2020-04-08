@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <syscall.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <fcntl.h>
+
+#define H_RES 640
+#define V_RES 480
+#define FB_SIZE (H_RES * V_RES * 2)
 
 #define MASK5 0x1f
 #define MASK6 0x3f
@@ -17,35 +21,34 @@ int main(int argc, char **argv)
 {
 	int fd;
 	uint32_t i, j;
-	uint16_t* vram_addr;
+	uint16_t* fbp;
 
 	/* Get file descriptor of the fb.0 framebuffer, i.e. the first fb debice registered. */
 	fd = open("fb.0", 0);
 
-	/* Map the framebuffer memory (VRAM) to a process virtual address. */
-	/* TODO place this syscall in a wrapper? */
-	vram_addr = sys_mmap(0x4b000 * 2, 0, fd, 0);
-	printf("ptr: 0x%08x\n", vram_addr);
+	/* Map the framebuffer memory to a process virtual address. */
+	fbp = mmap(NULL, FB_SIZE, 0, 0, fd, 0);
+	printf("fbp: 0x%08x\n", fbp);
 
 	/* Display some pixels. */
 
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			vram_addr[j + i * 640] = create_px(0xff, 0, 0);
+	for (i = 0; i < V_RES / 3; i++) {
+		for (j = 0; j < H_RES; j++) {
+			fbp[j + i * H_RES] = create_px(0xff, 0, 0);
 		}
 	}
 
-	vram_addr += 160 * 640;
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			vram_addr[j + i * 640] = create_px(0, 0xff, 0);
+	fbp += V_RES / 3 * H_RES;
+	for (i = 0; i < V_RES / 3; i++) {
+		for (j = 0; j < H_RES; j++) {
+			fbp[j + i * H_RES] = create_px(0, 0xff, 0);
 		}
 	}
 
-	vram_addr += 160 * 640;
-	for (i = 0; i < 160; i++) {
-		for (j = 0; j < 640; j++) {
-			vram_addr[j + i * 640] = create_px(0, 0, 0xff);
+	fbp += V_RES / 3 * H_RES;
+	for (i = 0; i < V_RES / 3; i++) {
+		for (j = 0; j < H_RES; j++) {
+			fbp[j + i * H_RES] = create_px(0, 0, 0xff);
 		}
 	}
 

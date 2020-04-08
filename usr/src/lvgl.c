@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <syscall.h>
+#include <sys/mman.h>
 
 #include "lvgl/lvgl.h"
 
@@ -97,7 +97,7 @@ int fb_init()
 	}
 
 	/* Map the fb into process memory. */
-	fbp = sys_mmap(FB_SIZE, 0, fd, 0);
+	fbp = mmap(NULL, FB_SIZE, 0, 0, fd, 0);
 	if (!fbp) {
 		printf("Couldn't map framebuffer.\n");
 		return -1;
