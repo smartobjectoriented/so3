@@ -64,6 +64,7 @@
 #include <lwip/dhcp.h>
 #include <netif/ethernet.h>
 #include <lwip/tcpip.h>
+#include <lwip/ip_addr.h>
 
 
 
@@ -247,8 +248,8 @@ static int smc911x_send(eth_dev_t *dev, void *packet, int length)
 
     while (tmplen--)
     {
-        char *little = (char*)data;
-        printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
+        //char *little = (char*)data;
+        //printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
         pkt_data_push(dev, TX_DATA_FIFO, *data++);
     }
 
@@ -263,7 +264,7 @@ static int smc911x_send(eth_dev_t *dev, void *packet, int length)
              (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
               TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
 
-    printk("\nSend %i\n", i++);
+    //printk("\nSend %i\n", i++);
 
     if (!status)
         return 0;
@@ -290,83 +291,31 @@ static int smc911x_rx(struct netif *netif)
     eth_dev_t *dev = netif->state;
 
 
-    static int i = 0;
+    int i = 0;
     //printk("RX1 %d\n", i++);
     u32 *data = NULL;
     u32 pktlen, tmplen;
-    u32 status, mask;
-
-    mask = smc911x_reg_read(dev, INT_EN);
-    smc911x_reg_write(dev, INT_EN, 0);
+    u32 status, mask, cfg;
 
 
 
-    status = smc911x_reg_read(dev, INT_STS);
 
-
-    //printk("0x%08x\n", status);
-
-
-    if (status & INT_STS_SW_INT) {
-        printk("STS_SW\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_SW_INT);
-    }
-    /* Handle various error conditions */
-    if (status & INT_STS_RXE) {
-        printk("STS_RXE\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RXE);
-    }
-    if (status & INT_STS_RXDFH_INT) {
-        printk("STS_RXDFH\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RXDFH_INT);
-    }
-    /* Undocumented interrupt-what is the right thing to do here? */
-    if (status & INT_STS_RXDF_INT) {
-        printk("STS_RXDF\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
-    }
-    if (status & INT_STS_RSFL) {
-        printk("STS_RSFL\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
-    }
-    /* Rx Data FIFO exceeds set level */
-    if (status & INT_STS_RDFL) {
-        printk("STS_RDFL\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RDFL);
-    }
-    if (status & INT_STS_RDFO) {
-        printk("STS_RDFO\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_RDFO);
-    }
-
-    if(status & (INT_STS_TSFL | INT_STS_GPT_INT)){
-        printk("STS_TSFL\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_TSFL | INT_STS_GPT_INT);
-    }
-
-    if(status & INT_STS_PHY_INT){
-        printk("PHY_INT\n", status);
-        smc911x_reg_write(dev, INT_STS, INT_STS_PHY_INT);
-    }
-
-    goto exit;
-
-    if ((smc911x_reg_read(dev, RX_FIFO_INF) & RX_FIFO_INF_RXSUSED) >> 16) {
+    while ((smc911x_reg_read(dev, RX_FIFO_INF) & RX_FIFO_INF_RXSUSED) >> 16) {
         status = smc911x_reg_read(dev, RX_STATUS_FIFO);
         pktlen = (status & RX_STS_PKT_LEN) >> 16;
 
         if(status & RX_STS_ES){
             printk("dropped bad packet. Status: 0x%08x\n", status);
-            goto exit;
+            return;
         }
 
 
         if(pktlen > ETHERNET_LAYER_2_MAX_LENGTH){
             printk("Dropped bad packet. Packet length can't exceed %d bytes, length was: %d bytes\n", ETHERNET_LAYER_2_MAX_LENGTH, pktlen);
-            goto exit;
+            return;
         }
 
-        //printk("Len %d\n", pktlen);
+        //printk("\nIn Len %d %d\n", pktlen, i++);
 
 
         smc911x_reg_write(dev, RX_CFG, 0);
@@ -378,17 +327,19 @@ static int smc911x_rx(struct netif *netif)
         if(buf != NULL)
         {
             data = (u32)buf->payload;
-            printk("Buff %d\n", pktlen);
+            //printk("Buff %d\n", pktlen);
         } else {
 
             printk("No buff %d\n", pktlen);
         }
 
 
-
         while (tmplen--)
         {
             u32 pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
+
+            //char *little = (char*)&pulled_data;
+            //printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
 
             if(data != NULL){
                 *data = pulled_data;
@@ -406,8 +357,6 @@ static int smc911x_rx(struct netif *netif)
 
     //printk("Received");
 
-    exit:
-    smc911x_reg_write(dev, INT_EN, mask);
 
     return 0;
 }
@@ -416,9 +365,96 @@ static int smc911x_rx(struct netif *netif)
 static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 {
     struct netif* netif = (struct netif*)dummy;
+    eth_dev_t *dev = netif->state;
+    u32 status, mask, cfg, timeout;
 
-    smc911x_rx(netif);
+
+    mask = smc911x_reg_read(dev, INT_EN);
+    smc911x_reg_write(dev, INT_EN, 0);
+
+
+    cfg = smc911x_reg_read(dev, INT_CFG);
+
+    /*if(cfg)
+        printk("caca %08x\n", cfg);*/
+
+    timeout = 8;
+
+    do{
+
+        status = smc911x_reg_read(dev, INT_STS);
+        //printk("%08x\n", status);
+
+        status &= mask;
+
+        if(!status)
+            break;
+
+
+        //printk("0x%08x\n", status);
+
+
+        if (status & INT_STS_SW_INT) {
+            printk("STS_SW\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_SW_INT);
+        }
+        /* Handle various error conditions */
+        if (status & INT_STS_RXE) {
+            printk("STS_RXE\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RXE);
+        }
+        if (status & INT_STS_RXDFH_INT) {
+            printk("STS_RXDFH\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RXDFH_INT);
+        }
+        /* Undocumented interrupt-what is the right thing to do here? */
+        if (status & INT_STS_RXDF_INT) {
+            printk("STS_RXDF\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
+        }
+
+        if (status & INT_STS_RSFL) {
+            //printk("STS_RSFL\n", status);
+            //printk("%s\n", ipaddr_ntoa(&netif->ip_addr));
+            //printk("%s\n", ipaddr_ntoa(&netif->netmask));
+            //printk("%s\n", ipaddr_ntoa(&netif->gw));
+
+            smc911x_rx(netif);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
+        }
+        /* Rx Data FIFO exceeds set level */
+        if (status & INT_STS_RDFL) {
+            printk("STS_RDFL\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RDFL);
+        }
+        if (status & INT_STS_RDFO) {
+            printk("STS_RDFO\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_RDFO);
+        }
+
+        if(status & (INT_STS_TSFL | INT_STS_GPT_INT)){
+            printk("STS_TSFL\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_TSFL | INT_STS_GPT_INT);
+        }
+
+        if(status & INT_STS_PHY_INT){
+            printk("PHY_INT\n", status);
+            smc911x_reg_write(dev, INT_STS, INT_STS_PHY_INT);
+        }
+
+    } while(--timeout);
+
+    //printk("0x%08x\n", mask);
+    smc911x_reg_write(dev, INT_STS, -1); // Clear all interrupts
+
+
+    //printk("0x%08x\n", smc911x_reg_read(dev, INT_EN));
+    smc911x_reg_write(dev, INT_EN, mask);
+    //printk("CFG: 0x%08x\n", smc911x_reg_read(dev, INT_CFG));
+
+    //smc911x_rx(netif);
     //printk("m\n");
+
     return IRQ_COMPLETED;
 
 }
@@ -446,6 +482,7 @@ err_t smc911x_lwip_init(struct netif *netif)
 {
     eth_dev_t *eth_dev = netif->state;
     struct chip_id *id = eth_dev->priv;
+    u32 fifo;
     int i = 0;
 
     LWIP_ASSERT("netif != NULL", (netif != NULL));
@@ -492,22 +529,29 @@ err_t smc911x_lwip_init(struct netif *netif)
     netif_set_up(netif);
 
 
-    u32 mask = INT_EN_TDFA_EN | INT_EN_TSFL_EN | INT_EN_RSFL_EN |
+    /*u32 mask = INT_EN_TDFA_EN | INT_EN_TSFL_EN | INT_EN_RSFL_EN |
                     INT_EN_GPT_INT_EN | INT_EN_RXDFH_INT_EN | INT_EN_RXE_EN |
-                    INT_EN_PHY_INT_EN;
+                    INT_EN_PHY_INT_EN | INT_EN_RDFL_EN;*/
+
+    u32 mask = INT_EN_RSFL_EN | INT_EN_RSFF_EN;
 
 
-    smc911x_reg_write(eth_dev, INT_EN, 0);
+    /*smc911x_reg_write(eth_dev, INT_EN, 0);
+    smc911x_reg_write(eth_dev, INT_STS, -1);*/
 
-    printk("Conf: %04x\n", smc911x_reg_read(eth_dev, INT_EN));
+
+    //smc911x_reg_write(eth_dev, INT_CFG, (1 << 24) | INT_CFG_IRQ_EN | INT_CFG_IRQ_TYPE);
+
+
+    fifo = smc911x_reg_read(eth_dev, FIFO_INT);
+    smc911x_reg_write(eth_dev, FIFO_INT, 0x01 | (fifo & 0xFFFFFF00));
+
 
     smc911x_reg_write(eth_dev, INT_EN, mask);
 
-    printk("Conf: %08x\n", smc911x_reg_read(eth_dev, INT_EN));
-
     irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
 
-    //err_t err = dhcp_start(netif);
+    err_t err = dhcp_start(netif);
 
     return ERR_OK;
 }

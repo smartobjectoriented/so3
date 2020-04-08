@@ -354,7 +354,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
             time_needed = 0;
             sem_down(mbox->not_empty);
 
-            if (time_needed == SYS_ARCH_TIMEOUT) {
+            if (time_needed >= SYS_ARCH_TIMEOUT) {
                 return SYS_ARCH_TIMEOUT;
             }
         } else {

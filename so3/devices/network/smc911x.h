@@ -674,7 +674,8 @@ static int smc911x_detect_chip(eth_dev_t *dev)
 
 static void smc911x_reset(eth_dev_t *dev)
 {
-	int timeout;
+	int timeout, resets = 1;
+	u32 reg;
 
 	/*
 	 *  Take out of PM setting first
@@ -699,7 +700,25 @@ static void smc911x_reset(eth_dev_t *dev)
 	/* Disable interrupts */
 	smc911x_reg_write(dev, INT_EN, 0);
 
-	smc911x_reg_write(dev, HW_CFG, HW_CFG_SRST);
+	while(resets--){
+        smc911x_reg_write(dev, HW_CFG, HW_CFG_SRST);
+        timeout=10;
+        do {
+            udelay(10);
+            reg = smc911x_reg_read(dev, HW_CFG);
+            /* If chip indicates reset timeout then try again */
+            if (reg & HW_CFG_SRST_TO) {
+                printk("chip reset timeout, retrying...\n");
+                resets++;
+                break;
+            }
+        } while (--timeout && (reg & HW_CFG_SRST));
+    }
+
+    if (timeout == 0) {
+        printk("smc911x_reset timeout waiting for reset\n");
+        return;
+    }
 
 	timeout = 1000;
 	while (timeout-- && smc911x_reg_read(dev, E2P_CMD) & E2P_CMD_EPC_BUSY)
@@ -710,12 +729,20 @@ static void smc911x_reset(eth_dev_t *dev)
 		return;
 	}
 
+    /* Initialize interrupts */
+    smc911x_reg_write(dev, INT_EN, 0);
+    smc911x_reg_write(dev, INT_STS, -1); // Clear all interrupts
+
 	/* Reset the FIFO level and flow control settings */
 	smc911x_set_mac_csr(dev, FLOW, FLOW_FCPT | FLOW_FCEN);
 	smc911x_reg_write(dev, AFC_CFG, 0x0050287F);
 
 	/* Set to LED outputs */
 	smc911x_reg_write(dev, GPIO_CFG, 0x70070000);
+
+
+    smc911x_reg_write(dev, INT_CFG, (0x1 << 24) | INT_CFG_IRQ_EN | INT_CFG_IRQ_POL | INT_CFG_IRQ_TYPE);
+
 }
 
 #endif
