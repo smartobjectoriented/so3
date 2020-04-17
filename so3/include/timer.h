@@ -21,8 +21,10 @@
 
 #include <device/timer.h>
 
-#define NSECS		1000000000ull
+#ifndef TIMER_H
+#define TIMER_H
 
+#define NSECS		1000000000ull
 
 #define NOW()           ((u64) get_s_time())
 #define SECONDS(_s)     ((u64)((_s)  * 1000000000ull))
@@ -115,3 +117,4 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 
 int do_nanosleep(const struct timespec *req, struct timespec *rem);
 
+#endif /* TIMER_H */
