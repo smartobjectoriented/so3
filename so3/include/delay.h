@@ -20,11 +20,14 @@
 #define DELAY_H
 
 #include <common.h>
+#include <timer.h>
 
 /**
  * Active wait based on the jiffy_usec
  */
 void udelay(u64 us);
+
+void sleep(u64 ns);
 void msleep(uint32_t);
 void usleep(u64 us);
 

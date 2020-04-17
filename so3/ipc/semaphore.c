@@ -19,19 +19,26 @@
 #include <types.h>
 #include <semaphore.h>
 #include <string.h>
+#include <schedule.h>
+#include <delay.h>
 
 /*
  * Sempahore down operation - Prepare to enter a critical section
  * by means of the semaphore paradigm.
+ * The timeout is a delay until the thread will be woken up even if the semaphore is not acquired.
+ * The timeout is expressed in nanoseconds.
+ * Returns the value 0 in case of successful semaphore acquisition, -1 in case of timeout.
  */
-void sem_down(sem_t *sem) {
+int sem_timeddown(sem_t *sem, uint64_t timeout) {
 	queue_thread_t q_tcb;
+	struct list_head *pos;
 
 	for (;;) {
 
 		mutex_lock(&sem->lock);
 
 		if (sem->val <= 0) {
+
 			q_tcb.tcb = current();
 			/*
 			 * We only attempt the xchg if the count is non-negative in order
@@ -46,17 +53,57 @@ void sem_down(sem_t *sem) {
 
 			mutex_unlock(&sem->lock);
 
-			waiting();
+			if (!timeout)
+				waiting();
+			else {
+				sleep(timeout);
+
+				/* If the semaphore got valid, we will have a positive timeout and
+				 * we can go ahead. However, it might be the case that the semaphore
+				 * gets busy again, and we start a new suspending with an up-to-date timeout.
+				 */
+
+				if (current()->timeout <= 0) {
+					/* We have to remove ourself from the waiting list. */
+
+					mutex_lock(&sem->lock);
+
+					/* Make sure the entry has not been deleted, right before the timeout... it might happen! */
+					list_for_each(pos, &sem->tcb_list)
+						if (pos == &q_tcb.list)
+							break;
+
+					if (pos == &q_tcb.list)
+						list_del(&q_tcb.list);
+
+					mutex_unlock(&sem->lock);
+
+					/* This is possible only if we were woken up by the timer deadline. */
+					return -1;
+				}
+
+				timeout = current()->timeout;
+			}
 
 		} else {
 			atomic_set(&sem->count, 0);
 
 			sem->val--;
+
 			mutex_unlock(&sem->lock);
 			break;
 		}
 	}
 
+	return 0;
+}
+
+/*
+ * Sempahore down operation - Prepare to enter a critical section
+ * by means of the semaphore paradigm.
+ */
+void sem_down(sem_t *sem) {
+	sem_timeddown(sem, 0ull);
 }
 
 void sem_up(sem_t *sem) {

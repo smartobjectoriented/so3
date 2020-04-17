@@ -283,16 +283,24 @@ __get_syscall_args_ext:
 .align  5
 prefetch_abort:
 
+	@ Call the C data abort handler with the following args:
+	@ r0 = IFAR, r1 = IFSR, r2 = LR
+
 	mrc	p15, 0, r0, c6, c0, 2		@ get IFAR
 	mrc	p15, 0, r1, c5, c0, 1		@ get IFSR
+	mov r2, lr
 
     b __prefetch_abort
 
 .align  5
 data_abort:
 
+	@ Call the C data abort handler with the following args:
+	@ r0 = FAR, r1 = FSR, r2 = LR
+
 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+	mov r2, lr
 
     b __data_abort
 

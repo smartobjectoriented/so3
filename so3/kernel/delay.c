@@ -40,12 +40,13 @@ void udelay(u64 us) {
 
 /*
  * Timer callback which will awake the thread.
+ * IRQs are off.
  */
 void delay_handler(void *arg) {
 	tcb_t *tcb = (tcb_t *) arg;
 	/*
 	 * delay_handler may be called two ways differently; the first one (and more standard way)
-	 * is from an interrupt context during the softirq action processing. In this case,
+	 * is right after an interrupt context during the softirq action processing. In this case,
 	 * it is *sure* that the thread is in waiting state (issued from a previous sleep function which
 	 * is set with IRQs off). The second case corresponds to a call along the msleep() path during the set_timer()
 	 * initialization. In this case, the handler can be called if the deadline already expired and the thread will
@@ -53,11 +54,17 @@ void delay_handler(void *arg) {
 	 */
 
 	if (tcb->state == THREAD_STATE_WAITING) {
+
+		/* If the thread is submitted to a waiting timeout,
+		 * the value is re-adjusted here.
+		 */
+
+		tcb->timeout = tcb->timeout - NOW();
+
 		ready(tcb);
 
 		/* Trigger a schedule to give a change to the waiter */
 		raise_softirq(SCHEDULE_SOFTIRQ);
-
 	}
 }
 
@@ -70,11 +77,20 @@ static void __sleep(u64 ns) {
 	/* Create a specific timer attached to this thread */
 	init_timer(&__timer, delay_handler, current());
 
-	set_timer(&__timer, NOW() + ns);
+	current()->timeout = NOW() + ns;
+	set_timer(&__timer, current()->timeout);
 
 	/* Put the thread in waiting state *only* if the timer still makes sense. */
-	if (__timer.status == TIMER_STATUS_in_list)
+	if (__timer.status == TIMER_STATUS_in_list) {
 		waiting();
+
+		/* We are resumed, but not necessarly by the timer handler (in case of a semaphore timeout based synchronization
+		 * mechanism, we might get the lock *before* the timeout.
+		 * In this case, we have to clean the timer.
+		 */
+		stop_timer(&__timer);
+
+	}
 
 	local_irq_restore(flags);
 
@@ -92,6 +108,10 @@ void msleep(uint32_t ms) {
  */
 void usleep(u64 us) {
 	__sleep(MICROSECS(us));
+}
+
+void sleep(u64 ns) {
+	__sleep(ns);
 }
 
 int do_nanosleep(const struct timespec *req, struct timespec *rem) {
