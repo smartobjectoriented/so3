@@ -35,7 +35,6 @@
 
 #include <types.h>
 #include <list.h>
-#include <schedule.h>
 
 typedef enum { THREAD_STATE_NEW, THREAD_STATE_READY, THREAD_STATE_RUNNING, THREAD_STATE_WAITING, THREAD_STATE_ZOMBIE } thread_state_t;
 typedef unsigned int thread_t;
@@ -59,6 +58,9 @@ struct tcb {
 	/* Priority starts from 1 and as no limit at the moment. The prio 0 is used to indicate
 	 * the default priority is used. */
 	uint32_t prio;
+
+	/* Timeout value to keep track of possible scheduling after a timeout. */
+	int64_t timeout;
 
 	/* Threaded function */
 	int (*th_fn)(void *);
