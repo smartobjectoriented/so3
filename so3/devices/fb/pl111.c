@@ -23,39 +23,39 @@
 #include <device/driver.h>
 #include <device/fb.h>
 
-/* Register addresses */
-#define CLCD_TIM0	0x00000000
-#define CLCD_TIM1	0x00000004
-#define CLCD_TIM2	0x00000008
-#define CLCD_TIM3	0x0000000c
-#define CLCD_UBAS	0x00000010
-#define CLCD_LBAS	0x00000014
-#define CLCD_CNTL	0x00000018
-#define CLCD_IENB	0x0000001c
+/* Register address offsets */
+#define CLCD_TIM0	0x000
+#define CLCD_TIM1	0x004
+#define CLCD_TIM2	0x008
+#define CLCD_TIM3	0x00c
+#define CLCD_UBAS	0x010
+#define CLCD_LBAS	0x014
+#define CLCD_CNTL	0x018
+#define CLCD_IENB	0x01c
 
 /* Timing0 register values */
-#define HBP (39 << 24)
-#define HFP (23 << 16)
-#define HSW (95 <<  8)
-#define PPL (39 <<  2) /* 16 * (PPL + 1) = horizontal res */
+#define HBP (151 << 24)
+#define HFP ( 47 << 16)
+#define HSW (103 <<  8)
+#define PPL ( 63 <<  2) /* PPL = horizonzal res / 16 - 1 */
 
 /* Timing1 register values */
-#define VBP ( 32 << 24)
-#define VFP ( 11 << 16)
-#define VSW (  1 << 10)
-#define LPP (479 <<  0) /* LPP + 1 = vertical res */
+#define VBP (  22 << 24)
+#define VFP (   2 << 16)
+#define VSW (   3 << 10)
+#define LPP ( 767 <<  0) /* LPP = vertical res -1 */
 
 /* Timing2 register values */
-#define PCD_HI (  0 << 27)
-#define BCD    (  1 << 26)
-#define CPL    (639 << 16) /* for TFT: PPL - 1 */
-#define IOE    (  0 << 14)
-#define IPC    (  1 << 13)
-#define IHS    (  1 << 12)
-#define IVS    (  1 << 11)
-#define ACB    (  0 <<  6)
-#define CLKSEL (  0 <<  5)
-#define PCD_LO (  0 <<  0)
+#define PCD_HI (   0 << 27)
+#define BCD    (   1 << 26)
+#define CPL    (1023 << 16) /* for TFT: PPL - 1 */
+#define IOE    (   0 << 14)
+#define IPC    (   1 << 13)
+#define IHS    (   1 << 12)
+#define IVS    (   1 << 11)
+#define ACB    (   0 <<  6)
+#define CLKSEL (   0 <<  5)
+#define PCD_LO (   0 <<  0)
 
 /* Timing3 register values */
 #define LEE (0 << 16)
@@ -71,7 +71,7 @@
 #define LCDPWR    (1 << 11) /* power display */
 #define BEPO      (0 << 10) /* little-endian pixel ordering */
 #define BEBO      (0 <<  9) /* little-endian byte order */
-#define BGR       (0 <<  8) /* RGB */
+#define BGR       (1 <<  8) /* 0: RGB, 1: BGR */
 #define LCDDUAL   (0 <<  7) /* single panel */
 #define LCDMONO8  (0 <<  6) /* unused for TFT */
 #define LCDTFT    (1 <<  5) /* LCD is TFT */
@@ -89,6 +89,7 @@ struct file_operations pl111_ops = {
 
 /*
  * Initialisation of the PL111 CLCD Controller.
+ * Linux driver: video/fbdev/amba-clcd.c
  */
 int pl111_init(dev_t *dev)
 {
@@ -101,16 +102,16 @@ int pl111_init(dev_t *dev)
 	iowrite32(dev->base + CLCD_TIM2, PCD_HI | BCD | CPL | IOE | IPC | IHS | IVS | ACB | CLKSEL | PCD_LO);
 	iowrite32(dev->base + CLCD_TIM3, LEE | LED);
 
-	/* Set frame address */
+	/* Set framebuffer addresses. */
 	iowrite32(dev->base + CLCD_UBAS, LCDUPBASE);
 	if (LCDDUAL) {
 		iowrite32(dev->base + CLCD_LBAS, LCDLPBASE);
 	}
 
-	/* amba-clcd.c:113 clcdfb_enable: enable and power on */
+	/* Configure, enable and power on the controller. */
 	iowrite32(dev->base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
 
-	/* Register framebuffer fops. */
+	/* Register the framebuffer device. */
 	if (register_fb(&pl111_ops)) {
 		printk("%s: pl111 initialised but could not register fops.", __func__);
 		return -1;
