@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define H_RES 640
-#define V_RES 480
+#define H_RES 1024
+#define V_RES 768
 #define FB_SIZE (H_RES * V_RES * 2)
 
 #define MASK5 0x1f
@@ -23,12 +23,11 @@ int main(int argc, char **argv)
 	uint32_t i, j;
 	uint16_t* fbp;
 
-	/* Get file descriptor of the fb.0 framebuffer, i.e. the first fb debice registered. */
-	fd = open("fb.0", 0);
+	/* Get file descriptor for /dev/fb0, i.e. the first fb device registered. */
+	fd = open("/dev/fb0", 0);
 
 	/* Map the framebuffer memory to a process virtual address. */
 	fbp = mmap(NULL, FB_SIZE, 0, 0, fd, 0);
-	printf("fbp: 0x%08x\n", fbp);
 
 	/* Display some pixels. */
 

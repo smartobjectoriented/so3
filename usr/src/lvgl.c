@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
 	/* Initialisation of our framebuffer. */
 	if (fb_init()) {
-		printf("Framebuffer initialisation failed.\n");
+		return -1;
 	}
 
 	/* lvgl will draw the screen into this buffer. */
@@ -90,7 +90,7 @@ int fb_init()
 	int fd;
 
 	/* Get file descriptor. */
-	fd = open("fb.0", 0);
+	fd = open("/dev/fb0", 0);
 	if (-1 == fd) {
 		printf("Couldn't open framebuffer.\n");
 		return -1;
