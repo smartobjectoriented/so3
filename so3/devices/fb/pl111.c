@@ -111,7 +111,7 @@ int pl111_init(dev_t *dev)
 	iowrite32(dev->base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
 
 	/* Register framebuffer fops. */
-	if (register_fb_ops(&pl111_ops)) {
+	if (register_fb(&pl111_ops)) {
 		printk("%s: pl111 initialised but could not register fops.", __func__);
 		return -1;
 	}

@@ -23,6 +23,7 @@
 #include <types.h>
 #include <stat.h>
 #include <dirent.h>
+#include <device/device.h>
 
 /* File access mode flags */
 #define O_SEARCH  O_PATH
@@ -56,8 +57,9 @@
 #define O_TMPFILE 020040000
 #define O_NDELAY O_NONBLOCK
 
-#define MAX_FS_REGISTERED 4
-#define MAX_FDS 128
+#define MAX_FS_REGISTERED          4
+#define MAX_DEV_CLASS_REGISTERED   4
+#define MAX_FDS                  128
 
 #define FILENAME_MAX 100
 
@@ -138,6 +140,7 @@ int vfs_close(int gfd);
 void vfs_set_privdata(int gfd, void *data);
 void *vfs_get_privdata(int gfd);
 int vfs_clone_fd(int *gfd_src, int *gfd_dst);
+int vfs_register_dev_class(struct dev_class *);
 
 uint32_t vfs_get_access_mode(int fd);
 uint32_t vfs_get_open_mode(int fd);

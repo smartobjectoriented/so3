@@ -16,11 +16,8 @@
  *
  */
 
-/*
- * This file allows for multiple framebuffer devices to register their own file
- * operations. These fops can then be queried by using a fb device id. This id
- * depends on the order of initialisation of their respective drivers.
- */
+/* Maximum number of framebuffer device. Can be increased if needed. */
+#define MAX_FB 2
 
-struct file_operations *get_fb_ops(uint32_t id);
-int register_fb_ops(struct file_operations* fb_ops);
+int register_fb(struct file_operations *fb_ops);
+void fb_init(void);

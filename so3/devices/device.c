@@ -34,6 +34,7 @@
 #include <device/irq.h>
 #include <device/timer.h>
 #include <device/ramdev.h>
+#include <device/fb.h>
 
 /*
  * Device status strings
@@ -164,8 +165,8 @@ void devices_init(void) {
 	boot_stage = BOOT_STAGE_IRQ_INIT;
 
 	serial_init();
-
 	timer_dev_init();
+	fb_init();
 
 #ifdef CONFIG_ROOTFS_RAMDEV
 	/* Get possible ram device (aka initrd loaded from U-boot) */

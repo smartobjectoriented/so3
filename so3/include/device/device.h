@@ -41,6 +41,16 @@ struct dev {
 };
 typedef struct dev dev_t;
 
+/*
+ * A device class represents a certain type of device. It has a name (e.g fb,
+ * input) and a get_fops functions which allows retrieving fops for a given
+ * device.
+ */
+struct dev_class {
+	char *name;
+	struct file_operations *(*get_fops)(uint32_t dev_id);
+};
+
 #define INITCALLS_LEVELS 2
 
 /*
