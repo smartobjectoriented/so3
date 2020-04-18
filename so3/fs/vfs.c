@@ -586,7 +586,7 @@ int do_open(const char *filename, int flags)
 	mutex_lock(&vfs_lock);
 
 	/*
-	 * A device file has the format following format:
+	 * A device file has the following format:
 	 *   /dev/<dev-class>[dev-id]
 	 *   e.g. /dev/fb0, /dev/input1
 	 * If dev-id is not specified, 0 is assumed.
@@ -609,6 +609,13 @@ int do_open(const char *filename, int flags)
 		/* Create a string with the device class. */
 		dev_class_len = dev_id_s - dev_class_s + 1;
 		dev_class_s = malloc(dev_class_len * sizeof(char));
+
+		if (!dev_class_s) {
+			printk("%s: failed to allocate memory.\n", __func__);
+			set_errno(ENOMEM);
+			return -1;
+		}
+
 		strncpy(dev_class_s, filename + 5, dev_class_len - 1);
 		dev_class_s[dev_class_len - 1] = 0;
 
