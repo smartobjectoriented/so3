@@ -899,7 +899,6 @@ void *do_mmap(size_t length, int prot, int fd, off_t offset)
 
 	gfd = vfs_get_gfd(fd);
 	if (-1 == gfd) {
-		/* TODO */
 		printk("%s: could not get global fd.", __func__);
 		return NULL;
 	}
