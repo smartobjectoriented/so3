@@ -120,7 +120,9 @@ irq_return_t pl050_int(int irq, void *dummy)
 	}
 
 	/* Set mouse coordinates and button states. */
-	get_ps2_state(packet, &state, res.h, res.v);
+	if (i == 3) {
+		get_ps2_state(packet, &state, res.h, res.v);
+	}
 
 	return IRQ_COMPLETED;
 }

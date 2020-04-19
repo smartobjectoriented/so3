@@ -58,11 +58,21 @@ void get_ps2_state(uint8_t *packet, struct mouse_state * state, uint16_t max_x, 
 
 		/* Retrieve dx and dy values to compute the mouse coordinates. */
 		state->x += GET_DX(packet[PS2_STATE], packet[PS2_X]);
-		state->y -= GET_DY(packet[PS2_STATE], packet[PS2_Y]);;
+		state->y -= GET_DY(packet[PS2_STATE], packet[PS2_Y]);
 
 		state->x = CLAMP(state->x, 0, max_x);
 		state->y = CLAMP(state->y, 0, max_y);
 
+		/* debug
+		printk("%s: sign[%u, %u], xy[%u, %u], realxy[%d, %d]\n",
+				__func__,
+				packet[PS2_STATE] & X_BS,
+				packet[PS2_STATE] & Y_BS,
+				packet[PS2_X],
+				packet[PS2_Y],
+				GET_DX(packet[PS2_STATE], packet[PS2_X]),
+				GET_DY(packet[PS2_STATE], packet[PS2_Y]));
+		*/
 		//printk("%s: [%03d, %03d] [%03d, %03d] %s %s %s\n", __func__, state->x, state->y, 0, 0, state->left ? "LFT" : "", state->middle ? "MID" : "", state->right ? "RGT" : "");
 	}
 	else {

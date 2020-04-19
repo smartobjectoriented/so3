@@ -38,7 +38,7 @@
 
 
 struct mouse_state {
-	uint16_t x, y;
+	int16_t x, y;
 	uint8_t left, right, middle;
 };
 
