@@ -53,7 +53,7 @@ struct file_operations *get_fb_fops(uint32_t id)
 }
 
 /* Registers a framebuffer device by setting its fops. */
-int register_fb(struct file_operations *fb_ops)
+int register_fb(struct file_operations *fops)
 {
 	uint32_t id = 0;
 
@@ -67,7 +67,7 @@ int register_fb(struct file_operations *fb_ops)
 		return -1;
 	}
 
-	registered_fb[id] = fb_ops;
+	registered_fb[id] = fops;
 	mutex_unlock(&fb_lock);
 
 	return 0;

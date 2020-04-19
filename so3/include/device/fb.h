@@ -16,8 +16,8 @@
  *
  */
 
-/* Maximum number of framebuffer device. Can be increased if needed. */
+/* Maximum number of framebuffer devices. Can be increased if needed. */
 #define MAX_FB 2
 
-int register_fb(struct file_operations *fb_ops);
+int register_fb(struct file_operations *fops);
 void fb_init(void);

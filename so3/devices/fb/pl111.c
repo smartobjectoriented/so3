@@ -16,6 +16,13 @@
  *
  */
 
+/*
+ * Driver for the PL111 CLCD controller.
+ *
+ * Documentation:
+ *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0293c/index.html
+ */
+
 #include <vfs.h>
 #include <process.h>
 #include <asm/io.h>
@@ -43,7 +50,7 @@
 #define VBP (  22 << 24)
 #define VFP (   2 << 16)
 #define VSW (   3 << 10)
-#define LPP ( 767 <<  0) /* LPP = vertical res -1 */
+#define LPP ( 767 <<  0) /* LPP = vertical res - 1 */
 
 /* Timing2 register values */
 #define PCD_HI (   0 << 27)
