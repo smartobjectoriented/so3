@@ -35,6 +35,7 @@
 #include <device/timer.h>
 #include <device/ramdev.h>
 #include <device/fb.h>
+#include <device/input.h>
 
 /*
  * Device status strings
@@ -167,6 +168,7 @@ void devices_init(void) {
 	serial_init();
 	timer_dev_init();
 	fb_init();
+	input_init();
 
 #ifdef CONFIG_ROOTFS_RAMDEV
 	/* Get possible ram device (aka initrd loaded from U-boot) */

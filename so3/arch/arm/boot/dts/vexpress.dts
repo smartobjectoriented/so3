@@ -114,11 +114,23 @@
 	};
 
 	/* PL111 Color LCD Controller
-	 * Documentation: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0447j/Caccidgi.html
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0293c/index.html
 	 */
 	clcd@1c1f0000 {
 		compatible = "arm,pl111";
 		reg = <0x1c1f0000 0x1000>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
+	kmi@1c070000 { /* mouse */
+		compatible = "arm,pl050";
+		reg = <0x1c070000 0x100>;
+		interrupt-parent = <&gic>;
+		interrupts = <45>;
 
 		status = "ok";
 	};

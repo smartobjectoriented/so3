@@ -1,0 +1,1 @@
+obj-$(CONFIG_PL050_KMI) += pl050.o ps2.o

@@ -1,4 +1,4 @@
-obj-y = device.o irq.o timer.o fb.o
+obj-y = device.o irq.o timer.o fb.o input.o
 
 obj-$(CONFIG_UART) += serial.o
 
@@ -10,3 +10,4 @@ obj-$(CONFIG_RAMDEV) += ramdev/
 obj-y += timer/
 obj-y += irq/
 obj-y += fb/
+obj-y += input/
