@@ -73,6 +73,9 @@
 /* stdin/stdout/stderr */
 #define VFS_TYPE_IO		3
 
+/* Sockets */
+#define VFS_TYPE_SOCK		4
+
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
 #define DT_FIFO		1	/* Like pipe */

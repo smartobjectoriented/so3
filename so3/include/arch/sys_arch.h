@@ -13,6 +13,7 @@
 
 #define sys_msleep(ms) sys_arch_msleep(ms)
 
+
 #if SYS_LIGHTWEIGHT_PROT
 typedef u32_t sys_prot_t;
 #endif
@@ -49,5 +50,7 @@ struct _sys_thread {
     void *thread_handle;
 };
 typedef struct _sys_thread sys_thread_t;
+
+
 
 #endif //SO3_SYS_ARCH_H

@@ -145,7 +145,7 @@ extern struct ip_globals ip_data;
 #define ip_current_dest_addr()  (&ip_data.current_iphdr_dest)
 
 #if LWIP_IPV4 && LWIP_IPV6
-/** Get the IPv4 header of the current packet.
+à/** Get the IPv4 header of the current packet.
  * This function must only be called from a receive callback (udp_recv,
  * raw_recv, tcp_accept). It will return NULL otherwise. */
 #define ip4_current_header()     ip_data.current_ip4_header

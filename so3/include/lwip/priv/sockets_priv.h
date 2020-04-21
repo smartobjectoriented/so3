@@ -92,6 +92,7 @@ struct lwip_sock {
 };
 
 #ifndef set_errno
+#error "cara"
 #define set_errno(err) do { if (err) { errno = (err); } } while(0)
 #endif
 

@@ -22,8 +22,20 @@
 #endif
 
 
+/**
+ *
+ */
+#include <errno.h>
+#define set_errno(err) set_errno(err)
+
+
+#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
+
 #define LWIP_NO_STDINT_H 1
 #define LWIP_NO_INTTYPES_H 1
+
+// Required functions defined in compiler.c
+#define LWIP_NO_STDDEF_H 1
 
 
 #define X8_F  "02x"
