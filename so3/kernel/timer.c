@@ -22,7 +22,6 @@
 
 #include <types.h>
 #include <spinlock.h>
-#include <timer.h>
 #include <softirq.h>
 #include <div64.h>
 #include <delay.h>

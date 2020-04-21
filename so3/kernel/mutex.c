@@ -138,7 +138,7 @@ void mutex_unlock(struct mutex *lock) {
 
 		list_del(&curr->list);
 
-		wake_up(curr->tcb);
+		ready(curr->tcb);
 
 	}
 
