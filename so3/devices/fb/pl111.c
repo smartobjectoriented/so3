@@ -82,7 +82,7 @@
 #define LCDMONO8  (0 <<  6) /* unused for TFT */
 #define LCDTFT    (1 <<  5) /* LCD is TFT */
 #define LCDBW     (0 <<  4) /* unused for TFT */
-#define LCDBPP    (6 <<  1) /* 16bpp 5:6:5 mode */
+#define LCDBPP    (5 <<  1) /* 5: 24bpp, 6: 16bpp565 */
 #define LCDEN     (1 <<  0) /* enable display */
 
 
