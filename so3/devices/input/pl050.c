@@ -162,7 +162,7 @@ int pl050_init(dev_t *dev)
 	memcpy(&pl050_dev, dev, sizeof(dev_t));
 
 	/* Set the clock divisor (arbitrary value). */
-	iowrite8(dev->base + KMI_CLKDIV, 5);
+	iowrite8(dev->base + KMI_CLKDIV, 2);
 
 	/* Enable interface and receiver interrupt. */
 	iowrite8(dev->base + KMI_CR, KMICR_EN | KMICR_RXINTREN | KMICR_TXINTREN);
