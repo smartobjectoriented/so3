@@ -28,7 +28,6 @@
 #include <asm/io.h>
 #include <asm/mmu.h>
 #include <device/driver.h>
-#include <device/fb.h>
 
 /* Register address offsets */
 #define CLCD_TIM0	0x000
@@ -89,8 +88,15 @@
 
 void *mmap(int fd, uint32_t virt_addr, uint32_t page_count);
 
-struct file_operations pl111_ops = {
+struct file_operations pl111_fops = {
 	.mmap = mmap
+};
+
+struct reg_dev pl111_rdev = {
+	.class = DEV_CLASS_FB,
+	.type = VFS_TYPE_FB,
+	.fops = &pl111_fops,
+	.list = LIST_HEAD_INIT(pl111_rdev.list)
 };
 
 
@@ -118,11 +124,8 @@ int pl111_init(dev_t *dev)
 	/* Configure, enable and power on the controller. */
 	iowrite32(dev->base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
 
-	/* Register the framebuffer device. */
-	if (register_fb(&pl111_ops)) {
-		printk("%s: pl111 initialised but could not register fops.", __func__);
-		return -1;
-	}
+	/* Register the framebuffer so it can be accessed from user space. */
+	dev_register(&pl111_rdev);
 
 	return 0;
 }

@@ -30,10 +30,8 @@
 #include <mutex.h>
 #include <string.h>
 #include <dirent.h>
-#include <ctype.h>
 
 #include <device/serial.h>
-#include <device/fb.h>
 #include <fat/fat.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -49,12 +47,6 @@ struct fd *open_fds[MAX_FDS];
 /* Registered file system operations - This is specific to a file system type. Currently, only FAT and pipe is used. */
 /* Pipe has its own fops which is not put in this table. */
 struct file_operations *registered_fs_ops[MAX_FS_REGISTERED];
-
-/*
- * An array of registered device classes. A device class should be registered
- * using the vfs_register_dev_class function.
- */
-struct dev_class *registered_dev_class[MAX_DEV_CLASS_REGISTERED];
 
 /*
  * Check the validity of a gfd
@@ -577,79 +569,20 @@ int do_write(int fd, void *buffer, int count)
  */
 int do_open(const char *filename, int flags)
 {
-	int fd, gfd, type;
-	uint32_t dev_id, i;
+	int fd, gfd;
+	uint32_t type;
 	struct file_operations *fops;
-	char *dev_class_s, *dev_id_s;
-	size_t dev_class_len;
 
 	mutex_lock(&vfs_lock);
 
-	/*
-	 * A device file has the following format:
-	 *   /dev/<dev-class>[dev-id]
-	 *   e.g. /dev/fb0, /dev/input1
-	 * If dev-id is not specified, 0 is assumed.
-	 */
-	if (!strncmp("/dev/", filename, 5)) {
+	/* A filename starting with `/dev/' is considered a device. */
+	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
 
-		dev_class_s = (char *) filename + 5;
-		dev_id_s = dev_class_s;
-
-		/* Find the first number. */
-		while (islower(*dev_id_s))
-			dev_id_s++;
-
-		if (dev_id_s == dev_class_s) {
-			printk("%s: no device class specified.\n", __func__);
-			mutex_unlock(&vfs_lock);
-			return -1;
-		}
-
-		/* Create a string with the device class. */
-		dev_class_len = dev_id_s - dev_class_s + 1;
-		dev_class_s = malloc(dev_class_len * sizeof(char));
-
-		if (!dev_class_s) {
-			printk("%s: failed to allocate memory.\n", __func__);
-			set_errno(ENOMEM);
-			return -1;
-		}
-
-		strncpy(dev_class_s, filename + 5, dev_class_len - 1);
-		dev_class_s[dev_class_len - 1] = 0;
-
-		/* Get the correct registered device class. */
-		i = 0;
-		while (i < MAX_DEV_CLASS_REGISTERED
-			&& (!registered_dev_class[i]
-				|| strcmp(registered_dev_class[i]->name, dev_class_s))) {
-			i++;
-		}
-
-		free(dev_class_s);
-
-		if (i == MAX_DEV_CLASS_REGISTERED) {
-			printk("%s: device class not found.\n", __func__);
-			mutex_unlock(&vfs_lock);
-			return -1;
-		}
-
-		/*
-		 * Get device id. If dev_id_s is NULL then 0 should be returned.
-		 * TODO simple_strtox functions are deprecated.
-		 */
-		dev_id = (uint32_t) simple_strtoul(dev_id_s, NULL, 10);
-
-		/* Get the device fops. */
-		fops = registered_dev_class[i]->get_fops(dev_id);
+		fops = dev_get_fops(filename + DEV_PREFIX_LEN, &type);
 		if (!fops) {
-			printk("%s: requested framebuffer not found.\n", __func__);
 			mutex_unlock(&vfs_lock);
 			return -1;
 		}
-
-		type = VFS_TYPE_FBDEV;
 	}
 	else {
 		/* FIXME: Should find the mounted point regarding the path */
@@ -907,6 +840,7 @@ void *do_mmap(size_t length, int prot, int fd, off_t offset)
 	fops = vfs_get_fops(gfd);
 	if (!fops) {
 		printk("%s: could not get the framebuffer fops.", __func__);
+		mutex_unlock(&vfs_lock);
 		return NULL;
 	}
 
@@ -944,28 +878,6 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
 	mutex_unlock(&vfs_lock);
 
 	return rc;
-}
-
-int vfs_register_dev_class(struct dev_class *dev_class)
-{
-	uint32_t i = 0;
-
-	/* Find first available position in registered_dev_class. */
-	mutex_lock(&vfs_lock);
-	while (i < MAX_DEV_CLASS_REGISTERED && registered_dev_class[i]) {
-		i++;
-	}
-
-	if (i == MAX_DEV_CLASS_REGISTERED) {
-		mutex_unlock(&vfs_lock);
-		return -1;
-	}
-
-	/* Register the device class. */
-	registered_dev_class[i] = dev_class;
-	mutex_unlock(&vfs_lock);
-
-	return 0;
 }
 
 static void vfs_gfd_init(void)

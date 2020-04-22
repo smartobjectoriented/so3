@@ -72,7 +72,8 @@
 #define VFS_TYPE_DIR		1
 #define VFS_TYPE_PIPE		2
 #define VFS_TYPE_IO		3	/* stdin/stdout/stderr */
-#define VFS_TYPE_FBDEV		4	/* framebuffer device */
+#define VFS_TYPE_FB		4	/* framebuffer device */
+#define VFS_TYPE_INPUT		5	/* input device (e.g. mouse) */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
@@ -140,7 +141,6 @@ int vfs_close(int gfd);
 void vfs_set_privdata(int gfd, void *data);
 void *vfs_get_privdata(int gfd);
 int vfs_clone_fd(int *gfd_src, int *gfd_dst);
-int vfs_register_dev_class(struct dev_class *);
 
 uint32_t vfs_get_access_mode(int fd);
 uint32_t vfs_get_open_mode(int fd);

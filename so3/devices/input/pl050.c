@@ -29,13 +29,10 @@
  */
 
 #include <printk.h>
-#include <delay.h>
-#include <process.h>
 #include <vfs.h>
 #include <asm/io.h>
 #include <device/driver.h>
 #include <device/irq.h>
-#include <device/input.h>
 #include <device/input/ps2.h>
 
 /* Register address offsets */
@@ -73,15 +70,20 @@
 int ioctl(int fd, unsigned long cmd, unsigned long args);
 
 
+dev_t pl050_dev;
+
 /*
  * Maximal horizontal and vertical resolution of the display.
  * To be set via the ioctl SET_SIZE command.
+ *
+ * This is used to prevent the cursor from going outside the
+ * display.
  */
 struct display_res {
 	uint16_t h, v;
 } res = { .h = 0xffff, .v = 0xffff };
 
-/* Set initial mouse state. */
+/* Defines the mouse position and button states. */
 struct mouse_state state = {
 	.x = 0, .y = 0,
 	.left = 0, .right = 0, .middle = 0
@@ -91,9 +93,19 @@ struct file_operations pl050_fops = {
 	.ioctl = ioctl
 };
 
-dev_t pl050_dev;
+struct reg_dev pl050_rdev = {
+	.class = DEV_CLASS_INPUT,
+	.type = VFS_TYPE_INPUT,
+	.fops = &pl050_fops,
+	.list = LIST_HEAD_INIT(pl050_rdev.list)
+};
 
-/* Mouse interrupt service routine. */
+/*
+ * Mouse interrupt service routine.
+ *
+ * Called each time the mouse sends a packet. We use the packet to compute the
+ * mouse coordinates and retrieve its button states.
+ */
 irq_return_t pl050_int(int irq, void *dummy)
 {
 	uint8_t status, packet[3], i, tmp;
@@ -127,6 +139,7 @@ irq_return_t pl050_int(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
+/* Write a byte to the device. */
 void pl050_write(uint8_t data)
 {
 	/* Check if we can actually write in the transmit registry. */
@@ -157,8 +170,8 @@ int pl050_init(dev_t *dev)
 	/* Bind the ISR to the interrupt controller. */
 	irq_bind(dev->irq, pl050_int, NULL, NULL);
 
-	/* Register the input device. */
-	register_input(&pl050_fops);
+	/* Register the input device so it can be accessed from user space. */
+	dev_register(&pl050_rdev);
 
 	/* Tell the mouse to send PS/2 packets when moving. */
 	pl050_write(EN_PKT_STREAM);
@@ -166,6 +179,7 @@ int pl050_init(dev_t *dev)
 	return 0;
 }
 
+/* Mouse ioctl. */
 int ioctl(int fd, unsigned long cmd, unsigned long args)
 {
 	static struct mouse_state *s;

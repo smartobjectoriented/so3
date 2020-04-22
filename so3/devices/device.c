@@ -23,19 +23,19 @@
 #include <common.h>
 #include <heap.h>
 #include <memory.h>
-
-#include <device/fdt/libfdt.h>
+#include <list.h>
+#include <errno.h>
+#include <ctype.h>
 
 #include <asm/setup.h>
 
+#include <device/fdt/libfdt.h>
 #include <device/device.h>
 #include <device/driver.h>
 #include <device/serial.h>
 #include <device/irq.h>
 #include <device/timer.h>
 #include <device/ramdev.h>
-#include <device/fb.h>
-#include <device/input.h>
 
 /*
  * Device status strings
@@ -46,6 +46,15 @@ static char *__dev_state_str[] = {
 		"init pending",
 		"initialized",
 };
+
+/*
+ * A list of registered devices.
+ *
+ * A device is registered with the dev_register function from its driver file.
+ * It is registered so that it can be accessed e.g. by the VFS using the
+ * dev_get_fops function.
+ */
+static LIST_HEAD(registered_dev);
 
 char *dev_state_str(dev_status_t status) {
 	return __dev_state_str[status];
@@ -155,6 +164,72 @@ void parse_dtb(void) {
 	free(dev);
 }
 
+/* Register a device. Usually called from the device driver. */
+void dev_register(struct reg_dev *dev)
+{
+	list_add(&dev->list, &registered_dev);
+}
+
+/*
+ * Get the fops of a registered device using the given filename. The vfs_type
+ * is also set to the proper value.
+ *
+ * A device filename has the following format:
+ *   /dev/<dev-class>[dev-id]
+ *   e.g. /dev/fb0, /dev/input1
+ *
+ * If dev-id is not specified, 0 is assumed.
+ *
+ * Note: the given `filename' must not include the /dev/ prefix.
+ */
+struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
+{
+	uint32_t dev_id, i;
+	char *dev_id_s;
+	size_t dev_class_len;
+	struct reg_dev *cur_dev;
+
+	/* Find the beginning of the device id string. */
+	dev_id_s = (char *) filename;
+	while (islower(*dev_id_s))
+		dev_id_s++;
+
+	if (dev_id_s == filename) {
+		printk("%s: no device class specified.\n", __func__);
+		return NULL;
+	}
+
+	/*
+	 * Get the device id. If dev_id_s is NULL then 0 should be returned.
+	 * TODO simple_strtox functions are deprecated.
+	 */
+	dev_id = (uint32_t) simple_strtoul(dev_id_s, NULL, 10);
+
+	/* Get the device class length. */
+	dev_class_len = dev_id_s - filename;
+
+	/* Loop through registered_dev. */
+	i = 0;
+	list_for_each_entry(cur_dev, &registered_dev, list) {
+
+		/*
+		 * We compare the lengths and use strncmp to compare only the
+		 * device class part of `filename'.
+		 */
+		if (strlen(cur_dev->class) == dev_class_len
+			&& !strncmp(filename, cur_dev->class, dev_class_len)) {
+
+			if (dev_id == i++) {
+				*vfs_type = cur_dev->type;
+				return cur_dev->fops;
+			}
+		}
+	}
+
+	printk("%s: device not found.\n", __func__);
+	return NULL;
+}
+
 /*
  * Main device initialization function.
  */
@@ -167,8 +242,6 @@ void devices_init(void) {
 
 	serial_init();
 	timer_dev_init();
-	fb_init();
-	input_init();
 
 #ifdef CONFIG_ROOTFS_RAMDEV
 	/* Get possible ram device (aka initrd loaded from U-boot) */
