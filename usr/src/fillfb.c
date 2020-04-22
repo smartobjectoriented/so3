@@ -6,12 +6,12 @@
 
 #define H_RES 1024
 #define V_RES 768
-#define FB_SIZE (H_RES * V_RES * 2)
+#define FB_SIZE (H_RES * V_RES * 4)
 
 #define MASK5 0x1f
 #define MASK6 0x3f
 
-uint16_t create_px(uint16_t r, uint16_t g, uint16_t b);
+uint32_t create_px(uint8_t r, uint8_t g, uint8_t b);
 
 /*
  * Demo application to show how to open a framebuffer file type, use mmap to
@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 {
 	int fd;
 	uint32_t i, j;
-	uint16_t* fbp;
+	uint32_t* fbp;
 
 	/* Get file descriptor for /dev/fb0, i.e. the first fb device registered. */
 	fd = open("/dev/fb0", 0);
@@ -54,12 +54,11 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-uint16_t create_px(uint16_t r, uint16_t g, uint16_t b)
+uint32_t create_px(uint8_t r, uint8_t g, uint8_t b)
 {
-	/* Depends on the driver's bpp mode, here for bgr565. */
-	uint16_t px = 0;
-	px |= r & MASK5;
-	px |= (g & MASK6) << 5;
-	px |= (b & MASK5) << 11;
+	uint32_t px = 0;
+	px |= b;
+	px |= g << 8;
+	px |= r << 16;
 	return px;
 }
