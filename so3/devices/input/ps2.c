@@ -24,7 +24,11 @@
  *   https://wiki.osdev.org/PS/2_Mouse
  */
 
-#include <printk.h>
+#if 0
+#define DEBUG
+#endif
+
+#include <common.h>
 #include <device/input/ps2.h>
 
 #define GET_DX(state, x) ((x) - (((state) << 4) & 0x100))
@@ -63,17 +67,15 @@ void get_ps2_state(uint8_t *packet, struct mouse_state * state, uint16_t max_x, 
 		state->x = CLAMP(state->x, 0, max_x);
 		state->y = CLAMP(state->y, 0, max_y);
 
-		/* debug
-		printk("%s: sign[%u, %u], xy[%u, %u], realxy[%d, %d]\n",
-				__func__,
-				packet[PS2_STATE] & X_BS,
-				packet[PS2_STATE] & Y_BS,
-				packet[PS2_X],
-				packet[PS2_Y],
-				GET_DX(packet[PS2_STATE], packet[PS2_X]),
-				GET_DY(packet[PS2_STATE], packet[PS2_Y]));
-		*/
-		//printk("%s: [%03d, %03d] [%03d, %03d] %s %s %s\n", __func__, state->x, state->y, 0, 0, state->left ? "LFT" : "", state->middle ? "MID" : "", state->right ? "RGT" : "");
+		DBG("sign_dxy[%s, %s], dxy_val[%03u, %03u], computed_dxy[%03d, %03d]; xy[%03d, %03d]; %03s %03s %03s\n",
+			packet[PS2_STATE] & X_BS ? "neg" : "pos",
+			packet[PS2_STATE] & Y_BS ? "neg" : "pos",
+			packet[PS2_X],
+			packet[PS2_Y],
+			GET_DX(packet[PS2_STATE], packet[PS2_X]),
+			GET_DY(packet[PS2_STATE], packet[PS2_Y]),
+			state->x, state->y,
+			state->left ? "LFT" : "", state->middle ? "MID" : "", state->right ? "RGT" : "");
 	}
 	else {
 		printk("%s: packet discarded.\n", __func__);
