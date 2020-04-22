@@ -33,25 +33,33 @@
 #include <bits/ioctl_fix.h>
 
 #include "lvgl/lvgl.h"
-#include "reds.c"
 
 /* Framebuffer constants. */
 #define BUF_SIZE (LV_HOR_RES_MAX * LV_VER_RES_MAX)
 #define FB_SIZE (BUF_SIZE * LV_COLOR_DEPTH / 8)
 
 /* Pointer on the framebuffer. */
-static uint16_t *fbp;
+static uint32_t *fbp;
 
 /* File descriptor of the mouse input device. */
 static int mfd;
 
 /* Function prototypes. */
+void fs_init(void);
 int fb_init(void);
 int mouse_init(void);
 void create_ui(void);
 void *tick_routine (void *args);
 void my_fb_cb(lv_disp_drv_t * disp, const lv_area_t * area, lv_color_t * color_p);
 bool my_mouse_cb(lv_indev_drv_t * indev, lv_indev_data_t * data);
+
+/* File system driver functions. */
+bool fs_ready_cb(struct _lv_fs_drv_t * drv);
+lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t * drv, void * file_p, const char * path, lv_fs_mode_t mode);
+lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t * drv, void * file_p);
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br);
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t pos);
+lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
 
 /* Mouse driver-related structures. */
 #define GET_STATE 0
@@ -69,8 +77,9 @@ struct display_res {
 /* Main code. */
 int main(int argc, char **argv)
 {
-	/* Initialisation of lvgl (internal stuff). */
+	/* Initialisation of lvgl. */
 	lv_init();
+	fs_init();
 
 	/* Initialisation of the framebuffer. */
 	if (fb_init()) {
@@ -141,6 +150,81 @@ void *tick_routine (void *args)
 		lv_tick_inc(5);
 	}
 }
+
+/* File system driver initialisation. */
+void fs_init(void)
+{
+	lv_fs_drv_t drv;
+	lv_fs_drv_init(&drv);
+
+	drv.letter = 'S';			/* An uppercase letter to identify the drive */
+	drv.file_size = sizeof(int);		/* Size required to store a file object */
+	drv.rddir_size = sizeof(int);		/* Size required to store a directory object (used by dir_open/close/read) */
+	drv.ready_cb = fs_ready_cb;		/* Callback to tell if the drive is ready to use */
+
+	drv.open_cb = fs_open_cb;		/* Callback to open a file */
+	drv.close_cb = fs_close_cb;		/* Callback to close a file */
+	drv.read_cb = fs_read_cb;		/* Callback to read a file */
+	drv.seek_cb = fs_seek_cb;		/* Callback to seek in a file (Move cursor) */
+	drv.tell_cb = fs_tell_cb;		/* Callback to tell the cursor position */
+
+	drv.write_cb = NULL;			/* Callback to write a file */
+	drv.trunc_cb = NULL;			/* Callback to delete a file */
+	drv.size_cb = NULL;			/* Callback to tell a file's size */
+	drv.rename_cb = NULL;			/* Callback to rename a file */
+	drv.dir_open_cb = NULL;			/* Callback to open directory to read its content */
+	drv.dir_read_cb = NULL;			/* Callback to read a directory's content */
+	drv.dir_close_cb = NULL;		/* Callback to close a directory */
+	drv.free_space_cb = NULL;		/* Callback to tell free space on the drive */
+
+	lv_fs_drv_register(&drv);
+}
+
+bool fs_ready_cb(struct _lv_fs_drv_t * drv)
+{
+	return true;
+}
+
+lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t * drv, void * file_p, const char * path, lv_fs_mode_t mode)
+{
+	int fd, flags;
+	flags = mode & LV_FS_MODE_WR ? O_WRONLY : 0;
+	flags |= mode & LV_FS_MODE_RD ? O_RDONLY : 0;
+
+	fd = open(path, flags);
+	if (-1 == fd) {
+		return LV_FS_RES_UNKNOWN;
+	}
+
+	*(int*)file_p = fd;
+	return LV_FS_RES_OK;
+}
+
+lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t * drv, void * file_p)
+{
+	if (-1 == close(*(int*)file_p)) {
+		return LV_FS_RES_UNKNOWN;
+	}
+
+	return LV_FS_RES_OK;
+}
+
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br)
+{
+	*br = read(*(int*)file_p, buf, btr);
+	return LV_FS_RES_OK;
+}
+
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t pos)
+{
+	return LV_FS_RES_OK;
+}
+
+lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
+{
+	return LV_FS_RES_OK;
+}
+
 
 /*
  * Framebuffer initialisation.
@@ -238,8 +322,6 @@ bool my_mouse_cb(lv_indev_drv_t * indev, lv_indev_data_t * data)
  * UI creation.
  */
 
-LV_IMG_DECLARE(reds);
-
 void create_tab1(lv_obj_t * parent)
 {
 	lv_page_set_scrl_layout(parent, LV_LAYOUT_PRETTY);
@@ -265,7 +347,7 @@ void create_tab1(lv_obj_t * parent)
 	lv_label_set_text(btn_label, "Button");
 
 	lv_obj_t * img = lv_img_create(h, NULL);
-	lv_img_set_src(img, &reds);
+	lv_img_set_src(img, "S:/reds.bin");
 
 	btn = lv_btn_create(h, btn);
 	lv_btn_set_toggle(btn, true);
