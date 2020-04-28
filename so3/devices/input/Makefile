@@ -1,1 +1,1 @@
-obj-$(CONFIG_PL050_KMI) += pl050.o ps2.o
+obj-$(CONFIG_PL050_KMI) += pl050.o kmi1.o ps2.o
