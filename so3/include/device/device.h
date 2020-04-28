@@ -19,29 +19,50 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <list.h>
 #include <device/fdt/fdt.h>
 
+/* Filename prefix of a device. */
+#define DEV_PREFIX      "/dev/"
+#define DEV_PREFIX_LEN  sizeof(DEV_PREFIX) - 1
+
+/* Device classes. */
+#define DEV_CLASS_FB    "fb"
+#define DEV_CLASS_INPUT "input"
+#define DEV_CLASS_NIC   "nic"
+
+#define INITCALLS_LEVELS 2
+
+/* Device status. */
 typedef enum {
-	STATUS_UNKNOWN,
-	STATUS_DISABLED,
-	STATUS_INIT_PENDING,
-	STATUS_INITIALIZED,
+    STATUS_UNKNOWN,
+    STATUS_DISABLED,
+    STATUS_INIT_PENDING,
+    STATUS_INITIALIZED,
 } dev_status_t;
 
 struct dev {
-	char compatible[MAX_COMPAT_SIZE];
-	char nodename[MAX_NODE_SIZE];
-	uint32_t base;
-	uint32_t size;
-	int irq;
-	dev_status_t status;
-	int offset_dts;
-	struct dev *parent;
-	void *fdt;
+    char compatible[MAX_COMPAT_SIZE];
+    char nodename[MAX_NODE_SIZE];
+    uint32_t base;
+    uint32_t size;
+    int irq;
+    dev_status_t status;
+    int offset_dts;
+    struct dev *parent;
+    void *fdt;
 };
 typedef struct dev dev_t;
 
-#define INITCALLS_LEVELS 2
+/* Structure used by drivers to register their devices. */
+struct reg_dev {
+
+    char *class;			/* device class */
+    uint32_t type;			/* vfs type */
+    struct file_operations *fops;	/* the device's fops */
+
+    struct list_head list;
+};
 
 /*
  * Core drivers are initialized before postcore drivers.
@@ -56,6 +77,9 @@ enum inicalls_levels { CORE, POSTCORE };
 int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info);
 int fdt_get_int(dev_t *dev, const char *name);
 bool fdt_device_is_available(int node_offset);
+
+void dev_register(struct reg_dev *);
+struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type);
 
 void devices_init(void);
 

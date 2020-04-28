@@ -16,6 +16,7 @@
 
 #include <lwip/tcpip.h>
 #include <lwip/sockets.h>
+#include <lwip/netif.h>
 #include <device/network.h>
 
 static void network_tcpip_done(void *args) {
@@ -78,6 +79,153 @@ int close_sock(int fd) {
 }
 
 
+// TODO move
+#define SIOCADDRT       0x890B
+#define SIOCDELRT       0x890C
+#define SIOCRTMSG       0x890D
+
+#define SIOCGIFNAME     0x8910
+#define SIOCSIFLINK     0x8911
+#define SIOCGIFCONF     0x8912
+#define SIOCGIFFLAGS    0x8913
+#define SIOCSIFFLAGS    0x8914
+#define SIOCGIFADDR     0x8915
+#define SIOCSIFADDR     0x8916
+#define SIOCGIFDSTADDR  0x8917
+#define SIOCSIFDSTADDR  0x8918
+#define SIOCGIFBRDADDR  0x8919
+#define SIOCSIFBRDADDR  0x891a
+#define SIOCGIFNETMASK  0x891b
+#define SIOCSIFNETMASK  0x891c
+#define SIOCGIFMETRIC   0x891d
+#define SIOCSIFMETRIC   0x891e
+#define SIOCGIFMEM      0x891f
+#define SIOCSIFMEM      0x8920
+#define SIOCGIFMTU      0x8921
+#define SIOCSIFMTU      0x8922
+#define SIOCSIFNAME     0x8923
+#define SIOCSIFHWADDR   0x8924
+#define SIOCGIFENCAP    0x8925
+#define SIOCSIFENCAP    0x8926
+#define SIOCGIFHWADDR   0x8927
+#define SIOCGIFSLAVE    0x8929
+#define SIOCSIFSLAVE    0x8930
+#define SIOCADDMULTI    0x8931
+#define SIOCDELMULTI    0x8932
+#define SIOCGIFINDEX    0x8933
+#define SIOGIFINDEX     SIOCGIFINDEX
+#define SIOCSIFPFLAGS   0x8934
+#define SIOCGIFPFLAGS   0x8935
+#define SIOCDIFADDR     0x8936
+#define SIOCSIFHWBROADCAST 0x8937
+#define SIOCGIFCOUNT    0x8938
+
+// todo redefine as ifreq
+struct ifreq2 {
+    char ifrn_name[16];
+    union {
+        struct sockaddr ifru_addr;
+        struct sockaddr ifru_dstaddr;
+        struct sockaddr ifru_broadaddr;
+        struct sockaddr ifru_netmask;
+        struct sockaddr ifru_hwaddr;
+        short int ifru_flags;
+        int ifru_ivalue;
+        int ifru_mtu;
+        //struct ifmap ifru_map;
+        char ifru_slave[IFNAMSIZ];
+        char ifru_newname[IFNAMSIZ];
+        char *ifru_data;
+    } ifr_ifru;
+};
+
+// TODO
+int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
+    int lwip_fd = get_lwip_fd(fd);
+    struct ifreq2* ifreq = NULL;
+    struct netif* netif = NULL;
+
+    // LwIP handeled the ioctl cmd
+    if(!lwip_ioctl(lwip_fd, cmd, (void*)args)){
+        return 0;
+    }
+
+
+    switch (cmd){
+        case SIOCGIFNAME:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+
+            netif = netif_get_by_index((u8_t)ifreq->ifr_ifru.ifru_ivalue);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            char* name = netif->name;
+            ifreq->ifrn_name[0] = name[0];
+            ifreq->ifrn_name[1] = name[1];
+            ifreq->ifrn_name[2] = '\0';
+
+            return 0;
+        case SIOCGIFINDEX:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            int index = netif_name_to_index(ifreq->ifrn_name);
+
+            if(index == NETIF_NO_INDEX){
+                set_errno(EINVAL); //TODO change
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_ivalue = index;
+            return 0;
+
+
+        case SIOCGIFADDR:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            netif = netif_find(ifreq->ifrn_name);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
+            ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
+
+            printk("TEST");
+
+            char *v = inet_ntoa(netif->ip_addr.addr);
+
+            printk(inet_ntoa(netif->ip_addr.addr));
+
+            // TO Change
+            ifreq->ifr_ifru.ifru_addr.sa_data[0] = netif->ip_addr.addr >> 24;
+            ifreq->ifr_ifru.ifru_addr.sa_data[1] = netif->ip_addr.addr >> 16;
+            ifreq->ifr_ifru.ifru_addr.sa_data[2] = netif->ip_addr.addr >> 8;
+            ifreq->ifr_ifru.ifru_addr.sa_data[3] = netif->ip_addr.addr;
+
+            return 0;
+        default:
+            return -1;
+    }
+
+}
+
+
 static struct file_operations sockops = {
         .open = NULL,
         .close = close_sock,
@@ -86,6 +234,7 @@ static struct file_operations sockops = {
         .mount = NULL,
         .readdir = NULL,
         .stat = NULL,
+        .ioctl = ioctl_sock
 };
 
 struct file_operations *register_sock(void) {
@@ -180,6 +329,12 @@ int do_setsockopt(int sockfd, int level, int optname, const void *optval, sockle
 
     return lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
 }
+
+/*int do_ioctl(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
+}*/
 
 
 

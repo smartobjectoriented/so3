@@ -23,7 +23,7 @@ CFLAGS	+= -I$(LIBC_DIR)/include
 all: $(NLIB)
 
 $(NLIB): libc_root libc_subdirs
-	$(AR) rv $@ *.o string/*.o stdio/*.o fcntl/*.o misc/*.o dirent/*.o math/*.o errno/*.o multibyte/*.o ctype/*.o thread/*.o exit/*.o stdlib/*.o unistd/*.o env/*.o malloc/*.o process/*.o prng/*.o signal/*.o time/*.o >  /dev/null 
+	$(AR) rv $@ *.o string/*.o stdio/*.o fcntl/*.o misc/*.o dirent/*.o math/*.o errno/*.o multibyte/*.o ctype/*.o thread/*.o exit/*.o stdlib/*.o unistd/*.o env/*.o malloc/*.o process/*.o prng/*.o signal/*.o time/*.o network/*.o >  /dev/null
 
 libc_root: $(patsubst %,%.o,$(LIB))
 
@@ -48,6 +48,7 @@ libc_subdirs:
 	make -C signal
 	make -C time
 	make -C prng
+	make -C network
 
 crt.o: crt.S
 	$(CC) $(AFLAGS) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -77,6 +78,7 @@ clean:
 	make -C signal clean
 	make -C time clean
 	make -C prng clean
+	make -C network clean
 	rm -f *.o
 	rm -f libso3.a
 

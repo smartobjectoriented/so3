@@ -37,11 +37,6 @@ int sendmmsg (int, struct mmsghdr *, unsigned int, unsigned int);
 int recvmmsg (int, struct mmsghdr *, unsigned int, unsigned int, struct timespec *);
 #endif
 
-struct linger {
-	int l_onoff;
-	int l_linger;
-};
-
 #define SHUT_RD 0
 #define SHUT_WR 1
 #define SHUT_RDWR 2
@@ -51,17 +46,20 @@ struct linger {
 #define SOCK_DGRAM     2
 #endif
 
+/** //TODO: clean Already declared in socketType bits
 #define SOCK_RAW       3
 #define SOCK_RDM       4
 #define SOCK_SEQPACKET 5
 #define SOCK_DCCP      6
 #define SOCK_PACKET    10
+ **/
 
 #ifndef SOCK_CLOEXEC
 #define SOCK_CLOEXEC   02000000
 #define SOCK_NONBLOCK  04000
 #endif
 
+/** //TODO: clean Already declared in bits/socket.h ???
 #define PF_UNSPEC       0
 #define PF_LOCAL        1
 #define PF_UNIX         PF_LOCAL
@@ -156,7 +154,7 @@ struct linger {
 #define AF_VSOCK        PF_VSOCK
 #define AF_KCM          PF_KCM
 #define AF_QIPCRTR      PF_QIPCRTR
-#define AF_MAX          PF_MAX
+#define AF_MAX          PF_MAX*/
 
 #ifndef SO_DEBUG
 #define SO_DEBUG        1
@@ -257,7 +255,7 @@ struct linger {
 #define SOL_KCM         281
 
 #define SOMAXCONN       128
-
+/** //TODO: clean Already declared in bits/socket.h ???
 #define MSG_OOB       0x0001
 #define MSG_PEEK      0x0002
 #define MSG_DONTROUTE 0x0004
@@ -278,28 +276,29 @@ struct linger {
 #define MSG_BATCH     0x40000
 #define MSG_FASTOPEN  0x20000000
 #define MSG_CMSG_CLOEXEC 0x40000000
+ */
 
 #define __CMSG_LEN(cmsg) (((cmsg)->cmsg_len + sizeof(long) - 1) & ~(long)(sizeof(long) - 1))
 #define __CMSG_NEXT(cmsg) ((unsigned char *)(cmsg) + __CMSG_LEN(cmsg))
 #define __MHDR_END(mhdr) ((unsigned char *)(mhdr)->msg_control + (mhdr)->msg_controllen)
 
-#define CMSG_DATA(cmsg) ((unsigned char *) (((struct cmsghdr *)(cmsg)) + 1))
-#define CMSG_NXTHDR(mhdr, cmsg) ((cmsg)->cmsg_len < sizeof (struct cmsghdr) || \
-	__CMSG_LEN(cmsg) + sizeof(struct cmsghdr) >= __MHDR_END(mhdr) - (unsigned char *)(cmsg) \
-	? 0 : (struct cmsghdr *)__CMSG_NEXT(cmsg))
+//TODO #define CMSG_DATA(cmsg) ((unsigned char *) (((struct cmsghdr *)(cmsg)) + 1))
+/**TODO #define CMSG_NXTHDR(mhdr, cmsg) ((cmsg)->cmsg_len < sizeof (struct cmsghdr) || \
+ 	__CMSG_LEN(cmsg) + sizeof(struct cmsghdr) >= __MHDR_END(mhdr) - (unsigned char *)(cmsg) \
+ 	? 0 : (struct cmsghdr *)__CMSG_NEXT(cmsg))*/
 #define CMSG_FIRSTHDR(mhdr) ((size_t) (mhdr)->msg_controllen >= sizeof (struct cmsghdr) ? (struct cmsghdr *) (mhdr)->msg_control : (struct cmsghdr *) 0)
 
 #define CMSG_ALIGN(len) (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1))
 #define CMSG_SPACE(len) (CMSG_ALIGN (len) + CMSG_ALIGN (sizeof (struct cmsghdr)))
 #define CMSG_LEN(len)   (CMSG_ALIGN (sizeof (struct cmsghdr)) + (len))
 
-#define SCM_RIGHTS      0x01
+//TODO #define SCM_RIGHTS      0x01
 #define SCM_CREDENTIALS 0x02
 
-struct sockaddr {
+/** TODO struct sockaddr {
 	sa_family_t sa_family;
 	char sa_data[14];
-};
+};*/
 
 struct sockaddr_storage {
 	sa_family_t ss_family;

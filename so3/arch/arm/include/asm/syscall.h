@@ -49,6 +49,16 @@
 #define SYSCALL_DUP		22
 #define SYSCALL_DUP2		23
 
+
+#define SYSCALL_SOCKET 			26
+#define SYSCALL_BIND			27
+#define SYSCALL_LISTEN			28
+#define SYSCALL_ACCEPT 			29
+#define SYSCALL_CONNECT			30
+#define SYSCALL_RECV			31
+#define SYSCALL_SEND			32
+#define SYSCALL_SENDTO			33
+
 #define SYSCALL_STAT		34
 #define SYSCALL_GETPID		37
 

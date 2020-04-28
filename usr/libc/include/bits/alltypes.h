@@ -32,6 +32,7 @@ typedef void *timer_t;
 typedef int clockid_t;
 typedef int pid_t;
 typedef unsigned uid_t;
+typedef unsigned gid_t;
 
 typedef long clock_t;
 typedef long time_t;
@@ -72,5 +73,8 @@ typedef struct { union { int __i[8]; volatile int __vi[8]; void *__p[8]; } __u; 
 typedef struct { union { int __i[5]; volatile int __vi[5]; void *__p[5]; } __u; } pthread_barrier_t;
 
 typedef struct __sigset_t { unsigned long __bits[128/sizeof(long)]; } sigset_t;
+
+typedef uint32_t socklen_t;
+
 
 #endif /* ALLTYPES_H */

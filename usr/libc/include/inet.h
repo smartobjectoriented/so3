@@ -4,12 +4,12 @@
 #include "types.h"
 
 /* Supported socket address families. */
-#define AF_INET         2       /* Internet IP Protocol */
+//TODO #define AF_INET         2       /* Internet IP Protocol */
 
 /**
  * enum sock_type - Socket types
  */
-enum sock_type {
+/**TODO enum sock_type {
     SOCK_STREAM     = 1,
     SOCK_DGRAM      = 2,
     SOCK_RAW        = 3,
@@ -17,12 +17,12 @@ enum sock_type {
     SOCK_SEQPACKET  = 5,
     SOCK_DCCP       = 6,
     SOCK_PACKET     = 10,
-};
+};*/
 
 /**
  * enum socket_protocol - IP protocols
  */
-enum socket_protocol {
+/*enum socket_protocol {
     IPPROTO_IP      = 0,
     IPPROTO_ICMP    = 1,
     IPPROTO_IGMP    = 2,
@@ -45,7 +45,7 @@ enum socket_protocol {
     IPPROTO_UDPLITE = 136,
     IPPROTO_RAW     = 255,
     IPPROTO_MAX
-};
+};*/
 
 in_addr_t inet_addr(const char *cp);
 

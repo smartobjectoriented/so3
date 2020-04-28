@@ -5,7 +5,7 @@
 
 int socket(int domain, int type, int protocol)
 {
-	int s = socketcall(socket, domain, type, protocol, 0, 0, 0);
+	/*TODO int s = socketcall(socket, domain, type, protocol, 0, 0, 0);
 	if (s<0 && (errno==EINVAL || errno==EPROTONOSUPPORT)
 	    && (type&(SOCK_CLOEXEC|SOCK_NONBLOCK))) {
 		s = socketcall(socket, domain,
@@ -13,9 +13,10 @@ int socket(int domain, int type, int protocol)
 			protocol, 0, 0, 0);
 		if (s < 0) return s;
 		if (type & SOCK_CLOEXEC)
-			__syscall(SYS_fcntl, s, F_SETFD, FD_CLOEXEC);
+            sys_socket(SYS_fcntl, s, F_SETFD, FD_CLOEXEC);
 		if (type & SOCK_NONBLOCK)
-			__syscall(SYS_fcntl, s, F_SETFL, O_NONBLOCK);
-	}
+            sys_socket(SYS_fcntl, s, F_SETFL, O_NONBLOCK);
+	}*/
+	int s = sys_socket(domain, type, protocol);
 	return s;
 }

@@ -28,6 +28,7 @@
 #include <process.h>
 #include <signal.h>
 #include <timer.h>
+#include <network.h>
 
 static uint32_t *errno_addr = NULL;
 
@@ -223,6 +224,27 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t 
 			break;
 #endif /* CONFIG_IPC_SIGNAL */
 
+        case SYSCALL_SOCKET:
+            result = do_socket((int)r0, (int)r1, (int)r2);
+            break;
+        case SYSCALL_BIND:
+            result = do_bind((int)r0, (const struct sockaddr*)r1, (socklen_t) r2);
+            break;
+        case SYSCALL_LISTEN:
+            result = do_listen((int)r0, (int) r1);
+            break;
+        case SYSCALL_ACCEPT:
+            break;
+        case SYSCALL_CONNECT:
+            result = do_connect((int)r0, (const struct sockaddr *)r1, (socklen_t) r2);
+
+            break;
+        case SYSCALL_RECV:
+            break;
+        case SYSCALL_SEND:
+            break;
+        case SYSCALL_SENDTO:
+            break;
 		default:
 			printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
 			break;

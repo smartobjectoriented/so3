@@ -18,6 +18,7 @@
 
 #include <types.h>
 #include <heap.h>
+#include <vfs.h>
 
 #include <process.h>
 #include <signal.h>
@@ -121,6 +122,33 @@
 
 
 #include "smc911x.h"
+
+int smc911x_ioctl(int fd, unsigned long cmd, unsigned long args)
+{
+    switch (cmd) {
+
+        case 0:
+
+            break;
+        default:
+            /* Unknown command. */
+            return -1;
+    }
+
+    return 0;
+}
+
+
+struct file_operations smc911x_fops = {
+        .ioctl = smc911x_ioctl
+};
+
+struct reg_dev smc911x_rdev = {
+        .class = DEV_CLASS_NIC,
+        .type = VFS_TYPE_NIC,
+        .fops = &smc911x_fops,
+        .list = LIST_HEAD_INIT(smc911x_rdev.list)
+};
 
 
 
@@ -552,6 +580,8 @@ err_t smc911x_lwip_init(struct netif *netif)
     irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
 
     err_t err = dhcp_start(netif);
+
+    dev_register(&smc911x_rdev);
 
     return ERR_OK;
 }

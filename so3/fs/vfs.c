@@ -574,14 +574,24 @@ int do_open(const char *filename, int flags)
 	struct file_operations *fops;
 
 	mutex_lock(&vfs_lock);
-  	/* FIXME: Should find the mounted point regarding the path */
-	/* At the moment... */
-	fops = registered_fs_ops[0];
+    /* A filename starting with `/dev/' is considered a device. */
+    if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
 
-	if (flags & O_DIRECTORY)
-		type = VFS_TYPE_DIR;
-	else
-		type = VFS_TYPE_FILE;
+        fops = dev_get_fops(filename + DEV_PREFIX_LEN, &type);
+        if (!fops) {
+            mutex_unlock(&vfs_lock);
+            return -1;
+        }
+    }
+    else {
+        /* FIXME: Should find the mounted point regarding the path */
+        fops = registered_fs_ops[0];
+
+        if (flags & O_DIRECTORY)
+            type = VFS_TYPE_DIR;
+        else
+            type = VFS_TYPE_FILE;
+    }
 
 	/* vfs_open is already clean fops and open_fds */
 	fd = vfs_open(fops, type);
@@ -598,9 +608,9 @@ int do_open(const char *filename, int flags)
 
 	vfs_set_open_mode(gfd, flags);
 
-	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (registered_fs_ops[0]->open(gfd, filename))
-		goto open_failed;
+    /* The open() callback operation in the sub-layers must NOT suspend. */
+    if (fops->open && fops->open(gfd, filename))
+        goto open_failed;
 
 	mutex_unlock(&vfs_lock);
 

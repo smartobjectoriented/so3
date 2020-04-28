@@ -95,9 +95,11 @@
 
 #include <bits/alltypes.h>
 
+#include <netinet/in.h>
 #include <pthread.h>
 #include <types.h>
 #include <inet.h>
+#include <signal.h>
 #include <signal.h>
 
 extern int errno;

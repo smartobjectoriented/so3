@@ -3,6 +3,10 @@ menu "Drivers"
 
 config UART
 	bool "Driver UART"
+
+config NET
+    bool "Driver Network"
+
 	
 source "devices/serial/Kconfig"
 source "devices/mmc/Kconfig"

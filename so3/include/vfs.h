@@ -68,13 +68,12 @@
 /* Types of entry */
 #define VFS_TYPE_FILE		0
 #define VFS_TYPE_DIR		1
-
 #define VFS_TYPE_PIPE		2
-/* stdin/stdout/stderr */
-#define VFS_TYPE_IO		3
-
-/* Sockets */
-#define VFS_TYPE_SOCK		4
+#define VFS_TYPE_IO		    3   /* stdin/stdout/stderr */
+#define VFS_TYPE_FB		    4   /* framebuffer device */
+#define VFS_TYPE_INPUT		5   /* input device (e.g. mouse) */
+#define VFS_TYPE_SOCK		6   /* Sockets */
+#define VFS_TYPE_NIC		7   /* NICs */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
