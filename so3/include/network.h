@@ -19,8 +19,9 @@ int do_socket(int domain, int type, int protocol);
 int do_connect(int sockfd, const struct sockaddr *name, socklen_t namelen);
 int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int do_listen(int sockfd, int backlog);
-
-
-
+int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int do_recv(int sockfd, void *mem, size_t len, int flags);
+int do_send(int sockfd, const void *dataptr, size_t size, int flags);
+int do_sendto(int sockfd, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
 
 #endif //SO3_NETWORK_H

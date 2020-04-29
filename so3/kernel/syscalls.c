@@ -234,16 +234,19 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t 
             result = do_listen((int)r0, (int) r1);
             break;
         case SYSCALL_ACCEPT:
+            result = do_accept((int)r0, (const struct sockaddr*)r1, (socklen_t) r2);
             break;
         case SYSCALL_CONNECT:
             result = do_connect((int)r0, (const struct sockaddr *)r1, (socklen_t) r2);
-
             break;
         case SYSCALL_RECV:
+            result = do_recv((int)r0, (void*)r1, (size_t)r2, (int)r3);
             break;
         case SYSCALL_SEND:
+            result = do_send((int)r0, (const void *)r1, (size_t)r2, (int)r3);
             break;
         case SYSCALL_SENDTO:
+            result = do_sendto((int)r0, (const void *)r1, (size_t)r2, (int)r3, (const struct sockaddr *)r4, (socklen_t)0/* TODO chnage */);
             break;
 		default:
 			printk("%s: unhandled syscall: %d\n", __func__, syscall_no);

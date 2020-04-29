@@ -406,18 +406,49 @@ int do_listen(int sockfd, int backlog) {
     return lwip_listen(lwip_fd, backlog);
 }
 
+int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_accept(lwip_fd, addr, addrlen);
+}
+
+int do_recv(int sockfd, void *mem, size_t len, int flags) {
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_recv(lwip_fd, mem, len, flags);
+}
+
+int do_send(int sockfd, const void *dataptr, size_t size, int flags) {
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_send(lwip_fd, dataptr, size, flags);
+}
+
+int do_sendto(int sockfd, const void *dataptr, size_t size, int flags,
+              const struct sockaddr *to, socklen_t tolen) {
+
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_sendto(lwip_fd, dataptr, size, flags, to, tolen);
+}
+
+
+
+/*ssize_t lwip_recv(int s, void *mem, size_t len, int flags);
+ssize_t lwip_read(int s, void *mem, size_t len);
+ssize_t lwip_readv(int s, const struct iovec *iov, int iovcnt);
+ssize_t lwip_recvfrom(int s, void *mem, size_t len, int flags,
+                      struct sockaddr *from, socklen_t *fromlen);
+ssize_t lwip_recvmsg(int s, struct msghdr *message, int flags);
+ssize_t lwip_send(int s, const void *dataptr, size_t size, int flags);
+ssize_t lwip_sendmsg(int s, const struct msghdr *message, int flags);
+ssize_t lwip_sendto(int s, const void *dataptr, size_t size, int flags,
+                    const struct sockaddr *to, socklen_t tolen);*/
+
 int do_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
     int lwip_fd = get_lwip_fd(sockfd);
 
     return lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
 }
-
-/*int do_ioctl(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
-    int lwip_fd = get_lwip_fd(sockfd);
-
-    return lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
-}*/
-
-
 
 
