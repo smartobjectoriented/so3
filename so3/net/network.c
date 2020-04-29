@@ -142,8 +142,10 @@ struct ifreq2 {
 // TODO
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
     int lwip_fd = get_lwip_fd(fd);
+    int id;
     struct ifreq2* ifreq = NULL;
     struct netif* netif = NULL;
+    struct sockaddr_in *addr = NULL;
 
     // LwIP handeled the ioctl cmd
     if(!lwip_ioctl(lwip_fd, cmd, (void*)args)){
@@ -159,17 +161,20 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
             }
             ifreq = (struct ifreq2*)args;
 
-
-            netif = netif_get_by_index((u8_t)ifreq->ifr_ifru.ifru_ivalue);
+            id = ifreq->ifr_ifru.ifru_ivalue;
+            netif = netif_get_by_index((u8_t)id + 1); // LWIP index start a 1
             if(netif == NULL){
                 set_errno(EINVAL); // TODO edit
                 return -1;
             }
 
-            char* name = netif->name;
-            ifreq->ifrn_name[0] = name[0];
-            ifreq->ifrn_name[1] = name[1];
-            ifreq->ifrn_name[2] = '\0';
+
+            // Lwip netid name is always 2 charsma followed by an id
+            sprintf(ifreq->ifrn_name, "%c%c%d",
+                    netif->name[0],
+                    netif->name[1],
+                    id);
+
 
             return 0;
         case SIOCGIFINDEX:
@@ -186,9 +191,35 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
                 return -1;
             }
 
-            ifreq->ifr_ifru.ifru_ivalue = index;
+            ifreq->ifr_ifru.ifru_ivalue = index - 1;
             return 0;
 
+
+        case SIOCGIFHWADDR:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            netif = netif_find(ifreq->ifrn_name);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
+            ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
+
+            char* hwaddr = ifreq->ifr_ifru.ifru_hwaddr.sa_data;
+            hwaddr[0] = netif->hwaddr[0];
+            hwaddr[1] = netif->hwaddr[1];
+            hwaddr[2] = netif->hwaddr[2];
+            hwaddr[3] = netif->hwaddr[3];
+            hwaddr[4] = netif->hwaddr[4];
+            hwaddr[5] = netif->hwaddr[5];
+
+            return 0;
 
         case SIOCGIFADDR:
             if (!args) {
@@ -206,19 +237,70 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
             ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
             ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
 
-            printk("TEST");
-
-            char *v = inet_ntoa(netif->ip_addr.addr);
-
-            printk(inet_ntoa(netif->ip_addr.addr));
-
-            // TO Change
-            ifreq->ifr_ifru.ifru_addr.sa_data[0] = netif->ip_addr.addr >> 24;
-            ifreq->ifr_ifru.ifru_addr.sa_data[1] = netif->ip_addr.addr >> 16;
-            ifreq->ifr_ifru.ifru_addr.sa_data[2] = netif->ip_addr.addr >> 8;
-            ifreq->ifr_ifru.ifru_addr.sa_data[3] = netif->ip_addr.addr;
+            addr = (struct sockaddr_in *)&ifreq->ifr_ifru.ifru_addr;
+            addr->sin_addr.s_addr = netif->ip_addr.addr;
 
             return 0;
+
+        case SIOCGIFBRDADDR:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            netif = netif_find(ifreq->ifrn_name);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
+            ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
+
+            addr = (struct sockaddr_in *)&ifreq->ifr_ifru.ifru_addr;
+            addr->sin_addr.s_addr = netif->ip_addr.addr | ~netif->netmask.addr;
+
+            return 0;
+
+        case SIOCGIFNETMASK:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            netif = netif_find(ifreq->ifrn_name);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
+            ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
+
+            addr = (struct sockaddr_in *)&ifreq->ifr_ifru.ifru_addr;
+            addr->sin_addr.s_addr = netif->netmask.addr;
+
+            return 0;
+
+        case SIOCGIFMTU:
+            if (!args) {
+                set_errno(EINVAL);
+                return -1;
+            }
+            ifreq = (struct ifreq2*)args;
+
+            netif = netif_find(ifreq->ifrn_name);
+            if(netif == NULL){
+                set_errno(EINVAL); // TODO edit
+                return -1;
+            }
+
+            ifreq->ifr_ifru.ifru_mtu = netif->mtu;
+
+            return 0;
+
         default:
             return -1;
     }
