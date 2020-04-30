@@ -90,7 +90,7 @@ struct file_operations {
 	int (*close)(int fd);
 	int (*read)(int fd, void *buffer, int count);
 	int (*write)(int fd, void *buffer, int count);
-	int (*lseek)(size_t);
+	int (*lseek)(int fd, off_t off, int whence);
 	int (*ioctl)(int fd, unsigned long cmd, unsigned long args);
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
@@ -130,6 +130,7 @@ int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
 void *do_mmap(size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
+off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */
 int vfs_get_gfd(int localfd);

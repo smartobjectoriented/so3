@@ -886,6 +886,29 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
 	return rc;
 }
 
+/*
+ * Implementation of standard lseek() syscall. It depends on the underlying
+ * device operations.
+ */
+off_t do_lseek(int fd, off_t off, int whence) {
+	int rc, gfd;
+	mutex_lock(&vfs_lock);
+
+	gfd = vfs_get_gfd(fd);
+
+	if (!vfs_is_valid_gfd(gfd)) {
+		set_errno(EINVAL);
+		mutex_unlock(&vfs_lock);
+		return -1;
+	}
+
+	rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+
+	mutex_unlock(&vfs_lock);
+
+	return rc;
+}
+
 static void vfs_gfd_init(void)
 {
 	memset(open_fds, 0, sizeof(struct fd));
