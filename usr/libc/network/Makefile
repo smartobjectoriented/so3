@@ -1,7 +1,7 @@
 
 -include $(USR_DIR)/Makefile.common
 
-LIB = socket inet_ntoa
+LIB = socket inet_ntoa sendto
 
 all: $(patsubst %,%.o,$(LIB))
 
