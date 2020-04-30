@@ -32,6 +32,7 @@
 #include <dirent.h>
 
 #include <device/serial.h>
+
 #include <fat/fat.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -107,6 +108,10 @@ int vfs_get_gfd(int localfd)
 {
 	pcb_t *pcb = current()->pcb;
 	int gfd;
+
+	/* Basic validation of fd */
+	if (localfd < 0)
+		return -1;
 
 	mutex_lock(&vfs_lock);
 
@@ -618,6 +623,7 @@ int do_open(const char *filename, int flags)
 	return fd;
 
 open_failed:
+
 	free(open_fds[gfd]);
 	open_fds[gfd] = NULL;
 	mutex_unlock(&vfs_lock);

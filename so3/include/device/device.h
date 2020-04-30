@@ -54,8 +54,8 @@ struct dev {
 typedef struct dev dev_t;
 
 /* Structure used by drivers to register their devices. */
-struct reg_dev {
-
+struct classdev {
+	dev_t *dev; 			/* Reference to the device */
 	char *class;			/* device class */
 	uint32_t type;			/* vfs type */
 	struct file_operations *fops;	/* the device's fops */
@@ -77,7 +77,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info);
 int fdt_get_int(dev_t *dev, const char *name);
 bool fdt_device_is_available(int node_offset);
 
-void dev_register(struct reg_dev *);
+void devclass_register(dev_t *dev, struct classdev *);
 struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type);
 
 void devices_init(void);
