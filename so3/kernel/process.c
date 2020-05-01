@@ -331,7 +331,7 @@ void create_process(int (*start_routine)(void *), const char *name)
 #warning set up argc & argv correctly for the root process...
 
 	/* Start main thread */
-	pcb->main_thread = user_thread(start_routine, name, NULL, pcb, 0);
+	pcb->main_thread = user_thread(start_routine, name, NULL, pcb);
 
 	/* init process? */
 	if (!root_process)
@@ -719,7 +719,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 	start_routine = (int(*)(void *)) pcb->bin_image_entry;
 
 	/* We start the new thread */
-	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb, 0);
+	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb);
 
 	/* Transfer the waiting thread if any */
 
@@ -815,7 +815,7 @@ int do_fork(void)
 	 */
 	sprintf(newp->name, "%s_child_%d", parent->name, newp->pid);
 
-	newp->main_thread = user_thread(NULL, newp->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), newp, 0);
+	newp->main_thread = user_thread(NULL, newp->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), newp);
 
 	/* Copy the kernel stack of the main thread */
 	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - THREAD_STACK_SIZE,

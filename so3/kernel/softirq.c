@@ -72,7 +72,7 @@ void register_softirq(int nr, softirq_handler handler)
 
 void raise_softirq(unsigned int nr)
 {
-  set_bit(nr, (unsigned long *) &softirq_bitmap);
+	set_bit(nr, (unsigned long *) &softirq_bitmap);
 }
 
 

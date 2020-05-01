@@ -88,12 +88,12 @@ typedef int(*th_fn_t)(void *);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p, uint32_t prio);
+int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p);
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
 tcb_t *kernel_thread(int (*start_routine) (void *), const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio);
+tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
 
 int thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);
