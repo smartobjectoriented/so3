@@ -63,5 +63,9 @@ int snprintf(char * buf, size_t size, const char *fmt, ...);
 char *kvasprintf(const char *fmt, va_list ap);
 char *kasprintf(const char *fmt, ...);
 
+unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
+long simple_strtol(const char *cp, char **endp, unsigned int base);
+unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
+long long simple_strtoll(const char *cp, char **endp, unsigned int base);
 
 #endif /* STRING_H */

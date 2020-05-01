@@ -24,6 +24,8 @@
 #include <stat.h>
 #include <dirent.h>
 
+#include <device/device.h>
+
 /* File access mode flags */
 #define O_SEARCH  O_PATH
 #define O_EXEC    O_PATH
@@ -56,8 +58,9 @@
 #define O_TMPFILE 020040000
 #define O_NDELAY O_NONBLOCK
 
-#define MAX_FS_REGISTERED 4
-#define MAX_FDS 128
+#define MAX_FS_REGISTERED          4
+#define MAX_DEV_CLASS_REGISTERED   4
+#define MAX_FDS                  128
 
 #define FILENAME_MAX 100
 
@@ -70,8 +73,10 @@
 #define VFS_TYPE_DIR		1
 
 #define VFS_TYPE_PIPE		2
-/* stdin/stdout/stderr */
-#define VFS_TYPE_IO		3
+#define VFS_TYPE_IO		3	/* stdin/stdout/stderr */
+#define VFS_TYPE_FB		4	/* framebuffer device */
+#define VFS_TYPE_INPUT		5	/* input device (e.g. mouse) */
+#define VFS_TYPE_DEV_CHAR	6       /* Generic device character */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0

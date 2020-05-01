@@ -19,9 +19,14 @@
 #include <string.h>
 #include <common.h>
 #include <stdarg.h>
+#include <process.h>
+#include <vfs.h>
 
 #include <device/serial.h>
 
+/*
+ * Standard version of printk to be used.
+ */
 void printk(const char *fmt, ...)
 {
 	static char   buf[1024];
@@ -33,20 +38,23 @@ void printk(const char *fmt, ...)
 	(void)vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-	p = buf;
+	if (cpu_mode() == USR_MODE)
+		__write(STDOUT, buf, strlen(buf));
+	else {
+		p = buf;
 
-	while ((q = strchr(p, '\n')) != NULL)
-	{
-		*q = '\0';
+		while ((q = strchr(p, '\n')) != NULL)
+		{
+			*q = '\0';
 
-		serial_write(p, strlen(p)+1);
-		serial_write("\n", 2);
+			serial_write(p, strlen(p)+1);
+			serial_write("\n", 2);
 
-		p = q + 1;
+			p = q + 1;
+		}
+
+		if (*p != '\0')
+			serial_write(p, strlen(p)+1);
 	}
-
-	if (*p != '\0')
-		serial_write(p, strlen(p)+1);
-
 }
 

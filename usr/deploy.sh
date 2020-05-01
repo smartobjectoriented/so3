@@ -5,5 +5,5 @@
 echo Deploying usr apps into the first partition...
 cd ../filesystem
 ./mount.sh 1
-sudo cp ../usr/out/*.elf fs/
+sudo cp ../usr/out/* fs/
 sudo ./umount.sh

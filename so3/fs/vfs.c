@@ -32,6 +32,7 @@
 #include <dirent.h>
 
 #include <device/serial.h>
+
 #include <fat/fat.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -45,7 +46,7 @@ struct mutex vfs_lock;
 struct fd *open_fds[MAX_FDS];
 
 /* Registered file system operations - This is specific to a file system type. Currently, only FAT and pipe is used. */
-/* Pipe as its own fops which is not put in this table. */
+/* Pipe has its own fops which is not put in this table. */
 struct file_operations *registered_fs_ops[MAX_FS_REGISTERED];
 
 /*
@@ -107,6 +108,10 @@ int vfs_get_gfd(int localfd)
 {
 	pcb_t *pcb = current()->pcb;
 	int gfd;
+
+	/* Basic validation of fd */
+	if (localfd < 0)
+		return -1;
 
 	mutex_lock(&vfs_lock);
 
@@ -228,7 +233,7 @@ struct file_operations *vfs_get_fops(uint32_t gfd) {
 	ASSERT(mutex_is_locked(&vfs_lock));
 
 	if (!vfs_is_valid_gfd(gfd))
-			return NULL;
+		return NULL;
 
 	return open_fds[gfd]->fops;
 }
@@ -565,23 +570,34 @@ int do_write(int fd, void *buffer, int count)
 }
 
 /**
- * @brief This function opens a file (currently, only regular and dir are supported)
+ * @brief This function opens a file. Not all file types are supported.
  */
 int do_open(const char *filename, int flags)
 {
 	int fd, gfd;
-	int type;
+	uint32_t type;
 	struct file_operations *fops;
 
 	mutex_lock(&vfs_lock);
-  	/* FIXME: Should find the mounted point regarding the path */
-	/* At the moment... */
-	fops = registered_fs_ops[0];
 
-	if (flags & O_DIRECTORY)
-		type = VFS_TYPE_DIR;
-	else
-		type = VFS_TYPE_FILE;
+	/* A filename starting with `/dev/' is considered a device. */
+	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
+
+		fops = dev_get_fops(filename + DEV_PREFIX_LEN, &type);
+		if (!fops) {
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+	}
+	else {
+		/* FIXME: Should find the mounted point regarding the path */
+		fops = registered_fs_ops[0];
+
+		if (flags & O_DIRECTORY)
+			type = VFS_TYPE_DIR;
+		else
+			type = VFS_TYPE_FILE;
+	}
 
 	/* vfs_open is already clean fops and open_fds */
 	fd = vfs_open(fops, type);
@@ -599,7 +615,7 @@ int do_open(const char *filename, int flags)
 	vfs_set_open_mode(gfd, flags);
 
 	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (registered_fs_ops[0]->open(gfd, filename))
+	if (fops->open && fops->open(gfd, filename))
 		goto open_failed;
 
 	mutex_unlock(&vfs_lock);
@@ -611,6 +627,7 @@ open_failed:
 	free(open_fds[gfd]);
 	open_fds[gfd] = NULL;
 	mutex_unlock(&vfs_lock);
+
 	return -1;
 }
 
@@ -847,22 +864,20 @@ static void vfs_gfd_init(void)
 
 	open_fds[STDIN]->val = STDIN;
 	open_fds[STDIN]->type = VFS_TYPE_IO;
+	open_fds[STDIN]->fops = &console_fops;
 
 	open_fds[STDOUT]->val = STDOUT;
-	open_fds[STDOUT]->val = VFS_TYPE_IO;
+	open_fds[STDOUT]->type = VFS_TYPE_IO;
+	open_fds[STDOUT]->fops = &console_fops;
 
 	open_fds[STDERR]->val = STDERR;
-	open_fds[STDERR]->val = VFS_TYPE_IO;
-
-	open_fds[STDIN]->fops = &console_fops;
-	open_fds[STDOUT]->fops = &console_fops;
+	open_fds[STDERR]->type = VFS_TYPE_IO;
 	open_fds[STDERR]->fops = &console_fops;
 
 	/* Ref counter updated to 1 on init */
 	open_fds[STDERR]->ref_count = 1;
 	open_fds[STDIN]->ref_count = 1;
 	open_fds[STDOUT]->ref_count = 1;
-
 }
 
 void vfs_init(void)
@@ -880,4 +895,3 @@ void vfs_init(void)
 
 	vfs_gfd_init();
 }
-

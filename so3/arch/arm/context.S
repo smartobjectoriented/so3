@@ -26,6 +26,7 @@
 #include <linkage.h>
 
 #define SYSCALL_EXEC_NR		2
+#define SYSCALL_WRITE_NR	5
 
 .global __switch_context
 .global __thread_prologue_kernel
@@ -38,6 +39,7 @@
 
 .global __mmu_switch
 .global __exec
+.global __write
 .global __save_context
 
 .extern thread_prologue
@@ -80,6 +82,19 @@ __exec:
 
   	mov r1, #0 		@ args = NULL
   	mov r2, #0 		@ envp = NULL
+
+	mov r10, #0  	@ We do not use errno
+
+  	swi 0
+
+  	ldmfd sp!, {r7, r10, r11, r12}
+
+  	mov	pc, lr
+
+@ write syscall used by the kernel to print a message in user mode (if exec() fails for example)
+__write:
+  	stmfd sp!, {r7, r10, r11, r12}
+  	mov	r7, #SYSCALL_WRITE_NR
 
 	mov r10, #0  	@ We do not use errno
 
