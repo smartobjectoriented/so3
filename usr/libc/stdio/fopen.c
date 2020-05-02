@@ -22,10 +22,12 @@ FILE *fopen(const char *restrict filename, const char *restrict mode)
 	fd = sys_open(filename, flags, 0666);
 	if (fd < 0) return 0;
 
-#if 0 /* Not supported yet */
+
 	if (flags & O_CLOEXEC)
+#if 0
 		__syscall(SYS_fcntl, fd, F_SETFD, FD_CLOEXEC);
-#endif /* 0 */
+#endif
+		sys_fcntl(fd, F_SETFD, (void *) FD_CLOEXEC);
 
 	f = __fdopen(fd, mode);
 	if (f) return f;

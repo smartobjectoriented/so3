@@ -138,6 +138,14 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			result = do_ioctl((int) r0, (unsigned long) r1, (unsigned long) r2);
 			break;
 
+		case SYSCALL_FCNTL:
+			result = do_fcntl((int) r0, (int) r1, (unsigned long) r2);
+			break;
+
+		case SYSCALL_LSEEK:
+			result = do_lseek((int) r0, (off_t) r1, (int) r2);
+			break;
+
 #ifdef CONFIG_IPC_PIPE
 		case SYSCALL_PIPE:
 			result = do_pipe((int *) r0);

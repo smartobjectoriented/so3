@@ -1,10 +1,13 @@
+
+#include <bits/alltypes.h>
+
 #include <elf.h>
-#include <poll.h>
+//#include <poll.h>
 #include <fcntl.h>
 #include <signal.h>
-#include "syscall.h"
-#include "atomic.h"
-#include "libc.h"
+#include <syscall.h>
+#include <atomic.h>
+#include <libc.h>
 
 void __init_tls(size_t *);
 
@@ -41,7 +44,9 @@ void __init_libc(char **envp, char *pn)
 	if (aux[AT_UID]==aux[AT_EUID] && aux[AT_GID]==aux[AT_EGID]
 		&& !aux[AT_SECURE]) return;
 
+#if 0 /* at the moment ... */
 	struct pollfd pfd[3] = { {.fd=0}, {.fd=1}, {.fd=2} };
+
 #ifdef SYS_poll
 	__syscall(SYS_poll, pfd, 3, 0);
 #else
@@ -50,7 +55,10 @@ void __init_libc(char **envp, char *pn)
 	for (i=0; i<3; i++) if (pfd[i].revents&POLLNVAL)
 		if (__sys_open("/dev/null", O_RDWR)<0)
 			a_crash();
+#endif /* 0 */
+
 	libc.secure = 1;
+
 }
 
 static void libc_start_init(void)
