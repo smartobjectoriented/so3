@@ -28,8 +28,6 @@
 extern u64 jiffies;
 extern u64 jiffies_ref;
 
-struct tcb;
-
 extern struct tcb *tcb_idle;
 
 void scheduler_init(void);
@@ -62,6 +60,11 @@ static inline struct tcb *current(void) {
 }
 
 struct tcb *current(void);
+
+static inline void reset_thread_timeout(void) {
+	current_thread->timeout = 0ull;
+}
+
 void remove_ready(struct tcb *tcb);
 
 void schedule_isr(void);

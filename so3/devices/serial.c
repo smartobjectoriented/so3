@@ -107,7 +107,6 @@ int serial_gwinsize(struct winsize *wsz)
 	if (serial_write(SERIAL_GWINSZ, 1) == 0) 
 		return -1;
 	
-
 	wsz->ws_row = serial_ops.get_byte(true);
 	wsz->ws_col = serial_ops.get_byte(true);
 

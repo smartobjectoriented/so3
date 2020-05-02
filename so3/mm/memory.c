@@ -24,6 +24,8 @@
 #include <process.h>
 #include <heap.h>
 
+#include <device/ramdev.h>
+
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
@@ -56,7 +58,7 @@ void frame_table_init(uint32_t frame_table_start) {
 	frame_table = (page_t *) __va(ft_phys);
 
 	/* Size of the available memory (without the kernel region) */
-	mem_info.avail_pages = (mem_info.size - (ft_phys - mem_info.phys_base)) >> PAGE_SHIFT;
+	mem_info.avail_pages = (mem_info.size - (ft_phys - mem_info.phys_base) - get_ramdev_size()) >> PAGE_SHIFT;
 
 	/* Determine the length of the frame table in bytes */
 	ft_length = mem_info.avail_pages * sizeof(page_t);

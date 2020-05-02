@@ -25,7 +25,7 @@
 #include <thread.h>
 #include <schedule.h>
 #include <elf-struct.h>
-#include <sync.h>
+#include <completion.h>
 #include <memory.h>
 #include <signal.h>
 #include <ptrace.h>
@@ -149,6 +149,7 @@ int proc_new_fd(pcb_t *pcb);
 void dump_proc(void);
 
 extern int __exec(const char *file);
+extern int __write(int fd, char *buffer, int count);
 
 int do_sbrk(int increment);
 

@@ -246,6 +246,7 @@ void devices_init(void) {
 	boot_stage = BOOT_STAGE_IRQ_INIT;
 
 	serial_init();
+
 	timer_dev_init();
 
 #ifdef CONFIG_ROOTFS_RAMDEV

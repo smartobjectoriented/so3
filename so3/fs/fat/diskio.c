@@ -154,7 +154,7 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	printk("IOCLT %d %p\n", cmd, buff);
+	DBG("IOCLT %d %p\n", cmd, buff);
 	/* As for now, this is not in use */
 	return 0 ;
 }

@@ -23,6 +23,7 @@
 #include <types.h>
 #include <stat.h>
 #include <dirent.h>
+
 #include <device/device.h>
 
 /* File access mode flags */
@@ -78,10 +79,12 @@
 /* Types of entry */
 #define VFS_TYPE_FILE		0
 #define VFS_TYPE_DIR		1
+
 #define VFS_TYPE_PIPE		2
 #define VFS_TYPE_IO		3	/* stdin/stdout/stderr */
 #define VFS_TYPE_FB		4	/* framebuffer device */
 #define VFS_TYPE_INPUT		5	/* input device (e.g. mouse) */
+#define VFS_TYPE_DEV_CHAR	6       /* Generic device character */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
@@ -97,8 +100,8 @@ struct file_operations {
 	int (*open)(int fd, const char *path);
 	int (*close)(int fd);
 	int (*read)(int fd, void *buffer, int count);
-	int (*write)(int fd, void *buffer, int count);
-	int (*lseek)(int fd, off_t off, int whence);
+	int (*write)(int fd, const void *buffer, int count);
+	off_t (*lseek)(int fd, off_t off, int whence);
 	int (*ioctl)(int fd, unsigned long cmd, unsigned long args);
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
@@ -130,7 +133,7 @@ struct fd {
 /* Syscall accessible from userspace */
 int do_open(const char *filename, int flags);
 int do_read(int fd, void *buffer, int count);
-int do_write(int fd, void *buffer, int count);
+int do_write(int fd, const void *buffer, int count);
 int do_readdir(int fd, char *buf, int len);
 void do_close(int fd);
 int do_dup(int oldfd);
@@ -138,6 +141,7 @@ int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
 void *do_mmap(size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
+int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */

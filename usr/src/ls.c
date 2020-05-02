@@ -22,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <dirent.h>
 
 /*
  * Main function of ls application.
@@ -47,8 +48,23 @@ int main(int argc, char **argv) {
 	if (stream == NULL)
 		exit(1);
 
-	while ((p_entry = readdir(stream)) != NULL)
-		printf("%s\n", p_entry->d_name);
+	while ((p_entry = readdir(stream)) != NULL) {
+		switch (p_entry->d_type) {
+
+		/* Directory entry */
+		case DT_DIR:
+			printf("%s/\n", p_entry->d_name);
+			break;
+
+		/* Regular entry */
+		case DT_REG:
+			printf("%s\n", p_entry->d_name);
+			break;
+
+		default:
+			break;
+		}
+	}
 
 	exit(0);
 }
