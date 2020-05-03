@@ -168,8 +168,8 @@ void fs_init(void)
 	lv_fs_drv_init(&drv);
 
 	drv.letter = 'S';			/* An uppercase letter to identify the drive */
-	drv.file_size = sizeof(int);		/* Size required to store a file object */
-	drv.rddir_size = sizeof(int);		/* Size required to store a directory object (used by dir_open/close/read) */
+	drv.file_size = sizeof(FILE*);		/* Size required to store a file object */
+	drv.rddir_size = sizeof(FILE*);		/* Size required to store a directory object (used by dir_open/close/read) */
 	drv.ready_cb = fs_ready_cb;		/* Callback to tell if the drive is ready to use */
 
 	drv.open_cb = fs_open_cb;		/* Callback to open a file */
@@ -197,22 +197,24 @@ bool fs_ready_cb(struct _lv_fs_drv_t *drv)
 
 lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode)
 {
-	int fd, flags;
+	FILE *fp;
+	int flags;
+
 	flags = mode & LV_FS_MODE_WR ? O_WRONLY : 0;
 	flags |= mode & LV_FS_MODE_RD ? O_RDONLY : 0;
 
-	fd = open(path, flags);
-	if (-1 == fd) {
+	fp = fopen(path, "r");
+	if (!fp) {
 		return LV_FS_RES_UNKNOWN;
 	}
 
-	*(int*)file_p = fd;
+	*((FILE **)file_p) = fp;
 	return LV_FS_RES_OK;
 }
 
 lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p)
 {
-	if (-1 == close(*(int*)file_p)) {
+	if (0 != fclose(*(FILE **)file_p)) {
 		return LV_FS_RES_UNKNOWN;
 	}
 
@@ -221,17 +223,22 @@ lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p)
 
 lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
 {
-	*br = read(*(int*)file_p, buf, btr);
+	*br = fread(buf, sizeof(uint8_t), btr, *(FILE **)file_p);
 	return LV_FS_RES_OK;
 }
 
 lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos)
 {
+	if (0 != fseek(*(FILE **)file_p, pos, SEEK_SET)) {
+		return LV_FS_RES_UNKNOWN;
+	}
+
 	return LV_FS_RES_OK;
 }
 
 lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 {
+	*pos_p = ftell(*(FILE **)file_p);
 	return LV_FS_RES_OK;
 }
 
