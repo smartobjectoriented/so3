@@ -26,6 +26,7 @@
 #include <linkage.h>
 
 #define SYSCALL_EXEC_NR		2
+#define SYSCALL_WRITE_NR	5
 
 .global __switch_context
 .global __thread_prologue_kernel
@@ -33,8 +34,12 @@
 .global __exec_prologue_user
 .global __thread_prologue_user_pre_launch
 
+.globl __get_syscall_args_ext
+.globl __get_syscall_arg
+
 .global __mmu_switch
 .global __exec
+.global __write
 .global __save_context
 
 .extern thread_prologue
@@ -47,6 +52,29 @@
 
 #endif
 
+@ Get the arguments of the syscall which are stored on the stack
+@ (greather than 4 args (r0-r3))
+@ r0 contains the number of args (0 = first argument on the stack,
+@ hence the fifth argument of the syscall, 1 = second arg. on the stack,
+@ hence the sixth arg., etc.
+@ Returns the value in r0 (according to the EABI)
+__get_syscall_stack_args:
+	ldr r0, [sp, #OFFSET_SP_USR]
+
+	mov pc, lr
+
+
+@ Get the additional arguments linked to the syscall.
+@ The ABI convention is described in crt0.S of the libc.
+@ r7 contains the syscall number
+@ r10 contains the address of the errno variable
+__get_syscall_args_ext:
+
+	str		r7, [r0]
+	str		r10, [r1]
+
+	mov 	pc, lr
+
 @ exec syscall used by the kernel to run the initial binary image (shell)
 __exec:
   	stmfd sp!, {r7, r10, r11, r12}
@@ -54,6 +82,19 @@ __exec:
 
   	mov r1, #0 		@ args = NULL
   	mov r2, #0 		@ envp = NULL
+
+	mov r10, #0  	@ We do not use errno
+
+  	swi 0
+
+  	ldmfd sp!, {r7, r10, r11, r12}
+
+  	mov	pc, lr
+
+@ write syscall used by the kernel to print a message in user mode (if exec() fails for example)
+__write:
+  	stmfd sp!, {r7, r10, r11, r12}
+  	mov	r7, #SYSCALL_WRITE_NR
 
 	mov r10, #0  	@ We do not use errno
 

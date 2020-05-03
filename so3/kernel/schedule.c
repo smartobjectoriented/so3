@@ -96,8 +96,16 @@ void preempt_enable(void) {
 void ready(tcb_t *tcb) {
 	uint32_t flags;
 	queue_thread_t *cur;
+	bool already_locked;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	/* We check if we are in a call path where the lock was already acquired.
+	 * These are rare cases where consistency check is performed before calling
+	 * ready() like waking up threads (see wake_up()).
+	 */
+	already_locked = (spin_is_locked(&schedule_lock) ? true : false);
+
+	if (!already_locked)
+		spin_lock_irqsave(&schedule_lock, flags);
 
 	tcb->state = THREAD_STATE_READY;
 
@@ -109,7 +117,8 @@ void ready(tcb_t *tcb) {
 	/* Insert the thread at the end of the list */
 	list_add_tail(&cur->list, &readyThreads);
 
-	spin_unlock_irqrestore(&schedule_lock, flags);
+	if (!already_locked)
+		spin_unlock_irqrestore(&schedule_lock, flags);
 }
 
 /*
@@ -191,10 +200,17 @@ void remove_zombie(struct tcb *tcb) {
 
 /*
  * Wake up a thread which is in waiting state.
- * If the thread passed as argument is not sleeping, we just call schedule().
+ * If the thread passed as argument is not sleeping, we just skip it.
  */
 void wake_up(struct tcb *tcb) {
-	ready(tcb);
+	uint32_t flags;
+
+	spin_lock_irqsave(&schedule_lock, flags);
+
+	if (tcb->state == THREAD_STATE_WAITING)
+		ready(tcb);
+
+	spin_unlock_irqrestore(&schedule_lock, flags);
 }
 
 /*

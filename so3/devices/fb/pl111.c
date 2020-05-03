@@ -92,11 +92,10 @@ struct file_operations pl111_fops = {
 	.mmap = mmap
 };
 
-struct reg_dev pl111_rdev = {
+struct classdev pl111_cdev = {
 	.class = DEV_CLASS_FB,
 	.type = VFS_TYPE_FB,
 	.fops = &pl111_fops,
-	.list = LIST_HEAD_INIT(pl111_rdev.list)
 };
 
 
@@ -125,7 +124,7 @@ int pl111_init(dev_t *dev)
 	iowrite32(dev->base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
 
 	/* Register the framebuffer so it can be accessed from user space. */
-	dev_register(&pl111_rdev);
+	devclass_register(dev, &pl111_cdev);
 
 	return 0;
 }

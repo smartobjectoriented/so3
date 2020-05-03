@@ -6,7 +6,6 @@ obj-y += 	main.o \
 		schedule.o \
 		mutex.o  \
 		spinlock.o \
-		sync.o \
 		syscalls.o \
 		timer.o 
 		

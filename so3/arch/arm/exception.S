@@ -39,7 +39,6 @@
 
 .globl _vectors
 .globl ret_from_fork
-.globl __get_syscall_args_ext
 .global __call_sig_handler
 
 .extern current_thread
@@ -268,31 +267,27 @@ ret_from_fork:
 	mov		r0, #0
 	b		__ret_from_fork
 
-
-@ Get the additional arguments linked to the syscall.
-@ The ABI convention is described in crt0.S of the libc.
-@ r7 contains the syscall number
-@ r10 contains the address of the errno variable
-__get_syscall_args_ext:
-
-	str		r7, [r0]
-	str		r10, [r1]
-
-	mov 	pc, lr
-
 .align  5
 prefetch_abort:
 
+	@ Call the C data abort handler with the following args:
+	@ r0 = IFAR, r1 = IFSR, r2 = LR
+
 	mrc	p15, 0, r0, c6, c0, 2		@ get IFAR
 	mrc	p15, 0, r1, c5, c0, 1		@ get IFSR
+	mov r2, lr
 
     b __prefetch_abort
 
 .align  5
 data_abort:
 
+	@ Call the C data abort handler with the following args:
+	@ r0 = FAR, r1 = FSR, r2 = LR
+
 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+	mov r2, lr
 
     b __data_abort
 

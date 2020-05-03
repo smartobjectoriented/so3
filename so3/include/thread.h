@@ -35,7 +35,6 @@
 
 #include <types.h>
 #include <list.h>
-#include <schedule.h>
 
 typedef enum { THREAD_STATE_NEW, THREAD_STATE_READY, THREAD_STATE_RUNNING, THREAD_STATE_WAITING, THREAD_STATE_ZOMBIE } thread_state_t;
 typedef unsigned int thread_t;
@@ -59,6 +58,9 @@ struct tcb {
 	/* Priority starts from 1 and as no limit at the moment. The prio 0 is used to indicate
 	 * the default priority is used. */
 	uint32_t prio;
+
+	/* Timeout value to keep track of possible scheduling after a timeout. */
+	int64_t timeout;
 
 	/* Threaded function */
 	int (*th_fn)(void *);
@@ -86,12 +88,12 @@ typedef int(*th_fn_t)(void *);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p, uint32_t prio);
+int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p);
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
 tcb_t *kernel_thread(int (*start_routine) (void *), const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio);
+tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
 
 int thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);

@@ -41,6 +41,10 @@ bool valid_ramdev(void) {
 	return (ramdev_size > 0);
 }
 
+uint32_t get_ramdev_size(void) {
+	return ramdev_size;
+}
+
 unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt, void *buffer) {
 	uint32_t bytes_count;
 

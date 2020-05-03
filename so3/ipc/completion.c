@@ -16,7 +16,7 @@
  *
  */
 
-#include <sync.h>
+#include <completion.h>
 #include <schedule.h>
 #include <spinlock.h>
 #include <softirq.h>
@@ -40,7 +40,7 @@ void wait_for_completion(completion_t *completion) {
 	q_tcb.tcb = current();
 
 	if (!completion->count) {
-		list_add_tail(&q_tcb.list, &completion->wait.tcb_list);
+		list_add_tail(&q_tcb.list, &completion->tcb_list);
 
 		while (!completion->count)
 			waiting();
@@ -63,8 +63,8 @@ void complete(completion_t *completion) {
 
 	completion->count++;
 
-	if (!list_empty(&completion->wait.tcb_list)) {
-		curr = list_first_entry(&completion->wait.tcb_list, queue_thread_t, list);
+	if (!list_empty(&completion->tcb_list)) {
+		curr = list_first_entry(&completion->tcb_list, queue_thread_t, list);
 		ready(curr->tcb);
 		list_del(&curr->list);
 	}
@@ -77,7 +77,10 @@ void complete(completion_t *completion) {
 }
 
 void init_completion(completion_t *completion) {
-	INIT_LIST_HEAD(&completion->wait.tcb_list);
+
+	memset(completion, 0, sizeof(completion_t));
+
+	INIT_LIST_HEAD(&completion->tcb_list);
 
 	completion->count = 0;
 }

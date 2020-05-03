@@ -133,7 +133,11 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 	int prop_len;
 	const fdt32_t *p;
 	const char *compat_str, *node_str;
-	int depth = 0;
+	static int depth = 0;
+
+	/* Need to reset the depth? */
+	if (offset == 0)
+		depth = 0;
 
 	/* Initialize dev_info structure to default/invalid values */
 	init_dev_info(info);
@@ -148,7 +152,6 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 	if (new_offset < 0)
 		/* No node found */
 		return -1;
-
 
 	if (depth > MAX_SUBNODE) {
 		printk("Cannot enter subnode, 4 subnode max \n");

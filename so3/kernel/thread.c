@@ -22,7 +22,7 @@
 #include <common.h>
 #include <heap.h>
 #include <errno.h>
-#include <sync.h>
+#include <completion.h>
 #include <schedule.h>
 #include <memory.h>
 #include <string.h>
@@ -472,9 +472,9 @@ tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, 
 
 /* Should not be called directly. Call create_process() or create_child_thread() instead. */
 /* FIXME: start_routine() should returns void * instead of int? */
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
 {
-	return thread_create(start_routine, name, arg, pcb, prio);
+	return thread_create(start_routine, name, arg, pcb, 0);
 }
 
 /*
@@ -611,7 +611,7 @@ int thread_join(tcb_t *tcb)
  * The function returns 0 if successful.
  */
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p, uint32_t prio) {
+int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p) {
 
 	uint32_t flags;
 	tcb_t *tcb;
@@ -629,7 +629,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 	}
 	sprintf(name, "thread_p%d", current()->pcb->pid);
 
-	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb, prio);
+	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
 
 	/* The name has been copied in thread creation */
 	free(name);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,21 +16,37 @@
  *
  */
 
-#ifndef DELAY_H
-#define DELAY_H
+#ifndef SEMAPHORE_H
+#define SEMAPHORE_H
 
-#include <common.h>
+#include <mutex.h>
+#include <list.h>
 #include <timer.h>
 
-/**
- * Active wait based on the jiffy_usec
- */
-void udelay(u64 us);
+#include <asm/atomic.h>
 
-void sleep(u64 ns);
-void msleep(uint32_t);
-void usleep(u64 us);
+typedef struct {
 
-void delay_init(void);
+	/* Semaphore counter */
+	uint32_t val;
 
-#endif /* DELAY_H */
+	/* Used to manage atomic operation during sleep/wakeup operation */
+	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
+	atomic_t count;
+
+	/* Protect access to internal variables */
+	mutex_t lock;
+
+	/* Waiting queue */
+	struct list_head tcb_list;
+
+} sem_t;
+
+void sem_up(sem_t *sem);
+void sem_down(sem_t *sem);
+int sem_timeddown(sem_t *sem, uint64_t timeout);
+
+void sem_init(sem_t *sem);
+
+#endif /* SEMAPHORE_H */
+

@@ -32,6 +32,7 @@
 static uint32_t *errno_addr = NULL;
 
 extern void __get_syscall_args_ext(uint32_t *syscall_no, uint32_t **__errno_addr);
+extern uint32_t __get_syscall_stack_args(uint32_t nr);
 
 extern void test_malloc(int test_no);
 
@@ -56,9 +57,11 @@ void set_errno(uint32_t val) {
 
 /*
  * Process syscalls according to the syscall number passed in r7.
+ * According to the ARM EABI, arguments are passed into registers r0-r3,
+ * and then on the (user) stack.
  */
 
-int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t r4)
+int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 {
 	int result = -1;
 	uint32_t syscall_no, *__errno_addr;
@@ -110,7 +113,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t 
 			break;
 
 		case SYSCALL_THREAD_CREATE:
-			result = do_thread_create((uint32_t *) r0, r1, r2, r3, r4);
+			result = do_thread_create((uint32_t *) r0, r1, r2, r3);
 			break;
 
 		case SYSCALL_THREAD_JOIN:
@@ -133,6 +136,14 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t 
 
 		case SYSCALL_IOCTL:
 			result = do_ioctl((int) r0, (unsigned long) r1, (unsigned long) r2);
+			break;
+
+		case SYSCALL_FCNTL:
+			result = do_fcntl((int) r0, (int) r1, (unsigned long) r2);
+			break;
+
+		case SYSCALL_LSEEK:
+			result = do_lseek((int) r0, (off_t) r1, (int) r2);
 			break;
 
 #ifdef CONFIG_IPC_PIPE

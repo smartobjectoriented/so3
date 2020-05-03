@@ -23,17 +23,12 @@
 #include <list.h>
 #include <schedule.h>
 
-struct waitqueue {
-	struct list_head tcb_list;
-};
-typedef struct waitqueue waitqueue_t;
-
 /*
  * Simple completion structure to perform synchronized operations between threads.
  */
 struct completion {
 	volatile uint32_t count;
-	waitqueue_t wait;
+	struct list_head tcb_list;
 };
 typedef struct completion completion_t;
 

@@ -32,6 +32,7 @@
 #include <dirent.h>
 
 #include <device/serial.h>
+
 #include <fat/fat.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -71,7 +72,7 @@ static int fd_serial_getc(int gfd, void *buffer, int count)
 }
 
 /* Send out to the serial console. */
-static int fd_serial_write(int gfd, void *buffer, int count)
+static int fd_serial_write(int gfd, const void *buffer, int count)
 {
 	int ret;
 
@@ -107,6 +108,10 @@ int vfs_get_gfd(int localfd)
 {
 	pcb_t *pcb = current()->pcb;
 	int gfd;
+
+	/* Basic validation of fd */
+	if (localfd < 0)
+		return -1;
 
 	mutex_lock(&vfs_lock);
 
@@ -520,7 +525,7 @@ int do_read(int fd, void *buffer, int count)
 /**
  * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
  */
-int do_write(int fd, void *buffer, int count)
+int do_write(int fd, const void *buffer, int count)
 {
 	int gfd;
 	int ret;
@@ -618,6 +623,7 @@ int do_open(const char *filename, int flags)
 	return fd;
 
 open_failed:
+
 	free(open_fds[gfd]);
 	open_fds[gfd] = NULL;
 	mutex_unlock(&vfs_lock);
@@ -878,6 +884,39 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
 	mutex_unlock(&vfs_lock);
 
 	return rc;
+}
+
+/*
+ * Implementation of standard lseek() syscall. It depends on the underlying
+ * device operations.
+ */
+off_t do_lseek(int fd, off_t off, int whence) {
+	int rc, gfd;
+	mutex_lock(&vfs_lock);
+
+	gfd = vfs_get_gfd(fd);
+
+	if (!vfs_is_valid_gfd(gfd)) {
+		set_errno(EINVAL);
+		mutex_unlock(&vfs_lock);
+		return -1;
+	}
+
+	rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+
+	mutex_unlock(&vfs_lock);
+
+	return rc;
+}
+
+/*
+ * Implementation of the fcntl syscall
+ */
+int do_fcntl(int fd, unsigned long cmd, unsigned long args) {
+
+	/* Not yet implemented */
+
+	return 0;
 }
 
 static void vfs_gfd_init(void)

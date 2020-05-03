@@ -172,7 +172,7 @@ static int pipe_write_byte(pipe_desc_t *pd, char value)
 	return 1; /* 1 bytes successfully written */
 }
 
-static int pipe_write(int gfd, void *buffer, int count)
+static int pipe_write(int gfd, const void *buffer, int count)
 {
 	int pos, ret;
 	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_privdata(gfd);

@@ -27,9 +27,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include <device/fdt/libfdt.h>
+
 #include <asm/setup.h>
 
-#include <device/fdt/libfdt.h>
 #include <device/device.h>
 #include <device/driver.h>
 #include <device/serial.h>
@@ -165,9 +166,12 @@ void parse_dtb(void) {
 }
 
 /* Register a device. Usually called from the device driver. */
-void dev_register(struct reg_dev *dev)
+void devclass_register(dev_t *dev, struct classdev *cdev)
 {
-	list_add(&dev->list, &registered_dev);
+	cdev->dev = dev;
+	INIT_LIST_HEAD(&cdev->list);
+
+	list_add(&cdev->list, &registered_dev);
 }
 
 /*
@@ -187,7 +191,7 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 	uint32_t dev_id, i;
 	char *dev_id_s;
 	size_t dev_class_len;
-	struct reg_dev *cur_dev;
+	struct classdev *cur_dev;
 
 	/* Find the beginning of the device id string. */
 	dev_id_s = (char *) filename;
@@ -195,7 +199,7 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 		dev_id_s++;
 
 	if (dev_id_s == filename) {
-		printk("%s: no device class specified.\n", __func__);
+		lprintk("%s: no device class specified.\n", __func__);
 		return NULL;
 	}
 
@@ -226,7 +230,8 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 		}
 	}
 
-	printk("%s: device not found.\n", __func__);
+	lprintk("%s: device not found.\n", __func__);
+
 	return NULL;
 }
 
@@ -241,6 +246,7 @@ void devices_init(void) {
 	boot_stage = BOOT_STAGE_IRQ_INIT;
 
 	serial_init();
+
 	timer_dev_init();
 
 #ifdef CONFIG_ROOTFS_RAMDEV

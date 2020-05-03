@@ -30,16 +30,19 @@ void dump_backtrace_entry(unsigned long where, unsigned long from)
         lprintk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
 }
 
-void __prefetch_abort(uint32_t ifar, uint32_t ifsr) {
-	lprintk("### prefetch abort exception ifar: %x ifsr: %x ###\n", ifar, ifsr);
+void __prefetch_abort(uint32_t ifar, uint32_t ifsr, uint32_t lr) {
+	lprintk("### prefetch abort exception ifar: %x ifsr: %x lr(r14)-8: %x ###\n", ifar, ifsr, lr-8);
 
 	__backtrace();
 
 	kernel_panic();
 }
 
-void __data_abort(uint32_t far, uint32_t fsr) {
-	lprintk("### abort exception far: %x fsr: %x ###\n", far, fsr);
+void __data_abort(uint32_t far, uint32_t fsr, uint32_t lr) {
+	lprintk("### abort exception far: %x fsr: %x lr(r14)-8: %x ###\n", far, fsr, lr-8);
+
+	__backtrace();
+
 	kernel_panic();
 }
 

@@ -23,6 +23,7 @@
 
 void lprintk(char *format, ...);
 void llprintk(char *format, ...);
+
 void printk(const char *fmt, ...);
 
 #ifndef __ASSEMBLY__

@@ -29,7 +29,7 @@
 
 void mutex_lock(struct mutex *lock) {
 	uint32_t flags;
-	struct mutex_waiter waiter;
+	queue_thread_t q_tcb;
 
 	/*
 	 * We get a spinlock with IRQs off after acquiring to avoid a race condition which
@@ -50,8 +50,6 @@ void mutex_lock(struct mutex *lock) {
 		goto skip_wait;
 	}
 
-	memset(&waiter, 0, sizeof(waiter));
-
 	for (;;) {
 		/*
 		 * Lets try to take the lock again - this is needed even if
@@ -60,15 +58,17 @@ void mutex_lock(struct mutex *lock) {
 		 * it's unlocked. Later on, if we sleep, this is the
 		 * operation that gives us the lock. We xchg it to -1, so
 		 * that when we release the lock, we properly wake up the
-		 * other waiters. We only attempt the xchg if the count is
-		 * non-negative in order to avoid unnecessary xchg operations:
+		 * other waiters.
+		 *
+		 * We only attempt the xchg if the count is non-negative in order
+		 * to avoid unnecessary xchg operations.
 		 */
 		if ((atomic_read(&lock->count) >= 0) && (atomic_xchg(&lock->count, -1) == 1))
 			break;
 
 		/* Add waiting tasks to the end of the waitqueue (FIFO) */
-		waiter.tcb = current();
-		list_add_tail(&waiter.list, &lock->waitqueue);
+		q_tcb.tcb = current();
+		list_add_tail(&q_tcb.list, &lock->tcb_list);
 
 		/* didn't get the lock, go to sleep. */
 		spin_unlock(&lock->wait_lock);
@@ -77,14 +77,18 @@ void mutex_lock(struct mutex *lock) {
 
 		BUG_ON(local_irq_is_enabled());
 
+		/* Since IRQs are off anyway, we are sure to re-acquire the lock (another thread could
+		 * try to acquire this mutex right after the other thread wakes up, but in this case it will be
+		 * blocked wince we have not finished unlocking (lock->count != 0).
+		 */
 		spin_lock(&lock->wait_lock);
 	}
 
 	/* set it to 0 if there are no waiters left */
-	if (likely(list_empty(&lock->waitqueue)))
+	if (likely(list_empty(&lock->tcb_list)))
 		atomic_set(&lock->count, 0);
 
-	skip_wait:
+skip_wait:
 
 	/* got the lock - cleanup and rejoice! */
 	lock->owner = current();
@@ -95,7 +99,7 @@ void mutex_lock(struct mutex *lock) {
 
 void mutex_unlock(struct mutex *lock) {
 
-	struct mutex_waiter *waiter = NULL;
+	queue_thread_t *curr;
 	bool need_resched = false;
 	uint32_t flags;
 
@@ -126,16 +130,15 @@ void mutex_unlock(struct mutex *lock) {
 
 	spin_lock_irqsave(&lock->wait_lock, flags);
 
-	if (!list_empty(&lock->waitqueue)) {
+	if (!list_empty(&lock->tcb_list)) {
 
 		/* Get the waiting the first entry of this associated waitqueue */
-		waiter = list_entry(lock->waitqueue.next, struct mutex_waiter, list);
-
+		curr = list_first_entry(&lock->tcb_list, queue_thread_t, list);
 		need_resched = true;
 
-		list_del(&waiter->list);
+		list_del(&curr->list);
 
-		wake_up(waiter->tcb);
+		ready(curr->tcb);
 
 	}
 
@@ -161,10 +164,11 @@ int do_mutex_unlock(mutex_t *lock) {
 
 void mutex_init(struct mutex *lock) {
 
+	memset(lock, 0, sizeof(struct mutex));
+
+	INIT_LIST_HEAD(&lock->tcb_list);
 	atomic_set(&lock->count, 1);
 	spin_lock_init(&lock->wait_lock);
-	INIT_LIST_HEAD(&lock->waitqueue);
-
 }
 
 
