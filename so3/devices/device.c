@@ -242,7 +242,7 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 	/* Loop through registered_dev. */
 	i = 0;
 	list_for_each_entry(cur_dev, &registered_dev, list) {
-lprintk("## registered: %s dev_id %d\n", cur_dev->class, dev_id);
+
 		/*
 		 * We compare the lengths and use strncmp to compare only the
 		 * device class part of `filename'.
