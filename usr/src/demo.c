@@ -41,37 +41,63 @@
 /* Pointer on the framebuffer. */
 static uint32_t *fbp;
 
-/* File descriptor of the mouse input device. */
+/* File descriptor of the mouse and keyboard input device. */
 static int mfd;
+static int kfd;
+
+/* Group for the keyboard. */
+static lv_group_t *keyboard_group;
+
 
 /* Function prototypes. */
+
 void fs_init(void);
 int fb_init(void);
+void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p);
+
 int mouse_init(void);
+bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data);
+
+int keyboard_init(void);
+bool my_keyboard_cb(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
+
 void create_ui(void);
 void *tick_routine (void *args);
-void my_fb_cb(lv_disp_drv_t * disp, const lv_area_t * area, lv_color_t * color_p);
-bool my_mouse_cb(lv_indev_drv_t * indev, lv_indev_data_t * data);
 
 /* File system driver functions. */
-bool fs_ready_cb(struct _lv_fs_drv_t * drv);
-lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t * drv, void * file_p, const char * path, lv_fs_mode_t mode);
-lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t * drv, void * file_p);
-lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br);
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t pos);
-lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p);
+bool fs_ready_cb(struct _lv_fs_drv_t *drv);
+lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode);
+lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p);
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos);
+lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 
 /* Mouse driver-related structures. */
 #define GET_STATE 0
 #define SET_SIZE  1
 
-struct mouse_state {
+struct ps2_mouse {
 	uint16_t x, y;
 	uint8_t left, right, middle;
 };
 
 struct display_res {
 	uint16_t h, v;
+};
+
+/* Keyboard driver-related structures. */
+#define GET_KEY 0
+
+struct ps2_key {
+	/* UTF-8 char */
+	uint32_t value;
+
+	/*
+	 * 1st bit -> whether key was pressed or released
+	 * 2nd bit -> whether the shift modifier was activated or not
+	 * 3rd bit -> indicates if the first scan codes was 0xE0
+	 */
+	uint8_t state;
 };
 
 /* Main code. */
@@ -83,11 +109,6 @@ int main(int argc, char **argv)
 
 	/* Initialisation of the framebuffer. */
 	if (fb_init()) {
-		return -1;
-	}
-
-	/* Initialisation of the mouse. */
-	if (mouse_init()) {
 		return -1;
 	}
 
@@ -107,21 +128,10 @@ int main(int argc, char **argv)
 	disp_drv.flush_cb = my_fb_cb;
 	lv_disp_drv_register(&disp_drv);
 
-	/*
-	 * Initialisation of an input driver, in our case for a mouse. Also set
-	 * a cursor image. We also set a callback function which will be called
-	 * by lvgl periodically. This function queries the mouse driver for the
-	 * xy coordinates and button states.
-	 */
-	lv_indev_drv_t indev_drv;
-	lv_indev_drv_init(&indev_drv);
-	indev_drv.type = LV_INDEV_TYPE_POINTER;
-	indev_drv.read_cb = my_mouse_cb;
-	lv_indev_t *mouse_indev = lv_indev_drv_register(&indev_drv);
-
-	lv_obj_t * cursor_obj =  lv_img_create(lv_disp_get_scr_act(NULL), NULL); // create object
-	lv_img_set_src(cursor_obj, LV_SYMBOL_PLUS);
-	lv_indev_set_cursor(mouse_indev, cursor_obj);
+	/* Initialisation of the mouse and keyboard. */
+	if (mouse_init() || keyboard_init()) {
+		return -1;
+	}
 
 	/* Creating the UI. */
 	create_ui();
@@ -180,12 +190,12 @@ void fs_init(void)
 	lv_fs_drv_register(&drv);
 }
 
-bool fs_ready_cb(struct _lv_fs_drv_t * drv)
+bool fs_ready_cb(struct _lv_fs_drv_t *drv)
 {
 	return true;
 }
 
-lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t * drv, void * file_p, const char * path, lv_fs_mode_t mode)
+lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode)
 {
 	int fd, flags;
 	flags = mode & LV_FS_MODE_WR ? O_WRONLY : 0;
@@ -200,7 +210,7 @@ lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t * drv, void * file_p, const char * pa
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t * drv, void * file_p)
+lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p)
 {
 	if (-1 == close(*(int*)file_p)) {
 		return LV_FS_RES_UNKNOWN;
@@ -209,18 +219,18 @@ lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t * drv, void * file_p)
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t * drv, void * file_p, void * buf, uint32_t btr, uint32_t * br)
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
 {
 	*br = read(*(int*)file_p, buf, btr);
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t pos)
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos)
 {
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t * drv, void * file_p, uint32_t * pos_p)
+lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 {
 	return LV_FS_RES_OK;
 }
@@ -251,7 +261,7 @@ int fb_init(void)
 }
 
 /* Framebuffer callback. TODO copy whole region? */
-void my_fb_cb(lv_disp_drv_t * disp, const lv_area_t * area, lv_color_t * color_p)
+void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
 	int32_t x, y;
 	for(y = area->y1; y <= area->y2; y++) {
@@ -292,28 +302,95 @@ int mouse_init(void)
 	ioctl(mfd, SET_SIZE, res);
 	free(res);
 
+	/*
+	 * Initialisation of an input driver, in our case for a mouse. Also set
+	 * a cursor image. We also set a callback function which will be called
+	 * by lvgl periodically. This function queries the mouse driver for the
+	 * xy coordinates and button states.
+	 */
+	lv_indev_drv_t mouse_drv;
+	lv_indev_drv_init(&mouse_drv);
+	mouse_drv.type = LV_INDEV_TYPE_POINTER;
+	mouse_drv.read_cb = my_mouse_cb;
+
+	lv_indev_t *mouse_dev = lv_indev_drv_register(&mouse_drv);
+	lv_obj_t *cursor_obj =  lv_img_create(lv_disp_get_scr_act(NULL), NULL);
+	lv_img_set_src(cursor_obj, LV_SYMBOL_PLUS);
+	lv_indev_set_cursor(mouse_dev, cursor_obj);
+
 	return 0;
 }
 
 /* Mouse callback. */
-bool my_mouse_cb(lv_indev_drv_t * indev, lv_indev_data_t * data)
+bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 {
 	/* Initialise once and place it in the heap. Not freed. */
-	static struct mouse_state *state = NULL;
-	if (!state) {
-		state = malloc(sizeof(struct mouse_state));
-		if (!state) {
+	static struct ps2_mouse *mouse = NULL;
+	if (!mouse) {
+		mouse = malloc(sizeof(struct ps2_mouse));
+		if (!mouse) {
 			printf("Insufficient memory.\n");
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	/* Retrieve mouse state from the driver. */
-	ioctl(mfd, GET_STATE, state);
+	ioctl(mfd, GET_STATE, mouse);
 
-	data->state = state->left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
-	data->point.x = state->x;
-	data->point.y = state->y;
+	data->state = mouse->left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+	data->point.x = mouse->x;
+	data->point.y = mouse->y;
+
+	return false;
+}
+
+/*
+ * Keyboard initialisation.
+ */
+int keyboard_init(void)
+{
+	kfd = open("/dev/input1", 0);
+	if (-1 == kfd) {
+		printf("Couldn't open input device.\n");
+		return -1;
+	}
+
+	/**
+	 * Initialisation of the keyboard input driver.
+	 */
+	lv_indev_drv_t keyboard_drv;
+	lv_indev_drv_init(&keyboard_drv);
+	keyboard_drv.type = LV_INDEV_TYPE_KEYPAD;
+	keyboard_drv.read_cb = my_keyboard_cb;
+
+	lv_indev_t *keyboard_dev = lv_indev_drv_register(&keyboard_drv);
+
+	keyboard_group = lv_group_create();
+	lv_indev_set_group(keyboard_dev, keyboard_group);
+
+	return 0;
+}
+
+/* Keyboard callback. */
+bool my_keyboard_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
+{
+	/* Initialise once and place it in the heap. Not freed. */
+	static struct ps2_key *key = NULL;
+	if (!key) {
+		key = malloc(sizeof(struct ps2_key));
+		if (!key) {
+			printf("Insufficient memory.\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	/* Retrieve mouse state from the driver. */
+	ioctl(kfd, GET_KEY, key);
+
+	if (key->value != 0) {
+		data->key = key->value;
+		data->state = key->state & 1;
+	}
 
 	return false;
 }
@@ -321,8 +398,7 @@ bool my_mouse_cb(lv_indev_drv_t * indev, lv_indev_data_t * data)
 /*
  * UI creation.
  */
-
-void create_tab1(lv_obj_t * parent)
+void create_tab1(lv_obj_t *parent)
 {
 	lv_page_set_scrl_layout(parent, LV_LAYOUT_PRETTY);
 
@@ -334,19 +410,19 @@ void create_tab1(lv_obj_t * parent)
 	h_style.body.padding.top = LV_DPI / 10;
 	h_style.body.padding.bottom = LV_DPI / 10;
 
-	lv_obj_t * h = lv_cont_create(parent, NULL);
+	lv_obj_t *h = lv_cont_create(parent, NULL);
 	lv_obj_set_style(h, &h_style);
 	lv_obj_set_click(h, false);
 	lv_cont_set_fit(h, LV_FIT_TIGHT);
 	lv_cont_set_layout(h, LV_LAYOUT_COL_M);
 
-	lv_obj_t * btn = lv_btn_create(h, NULL);
+	lv_obj_t *btn = lv_btn_create(h, NULL);
 	lv_btn_set_fit(btn, LV_FIT_TIGHT);
 	lv_btn_set_toggle(btn, false);
-	lv_obj_t * btn_label = lv_label_create(btn, NULL);
+	lv_obj_t *btn_label = lv_label_create(btn, NULL);
 	lv_label_set_text(btn_label, "Button");
 
-	lv_obj_t * img = lv_img_create(h, NULL);
+	lv_obj_t *img = lv_img_create(h, NULL);
 	lv_img_set_src(img, "S:/reds.bin");
 
 	btn = lv_btn_create(h, btn);
@@ -360,7 +436,7 @@ void create_tab1(lv_obj_t * parent)
 	btn_label = lv_label_create(btn, NULL);
 	lv_label_set_text(btn_label, "Inactive");
 
-	lv_obj_t * label = lv_label_create(h, NULL);
+	lv_obj_t *label = lv_label_create(h, NULL);
 	lv_label_set_text(label, "Primary");
 
 	label = lv_label_create(h, NULL);
@@ -369,14 +445,14 @@ void create_tab1(lv_obj_t * parent)
 	label = lv_label_create(h, NULL);
 	lv_label_set_text(label, "Hint");
 
-	static const char * btnm_str[] = {"1", "2", "3", LV_SYMBOL_OK, LV_SYMBOL_CLOSE, ""};
-	lv_obj_t * btnm = lv_btnm_create(h, NULL);
-	lv_obj_set_size(btnm, lv_disp_get_hor_res(NULL) / 4, 2 * LV_DPI / 3);
+	static const char *btnm_str[] = {"1", "2", "3", LV_SYMBOL_OK, LV_SYMBOL_CLOSE, ""};
+	lv_obj_t *btnm = lv_btnm_create(h, NULL);
+	lv_obj_set_size(btnm, lv_disp_get_hor_res(NULL) / 4, 2 *LV_DPI / 3);
 	lv_btnm_set_map(btnm, btnm_str);
 	lv_btnm_set_btn_ctrl_all(btnm, LV_BTNM_CTRL_TGL_ENABLE);
 	lv_btnm_set_one_toggle(btnm, true);
 
-	lv_obj_t * table = lv_table_create(h, NULL);
+	lv_obj_t *table = lv_table_create(h, NULL);
 	lv_table_set_col_cnt(table, 3);
 	lv_table_set_row_cnt(table, 4);
 	lv_table_set_col_width(table, 0, LV_DPI / 3);
@@ -405,25 +481,25 @@ void create_tab1(lv_obj_t * parent)
 
 	h = lv_cont_create(parent, h);
 
-	lv_obj_t * sw_h = lv_cont_create(h, NULL);
+	lv_obj_t *sw_h = lv_cont_create(h, NULL);
 	lv_cont_set_style(sw_h, LV_CONT_STYLE_MAIN, &lv_style_transp);
 	lv_cont_set_fit2(sw_h, LV_FIT_NONE, LV_FIT_TIGHT);
 	lv_obj_set_width(sw_h, LV_HOR_RES / 4);
 	lv_cont_set_layout(sw_h, LV_LAYOUT_PRETTY);
 
-	lv_obj_t * sw = lv_sw_create(sw_h, NULL);
+	lv_obj_t *sw = lv_sw_create(sw_h, NULL);
 	lv_sw_set_anim_time(sw, 250);
 
 	sw = lv_sw_create(sw_h, sw);
 	lv_sw_on(sw, LV_ANIM_OFF);
 
-	lv_obj_t * bar = lv_bar_create(h, NULL);
+	lv_obj_t *bar = lv_bar_create(h, NULL);
 	lv_bar_set_value(bar, 70, false);
 
-	lv_obj_t * slider = lv_slider_create(h, NULL);
+	lv_obj_t *slider = lv_slider_create(h, NULL);
 	lv_bar_set_value(slider, 70, false);
 
-	lv_obj_t * line = lv_line_create(h, NULL);
+	lv_obj_t *line = lv_line_create(h, NULL);
 	static lv_point_t line_p[2];
 	line_p[0].x = 0;
 	line_p[0].y = 0;
@@ -432,20 +508,20 @@ void create_tab1(lv_obj_t * parent)
 
 	lv_line_set_points(line, line_p, 2);
 
-	lv_obj_t * cb = lv_cb_create(h, NULL);
+	lv_obj_t *cb = lv_cb_create(h, NULL);
 
 	cb = lv_cb_create(h, cb);
 	lv_btn_set_state(cb, LV_BTN_STATE_TGL_REL);
 
-	lv_obj_t * ddlist = lv_ddlist_create(h, NULL);
+	lv_obj_t *ddlist = lv_ddlist_create(h, NULL);
 	lv_ddlist_set_fix_width(ddlist, lv_obj_get_width(ddlist) + LV_DPI / 2);   /*Make space for the arrow*/
 	lv_ddlist_set_draw_arrow(ddlist, true);
 
 	h = lv_cont_create(parent, h);
 
-	lv_obj_t * list = lv_list_create(h, NULL);
+	lv_obj_t *list = lv_list_create(h, NULL);
 	lv_obj_set_size(list, lv_disp_get_hor_res(NULL) / 4, lv_disp_get_ver_res(NULL) / 2);
-	lv_obj_t * list_btn;
+	lv_obj_t *list_btn;
 	list_btn = lv_list_add_btn(list, LV_SYMBOL_GPS,  "GPS");
 	lv_btn_set_toggle(list_btn, true);
 
@@ -460,21 +536,21 @@ void create_tab1(lv_obj_t * parent)
 	lv_list_add_btn(list, LV_SYMBOL_CUT,  "Cut");
 	lv_list_add_btn(list, LV_SYMBOL_COPY, "Copy");
 
-	lv_obj_t * roller = lv_roller_create(h, NULL);
+	lv_obj_t *roller = lv_roller_create(h, NULL);
 	lv_roller_set_options(roller, "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday", true);
 	lv_roller_set_selected(roller, 1, false);
 	lv_roller_set_visible_row_count(roller, 3);
 }
 
-void create_tab2(lv_obj_t * parent)
+void create_tab2(lv_obj_t *parent)
 {
 	lv_coord_t w = lv_page_get_scrl_width(parent);
 
-	lv_obj_t * chart = lv_chart_create(parent, NULL);
+	lv_obj_t *chart = lv_chart_create(parent, NULL);
 	lv_chart_set_type(chart, LV_CHART_TYPE_AREA);
 	lv_obj_set_size(chart, w / 3, lv_disp_get_ver_res(NULL) / 3);
 	lv_obj_set_pos(chart, LV_DPI / 10, LV_DPI / 10);
-	lv_chart_series_t * s1 = lv_chart_add_series(chart, LV_COLOR_RED);
+	lv_chart_series_t *s1 = lv_chart_add_series(chart, LV_COLOR_RED);
 	lv_chart_set_next(chart, s1, 30);
 	lv_chart_set_next(chart, s1, 20);
 	lv_chart_set_next(chart, s1, 10);
@@ -486,35 +562,36 @@ void create_tab2(lv_obj_t * parent)
 	lv_chart_set_next(chart, s1, 70);
 	lv_chart_set_next(chart, s1, 75);
 
-
-	lv_obj_t * gauge = lv_gauge_create(parent, NULL);
+	lv_obj_t *gauge = lv_gauge_create(parent, NULL);
 	lv_gauge_set_value(gauge, 0, 40);
 	lv_obj_set_size(gauge, w / 4, w / 4);
 	lv_obj_align(gauge, chart, LV_ALIGN_OUT_BOTTOM_LEFT, 0, LV_DPI / 4);
 
-
-	lv_obj_t * arc = lv_arc_create(parent, NULL);
+	lv_obj_t *arc = lv_arc_create(parent, NULL);
 	lv_obj_align(arc, gauge, LV_ALIGN_OUT_BOTTOM_MID, 0, LV_DPI / 8);
 
-	lv_obj_t * ta = lv_ta_create(parent, NULL);
+	lv_obj_t *ta = lv_ta_create(parent, NULL);
 	lv_obj_set_size(ta, w / 3, lv_disp_get_ver_res(NULL) / 4);
 	lv_obj_align(ta, NULL, LV_ALIGN_IN_TOP_RIGHT, -LV_DPI / 10, LV_DPI / 10);
 	lv_ta_set_cursor_type(ta, LV_CURSOR_BLOCK);
+	lv_ta_set_placeholder_text(ta, "Write your text here…");
+	lv_group_add_obj(keyboard_group, ta);
 
-	lv_obj_t * kb = lv_kb_create(parent, NULL);
-	lv_obj_set_size(kb, 2 * w / 3, lv_disp_get_ver_res(NULL) / 3);
+	lv_obj_t *kb = lv_kb_create(parent, NULL);
+	lv_obj_set_size(kb, 2 *w / 3, lv_disp_get_ver_res(NULL) / 3);
 	lv_obj_align(kb, ta, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, LV_DPI);
 	lv_kb_set_ta(kb, ta);
+	lv_group_add_obj(keyboard_group, kb);
 
-	lv_obj_t * loader = lv_preload_create(parent, NULL);
+	lv_obj_t *loader = lv_preload_create(parent, NULL);
 	lv_obj_align(loader, NULL, LV_ALIGN_CENTER, 0, - LV_DPI);
 }
 
-void create_tab3(lv_obj_t * parent)
+void create_tab3(lv_obj_t *parent)
 {
 	/*Create a Window*/
-	lv_obj_t * win = lv_win_create(parent, NULL);
-	lv_obj_t * win_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);
+	lv_obj_t *win = lv_win_create(parent, NULL);
+	lv_obj_t *win_btn = lv_win_add_btn(win, LV_SYMBOL_CLOSE);
 	lv_obj_set_event_cb(win_btn, lv_win_close_event_cb);
 	lv_win_add_btn(win, LV_SYMBOL_DOWN);
 	lv_obj_set_size(win, lv_disp_get_hor_res(NULL) / 2, lv_disp_get_ver_res(NULL) / 2);
@@ -523,25 +600,25 @@ void create_tab3(lv_obj_t * parent)
 
 
 	/*Create a Label in the Window*/
-	lv_obj_t * label = lv_label_create(win, NULL);
+	lv_obj_t *label = lv_label_create(win, NULL);
 	lv_label_set_text(label, "Label in the window");
 
 	/*Create a  Line meter in the Window*/
-	lv_obj_t * lmeter = lv_lmeter_create(win, NULL);
+	lv_obj_t *lmeter = lv_lmeter_create(win, NULL);
 	lv_obj_align(lmeter, label, LV_ALIGN_OUT_BOTTOM_LEFT, 0, LV_DPI / 2);
 	lv_lmeter_set_value(lmeter, 70);
 
 	/*Create a 2 LEDs in the Window*/
-	lv_obj_t * led1 = lv_led_create(win, NULL);
+	lv_obj_t *led1 = lv_led_create(win, NULL);
 	lv_obj_align(led1, lmeter, LV_ALIGN_OUT_RIGHT_MID, LV_DPI / 2, 0);
 	lv_led_on(led1);
 
-	lv_obj_t * led2 = lv_led_create(win, NULL);
+	lv_obj_t *led2 = lv_led_create(win, NULL);
 	lv_obj_align(led2, led1, LV_ALIGN_OUT_RIGHT_MID, LV_DPI / 2, 0);
 	lv_led_off(led2);
 
 	/*Create a Page*/
-	lv_obj_t * page = lv_page_create(parent, NULL);
+	lv_obj_t *page = lv_page_create(parent, NULL);
 	lv_obj_set_size(page, lv_disp_get_hor_res(NULL) / 3, lv_disp_get_ver_res(NULL) / 2);
 	lv_obj_set_top(page, true);
 	lv_obj_align(page, win, LV_ALIGN_IN_TOP_RIGHT,  LV_DPI, LV_DPI);
@@ -560,7 +637,7 @@ void create_tab3(lv_obj_t * parent)
 			"per duis explicari at. Simul mediocritatem mei et.");
 
 	/*Create a Calendar*/
-	lv_obj_t * cal = lv_calendar_create(parent, NULL);
+	lv_obj_t *cal = lv_calendar_create(parent, NULL);
 	lv_obj_set_size(cal, 5 * LV_DPI / 2, 5 * LV_DPI / 2);
 	lv_obj_align(cal, page, LV_ALIGN_OUT_RIGHT_TOP, -LV_DPI / 2, LV_DPI / 3);
 	lv_obj_set_top(cal, true);
@@ -579,8 +656,8 @@ void create_tab3(lv_obj_t * parent)
 	lv_calendar_set_showed_date(cal, &highlighted_days[0]);
 
 	/*Create a Message box*/
-	static const char * mbox_btn_map[] = {" ", "Got it!", " ", ""};
-	lv_obj_t * mbox = lv_mbox_create(parent, NULL);
+	static const char *mbox_btn_map[] = {" ", "Got it!", " ", ""};
+	lv_obj_t *mbox = lv_mbox_create(parent, NULL);
 	lv_mbox_set_text(mbox, "Click on the window or the page to bring it to the foreground");
 	lv_mbox_add_btns(mbox, mbox_btn_map);
 	lv_btnm_set_btn_ctrl(lv_mbox_get_btnm(mbox), 0, LV_BTNM_CTRL_HIDDEN);
@@ -591,14 +668,14 @@ void create_tab3(lv_obj_t * parent)
 
 void create_ui()
 {
-	lv_obj_t * scr = lv_cont_create(NULL, NULL);
+	lv_obj_t *scr = lv_cont_create(NULL, NULL);
 	lv_disp_load_scr(scr);
 
-	lv_obj_t * tv = lv_tabview_create(scr, NULL);
+	lv_obj_t *tv = lv_tabview_create(scr, NULL);
 	lv_obj_set_size(tv, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
-	lv_obj_t * tab1 = lv_tabview_add_tab(tv, "Tab 1");
-	lv_obj_t * tab2 = lv_tabview_add_tab(tv, "Tab 2");
-	lv_obj_t * tab3 = lv_tabview_add_tab(tv, "Tab 3");
+	lv_obj_t *tab1 = lv_tabview_add_tab(tv, "Tab 1");
+	lv_obj_t *tab2 = lv_tabview_add_tab(tv, "Tab 2");
+	lv_obj_t *tab3 = lv_tabview_add_tab(tv, "Tab 3");
 
 	create_tab1(tab1);
 	create_tab2(tab2);
