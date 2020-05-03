@@ -4,7 +4,6 @@
 *.tmp*
 *.log
 *.ko
-*.mk
 *.builtin
 *.dtb
 *.su
