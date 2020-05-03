@@ -26,6 +26,7 @@
 #include <list.h>
 #include <errno.h>
 #include <ctype.h>
+#include <vfs.h>
 
 #include <device/fdt/libfdt.h>
 
@@ -165,6 +166,29 @@ void parse_dtb(void) {
 	free(dev);
 }
 
+/*
+ * Get the device id of a specific fd.
+ * Returns by-default id 0 if no number is specified at the end of the class name.
+ */
+int devclass_get_id(int fd) {
+	char *pos;
+	int val;
+
+	pos = vfs_get_filename(fd);
+
+	while (*pos) {
+	    if (isdigit(*pos)) {
+	        /* Found a number */
+	        val = simple_strtoul(pos, NULL, 10);
+	        return val;
+	    } else
+	        /* Otherwise, move on to the next character. */
+	        pos++;
+	}
+
+	return -1;
+}
+
 /* Register a device. Usually called from the device driver. */
 void devclass_register(dev_t *dev, struct classdev *cdev)
 {
@@ -195,7 +219,7 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 
 	/* Find the beginning of the device id string. */
 	dev_id_s = (char *) filename;
-	while (islower(*dev_id_s))
+	while (*dev_id_s && !isdigit(*dev_id_s))
 		dev_id_s++;
 
 	if (dev_id_s == filename) {
@@ -207,7 +231,10 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 	 * Get the device id. If dev_id_s is NULL then 0 should be returned.
 	 * TODO simple_strtox functions are deprecated.
 	 */
-	dev_id = (uint32_t) simple_strtoul(dev_id_s, NULL, 10);
+	if (*dev_id_s)
+		dev_id = (uint32_t) simple_strtoul(dev_id_s, NULL, 10);
+	else
+		dev_id = 0;
 
 	/* Get the device class length. */
 	dev_class_len = dev_id_s - filename;
@@ -215,15 +242,14 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 	/* Loop through registered_dev. */
 	i = 0;
 	list_for_each_entry(cur_dev, &registered_dev, list) {
-
+lprintk("## registered: %s dev_id %d\n", cur_dev->class, dev_id);
 		/*
 		 * We compare the lengths and use strncmp to compare only the
 		 * device class part of `filename'.
 		 */
-		if (strlen(cur_dev->class) == dev_class_len
-			&& !strncmp(filename, cur_dev->class, dev_class_len)) {
+		if ((strlen(cur_dev->class) == dev_class_len) && !strncmp(filename, cur_dev->class, dev_class_len)) {
 
-			if (dev_id == i++) {
+			if ((dev_id == i++) || ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end))) {
 				*vfs_type = cur_dev->type;
 				return cur_dev->fops;
 			}

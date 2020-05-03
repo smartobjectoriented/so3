@@ -112,4 +112,9 @@
 
 		status = "ok";
 	};
+
+	mydev {
+		compatible = "arm,mydev";
+		status = "ok";
+	};
 };

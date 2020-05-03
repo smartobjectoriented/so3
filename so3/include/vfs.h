@@ -113,6 +113,10 @@ struct file_operations {
 };
 
 struct fd {
+
+	/* Filename */
+	char *filename;
+
 	/*  FD number */
 	uint32_t val;
 	uint32_t flags_operating_mode;
@@ -125,6 +129,7 @@ struct fd {
 
 	/* List of callbacks */
 	struct file_operations *fops;
+
 	/* Private data of fd */
 	void *priv;
 };
@@ -143,11 +148,12 @@ int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */
+char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
 struct file_operations *vfs_get_fops(uint32_t gfd);
 int vfs_refcount(int gfd);
 void vfs_init(void);
-int vfs_open(struct file_operations *fops, uint32_t type);
+int vfs_open(const char *filename, struct file_operations *fops, uint32_t type);
 int vfs_close(int gfd);
 void vfs_set_privdata(int gfd, void *data);
 void *vfs_get_privdata(int gfd);

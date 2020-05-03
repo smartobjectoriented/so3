@@ -226,6 +226,14 @@ int vfs_get_type(int gfd)
 }
 
 /*
+ * Get the filename associated to a file descriptor
+ */
+char *vfs_get_filename(int gfd)
+{
+	return open_fds[gfd]->filename;
+}
+
+/*
  * Get the reference to the fops associated to a gfd.
  */
 struct file_operations *vfs_get_fops(uint32_t gfd) {
@@ -246,7 +254,7 @@ struct file_operations *vfs_get_fops(uint32_t gfd) {
  * @param fd: This is the index on the open_fds
  * @return a new (local) fd for the running process
  */
-int vfs_open(struct file_operations *fops, uint32_t type)
+int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 {
 	int gfd, fd;
 
@@ -273,6 +281,18 @@ int vfs_open(struct file_operations *fops, uint32_t type)
 	}
 
 	memset(open_fds[gfd], 0, sizeof(struct fd));
+
+	/* Store the filename */
+	if (filename) {
+		open_fds[gfd]->filename = malloc(strlen(filename)+1);
+		if (!open_fds[gfd]) {
+			printk("%s: failed to allocate memory\n", __func__);
+			set_errno(ENOMEM);
+			goto vfs_open_failed;
+		}
+
+		strcpy(open_fds[gfd]->filename, filename);
+	}
 
 	open_fds[gfd]->fops = fops;
 	open_fds[gfd]->type = type;
@@ -301,7 +321,7 @@ fs_open_failed:
 	open_fds[gfd] = NULL;
 
 vfs_open_failed:
-	free(fops);
+
 	mutex_unlock(&vfs_lock);
 	return -1;
 }
@@ -600,7 +620,7 @@ int do_open(const char *filename, int flags)
 	}
 
 	/* vfs_open is already clean fops and open_fds */
-	fd = vfs_open(fops, type);
+	fd = vfs_open(filename, fops, type);
 
 	if (fd < 0) {
 		/* fd already open */
@@ -724,6 +744,9 @@ void do_close(int fd)
 		if (open_fds[gfd]->fops->close)
 			open_fds[gfd]->fops->close(gfd);
 
+		if (open_fds[gfd]->filename)
+			free(open_fds[gfd]->filename);
+
 		free(open_fds[gfd]);
 
 		open_fds[gfd] = NULL;
@@ -841,7 +864,12 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return -1;
 	}
 
-	rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
+	if (open_fds[gfd]->fops->ioctl)
+		rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
+	else {
+		set_errno(EPERM);
+		rc = -1;
+	}
 
 	mutex_unlock(&vfs_lock);
 
