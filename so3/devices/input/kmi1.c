@@ -56,11 +56,10 @@ struct file_operations pl050_mouse_fops = {
 
 /* Device info. */
 dev_t pl050_mouse;
-struct reg_dev pl050_mouse_rdev = {
+struct classdev pl050_mouse_cdev = {
 	.class = DEV_CLASS_INPUT,
 	.type = VFS_TYPE_INPUT,
 	.fops = &pl050_mouse_fops,
-	.list = LIST_HEAD_INIT(pl050_mouse_rdev.list)
 };
 
 /*
@@ -104,7 +103,7 @@ irq_return_t pl050_int_mouse(int irq, void *dummy)
 
 int pl050_init_mouse(dev_t *dev)
 {
-	int res = pl050_init(dev, &pl050_mouse, &pl050_mouse_rdev, pl050_int_mouse);
+	int res = pl050_init(dev, &pl050_mouse, &pl050_mouse_cdev, pl050_int_mouse);
 	if (0 != res) {
 		return res;
 	}

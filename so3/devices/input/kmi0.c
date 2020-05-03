@@ -45,11 +45,10 @@ struct file_operations pl050_keyboard_fops = {
 
 dev_t pl050_keyboard;
 
-struct reg_dev pl050_keyboard_rdev = {
+struct classdev pl050_keyboard_cdev = {
 	.class = DEV_CLASS_INPUT,
 	.type = VFS_TYPE_INPUT,
 	.fops = &pl050_keyboard_fops,
-	.list = LIST_HEAD_INIT(pl050_keyboard_rdev.list)
 };
 
 struct ps2_key last_key = {
@@ -98,7 +97,7 @@ irq_return_t pl050_int_keyboard(int irq, void *dummy)
 
 int pl050_init_keyboard(dev_t *dev)
 {
-	return pl050_init(dev, &pl050_keyboard, &pl050_keyboard_rdev, pl050_int_keyboard);
+	return pl050_init(dev, &pl050_keyboard, &pl050_keyboard_cdev, pl050_int_keyboard);
 }
 
 int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)

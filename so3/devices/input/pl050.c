@@ -51,7 +51,7 @@ void pl050_write(dev_t *dev, uint8_t data)
  * Initialisation of the PL050 Keyboard/Mouse Interface.
  * Linux driver: input/serio/ambakmi.c
  */
-int pl050_init(dev_t *dev, dev_t *dev_copy, struct reg_dev *rdev, irq_return_t (*isr)(int, void *))
+int pl050_init(dev_t *dev, dev_t *dev_copy, struct classdev *cdev, irq_return_t (*isr)(int, void *))
 {
 	/* Keep a reference to the device structure. */
 	memcpy(dev_copy, dev, sizeof(dev_t));
@@ -66,7 +66,7 @@ int pl050_init(dev_t *dev, dev_t *dev_copy, struct reg_dev *rdev, irq_return_t (
 	irq_bind(dev->irq, isr, NULL, NULL);
 
 	/* Register the input device so it can be accessed from user space. */
-	dev_register(rdev);
+	devclass_register(dev, cdev);
 
 	return 0;
 }
