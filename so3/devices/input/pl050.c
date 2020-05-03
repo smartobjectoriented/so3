@@ -17,11 +17,11 @@
  */
 
 /*
- * This is a driver for the PL050. The PL050 is a controller for both the mouse
- * and the keyboard. The differences are the base addresses and the interrupt
- * numbers.
+ * This is a driver for the PL050 controller. There are two such controllers on
+ * the Versatile Express board, one for the mouse and one for the keyboard. The
+ * differences are the base addresses and the interrupt numbers.
  *
- * We currently only use it for the mouse.
+ * kmi0.c is the driver for the keyboard and kmi1.c for the mouse.
  *
  * Documentation:
  *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
@@ -31,7 +31,6 @@
 #include <printk.h>
 #include <vfs.h>
 #include <asm/io.h>
-#include <device/input/ps2.h>
 #include <device/input/pl050.h>
 
 

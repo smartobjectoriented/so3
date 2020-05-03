@@ -18,15 +18,15 @@
 
 #include <types.h>
 
-/* PS2 packet byte indexes. */
+/* Mouse packet byte indexes. */
 #define PS2_STATE 0
 #define PS2_X     1
 #define PS2_Y     2
 
-/* PS/2 commands. */
+/* Mouse commands. */
 #define EN_PKT_STREAM 0xf4
 
-/* First packet byte masks. */
+/* Mouse state packet byte masks. */
 #define Y_OF (1 << 7)
 #define X_OF (1 << 6)
 #define Y_BS (1 << 5)
@@ -36,10 +36,34 @@
 #define BR   (1 << 1)
 #define BL   (1 << 0)
 
+/* Keyboard bytes */
+#define KEY_LSH 0x12
+#define KEY_RSH 0x59
+#define KEY_EXT 0xe0
+#define KEY_REL 0xf0
 
-struct mouse_state {
+/* Keyboard masks */
+#define KEY_ST_PRESSED  (1 << 0)
+#define KEY_ST_SHIFT    (1 << 1)
+#define KEY_ST_EXTENDED (1 << 2)
+
+
+struct ps2_mouse {
 	int16_t x, y;
 	uint8_t left, right, middle;
 };
 
-void get_ps2_state(uint8_t *packet, struct mouse_state *, uint16_t max_x, uint16_t max_y);
+struct ps2_key {
+	/* UTF-8 char */
+	uint32_t value;
+
+	/*
+	 * 1st bit -> whether key was pressed or released
+	 * 2nd bit -> whether the shift modifier was activated or not
+	 * 3rd bit -> indicates if the first scan codes was 0xE0
+	 */
+	uint8_t state;
+};
+
+void get_mouse_state(uint8_t *packet, struct ps2_mouse *, uint16_t max_x, uint16_t max_y);
+void get_kb_key(uint8_t *packet, uint8_t len, struct ps2_key *);

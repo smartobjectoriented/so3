@@ -126,6 +126,18 @@
 	/* PL050 PS2 Keyboard/Mouse Interface
 	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
 	 */
+	kmi@1c060000 { /* keyboard */
+		compatible = "arm,pl050,keyboard";
+		reg = <0x1c060000 0x100>;
+		interrupt-parent = <&gic>;
+		interrupts = <44>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
 	kmi@1c070000 { /* mouse */
 		compatible = "arm,pl050,mouse";
 		reg = <0x1c070000 0x100>;

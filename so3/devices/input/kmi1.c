@@ -16,6 +16,10 @@
  *
  */
 
+/*
+ * Driver for the mouse (see pl050.c).
+ */
+
 #include <vfs.h>
 #include <asm/io.h>
 #include <device/driver.h>
@@ -35,7 +39,7 @@ static struct display_res {
 } res = { .h = 0xffff, .v = 0xffff };
 
 /* Defines the mouse position and button states. */
-static struct mouse_state state = {
+struct ps2_mouse state = {
 	.x = 0, .y = 0,
 	.left = 0, .right = 0, .middle = 0
 };
@@ -44,19 +48,19 @@ static struct mouse_state state = {
 #define GET_STATE 0
 #define SET_SIZE  1
 
-int ioctl(int fd, unsigned long cmd, unsigned long args);
+int ioctl_mouse(int fd, unsigned long cmd, unsigned long args);
 
- struct file_operations pl050_fops = {
-	.ioctl = ioctl
+struct file_operations pl050_mouse_fops = {
+	.ioctl = ioctl_mouse
 };
 
 /* Device info. */
-static dev_t pl050_mouse;
- struct reg_dev pl050_rdev = {
+dev_t pl050_mouse;
+struct reg_dev pl050_mouse_rdev = {
 	.class = DEV_CLASS_INPUT,
 	.type = VFS_TYPE_INPUT,
-	.fops = &pl050_fops,
-	.list = LIST_HEAD_INIT(pl050_rdev.list)
+	.fops = &pl050_mouse_fops,
+	.list = LIST_HEAD_INIT(pl050_mouse_rdev.list)
 };
 
 /*
@@ -92,19 +96,18 @@ irq_return_t pl050_int_mouse(int irq, void *dummy)
 
 	/* Set mouse coordinates and button states. */
 	if (i == 3) {
-		get_ps2_state(packet, &state, res.h, res.v);
+		get_mouse_state(packet, &state, res.h, res.v);
 	}
 
 	return IRQ_COMPLETED;
 }
 
-/*
- * Initialisation of the PL050 Keyboard/Mouse Interface.
- * Linux driver: input/serio/ambakmi.c
- */
 int pl050_init_mouse(dev_t *dev)
 {
-	pl050_init(dev, &pl050_mouse, &pl050_rdev, pl050_int_mouse);
+	int res = pl050_init(dev, &pl050_mouse, &pl050_mouse_rdev, pl050_int_mouse);
+	if (0 != res) {
+		return res;
+	}
 
 	/* Tell the mouse to send PS/2 packets when moving. */
 	pl050_write(&pl050_mouse, EN_PKT_STREAM);
@@ -112,18 +115,13 @@ int pl050_init_mouse(dev_t *dev)
 	return 0;
 }
 
-/* Mouse ioctl. */
-int ioctl(int fd, unsigned long cmd, unsigned long args)
+int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
 {
-	static struct mouse_state *s;
-	static struct display_res *r;
-
 	switch (cmd) {
 
 	case GET_STATE:
 		/* Return the mouse coordinates and button states. */
-		s = (struct mouse_state *) args;
-		*s = state;
+		*((struct ps2_mouse *) args) = state;
 
 		/* Reset the button states. */
 		state.left = 0;
@@ -133,8 +131,7 @@ int ioctl(int fd, unsigned long cmd, unsigned long args)
 
 	case SET_SIZE:
 		/* Set the display maximum size. */
-		r = (struct display_res *) args;
-		res = *r;
+		res = *((struct display_res *) args);
 		break;
 
 	default:
