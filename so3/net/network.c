@@ -112,6 +112,32 @@ struct ifreq2 {
     } ifr_ifru;
 };
 
+
+// TODO
+
+struct sockaddr_in_usr {
+    u16 sin_family;
+    in_port_t sin_port;
+    struct in_addr sin_addr;
+    uint8_t sin_zero[8];
+};
+
+/**
+ * Adapt a userspace sockaddr to a lwip one.
+ * Iwip sockaddr have a sa_len field as first byte
+ * @param usr
+ * @param lwip
+ */
+void user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockaddr_in *lwip) {
+
+    memset(lwip, 0, sizeof(struct sockaddr));
+
+    lwip->sin_len = sizeof(struct sockaddr);
+    lwip->sin_family = usr->sin_family;
+    lwip->sin_port = usr->sin_port;
+    lwip->sin_addr = usr->sin_addr;
+}
+
 // TODO
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
     int lwip_fd = get_lwip_fd(fd);
@@ -350,6 +376,11 @@ int do_socket(int domain, int type, int protocol) {
     lwip_fd = lwip_socket(domain, type, protocol);
 
 
+    if(lwip_fd < 0){
+        do_close(fd);
+        return lwip_fd;
+    }
+
     // TODO check fd ok
     lwip_fds[gfd] = lwip_fd;
 
@@ -397,13 +428,36 @@ int do_send(int sockfd, const void *dataptr, size_t size, int flags) {
 
     return lwip_send(lwip_fd, dataptr, size, flags);
 }
+/*
+struct sockaddr_in {
+    u8_t            sin_len; //8
+    sa_family_t     sin_family; //8
+    in_port_t       sin_port; //16
+    struct in_addr  sin_addr; //32
+#define SIN_ZERO_LEN 8
+    char            sin_zero[SIN_ZERO_LEN];
+};*/
+
+/**
+struct sockaddr_in {
+	sa_family_t sin_family;
+	in_port_t sin_port;
+	struct in_addr sin_addr;
+	uint8_t sin_zero[8];
+};
+ */
+
+
 
 int do_sendto(int sockfd, const void *dataptr, size_t size, int flags,
               const struct sockaddr *to, socklen_t tolen) {
-
+    struct sockaddr_in to_lwip;
     int lwip_fd = get_lwip_fd(sockfd);
 
-    return lwip_sendto(lwip_fd, dataptr, size, flags, to, tolen);
+    user_to_lwip_sockadd((struct sockaddr_in_usr *)to, &to_lwip);
+
+
+    return lwip_sendto(lwip_fd, dataptr, size, flags, (struct sockaddr*)&to_lwip, tolen);
 }
 
 

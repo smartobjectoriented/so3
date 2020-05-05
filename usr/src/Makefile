@@ -1,5 +1,5 @@
 
-TARGETS     := echo sh ls more cat ifconfig #net
+TARGETS     := echo sh ls more cat ifconfig ping #net
 
 
 

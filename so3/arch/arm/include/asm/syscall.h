@@ -81,7 +81,7 @@
 #include <errno.h>
 #include <types.h>
 
-int syscall_handle(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+int syscall_handle(uint32_t, uint32_t, uint32_t, uint32_t);
 
 void set_errno(uint32_t val);
 #endif /* __ASSEMBLY__ */

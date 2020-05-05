@@ -316,8 +316,10 @@ static int smc911x_rx(struct netif *netif)
 
         if(buf != NULL) {
             data = (u32*)buf->payload;
-        } else {
+        } else { // TODO better
             printk("No buff %d\n", pktlen);
+            msleep(100);
+            continue;
         }
 
 

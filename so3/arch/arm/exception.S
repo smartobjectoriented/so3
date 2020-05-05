@@ -39,7 +39,6 @@
 
 .globl _vectors
 .globl ret_from_fork
-.globl __get_syscall_args_ext
 .global __call_sig_handler
 
 .extern current_thread
@@ -200,7 +199,6 @@ syscall_interrupt:
 	ldr		r0, [sp, #OFFSET_SP_USR]
 	ldr 	r1, .LCcurrent
 	ldr 	r1, [r1]
-
 	str 	r0, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
 
 	@ Restore r0-r2
@@ -267,18 +265,6 @@ __ret_from_fork:
 ret_from_fork:
 	mov		r0, #0
 	b		__ret_from_fork
-
-
-@ Get the additional arguments linked to the syscall.
-@ The ABI convention is described in crt0.S of the libc.
-@ r7 contains the syscall number
-@ r10 contains the address of the errno variable
-__get_syscall_args_ext:
-
-	str		r7, [r0]
-	str		r10, [r1]
-
-	mov 	pc, lr
 
 .align  5
 prefetch_abort:
@@ -419,9 +405,9 @@ irq:
 fiq:
     b  fiq
 
-.LCcurrent:
-	.word current_thread
-
 .LClog:
 	.word 0
+
+.LCcurrent:
+	.word current_thread
 

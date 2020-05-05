@@ -421,7 +421,8 @@ int sys_send(int socket_fd, void *buffer, int count, int flags);
  * Returns the number of byte written. On error, -1 is returned,
  * and errno is set appropriately.
  */
-int sys_sendto(int socket_fd, void *buffer, int count, struct sockaddr_in *si);
+//int sys_sendto(int socket_fd, void *buffer, int count, struct sockaddr_in *si);
+int sys_sendto(int fd, const void *buf, size_t len, int flags, const struct sockaddr *addr, socklen_t alen);
 
 /**
  * This system call is used to map a file (or a portion of it) to a memory buffer
