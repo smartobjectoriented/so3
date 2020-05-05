@@ -234,7 +234,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3, uint32_t 
             result = do_listen((int)r0, (int) r1);
             break;
         case SYSCALL_ACCEPT:
-            result = do_accept((int)r0, (const struct sockaddr*)r1, (socklen_t) r2);
+            result = do_accept((int)r0, (struct sockaddr*)r1, (socklen_t*) r2);
             break;
         case SYSCALL_CONNECT:
             result = do_connect((int)r0, (const struct sockaddr *)r1, (socklen_t) r2);
