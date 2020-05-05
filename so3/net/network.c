@@ -20,34 +20,7 @@
 #include <device/network.h>
 
 static void network_tcpip_done(void *args) {
-
-
     network_devices_init();
-    printk("done");
-
-    // TODO remove test code
-    /**struct sockaddr_in addr;
-
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_len = sizeof(addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = 90;
-    addr.sin_addr.s_addr = inet_addr("192.168.1.1");
-
-    int ret = 0;
-
-    int fd = do_socket(AF_INET, SOCK_STREAM, 0);
-    printk("%i", fd);
-
-    ret = do_connect(fd, (struct sockaddr *) &addr, sizeof(addr));
-    printk("%i", ret);
-
-    ret = do_write(fd, "test", 4);
-    printk("%i", ret);
-
-    do_close(fd);*/
-
-
 }
 
 
@@ -142,7 +115,8 @@ struct ifreq2 {
 // TODO
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
     int lwip_fd = get_lwip_fd(fd);
-    int id;
+    int id, index;
+    char* hwaddr;
     struct ifreq2* ifreq = NULL;
     struct netif* netif = NULL;
     struct sockaddr_in *addr = NULL;
@@ -169,7 +143,7 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
             }
 
 
-            // Lwip netid name is always 2 charsma followed by an id
+            // Lwip netid name is always 2 chars followed by an id
             sprintf(ifreq->ifrn_name, "%c%c%d",
                     netif->name[0],
                     netif->name[1],
@@ -184,7 +158,7 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
             }
             ifreq = (struct ifreq2*)args;
 
-            int index = netif_name_to_index(ifreq->ifrn_name);
+            index = netif_name_to_index(ifreq->ifrn_name);
 
             if(index == NETIF_NO_INDEX){
                 set_errno(EINVAL); //TODO change
@@ -211,7 +185,7 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args) {
             ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
             ifreq->ifr_ifru.ifru_addr.sa_len = 4; //IPV4
 
-            char* hwaddr = ifreq->ifr_ifru.ifru_hwaddr.sa_data;
+            hwaddr = ifreq->ifr_ifru.ifru_hwaddr.sa_data;
             hwaddr[0] = netif->hwaddr[0];
             hwaddr[1] = netif->hwaddr[1];
             hwaddr[2] = netif->hwaddr[2];

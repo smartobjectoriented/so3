@@ -123,35 +123,6 @@
 
 #include "smc911x.h"
 
-int smc911x_ioctl(int fd, unsigned long cmd, unsigned long args)
-{
-    switch (cmd) {
-
-        case 0:
-
-            break;
-        default:
-            /* Unknown command. */
-            return -1;
-    }
-
-    return 0;
-}
-
-
-struct file_operations smc911x_fops = {
-        .ioctl = smc911x_ioctl
-};
-
-struct reg_dev smc911x_rdev = {
-        .class = DEV_CLASS_NIC,
-        .type = VFS_TYPE_NIC,
-        .fops = &smc911x_fops,
-        .list = LIST_HEAD_INIT(smc911x_rdev.list)
-};
-
-
-
 
 u32 pkt_data_pull(eth_dev_t *dev, u32 addr) \
 	__attribute__ ((weak, alias ("smc911x_reg_read")));
@@ -205,9 +176,9 @@ static int smc911x_phy_reset(eth_dev_t *dev)
     reg |= PMT_CTRL_PHY_RST;
     smc911x_reg_write(dev, PMT_CTRL, reg);
 
-    //msleep(100);
+    msleep(100);
 
-    udelay(100*1000);
+   // udelay(100*1000);
 
     return 0;
 }
@@ -262,8 +233,6 @@ static void smc911x_enable(eth_dev_t *dev)
 
 static int smc911x_send(eth_dev_t *dev, void *packet, int length)
 {
-    static int i = 0;
-
     u32 *data = (u32*)packet;
     u32 tmplen;
     u32 status;
@@ -276,8 +245,6 @@ static int smc911x_send(eth_dev_t *dev, void *packet, int length)
 
     while (tmplen--)
     {
-        //char *little = (char*)data;
-        //printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
         pkt_data_push(dev, TX_DATA_FIFO, *data++);
     }
 
@@ -291,8 +258,6 @@ static int smc911x_send(eth_dev_t *dev, void *packet, int length)
     status = smc911x_reg_read(dev, TX_STATUS_FIFO) &
              (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
               TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
-
-    //printk("\nSend %i\n", i++);
 
     if (!status)
         return 0;
@@ -318,12 +283,11 @@ static int smc911x_rx(struct netif *netif)
 {
     eth_dev_t *dev = netif->state;
 
-
-    int i = 0;
-    //printk("RX1 %d\n", i++);
     u32 *data = NULL;
     u32 pktlen, tmplen;
-    u32 status, mask, cfg;
+    u32 status, pulled_data;
+
+    struct pbuf *buf;
 
 
 
@@ -334,93 +298,92 @@ static int smc911x_rx(struct netif *netif)
 
         if(status & RX_STS_ES){
             printk("dropped bad packet. Status: 0x%08x\n", status);
-            return;
+            return -1;
         }
 
 
         if(pktlen > ETHERNET_LAYER_2_MAX_LENGTH){
             printk("Dropped bad packet. Packet length can't exceed %d bytes, length was: %d bytes\n", ETHERNET_LAYER_2_MAX_LENGTH, pktlen);
-            return;
+            return -1;
         }
-
-        //printk("\nIn Len %d %d\n", pktlen, i++);
 
 
         smc911x_reg_write(dev, RX_CFG, 0);
 
         tmplen = (pktlen + 3) / 4;
 
-        struct pbuf *buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
+        buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
 
-        if(buf != NULL)
-        {
-            data = (u32)buf->payload;
-            //printk("Buff %d\n", pktlen);
+        if(buf != NULL) {
+            data = (u32*)buf->payload;
         } else {
-
             printk("No buff %d\n", pktlen);
         }
 
 
         while (tmplen--)
         {
-            u32 pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
-
-            //char *little = (char*)&pulled_data;
-            //printk("%02x%02x%02x%02x ", *(little++),*(little++),*(little++),*(little+0));
+            pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
 
             if(data != NULL){
-                *data = pulled_data;
-                data++;
+                *(data++) = pulled_data;
             }
         }
 
 
         if(buf != NULL)
             netif->input(buf, netif);
-
-        // TODO handle packet
-
     }
-
-    //printk("Received");
-
 
     return 0;
 }
 
+static irq_return_t smc911x_so3_interrupt_top(int irq, void *dummy){
+    struct netif* netif = (struct netif*)dummy;
+    eth_dev_t *dev = netif->state;
+    u32 mask;
+
+    if(!sem_timeddown(&dev->sem_read, 10000)){
+
+        // Disable frame interrupts
+        mask = smc911x_reg_read(dev, INT_EN);
+        smc911x_reg_write(dev, INT_EN, mask & ~(INT_EN_RSFL_EN | INT_EN_RSFF_EN));
+
+        // Process incoming frames
+        smc911x_rx(netif);
+
+        // Re-enable frame interrupts
+        smc911x_reg_write(dev, INT_EN, mask);
+        sem_up(&dev->sem_read);
+
+    }
+
+    return IRQ_COMPLETED;
+}
 
 static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 {
     struct netif* netif = (struct netif*)dummy;
     eth_dev_t *dev = netif->state;
-    u32 status, mask, cfg, timeout;
 
+    irq_return_t irq_return = IRQ_COMPLETED;
+    u32 status, mask, timeout;
 
+    // Disable interrupts
     mask = smc911x_reg_read(dev, INT_EN);
     smc911x_reg_write(dev, INT_EN, 0);
 
-
-    cfg = smc911x_reg_read(dev, INT_CFG);
-
-    /*if(cfg)
-        printk("caca %08x\n", cfg);*/
 
     timeout = 8;
 
     do{
 
         status = smc911x_reg_read(dev, INT_STS);
-        //printk("%08x\n", status);
 
         status &= mask;
 
         if(!status)
             break;
-
-
-        //printk("0x%08x\n", status);
-
 
         if (status & INT_STS_SW_INT) {
             printk("STS_SW\n", status);
@@ -440,14 +403,10 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
             printk("STS_RXDF\n", status);
             smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
         }
-
+        /* Incoming frame */
         if (status & INT_STS_RSFL) {
-            //printk("STS_RSFL\n", status);
-            //printk("%s\n", ipaddr_ntoa(&netif->ip_addr));
-            //printk("%s\n", ipaddr_ntoa(&netif->netmask));
-            //printk("%s\n", ipaddr_ntoa(&netif->gw));
 
-            smc911x_rx(netif);
+            irq_return = IRQ_BOTTOM;
             smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
         }
         /* Rx Data FIFO exceeds set level */
@@ -472,18 +431,11 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 
     } while(--timeout);
 
-    //printk("0x%08x\n", mask);
     smc911x_reg_write(dev, INT_STS, -1); // Clear all interrupts
 
+    smc911x_reg_write(dev, INT_EN, mask); // Re-enable interrupts
 
-    //printk("0x%08x\n", smc911x_reg_read(dev, INT_EN));
-    smc911x_reg_write(dev, INT_EN, mask);
-    //printk("CFG: 0x%08x\n", smc911x_reg_read(dev, INT_CFG));
-
-    //smc911x_rx(netif);
-    //printk("m\n");
-
-    return IRQ_COMPLETED;
+    return irq_return;
 
 }
 
@@ -512,6 +464,8 @@ err_t smc911x_lwip_init(struct netif *netif)
     struct chip_id *id = eth_dev->priv;
     u32 fifo;
     int i = 0;
+
+    sem_init(&eth_dev->sem_read);
 
     LWIP_ASSERT("netif != NULL", (netif != NULL));
 
@@ -552,36 +506,23 @@ err_t smc911x_lwip_init(struct netif *netif)
     }
 
 
+    // TODO change ??
     netif_set_default(netif);
     netif_set_link_up(netif);
     netif_set_up(netif);
-
-
-    /*u32 mask = INT_EN_TDFA_EN | INT_EN_TSFL_EN | INT_EN_RSFL_EN |
-                    INT_EN_GPT_INT_EN | INT_EN_RXDFH_INT_EN | INT_EN_RXE_EN |
-                    INT_EN_PHY_INT_EN | INT_EN_RDFL_EN;*/
-
-    u32 mask = INT_EN_RSFL_EN | INT_EN_RSFF_EN;
-
-
-    /*smc911x_reg_write(eth_dev, INT_EN, 0);
-    smc911x_reg_write(eth_dev, INT_STS, -1);*/
-
-
-    //smc911x_reg_write(eth_dev, INT_CFG, (1 << 24) | INT_CFG_IRQ_EN | INT_CFG_IRQ_TYPE);
 
 
     fifo = smc911x_reg_read(eth_dev, FIFO_INT);
     smc911x_reg_write(eth_dev, FIFO_INT, 0x01 | (fifo & 0xFFFFFF00));
 
 
-    smc911x_reg_write(eth_dev, INT_EN, mask);
+    // Turn on relevant interrupts
+    smc911x_reg_write(eth_dev, INT_EN, INT_EN_RSFL_EN | INT_EN_RSFF_EN);
 
-    irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
+    irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, smc911x_so3_interrupt_top, netif);
 
-    err_t err = dhcp_start(netif);
-
-    dev_register(&smc911x_rdev);
+    // TODO remove ?
+    dhcp_start(netif);
 
     return ERR_OK;
 }
@@ -617,7 +558,6 @@ int smc911x_init(eth_dev_t * eth_dev)
 
     netif = malloc(sizeof(struct netif));
     netif_add(netif , NULL, NULL, NULL, eth_dev, smc911x_lwip_init, tcpip_input);
-    //irq_bind(eth_dev->dev->irq, smc911x_so3_interrupt, NULL, netif);
 
 
     return 1;
@@ -643,11 +583,6 @@ static int smc911x_register(dev_t *dev) {
 
 
 }
-
-/*
-err_t myif_init(struct netif *netif){
-
-}*/
 
 
 REGISTER_DRIVER_POSTCORE("smsc,smc911x", smc911x_register);

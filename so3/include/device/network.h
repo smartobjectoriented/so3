@@ -8,6 +8,7 @@
 #include <types.h>
 #include <list.h>
 #include <device/device.h>
+#include <semaphore.h>
 
 
 #define ARP_HLEN 6
@@ -29,6 +30,8 @@ struct eth_dev {
     void *priv;
 
     dev_t *dev;
+
+    sem_t sem_read;
 
     struct eth_dev *next;
 

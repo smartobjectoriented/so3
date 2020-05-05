@@ -1,5 +1,5 @@
 
-TARGETS     := echo sh ls more cat net ifconfig
+TARGETS     := echo sh ls more cat ifconfig #net
 
 
 
