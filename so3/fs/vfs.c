@@ -226,6 +226,14 @@ int vfs_get_type(int gfd)
 }
 
 /*
+ * Get the filename associated to a file descriptor
+ */
+char *vfs_get_filename(int gfd)
+{
+	return open_fds[gfd]->filename;
+}
+
+/*
  * Get the reference to the fops associated to a gfd.
  */
 struct file_operations *vfs_get_fops(uint32_t gfd) {
@@ -246,7 +254,7 @@ struct file_operations *vfs_get_fops(uint32_t gfd) {
  * @param fd: This is the index on the open_fds
  * @return a new (local) fd for the running process
  */
-int vfs_open(struct file_operations *fops, uint32_t type)
+int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 {
 	int gfd, fd;
 
@@ -273,6 +281,18 @@ int vfs_open(struct file_operations *fops, uint32_t type)
 	}
 
 	memset(open_fds[gfd], 0, sizeof(struct fd));
+
+	/* Store the filename */
+	if (filename) {
+		open_fds[gfd]->filename = malloc(strlen(filename)+1);
+		if (!open_fds[gfd]) {
+			printk("%s: failed to allocate memory\n", __func__);
+			set_errno(ENOMEM);
+			goto vfs_open_failed;
+		}
+
+		strcpy(open_fds[gfd]->filename, filename);
+	}
 
 	open_fds[gfd]->fops = fops;
 	open_fds[gfd]->type = type;
@@ -301,7 +321,7 @@ fs_open_failed:
 	open_fds[gfd] = NULL;
 
 vfs_open_failed:
-	free(fops);
+
 	mutex_unlock(&vfs_lock);
 	return -1;
 }
@@ -583,11 +603,26 @@ int do_open(const char *filename, int flags)
 	/* A filename starting with `/dev/' is considered a device. */
 	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
 
-		fops = dev_get_fops(filename + DEV_PREFIX_LEN, &type);
+		fops = devclass_get_fops(filename + DEV_PREFIX_LEN, &type);
 		if (!fops) {
 			mutex_unlock(&vfs_lock);
 			return -1;
 		}
+
+		/* vfs_open is already clean fops and open_fds */
+		fd = vfs_open(filename, fops, type);
+
+		if (fd < 0) {
+			/* fd already open */
+			set_errno(EBADF);
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+
+		/* Get index of open_fds*/
+		gfd = current()->pcb->fd_array[fd];
+
+		vfs_set_privdata(gfd, devclass_get_priv(devclass_get_cdev(filename + DEV_PREFIX_LEN)));
 	}
 	else {
 		/* FIXME: Should find the mounted point regarding the path */
@@ -597,20 +632,21 @@ int do_open(const char *filename, int flags)
 			type = VFS_TYPE_DIR;
 		else
 			type = VFS_TYPE_FILE;
+
+		/* vfs_open is already clean fops and open_fds */
+		fd = vfs_open(filename, fops, type);
+
+		if (fd < 0) {
+			/* fd already open */
+			set_errno(EBADF);
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+
+		/* Get index of open_fds*/
+		gfd = current()->pcb->fd_array[fd];
+
 	}
-
-	/* vfs_open is already clean fops and open_fds */
-	fd = vfs_open(fops, type);
-
-	if (fd < 0) {
-		/* fd already open */
-		set_errno(EBADF);
-		mutex_unlock(&vfs_lock);
-		return -1;
-	}
-
-	/* Get index of open_fds*/
-	gfd = current()->pcb->fd_array[fd];
 
 	vfs_set_open_mode(gfd, flags);
 
@@ -724,6 +760,9 @@ void do_close(int fd)
 		if (open_fds[gfd]->fops->close)
 			open_fds[gfd]->fops->close(gfd);
 
+		if (open_fds[gfd]->filename)
+			free(open_fds[gfd]->filename);
+
 		free(open_fds[gfd]);
 
 		open_fds[gfd] = NULL;
@@ -831,7 +870,7 @@ void *do_mmap(size_t length, int prot, int fd, off_t offset)
 {
 	int gfd;
 	uint32_t page_count, virt_addr;
-	struct file_operations* fops;
+	struct file_operations *fops;
 	pcb_t* pcb;
 
 	/* Get the fops associated to the file descriptor. */
@@ -879,7 +918,12 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return -1;
 	}
 
-	rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
+	if (open_fds[gfd]->fops->ioctl)
+		rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
+	else {
+		set_errno(EPERM);
+		rc = -1;
+	}
 
 	mutex_unlock(&vfs_lock);
 
@@ -902,7 +946,12 @@ off_t do_lseek(int fd, off_t off, int whence) {
 		return -1;
 	}
 
-	rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+	if (open_fds[gfd]->fops->lseek)
+		rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+	else {
+		set_errno(EPERM);
+		rc = -1;
+	}
 
 	mutex_unlock(&vfs_lock);
 

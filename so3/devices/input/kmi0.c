@@ -47,7 +47,7 @@ dev_t pl050_keyboard;
 
 struct classdev pl050_keyboard_cdev = {
 	.class = DEV_CLASS_INPUT,
-	.type = VFS_TYPE_INPUT,
+	.type = VFS_TYPE_DEV_INPUT,
 	.fops = &pl050_keyboard_fops,
 };
 

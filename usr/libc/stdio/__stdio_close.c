@@ -1,4 +1,5 @@
 #include <stdio_impl.h>
+#include <syscall.h>
 
 static int dummy(int fd)
 {
@@ -11,5 +12,5 @@ int __stdio_close(FILE *f)
 #if 0
 	return syscall(SYS_close, __aio_close(f->fd));
 #endif
-	return 0;
+	return sys_close(__aio_close(f->fd));
 }

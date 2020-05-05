@@ -20,11 +20,13 @@
 #define DEVICE_H
 
 #include <list.h>
+#include <vfs.h>
+
 #include <device/fdt/fdt.h>
 
 /* Filename prefix of a device. */
 #define DEV_PREFIX      "/dev/"
-#define DEV_PREFIX_LEN  sizeof(DEV_PREFIX) - 1
+#define DEV_PREFIX_LEN  (sizeof(DEV_PREFIX)-1)
 
 /* Device classes. */
 #define DEV_CLASS_FB    "fb"
@@ -57,10 +59,15 @@ typedef struct dev dev_t;
 struct classdev {
 	dev_t *dev; 			/* Reference to the device */
 	char *class;			/* device class */
+
+	uint32_t id_start, id_end;	/* Range of device associated to this device */
+
 	uint32_t type;			/* vfs type */
 	struct file_operations *fops;	/* the device's fops */
 
 	struct list_head list;
+
+	void *priv;			/* Private data for this device */
 };
 
 /*
@@ -78,7 +85,12 @@ int fdt_get_int(dev_t *dev, const char *name);
 bool fdt_device_is_available(int node_offset);
 
 void devclass_register(dev_t *dev, struct classdev *);
-struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type);
+struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type);
+struct classdev *devclass_get_cdev(const char *filename);
+int devclass_get_id(int fd);
+
+void devclass_set_priv(struct classdev *cdev, void *priv);
+void *devclass_get_priv(struct classdev *cdev);
 
 void devices_init(void);
 

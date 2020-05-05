@@ -94,7 +94,7 @@ struct file_operations pl111_fops = {
 
 struct classdev pl111_cdev = {
 	.class = DEV_CLASS_FB,
-	.type = VFS_TYPE_FB,
+	.type = VFS_TYPE_DEV_FB,
 	.fops = &pl111_fops,
 };
 
