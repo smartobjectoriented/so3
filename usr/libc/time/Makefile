@@ -1,7 +1,7 @@
 
 -include $(USR_DIR)/Makefile.common
 
-LIB = nanosleep 
+LIB = nanosleep  gettimeofday
 
 all: $(patsubst %,%.o,$(LIB))
 
