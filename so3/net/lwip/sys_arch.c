@@ -185,9 +185,18 @@ void sys_sem_signal(sys_sem_t *sem)
 
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout_ms)
 {
-    //sem_timeddown(sem->sem, timeout_ms * 1000000ull);
+    int start_time = sys_now();
+
     sem_down(sem->sem);
-    return 1;
+
+    if(timeout_ms > 0){
+        if(sem_timeddown(sem->sem, timeout_ms * 1000000ull))
+            return SYS_ARCH_TIMEOUT;
+    } else {
+        sem_down(sem->sem);
+    }
+
+    return sys_now() - start_time;
 }
 
 void sys_sem_free(sys_sem_t *sem)
@@ -331,7 +340,7 @@ err_t sys_mbox_trypost_fromisr(sys_mbox_t *sys_mbox, void *msg)
 
 u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
 {
-    u32_t time_needed = 0;
+    int start_time = sys_now();
     _mbox_t* mbox;
 
     LWIP_ASSERT("invalid mbox", (sys_mbox_t != NULL) && (sys_mbox->mbox != NULL));
@@ -347,11 +356,10 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
 
         /* We block while waiting for a mail to arrive in the mailbox. We
            must be prepared to timeout. */
-        if (timeout_ms != 0) {
-            sem_down(mbox->not_empty);
-            /*if (sem_timeddown(mbox->not_empty, timeout_ms * 1000000ull)) {
+        if (timeout_ms > 0) {
+            if (sem_timeddown(mbox->not_empty, timeout_ms * 1000000ull)) {
                 return SYS_ARCH_TIMEOUT;
-            }*/
+            }
         } else {
             sem_down(mbox->not_empty);
         }
@@ -375,7 +383,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
 
     mutex_unlock(mbox->mutex);
 
-    return time_needed;
+    return sys_now() - start_time;
 }
 
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *sys_mbox, void **msg)
