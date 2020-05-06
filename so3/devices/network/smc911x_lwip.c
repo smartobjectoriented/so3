@@ -138,8 +138,6 @@ static void smc911x_handle_mac_address(eth_dev_t *dev)
     addrh = m[4] | (m[5] << 8);
     smc911x_set_mac_csr(dev, ADDRL, addrl);
     smc911x_set_mac_csr(dev, ADDRH, addrh);
-
-    printk(DRIVERNAME ": MAC %pM\n", m);
 }
 
 static int smc911x_eth_phy_read(eth_dev_t *dev,u8 phy, u8 reg, u16 *val)
@@ -207,8 +205,6 @@ static void smc911x_phy_configure(eth_dev_t *dev)
 
     } while (!(status & BMSR_LSTATUS));
 
-    printk(DRIVERNAME ": phy initialized\n");
-
     return;
 
     err_out:
@@ -231,6 +227,8 @@ static void smc911x_enable(eth_dev_t *dev)
 
 }
 
+
+// TODO remove
 static int smc911x_send(eth_dev_t *dev, void *packet, int length)
 {
     u32 *data = (u32*)packet;
@@ -315,9 +313,10 @@ static int smc911x_rx(struct netif *netif)
         buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
 
         if(buf != NULL) {
+            //printk("Pkt %d\n", pktlen);
             data = (u32*)buf->payload;
         } else { // TODO better
-            printk("No buff %d\n", pktlen);
+            //printk("No buff %d\n", pktlen);
             msleep(100);
             continue;
         }
@@ -444,8 +443,67 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 static err_t smc911x_lwip_send(struct netif *netif, struct pbuf *p)
 {
     struct pbuf *q;
+    char buff[1500];
+    eth_dev_t *dev = netif->state;
+    u32 *data, tmplen, status, offset;
+
+    smc911x_reg_write(dev, TX_DATA_FIFO, TX_CMD_A_INT_FIRST_SEG |
+                                         TX_CMD_A_INT_LAST_SEG | p->tot_len);
+    smc911x_reg_write(dev, TX_DATA_FIFO, p->tot_len);
+
+    data = (u32*)pbuf_get_contiguous(p, buff, 1500, p->tot_len, 0);
+
+    tmplen = (p->tot_len + 3) / 4;
+    while (tmplen--)
+    {
+        pkt_data_push(dev, TX_DATA_FIFO, *data++);
+    }
+
+    /*for (q = p; q != NULL; q = q->next) {
+        tmplen = (q->len + 3) / 4;
+        data = (u32*)((char*)q->payload + offset);
+
+        offset = q->len % 4;
+
+        while (tmplen--)
+        {
+            u32 val = *data++;
+            if(tmplen == 0 && offset != 0){
+                val
+            }
+
+            pkt_data_push(dev, TX_DATA_FIFO, val);
+        }
+
+
+    }*/
+
+    /* wait for transmission */
+    while (!((smc911x_reg_read(dev, TX_FIFO_INF) &
+              TX_FIFO_INF_TSUSED) >> 16));
+
+    /* get status. Ignore 'no carrier' error, it has no meaning for
+     * full duplex operation
+     */
+    status = smc911x_reg_read(dev, TX_STATUS_FIFO) &
+             (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
+              TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
+
+    if (!status)
+        return ERR_OK;
+
+    printk(DRIVERNAME ": failed to send packet: %s%s%s%s%s\n",
+           status & TX_STS_LOC ? "TX_STS_LOC " : "",
+           status & TX_STS_LATE_COLL ? "TX_STS_LATE_COLL " : "",
+           status & TX_STS_MANY_COLL ? "TX_STS_MANY_COLL " : "",
+           status & TX_STS_MANY_DEFER ? "TX_STS_MANY_DEFER " : "",
+           status & TX_STS_UNDERRUN ? "TX_STS_UNDERRUN" : "");
+
+    return ERR_IF;
 
     for (q = p; q != NULL; q = q->next) {
+
+        printk("%d\n", q->len);
 
         // TODO FIX on saute 2 bytes au début car sinon que de zéros
         char* buff = (char*)q->payload;
