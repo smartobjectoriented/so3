@@ -85,6 +85,9 @@
 
 #define syscallSysinfo			99
 
+#define syscallSetsockopt		110
+#define syscallRecvfrom			111
+
 
 #define SYSINFO_DUMP_HEAP	0
 #define SYSINFO_DUMP_SCHED	1
@@ -406,6 +409,18 @@ int sys_connect(int socket, struct sockaddr_in *si, socklen_t addrlen);
 int sys_recv(int socket_fd, void *buffer, int count, int flags);
 
 /**
+ * This system call is used to receive messages from a socket, and may be
+ * used to receive data on a socket whether or not it is connection-oriented.
+ * If no messages are available on the socket, the receive calls wait for a
+ * message to arrive.
+ *
+ * Returns the number of byte read. On error, -1 is returned, this can append if
+ * a network stream has been terminated by the remote host and no more data is available.
+ * See errno variable to have more information on the error.
+ */
+int sys_recvfrom(int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
+
+/**
  * This system call is used to transmit a messages to another socket.
  * This call may be used only when the socket is in a connected state.
  *
@@ -421,8 +436,11 @@ int sys_send(int socket_fd, void *buffer, int count, int flags);
  * Returns the number of byte written. On error, -1 is returned,
  * and errno is set appropriately.
  */
-//int sys_sendto(int socket_fd, void *buffer, int count, struct sockaddr_in *si);
 int sys_sendto(int fd, const void *buf, size_t len, int flags, const struct sockaddr *addr, socklen_t alen);
+
+
+int sys_setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen);
+
 
 /**
  * This system call is used to map a file (or a portion of it) to a memory buffer

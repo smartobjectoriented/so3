@@ -117,4 +117,6 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 
 int do_nanosleep(const struct timespec *req, struct timespec *rem);
 
+int do_get_time_of_day(struct timespec *ts);
+
 #endif /* TIMER_H */

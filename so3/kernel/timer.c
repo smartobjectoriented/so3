@@ -26,6 +26,7 @@
 #include <div64.h>
 #include <delay.h>
 #include <schedule.h>
+#include <errno.h>
 
 #include <device/timer.h>
 #include <device/irq.h>
@@ -354,3 +355,18 @@ void timer_init(void) {
 
 }
 
+
+int do_get_time_of_day(struct timespec *ts){
+    u64 time;
+
+    if(!ts){
+        set_errno(EINVAL);
+        return -1;
+    }
+
+    time = NOW();
+    ts->tv_sec = time / 1000000000ull;
+    ts->tv_nsec = (time % 1000000000ull);
+
+    return 0;
+}

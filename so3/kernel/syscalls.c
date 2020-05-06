@@ -79,6 +79,10 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			result = do_getpid();
 			break;
 
+		case SYSCALL_GETTIMEOFDAY:
+			result =  do_get_time_of_day((struct timespec *) r0);
+			break;
+
 		case SYSCALL_EXIT:
 			do_exit(r0);
 			break;
@@ -254,7 +258,13 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
             			(const struct sockaddr *) __get_syscall_stack_arg(0),
 						(socklen_t) __get_syscall_stack_arg(1));
             break;
-
+        case SYSCALL_SETSOCKOPT:
+            result = do_setsockopt((int)r0, (int)r1, (int)r2, (const void *)r3, (socklen_t)__get_syscall_stack_arg(0));
+            break;
+        case SYSCALL_RECVFROM:
+            result = do_recvfrom((int)r0, (void *)r1, (size_t)r2, (int)r3, (struct sockaddr *)__get_syscall_stack_arg(0),
+                                 (socklen_t *)__get_syscall_stack_arg(1));
+            break;
 		default:
 			printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
 			break;

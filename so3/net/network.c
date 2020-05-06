@@ -423,6 +423,15 @@ int do_recv(int sockfd, void *mem, size_t len, int flags) {
     return lwip_recv(lwip_fd, mem, len, flags);
 }
 
+int do_recvfrom(int sockfd, void *mem, size_t len, int flags,
+                  struct sockaddr *from, socklen_t *fromlen) {
+
+    int lwip_fd = get_lwip_fd(sockfd);
+
+    return lwip_recvfrom(lwip_fd, mem, len, flags, from, fromlen);
+}
+
+
 int do_send(int sockfd, const void *dataptr, size_t size, int flags) {
     int lwip_fd = get_lwip_fd(sockfd);
 

@@ -4,10 +4,12 @@
 
 int gettimeofday(struct timeval *restrict tv, void *restrict tz)
 {
-	struct timespec ts;
+	//struct timespec ts;
 	if (!tv) return 0;
-	clock_gettime(CLOCK_REALTIME, &ts);
-	tv->tv_sec = ts.tv_sec;
-	tv->tv_usec = (int)ts.tv_nsec / 1000;
+
+    sys_gettimeofday(tv);
+
+    // the syscall return nanoseconds
+    tv->tv_usec = tv->tv_usec / 1000ull;
 	return 0;
 }

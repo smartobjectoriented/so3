@@ -110,6 +110,8 @@ SYSCALLSTUB sys_mmap, 			syscallMmap
 SYSCALLSTUB sys_ptrace,  		syscallPtrace
 SYSCALLSTUB sys_send,	 		syscallSend
 SYSCALLSTUB sys_recv, 			syscallRecv
+SYSCALLSTUB sys_recvfrom, 		syscallRecvfrom
+SYSCALLSTUB sys_setsockopt, 	syscallSetsockopt
 SYSCALLSTUB sys_sendto, 		syscallSendTo
 SYSCALLSTUB sys_getpid,			syscallGetpid
 SYSCALLSTUB sys_gettimeofday,	syscallGetTimeOfDay
