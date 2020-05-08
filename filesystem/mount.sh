@@ -1,21 +1,24 @@
 #!/bin/bash
 
-if [ "$_PLATFORM" == "" ]; then
+if [ "$PLATFORM" == "" ]; then
     if [ "$2" == "" ]; then
-        echo "_PLATFORM must be defined (vexpress, rpi3, rpi4, bpi)"
+        echo "PLATFORM must be defined (vexpress, rpi3, rpi4, bpi, merida)"
         echo "You can invoke mount.sh <partition_nr> <platform>"
         exit 0
     fi
     
-    _PLATFORM=$2
+    PLATFORM=$2
 fi
 
-if [ "$_PLATFORM" == "vexpress" ]; then
-    devname=$(sudo losetup --partscan --find --show sdcard.img)
-    FS_IMG=sdcard.img
+sudo rm -rf fs/*
+mkdir -p fs
+ 
+if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" = "merida" ]; then
+    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
+    FS_IMG=sdcard.img.${PLATFORM}
 
     #sudo losetup -P --find --show flash
-    mkdir -p fs
+   
 
     # device is loopback (loop<n>)
     sudo mount ${devname}p$1 fs 
@@ -31,7 +34,6 @@ if [[ "$devname" = *[0-9] ]]; then
     export devname="${devname}p"
 fi
 
-if [ "$_PLATFORM" == "rpi3" -o "$_PLATFORM" == "bpi" -o "$_PLATFORM" == "rpi4" ]; then
-    mkdir -p fs
-    sudo mount /dev/"$devname"$1 fs
+if [ "$PLATFORM" == "rpi3" -o "$PLATFORM" == "bpi" -o "$PLATFORM" == "rpi4" ]; then
+    sudo mount /dev/"${devname}"$1 fs
 fi

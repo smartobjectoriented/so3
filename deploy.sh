@@ -44,7 +44,7 @@ if [ "$var" != "" ]; then
 fi
 done < build.conf
 
-if [ "$_PLATFORM" != "vexpress" ]; then
+if [ "$PLATFORM" != "vexpress" -a "$PLATFORM" != "merida" ]; then
     echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
     read devname
     export devname="$devname"
@@ -55,20 +55,20 @@ if [ "$deploy_boot" == "y" ]; then
     echo Deploying boot files into the first partition...
      
     cd target
-    ./mkuboot.sh ${_PLATFORM}
+    ./mkuboot.sh ${PLATFORM} 
     cd ../filesystem
     ./mount.sh 1
     sudo rm -rf fs/*
-    sudo cp ../target/${_PLATFORM}.itb fs/
-    sudo cp ../u-boot/uEnv.d/uEnv_${_PLATFORM}.txt fs/uEnv.txt
+    sudo cp ../target/${PLATFORM}.itb fs/
+    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
        
-    if [ "$_PLATFORM" == "vexpress" ]; then
+    if [ "$PLATFORM" == "vexpress" ]; then
 	# Nothing else ...
         ./umount.sh
         cd ..
     fi
  
-    if [ "$_PLATFORM" == "rpi3" ]; then
+    if [ "$PLATFORM" == "rpi3" ]; then
         sudo cp -r ../../bsp/rpi3/* fs/
         sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel.img
@@ -76,7 +76,7 @@ if [ "$deploy_boot" == "y" ]; then
         cd ..
     fi
     
-    if [ "$_PLATFORM" == "rpi4" ]; then
+    if [ "$PLATFORM" == "rpi4" ]; then
         sudo cp -r ../../bsp/rpi4/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel7.img
         ./umount.sh
