@@ -116,8 +116,6 @@ void memory_init(void) {
 
 	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
 
-#endif /* CONFIG_SO3VIRT */
-
 	set_pgtable(__sys_l1pgtable);
 
 

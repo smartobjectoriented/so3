@@ -1,3 +1,23 @@
+/*
+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/* Simple of example of devclass device */
+
 #include <vfs.h>
 
 #include <device/driver.h>
@@ -23,7 +43,7 @@ struct file_operations mydev_fops = {
 	.read = mydev_read
 };
 
-struct classdev mydev_cdev = {
+struct devclass mydev_cdev = {
 	.class = "mydev",
 	.type = VFS_TYPE_DEV_CHAR,
 	.fops = &mydev_fops,
