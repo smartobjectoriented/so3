@@ -603,11 +603,26 @@ int do_open(const char *filename, int flags)
 	/* A filename starting with `/dev/' is considered a device. */
 	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
 
-		fops = dev_get_fops(filename + DEV_PREFIX_LEN, &type);
+		fops = devclass_get_fops(filename + DEV_PREFIX_LEN, &type);
 		if (!fops) {
 			mutex_unlock(&vfs_lock);
 			return -1;
 		}
+
+		/* vfs_open is already clean fops and open_fds */
+		fd = vfs_open(filename, fops, type);
+
+		if (fd < 0) {
+			/* fd already open */
+			set_errno(EBADF);
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+
+		/* Get index of open_fds*/
+		gfd = current()->pcb->fd_array[fd];
+
+		vfs_set_privdata(gfd, devclass_get_priv(devclass_get_cdev(filename + DEV_PREFIX_LEN)));
 	}
 	else {
 		/* FIXME: Should find the mounted point regarding the path */
@@ -617,20 +632,21 @@ int do_open(const char *filename, int flags)
 			type = VFS_TYPE_DIR;
 		else
 			type = VFS_TYPE_FILE;
+
+		/* vfs_open is already clean fops and open_fds */
+		fd = vfs_open(filename, fops, type);
+
+		if (fd < 0) {
+			/* fd already open */
+			set_errno(EBADF);
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+
+		/* Get index of open_fds*/
+		gfd = current()->pcb->fd_array[fd];
+
 	}
-
-	/* vfs_open is already clean fops and open_fds */
-	fd = vfs_open(filename, fops, type);
-
-	if (fd < 0) {
-		/* fd already open */
-		set_errno(EBADF);
-		mutex_unlock(&vfs_lock);
-		return -1;
-	}
-
-	/* Get index of open_fds*/
-	gfd = current()->pcb->fd_array[fd];
 
 	vfs_set_open_mode(gfd, flags);
 
@@ -892,7 +908,12 @@ off_t do_lseek(int fd, off_t off, int whence) {
 		return -1;
 	}
 
-	rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+	if (open_fds[gfd]->fops->lseek)
+		rc = open_fds[gfd]->fops->lseek(fd, off, whence);
+	else {
+		set_errno(EPERM);
+		rc = -1;
+	}
 
 	mutex_unlock(&vfs_lock);
 

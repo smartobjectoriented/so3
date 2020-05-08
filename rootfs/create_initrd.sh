@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #create image first
-dd if=/dev/zero of=initrd.fat bs=1024 count=1024
-DEVLOOP=$(sudo losetup --partscan --find --show initrd.fat)
+dd if=/dev/zero of=board/so3virt/initrd.fat bs=1024 count=1024
+DEVLOOP=$(sudo losetup --partscan --find --show board/so3virt/initrd.fat)
 
 #create the partition this way
 (echo o; echo n; echo p; echo; echo; echo; echo; echo; echo t; echo; echo c; echo w) | sudo fdisk $DEVLOOP;

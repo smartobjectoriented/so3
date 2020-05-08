@@ -189,6 +189,14 @@ int devclass_get_id(int fd) {
 	return -1;
 }
 
+void devclass_set_priv(struct classdev *cdev, void *priv) {
+	cdev->priv = priv;
+}
+
+void *devclass_get_priv(struct classdev *cdev) {
+	return cdev->priv;
+}
+
 /* Register a device. Usually called from the device driver. */
 void devclass_register(dev_t *dev, struct classdev *cdev)
 {
@@ -199,7 +207,7 @@ void devclass_register(dev_t *dev, struct classdev *cdev)
 }
 
 /*
- * Get the fops of a registered device using the given filename. The vfs_type
+ * Get the cdev of a registered device using the given filename. The vfs_type
  * is also set to the proper value.
  *
  * A device filename has the following format:
@@ -210,7 +218,7 @@ void devclass_register(dev_t *dev, struct classdev *cdev)
  *
  * Note: the given `filename' must not include the /dev/ prefix.
  */
-struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
+struct classdev *devclass_get_cdev(const char *filename)
 {
 	uint32_t dev_id, i;
 	char *dev_id_s;
@@ -249,10 +257,8 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 		 */
 		if ((strlen(cur_dev->class) == dev_class_len) && !strncmp(filename, cur_dev->class, dev_class_len)) {
 
-			if ((dev_id == i++) || ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end))) {
-				*vfs_type = cur_dev->type;
-				return cur_dev->fops;
-			}
+			if ((dev_id == i++) || ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end)))
+				return cur_dev;
 		}
 	}
 
@@ -260,6 +266,25 @@ struct file_operations *dev_get_fops(const char *filename, uint32_t *vfs_type)
 
 	return NULL;
 }
+
+/*
+ * Get the fops of a registered device using the given filename. The vfs_type
+ * is also set to the proper value.
+ *
+ */
+struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type)
+{
+	struct classdev *cdev;
+
+	cdev = devclass_get_cdev(filename);
+	if (!cdev)
+		return NULL;
+
+	*vfs_type = cdev->type;
+
+	return cdev->fops;
+}
+
 
 /*
  * Main device initialization function.
