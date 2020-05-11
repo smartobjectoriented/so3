@@ -60,13 +60,16 @@ char serial_getc(void) {
 	return c;
 }
 
-/* Low-level sending bytes to the UART */
+/*
+ * Emergency printk() or very early printk() before the real uart driver is ready.
+ * It may be used in the context of the virtualized ME SO3 as well.
+ */
 int ll_serial_write(char *str, int len) {
 	int i;
 
 	for (i = 0; i < len; i++)
 		if (str[i] != 0)
-			serial_putc(str[i]);
+			__ll_put_byte(str[i]);
 	return len;
 }
 
@@ -74,7 +77,7 @@ int ll_serial_write(char *str, int len) {
 int serial_write(char *str, int len) {
 	int i;
 	uint32_t flags;
-	
+
 	/* Here, we disable IRQ since printk() can also be used with IRQs off */
 	flags = local_irq_save();
 
@@ -102,6 +105,7 @@ int serial_gwinsize(struct winsize *wsz)
 	 * Qemu to read the two bytes. So far, we do not
 	 * manage an internal buffer to read many chars.
 	 */
+
 	irq_ops.irq_disable(serial_ops.dev->irq);
 
 	if (serial_write(SERIAL_GWINSZ, 1) == 0) 

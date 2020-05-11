@@ -22,6 +22,30 @@
 
 .global __enable_vfp
 
+/*
+ * cache_line_size - get the cache line size from the CSIDR register
+ * (available on ARMv7+). It assumes that the CSSR register was configured
+ * to access the L1 data cache CSIDR.
+ */
+.macro	dcache_line_size, reg, tmp
+	mrc	p15, 1, \tmp, c0, c0, 0		@ read CSIDR
+	and	\tmp, \tmp, #7			@ cache line size encoding
+	mov	\reg, #16			@ size offset
+	mov	\reg, \reg, lsl \tmp		@ actual cache line size
+.endm
+
+/*
+ * icache_line_size - get the minimum I-cache line size from the CTR register
+ * on ARMv7.
+ */
+.macro	icache_line_size, reg, tmp
+	mrc	p15, 0, \tmp, c0, c0, 1		@ read ctr
+	and	\tmp, \tmp, #0xf		@ cache line size encoding
+	mov	\reg, #4			@ bytes per word
+	mov	\reg, \reg, lsl \tmp		@ actual cache line size
+.endm
+
+
 	/*
 	 * Memory region attributes with SCTLR.TRE=1
 	 *
@@ -226,6 +250,62 @@ ENTRY(cpu_setup)
 	orr	r0, r0, r6			@ set them
 
 	mov pc, lr
+
+/*
+ *	v7_coherent_kern_range(start,end)
+ *
+ *	Ensure that the I and D caches are coherent within specified
+ *	region.  This is typically used when code has been written to
+ *	a memory region, and will be executed.
+ *
+ *	- start   - virtual start address of region
+ *	- end     - virtual end address of region
+ *
+ *	It is assumed that:
+ *	- the Icache does not read data from the write buffer
+ */
+ENTRY(flush_icache_range)
+	/* FALLTHROUGH */
+
+/*
+ *	v7_coherent_user_range(start,end)
+ *
+ *	Ensure that the I and D caches are coherent within specified
+ *	region.  This is typically used when code has been written to
+ *	a memory region, and will be executed.
+ *
+ *	- start   - virtual start address of region
+ *	- end     - virtual end address of region
+ *
+ *	It is assumed that:
+ *	- the Icache does not read data from the write buffer
+ */
+	dcache_line_size r2, r3
+	sub	r3, r2, #1
+	bic	r12, r0, r3
+
+1:
+    mcr	p15, 0, r12, c7, c11, 1		@ clean D line to the point of unification
+	add	r12, r12, r2
+	cmp	r12, r1
+	blo	1b
+	dsb
+	icache_line_size r2, r3
+	sub	r3, r2, #1
+	bic	r12, r0, r3
+2:
+    mcr	p15, 0, r12, c7, c5, 1		@ invalidate I line
+	add	r12, r12, r2
+	cmp	r12, r1
+	blo	2b
+	mov	r0, #0
+
+	mcr	p15, 0, r0, c7, c1, 6	@ invalidate BTB Inner Shareable
+
+	dsb
+	isb
+	mov	pc, lr
+
 
 	/*   AT
 	 *  TFR   EV X F   I D LR    S
