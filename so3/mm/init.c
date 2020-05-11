@@ -79,7 +79,7 @@ void memory_init(void) {
 
 	init_io_mapping();
 
-	printk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, _fdt_addr, &__end, fdt_totalsize(_fdt_addr));
+	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, _fdt_addr, &__end, fdt_totalsize(_fdt_addr));
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
 	fdt_move((const void *) _fdt_addr, &__end, fdt_totalsize(_fdt_addr));
@@ -112,9 +112,9 @@ void memory_init(void) {
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
-	create_mapping(NULL, 0xffff0000, vectors_paddr, PAGE_SIZE, true);
+	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
 
-	memcpy((void *) 0xffff0000, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
+	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
 
 	set_pgtable(__sys_l1pgtable);
 

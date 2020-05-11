@@ -189,16 +189,16 @@ int devclass_get_id(int fd) {
 	return -1;
 }
 
-void devclass_set_priv(struct classdev *cdev, void *priv) {
+void devclass_set_priv(struct devclass *cdev, void *priv) {
 	cdev->priv = priv;
 }
 
-void *devclass_get_priv(struct classdev *cdev) {
+void *devclass_get_priv(struct devclass *cdev) {
 	return cdev->priv;
 }
 
 /* Register a device. Usually called from the device driver. */
-void devclass_register(dev_t *dev, struct classdev *cdev)
+void devclass_register(dev_t *dev, struct devclass *cdev)
 {
 	cdev->dev = dev;
 	INIT_LIST_HEAD(&cdev->list);
@@ -218,12 +218,12 @@ void devclass_register(dev_t *dev, struct classdev *cdev)
  *
  * Note: the given `filename' must not include the /dev/ prefix.
  */
-struct classdev *devclass_get_cdev(const char *filename)
+struct devclass *devclass_get_cdev(const char *filename)
 {
 	uint32_t dev_id, i;
 	char *dev_id_s;
 	size_t dev_class_len;
-	struct classdev *cur_dev;
+	struct devclass *cur_dev;
 
 	/* Find the beginning of the device id string. */
 	dev_id_s = (char *) filename;
@@ -274,7 +274,7 @@ struct classdev *devclass_get_cdev(const char *filename)
  */
 struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type)
 {
-	struct classdev *cdev;
+	struct devclass *cdev;
 
 	cdev = devclass_get_cdev(filename);
 	if (!cdev)

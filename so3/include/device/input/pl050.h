@@ -48,4 +48,4 @@
 #define KMIIR_RXINTR (1 << 0) /* receiver interrupt asserted */
 
 void pl050_write(dev_t *dev, uint8_t data);
-int pl050_init(dev_t *dev, dev_t *dev_copy, struct classdev *, irq_return_t (*isr)(int, void *));
+int pl050_init(dev_t *dev, dev_t *dev_copy, struct devclass *, irq_return_t (*isr)(int, void *));

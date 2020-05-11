@@ -92,16 +92,18 @@ void kernel_start(void) {
 	/* Basic low-level initialization */
 	setup_arch();
 
-	printk("\n\n********** Smart Object Oriented SO3 Operating System **********\n");
-	printk("Copyright (c) 2014-2019 REDS Institute, HEIG-VD, Yverdon\n");
-	printk("Version %s\n", SO3_KERNEL_VERSION);
+	lprintk("\n\n********** Smart Object Oriented SO3 Operating System **********\n");
+	lprintk("Copyright (c) 2014-2019 REDS Institute, HEIG-VD, Yverdon\n");
+	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
-	printk("\n\nNow bootstraping the kernel ...\n");
+	lprintk("\n\nNow bootstraping the kernel ...\n");
 
 	/* Memory manager subsystem initialization */
 	memory_init();
 
 	devices_init();
+
+	/* At this point of time, we are able to use the standard printk() */
 
 	timer_init();
 
