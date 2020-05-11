@@ -44,15 +44,18 @@ void __div0(void) {
 
 void kernel_panic(void)
 {
-	lprintk("%s: entering infinite loop... CPU: %d\n", __func__, smp_processor_id());
+	if (cpu_mode() == USR_MODE)
+		printk("%s: entering infinite loop...\n", __func__);
+	else {
+		lprintk("%s: entering infinite loop... CPU: %d\n", __func__, smp_processor_id());
 
 #ifdef CONFIG_VEXPRESS
-	{
-		extern void send_qemu_halt(void);
-		send_qemu_halt();
-	}
+		{
+			extern void send_qemu_halt(void);
+			send_qemu_halt();
+		}
 #endif
-
+	}
 	/* Stop all activities. */
 	local_irq_disable();
 
@@ -61,7 +64,8 @@ void kernel_panic(void)
 
 void _bug(char *file, int line)
 {
-	lprintk("BUG in %s at line: %d\n", file, line); \
+	lprintk("BUG in %s at line: %d\n", file, line);
+
 	kernel_panic();
 }
 
