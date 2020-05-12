@@ -37,6 +37,11 @@ struct timespec {
 	long		tv_nsec;		/* nanoseconds */
 };
 
+struct timeval {
+        long		tv_sec;			/* seconds */
+        long		tv_usec;		/* microseconds */
+};
+
 /* All timing information below must be express in nanoseconds. The underlying hardware is responsible
  * to perform the necessary alignment on 64 bits. */
 

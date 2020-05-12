@@ -5,10 +5,6 @@
 #ifndef SO3_CC_H
 #define SO3_CC_H
 
-
-
-
-
 #ifndef LWIP_PLATFORM_DIAG
 #define LWIP_PLATFORM_DIAG(x) printk x
 #include <printk.h>
@@ -56,5 +52,8 @@ typedef u32     u32_t;
 typedef s32     s32_t;
 
 typedef unsigned long int  mem_ptr_t;
+
+#include <timer.h>
+#define LWIP_TIMEVAL_PRIVATE 0
 
 #endif //SO3_CC_H

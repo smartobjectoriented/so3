@@ -29,8 +29,8 @@
 
 struct ping_pkt
 {
-    struct icmphdr hdr;
-    char msg[PING_PKT_LEN - sizeof(struct icmphdr)];
+        struct icmphdr hdr;
+        char msg[PING_PKT_LEN - sizeof(struct icmphdr)];
 };
 
 /**
@@ -42,99 +42,119 @@ struct ping_pkt
  */
 unsigned short checksum(void *b, int len)
 {
-    unsigned short *buf = b;
-    unsigned int sum=0;
-    unsigned short result;
+        unsigned short *buf = b;
+        unsigned int sum = 0;
+        unsigned short result;
 
-    for ( sum = 0; len > 1; len -= 2 )
-        sum += *buf++;
-    if ( len == 1 )
-        sum += *(unsigned char*)buf;
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    result = ~sum;
-    return result;
+        for (sum = 0; len > 1; len -= 2) {
+                sum += *buf++;
+        }
+        if (len == 1) {
+                sum += *(unsigned char *) buf;
+        }
+        sum = (sum >> 16) + (sum & 0xFFFF);
+        sum += (sum >> 16);
+        result = ~sum;
+        return result;
 }
 
 
-int main(int argc, char **argv) {
-    int s, i = 0, msg_count = 0;
-    float elapsed_time = 0;
-    //socklen_t addr_len;
-    struct ping_pkt packet;
-    struct sockaddr_in ping_addr/*, recv_addr*/;
-    struct timeval tv_out, start, end;
-    tv_out.tv_sec = 1;
-    tv_out.tv_usec = 0;
+void parse_args(int argc, char **argv)
+{
+        printf("Argc: %d", argc);
 
-    s = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+        for (int i = 0; i < argc; i++) {
+                printf(argv[i]);
+        }
+}
 
-    if(s < 0){
-        printf("Impossible to obtain a socket file descriptor!!\n");
+int main(int argc, char **argv)
+{
+        int s, i = 0, msg_count = 0, attempt = 0, ttl_val = 64;
+        unsigned int size = 0;
+        float elapsed_time = 0;
+        char ip[100];
+        //socklen_t addr_len;
+        struct ping_pkt packet;
+        struct sockaddr_in ping_addr, recv_addr;
+        struct timeval tv_out, start, end;
+        tv_out.tv_sec = 5;
+        tv_out.tv_usec = 0;
+
+
+        parse_args(argc, argv);
+
+        s = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+
+        if (s < 0) {
+                printf("Impossible to obtain a socket file descriptor!!\n");
+                return 0;
+        }
+
+        setsockopt(s, 0xfff, IP_TTL, (const char *) &ttl_val, sizeof(ttl_val));
+
+        setsockopt(s, 0xfff, 0x1005, (const char *) &tv_out, sizeof(struct timeval));
+        setsockopt(s, 0xfff, 0x1006, (const char *) &tv_out, sizeof(struct timeval));
+
+
+        while (attempt++ < 1) {
+                sleep(1);
+
+                // TODO loop from here
+                inet_pton(AF_INET, "10.0.2.2", &ping_addr.sin_addr);
+
+                ping_addr.sin_family = AF_INET;
+                ping_addr.sin_port = 0; // ICMP -> no port
+
+                memset(&packet, 0, sizeof(struct ping_pkt));
+
+                packet.hdr.type = ICMP_ECHO;
+                packet.hdr.un.echo.id = getpid();
+
+                for (i = 0; i < sizeof(packet.msg) - 1; i++) {
+                        packet.msg[i] = i + '0';
+                }
+                packet.msg[i] = 0;
+                packet.hdr.un.echo.sequence = msg_count++;
+                packet.hdr.checksum = checksum(&packet, sizeof(packet));
+
+                gettimeofday(&start, NULL);
+
+                if (sendto(s, &packet, sizeof(packet), 0, (struct sockaddr *) &ping_addr, sizeof(ping_addr)) <= 0) {
+                        printf("Packet sending failed!!\n");
+                        continue;
+                }
+
+                size = sizeof(recv_addr);
+
+                if (recvfrom(s, &packet, sizeof(packet), 0, (struct sockaddr *) &recv_addr, &size) <= 0 &&
+                    msg_count > 1) {
+                        printf("Packet receive failed!!\n");
+                        continue;
+                }
+
+                gettimeofday(&end, NULL);
+
+                inet_ntop(AF_INET, &recv_addr.sin_addr, ip, sizeof(ip));
+
+                elapsed_time =
+                        end.tv_usec / 1000.0 + end.tv_sec * 1000 - (start.tv_usec / 1000.0 + start.tv_sec * 1000);
+
+                if (!(packet.hdr.type == 69 && packet.hdr.code == 0)) {
+                        printf("Error... Packet received with ICMP type %d code %d\n", packet.hdr.type,
+                               packet.hdr.code);
+                } else {
+                        printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%Lf ms\n",
+                               PING_PKT_LEN, ip, msg_count, ttl_val, elapsed_time);
+                }
+        }
+
         return 0;
-    }
-
-    // TODO Set ttl
-
-    // TODO set timeout
-
-    setsockopt(s, 0xfff, 0x1005, (const char*)&tv_out, sizeof(struct timeval));
-    setsockopt(s, 0xfff, 0x1006, (const char*)&tv_out, sizeof(struct timeval));
-
-
-    while(i++ < 10){
-        // TODO loop from here
-        inet_pton(AF_INET, "10.0.2.2", &ping_addr.sin_addr);
-
-        printf("%d: \n", i);
-
-        ping_addr.sin_family = AF_INET;
-        ping_addr.sin_port = 0; // ICMP -> no port
-
-        memset(&packet, 0, sizeof(struct ping_pkt));
-
-        packet.hdr.type = ICMP_ECHO;
-        packet.hdr.un.echo.id = getpid();
-
-        for(i = 0; i < sizeof(packet.msg) - 1; i++) {
-            packet.msg[i] = i + '0';
-        }
-        packet.msg[i] = 0;
-        packet.hdr.un.echo.sequence = msg_count++;
-        packet.hdr.checksum = checksum(&packet, sizeof(packet));
-
-        gettimeofday(&start, NULL);
-
-        if(sendto(s, &packet, sizeof(packet), 0, (struct sockaddr*)&ping_addr, sizeof(ping_addr)) <= 0){
-            printf("Packet sending failed!!\n");
-            continue;
-        }
-
-        if(recvfrom(s, &packet, sizeof(packet), 0, NULL, NULL) <= 0 && msg_count > 1){
-            printf("Packet receive failed!!\n");
-            continue;
-        }
-
-        gettimeofday(&end, NULL);
-
-
-        elapsed_time = end.tv_usec / 1000.0 + end.tv_sec * 1000 - (start.tv_usec / 1000.0 + start.tv_sec * 1000);
-
-        if(!(packet.hdr.type == 69 && packet.hdr.code == 0)){
-            printf("Error... Packet received with ICMP type %d code %d\n", packet.hdr.type, packet.hdr.code);
-        } else {
-            printf("Packet Received ms %d\n", elapsed_time);
-        }
-
-        sleep(1);
-    }
-
-    return 0;
 
 
 
-    /*end:
+        /*end:
 
-    close(s);
-    return 0;*/
+        close(s);
+        return 0;*/
 }

@@ -16,56 +16,72 @@
 #include <arpa/inet.h>
 
 
+void show_if(int s, struct ifreq *ifr)
+{
+        int mtu;
+        char *ip, *mac;
 
-int main(int argc, char **argv) {
-    int s, i = 0, mtu = 0;
-    struct ifreq ifr;
-    char *ip, *mac;
+        printf("%s", ifr->ifr_name);
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-
-    for(i = 0; i < 256; i++){
-        ifr.ifr_ifru.ifru_ivalue = i;
-
-        // Check if if found
-        if(ioctl(s, SIOCGIFNAME, &ifr)){
-            continue;
+        if (ioctl(s, SIOCGIFHWADDR, &ifr) == 0) {
+                mac = ifr->ifr_ifru.ifru_hwaddr.sa_data;
+                printf("\tHWaddr %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         }
 
-        printf("%s", ifr.ifr_name);
-
-
-        if(ioctl(s, SIOCGIFHWADDR, &ifr) == 0){
-            mac = ifr.ifr_ifru.ifru_hwaddr.sa_data;
-            printf("\tHWaddr %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+        if (ioctl(s, SIOCGIFADDR, &ifr) == 0) {
+                ip = inet_ntoa(((struct sockaddr_in *) &ifr->ifr_ifru.ifru_addr)->sin_addr);
+                printf("\tinet addr:%s", ip);
         }
 
-        if(ioctl(s, SIOCGIFADDR, &ifr) == 0){
-            ip = inet_ntoa(((struct sockaddr_in*)&ifr.ifr_ifru.ifru_addr)->sin_addr);
-            printf("\tinet addr:%s", ip);
+        if (ioctl(s, SIOCGIFBRDADDR, &ifr) == 0) {
+                ip = inet_ntoa(((struct sockaddr_in *) &ifr->ifr_ifru.ifru_broadaddr)->sin_addr);
+                printf("  Bcast:%s", ip);
         }
 
-        if(ioctl(s, SIOCGIFBRDADDR, &ifr) == 0){
-            ip = inet_ntoa(((struct sockaddr_in*)&ifr.ifr_ifru.ifru_broadaddr)->sin_addr);
-            printf("  Bcast:%s", ip);
+        if (ioctl(s, SIOCGIFNETMASK, &ifr) == 0) {
+                ip = inet_ntoa(((struct sockaddr_in *) &ifr->ifr_ifru.ifru_netmask)->sin_addr);
+                printf("  Mask:%s\n", ip);
         }
 
-        if(ioctl(s, SIOCGIFNETMASK, &ifr) == 0){
-            ip = inet_ntoa(((struct sockaddr_in*)&ifr.ifr_ifru.ifru_netmask)->sin_addr);
-            printf("  Mask:%s\n", ip);
-        }
-
-        if(ioctl(s, SIOCGIFMTU, &ifr) == 0){
-            mtu = ifr.ifr_ifru.ifru_mtu;
-            printf("\tMTU:%d\n", mtu);
+        if (ioctl(s, SIOCGIFMTU, &ifr) == 0) {
+                mtu = ifr->ifr_ifru.ifru_mtu;
+                printf("\tMTU:%d\n", mtu);
         }
 
         printf("\n");
-    }
+}
 
-    close(s);
+void parse_args(int argc, char **argv)
+{
+        for(int i = 0; i < argc; i++){
+                printf(argv[i]);
+        }
+}
 
-    return 0;
+int main(int argc, char **argv)
+{
+        int s, i = 0;
+        struct ifreq ifr;
+
+        printf("Hello");
+
+        parse_args(argc, argv);
+
+        s = socket(AF_INET, SOCK_STREAM, 0);
+
+        ifr.ifr_addr.sa_family = AF_INET;
+
+        for (i = 0; i < 256; i++) {
+                ifr.ifr_ifru.ifru_ivalue = i;
+
+                /* Check if if found */
+                if (!ioctl(s, SIOCGIFNAME, &ifr))
+                        show_if(s, &ifr);
+                else
+                        printf("not found %d", i);
+        }
+
+        close(s);
+
+        return 0;
 }
