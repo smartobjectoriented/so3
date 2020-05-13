@@ -9,7 +9,7 @@
 	-semihosting-config enable,target=native \
 	-net user,tftp=. \
 	-net tap,script=tools/qemu-ifup,downscript=tools/qemu-ifdown -net nic \
-	-sd filesystem/sdcard.img \
+	-sd filesystem/sdcard.img.vexpress \
 	-nographic 
     
  
