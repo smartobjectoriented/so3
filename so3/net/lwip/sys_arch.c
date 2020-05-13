@@ -48,45 +48,38 @@
 #include <timer.h>
 
 
-
-
 mutex_t light_protect_mutex;
 
-
-
-/* Initialize this module (see description in sys.h) */
+/*
+ * Initialize this module (see description in sys.h)
+ */
 void sys_init(void)
 {
     mutex_init(&light_protect_mutex);
-    //light_protect_mutex = (mutex_t*)malloc(sizeof(mutex_t));
-    // INIT mutex
 }
 
-
+/*
+ * Return the current time in ms
+ */
 u32_t sys_now(void)
 {
     return NOW() / 1000000ull;
-    // time in ms
 }
 
+/*
+ * Return the current time in ns
+ */
 u32_t sys_jiffies(void)
 {
     return NOW();
-    // return monotonic time in NS
 }
 
 
-/**
- * SYS_LIGHTWEIGHT_PROT
- * define SYS_LIGHTWEIGHT_PROT in lwipopts.h if you want inter-task protection
- * for certain critical regions during buffer allocation, deallocation and memory
- * allocation and deallocation.
- */
 #if SYS_LIGHTWEIGHT_PROT
 
 sys_prot_t sys_arch_protect(void)
 {
-    // We can use mutex because SO3 mutexes support recursive calls
+    /* We can use mutex because SO3 mutexes support recursive calls */
     mutex_lock(&light_protect_mutex);
     return 1;
 }
@@ -98,15 +91,15 @@ void sys_arch_unprotect(sys_prot_t pval)
 
 #endif /* SYS_LIGHTWEIGHT_PROT */
 
+
 void sys_arch_msleep(u32_t delay_ms)
 {
     msleep(delay_ms);
 }
 
-// If mutex are availible use this code
-#if !LWIP_COMPAT_MUTEX
-
-/* Create a new mutex*/
+/*
+ * create a new mutex
+ */
 err_t sys_mutex_new(sys_mutex_t *mutex)
 {
     mutex_t *so3_mutex;
@@ -124,6 +117,9 @@ err_t sys_mutex_new(sys_mutex_t *mutex)
     return ERR_OK;
 }
 
+/*
+ * Lock the mutex
+ */
 void sys_mutex_lock(sys_mutex_t *mutex)
 {
     LWIP_ASSERT("mutex != NULL", mutex != NULL);
@@ -149,8 +145,6 @@ void sys_mutex_free(sys_mutex_t *mutex)
 
     mutex->mut = NULL;
 }
-
-#endif /* !LWIP_COMPAT_MUTEX */
 
 err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
 {
