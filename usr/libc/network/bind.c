@@ -3,5 +3,5 @@
 
 int bind(int fd, const struct sockaddr *addr, socklen_t len)
 {
-	return socketcall(bind, fd, addr, len, 0, 0, 0);
+	return sys_bind(fd, addr, len);
 }

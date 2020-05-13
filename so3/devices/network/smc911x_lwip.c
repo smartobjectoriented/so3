@@ -314,7 +314,7 @@ static int smc911x_rx(struct netif *netif)
                 buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
 
                 if (buf != NULL) {
-                        printk("Pkt %d\n", pktlen);
+                        //printk("Pkt %d\n", pktlen);
                         data = (u32 *) buf->payload;
                 } else { // TODO better
                         printk("No buff %d\n", pktlen);
@@ -326,17 +326,17 @@ static int smc911x_rx(struct netif *netif)
 
                 while (tmplen--) {
                         pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
-                        printk("%02x", (char) pulled_data);
-                        printk("%02x", (char) (pulled_data >> 8));
-                        printk("%02x", (char) (pulled_data >> 16));
-                        printk("%02x ", (char) (pulled_data >> 24));
+                        //printk("%02x", (char) pulled_data);
+                        //printk("%02x", (char) (pulled_data >> 8));
+                        //printk("%02x", (char) (pulled_data >> 16));
+                        //printk("%02x ", (char) (pulled_data >> 24));
 
                         if (data != NULL) {
                                 *(data++) = pulled_data;
                         }
                 }
 
-                printk("\n\n");
+                //printk("\n\n");
 
                 if (buf != NULL) {
                         netif->input(buf, netif);

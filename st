@@ -11,7 +11,7 @@ QEMU_GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
 echo -e 'MAC:\t\t' $QEMU_MAC_ADDR
 echo -e 'GDB Port:\t' $QEMU_GDB_PORT '\n\n'
 
- 
+
  sudo qemu/arm-softmmu/qemu-system-arm $@ \
     -gdb tcp::$QEMU_GDB_PORT \
   	-smp 4 \
@@ -22,7 +22,6 @@ echo -e 'GDB Port:\t' $QEMU_GDB_PORT '\n\n'
 	-semihosting-config enable,target=native \
 	-net user,tftp=. \
 	-nic tap,script=tools/qemu-ifup,downscript=tools/qemu-ifdown,mac=${QEMU_MAC_ADDR} \
-	-sd filesystem/sdcard.img \
+	-sd filesystem/sdcard.img.vexpress \
 	-nographic 
-    
  

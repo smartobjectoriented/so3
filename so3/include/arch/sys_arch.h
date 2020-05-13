@@ -42,8 +42,9 @@ struct _sys_mbox {
     void *mbox;
 };
 typedef struct _sys_mbox sys_mbox_t;
+
 #define sys_mbox_valid_val(_mbox)   ((_mbox).mbox != NULL)
-#define sys_mbox_valid(_mbox)       (((_mbox) != NULL))
+#define sys_mbox_valid(_mbox)       (((_mbox) != NULL) && ((_mbox)->mbox != NULL))
 #define sys_mbox_set_invalid(_mbox) ((_mbox)->mbox = NULL)
 
 struct _sys_thread {

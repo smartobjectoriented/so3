@@ -337,7 +337,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *sys_mbox, void **msg, u32_t timeout_ms)
     int start_time = sys_now();
     _mbox_t* mbox;
 
-    LWIP_ASSERT("invalid mbox", (sys_mbox_t != NULL) && (sys_mbox->mbox != NULL));
+    LWIP_ASSERT("invalid mbox", (sys_mbox != NULL) && (sys_mbox->mbox != NULL));
 
     mbox = sys_mbox->mbox;
 

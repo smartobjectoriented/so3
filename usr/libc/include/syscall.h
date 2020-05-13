@@ -368,7 +368,7 @@ int sys_socket(int domain, int type, int protocol);
  *
  * Returns 0 on success, or -1 on error and set errno.
  */
-int sys_bind(int socket, int port);
+int sys_bind(int socket, const struct sockaddr* addr, int port);
 
 /**
  * Marks the socket as passive and ready to accept incoming
@@ -386,7 +386,7 @@ int sys_listen(int socket, int backlog);
  *
  * Returns a new file descriptor on success, or -1 on error and set errno.
  */
-int sys_accept(int socket, int *cli_addr, int *cli_port);
+int sys_accept(int socket, struct sockaddr *cli_addr, socklen_t *cli_port);
 
 /**
  * Attempt to initiate a new connection (client side) to the specified port
@@ -396,7 +396,7 @@ int sys_accept(int socket, int *cli_addr, int *cli_port);
  *
  * Returns 0 on success, or -1 on error and set errno.
  */
-int sys_connect(int socket, struct sockaddr_in *si, socklen_t addrlen);
+int sys_connect(int socket, const struct sockaddr *si, socklen_t addrlen);
 
 /**
  * This system call is used to receive messages from a socket. If no messages are

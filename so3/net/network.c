@@ -132,8 +132,11 @@ struct sockaddr_in_usr {
  * @param usr
  * @param lwip
  */
-void user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockaddr_in *lwip)
+struct sockaddr *user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockaddr_in *lwip)
 {
+        if(usr == NULL){
+                return NULL;
+        }
 
         memset(lwip, 0, sizeof(struct sockaddr));
 
@@ -141,6 +144,8 @@ void user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockaddr_in *lwip)
         lwip->sin_family = usr->sin_family;
         lwip->sin_port = usr->sin_port;
         lwip->sin_addr = usr->sin_addr;
+
+        return (struct sockaddr *)lwip;
 }
 
 // TODO
@@ -349,12 +354,8 @@ int get_lwip_fd(int gfd)
         }
 }
 
-/**
+/*
  *
- * @param domain
- * @param type SOCK_STREAM for TCP or SOCK_DGRAM for UDP
- * @param protocol Protocol ID
- * @return Scoket FD
  */
 int do_socket(int domain, int type, int protocol)
 {
@@ -399,18 +400,28 @@ int do_socket(int domain, int type, int protocol)
         return fd;
 }
 
-int do_connect(int sockfd, const struct sockaddr *name, socklen_t namelen)
+int do_connect(int sockfd, const struct sockaddr *addr, socklen_t namelen)
 {
+        struct sockaddr_in addr_lwip;
+        struct sockaddr *addr_ptr;
+
         int lwip_fd = get_lwip_fd(sockfd);
 
-        return lwip_connect(lwip_fd, name, namelen);
+        addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+
+        return lwip_connect(lwip_fd, addr_ptr, namelen);
 }
 
 int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
+        struct sockaddr_in addr_lwip;
+        struct sockaddr *addr_ptr;
+
         int lwip_fd = get_lwip_fd(sockfd);
 
-        return lwip_bind(lwip_fd, addr, addrlen);
+        addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+
+        return lwip_bind(lwip_fd, addr_ptr, addrlen);
 }
 
 int do_listen(int sockfd, int backlog)
@@ -422,9 +433,55 @@ int do_listen(int sockfd, int backlog)
 
 int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-        int lwip_fd = get_lwip_fd(sockfd);
+        int fd, gfd, lwip_fd, lwip_bind_fd;
+        struct file_operations *fops;
+        struct sockaddr_in addr_lwip;
+        struct sockaddr *addr_ptr;
 
-        return lwip_accept(lwip_fd, addr, addrlen);
+
+        lwip_fd = get_lwip_fd(sockfd);
+
+        addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+
+
+
+        // TODO LOCK
+
+        /* FIXME: Should find the mounted point regarding the path */
+        /* At the moment... */
+        fops = register_sock();
+
+        /* vfs_open is already clean fops and open_fds */
+        fd = vfs_open(fops, VFS_TYPE_SOCK);
+
+        if (fd < 0) {
+                /* fd already open */
+                set_errno(EBADF);
+                // TODO UNLOCK
+                return -1;
+        }
+
+        /* Get index of open_fds*/
+        gfd = current()->pcb->fd_array[fd];
+
+        vfs_set_open_mode(gfd, 0);
+
+        lwip_bind_fd = lwip_accept(lwip_fd, addr_ptr, addrlen);
+
+        if (lwip_fd < 0) {
+                do_close(fd);
+                return lwip_fd;
+        }
+
+        // TODO check fd ok
+        lwip_fds[gfd] = lwip_bind_fd;
+
+
+        // TODO UNLOCK
+
+        return fd;
+
+
 }
 
 int do_recv(int sockfd, void *mem, size_t len, int flags)
