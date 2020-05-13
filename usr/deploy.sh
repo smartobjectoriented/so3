@@ -6,4 +6,6 @@ echo Deploying usr apps into the first partition...
 cd ../filesystem
 ./mount.sh 1
 sudo cp ../usr/out/*.elf fs/
-sudo ./umount.sh
+sync
+./umount.sh 
+ 

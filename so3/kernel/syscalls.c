@@ -80,7 +80,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_GETTIMEOFDAY:
-			result =  do_get_time_of_day((struct timespec *) r0);
+			result =  do_get_time_of_day((struct timeval *) r0);
 			break;
 
 		case SYSCALL_EXIT:

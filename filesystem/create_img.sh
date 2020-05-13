@@ -11,11 +11,11 @@ fi
 
 if [ "$1" == "vexpress" ]; then
     #create image first
-    echo Creating sdcard.img ... 
+    echo Creating sdcard.img.$1 ... 
     dd_size=32M
     
-    dd if=/dev/zero of=sdcard.img bs="$dd_size" count=1
-    devname=$(sudo losetup --partscan --find --show sdcard.img)
+    dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
+    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
 
     # Keep device name only without /dev/
     devname=${devname#"/dev/"}

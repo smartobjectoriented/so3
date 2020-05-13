@@ -355,18 +355,21 @@ void timer_init(void) {
 
 }
 
+/*
+ * Th function get the current time and put it in the parameter tv
+ */
+int do_get_time_of_day(struct timeval *tv)
+{
+        u64 time;
 
-int do_get_time_of_day(struct timespec *ts){
-    u64 time;
+        if (!tv) {
+                set_errno(EINVAL);
+                return -1;
+        }
 
-    if(!ts){
-        set_errno(EINVAL);
-        return -1;
-    }
+        time = NOW();
+        tv->tv_sec = time / 1000000000ull;
+        tv->tv_usec = (time % 1000000000ull) / 1000ull;
 
-    time = NOW();
-    ts->tv_sec = time / 1000000000ull;
-    ts->tv_nsec = (time % 1000000000ull);
-
-    return 0;
+        return 0;
 }
