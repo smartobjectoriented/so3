@@ -32,7 +32,7 @@
 static uint32_t *errno_addr = NULL;
 
 extern void __get_syscall_args_ext(uint32_t *syscall_no, uint32_t **__errno_addr);
-extern uint32_t __get_syscall_stack_args(uint32_t nr);
+extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
 

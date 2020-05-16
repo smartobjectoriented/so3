@@ -38,7 +38,7 @@ static struct list_head zombieThreads;
 
 /* Global list of process */
 struct list_head proc_list;
-struct tcb *tcb_idle;
+struct tcb *tcb_idle = NULL;
 
 tcb_t *current_thread;
 static sched_policy_t sched_policy;
@@ -351,6 +351,7 @@ void schedule(void) {
 	static volatile bool __in_scheduling = false;
 
 	BUG_ON(!__sched_preempt);
+	BUG_ON(!tcb_idle);
 
 	/* Already scheduling? May happen if set_timer leads to another softirq schedule */
 	if (__in_scheduling)
@@ -365,15 +366,13 @@ void schedule(void) {
 	prev = current();
 	next = next_thread();
 
-	if (unlikely((next == NULL) && ((prev == NULL) || (prev->state != THREAD_STATE_RUNNING))))
-		next = tcb_idle;
-
-#ifdef CONFIG_SCHED_RR
+#ifdef CONFIG_SCHED_FREQ_PREEMPTION
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
+	if ((next == NULL) && (prev->state != THREAD_STATE_RUNNING))
+		next = tcb_idle;
 
-	/* It may happen, at the very beginning, that the tcb_idle is not initialized yet */
-	if ((next != NULL) && (next != prev)) {
+	if (next && (next != prev)) {
 
 		DBG("Now scheduling thread ID: %d name: %s PID: %d\n", next->tid, next->name, ((next->pcb != NULL) ? next->pcb->pid : -1));
 
@@ -509,6 +508,8 @@ void dump_sched(void) {
 
 void scheduler_init(void) {
 
+	boot_stage = BOOT_STAGE_SCHED;
+
 	/* Low-level thread initialization */
 	threads_init();
 
@@ -531,6 +532,19 @@ void scheduler_init(void) {
 	/* Registering our softirq to activate the scheduler when necessary */
 	register_softirq(SCHEDULE_SOFTIRQ, schedule);
 
+	/* Initialize the idle thread so that we make sure there is at least
+	 * one ready thread, and support other threads to be waiting at
+	 * their early execution.
+	 */
+
+	/* Start the idle thread with priority 1. */
+	tcb_idle = kernel_thread(thread_idle, "idle", NULL, 1);
+
+	/* We put the current thread as NULL. The scheduler will avoid
+	 * to preserve hazardous register for a running thread which
+	 * has not been scheduled by itself. Therefore, the idle thread
+	 * starts to be ready first before getting running.
+	 */
 	set_current(NULL);
 
 	preempt_enable();
@@ -539,6 +553,4 @@ void scheduler_init(void) {
 	init_timer(&schedule_timer, raise_schedule, NULL);
 
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
-
-	boot_stage = BOOT_STAGE_SCHED;
 }
