@@ -19,6 +19,8 @@
 #include <common.h>
 
 #include <device/serial.h>
+#include <process.h>
+#include <vfs.h>
 
 #define CONSOLEIO_BUFFER_SIZE 256
 
@@ -43,7 +45,10 @@ void __lprintk(const char *format, const va_list va) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
-	ll_serial_write(buf, strlen(buf));
+	if (cpu_mode() == USR_MODE)
+		__write(STDOUT, buf, strlen(buf));
+	else
+		ll_serial_write(buf, strlen(buf));
 }
 
 void lprintk(char *format, ...) {

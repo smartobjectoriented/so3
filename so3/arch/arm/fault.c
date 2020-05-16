@@ -25,23 +25,14 @@ void __stack_alignment_fault(void) {
 	kernel_panic();
 }
 
-void dump_backtrace_entry(unsigned long where, unsigned long from)
-{
-        lprintk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
-}
-
 void __prefetch_abort(uint32_t ifar, uint32_t ifsr, uint32_t lr) {
 	lprintk("### prefetch abort exception ifar: %x ifsr: %x lr(r14)-8: %x ###\n", ifar, ifsr, lr-8);
-
-	__backtrace();
 
 	kernel_panic();
 }
 
 void __data_abort(uint32_t far, uint32_t fsr, uint32_t lr) {
 	lprintk("### abort exception far: %x fsr: %x lr(r14)-8: %x ###\n", far, fsr, lr-8);
-
-	__backtrace();
 
 	kernel_panic();
 }
@@ -53,17 +44,18 @@ void __div0(void) {
 
 void kernel_panic(void)
 {
-	lprintk("%s: entering infinite loop... CPU: %d\n", __func__, smp_processor_id());
-
-	__backtrace();
+	if (cpu_mode() == USR_MODE)
+		printk("%s: entering infinite loop...\n", __func__);
+	else {
+		lprintk("%s: entering infinite loop... CPU: %d\n", __func__, smp_processor_id());
 
 #ifdef CONFIG_VEXPRESS
-	{
-		extern void send_qemu_halt(void);
-		send_qemu_halt();
-	}
+		{
+			extern void send_qemu_halt(void);
+			send_qemu_halt();
+		}
 #endif
-
+	}
 	/* Stop all activities. */
 	local_irq_disable();
 
@@ -72,7 +64,8 @@ void kernel_panic(void)
 
 void _bug(char *file, int line)
 {
-	lprintk("BUG in %s at line: %d\n", file, line); \
+	lprintk("BUG in %s at line: %d\n", file, line);
+
 	kernel_panic();
 }
 

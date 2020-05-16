@@ -149,6 +149,7 @@ int proc_new_fd(pcb_t *pcb);
 void dump_proc(void);
 
 extern int __exec(const char *file);
+extern int __write(int fd, char *buffer, int count);
 
 int do_sbrk(int increment);
 

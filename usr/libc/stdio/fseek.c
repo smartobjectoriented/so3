@@ -40,4 +40,6 @@ int fseek(FILE *f, long off, int whence)
 
 weak_alias(__fseeko, fseeko);
 
+#if 0
 LFS64(fseeko);
+#endif

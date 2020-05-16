@@ -26,4 +26,6 @@ void dcache_flush(uint32_t *pte);
 
 void flush_all(void);
 
+void flush_icache_range(uint32_t start, uint32_t end);
+
 #endif /* CACHEFLUSH_H */

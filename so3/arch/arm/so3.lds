@@ -109,7 +109,7 @@ SECTIONS
         . = ALIGN (8);
         __stack_top = . ;
         
-       }
+    }
 
     __end = .;
 }

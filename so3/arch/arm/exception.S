@@ -199,6 +199,7 @@ syscall_interrupt:
 	ldr		r0, [sp, #OFFSET_SP_USR]
 	ldr 	r1, .LCcurrent
 	ldr 	r1, [r1]
+
 	str 	r0, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
 
 	@ Restore r0-r2
@@ -405,9 +406,9 @@ irq:
 fiq:
     b  fiq
 
-.LClog:
-	.word 0
-
 .LCcurrent:
 	.word current_thread
+
+.LClog:
+	.word 0
 

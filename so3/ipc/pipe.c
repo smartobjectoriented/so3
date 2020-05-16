@@ -172,7 +172,7 @@ static int pipe_write_byte(pipe_desc_t *pd, char value)
 	return 1; /* 1 bytes successfully written */
 }
 
-static int pipe_write(int gfd, void *buffer, int count)
+static int pipe_write(int gfd, const void *buffer, int count)
 {
 	int pos, ret;
 	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_privdata(gfd);
@@ -301,8 +301,8 @@ int do_pipe(int pipefd[2]) {
 	 * open file descriptor for both side of
 	 * the pipe 
 	 * */
-	pipefd[0] = vfs_open(&pipe_fops, VFS_TYPE_PIPE);
-	pipefd[1] = vfs_open(&pipe_fops, VFS_TYPE_PIPE);
+	pipefd[0] = vfs_open(NULL, &pipe_fops, VFS_TYPE_PIPE);
+	pipefd[1] = vfs_open(NULL, &pipe_fops, VFS_TYPE_PIPE);
 
 	/* Keep a reference to the two gfd of this pipe:
 	 * set the global fd inside the pipe descriptor

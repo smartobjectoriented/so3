@@ -95,7 +95,7 @@ SYSCALLSTUB sys_thread_exit, 	syscallThreadExit
 SYSCALLSTUB sys_thread_yield,   syscallThreadYield
 SYSCALLSTUB sys_pipe, 			syscallPipe
 SYSCALLSTUB sys_ioctl,			syscallIoctl
-SYSCALLSTUB sys_mkdir,			syscallMkdir
+SYSCALLSTUB sys_fcntl,	 	    syscallFcntl
 SYSCALLSTUB sys_stat,	 		syscallStat
 SYSCALLSTUB sys_dup,	 		syscallDup
 SYSCALLSTUB sys_dup2,	 		syscallDup2
@@ -118,6 +118,8 @@ SYSCALLSTUB sys_gettimeofday,	syscallGetTimeOfDay
 SYSCALLSTUB sys_settimeofday,	syscallSetTimeOfDay
 SYSCALLSTUB sys_sbrk,			syscallSbrk
 SYSCALLSTUB sys_info,	    	syscallSysinfo
+
+SYSCALLSTUB sys_lseek,			syscallLseek
 
 SYSCALLSTUB sys_mutex_lock,	    syscallMutexLock
 SYSCALLSTUB sys_mutex_unlock,	syscallMutexUnlock

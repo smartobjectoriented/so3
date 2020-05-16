@@ -46,7 +46,7 @@
 #define syscallThreadExit		18
 #define syscallPipe			19
 #define syscallIoctl			20
-#define syscallMkdir			21
+#define syscallFcntl			21
 #define syscallDup			22
 #define syscallDup2			23
 #define syscallRenice			24
@@ -75,6 +75,8 @@
 #define syscallSigaction    		46
 #define syscallKill         		47
 #define syscallSigreturn         	48
+
+#define syscallLseek			50
 
 #define syscallMutexLock		60
 #define syscallMutexUnlock		61
@@ -261,6 +263,40 @@ int sys_close(int fd);
  * Returns 0 on success or -1 if an error occurred, and errno is set.
  */
 int sys_ioctl(int fd, int cmd, void *val);
+
+/**
+ * fcntl() performs one of the operations described below on the open file descriptor fd.  The operation is determined by cmd.
+ * fcntl() can take an optional third argument.  Whether or not this argument is required is determined by cmd.
+ * The required argument type is indicated in parentheses after each cmd name (in most cases, the
+ * required type is int, and we identify the argument using the name arg), or void is specified if the argument is not required.
+ *
+ * Certain of the operations below are supported only since a particular Linux kernel version.
+ * The preferred method of checking whether the host kernel supports a particular operation  is  to  invoke  fcntl()
+ * with the desired cmd value and then test whether the call failed with EINVAL, indicating that the kernel does not recognize this value.
+ *
+ * See man page for returned value.
+ */
+int sys_fcntl(int fd, int cmd, void *val);
+
+/*
+ *  lseek() repositions the file offset of the open file description associated with the file descriptor fd to the argument offset
+ *  according to the directive whence as follows:
+ *
+ *    SEEK_SET
+ *            The file offset is set to offset bytes.
+ *
+ *    SEEK_CUR
+ *            The file offset is set to its current location plus offset bytes.
+ *
+ *    SEEK_END
+ *            The file offset is set to the size of the file plus offset bytes.
+ *
+ *     lseek()  allows  the  file  offset  to  be set beyond the end of the file (but this does not change the size of the file).
+ *     If data is later written at this point, subsequent reads of the data in the gap (a "hole") return null bytes ('\0') until data is actually written into the gap.
+ *
+ */
+
+off_t sys_lseek(int fd, off_t offset, int whence);
 
 /**
  * This IOCTL command returns the number of column and lines of the given

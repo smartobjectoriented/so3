@@ -24,6 +24,8 @@
 #include <stat.h>
 #include <dirent.h>
 
+#include <device/device.h>
+
 /* File access mode flags */
 #define O_SEARCH  O_PATH
 #define O_EXEC    O_PATH
@@ -56,8 +58,9 @@
 #define O_TMPFILE 020040000
 #define O_NDELAY O_NONBLOCK
 
-#define MAX_FS_REGISTERED 4
-#define MAX_FDS 128
+#define MAX_FS_REGISTERED          4
+#define MAX_DEV_CLASS_REGISTERED   4
+#define MAX_FDS                  128
 
 #define FILENAME_MAX 100
 
@@ -65,15 +68,26 @@
 #define STDOUT 1
 #define STDERR 2
 
+/* Types of lseek whence */
+#define SEEK_SET        0       /* seek relative to beginning of file */
+#define SEEK_CUR        1       /* seek relative to current file position */
+#define SEEK_END        2       /* seek relative to end of file */
+#define SEEK_DATA       3       /* seek to the next data */
+#define SEEK_HOLE       4       /* seek to the next hole */
+#define SEEK_MAX        SEEK_HOLE
+
 /* Types of entry */
 #define VFS_TYPE_FILE		0
 #define VFS_TYPE_DIR		1
+
 #define VFS_TYPE_PIPE		2
-#define VFS_TYPE_IO		    3   /* stdin/stdout/stderr */
-#define VFS_TYPE_FB		    4   /* framebuffer device */
-#define VFS_TYPE_INPUT		5   /* input device (e.g. mouse) */
-#define VFS_TYPE_SOCK		6   /* Sockets */
-#define VFS_TYPE_NIC		7   /* NICs */
+#define VFS_TYPE_IO		3	/* stdin/stdout/stderr */
+
+#define VFS_TYPE_DEV_FB		4	/* framebuffer device */
+#define VFS_TYPE_DEV_INPUT	5	/* input device (e.g. mouse) */
+#define VFS_TYPE_DEV_CHAR	6       /* Generic device character */
+#define VFS_TYPE_DEV_SOCK	6   /* Sockets */
+#define VFS_TYPE_DEV_NIC	7   /* NICs */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
@@ -89,8 +103,8 @@ struct file_operations {
 	int (*open)(int fd, const char *path);
 	int (*close)(int fd);
 	int (*read)(int fd, void *buffer, int count);
-	int (*write)(int fd, void *buffer, int count);
-	int (*lseek)(size_t);
+	int (*write)(int fd, const void *buffer, int count);
+	off_t (*lseek)(int fd, off_t off, int whence);
 	int (*ioctl)(int fd, unsigned long cmd, unsigned long args);
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
@@ -102,6 +116,10 @@ struct file_operations {
 };
 
 struct fd {
+
+	/* Filename */
+	char *filename;
+
 	/*  FD number */
 	uint32_t val;
 	uint32_t flags_operating_mode;
@@ -114,6 +132,7 @@ struct fd {
 
 	/* List of callbacks */
 	struct file_operations *fops;
+
 	/* Private data of fd */
 	void *priv;
 };
@@ -121,20 +140,23 @@ struct fd {
 /* Syscall accessible from userspace */
 int do_open(const char *filename, int flags);
 int do_read(int fd, void *buffer, int count);
-int do_write(int fd, void *buffer, int count);
+int do_write(int fd, const void *buffer, int count);
 int do_readdir(int fd, char *buf, int len);
 void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
+int do_fcntl(int fd, unsigned long cmd, unsigned long args);
+off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */
+char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
 struct file_operations *vfs_get_fops(uint32_t gfd);
 int vfs_refcount(int gfd);
 void vfs_init(void);
-int vfs_open(struct file_operations *fops, uint32_t type);
+int vfs_open(const char *filename, struct file_operations *fops, uint32_t type);
 int vfs_close(int gfd);
 void vfs_set_privdata(int gfd, void *data);
 void *vfs_get_privdata(int gfd);

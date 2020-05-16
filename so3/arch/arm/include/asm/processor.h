@@ -24,6 +24,8 @@
 
 #define NR_CPUS 		1
 
+#define VECTOR_VADDR		0xffff0000
+
 #define CPU_ARCH_UNKNOWN	0
 #define CPU_ARCH_ARMv3		1
 #define CPU_ARCH_ARMv4		2

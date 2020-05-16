@@ -31,6 +31,7 @@
 #include <heap.h>
 
 #include <device/timer.h>
+#include <device/serial.h>
 
 #define TYPE_FILE	0
 #define TYPE_FOLDER	1
@@ -176,12 +177,7 @@ static void time_fat_fat2so3(unsigned short date, unsigned short time, struct ti
 		ts->tv_nsec = 0;
 }
 
-int mkdir_fat(int fd, const char *path)
-{
-	return 0;
-}
-
-int read_fat(int fd, void *buffer, int count)
+int fat_read(int fd, void *buffer, int count)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
 	int rc = 0;
@@ -203,7 +199,7 @@ int read_fat(int fd, void *buffer, int count)
 	return bread;
 }
 
-int write_fat(int fd, void *buffer, int count)
+int fat_write(int fd, const void *buffer, int count)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
 	int rc = 0;
@@ -231,7 +227,7 @@ int write_fat(int fd, void *buffer, int count)
  *		kind of type provided
  *
  */
-int open_fat(int fd, const char *path)
+int fat_open(int fd, const char *path)
 {
 	struct fat_entry *ptrent;
 	int rc;
@@ -271,7 +267,7 @@ open_fail:
 	return -rc;
 }
 
-int close_fat(int fd)
+int fat_close(int fd)
 {
 	int rc;
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
@@ -295,7 +291,7 @@ int close_fat(int fd)
 	return 0;
 }
 
-int mount_fat(const char *mount_point)
+int fat_mount(const char *mount_point)
 {
 	int i;
 	int rc = 0;
@@ -315,12 +311,12 @@ int mount_fat(const char *mount_point)
 	return -1;
 }
 
-int unmount_fat(const char *mount_point)
+int fat_unmount(const char *mount_point)
 {
 	return 0;
 }
 
-struct dirent *readdir_fat(int fd)
+struct dirent *fat_readdir(int fd)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
 	struct dirent *dent;
@@ -360,12 +356,12 @@ struct dirent *readdir_fat(int fd)
 	return (void *) dent;
 }
 
-int unlink_fat(int fd, const char *path)
+int fat_unlink(int fd, const char *path)
 {
 	return 0;
 }
 
-int stat_fat(const char *path, struct stat *st)
+int fat_stat(const char *path, struct stat *st)
 {
 	FILINFO finfo;
 	struct timespec tm;
@@ -391,14 +387,105 @@ int stat_fat(const char *path, struct stat *st)
 	return res;
 }
 
+/* Request an ioctl from user space */
+static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
+{
+	int rc;
+
+	switch (cmd) {
+		case TIOCGWINSZ:
+			rc = serial_gwinsize((struct winsize *) args);
+			break;
+		default:
+			rc = -1;
+			break;
+	}
+
+	return rc;
+}
+
+/**
+ * lseek implementation for FAT filesystem
+ * @whence can have the following value:
+ *
+ * - SEEK_SET        seek relative to beginning of file
+ * - SEEK_CUR        seek relative to current file position
+ * - SEEK_END        seek relative to end of file
+ * - SEEK_DATA       seek to the next data
+ * - SEEK_HOLE       seek to the next hole
+ *
+ * Upon  successful  completion,  lseek() returns the resulting offset location as measured in bytes
+ * from the beginning of the file.  On error, the value (off_t) -1 is returned and errno is set to indicate the error.
+ *
+ */
+static off_t fat_lseek(int fd, off_t off, int whence) {
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	off_t ret;
+	uint32_t eof, cur;
+
+	/* Get the size of the file (eof) */
+	eof = ptrent->entry.file.obj.objsize;
+
+	/* Get the current position */
+	cur = ptrent->entry.file.fptr;
+
+	switch (whence) {
+		case SEEK_END:
+			off += eof;
+			break;
+
+		case SEEK_CUR:
+			/*
+			 * Here we special-case the lseek(fd, 0, SEEK_CUR)
+			 * position-querying operation.  Avoid rewriting the "same"
+			 * f_pos value back to the file because a concurrent read(),
+			 * write() or lseek() might have altered it
+			 */
+			if (off == 0)
+				return ptrent->entry.file.fptr;
+
+			off += cur;
+			if (off >= eof) {
+				set_errno(EINVAL);
+				return -1;
+			}
+			break;
+
+		case SEEK_DATA:
+			if (off >= eof)
+				return -ENXIO;
+			break;
+
+		case SEEK_HOLE:
+			/*
+			 * There is a virtual hole at the end of the file, so as long as
+			 * offset isn't i_size or larger, return i_size.
+			 */
+			if (off >= eof)
+				return -ENXIO;
+			off = eof;
+			break;
+	}
+
+	ret = f_lseek(&ptrent->entry.file, off);
+	if (ret) {
+		set_errno(EINVAL);
+		return (off_t) -1;
+	}
+
+	return off;
+}
+
 static struct file_operations fatops = {
-	.open = open_fat,
-	.close = close_fat,
-	.read = read_fat,
-	.write = write_fat,
-	.mount = mount_fat,
-	.readdir = readdir_fat,
-	.stat = stat_fat,
+	.open = fat_open,
+	.close = fat_close,
+	.read = fat_read,
+	.write = fat_write,
+	.mount = fat_mount,
+	.readdir = fat_readdir,
+	.stat = fat_stat,
+	.ioctl = fat_ioctl,
+	.lseek = fat_lseek
 };
 
 struct file_operations *register_fat(void)
