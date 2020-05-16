@@ -366,7 +366,7 @@ void schedule(void) {
 	prev = current();
 	next = next_thread();
 
-#ifdef CONFIG_SCHED_RR
+#ifdef CONFIG_SCHED_FREQ_PREEMPTION
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
 	if ((next == NULL) && (prev->state != THREAD_STATE_RUNNING))

@@ -19,8 +19,13 @@ CONFIG_RPI4=y
 CONFIG_RAM_BASE=0x00000000
 CONFIG_THREAD_ENV=y
 # CONFIG_PROC_ENV is not set
+
+#
+# SO3 Scheduling configuration
+#
 CONFIG_SCHED_RR=y
 # CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
 
 #
 # Drivers
