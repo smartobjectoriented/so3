@@ -369,6 +369,8 @@ void schedule(void) {
 #ifdef CONFIG_SCHED_RR
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
+	if ((next == NULL) && (prev->state != THREAD_STATE_RUNNING))
+		next = tcb_idle;
 
 	if (next && (next != prev)) {
 
@@ -537,9 +539,13 @@ void scheduler_init(void) {
 
 	/* Start the idle thread with priority 1. */
 	tcb_idle = kernel_thread(thread_idle, "idle", NULL, 1);
-	tcb_idle->state = THREAD_STATE_RUNNING;
 
-	set_current(tcb_idle);
+	/* We put the current thread as NULL. The scheduler will avoid
+	 * to preserve hazardous register for a running thread which
+	 * has not been scheduled by itself. Therefore, the idle thread
+	 * starts to be ready first before getting running.
+	 */
+	set_current(NULL);
 
 	preempt_enable();
 
