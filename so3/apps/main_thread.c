@@ -99,6 +99,30 @@ int thread_example(void *arg)
 	return 0;
 }
 
+int fn(void *args) {
+	int i = 0, ret;
+
+	printk("Thread #1\n");
+	while (1) {
+		ret = sem_timeddown(&sem, MILLISECS(100));
+		if (ret != 0)
+			lprintk("!");
+		else
+			lprintk("*");
+		//sem_down(&sem);
+
+		msleep((i*10) % 1000);
+
+		if (ret == 0)
+			sem_up(&sem);
+		//sem_up(&sem);
+
+		printk("--> th 1: %d\n", i++);
+	}
+
+	return 0;
+}
+
 int fn1(void *args) {
 	//int i = 0;
 
@@ -182,10 +206,14 @@ int main_kernel(void *args)
 #endif
 
 #if 1
-	sem_init(&sem);
+	{
+		int i;
 
-	kernel_thread(fn1, "fn1", NULL, 0);
-	kernel_thread(fn2, "fn2", NULL, 0);
+		sem_init(&sem);
+		for (i = 0; i < 20; i++)
+			kernel_thread(fn, "fn1", NULL, 0);
+	}
+
 #endif
 
 #if 0 /* Another test code */

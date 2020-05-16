@@ -134,7 +134,7 @@ void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, voi
 
 void irq_unbind(int irq) {
 
-	DBG("Binding irq %d with action at %x\n", irq, handler);
+	DBG("Unbinding irq %d\n", irq);
 	irqdesc[irq].action = NULL;
 	irqdesc[irq].irq_deferred_fn = NULL;
 }

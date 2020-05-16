@@ -414,7 +414,7 @@ void duplicate_user_space(pcb_t *from, pcb_t *to) {
 					/* Add the new page to the process list */
 					add_page_to_proc(to, phys_to_page(paddr));
 
-#warning should be avoided .. (simply replace the pte and flusing only this entry)
+#warning should be avoided .. (simply replace the pte and flushing only this entry)
 
 					create_mapping(current_pgtable(), TRANSITIONAL_MAPPING, paddr, PAGE_SIZE, false);
 

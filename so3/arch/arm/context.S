@@ -36,6 +36,7 @@
 
 .globl __get_syscall_args_ext
 .globl __get_syscall_arg
+.globl __get_syscall_stack_arg
 
 .global __mmu_switch
 .global __exec
@@ -43,6 +44,7 @@
 .global __save_context
 
 .extern thread_prologue
+.extern current_thread
 
 #ifdef CONFIG_MMU
 
@@ -58,11 +60,22 @@
 @ hence the fifth argument of the syscall, 1 = second arg. on the stack,
 @ hence the sixth arg., etc.
 @ Returns the value in r0 (according to the EABI)
-__get_syscall_stack_args:
-	ldr r0, [sp, #OFFSET_SP_USR]
+__get_syscall_stack_arg:
+
+	ldr	r1, .LCcurrent
+	ldr r1, [r1]
+
+	@ Get the user stack pointer at the entry of the interrupt vector
+	ldr	r1, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+
+	@ The syscall stub uses r7, r10 and r11. These are NO scratch register
+	@ and are preserved on the stack before the exception.
+	@ Therefore, we have to skip 12 bytes.
+	add r1, r1, #12
+
+	ldr r0, [r1, r0, lsl #2]
 
 	mov pc, lr
-
 
 @ Get the additional arguments linked to the syscall.
 @ The ABI convention is described in crt0.S of the libc.
@@ -217,3 +230,7 @@ __save_context:
 
 .LCret_from_fork:
 	.word ret_from_fork
+
+.LCcurrent:
+	.word current_thread
+

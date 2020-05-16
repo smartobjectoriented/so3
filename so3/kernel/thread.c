@@ -349,6 +349,7 @@ int thread_idle(void *dummy)
 {
 	/* Endless loop */
 	while (true) {
+
 		/* For the moment nothing... The call to schedule() is ensured right after an IRQ processing. */
 
 #ifdef CONFIG_RTOS
