@@ -166,7 +166,7 @@ int main(int argc, char **argv)
         int s, i = 0, msg_count = 0, msg_count_succeed = 0, attempt = 0;
         unsigned int size = 0;
         float rtt = 0, rtt_total, rtt_min = 1000000.0, rtt_max = 0.0;
-        char ip[100];;
+        char ip[100];
         struct ping_pkt packet;
         struct sockaddr_in ping_addr, recv_addr;
         struct timeval timeout, start, end;

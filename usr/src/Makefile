@@ -1,5 +1,6 @@
 
-TARGETS     := echo sh ls more cat ifconfig ping socket
+TARGETS     := echo sh ls more cat ping socket ifconfig
+
 
 
 

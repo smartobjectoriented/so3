@@ -13,4 +13,5 @@ obj-y += network/
 obj-y += timer/
 obj-y += irq/
 
-obj-y += mydev.o
+obj-y += network/
+
