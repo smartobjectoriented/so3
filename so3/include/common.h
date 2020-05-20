@@ -91,7 +91,7 @@ do {                                                            \
 void dump_heap(const char *info);
 
 typedef enum {
-	BOOT_STAGE_INIT, BOOT_STAGE_IRQ_INIT, BOOT_STAGE_SCHED, BOOT_STAGE_IRQ_ENABLE
+	BOOT_STAGE_INIT, BOOT_STAGE_IRQ_INIT, BOOT_STAGE_SCHED, BOOT_STAGE_IRQ_ENABLE, BOOT_STAGE_COMPLETED
 } boot_stage_t;
 extern boot_stage_t boot_stage;
 

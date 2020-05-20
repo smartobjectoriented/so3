@@ -350,6 +350,9 @@ void schedule(void) {
 	uint32_t flags;
 	static volatile bool __in_scheduling = false;
 
+	if (unlikely(boot_stage < BOOT_STAGE_COMPLETED))
+		return;
+
 	BUG_ON(!__sched_preempt);
 	BUG_ON(!tcb_idle);
 
