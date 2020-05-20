@@ -50,18 +50,21 @@ int root_proc(void *args)
 {
 	printk("SO3: starting the initial process (shell) ...\n\n\n");
 
-
 	/* Start the first process */
 	__exec("sh.elf");
 
 	/* We normally never runs here, if the exec() succeeds... */
-	printk("so3: No init proc (shell) found ...");
+	printk("so3: No init proc (shell) found ...\n");
+
 	kernel_panic();
 
 	return 0; /* Make gcc happy ;-) */
 }
 
 int rest_init(void *dummy) {
+
+	/* Start the idle thread with priority 1. */
+	tcb_idle = kernel_thread(thread_idle, "idle", NULL, 1);
 
 	/* Start a first SO3 thread (main app thread) */
 #if defined(CONFIG_THREAD_ENV)
@@ -73,6 +76,8 @@ int rest_init(void *dummy) {
 #elif defined(CONFIG_PROC_ENV)
 
 	/* Launch the root process (should be the shell...) */
+	printk("SO3: starting the initial process (shell) ...\n\n\n");
+
 	create_process(root_proc, "root_proc");
 
 	/* We should never reach this ... */
@@ -121,6 +126,8 @@ void kernel_start(void) {
 	 * The priority is max (99) over other possible threads (normally there is no such thread at this time).
 	 */
 	kernel_thread(rest_init, "so3_boot", NULL, 99);
+
+	boot_stage = BOOT_STAGE_COMPLETED;
 
 	/*
 	 * We loop forever, just the time the scheduler gives the hand to a ready thread.

@@ -51,6 +51,7 @@ uint32_t *current_pgtable(void) {
 /* Initialize the frame table */
 void frame_table_init(uint32_t frame_table_start) {
 	uint32_t i, ft_phys, ft_length, ft_pages;
+	uint32_t ramdev_size = 0;
 
 	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
 	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
@@ -58,7 +59,10 @@ void frame_table_init(uint32_t frame_table_start) {
 	frame_table = (page_t *) __va(ft_phys);
 
 	/* Size of the available memory (without the kernel region) */
-	mem_info.avail_pages = (mem_info.size - (ft_phys - mem_info.phys_base) - get_ramdev_size()) >> PAGE_SHIFT;
+#ifdef CONFIG_RAMDEV
+	ramdev_size = get_ramdev_size();
+#endif
+	mem_info.avail_pages = (mem_info.size - (ft_phys - mem_info.phys_base) - ramdev_size) >> PAGE_SHIFT;
 
 	/* Determine the length of the frame table in bytes */
 	ft_length = mem_info.avail_pages * sizeof(page_t);

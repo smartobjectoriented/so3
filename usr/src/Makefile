@@ -1,5 +1,5 @@
 
-TARGETS     := echo sh ls more cat
+TARGETS     := echo sh ls more cat try try2
 
 
 
