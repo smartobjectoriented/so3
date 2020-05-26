@@ -76,6 +76,32 @@ void complete(completion_t *completion) {
 
 }
 
+/*
+ * Wake all threads waiting for a completion.
+ * In this implementation, all waiting threads are woken up and the completion counter is reset to 0
+ * so that a next call to wait_for_completion() will suspend the thread on this completion.
+ * IRQs are disabled; this function can be safely called from an interrupt context.
+ */
+void complete_all(completion_t *completion) {
+	queue_thread_t *curr, *tmp;
+	uint32_t flags;
+
+	flags = local_irq_save();
+
+	list_for_each_entry_safe(curr, tmp, &completion->tcb_list, list) {
+		ready(curr->tcb);
+		list_del(&curr->list);
+	}
+
+	reinit_completion(completion);
+
+	/* Trigger a schedule to give a change to the waiter */
+	raise_softirq(SCHEDULE_SOFTIRQ);
+
+	local_irq_restore(flags);
+
+}
+
 void init_completion(completion_t *completion) {
 
 	memset(completion, 0, sizeof(completion_t));
