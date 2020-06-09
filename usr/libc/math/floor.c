@@ -22,7 +22,6 @@ double floor(double x)
 		y = x + toint - toint - x;
 	/* special case because of non-nearest rounding modes */
 	if (e <= 0x3ff-1) {
-		FORCE_EVAL(y);
 		return u.i >> 63 ? -1 : 0;
 	}
 	if (y > 0)

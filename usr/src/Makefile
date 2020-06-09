@@ -1,5 +1,5 @@
 
-TARGETS     := echo sh ls more cat ping socket ifconfig
+TARGETS     := echo sh ls more cat ping socket ifconfig netperfc netperfs
 
 
 
