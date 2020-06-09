@@ -30,6 +30,7 @@
 #include <lwip/tcpip.h>
 #include <lwip/sockets.h>
 #include <lwip/netif.h>
+#include <lwip/netifapi.h>
 #include <device/network.h>
 
 static void network_tcpip_done(void *args)

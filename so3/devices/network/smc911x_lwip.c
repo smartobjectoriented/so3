@@ -64,6 +64,7 @@
 #include <lwip/init.h>
 #include <lwip/dhcp.h>
 #include <netif/ethernet.h>
+#include <lwip/netifapi.h>
 #include <lwip/tcpip.h>
 #include <lwip/ip_addr.h>
 
@@ -227,55 +228,11 @@ static void smc911x_enable(eth_dev_t *dev)
         smc911x_set_mac_csr(dev, MAC_CR, MAC_CR_TXEN | MAC_CR_RXEN | MAC_CR_HBDIS);
 }
 
-
-// TODO remove
-static int smc911x_send(eth_dev_t *dev, void *packet, int length)
-{
-        u32 *data = (u32 *) packet;
-        u32 tmplen;
-        u32 status;
-
-        smc911x_reg_write(dev, TX_DATA_FIFO, TX_CMD_A_INT_FIRST_SEG |
-                                             TX_CMD_A_INT_LAST_SEG | length);
-        smc911x_reg_write(dev, TX_DATA_FIFO, length);
-
-        tmplen = (length + 3) / 4;
-
-        while (tmplen--) {
-                pkt_data_push(dev, TX_DATA_FIFO, *data++);
-        }
-
-        /* wait for transmission */
-        while (!((smc911x_reg_read(dev, TX_FIFO_INF) &
-                  TX_FIFO_INF_TSUSED) >> 16)) {}
-
-        /* get status. Ignore 'no carrier' error, it has no meaning for
-         * full duplex operation
-         */
-        status = smc911x_reg_read(dev, TX_STATUS_FIFO) &
-                 (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
-                  TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
-
-        if (!status) {
-                return 0;
-        }
-
-        printk(DRIVERNAME ": failed to send packet: %s%s%s%s%s\n",
-               status & TX_STS_LOC ? "TX_STS_LOC " : "",
-               status & TX_STS_LATE_COLL ? "TX_STS_LATE_COLL " : "",
-               status & TX_STS_MANY_COLL ? "TX_STS_MANY_COLL " : "",
-               status & TX_STS_MANY_DEFER ? "TX_STS_MANY_DEFER " : "",
-               status & TX_STS_UNDERRUN ? "TX_STS_UNDERRUN" : "");
-
-        return -1;
-}
-
 static void smc911x_halt(eth_dev_t *dev)
 {
         smc911x_reset(dev);
         smc911x_handle_mac_address(dev);
 }
-
 
 static int smc911x_rx(struct netif *netif)
 {
@@ -287,7 +244,7 @@ static int smc911x_rx(struct netif *netif)
 
         struct pbuf *buf;
 
-
+        /* Loop while there are incoming eth frames */
         while ((smc911x_reg_read(dev, RX_FIFO_INF) & RX_FIFO_INF_RXSUSED) >> 16) {
                 status = smc911x_reg_read(dev, RX_STATUS_FIFO);
                 pktlen = (status & RX_STS_PKT_LEN) >> 16;
@@ -298,7 +255,6 @@ static int smc911x_rx(struct netif *netif)
                         return -1;
                 }
 
-
                 if (pktlen > ETHERNET_LAYER_2_MAX_LENGTH) {
                         /*smc911x_drop_pkt(dev);*/
                         printk("Dropped bad packet. Packet length can't exceed %d bytes, length was: %d bytes\n",
@@ -306,39 +262,29 @@ static int smc911x_rx(struct netif *netif)
                         return -1;
                 }
 
-
                 //smc911x_reg_write(dev, RX_CFG, 0);
 
                 tmplen = (pktlen + 3) / 4;
 
-                buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM);
-
-                if (buf != NULL) {
-                        //printk("Pkt %d\n", pktlen);
-                        data = (u32 *) buf->payload;
-                } else { // TODO better
-                        printk("No buff %d\n", pktlen);
-                        /*smc911x_drop_pkt(dev);*/
-                        msleep(100);
-                        continue;
+                /* Wait until a buffer is available.
+                 * TODO maybe add a timeout ? */
+                while((buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM)) == NULL){
+                        /* Wait a little bit to hopefully get a buffer */
+                        DBG("No buf");
+                        msleep(10);
                 }
 
+                data = (u32 *) buf->payload;
 
                 while (tmplen--) {
                         pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
-                        //printk("%02x", (char) pulled_data);
-                        //printk("%02x", (char) (pulled_data >> 8));
-                        //printk("%02x", (char) (pulled_data >> 16));
-                        //printk("%02x ", (char) (pulled_data >> 24));
 
-                        if (data != NULL) {
+                        if (data != NULL)
                                 *(data++) = pulled_data;
-                        }
                 }
 
-                //printk("\n\n");
-
                 if (buf != NULL) {
+                        DBG(printk("."));
                         netif->input(buf, netif);
                 }
         }
@@ -353,7 +299,7 @@ static irq_return_t smc911x_so3_interrupt_top(int irq, void *dummy)
         u32 mask;
 
         if (!sem_timeddown(&dev->sem_read, 10000)) {
-
+                //printk("|");
                 // Disable frame interrupts
                 mask = smc911x_reg_read(dev, INT_EN);
                 smc911x_reg_write(dev, INT_EN, mask & ~(INT_EN_RSFL_EN | INT_EN_RSFF_EN));
@@ -364,6 +310,8 @@ static irq_return_t smc911x_so3_interrupt_top(int irq, void *dummy)
                 // Re-enable frame interrupts
                 smc911x_reg_write(dev, INT_EN, mask);
                 sem_up(&dev->sem_read);
+        } else {
+                printk("!!timeout!!");
         }
 
         return IRQ_COMPLETED;
@@ -395,46 +343,46 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
                 }
 
                 if (status & INT_STS_SW_INT) {
-                        printk("STS_SW\n", status);
+                        DBG("STS_SW\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_SW_INT);
                 }
                 /* Handle various error conditions */
                 if (status & INT_STS_RXE) {
-                        printk("STS_RXE\n", status);
+                        DBG("STS_RXE\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_RXE);
                 }
                 if (status & INT_STS_RXDFH_INT) {
-                        printk("STS_RXDFH\n", status);
+                        DBG("STS_RXDFH\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_RXDFH_INT);
                 }
                 /* Undocumented interrupt-what is the right thing to do here? */
                 if (status & INT_STS_RXDF_INT) {
-                        printk("STS_RXDF\n", status);
+                        DBG("STS_RXDF\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
                 }
                 /* Incoming frame */
                 if (status & INT_STS_RSFL) {
-
+                        DBG("STS_RSFL\n", status);
                         irq_return = IRQ_BOTTOM;
                         smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
                 }
                 /* Rx Data FIFO exceeds set level */
                 if (status & INT_STS_RDFL) {
-                        printk("STS_RDFL\n", status);
+                        DBG("STS_RDFL\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_RDFL);
                 }
                 if (status & INT_STS_RDFO) {
-                        printk("STS_RDFO\n", status);
+                        DBG("STS_RDFO\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_RDFO);
                 }
 
                 if (status & (INT_STS_TSFL | INT_STS_GPT_INT)) {
-                        printk("STS_TSFL\n", status);
+                        DBG("STS_TSFL\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_TSFL | INT_STS_GPT_INT);
                 }
 
                 if (status & INT_STS_PHY_INT) {
-                        printk("PHY_INT\n", status);
+                        DBG("PHY_INT\n", status);
                         smc911x_reg_write(dev, INT_STS, INT_STS_PHY_INT);
                 }
         } while (--timeout);
@@ -446,23 +394,31 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
         return irq_return;
 }
 
+// https://lists.gnu.org/archive/html/lwip-users/2017-05/msg00068.html
+char buff[1514]; // MSS is 1500 we need 14 bytes for eth header
 static err_t smc911x_lwip_send(struct netif *netif, struct pbuf *p)
 {
-        struct pbuf *q;
-        char buff[1500];
         eth_dev_t *dev = netif->state;
-        u32 *data, tmplen, status, offset;
+        u32 *data, tmplen, status;
 
-        smc911x_reg_write(dev, TX_DATA_FIFO, TX_CMD_A_INT_FIRST_SEG |
-                                             TX_CMD_A_INT_LAST_SEG | p->tot_len);
+
+        if(netif == NULL || p == NULL || dev == NULL)
+                return ERR_IF;
+
+        sem_down(&dev->sem_write);
+
+        smc911x_reg_write(dev, TX_DATA_FIFO, TX_CMD_A_INT_FIRST_SEG | TX_CMD_A_INT_LAST_SEG | p->tot_len);
         smc911x_reg_write(dev, TX_DATA_FIFO, p->tot_len);
 
-        data = (u32 *) pbuf_get_contiguous(p, buff, 1500, p->tot_len, 0);
+        data = (u32 *) pbuf_get_contiguous(p, buff, sizeof(buff), p->tot_len, 0);
 
         tmplen = (p->tot_len + 3) / 4;
+
+
         while (tmplen--) {
                 pkt_data_push(dev, TX_DATA_FIFO, *data++);
         }
+
 
         /* wait for transmission */
         while (!((smc911x_reg_read(dev, TX_FIFO_INF) &
@@ -471,21 +427,22 @@ static err_t smc911x_lwip_send(struct netif *netif, struct pbuf *p)
         /* get status. Ignore 'no carrier' error, it has no meaning for
          * full duplex operation
          */
-        status = smc911x_reg_read(dev, TX_STATUS_FIFO) &
-                 (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
+        status = smc911x_reg_read(dev, TX_STATUS_FIFO) & (TX_STS_LOC | TX_STS_LATE_COLL | TX_STS_MANY_COLL |
                   TX_STS_MANY_DEFER | TX_STS_UNDERRUN);
 
         if (!status) {
+                sem_up(&dev->sem_write);
                 return ERR_OK;
         }
 
-        printk(DRIVERNAME ": failed to send packet: %s%s%s%s%s\n",
+        DBG(DRIVERNAME ": failed to send packet: %s%s%s%s%s\n",
                status & TX_STS_LOC ? "TX_STS_LOC " : "",
                status & TX_STS_LATE_COLL ? "TX_STS_LATE_COLL " : "",
                status & TX_STS_MANY_COLL ? "TX_STS_MANY_COLL " : "",
                status & TX_STS_MANY_DEFER ? "TX_STS_MANY_DEFER " : "",
                status & TX_STS_UNDERRUN ? "TX_STS_UNDERRUN" : "");
 
+        sem_up(&dev->sem_write);
         return ERR_IF;
 }
 
@@ -497,6 +454,7 @@ err_t smc911x_lwip_init(struct netif *netif)
         int i = 0;
 
         sem_init(&eth_dev->sem_read);
+        sem_init(&eth_dev->sem_write);
 
         LWIP_ASSERT("netif != NULL", (netif != NULL));
 

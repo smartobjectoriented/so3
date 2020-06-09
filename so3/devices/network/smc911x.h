@@ -385,8 +385,8 @@ static inline void smc911x_reg_write(eth_dev_t *dev,
 
 
 /* PHY registers */
-#define MII_BMCR            0  /* Basic mode control register */
-#define MII_BMSR            1  /* Basic mode status register */
+//#define MII_BMCR            0  /* Basic mode control register */
+//#define MII_BMSR            1  /* Basic mode status register */
 #define MII_PHYID1          2  /* ID register 1 */
 #define MII_PHYID2          3  /* ID register 2 */
 #define MII_ANAR            4  /* Autonegotiation advertisement */
@@ -394,8 +394,8 @@ static inline void smc911x_reg_write(eth_dev_t *dev,
 #define MII_ANER            6  /* Autonegotiation expansion */
 #define MII_ANNP            7  /* Autonegotiation next page */
 #define MII_ANLPRNP         8  /* Autonegotiation link partner rx next page */
-#define MII_CTRL1000        9  /* 1000BASE-T control */
-#define MII_STAT1000        10 /* 1000BASE-T status */
+//#define MII_CTRL1000        9  /* 1000BASE-T control */
+//#define MII_STAT1000        10 /* 1000BASE-T status */
 #define MII_MDDACR          13 /* MMD access control */
 #define MII_MDDAADR         14 /* MMD access address data */
 #define MII_EXTSTAT         15 /* Extended Status */
