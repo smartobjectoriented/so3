@@ -148,7 +148,7 @@ void sys_mutex_free(sys_mutex_t *mutex)
 
 err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
 {
-    int i = 0;
+    int i = 1;
     LWIP_ASSERT("sem != NULL", sem != NULL);
     LWIP_ASSERT("initial_count invalid (count >= 0)", (initial_count >= 0));
 
@@ -161,6 +161,10 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
 
 
     sem_init(sem->sem);
+
+    // The semaphore initial value is 1. The needed value must be set accordingly
+    if(initial_count == 0)
+            sem_down(sem->sem);
 
     while(initial_count > i++){
         sem_up(sem->sem);
@@ -181,7 +185,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout_ms)
 {
     int start_time = sys_now();
 
-    sem_down(sem->sem);
+    //sem_down(sem->sem);
 
     if(timeout_ms > 0){
         if(sem_timeddown(sem->sem, timeout_ms * 1000000ull))
@@ -203,16 +207,7 @@ void sys_sem_free(sys_sem_t *sem)
     sem->sem = NULL;
 }
 
-#define SYS_MBOX_SIZE 128
-struct _mbox  {
-    u32_t first, last;
-    sem_t *not_empty;
-    sem_t *not_full;
-    void *mutex;
-    int *wait_send;
-    void *msgs[SYS_MBOX_SIZE];
-};
-typedef struct _mbox _mbox_t;
+
 
 
 
@@ -236,6 +231,8 @@ err_t sys_mbox_new(sys_mbox_t *sys_mbox, int size)
 
     sem_init(not_empty);
     sem_init(not_full);
+    sem_down(not_empty);
+    sem_down(not_full);
 
 
     mutex_init(mutex);
@@ -457,8 +454,6 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function, void *arg
 
     adapter_data->arg = arg;
     adapter_data->function = function;
-
-    //adapter_data->function(arg);
 
     sys_thread.thread_handle = kernel_thread(_thread_function_adapter, name, adapter_data, prio);
 

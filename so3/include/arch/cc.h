@@ -6,7 +6,7 @@
 #define SO3_CC_H
 
 #ifndef LWIP_PLATFORM_DIAG
-#define LWIP_PLATFORM_DIAG(x) printk x
+#define LWIP_PLATFORM_DIAG(x) do {printk x;} while(0)
 #include <printk.h>
 #endif
 

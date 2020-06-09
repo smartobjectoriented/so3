@@ -32,6 +32,7 @@ struct eth_dev {
     dev_t *dev;
 
     sem_t sem_read;
+    sem_t sem_write;
 
     struct eth_dev *next;
 
