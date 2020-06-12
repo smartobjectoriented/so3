@@ -30,8 +30,7 @@
 #include <mutex.h>
 #include <string.h>
 #include <dirent.h>
-
-#include <device/serial.h>
+#include <console.h>
 
 #include <fat/fat.h>
 
@@ -60,42 +59,6 @@ static bool vfs_is_valid_gfd(int gfd)
 		return false;
 
 	return true;
-}
-
-/* Used to read from a serial (uart) console. We report only one byte when the byte is ready. */
-static int fd_serial_getc(int gfd, void *buffer, int count)
-{
-	/* Read one byte from the UART console */
-	*((uint8_t *) buffer) = serial_getc();
-
-	return 1;
-}
-
-/* Send out to the serial console. */
-static int fd_serial_write(int gfd, const void *buffer, int count)
-{
-	int ret;
-
-	ret = serial_write((char *) buffer, count);
-
-	return ret;
-}
-
-/* Request an ioctl from user space */
-static int fd_serial_ioctl(int fd, unsigned long cmd, unsigned long args)
-{
-	int rc;
-
-	switch (cmd) {
-		case TIOCGWINSZ:
-			rc = serial_gwinsize((struct winsize *) args);
-			break;
-		default:
-			rc = -1;
-			break;
-	}
-
-	return rc;
 }
 
 /* @brief This function will retrieve the index in the
@@ -190,12 +153,6 @@ static int vfs_inc_ref(int gfd)
 
 	return ret;
 }
-
-struct file_operations console_fops = {
-		.read = fd_serial_getc,
-		.write = fd_serial_write,
-		.ioctl = fd_serial_ioctl,
-};
 
 /* @brief This function allows to set "private data"
  * @param gfd
@@ -622,7 +579,7 @@ int do_open(const char *filename, int flags)
 		/* Get index of open_fds*/
 		gfd = current()->pcb->fd_array[fd];
 
-		vfs_set_privdata(gfd, devclass_get_priv(devclass_get_cdev(filename + DEV_PREFIX_LEN)));
+		vfs_set_privdata(gfd, dev_get_drvdata(devclass_get_cdev(filename + DEV_PREFIX_LEN)->dev));
 	}
 	else {
 		/* FIXME: Should find the mounted point regarding the path */

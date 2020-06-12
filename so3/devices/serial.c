@@ -22,8 +22,6 @@
 #include <signal.h>
 #include <mutex.h>
 #include <process.h>
-#include <vfs.h>
-
 #include <device/irq.h>
 
 #include <device/serial.h>

@@ -136,6 +136,7 @@ struct fd {
 };
 
 /* Syscall accessible from userspace */
+
 int do_open(const char *filename, int flags);
 int do_read(int fd, void *buffer, int count);
 int do_write(int fd, const void *buffer, int count);
@@ -149,6 +150,7 @@ int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */
+
 char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
 struct file_operations *vfs_get_fops(uint32_t gfd);

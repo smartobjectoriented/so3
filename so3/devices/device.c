@@ -50,6 +50,11 @@ static char *__dev_state_str[] = {
 };
 
 /*
+ * List of all dev_t entries of the kernel
+ */
+static LIST_HEAD(devices);
+
+/*
  * A list of registered devices.
  *
  * A device is registered with the dev_register function from its driver file.
@@ -60,6 +65,19 @@ static LIST_HEAD(registered_dev);
 
 char *dev_state_str(dev_status_t status) {
 	return __dev_state_str[status];
+}
+
+/*
+ * Get a dev_t entry based on the compatible string
+ */
+dev_t *find_device(const char *compat) {
+	dev_t *dev;
+
+	list_for_each_entry(dev, &devices, list)
+		if (!strcmp(dev->compatible, compat))
+			return dev;  /* So far, we take the first match. */
+
+	return NULL;
 }
 
 /*
@@ -114,6 +132,7 @@ void parse_dtb(void) {
 	for (level = 0; level < INITCALLS_LEVELS; level++) { 
 		dev = (dev_t *) malloc(sizeof(dev_t));
 		ASSERT(dev != NULL);
+		memset(dev, 0, sizeof(dev_t));
 
 		found = false;
 		offset = 0;
@@ -146,6 +165,7 @@ void parse_dtb(void) {
 							driver_entries[level][i].init(dev);
 							dev->status = STATUS_INITIALIZED;
 
+							list_add_tail(&dev->list, &devices);
 						}
 						break;
 					}
@@ -158,6 +178,8 @@ void parse_dtb(void) {
 
 			dev = (dev_t *) malloc(sizeof(dev_t));
 			ASSERT(dev != NULL);
+			memset(dev, 0, sizeof(dev_t));
+
 			found = false;
 		}
 	}
@@ -187,14 +209,6 @@ int devclass_get_id(int fd) {
 	}
 
 	return -1;
-}
-
-void devclass_set_priv(struct devclass *cdev, void *priv) {
-	cdev->priv = priv;
-}
-
-void *devclass_get_priv(struct devclass *cdev) {
-	return cdev->priv;
 }
 
 /* Register a device. Usually called from the device driver. */
