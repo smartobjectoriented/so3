@@ -137,6 +137,7 @@ struct fd {
 };
 
 /* Syscall accessible from userspace */
+
 int do_open(const char *filename, int flags);
 int do_read(int fd, void *buffer, int count);
 int do_write(int fd, const void *buffer, int count);
@@ -145,12 +146,13 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
-void *do_mmap(size_t length, int prot, int fd, off_t offset);
+void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);
 
 /* VFS common interface */
+
 char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
 struct file_operations *vfs_get_fops(uint32_t gfd);

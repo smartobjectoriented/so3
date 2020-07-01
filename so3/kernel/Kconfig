@@ -12,13 +12,21 @@ choice
             
 endchoice
  
+menu "SO3 Scheduling configuration"
+
 choice
 	prompt "SO3 Scheduling policy"
 
 	config SCHED_RR
 		bool "Sched policy Round-Robin (normal)"
+		select SCHED_FREQ_PREEMPTION
 
-
-        config SCHED_PRIO
+    config SCHED_PRIO
 		bool "Sched policy with a simple priority based"
+	
 endchoice
+
+	config SCHED_FREQ_PREEMPTION
+		bool "Enabling possible preemption based on a timer frequency"
+		
+endmenu

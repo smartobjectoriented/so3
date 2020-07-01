@@ -5,9 +5,14 @@ Read the documentation in qemu-doc.html or on http://wiki.qemu.org
 - Need the SDL library
 sudo apt-get install libsdl1.2-dev
 
+For having the support of framebuffer, you need to install gtk3-devel as follows:
+
+sudo apt-get install libgtk-3-dev
+
 Configure options:
 
-./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
+./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs --enable-gtk
+
 
 
 

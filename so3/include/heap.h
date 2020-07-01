@@ -32,6 +32,11 @@
 */
 #define HEAP_SIZE 	(4*(SZ_512K))
 
+/*
+ * The user space has a 8 MB heap size
+ */
+#define USR_HEAP_SIZE	(8 * PAGE_SIZE)
+
 #define CHUNK_SIG	0xbeefdead
 
 /* there's a list for each size. The size changes over the process lifetime. */

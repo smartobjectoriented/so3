@@ -13,11 +13,6 @@
 #define dprintf(...) \
             do { if (DEBUG) fprintf(stderr, __VA_ARGS__); } while (0)
 
-#define MAX_HEAP_SIZE 256
-#define PAGE_SIZE 4096
-
-#define HEAP_SIZE (MAX_HEAP_SIZE * PAGE_SIZE)
-
 #ifdef DEBUG
 #define DBG(...) printf("Malloc: Debug" __func__ __VA_ARGS__)
 #else

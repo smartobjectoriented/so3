@@ -9,5 +9,6 @@
 	-semihosting-config enable,target=native \
 	-net user,tftp=. \
 	-net tap,script=tools/qemu-ifup,downscript=tools/qemu-ifdown -net nic \
+	-display gtk \
 	-sd filesystem/sdcard.img
 

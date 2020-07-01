@@ -585,16 +585,16 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	DBG("page count: 0x%08x\n", pcb->page_count);
 
 	/* Maximum heap size */
-	page_count = ALIGN_UP(HEAP_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
+	page_count = ALIGN_UP(USR_HEAP_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
 	pcb->heap_base = (pcb->page_count + 1) * PAGE_SIZE;
 	pcb->heap_pointer = pcb->heap_base;
 	pcb->page_count += page_count;
 
 	allocate_page(pcb, pcb->heap_base, page_count);
 
-	DBG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, HEAP_SIZE);
+	DBG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, USR_HEAP_SIZE);
 
-	/* arguments will be stored in one more page */
+	/* Arguments will be stored in one more page */
 	pcb->page_count++;
 
 	allocate_page(pcb, CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE, 1);

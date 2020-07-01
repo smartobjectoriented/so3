@@ -16,12 +16,16 @@ weak_alias(dummy, __vm_wait);
 
 void *__mmap(void *start, size_t len, int prot, int flags, int fd, off_t off)
 {
+
 	if (start || flags) {
 		/* Issue warning for unsupported parameters. */
 		printf("%s: start and flags parameters are not supported.\n", __func__);
 	}
 
-	return sys_mmap(len, prot, fd, off);
+	if (!start)
+		start = sbrk(0) + HEAP_SIZE;
+
+	return sys_mmap((uint32_t) start, len, prot, fd, off);
 
 #if 0 /* original musl implementation */
 	if (off & OFF_MASK) {

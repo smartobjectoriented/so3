@@ -459,14 +459,15 @@ int sys_sendto(int socket_fd, void *buffer, int count, struct sockaddr_in *si);
 
 /**
  * This system call is used to map a file (or a portion of it) to a memory buffer
- * in Virtualmemory. You have to open a file prior this call.
+ * in virtual memory. You have to open a file prior this call.
  *
+ * start: start of the virtual memory somewhere in the heap area of the process
  * length: represents how many bytes you want to map
  * prot: is the mode of accessing mapped memory (READ, WRITE, READ/WRITE)
  * fd: is the file descriptor of the opened file
  * offset: is where to start mapping in the file
  */
-void *sys_mmap(size_t length, int prot, int fd, off_t offset);
+void *sys_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
 
 /**
  * The ptrace() system call provides a means by which one process (the "tracer")

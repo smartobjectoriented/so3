@@ -50,12 +50,12 @@ int root_proc(void *args)
 {
 	printk("SO3: starting the initial process (shell) ...\n\n\n");
 
-
 	/* Start the first process */
 	__exec("sh.elf");
 
 	/* We normally never runs here, if the exec() succeeds... */
-	printk("so3: No init proc (shell) found ...");
+	printk("so3: No init proc (shell) found ...\n");
+
 	kernel_panic();
 
 	return 0; /* Make gcc happy ;-) */
@@ -121,6 +121,8 @@ void kernel_start(void) {
 	 * The priority is max (99) over other possible threads (normally there is no such thread at this time).
 	 */
 	kernel_thread(rest_init, "so3_boot", NULL, 99);
+
+	boot_stage = BOOT_STAGE_COMPLETED;
 
 	/*
 	 * We loop forever, just the time the scheduler gives the hand to a ready thread.

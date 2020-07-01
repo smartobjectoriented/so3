@@ -350,6 +350,9 @@ void schedule(void) {
 	uint32_t flags;
 	static volatile bool __in_scheduling = false;
 
+	if (unlikely(boot_stage < BOOT_STAGE_COMPLETED))
+		return;
+
 	BUG_ON(!__sched_preempt);
 	BUG_ON(!tcb_idle);
 
@@ -369,7 +372,8 @@ void schedule(void) {
 #ifdef CONFIG_SCHED_FREQ_PREEMPTION
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
-	if ((next == NULL) && (prev->state != THREAD_STATE_RUNNING))
+	/* prev may be NULL at the very beginning (current is set to NULL at init). */
+	if ((next == NULL) && (!prev || prev->state != THREAD_STATE_RUNNING))
 		next = tcb_idle;
 
 	if (next && (next != prev)) {

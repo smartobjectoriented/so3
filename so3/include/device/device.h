@@ -52,6 +52,12 @@ struct dev {
 	int offset_dts;
 	struct dev *parent;
 	void *fdt;
+
+	/* Private data regarding the driver for this device. */
+	void *driver_data;
+
+	/* Reference for the glbal list of dev_t */
+	struct list_head list;
 };
 typedef struct dev dev_t;
 
@@ -75,6 +81,15 @@ struct devclass {
  */
 enum inicalls_levels { CORE, POSTCORE };
 
+static inline void *dev_get_drvdata(const dev_t *dev)
+{
+	return dev->driver_data;
+}
+
+static inline void dev_set_drvdata(dev_t *dev, void *data)
+{
+	dev->driver_data = data;
+}
 
 /*
  * Get device information from a device tree
@@ -83,14 +98,12 @@ enum inicalls_levels { CORE, POSTCORE };
 int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info);
 int fdt_get_int(dev_t *dev, const char *name);
 bool fdt_device_is_available(int node_offset);
+dev_t *find_device(const char *compat);
 
 void devclass_register(dev_t *dev, struct devclass *);
 struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type);
 struct devclass *devclass_get_cdev(const char *filename);
 int devclass_get_id(int fd);
-
-void devclass_set_priv(struct devclass *cdev, void *priv);
-void *devclass_get_priv(struct devclass *cdev);
 
 void devices_init(void);
 
