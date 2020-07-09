@@ -18,6 +18,7 @@
 
 #include <timer.h>
 #include <softirq.h>
+#include <schedule.h>
 
 #include <device/device.h>
 #include <device/driver.h>

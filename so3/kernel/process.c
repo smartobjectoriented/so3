@@ -652,8 +652,6 @@ void load_process(elf_img_info_t *elf_img_info)
 
 			/* Real load of contents in the user space memory of the process */
 			memcpy((void *) elf_img_info->sections[j].sh_addr, (void *) (elf_img_info->file_buffer + elf_img_info->sections[j].sh_offset), elf_img_info->sections[j].sh_size);
-
-			/* FIXME: read-only bit if needed (Elf.java)? */
 		}
 	}
 }

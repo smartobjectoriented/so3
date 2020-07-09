@@ -37,6 +37,12 @@ void __data_abort(uint32_t far, uint32_t fsr, uint32_t lr) {
 	kernel_panic();
 }
 
+void __undefined_instruction(uint32_t lr) {
+	lprintk("### undefined instruction lr(r14)-8: %x ###\n", lr-8);
+
+	kernel_panic();
+}
+
 void __div0(void) {
 	lprintk("### division by 0\n");
 	kernel_panic();

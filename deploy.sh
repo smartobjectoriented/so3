@@ -69,7 +69,7 @@ if [ "$deploy_boot" == "y" ]; then
     fi
  
     if [ "$_PLATFORM" == "rpi3" ]; then
-        sudo cp -r ../../bsp/rpi3/* fs/
+        sudo cp -r../bsp/rpi3/* fs/
         sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel.img
         ./umount.sh
@@ -77,7 +77,7 @@ if [ "$deploy_boot" == "y" ]; then
     fi
     
     if [ "$_PLATFORM" == "rpi4" ]; then
-        sudo cp -r ../../bsp/rpi4/* fs/
+        sudo cp -r ../bsp/rpi4/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel7.img
         ./umount.sh
         cd ..

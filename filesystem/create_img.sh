@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 1 ]; then
-	echo "Please provide the board name (vexpress, rpi3, merida, bpi)"
+	echo "Please provide the board name (vexpress, rpi4, bpi)"
 	exit 0
 fi 
 
@@ -21,15 +21,15 @@ if [ "$1" == "vexpress" ]; then
     devname=${devname#"/dev/"}
 fi
 
-if [ "$1" == "rpi3" -o "$1" == "bpi" ]; then
+if [ "$1" == "rpi4" -o "$1" == "bpi" ]; then
     echo "Specify the MMC device you want to deploy on (ex: sdb or mmcblk0 or other...)" 
     read devname
 fi
 
 
-if [ "$1" == "vexpress" -o "$1" == "rpi3" -o "$1" == "bpi" ]; then
+if [ "$1" == "vexpress" -o "$1" == "rpi4" -o "$1" == "bpi" ]; then
 #create the partition layout this way
-    (echo o; echo n; echo p; echo; echo; echo +16M; echo t; echo c; echo n; echo p; echo; echo; echo +8M; echo w)   | sudo fdisk /dev/"$devname";
+    (echo o; echo n; echo p; echo; echo; echo +32M; echo t; echo c; echo n; echo p; echo; echo; echo +8M; echo w)   | sudo fdisk /dev/"$devname";
 fi
 
 if [[ "$devname" = *[0-9] ]]; then

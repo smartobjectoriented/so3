@@ -1,11 +1,6 @@
 #!/bin/bash
 
-echo Deploying secondary rootfs into the first partition...
-./mount_cpio.sh
-cd ../filesystem
-./mount.sh 1
-sudo rm -rf fs/*
-sudo cp -rf ../rootfs/initrd/* fs/
-./umount.sh
-cd ../rootfs
-./umount_cpio.sh
+echo "Deploying the usr apps into the ramfs filesystem..."
+./mount_ramfs.sh $1
+sudo cp -rf ../usr/out/* fs/
+./umount_ramfs.sh $1

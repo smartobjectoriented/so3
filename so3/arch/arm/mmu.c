@@ -74,6 +74,15 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
 
 	do {
 		*l2pte = (pfn << PAGE_SHIFT) | L2DESC_SMALL_PAGE_AP01 | L2DESC_SMALL_PAGE_AP2 | L2DESC_PAGE_TYPE_SMALL;
+
+		/*
+		 * One word about the following attributes: on Vexpress, DESC_CACHE (DESC_CACEABLE | DESC_BUFFERABLE) was
+		 * good to run in kernel and user space. But with Rpi4, it is another story; it works well in the kernel space
+		 * but executing instructions in other pages than the first one allocate to application code in user space
+		 * led to an undefined instruction exception (reading/writing in these different pages were successful).
+		 * It has been figured out by using DESC_CACHEABLE attribute only (BUFFERABLE is now disabled).
+		 * It works on both Rpi4 and vExpress.
+		 */
 		*l2pte |= (nocache ? 0 : DESC_CACHEABLE);
 
 		*l2pte &= ~L1DESC_PT_DOMAIN_MASK;
