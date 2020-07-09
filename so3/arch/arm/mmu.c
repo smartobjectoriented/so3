@@ -74,7 +74,7 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
 
 	do {
 		*l2pte = (pfn << PAGE_SHIFT) | L2DESC_SMALL_PAGE_AP01 | L2DESC_SMALL_PAGE_AP2 | L2DESC_PAGE_TYPE_SMALL;
-		*l2pte |= (nocache ? 0 : DESC_CACHE);
+		*l2pte |= (nocache ? 0 : DESC_CACHEABLE);
 
 		*l2pte &= ~L1DESC_PT_DOMAIN_MASK;
 		*l2pte |= PTE_DESC_DOMAIN_0;
