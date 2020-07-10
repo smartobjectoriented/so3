@@ -91,10 +91,10 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_pgtable = new_l1pgtable();
 
-	create_mapping(new_sys_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
+	create_mapping(new_sys_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false, false);
 
 	/* Mapping uart I/O for debugging purposes */
-	create_mapping(new_sys_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true);
+	create_mapping(new_sys_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true, false);
 
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
@@ -112,7 +112,7 @@ void memory_init(void) {
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
-	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
+	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true, false);
 
 	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
 

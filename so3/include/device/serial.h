@@ -33,6 +33,8 @@
  */
 #define SERIAL_SO3_HALT	"\253"
 
+#define WINSIZE_ROW_SIZE_DEFAULT	25
+#define WINSIZE_COL_SIZE_DEFAULT	80
 
 typedef struct {
 	dev_t *dev; /* Required to hold the IRQ number */

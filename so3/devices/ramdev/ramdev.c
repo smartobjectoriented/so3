@@ -140,7 +140,7 @@ size_t get_ramdev(const void *fdt) {
 
 	/* Do the virtual mapping */
 
-	create_mapping(NULL, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false);
+	create_mapping(NULL, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false, false);
 
 	flush_tlb_all();
 	cache_clean_flush();

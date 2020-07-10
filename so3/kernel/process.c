@@ -293,7 +293,7 @@ void add_page_to_proc(pcb_t *pcb, page_t *page) {
 /*
  * Find available frames and do the mapping of a number of pages.
  */
-static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages) {
+static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr) {
 	int i;
 	uint32_t page;
 
@@ -301,7 +301,7 @@ static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages) {
 	for (i = 0; i < nr_pages; i++) {
 		page = get_free_page();
 
-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false, usr);
 
 		add_page_to_proc(pcb, phys_to_page(page));
 	}
@@ -324,7 +324,7 @@ void create_process(int (*start_routine)(void *), const char *name)
 
 	/* We map the initial user space process stack here, and fork() will inherit from this mapping */
 
-	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count);
+	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
 	DBG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
@@ -564,7 +564,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	/* We re-init the user space process stack here, and fork() will inherit from this mapping */
 
-	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count);
+	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
 	DBG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
@@ -579,7 +579,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	pcb->page_count += elf_img_info->segment_page_count;
 
 	/* Map the elementary sections (text, data, bss) */
-	allocate_page(pcb, (uint32_t) elf_img_info->header->e_entry, elf_img_info->segment_page_count);
+	allocate_page(pcb, (uint32_t) elf_img_info->header->e_entry, elf_img_info->segment_page_count, true);
 
 	DBG("entry point: 0x%08x\n", elf_img_info->header->e_entry);
 	DBG("page count: 0x%08x\n", pcb->page_count);
@@ -590,14 +590,14 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	pcb->heap_pointer = pcb->heap_base;
 	pcb->page_count += page_count;
 
-	allocate_page(pcb, pcb->heap_base, page_count);
+	allocate_page(pcb, pcb->heap_base, page_count, true);
 
 	DBG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, HEAP_SIZE);
 
 	/* arguments will be stored in one more page */
 	pcb->page_count++;
 
-	allocate_page(pcb, CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE, 1);
+	allocate_page(pcb, CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE, 1, true);
 	DBG("arguments mapped at 0x%08x (size: %d bytes)\n", CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE,  PAGE_SIZE);
 
 	/* Prepare the arguments within the page reserved for this purpose. */
