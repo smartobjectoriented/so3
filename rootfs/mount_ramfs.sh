@@ -1,13 +1,11 @@
 #!/bin/bash
-echo "Usage: ./mount_initrd <board>"
+echo "Usage: ./mount_ramfs <board>"
 echo "Here: board is $1"
-echo "-------------------mount initrd ---------------"
+echo "-------------------mount ramfs ---------------"
 
-# Currently not using cpio but fat
-#../tools/mount_cpio $PWD/board/$1/initrd.cpio
-# mount the initrd
+# mount the rootfs
 mkdir -p fs
 
-DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/initrd.fat)
+DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/rootfs.fat)
 
 sudo mount ${DEVLOOP}p1 fs
