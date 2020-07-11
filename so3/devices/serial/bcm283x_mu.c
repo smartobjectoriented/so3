@@ -78,6 +78,7 @@ static int bcm283x_mu_init(dev_t *dev)
 	serial_ops.put_byte = bcm283x_mu_put_byte;
 	serial_ops.get_byte = bcm283x_mu_get_byte;
 
+	//serial_ops.dev = dev;
 
 	return 0;
 

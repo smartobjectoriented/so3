@@ -317,7 +317,7 @@ uint32_t io_map(uint32_t phys, size_t size) {
 		list_add_tail(&io_map->list, &io_maplist);
 
 
-	create_mapping(NULL, io_map->vaddr, io_map->paddr, io_map->size, true);
+	create_mapping(NULL, io_map->vaddr, io_map->paddr, io_map->size, true, false);
 
 	flush_tlb_all();
 	cache_clean_flush();

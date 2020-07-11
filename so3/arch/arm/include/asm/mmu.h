@@ -79,7 +79,6 @@
 #define DESC_CACHEABLE      	(1 << 3)
 #define DESC_CACHE		(DESC_BUFFERABLE | DESC_CACHEABLE)
 
-
 /* Given a virtual address, get an entry offset into a page table. */
 #define l1pte_index(a) ((((uint32_t) a) >> L1_PAGETABLE_SHIFT) & (L1_PAGETABLE_ENTRIES - 1))
 #define l2pte_index(a) ((((uint32_t) a) >> L2_PAGETABLE_SHIFT) & (L2_PAGETABLE_ENTRIES - 1))
@@ -117,7 +116,7 @@ extern void __mmu_switch(uint32_t l1pgtable_phys);
 
 void pgtable_copy_kernel_area(uint32_t *l1pgtable);
 
-void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base, uint32_t size, bool nocache);
+void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base, uint32_t size, bool nocache, bool usr);
 void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size);
 
 uint32_t *new_l1pgtable(void);

@@ -106,6 +106,7 @@ int serial_gwinsize(struct winsize *wsz)
 	 * manage an internal buffer to read many chars.
 	 */
 
+#ifdef CONFIG_VEXPRESS
 	irq_ops.irq_disable(serial_ops.dev->irq);
 
 	if (serial_write(SERIAL_GWINSZ, 1) == 0) 
@@ -115,6 +116,12 @@ int serial_gwinsize(struct winsize *wsz)
 	wsz->ws_col = serial_ops.get_byte(true);
 
 	irq_ops.irq_enable(serial_ops.dev->irq);
+#else
+
+	wsz->ws_row = WINSIZE_ROW_SIZE_DEFAULT;
+	wsz->ws_col = WINSIZE_COL_SIZE_DEFAULT;
+
+#endif
 
 	return 0;
 }
