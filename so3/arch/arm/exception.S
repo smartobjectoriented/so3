@@ -107,7 +107,6 @@ _pad:                   .word 0x12345678 @ now 16*4=64
 .align  5
 undefined_instruction:
 
-
     b  __undefined_instruction
 
 @ Prepare to call a handler associated to a pending signal
