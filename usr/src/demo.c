@@ -21,7 +21,7 @@
  *
  * A more complete LittlevGL demo.
  *
- * Base on:
+ * Based on:
  *  - https://github.com/littlevgl/lv_examples/blob/master/lv_tests/lv_test_theme/lv_test_theme_1.c
  */
 
@@ -29,107 +29,34 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <syscall.h>
+#include <sys/mman.h>
 #include <bits/ioctl_fix.h>
+#include <pthread.h>
 
 #include "lvgl/lvgl.h"
+#include "demo.h"
 
-/* Framebuffer constants. */
-#define BUF_SIZE (LV_HOR_RES_MAX * LV_VER_RES_MAX)
-#define FB_SIZE (BUF_SIZE * LV_COLOR_DEPTH / 8)
-
-/* Pointer on the framebuffer. */
-static uint32_t *fbp;
+/* Screen resolution. */
+static uint32_t scr_hres, scr_vres, *fbp;
 
 /* File descriptor of the mouse and keyboard input device. */
 static int mfd;
 static int kfd;
 
-/* Group for the keyboard. */
+/* lvgl group for the keyboard. */
 static lv_group_t *keyboard_group;
 
 
-/* Function prototypes. */
-
-void fs_init(void);
-int fb_init(void);
-void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p);
-
-int mouse_init(void);
-bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data);
-
-int keyboard_init(void);
-bool my_keyboard_cb(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
-
-void create_ui(void);
-void *tick_routine (void *args);
-
-/* File system driver functions. */
-bool fs_ready_cb(struct _lv_fs_drv_t *drv);
-lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode);
-lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p);
-lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos);
-lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
-
-/* Mouse driver-related structures. */
-#define GET_STATE 0
-#define SET_SIZE  1
-
-struct ps2_mouse {
-	uint16_t x, y;
-	uint8_t left, right, middle;
-};
-
-struct display_res {
-	uint16_t h, v;
-};
-
-/* Keyboard driver-related structures. */
-#define GET_KEY 0
-
-struct ps2_key {
-	/* UTF-8 char */
-	uint32_t value;
-
-	/*
-	 * 1st bit -> whether key was pressed or released
-	 * 2nd bit -> whether the shift modifier was activated or not
-	 * 3rd bit -> indicates if the first scan codes was 0xE0
-	 */
-	uint8_t state;
-};
-
 /* Main code. */
+
 int main(int argc, char **argv)
 {
 	/* Initialisation of lvgl. */
 	lv_init();
 	fs_init();
 
-	/* Initialisation of the framebuffer. */
-	if (fb_init()) {
-		return -1;
-	}
-
-	/* lvgl will draw the screen into this buffer. */
-	static lv_color_t buf[BUF_SIZE];
-	static lv_disp_buf_t disp_buf;
-	lv_disp_buf_init(&disp_buf, buf, NULL, BUF_SIZE);
-
-	/*
-	 * Initialisation and registration of the display driver.
-	 * Also setting the flush callback function (flush_cb) which will write
-	 * the lvgl buffer (buf) into our real framebuffer.
-	 */
-	lv_disp_drv_t disp_drv;
-	lv_disp_drv_init(&disp_drv);
-	disp_drv.buffer = &disp_buf;
-	disp_drv.flush_cb = my_fb_cb;
-	lv_disp_drv_register(&disp_drv);
-
-	/* Initialisation of the mouse and keyboard. */
-	if (mouse_init() || keyboard_init()) {
+	/* Initialisation of the framebuffer, mouse and keyboard. */
+	if (fb_init() || mouse_init() || keyboard_init()) {
 		return -1;
 	}
 
@@ -244,11 +171,12 @@ lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 
 
 /*
- * Framebuffer initialisation.
+ * Framebuffer and display initialisation.
  */
 int fb_init(void)
 {
 	int fd;
+	uint32_t fb_size;
 
 	/* Get file descriptor. */
 	fd = open("/dev/fb0", 0);
@@ -257,36 +185,75 @@ int fb_init(void)
 		return -1;
 	}
 
-	/* Map the fb into process memory. */
-	fbp = sys_mmap(FB_SIZE, 0, fd, 0);
+	/* Get screen resolution. */
+	if (ioctl(fd, IOCTL_FB_HRES, &scr_hres)
+		|| ioctl(fd, IOCTL_FB_VRES, &scr_vres)
+		|| ioctl(fd, IOCTL_FB_SIZE, &fb_size)) {
+
+		printf("Couldn't get framebuffer resolution.\n");
+		return -1;
+	}
+
+	/* Map the framebuffer into process memory. */
+	fbp = mmap(NULL, fb_size, 0, 0, fd, 0);
 	if (!fbp) {
 		printf("Couldn't map framebuffer.\n");
 		return -1;
 	}
 
+	/* LVGL will use this buffer to render the screen. See my_fb_cb. */
+	static lv_color_t buf1[LVGL_BUF_SIZE];
+	static lv_color_t buf2[LVGL_BUF_SIZE];
+	static lv_disp_buf_t disp_buf;
+	lv_disp_buf_init(&disp_buf, buf1, buf2, LVGL_BUF_SIZE);
+
+	/*
+	 * Initialisation and registration of the display driver.
+	 * Also setting the flush callback function (flush_cb) which will write
+	 * the lvgl buffer (buf) into our real framebuffer.
+	 */
+	static lv_disp_drv_t disp_drv;
+	lv_disp_drv_init(&disp_drv);
+	disp_drv.hor_res = scr_hres;
+	disp_drv.ver_res = scr_vres;
+	disp_drv.buffer = &disp_buf;
+	disp_drv.flush_cb = my_fb_cb;
+	lv_disp_drv_register(&disp_drv);
+
 	return 0;
 }
 
-/* Framebuffer callback. TODO copy whole region? */
+/*
+ * Framebuffer callback. LVGL calls this function to redraw a screen area. If
+ * the buffer given to LVGL is smaller than the framebuffer, this function will
+ * be called multiple times until the whole screen has been redrawn. This is
+ * why we cannot use memcpy to redraw the whole region, we have to do it line
+ * by line.
+ *
+ * If the buffer is the size of the framebuffer, we could use memcpy for the
+ * whole region, but then SO3 would require more memory.
+ *
+ * https://docs.lvgl.io/latest/en/html/porting/display.html#display-buffer
+ */
 void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-	int32_t x, y;
+	lv_coord_t y, w = lv_area_get_width(area);
+
 	for(y = area->y1; y <= area->y2; y++) {
-		for(x = area->x1; x <= area->x2; x++) {
-			fbp[x + y * disp->hor_res] = color_p->full;
-			color_p++;
-		}
+		memcpy(&fbp[y * scr_hres + area->x1], color_p, w * sizeof(lv_color_t));
+		color_p += w;
 	}
 
 	lv_disp_flush_ready(disp);
 }
+
 
 /*
  * Mouse initialisation.
  */
 int mouse_init(void)
 {
-	mfd = open("/dev/input0", 0);
+	mfd = open("/dev/mouse0", 0);
 	if (-1 == mfd) {
 		printf("Couldn't open input device.\n");
 		return -1;
@@ -299,14 +266,14 @@ int mouse_init(void)
 		return -1;
 	}
 
-	res->h = LV_HOR_RES_MAX;
-	res->v = LV_VER_RES_MAX;
+	res->h = scr_hres;
+	res->v = scr_vres;
 
 	/*
 	 * Informing the driver of the screen size so it knows the bounds for
 	 * the cursor coordinates.
 	 */
-	ioctl(mfd, SET_SIZE, res);
+	ioctl(mfd, IOCTL_MOUSE_SET_SIZE, res);
 	free(res);
 
 	/*
@@ -342,7 +309,7 @@ bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 	}
 
 	/* Retrieve mouse state from the driver. */
-	ioctl(mfd, GET_STATE, mouse);
+	ioctl(mfd, IOCTL_MOUSE_GET_STATE, mouse);
 
 	data->state = mouse->left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
 	data->point.x = mouse->x;
@@ -356,7 +323,7 @@ bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
  */
 int keyboard_init(void)
 {
-	kfd = open("/dev/input1", 0);
+	kfd = open("/dev/keyboard0", 0);
 	if (-1 == kfd) {
 		printf("Couldn't open input device.\n");
 		return -1;
@@ -392,7 +359,7 @@ bool my_keyboard_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 	}
 
 	/* Retrieve mouse state from the driver. */
-	ioctl(kfd, GET_KEY, key);
+	ioctl(kfd, IOCTL_KB_GET_KEY, key);
 
 	if (key->value != 0) {
 		data->key = key->value;

@@ -46,7 +46,7 @@ struct file_operations pl050_keyboard_fops = {
 dev_t pl050_keyboard;
 
 struct devclass pl050_keyboard_cdev = {
-	.class = DEV_CLASS_INPUT,
+	.class = DEV_CLASS_KEYBOARD,
 	.type = VFS_TYPE_DEV_INPUT,
 	.fops = &pl050_keyboard_fops,
 };

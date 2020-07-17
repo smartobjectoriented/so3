@@ -29,6 +29,13 @@
 #include <asm/mmu.h>
 #include <device/driver.h>
 
+#define IOCTL_HRES 1
+#define IOCTL_VRES 2
+#define IOCTL_SIZE 3
+
+#define HRES 1024
+#define VRES  768
+
 /* Register address offsets */
 #define CLCD_TIM0	0x000
 #define CLCD_TIM1	0x004
@@ -43,18 +50,18 @@
 #define HBP (151 << 24)
 #define HFP ( 47 << 16)
 #define HSW (103 <<  8)
-#define PPL ( 63 <<  2) /* PPL = horizonzal res / 16 - 1 */
+#define PPL ((HRES / 16 - 1) <<  2) /* PPL = horizonzal res / 16 - 1 */
 
 /* Timing1 register values */
 #define VBP (  22 << 24)
 #define VFP (   2 << 16)
 #define VSW (   3 << 10)
-#define LPP ( 767 <<  0) /* LPP = vertical res - 1 */
+#define LPP (VRES <<  0) /* LPP = vertical res - 1 */
 
 /* Timing2 register values */
 #define PCD_HI (   0 << 27)
 #define BCD    (   1 << 26)
-#define CPL    (1023 << 16) /* for TFT: PPL - 1 */
+#define CPL    (HRES << 16) /* for TFT: PPL - 1 */
 #define IOE    (   0 << 14)
 #define IPC    (   1 << 13)
 #define IHS    (   1 << 12)
@@ -86,10 +93,12 @@
 #define LCDEN     (1 <<  0) /* enable display */
 
 
-void *mmap(int fd, uint32_t virt_addr, uint32_t page_count);
+void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count);
+int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
 
 struct file_operations pl111_fops = {
-	.mmap = mmap
+	.mmap = fb_mmap,
+	.ioctl = fb_ioctl
 };
 
 struct devclass pl111_cdev = {
@@ -129,7 +138,7 @@ int pl111_init(dev_t *dev)
 	return 0;
 }
 
-void *mmap(int fd, uint32_t virt_addr, uint32_t page_count)
+void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count)
 {
 	uint32_t i, page;
 	pcb_t *pcb = current()->pcb;
@@ -142,6 +151,28 @@ void *mmap(int fd, uint32_t virt_addr, uint32_t page_count)
 	}
 
 	return (void *) virt_addr;
+}
+
+int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
+{
+	switch (cmd) {
+
+	case IOCTL_HRES:
+		*((uint32_t *) args) = HRES;
+		return 0;
+
+	case IOCTL_VRES:
+		*((uint32_t *) args) = VRES;
+		return 0;
+
+	case IOCTL_SIZE:
+		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
+		return 0;
+
+	default:
+		/* Unknown command. */
+		return -1;
+	}
 }
 
 REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);

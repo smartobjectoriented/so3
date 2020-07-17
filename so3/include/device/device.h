@@ -29,8 +29,9 @@
 #define DEV_PREFIX_LEN  (sizeof(DEV_PREFIX)-1)
 
 /* Device classes. */
-#define DEV_CLASS_FB    "fb"
-#define DEV_CLASS_INPUT "input"
+#define DEV_CLASS_FB       "fb"
+#define DEV_CLASS_MOUSE    "mouse"
+#define DEV_CLASS_KEYBOARD "keyboard"
 
 #define INITCALLS_LEVELS 2
 

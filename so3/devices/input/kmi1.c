@@ -57,7 +57,7 @@ struct file_operations pl050_mouse_fops = {
 /* Device info. */
 dev_t pl050_mouse;
 struct devclass pl050_mouse_cdev = {
-	.class = DEV_CLASS_INPUT,
+	.class = DEV_CLASS_MOUSE,
 	.type = VFS_TYPE_DEV_INPUT,
 	.fops = &pl050_mouse_fops,
 };
