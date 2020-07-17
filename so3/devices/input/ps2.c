@@ -34,7 +34,6 @@
 
 #define GET_DX(state, x) ((x) - (((state) << 4) & 0x100))
 #define GET_DY(state, y) ((y) - (((state) << 3) & 0x100))
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 /* Keyboard scan codes */
 uint8_t sc[] = {

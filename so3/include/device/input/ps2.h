@@ -18,6 +18,8 @@
 
 #include <types.h>
 
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 /* Mouse packet byte indexes. */
 #define PS2_STATE 0
 #define PS2_X     1
