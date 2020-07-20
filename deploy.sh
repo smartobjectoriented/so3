@@ -44,11 +44,13 @@ if [ "$var" != "" ]; then
 fi
 done < build.conf
 
-if [ "$_PLATFORM" != "vexpress" ]; then
-    echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
-    read devname
-    export devname="$devname"
-fi
+echo "Platform is : ${_PLATFORM}"
+
+#if [ "$_PLATFORM" != "vexpress" ]; then
+#    echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
+#    read devname
+#    export devname="$devname"
+#fi
 
 if [ "$deploy_boot" == "y" ]; then
     # Deploy files into the boot partition (first partition)
@@ -57,44 +59,46 @@ if [ "$deploy_boot" == "y" ]; then
     cd target
     ./mkuboot.sh ${_PLATFORM}
     cd ../filesystem
-    ./mount.sh 1
-    sudo rm -rf fs/*
-    sudo cp ../target/${_PLATFORM}.itb fs/
-    sudo cp ../u-boot/uEnv.d/uEnv_${_PLATFORM}.txt fs/uEnv.txt
-       
+    # This will clear the partitions
+    ./create_partitions.sh
+
+    mcopy -i partition1.img ../target/${_PLATFORM}.itb ::
+    mcopy -i partition1.img ../u-boot/uEnv.d/uEnv_"$_PLATFORM".txt ::uEnv.txt
+
     if [ "$_PLATFORM" == "vexpress" ]; then
-	# Nothing else ...
-        ./umount.sh
-        cd ..
+        # Nothing else ...
+        true
     fi
- 
+
     if [ "$_PLATFORM" == "rpi3" ]; then
-        sudo cp -r../bsp/rpi3/* fs/
-        sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
-        sudo cp ../u-boot/u-boot.bin fs/kernel.img
-        ./umount.sh
-        cd ..
+        mcopy -i partition1.img ../bsp/rpi3/* ::
+        mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel.img
+        #TODO
+    #    sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
     fi
     
     if [ "$_PLATFORM" == "rpi4" ]; then
-        sudo cp -r ../bsp/rpi4/* fs/
-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
-        ./umount.sh
-        cd ..
+        mcopy -i partition1.img ../bsp/rpi4/* ::
+        mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel7.img
     fi
+
+    cd ..
 fi
+
+# TODO : Find out differences between these two
 
 if [ "$deploy_rootfs" == "y" ]; then
     # Deploy of the rootfs (first partition)
-    cd rootfs
-    ./deploy.sh
-    cd ..
+    echo "Deploy rootfs"
+    cd filesystem
+    mcopy -i partition1.img ../usr/out/* ::
 fi
     
 if [ "$deploy_usr" == "y" ]; then
- 
     # Deploy all usr applications into the rootfs
-    cd usr
-    ./deploy.sh
-    cd ..
+    echo "Deploy userapps"
+    cd filesystem
+    mcopy -i partition1.img ../usr/out/* ::
 fi
+
+./populate_sd_image.sh
