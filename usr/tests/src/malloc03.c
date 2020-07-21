@@ -3,13 +3,15 @@
 #include <stdio.h>
 #include <limits.h>
 
+// Some block size
 #define BLOCK_SIZE 333
-#define MAX_ALLOCATIONS 1024*100
+// Some number of allocations
+#define MAX_ALLOCATIONS (1024*1024)
+
+static void *ptr[MAX_ALLOCATIONS] = {NULL,};
 
 int main()
 {
-    void *ptr[MAX_ALLOCATIONS] = {NULL,};
-
     int i = 0;
     int ret = 0;
     

@@ -3,12 +3,16 @@
 
 #define MAX (1024*1024)
 
+static void *ptr[MAX] = {NULL,}; // OK
+
 int main()
 {
     printf("Before array of pointers\n");
-    
-    //void *ptr[MAX] = {NULL,};
-    void *ptr[MAX];
+
+    // This also fails on the host (with a segmentation fault)
+    // Probably the stack size is not big enough to hold this
+    //void *ptr[MAX] = {NULL,}; // -> Kernel panic !
+    //void *ptr[MAX]; // -> Kernel panic !
 
     printf("Array of pointers set\n");
     
