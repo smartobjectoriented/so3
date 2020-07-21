@@ -13,12 +13,12 @@ partition2_size=8M
 partition2_type=''
 
 # Create partition 1
-dd if=/dev/zero of=${partition1} bs=${partition1_size} count=1
-mkfs.vfat ${partition1}
+dd if=/dev/zero of=${partition1} bs=${partition1_size} count=1 status=none
+mkfs.vfat ${partition1} > /dev/null
 
 # Create partition 2
-dd if=/dev/zero of=${partition2} bs=${partition2_size} count=1
-mkfs.ext4 ${partition2}
+dd if=/dev/zero of=${partition2} bs=${partition2_size} count=1 status=none
+mkfs.ext4 ${partition2} > /dev/null
 
 # Partitions can be mounted like so :
 #
@@ -32,7 +32,7 @@ mkfs.ext4 ${partition2}
 # such as mcopy or mke2fs to populate them
 
 # Create an empty image
-dd if=/dev/zero of=${sd_card_image_name} bs=${image_size} count=1
+dd if=/dev/zero of=${sd_card_image_name} bs=${image_size} count=1 status=none
 
 # Set partition table
 # man sfdisk for more information, sfdisk is a script-oriented tool for partitioning any block device.
