@@ -16,7 +16,7 @@ pipeline {
         }
         stage('Build U-Boot') {
             steps {
-                sh "cd u-boot; make vexpress_defconfig; make -j8"
+                sh "source toolchain/setup_env; cd u-boot; make vexpress_defconfig; make -j8"
             }
         }
         stage('Build SO3') {
