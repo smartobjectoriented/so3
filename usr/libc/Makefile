@@ -10,11 +10,11 @@ endif
 
 export USR_DIR
 
-LIBC_DIR = $(USR_DIR)/libc
+#LIBC_DIR = $(USR_DIR)/libc
 
 -include $(USR_DIR)/Makefile.common
 
-export LIBC_DIR
+#export LIBC_DIR
 
 LIB = crt0 crt1  pthread inet eabi_compat malloc shgetc intscan floatscan mutex sbrk
 
