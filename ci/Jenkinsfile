@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    // TODO : Setup for multiple platforms
+
+    stages {
+        stage('Setup toolchain') {
+            steps {
+                sh "source toolchain/setup_env"
+            }
+        }
+        stage('Build QEMU') {
+            steps {
+                sh "cd qemu; ./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs; make -j8"
+            }
+        }
+        stage('Build U-Boot') {
+            steps {
+                sh "cd u-boot; make vexpress_defconfig; make -j8"
+            }
+        }
+        stage('Build SO3') {
+            steps {
+                sh "source toolchain/setup_env; cd so3; make vexpress_mmc_defconfig; make"
+            }
+        }
+        stage('Build User Space') {
+            steps {
+                sh "source toolchain/setup_env; cd usr; make"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh "./deploy.sh -but"
+            }
+        }
+        stage('Boot SO3') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    sh 'expect -c "spawn ./st2; sleep 1; expect -re \".*so3%.*\"; send \"\x01\"; send \"x\" "'
+                }
+            }
+        }
+        stage('Launch Tests') {
+            steps {
+                echo 'TODO'
+            }
+        }
+    }
+}
