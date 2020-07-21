@@ -37,7 +37,7 @@ pipeline {
         stage('Boot SO3') {
             steps {
                 timeout(time: 1, unit: 'MINUTES') {
-                    sh 'expect -c "spawn ./st2; sleep 1; expect -re \".*so3%.*\"; send \"\x01\"; send \"x\" "'
+                    sh 'expect -c "spawn ./st2; sleep 1; expect -re \".*so3%.*\"; send \"\\x01\"; send \"x\" "'
                 }
             }
         }
