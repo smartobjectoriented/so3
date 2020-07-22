@@ -24,6 +24,33 @@ Supplemental test scripts are stored in `ci/test_scripts`.
 
 * `so3_test_script.sh` is a generic script to check if SO3 boots, but can also run test programs and check their output. This is used in `cukinia.conf` to run tests in SO3.
 
+### Adding a test
+
+In order to add a test modify the cukinia.conf file with the command you want to launch.
+
+If you want to create a userspace test for SO3 create it in `usr/tests/src` using `usr/tests/src/test.h` to specify if a test is successful or not. Then use the `so3_test_script.sh` to launch it by passing the executable name as argument.
+
+The `so3_test_script.sh` will launch SO3 in qemu and launch the specified executable. It will fail if there is no so3 prompt, if the executable returns as a failed test, or if the executable crashes or there is a timeout. Exact behavior can be found inside of the script (expect is used for interaction).
+
+The test suite will catch the first call to `SO3_TEST_SUCCESS(...)` or `SO3_TEST_FAIL(...)` in a test program so therefore usually the program returns after a failed test and only calls success if everything it tests did work.
+
+### Running the tests manually
+
+In the `ci` directory run :
+
+```shell
+    ./setup_cukinia.sh
+    ./cukinia cukinia.conf
+```
+
+If a test fails the command can be run manually to see what went wrong e.g.,
+
+```shell
+    ./test_scripts/so3_test_script.sh fail01
+```
+
+Since this was supposed to be run in a pipeline, it supposes the previous stages have been run (e.g., build qemu, build so3, build user space apps and tests, etc.). If this is run manually check out the `ci/Jenkinsfile` in order to execute the missing previous steps manually.
+
 ## Userspace folder
 
 ### Tests folder
