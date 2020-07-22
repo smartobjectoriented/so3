@@ -1,5 +1,9 @@
-
 #!/bin/bash
+script=${BASH_SOURCE[0]}
+# Get the path of this script
+SCRIPTPATH=$(realpath $(dirname $script))
+
+cd $SCRIPTPATH
 
 usage()
 {

@@ -7,6 +7,8 @@
  * Basic test for pipe().
  */
 
+#include "test.h"
+
 #include <stdio.h>
 #include <unistd.h>
 
@@ -34,7 +36,8 @@ int main()
 	//if (TST_RET == -1) {
         if (pipe_result < 0) {
                 //tst_res(TFAIL | TTERRNO, "pipe()");
-                printf("[FAIL] pipe() test failed with error %d\n", errno);
+                //printf("[FAIL] pipe() test failed with error %d\n", errno);
+                SO3_TEST_FAIL("pipe() test failed with error %d\n", errno);
 		return -1;
 	}
 
@@ -46,14 +49,15 @@ int main()
 	if (rd_size != wr_size) {
                 //tst_res(TFAIL, "read() returned %d, expected %d",
 		//        rd_size, wr_size);
-                printf("[FAIL] read() returned %d, expected %d\n",
-                       rd_size, wr_size);
+                //printf("[FAIL] read() returned %d, expected %d\n", rd_size, wr_size);
+                SO3_TEST_FAIL("read() returned %d, expected %d\n", rd_size, wr_size);
 		return -1;
 	}
 
 	if ((strncmp(rdbuf, wrbuf, wr_size)) != 0) {
                 //tst_res(TFAIL, "Wrong data were read back");
-                printf("[FAIL] Wrong data were read back\n");
+                //printf("[FAIL] Wrong data were read back\n");
+                SO3_TEST_FAIL("Wrong data were read back\n");
 		return -1;
 	}
 
@@ -63,7 +67,8 @@ int main()
         close(fds[1]);
 
 	//tst_res(TPASS, "pipe() functionality is correct");
-        printf("[PASS] pipe() functionnality is correct\n");
+        //printf("[PASS] pipe() functionnality is correct\n");
+        SO3_TEST_SUCCESS("pipe() functionnality is correct\n");
         return 0;
 }
 

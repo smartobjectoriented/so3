@@ -2,13 +2,16 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "test.h"
+
 int main()
 {
     void *ptr = malloc(100);
 
     //ASSERT_TRUE(ptr != nullptr);
     if (ptr == NULL) {
-        printf("[FAIL] malloc() returned a nullptr\n");
+        //printf("[FAIL] malloc() returned a nullptr\n");
+        SO3_TEST_FAIL("malloc() returned a nullptr\n");
         return -1;
     }
     //ASSERT_LE(100U, malloc_usable_size(ptr));
@@ -19,6 +22,7 @@ int main()
 
     free(ptr);
     
-    printf("[PASS] malloc() test 01 did pass\n");
+    //printf("[PASS] malloc() test 01 did pass\n");
+    SO3_TEST_SUCCESS("malloc() test 01 did pass\n");
     return 0;
 }

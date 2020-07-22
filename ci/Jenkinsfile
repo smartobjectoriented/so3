@@ -43,7 +43,10 @@ pipeline {
         }
         stage('Launch Tests') {
             steps {
-                echo 'TODO'
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh "cd ci; ./setup_cukinia.sh; ./cukinia -f junitxml -o so3_userspace_results.xml cukinia.conf"
+                    junit 'ci/*.xml'
+                }
             }
         }
     }
