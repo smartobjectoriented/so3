@@ -407,7 +407,7 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	tcb->tid = tid_next++;
 	
 	/* We append the tid to the thread name */
-	sprintf(tcb->name, "%s_%d", name, tcb->tid);
+	snprintf(tcb->name, THREAD_NAME_LEN, "%s_%d", name, tcb->tid);
 
 	tcb->th_fn = start_routine;
 	tcb->th_arg = arg;
@@ -625,7 +625,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 		printk("%s: heap overflow...\n", __func__);
 		kernel_panic();
 	}
-	sprintf(name, "thread_p%d", current()->pcb->pid);
+	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
 	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
 
