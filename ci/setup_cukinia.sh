@@ -8,6 +8,7 @@ if [ ! -f "${SCRIPTPATH}/cukinia" ]; then
     tmp_dir=$(mktemp -d)
     git clone https://github.com/savoirfairelinux/cukinia ${tmp_dir}
     cp ${tmp_dir}/cukinia .
+    echo "rm -rf ${tmp_dir}"
     rm -rf ${tmp_dir}
     echo "Cukinia is locally installed !"
 fi
