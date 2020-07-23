@@ -6,36 +6,43 @@ pipeline {
     stages {
         stage('Setup toolchain') {
             steps {
+                // This step will download and install the toolchain if missing
                 sh "./ci/pipeline_steps/setup_toolchain.sh"
             }
         }
         stage('Build QEMU') {
             steps {
+                // This step will build QEMU
                 sh "./ci/pipeline_steps/build_qemu.sh"
             }
         }
         stage('Build U-Boot') {
             steps {
+                // This step will build U-boot
                 sh "./ci/pipeline_steps/build_uboot.sh"
             }
         }
         stage('Build SO3') {
             steps {
+                // This step will build SO3
                 sh "./ci/pipeline_steps/build_so3.sh"
             }
         }
         stage('Build User Space') {
             steps {
+                // This step will build all userspace executables (programs and tests)
                 sh "./ci/pipeline_steps/build_usr.sh"
             }
         }
         stage('Deploy') {
             steps {
+                // This step will prepare the SD card image
                 sh "./ci/pipeline_steps/deploy.sh"
             }
         }
         stage('Boot SO3') {
             steps {
+                // This step will try to boot SO3 in QEMU
                 timeout(time: 1, unit: 'MINUTES') {
                     sh "./ci/pipeline_steps/boot_so3.sh"
                 }
@@ -43,6 +50,7 @@ pipeline {
         }
         stage('Launch Tests') {
             steps {
+                // This step will run tests on SO3 and report the results
                 timeout(time: 10, unit: 'MINUTES') {
                     sh "./ci/pipeline_steps/launch_tests.sh"
                     junit 'ci/*.xml'
