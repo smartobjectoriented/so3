@@ -18,6 +18,10 @@ The CI (Continuous Integratoin) folder `ci` holds a few new files :
 * `cukinia.conf` is the configuration for the [cukinia](https://github.com/savoirfairelinux/cukinia) test suite. It holds the tests that should be run during the "test" stage of the pipeline.
 * `setup_cukinia.sh` a script to setup the cukinia executable.
 
+### Pipeline Steps sub folder
+
+The Jenkinsfile that describes the pipeline will call the associated script from this folder `ci/pipeline_steps` for each step of the pipeline. This is done to make it more convenient to run each step manually..
+
 ### Test Scripts sub folder
 
 Supplemental test scripts are stored in `ci/test_scripts`.
