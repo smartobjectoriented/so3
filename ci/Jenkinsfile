@@ -6,45 +6,45 @@ pipeline {
     stages {
         stage('Setup toolchain') {
             steps {
-                sh "source toolchain/setup_env"
+                sh "./ci/pipeline_steps/setup_toolchain.sh"
             }
         }
         stage('Build QEMU') {
             steps {
-                sh "cd qemu; ./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs; make -j8"
+                sh "./ci/pipeline_steps/build_qemu.sh"
             }
         }
         stage('Build U-Boot') {
             steps {
-                sh "source toolchain/setup_env; cd u-boot; make vexpress_defconfig; make -j8"
+                sh "./ci/pipeline_steps/build_uboot.sh"
             }
         }
         stage('Build SO3') {
             steps {
-                sh "source toolchain/setup_env; cd so3; make vexpress_mmc_defconfig; make"
+                sh "./ci/pipeline_steps/build_so3.sh"
             }
         }
         stage('Build User Space') {
             steps {
-                sh "source toolchain/setup_env; cd usr; make; cd tests; make"
+                sh "./ci/pipeline_steps/build_usr.sh"
             }
         }
         stage('Deploy') {
             steps {
-                sh "./deploy.sh -but"
+                sh "./ci/pipeline_steps/deploy.sh"
             }
         }
         stage('Boot SO3') {
             steps {
                 timeout(time: 1, unit: 'MINUTES') {
-                    sh 'expect -c "spawn ./st2; sleep 1; expect -re \".*so3%.*\"; send \"\\x01\"; send \"x\" "'
+                    sh "./ci/pipeline_steps/boot_so3.sh"
                 }
             }
         }
         stage('Launch Tests') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    sh "cd ci; ./setup_cukinia.sh; ./cukinia -f junitxml -o so3_userspace_results.xml cukinia.conf || true" // We want this to return a good error code even if tests fail
+                    sh "./ci/pipeline_steps/launch_tests.sh"
                     junit 'ci/*.xml'
                 }
             }
