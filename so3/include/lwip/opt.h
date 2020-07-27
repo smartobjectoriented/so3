@@ -442,7 +442,7 @@
  * (requires the LWIP_TCP option)
  */
 #if !defined MEMP_NUM_TCP_SEG || defined __DOXYGEN__
-#define MEMP_NUM_TCP_SEG                16
+#define MEMP_NUM_TCP_SEG                64
 #endif
 
 /**

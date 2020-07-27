@@ -44,22 +44,22 @@
 
 #define ETH_PAD_SIZE 					0
 
-#define LWIP_DEBUG 1
+#define LWIP_DEBUG 0
 
 #define NOT_LWIP_DEBUG                  0
 #define DBG_TYPES_ON                    0x00
 #define LWIP_DBG_TYPES_ON               LWIP_DBG_OFF
 
 #define ETHARP_DEBUG                    LWIP_DBG_ON
-#define NETIF_DEBUG                     LWIP_DBG_ON
-#define PBUF_DEBUG                      LWIP_DBG_ON
+#define NETIF_DEBUG                     LWIP_DBG_OFF
+#define PBUF_DEBUG                      LWIP_DBG_OFF
 #define API_LIB_DEBUG                   LWIP_DBG_OFF
 #define API_MSG_DEBUG                   LWIP_DBG_OFF
 #define SOCKETS_DEBUG                   LWIP_DBG_OFF
 #define ICMP_DEBUG                      LWIP_DBG_OFF
 #define IGMP_DEBUG                      LWIP_DBG_OFF
 #define INET_DEBUG                      LWIP_DBG_OFF
-#define IP_DEBUG                        LWIP_DBG_ON
+#define IP_DEBUG                        LWIP_DBG_OFF
 #define IP_REASS_DEBUG                  LWIP_DBG_OFF
 #define RAW_DEBUG                       LWIP_DBG_OFF
 #define MEM_DEBUG                       LWIP_DBG_OFF
@@ -78,7 +78,7 @@
 #define TCPIP_DEBUG                     LWIP_DBG_OFF
 #define PPP_DEBUG                       LWIP_DBG_OFF
 #define SLIP_DEBUG                      LWIP_DBG_OFF
-#define DHCP_DEBUG                      LWIP_DBG_ON
+#define DHCP_DEBUG                      LWIP_DBG_OFF
 #define AUTOIP_DEBUG                    LWIP_DBG_OFF
 #define SNMP_MSG_DEBUG                  LWIP_DBG_OFF
 #define SNMP_MIB_DEBUG                  LWIP_DBG_OFF
@@ -136,7 +136,7 @@
  * MEMP_NUM_TCP_SEG: the number of simultaneously queued TCP segments.
  * (requires the LWIP_TCP option)
  */
-#define MEMP_NUM_TCP_SEG                8
+#define MEMP_NUM_TCP_SEG                64
 
 /**
  * MEMP_NUM_SYS_TIMEOUT: the number of simulateously active timeouts.
@@ -153,7 +153,7 @@
 /**
  * PBUF_POOL_SIZE: the number of buffers in the pbuf pool.
  */
-#define PBUF_POOL_SIZE                  4
+#define PBUF_POOL_SIZE                  64
 
 
 /*
@@ -183,12 +183,12 @@
 #define TCP_MSS                         1500
 
 /* TCP sender buffer space (bytes). */
-#define TCP_SND_BUF                     TCP_MSS * 2
+#define TCP_SND_BUF                     TCP_MSS * 16
 
 /**
  * TCP_WND: The size of a TCP window.
  */
-#define TCP_WND                         1500
+#define TCP_WND                         TCP_MSS * 16
 
 /**
  * TCP_SYNMAXRTX: Maximum number of retransmissions of SYN segments.

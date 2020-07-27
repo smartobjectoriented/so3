@@ -52,7 +52,6 @@ int root_proc(void *args)
 {
 	printk("SO3: starting the initial process (shell) ...\n\n\n");
 
-
 	/* Start the first process */
 	__exec("sh.elf");
 

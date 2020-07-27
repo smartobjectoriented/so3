@@ -105,7 +105,6 @@ err_t sys_mutex_new(sys_mutex_t *mutex)
     mutex_t *so3_mutex;
     LWIP_ASSERT("mutex != NULL", mutex != NULL);
 
-    // Alloc a new mutex
     so3_mutex = (mutex_t*)malloc(sizeof(mutex_t));
     mutex_init(so3_mutex);
 
@@ -152,7 +151,6 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
     LWIP_ASSERT("sem != NULL", sem != NULL);
     LWIP_ASSERT("initial_count invalid (count >= 0)", (initial_count >= 0));
 
-    // Alloc a new mutex
     sem->sem = (sem_t*)malloc(sizeof(sem_t));
 
     if(sem->sem == NULL) {
@@ -162,7 +160,7 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t initial_count)
 
     sem_init(sem->sem);
 
-    // The semaphore initial value is 1. The needed value must be set accordingly
+    /* The semaphore initial value is 1. The needed value must be set accordingly */
     if(initial_count == 0)
             sem_down(sem->sem);
 
@@ -184,8 +182,6 @@ void sys_sem_signal(sys_sem_t *sem)
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout_ms)
 {
     int start_time = sys_now();
-
-    //sem_down(sem->sem);
 
     if(timeout_ms > 0){
         if(sem_timeddown(sem->sem, timeout_ms * 1000000ull))

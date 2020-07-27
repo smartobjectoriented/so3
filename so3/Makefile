@@ -99,7 +99,7 @@ VPATH		:= $(srctree)
 export srctree objtree VPATH
 
 #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-CROSS_COMPILE = arm-linux-gnueabihf-
+CROSS_COMPILE = /lib/gcc-linaro-64-7.5/bin/arm-linux-gnueabihf-
 
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG

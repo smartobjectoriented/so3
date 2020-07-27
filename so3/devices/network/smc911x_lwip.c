@@ -177,8 +177,6 @@ static int smc911x_phy_reset(eth_dev_t *dev)
 
         msleep(100);
 
-        // udelay(100*1000);
-
         return 0;
 }
 
@@ -223,7 +221,7 @@ static void smc911x_enable(eth_dev_t *dev)
         smc911x_reg_write(dev, TX_CFG, TX_CFG_TX_ON);
 
         /* no padding to start of packets */
-        smc911x_reg_write(dev, RX_CFG, /*(2<<8) & RX_CFG_RXDOFF*/0);
+        smc911x_reg_write(dev, RX_CFG, 0);
 
         smc911x_set_mac_csr(dev, MAC_CR, MAC_CR_TXEN | MAC_CR_RXEN | MAC_CR_HBDIS);
 }
@@ -241,6 +239,7 @@ static int smc911x_rx(struct netif *netif)
         u32 *data = NULL;
         u32 pktlen, tmplen;
         u32 status, pulled_data;
+        u32 timeout = 10;
 
         struct pbuf *buf;
 
@@ -250,31 +249,29 @@ static int smc911x_rx(struct netif *netif)
                 pktlen = (status & RX_STS_PKT_LEN) >> 16;
 
                 if (status & RX_STS_ES) {
-                        /*smc911x_drop_pkt(dev);*/
                         printk("dropped bad packet. Status: 0x%08x\n", status);
                         return -1;
                 }
 
                 if (pktlen > ETHERNET_LAYER_2_MAX_LENGTH) {
-                        /*smc911x_drop_pkt(dev);*/
                         printk("Dropped bad packet. Packet length can't exceed %d bytes, length was: %d bytes\n",
                                ETHERNET_LAYER_2_MAX_LENGTH, pktlen);
                         return -1;
                 }
 
-                //smc911x_reg_write(dev, RX_CFG, 0);
-
                 tmplen = (pktlen + 3) / 4;
 
-                /* Wait until a buffer is available.
-                 * TODO maybe add a timeout ? */
+                /* Wait until a buffer is available. */
                 while((buf = pbuf_alloc(PBUF_RAW, pktlen, PBUF_RAM)) == NULL){
                         /* Wait a little bit to hopefully get a buffer */
-                        DBG("No buf");
                         msleep(10);
+
+                        if(timeout-- <= 0)
+                                break;
                 }
 
-                data = (u32 *) buf->payload;
+                if(buf != NULL)
+                        data = (u32 *) buf->payload;
 
                 while (tmplen--) {
                         pulled_data = pkt_data_pull(dev, RX_DATA_FIFO);
@@ -284,7 +281,6 @@ static int smc911x_rx(struct netif *netif)
                 }
 
                 if (buf != NULL) {
-                        DBG(printk("."));
                         netif->input(buf, netif);
                 }
         }
@@ -299,19 +295,16 @@ static irq_return_t smc911x_so3_interrupt_top(int irq, void *dummy)
         u32 mask;
 
         if (!sem_timeddown(&dev->sem_read, 10000)) {
-                //printk("|");
-                // Disable frame interrupts
+                /* Disable frame interrupts */
                 mask = smc911x_reg_read(dev, INT_EN);
                 smc911x_reg_write(dev, INT_EN, mask & ~(INT_EN_RSFL_EN | INT_EN_RSFF_EN));
 
-                // Process incoming frames
+                /* Process incoming frames */
                 smc911x_rx(netif);
 
-                // Re-enable frame interrupts
+                /* Re-enable frame interrupts */
                 smc911x_reg_write(dev, INT_EN, mask);
                 sem_up(&dev->sem_read);
-        } else {
-                printk("!!timeout!!");
         }
 
         return IRQ_COMPLETED;
@@ -325,10 +318,9 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
         irq_return_t irq_return = IRQ_COMPLETED;
         u32 status, mask, timeout;
 
-        // Disable interrupts
+        /* Disable interrupts */
         mask = smc911x_reg_read(dev, INT_EN);
         smc911x_reg_write(dev, INT_EN, 0);
-
 
         timeout = 8;
 
@@ -387,15 +379,16 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
                 }
         } while (--timeout);
 
-        smc911x_reg_write(dev, INT_STS, -1); // Clear all interrupts
+        smc911x_reg_write(dev, INT_STS, -1); /* Clear all interrupts */
 
-        smc911x_reg_write(dev, INT_EN, mask); // Re-enable interrupts
+        smc911x_reg_write(dev, INT_EN, mask); /* Re-enable interrupts */
 
         return irq_return;
 }
 
-// https://lists.gnu.org/archive/html/lwip-users/2017-05/msg00068.html
-char buff[1514]; // MSS is 1500 we need 14 bytes for eth header
+/* https://lists.gnu.org/archive/html/lwip-users/2017-05/msg00068.html
+ * MSS is 1500 we need 14 bytes for eth header */
+char buff[1514];
 static err_t smc911x_lwip_send(struct netif *netif, struct pbuf *p)
 {
         eth_dev_t *dev = netif->state;
@@ -493,12 +486,9 @@ err_t smc911x_lwip_init(struct netif *netif)
                 i++;
         }
 
-
-        // TODO change ??
         netif_set_default(netif);
         netif_set_link_up(netif);
         netif_set_up(netif);
-
 
         fifo = smc911x_reg_read(eth_dev, FIFO_INT);
         smc911x_reg_write(eth_dev, FIFO_INT, 0x01 | (fifo & 0xFFFFFF00));
