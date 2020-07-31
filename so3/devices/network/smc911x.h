@@ -20,15 +20,6 @@
  *
  */
 
-
-/*
- * SMSC LAN9[12]1[567] Network driver
- *
- *
- *
- * (c) 2020 Julien Quartier<julien.quartier@bluewin.ch> Port the driver to so3
- */
-
 #ifndef _SMC911X_H_
 #define _SMC911X_H_
 #define DEBUG
