@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
 	/* LittlevGL needs to know how time passes by. */
 	pthread_t tick_thread;
-	if(-1 == pthread_create(&tick_thread, NULL, tick_routine, NULL)) {
+	if (-1 == pthread_create(&tick_thread, NULL, tick_routine, NULL)) {
 		return -1;
 	}
 
@@ -79,9 +79,9 @@ int main(int argc, char **argv)
 }
 
 /* Tick routine for lvgl. */
-void *tick_routine (void *args)
+void *tick_routine(void *args)
 {
-	while(1) {
+	while (1) {
 		/* Tell LittlevGL that 5 milliseconds were elapsed */
 		usleep(5000);
 		lv_tick_inc(5);
@@ -124,13 +124,7 @@ bool fs_ready_cb(struct _lv_fs_drv_t *drv)
 
 lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode)
 {
-	FILE *fp;
-	int flags;
-
-	flags = mode & LV_FS_MODE_WR ? O_WRONLY : 0;
-	flags |= mode & LV_FS_MODE_RD ? O_RDONLY : 0;
-
-	fp = fopen(path, "r");
+	FILE *fp = fopen(path, (mode & LV_FS_MODE_WR) ? "w" : "r");
 	if (!fp) {
 		return LV_FS_RES_UNKNOWN;
 	}
@@ -202,10 +196,9 @@ int fb_init(void)
 	}
 
 	/* LVGL will use this buffer to render the screen. See my_fb_cb. */
-	static lv_color_t buf1[LVGL_BUF_SIZE];
-	static lv_color_t buf2[LVGL_BUF_SIZE];
+	static lv_color_t buf[LVGL_BUF_SIZE];
 	static lv_disp_buf_t disp_buf;
-	lv_disp_buf_init(&disp_buf, buf1, buf2, LVGL_BUF_SIZE);
+	lv_disp_buf_init(&disp_buf, buf, NULL, LVGL_BUF_SIZE);
 
 	/*
 	 * Initialisation and registration of the display driver.
@@ -238,9 +231,10 @@ int fb_init(void)
 void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
 	lv_coord_t y, w = lv_area_get_width(area);
+	uint32_t line_size = w * sizeof(lv_color_t);
 
-	for(y = area->y1; y <= area->y2; y++) {
-		memcpy(&fbp[y * scr_hres + area->x1], color_p, w * sizeof(lv_color_t));
+	for (y = area->y1; y <= area->y2; y++) {
+		memcpy(&fbp[y * scr_hres + area->x1], color_p, line_size);
 		color_p += w;
 	}
 
@@ -259,22 +253,12 @@ int mouse_init(void)
 		return -1;
 	}
 
-	/* We need to place res on the heap so the kernel can read it. */
-	struct display_res *res = malloc(sizeof(struct display_res));
-	if (!res) {
-		printf("Insufficient memory.\n");
-		return -1;
-	}
-
-	res->h = scr_hres;
-	res->v = scr_vres;
-
 	/*
 	 * Informing the driver of the screen size so it knows the bounds for
 	 * the cursor coordinates.
 	 */
-	ioctl(mfd, IOCTL_MOUSE_SET_SIZE, res);
-	free(res);
+	struct display_res res = { .h = scr_hres, .v = scr_vres };
+	ioctl(mfd, IOCTL_MOUSE_SET_RES, &res);
 
 	/*
 	 * Initialisation of an input driver, in our case for a mouse. Also set
@@ -288,7 +272,7 @@ int mouse_init(void)
 	mouse_drv.read_cb = my_mouse_cb;
 
 	lv_indev_t *mouse_dev = lv_indev_drv_register(&mouse_drv);
-	lv_obj_t *cursor_obj =  lv_img_create(lv_disp_get_scr_act(NULL), NULL);
+	lv_obj_t *cursor_obj = lv_img_create(lv_disp_get_scr_act(NULL), NULL);
 	lv_img_set_src(cursor_obj, LV_SYMBOL_PLUS);
 	lv_indev_set_cursor(mouse_dev, cursor_obj);
 
@@ -298,22 +282,13 @@ int mouse_init(void)
 /* Mouse callback. */
 bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 {
-	/* Initialise once and place it in the heap. Not freed. */
-	static struct ps2_mouse *mouse = NULL;
-	if (!mouse) {
-		mouse = malloc(sizeof(struct ps2_mouse));
-		if (!mouse) {
-			printf("Insufficient memory.\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-
 	/* Retrieve mouse state from the driver. */
-	ioctl(mfd, IOCTL_MOUSE_GET_STATE, mouse);
+	static struct ps2_mouse mouse;
+	ioctl(mfd, IOCTL_MOUSE_GET_STATE, &mouse);
 
-	data->state = mouse->left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
-	data->point.x = mouse->x;
-	data->point.y = mouse->y;
+	data->state = mouse.left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+	data->point.x = mouse.x;
+	data->point.y = mouse.y;
 
 	return false;
 }
@@ -348,22 +323,13 @@ int keyboard_init(void)
 /* Keyboard callback. */
 bool my_keyboard_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 {
-	/* Initialise once and place it in the heap. Not freed. */
-	static struct ps2_key *key = NULL;
-	if (!key) {
-		key = malloc(sizeof(struct ps2_key));
-		if (!key) {
-			printf("Insufficient memory.\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-
 	/* Retrieve mouse state from the driver. */
-	ioctl(kfd, IOCTL_KB_GET_KEY, key);
+	static struct ps2_key key;
+	ioctl(kfd, IOCTL_KB_GET_KEY, &key);
 
-	if (key->value != 0) {
-		data->key = key->value;
-		data->state = key->state & 1;
+	if (key.value != 0) {
+		data->key = key.value;
+		data->state = key.state & 1;
 	}
 
 	return false;

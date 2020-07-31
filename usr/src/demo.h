@@ -54,7 +54,7 @@ lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 /* Mouse driver-related structures. */
 
 #define IOCTL_MOUSE_GET_STATE 0
-#define IOCTL_MOUSE_SET_SIZE  1
+#define IOCTL_MOUSE_SET_RES   1
 
 struct ps2_mouse {
 	uint16_t x, y;
