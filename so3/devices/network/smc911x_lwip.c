@@ -1,5 +1,9 @@
 /*
- * Copyright (C) 2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Original driver for u-boot:
+ *      Copyright (C)  2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+ *
+ * SO3 Port:
+ *      Copyright (C) 2020 Julien Quartier <julien.quartier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

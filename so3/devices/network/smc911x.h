@@ -1,15 +1,37 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+/*
+ * Original driver for u-boot:
+ *      Copyright (C)  2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+ *
+ * SO3 Port:
+ *      Copyright (C) 2020 Julien Quartier <julien.quartier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+
 /*
  * SMSC LAN9[12]1[567] Network driver
  *
- * (c) 2007 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+ *
+ *
+ * (c) 2020 Julien Quartier<julien.quartier@bluewin.ch> Port the driver to so3
  */
 
 #ifndef _SMC911X_H_
 #define _SMC911X_H_
 #define DEBUG
-
-//#include <linux/types.h>
 
 #define DRIVERNAME "smc911x"
 
@@ -315,7 +337,6 @@ static inline void smc911x_reg_write(eth_dev_t *dev,
 
 /* MAC_CR - MAC Control Register */
 #define MAC_CR_RXALL			0x80000000
-/* TODO: delete this bit? It is not described in the data sheet. */
 #define MAC_CR_HBDIS			0x10000000
 #define MAC_CR_RCVOWN			0x00800000
 #define MAC_CR_LOOPBK			0x00200000
