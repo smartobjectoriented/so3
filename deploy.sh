@@ -8,19 +8,24 @@ usage()
   echo "Where OPTIONS are:"
   echo "  -a    Deploy all"
   echo "  -b    Deploy boot (kernel, U-boot, etc.)"
-  echo "  -u    Deploy usr apps"
+  echo "  -r    Deploy usr apps into the rootfs (here as ramfs)"
+  echo "  -u    Deploy usr apps in the first partition of the sdcard"
   echo ""
   exit 1
 }
 
-while getopts "abu" o; do
+while getopts "abru" o; do
   case "$o" in
     a)
       deploy_boot=y
       deploy_usr=y
+      deploy_rootfs=y
       ;;
     b)
       deploy_boot=y
+      ;;
+    r)
+      deploy_rootfs=y
       ;;
     u)
       deploy_usr=y
@@ -44,6 +49,26 @@ if [ "$PLATFORM" != "vexpress" ]; then
     read devname
     export devname="$devname"
 fi
+
+# Deploy usr apps before boot components in case if the rootfs
+# is embedded in a ramfs file
+
+if [ "$deploy_usr" == "y" ]; then
+ 
+    # Deploy all usr applications into the rootfs (first partition)
+    cd usr
+    ./deploy.sh
+    cd ..
+fi
+
+if [ "$deploy_rootfs" == "y" ]; then
+ 
+    # Deploy all usr applications into the ramfs
+    cd rootfs
+    ./deploy.sh
+    cd ..
+fi
+
 
 if [ "$deploy_boot" == "y" ]; then
     # Deploy files into the boot partition (first partition)
@@ -78,11 +103,4 @@ if [ "$deploy_boot" == "y" ]; then
         cd ..
     fi
 fi
-  
-if [ "$deploy_usr" == "y" ]; then
- 
-    # Deploy all usr applications into the rootfs
-    cd usr
-    ./deploy.sh
-    cd ..
-fi
+

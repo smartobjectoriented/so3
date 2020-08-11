@@ -2,6 +2,6 @@
 
 sudo umount fs
 
-if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "merida" ]; then
+if [ "$PLATFORM" == "vexpress" ]; then
     sudo losetup -D
 fi
