@@ -20,12 +20,9 @@
 
 / {
 	description = "SO3 image containing so3 kernel and FDT blob";
-	#address-cells = <0>;
-	#size-cells = <0>;
-	
+
 	images {
-		#address-cells = <0>;
-		#size-cells = <0>;
+
 		kernel {
 			/*reg = <>; Make dtc happy ;-) */
 			description = "SO3 OS kernel";
@@ -37,13 +34,11 @@
 			load = <0x80008000>;
 			entry = <0x80008000>;
 			
-			#address-cells = <0>;
-			#size-cells = <0>;
-			
 			hash {
 				algo = "crc32";
 			};
 		};
+                
 		fdt {
 			description = "Flattened Device Tree blob";
 			data = /incbin/("../so3/arch/arm/boot/dts/vexpress.dtb");
