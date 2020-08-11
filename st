@@ -8,7 +8,7 @@
 	-kernel u-boot/u-boot \
 	-semihosting-config enable,target=native \
 	-net user,tftp=. \
-	-net tap,script=tools/qemu-ifup,downscript=tools/qemu-ifdown -net nic \
+	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic \
 	-sd filesystem/sdcard.img \
 	-nographic 
     

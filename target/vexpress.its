@@ -55,7 +55,7 @@
 			};
 		};	
 /* Uncomment if ramdisk is used. */
- 
+/*
                 ramdisk {
                         description = "SO3 environment minimal rootfs";
                         data = /incbin/("../rootfs/board/vexpress/initrd.fat");
@@ -65,7 +65,7 @@
                         compression = "none";
                         load = <0x84000000>;
                 };
-
+*/
 
     };
 	configurations {
@@ -75,7 +75,7 @@
 			kernel = "kernel";
 			fdt = "fdt";
 
-                        ramdisk = "ramdisk";
+ /*                       ramdisk = "ramdisk"; */
 
 		};
 	};

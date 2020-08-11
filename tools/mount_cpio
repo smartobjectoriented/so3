@@ -1,8 +1,0 @@
-#!/bin/bash
-
-calldir=`dirname "$0"`
-rm -rf initrd
-mkdir initrd
-cd initrd
-fakeroot -- /bin/bash ../${calldir}/mount_cpio_fakeroot $1
-cd ..

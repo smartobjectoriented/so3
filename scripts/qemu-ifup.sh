@@ -8,15 +8,6 @@
 # This work is licensed under the terms of the GNU GPL, version 2.  See
 # the COPYING file in the top-level directory.
 #
-# * -- Smart Object Oriented  --
-# * Copyright (c) 2016,2017 Sootech SA, Switzerland
-# * 
-# * The contents of this file is strictly under the property of Sootech SA and must not be shared in any case.
-# *
-# * Contributors:
-# *
-# * - October 2017: Baptiste Delporte
-#
 
 # Set to the name of your bridge
 BRIDGE=br0

@@ -1,14 +1,4 @@
 #!/bin/bash
-#
-# * -- Smart Object Oriented  --
-# * Copyright (c) 2016,2017 Sootech SA, Switzerland
-# * 
-# * The contents of this file is strictly under the property of Sootech SA and must not be shared in any case.
-# *
-# * Contributors:
-# *
-# * - October 2017: Baptiste Delporte
-#
 
 other_qemu=`sudo brctl show | grep tap | wc -l`
 if [[ ${other_qemu} -eq 1 ]]

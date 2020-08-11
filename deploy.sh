@@ -8,24 +8,19 @@ usage()
   echo "Where OPTIONS are:"
   echo "  -a    Deploy all"
   echo "  -b    Deploy boot (kernel, U-boot, etc.)"
-  echo "  -r    Deploy rootfs (secondary)"
   echo "  -u    Deploy usr apps"
   echo ""
   exit 1
 }
 
-while getopts "abru" o; do
+while getopts "abu" o; do
   case "$o" in
     a)
-      deploy_rootfs=y
       deploy_boot=y
       deploy_usr=y
       ;;
     b)
       deploy_boot=y
-      ;;
-    r) 
-      deploy_rootfs=y
       ;;
     u)
       deploy_usr=y
@@ -44,7 +39,7 @@ if [ "$var" != "" ]; then
 fi
 done < build.conf
 
-if [ "$_PLATFORM" != "vexpress" ]; then
+if [ "$PLATFORM" != "vexpress" ]; then
     echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
     read devname
     export devname="$devname"
@@ -55,20 +50,20 @@ if [ "$deploy_boot" == "y" ]; then
     echo Deploying boot files into the first partition...
      
     cd target
-    ./mkuboot.sh ${_PLATFORM}
+    ./mkuboot.sh ${PLATFORM}
     cd ../filesystem
     ./mount.sh 1
     sudo rm -rf fs/*
-    sudo cp ../target/${_PLATFORM}.itb fs/
-    sudo cp ../u-boot/uEnv.d/uEnv_${_PLATFORM}.txt fs/uEnv.txt
+    sudo cp ../target/${PLATFORM}.itb fs/
+    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
        
-    if [ "$_PLATFORM" == "vexpress" ]; then
+    if [ "$PLATFORM" == "vexpress" ]; then
 	# Nothing else ...
         ./umount.sh
         cd ..
     fi
  
-    if [ "$_PLATFORM" == "rpi3" ]; then
+    if [ "$PLATFORM" == "rpi3" ]; then
         sudo cp -r../bsp/rpi3/* fs/
         sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel.img
@@ -76,21 +71,14 @@ if [ "$deploy_boot" == "y" ]; then
         cd ..
     fi
     
-    if [ "$_PLATFORM" == "rpi4" ]; then
+    if [ "$PLATFORM" == "rpi4" ]; then
         sudo cp -r ../bsp/rpi4/* fs/
         sudo cp ../u-boot/u-boot.bin fs/kernel7.img
         ./umount.sh
         cd ..
     fi
 fi
-
-if [ "$deploy_rootfs" == "y" ]; then
-    # Deploy of the rootfs (first partition)
-    cd rootfs
-    ./deploy.sh
-    cd ..
-fi
-    
+  
 if [ "$deploy_usr" == "y" ]; then
  
     # Deploy all usr applications into the rootfs

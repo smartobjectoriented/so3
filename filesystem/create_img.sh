@@ -6,13 +6,12 @@ if [ $# -ne 1 ]; then
 fi 
 
 # Partition layout on the sdcard:
-# - Partition #1: 16 MB (u-boot, kernel, initrd, etc.)
-# - Partition #2: 8 MB (main rootfs)
+# - Partition #1: 32 MB
 
 if [ "$1" == "vexpress" ]; then
     #create image first
     echo Creating sdcard.img ... 
-    dd_size=32M
+    dd_size=64M
     
     dd if=/dev/zero of=sdcard.img bs="$dd_size" count=1
     devname=$(sudo losetup --partscan --find --show sdcard.img)
@@ -29,7 +28,7 @@ fi
 
 if [ "$1" == "vexpress" -o "$1" == "rpi4" -o "$1" == "bpi" ]; then
 #create the partition layout this way
-    (echo o; echo n; echo p; echo; echo; echo +32M; echo t; echo c; echo n; echo p; echo; echo; echo +8M; echo w)   | sudo fdisk /dev/"$devname";
+    (echo o; echo n; echo p; echo; echo; echo +32M; echo t; echo c; echo w)   | sudo fdisk /dev/"$devname";
 fi
 
 if [[ "$devname" = *[0-9] ]]; then
@@ -37,4 +36,4 @@ if [[ "$devname" = *[0-9] ]]; then
 fi
 
 sudo mkfs.vfat /dev/"$devname"1
-sudo mkfs.ext4 /dev/"$devname"2
+
