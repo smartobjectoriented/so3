@@ -58,7 +58,7 @@
 /*
                 ramdisk {
                         description = "SO3 environment minimal rootfs";
-                        data = /incbin/("../rootfs/board/vexpress/initrd.fat");
+                        data = /incbin/("../rootfs/board/vexpress/rootfs.fat");
                         type = "ramdisk";
                         arch = "arm";
                         os = "linux";

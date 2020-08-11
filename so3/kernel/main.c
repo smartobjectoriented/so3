@@ -29,6 +29,7 @@
 #include <vfs.h>
 #include <process.h>
 #include <timer.h>
+#include <version.h>
 
 #include <asm/atomic.h>
 #include <asm/setup.h>
@@ -37,8 +38,6 @@
 #include <device/driver.h>
 
 #include <apps/main_thread.h>
-
-#define SO3_KERNEL_VERSION "2020.3.1"
 
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
 

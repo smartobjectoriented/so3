@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #create image first
-dd if=/dev/zero of=board/$1/initrd.fat bs=1024 count=1024
+dd if=/dev/zero of=board/$1/rootfs.fat bs=1024 count=1024
 DEVLOOP=$(sudo losetup --partscan --find --show board/$1/rootfs.fat)
 
 #create the partition this way
