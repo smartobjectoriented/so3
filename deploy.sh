@@ -65,7 +65,8 @@ if [ "${deploy_boot}" == "y" ]; then
     echo "Deploying boot files into the first partition..."
      
     cd target
-    ./mkuboot.sh ${_PLATFORM} > /dev/null
+    #./mkuboot.sh ${_PLATFORM} > /dev/null || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
+    ./mkuboot.sh ${_PLATFORM} || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
     cd ../filesystem
     # This will clear the partitions
     ./create_partitions.sh
