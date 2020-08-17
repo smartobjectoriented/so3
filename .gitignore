@@ -39,4 +39,4 @@ agency/rootfs/target/**
 !agency/rootfs/*.mk
 !agency/rootfs/package/**
 !agency/rootfs/board/**/*.d
-
+!bsp/**/*.dtb
