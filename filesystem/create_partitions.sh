@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Image parameters
-image_size=64M
+image_size=128M
 sd_card_image_name=sdcard.img
 
 # Partition parameters
 partition1=partition1.img
-partition1_size=32M
+partition1_size=64M
 partition1_type=c
 partition2=partition2.img
 partition2_size=8M
@@ -27,7 +27,7 @@ mkfs.ext4 ${partition2} > /dev/null
 # ls partition1
 # sudo umount parition1
 #
-# These commands do require super user priviliedges
+# These commands do require super user priviledges
 # Therefore it is recommended to use other commands
 # such as mcopy or mke2fs to populate them
 
