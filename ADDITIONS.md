@@ -70,3 +70,7 @@ The `create_img.sh` script has been replaced by two scripts `create_partitions.s
 The new scripts (e.g., deploy.sh) make use of tools such as mke2fs and mcopy in order to copy files to the partitions without mounting them (which requires root priviledges). The partitions can still be mounted for e.g., manual inspection or modification.
 
 This is removes the need to run anything with root priviledges and so will save the user from harm (e.g., formatting the wrong /dev/entry) as well as allow for easier automation.
+
+## Rootfs / Ramfs folder
+
+The `create_ramfs.sh` script has been rewritten so that it does not require any priviledged commands, it will create an image with a FAT partition. The `deploy.sh` has also been rewritten so that it does not require any priviliedged commands. This script also copies the contents of `usr/out/` in the file system if no specific folder is passed as an argument.

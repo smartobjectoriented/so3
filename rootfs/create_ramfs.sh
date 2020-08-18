@@ -18,7 +18,7 @@ partition="${tmp_dir}/partition.img"
 
 # Create image first
 image_name="board/$1/initrd.fat"
-dd if=/dev/zero of="${image_name}" bs=512 count=${start_sector} status=none
+dd if=/dev/zero of="${image_name}" count=${start_sector} status=none
 
 # Append the formatted partition
 dd if=/dev/zero of="${partition}" bs=${partition_size} count=1 status=none

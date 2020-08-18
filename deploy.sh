@@ -63,6 +63,7 @@ filesystem/create_partitions.sh
 if [ "${deploy_rootfs}" == "y" ]; then
     # Deploy of the rootfs (first partition of ramfs)
     echo "Deploying rootfs..."
+    rootfs/create_ramfs.sh ${_PLATFORM}
     rootfs/deploy.sh ${_PLATFORM}
 fi
 
