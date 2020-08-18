@@ -19,7 +19,7 @@ fs_name=initrd.fat
 # Block size can be checked with fdisk -l (sector size)
 block_size=512
 # Partition start can be checked with fdisk -l too
-start_pos=1
+start_pos=2048
 # Create temporary directory
 tmp_dir=$(mktemp -d -t so3-rootfs-XXXXXXXX)
 partition="${tmp_dir}/${fs_name}1"
@@ -35,7 +35,9 @@ export MTOOLS_SKIP_CHECK=1
 
 # Copy the files from usr/out to the partition (fat) the tmp dir is kept for inspection if fail
 # -o option is for overwrite
-mcopy -o -i ${partition} ${directory}/* :: || { echo "mcopy failed, exiting..." ; exit 1 ; }
+mcopy -o -i ${partition} ${directory}/* :: || { echo "mcopy failed, exiting..." ;
+                                                echo "temporary directory is ${tmp_dir}"
+                                                exit 1 ; }
 
 # Write the first partition back to the binary file
 dd if="${partition}" of="board/$1/${fs_name}" conv=notrunc bs=${block_size} seek=$start_pos status=none
