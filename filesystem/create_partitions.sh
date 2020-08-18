@@ -1,4 +1,9 @@
 #!/bin/bash
+script=${BASH_SOURCE[0]}
+# Get the path of this script
+SCRIPTPATH=$(realpath $(dirname "$script"))
+# Make sure to be at the script location
+cd "$SCRIPTPATH"
 
 # Image parameters
 image_size=128M

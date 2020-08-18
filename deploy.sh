@@ -1,9 +1,11 @@
 #!/bin/bash
 script=${BASH_SOURCE[0]}
 # Get the path of this script
-SCRIPTPATH=$(realpath $(dirname $script))
+SCRIPTPATH=$(realpath $(dirname "$script"))
 
-cd $SCRIPTPATH
+# TODO : mcopy may require the -s flag for recursive copy
+
+cd "$SCRIPTPATH"
 
 usage()
 {
@@ -46,6 +48,7 @@ done
 
 if [ $OPTIND -eq 1 ]; then usage; fi
 
+# Extract variables from build.conf file
 while read var; do
     if [ "$var" != "" ]; then
         export $(echo $var | sed -e 's/ //g' -e /^$/d -e 's/://g' -e /^#/d)
@@ -54,23 +57,38 @@ done < build.conf
 
 echo "Platform is : ${_PLATFORM}"
 
-#if [ "$_PLATFORM" != "vexpress" ]; then
-#    echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
-#    read devname
-#    export devname="$devname"
-#fi
+# This will clear the partitions
+filesystem/create_partitions.sh
+
+if [ "${deploy_rootfs}" == "y" ]; then
+    # Deploy of the rootfs (first partition of ramfs)
+    echo "Deploying rootfs..."
+    rootfs/deploy.sh ${_PLATFORM}
+fi
+
+if [ "${deploy_usr}" == "y" ]; then
+    # Deploy all usr applications into the rootfs
+    echo "Deploying user apps..."
+    mcopy -i filesystem/partition1.img usr/out/* ::
+fi
+
+if [ "${deploy_tests}" == "y" ]; then
+    echo "Deploying test apps..."
+    mcopy -i filesystem/partition1.img usr/tests/out/* ::
+    if [ "${deploy_rootfs}" == "y" ]; then
+        rootfs/deploy.sh ${_PLATFORM} usr/tests/out/
+    fi
+fi
 
 if [ "${deploy_boot}" == "y" ]; then
     # Deploy files into the boot partition (first partition)
     echo "Deploying boot files into the first partition..."
      
     cd target
-    #./mkuboot.sh ${_PLATFORM} > /dev/null || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
-    ./mkuboot.sh ${_PLATFORM} || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
-    cd ../filesystem
-    # This will clear the partitions
-    ./create_partitions.sh
+    ./mkuboot.sh ${_PLATFORM} > /dev/null || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
+    cd ..
 
+    cd filesystem
     mcopy -i partition1.img ../target/${_PLATFORM}.itb ::
     mcopy -i partition1.img ../u-boot/uEnv.d/uEnv_"$_PLATFORM".txt ::uEnv.txt
     # This is a simple way to put the time when deploy.sh was called into the file system
@@ -84,11 +102,11 @@ if [ "${deploy_boot}" == "y" ]; then
     if [ "$_PLATFORM" == "rpi3" ]; then
         mcopy -i partition1.img ../bsp/rpi3/* ::
         mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel.img
-        #TODO
-    #    sudo cp -r ~/sootech/rpi-bsp/boot/* fs/
+        # TODO itb for rpi3 may be missing from git repo
     fi
     
     if [ "$_PLATFORM" == "rpi4" ]; then
+        # https://www.raspberrypi.org/documentation/configuration/boot_folder.md
         mcopy -i partition1.img ../bsp/rpi4/* ::
         mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel7.img
     fi
@@ -96,24 +114,8 @@ if [ "${deploy_boot}" == "y" ]; then
     cd ..
 fi
 
-# TODO : Find out differences between these two
-
-if [ "${deploy_rootfs}" == "y" ]; then
-    # Deploy of the rootfs (first partition)
-    echo "Deploy rootfs ..."
-    mcopy -i filesystem/partition1.img usr/out/* ::
-fi
-    
-if [ "${deploy_usr}" == "y" ]; then
-    # Deploy all usr applications into the rootfs
-    echo "Deploy user apps ..."
-    mcopy -i filesystem/partition1.img usr/out/* ::
+if [ "${deploy_boot}" == "y" ] || [ "${deploy_usr}" == "y" ] || [ "${deploy_tests}" == "y" ]; then
+    cd filesystem
+    ./populate_sd_image.sh
 fi
 
-if [ "${deploy_tests}" == "y" ]; then
-    echo "Deploy test apps ..."
-    mcopy -i filesystem/partition1.img usr/tests/out/* ::
-fi
-
-cd filesystem
-./populate_sd_image.sh
