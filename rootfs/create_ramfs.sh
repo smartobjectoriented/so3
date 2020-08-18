@@ -29,3 +29,6 @@ dd if="${partition}" status=none >> "${image_name}"
 sfdisk "${image_name}" <<EOF
 ${start_sector}, ${partition_size}, ${partition_type}
 EOF
+
+# Delete temporary directory
+rm -r "${tmp_dir}"
