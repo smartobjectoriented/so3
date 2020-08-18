@@ -7,4 +7,5 @@ SCRIPTPATH=$(realpath $(dirname $script))
 # returns the error code (for continuous integration)
 
 cd ${SCRIPTPATH}/../.. && \
+    echo '_PLATFORM := vexpress' > build.conf && \
     ./deploy.sh -but
