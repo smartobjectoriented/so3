@@ -11,6 +11,7 @@
 *.su
 *.img
 *.elf
+*.fat*
 
 **/doxy/**
 **/generated/**
