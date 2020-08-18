@@ -1,11 +1,11 @@
 #!/bin/bash
 script=${BASH_SOURCE[0]}
 # Get the path of this script
-SCRIPTPATH=$(realpath $(dirname $script))
+SCRIPTPATH=$(realpath $(dirname "$script"))
 
 __OLD_PWD=$(pwd)
 
-if [ $script == $0 ]; then
+if [ "$script" == "$0" ]; then
     echo "ERROR: You must source this script"
     exit 2
 fi
