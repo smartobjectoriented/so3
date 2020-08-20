@@ -244,10 +244,7 @@ void thread_exit(int *exit_status)
 
 	ASSERT(current()->state == THREAD_STATE_RUNNING);
 
-	if (exit_status != NULL)
-		current()->exit_status = *exit_status;
-	else
-		current()->exit_status = 0;
+        current()->exit_status = exit_status;
 
 	/*
 	 * According to the thread which is calling thread_exit(), the behaviour may differ.
@@ -271,7 +268,7 @@ void thread_exit(int *exit_status)
 		remove_tcb_from_pcb(current());
 
 #ifdef CONFIG_PROC_ENV
-		do_exit(current()->exit_status);
+		do_exit((int)(current()->exit_status));
 #endif
 
 	} else {
@@ -410,7 +407,7 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	tcb->tid = tid_next++;
 	
 	/* We append the tid to the thread name */
-	sprintf(tcb->name, "%s_%d", name, tcb->tid);
+	snprintf(tcb->name, THREAD_NAME_LEN, "%s_%d", name, tcb->tid);
 
 	tcb->th_fn = start_routine;
 	tcb->th_arg = arg;
@@ -504,7 +501,7 @@ void clean_thread(tcb_t *tcb) {
  * The target thread which we are trying to join will be definitively removed
  * from the system when no other threads are joining it too.
  */
-int thread_join(tcb_t *tcb)
+int thread_join(tcb_t *tcb) // Should return an int* (void*)
 {
 	queue_thread_t *cur;
 	int exit_status;
@@ -578,7 +575,7 @@ int thread_join(tcb_t *tcb)
 		if (is_main_thread)
 			exit_status = tcb->pcb->exit_status;
 		else
-			exit_status = tcb->exit_status;
+                    exit_status = (int)tcb->exit_status;
 
 		/*
 		 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
@@ -628,7 +625,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 		printk("%s: heap overflow...\n", __func__);
 		kernel_panic();
 	}
-	sprintf(name, "thread_p%d", current()->pcb->pid);
+	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
 	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
 
@@ -651,7 +648,6 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 int do_thread_join(uint32_t pthread_id, int **value_p) {
 	tcb_t *tcb;
 	int ret;
-	int *exitval;
 	uint32_t flags;
 
 	flags = local_irq_save();
@@ -666,8 +662,8 @@ int do_thread_join(uint32_t pthread_id, int **value_p) {
 	ret = thread_join(tcb);
 
 	if (value_p != NULL) {
-		exitval = *value_p;
-		*exitval = ret;
+            *value_p = (int*)ret; // A joined POSIX thread should return a void* (here int*)
+            // This value is simply passed into value_p (normally a void**)
 	}
 
 	local_irq_restore(flags);
