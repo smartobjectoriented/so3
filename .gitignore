@@ -31,6 +31,8 @@ agency/rootfs/host/**
 agency/rootfs/images/**
 agency/rootfs/target/**
 
+# Toolchain
+toolchain/gcc-*
 
 # except the followings:
 !.gitignore #Don't ignore the ignore file ;-)
