@@ -55,7 +55,8 @@ while read var; do
     fi
 done < build.conf
 
-echo "Platform is : ${_PLATFORM}"
+echo "Platform is : ${PLATFORM}"
+[ "${PLATFORM}" == "" ] && { echo "Platform variable is not set, exiting..." ; exit 1 ; }
 
 # This will clear the partitions
 filesystem/create_partitions.sh
@@ -63,8 +64,8 @@ filesystem/create_partitions.sh
 if [ "${deploy_rootfs}" == "y" ]; then
     # Deploy of the rootfs (first partition of ramfs)
     echo "Deploying rootfs..."
-    rootfs/create_ramfs.sh ${_PLATFORM}
-    rootfs/deploy.sh ${_PLATFORM}
+    rootfs/create_ramfs.sh ${PLATFORM}
+    rootfs/deploy.sh ${PLATFORM}
 fi
 
 if [ "${deploy_usr}" == "y" ]; then
@@ -77,7 +78,7 @@ if [ "${deploy_tests}" == "y" ]; then
     echo "Deploying test apps..."
     mcopy -i filesystem/partition1.img usr/tests/out/* ::
     if [ "${deploy_rootfs}" == "y" ]; then
-        rootfs/deploy.sh ${_PLATFORM} usr/tests/out/
+        rootfs/deploy.sh ${PLATFORM} usr/tests/out/
     fi
 fi
 
@@ -86,27 +87,27 @@ if [ "${deploy_boot}" == "y" ]; then
     echo "Deploying boot files into the first partition..."
      
     cd target
-    ./mkuboot.sh ${_PLATFORM} > /dev/null || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
+    ./mkuboot.sh ${PLATFORM} > /dev/null || { echo "./mkuboot.sh failed, exiting..." ; exit 1 ; }
     cd ..
 
     cd filesystem
-    mcopy -i partition1.img ../target/${_PLATFORM}.itb ::
-    mcopy -i partition1.img ../u-boot/uEnv.d/uEnv_"$_PLATFORM".txt ::uEnv.txt
+    mcopy -i partition1.img ../target/${PLATFORM}.itb ::
+    mcopy -i partition1.img ../u-boot/uEnv.d/uEnv_"$PLATFORM".txt ::uEnv.txt
     # This is a simple way to put the time when deploy.sh was called into the file system
     mcopy -i partition1.img /proc/driver/rtc ::host_time.txt
 
-    if [ "$_PLATFORM" == "vexpress" ]; then
+    if [ "$PLATFORM" == "vexpress" ]; then
         # Nothing else ...
         true
     fi
 
-    if [ "$_PLATFORM" == "rpi3" ]; then
+    if [ "$PLATFORM" == "rpi3" ]; then
         mcopy -i partition1.img ../bsp/rpi3/* ::
         mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel.img
         # TODO itb for rpi3 may be missing from git repo
     fi
     
-    if [ "$_PLATFORM" == "rpi4" ]; then
+    if [ "$PLATFORM" == "rpi4" ]; then
         # https://www.raspberrypi.org/documentation/configuration/boot_folder.md
         mcopy -i partition1.img ../bsp/rpi4/* ::
         mcopy -i partition1.img ../u-boot/u-boot.bin ::kernel7.img
