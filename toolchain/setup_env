@@ -21,5 +21,5 @@ if [ ! -d "$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gn
 fi
 
 export PATH="$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin):${PATH}"
-export CC="$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-)"
-export CROSS_COMPILE="${CC}"
+#export CC="$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-)"
+#export CROSS_COMPILE="${CC}"
