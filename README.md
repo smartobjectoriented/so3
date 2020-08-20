@@ -73,7 +73,9 @@ Simply invoking the script st as following:
 ```
 and you should run into the shell...
 
+You can also run
+```shell
+./st2
+```
 
-
-
-
+Which does not require root priviledges but does not have network support.
