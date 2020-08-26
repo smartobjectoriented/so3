@@ -1,8 +1,8 @@
 # Additions - Part of CI Project for REDS
 
-* `st2` a modified version of the `st` start script that does not rely on root priviledges and has no networking.
+* `st2` a modified version of the `st` start script that does not rely on root privileges and has no networking.
 
-The `deploy.sh` script has been entirely rewritten as well as SD card related scripts in order to generate the sd card image without root priviledges. Root priviledges are now only required when a real SD card requires to be written, which is a manual opration most of the time.
+The `deploy.sh` script has been entirely rewritten as well as SD card related scripts in order to generate the sd card image without root privileges. Root privileges are now only required when a real SD card requires to be written, which is a manual oration most of the time.
 
 ## Toolchain folder
 
@@ -12,11 +12,33 @@ The toolchain folder `toolchain` holds a single script to install the toolchain 
 
 ## CI folder
 
-The CI (Continuous Integratoin) folder `ci` holds a few new files :
+The CI (Continuous Integration) folder `ci` holds a few new files :
 
-* `Jenkinsfile` describes the Jenkins pipeline used for contiunous integration.
+* `Jenkinsfile` describes the Jenkins pipeline used for continuous integration.
 * `cukinia.conf` is the configuration for the [cukinia](https://github.com/savoirfairelinux/cukinia) test suite. It holds the tests that should be run during the "test" stage of the pipeline.
 * `setup_cukinia.sh` a script to setup the cukinia executable.
+
+### Setting up a Jenkins pipeline
+
+- From the main Jenkins interface (in browser) select "New Item"
+- Enter an item name e.g., "SO3 pipeline"
+- Select "Pipeline"
+- Click OK
+- (optional) add a description
+- Select options e.g., "Do not allow concurrent builds" (nothing mandatory)
+- Select build triggers (nothing mandatory but "Poll SCM" may be of interest)
+- Under Pipeline
+  - Select "Pipeline script from SCM"
+  - Select "git" as "SCM"
+  - Fill the "Repository URL" with the SSH git link, e.g., `git@gitlab.com:smartobject/so3.git` 
+  - Select or add the credentials (SSH private key, not your own, create a new one and put the public key as a deploy key in the git repository)
+  - Select the branches to build (e.g., `*/ci`)
+  - Set the "Script Path" `ci/Jenkinsfile` (other pipelines may use other Jenkinsfiles, the file can be named with any name)
+- Save the pipeline
+
+#### Launching / Testing the pipeline
+
+Select "Build Now" from the interface. If some stage fails see the logs.
 
 ### Pipeline Steps sub folder
 
@@ -59,18 +81,18 @@ Since this was supposed to be run in a pipeline, it supposes the previous stages
 
 ### Tests folder
 
-Under `usr/tests/src` are test programs that check the kernel functionnality as a black box through syscalls.
+Under `usr/tests/src` are test programs that check the kernel functionality as a black box through syscalls.
 
 These test programs are run through the automated test suite (Cukinia in the test stage of the Jenkins pipeline)
 
 ## File System folder
 
-The `create_img.sh` script has been replaced by two scripts `create_partitions.sh` and `populate_sd_image.sh`. The new script do not require root priviledges at all. The final populated sd image can be copied to an actual sd card using dd.
+The `create_img.sh` script has been replaced by two scripts `create_partitions.sh` and `populate_sd_image.sh`. The new script do not require root privileges at all. The final populated sd image can be copied to an actual sd card using dd.
 
-The new scripts (e.g., deploy.sh) make use of tools such as mke2fs and mcopy in order to copy files to the partitions without mounting them (which requires root priviledges). The partitions can still be mounted for e.g., manual inspection or modification.
+The new scripts (e.g., deploy.sh) make use of tools such as mke2fs and mcopy in order to copy files to the partitions without mounting them (which requires root privileges). The partitions can still be mounted for e.g., manual inspection or modification.
 
-This is removes the need to run anything with root priviledges and so will save the user from harm (e.g., formatting the wrong /dev/entry) as well as allow for easier automation.
+This is removes the need to run anything with root privileges and so will save the user from harm (e.g., formatting the wrong /dev/entry) as well as allow for easier automation.
 
 ## Rootfs / Ramfs folder
 
-The `create_ramfs.sh` script has been rewritten so that it does not require any priviledged commands, it will create an image with a FAT partition. The `deploy.sh` has also been rewritten so that it does not require any priviliedged commands. This script also copies the contents of `usr/out/` in the file system if no specific folder is passed as an argument.
+The `create_ramfs.sh` script has been rewritten so that it does not require any privileged commands, it will create an image with a FAT partition. The `deploy.sh` has also been rewritten so that it does not require any privileged commands. This script also copies the contents of `usr/out/` in the file system if no specific folder is passed as an argument.
