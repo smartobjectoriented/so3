@@ -187,7 +187,7 @@ LINUXINCLUDE    := -Iinclude  -I.  \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
                    -include include/generated/autoconf.h
 
-KBUILD_CPPFLAGS := -D__KERNEL__ -D__SO3__ 
+KBUILD_CPPFLAGS := -D__KERNEL__ -D__SO3
 
 KBUILD_CPPFLAGS += -I$(TOPDIR)include
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)  

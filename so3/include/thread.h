@@ -73,7 +73,7 @@ struct tcb {
 	pcb_t *pcb;
 	int pcb_stack_slotID; /* This is the user space stack slot ID (for user threads) */
 
-	int exit_status;
+	int *exit_status;
 
 	struct list_head list;  /* List of threads belonging to a process */
 

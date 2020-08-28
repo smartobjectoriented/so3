@@ -1,0 +1,25 @@
+#!/bin/bash
+script=${BASH_SOURCE[0]}
+# Get the path of this script
+SCRIPTPATH=$(realpath $(dirname "$script"))
+
+__OLD_PWD=$(pwd)
+
+if [ "$script" == "$0" ]; then
+    echo "ERROR: You must source this script"
+    exit 2
+fi
+
+# If the toolchain is missing download and install it
+if [ ! -d "$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf)" ]; then
+    cd ${SCRIPTPATH}
+    echo "toolchain is missing, installing..."
+    wget https://releases.linaro.org/components/toolchain/binaries/latest-7/arm-linux-gnueabihf/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+    tar -xvf gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+    rm gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
+    cd ${__OLD_PWD}
+fi
+
+export PATH="$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin):${PATH}"
+#export CC="$(realpath ${SCRIPTPATH}/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-)"
+#export CROSS_COMPILE="${CC}"

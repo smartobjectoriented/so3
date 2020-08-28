@@ -1,15 +1,36 @@
 #!/bin/bash
+script=${BASH_SOURCE[0]}
+# Get the path of this script
+SCRIPTPATH=$(realpath $(dirname "$script"))
 
-# Create image first
+# Make sure to be at the script location
+cd "$SCRIPTPATH"
 
 # Make sure the dir exists
-mkdir -p board/$1
 
-dd if=/dev/zero of=board/$1/rootfs.fat bs=1024 count=1024
-DEVLOOP=$(sudo losetup --partscan --find --show board/$1/rootfs.fat)
+# Check if board exists
+[ $# == 0 ] && { echo "usage : $script <board>" ; exit 1 ; }
+[ ! -d board/$1 ] && { echo "board $1 not found in board directory, creating it..." ; mkdir -p board/$1 ; }
 
-#create the partition this way
-(echo o; echo n; echo p; echo; echo; echo; echo; echo; echo t; echo; echo c; echo w) | sudo fdisk $DEVLOOP;
+start_sector=2048
+partition_size=16M # This image will be copied into the .itb and written to SD card image so it must be small enough
+partition_type=c
+tmp_dir=$(mktemp -d -t so3-rootfs-XXXXXXXX)
+partition="${tmp_dir}/partition.img"
 
-sudo mkfs.vfat ${DEVLOOP}p1
-sudo losetup -D
+# Create image first
+image_name="board/$1/rootfs.fat"
+dd if=/dev/zero of="${image_name}" count=${start_sector} status=none
+
+# Append the formatted partition
+dd if=/dev/zero of="${partition}" bs=${partition_size} count=1 status=none
+mkfs.vfat "${partition}" > /dev/null
+dd if="${partition}" status=none >> "${image_name}"
+
+# Set the partition table
+sfdisk "${image_name}" <<EOF
+${start_sector}, ${partition_size}, ${partition_type}
+EOF
+
+# Delete temporary directory
+rm -r "${tmp_dir}"
