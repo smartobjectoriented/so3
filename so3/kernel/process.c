@@ -1135,14 +1135,13 @@ int proc_register_fd(int gfd)
 
 void dump_proc(void) {
 	pcb_t *pcb = NULL;
-	struct list_head *cur;
 
 	printk("********* List of processes **********\n\n");
 
-	list_for_each(cur, &proc_list)
+	list_for_each_entry(pcb, &proc_list, list)
 	{
-		/* find and print main thread */
-		pcb = list_entry(cur, pcb_t, list);
+		/* Based on process main thread. */
+
 		printk(" [pid %d state: %s] [main_tid: %d name: %s]\n", pcb->pid, proc_state_str(pcb->state),
 				((pcb->main_thread != NULL) ? pcb->main_thread->tid : -1), pcb->main_thread->name);
 	}
