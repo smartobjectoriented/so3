@@ -60,8 +60,6 @@ void process_cmd(void) {
 	int pipe_on = 0;
 	int pipe_fd[2];
 
-	/* PRIVATE to SYE team */
-
 	if (!strcmp(tokens[0], "dumpsched")) {
 		sys_info(1, 0);
 		return ;
@@ -82,8 +80,6 @@ void process_cmd(void) {
 		/* If the shell is the root shell, there is a failure on exit() */
 		return ;
 	}
-
-	/* end of PRIVATE */
 
 	/* setenv */
 	if (!strcmp(tokens[0], "setenv")) {
