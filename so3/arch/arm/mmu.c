@@ -33,6 +33,12 @@
 
 #include <generated/autoconf.h>
 
+uint32_t *__current_pgtable = NULL;
+
+uint32_t *current_pgtable(void) {
+	return __current_pgtable;
+}
+
 unsigned int get_domain(void)
 {
 	unsigned int domain;

@@ -112,6 +112,14 @@
 #ifdef CONFIG_MMU
 #include <process.h>
 
+uint32_t *current_pgtable(void);
+
+extern uint32_t *__current_pgtable;
+
+static inline void set_pgtable(uint32_t *pgtable) {
+	__current_pgtable = pgtable;
+}
+
 extern void __mmu_switch(uint32_t l1pgtable_phys);
 
 void pgtable_copy_kernel_area(uint32_t *l1pgtable);

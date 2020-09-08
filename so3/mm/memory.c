@@ -42,12 +42,6 @@ static uint32_t kernel_size;
 uint32_t io_mapping_current;
 struct list_head io_maplist;
 
-uint32_t *__current_pgtable;
-
-uint32_t *current_pgtable(void) {
-	return __current_pgtable;
-}
-
 /* Initialize the frame table */
 void frame_table_init(uint32_t frame_table_start) {
 	uint32_t i, ft_phys, ft_length, ft_pages;

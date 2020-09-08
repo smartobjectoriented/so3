@@ -112,12 +112,6 @@ uint32_t get_kernel_size(void);
 
 uint32_t *current_pgtable(void);
 
-extern uint32_t *__current_pgtable;
-
-static inline void set_pgtable(uint32_t *pgtable) {
-	__current_pgtable = pgtable;
-}
-
 void init_io_mapping(void);
 uint32_t io_map(uint32_t phys, size_t size);
 void io_unmap(uint32_t vaddr);
