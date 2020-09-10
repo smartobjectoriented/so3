@@ -24,10 +24,9 @@
 	model = "SO3 Vexpress";
 	compatible = "arm,vexpress";
 
-	cpus@0 {
+	cpus {
 		device_type = "cpu";
 		compatible = "arm,cortex-a72";
-		reg = <0 0>;
 	};
 
 	memory@0 {
@@ -53,18 +52,16 @@
 	};
 
 	/* Periodic timer based on ARM CP15 timer */
-	periodic-timer@0 {
+	periodic-timer {
 		compatible = "arm,periodic-timer";
-		reg = <0 0>;
 		interrupt-parent = <&gic>;
 		interrupts = <27>;
 		status = "ok";
 	};
 	
 	/* Clocksource free-running timer based on ARM CP15 timer */
-	clocksource-timer@0 {
+	clocksource-timer {
 		compatible = "arm,clocksource-timer";
-		reg = <0 0>;
 		status = "ok";
 	};
 	

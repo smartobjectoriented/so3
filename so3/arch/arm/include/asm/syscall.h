@@ -51,6 +51,7 @@
 #define SYSCALL_DUP2		23
 
 #define SYSCALL_STAT		34
+#define SYSCALL_MMAP		35
 #define SYSCALL_GETPID		37
 
 #define SYSCALL_THREAD_YIELD	40

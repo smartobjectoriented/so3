@@ -28,4 +28,23 @@ void flush_all(void);
 
 void flush_icache_range(uint32_t start, uint32_t end);
 
+/*
+ *	flush_pte_entry
+ *
+ *	Flush a PTE entry (word aligned, or double-word aligned) to
+ *	RAM if the TLB for the CPU we are running on requires this.
+ *	This is typically used when we are creating or removing PTE entries.
+ *
+ */
+static inline void flush_pte_entry(void *pte)
+{
+	do {
+		asm("mcr p15, 0, %0, c7, c10, 1   @ flush pte" : : "r" (pte) : "cc");
+	} while (0);
+
+	dsb();
+}
+
+
+
 #endif /* CACHEFLUSH_H */

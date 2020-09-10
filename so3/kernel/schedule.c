@@ -401,9 +401,9 @@ void schedule(void) {
 				prev->pcb->state = PROC_STATE_READY;
 
 			mmu_switch(next->pcb->pgtable);
-                        set_pgtable(next->pcb->pgtable);
+			set_pgtable(next->pcb->pgtable);
 
-                }
+		}
 #endif /* CONFIG_MMU */
 
 		/* Authorized to leave the interrupt context here */

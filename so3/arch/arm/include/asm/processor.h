@@ -162,6 +162,7 @@
 #include <common.h>
 
 extern void __enable_vfp(void);
+extern void inject_syscall_vector(void);
 
 #define FP_SIZE 35
 
@@ -327,6 +328,13 @@ static inline void set_cr(unsigned int val)
 
 #define barrier() __asm__ __volatile__("": : :"memory")
 
+#define cpu_get_l1pgtable()	\
+({						\
+	unsigned long pg;			\
+	__asm__("mrc	p15, 0, %0, c2, c0, 0"	\
+		 : "=r" (pg) : : "cc");		\
+	pg &= ~0x3fff;				\
+})
 
 static inline int smp_processor_id(void) {
 	int cpu;

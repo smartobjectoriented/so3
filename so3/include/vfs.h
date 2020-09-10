@@ -107,6 +107,7 @@ struct file_operations {
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
 	int (*stat)(const char *path, struct stat *st);
+	void* (*mmap)(int fd, uint32_t virt_addr, uint32_t page_count);
 	int (*unlink)(int fd, void *);
 	int (*mount)(const char *);
 	int (*unmount)(const char *);
@@ -145,6 +146,7 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
+void *do_mmap(size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);

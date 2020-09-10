@@ -96,9 +96,7 @@ static int periodic_timer_init(dev_t *dev) {
 	periodic_timer.period = NSECS / HZ;
 
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
-	lprintk("## rate: %d\n", clocksource_timer.rate);
-	lprintk("## reload: %d\n", reload);
-
+        
 	/* Bind ISR into interrupt controller */
 	irq_bind(dev->irq, timer_isr, NULL, NULL);
 

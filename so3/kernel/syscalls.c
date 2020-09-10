@@ -164,6 +164,10 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			result = do_stat((char *) r0, (struct stat *) r1);
 			break;
 
+		case SYSCALL_MMAP:
+			result = (int) do_mmap((size_t) r0, (int) r1, (int) r2, (off_t) r3);
+			break;
+
 		case SYSCALL_NANOSLEEP:
 			result = do_nanosleep((const struct timespec *) r0, (struct timespec *) r1);
 			break;

@@ -1,5 +1,11 @@
 #!/bin/bash
-echo "Usage: ./mount_ramfs <board>"
+
+if [ $# -ne 1 ]; then
+        echo "Usage: ./mount_ramfs <board>"
+	echo "Please provide the board name (vexpress, rpi4)"
+	exit 0
+fi
+
 echo "Here: board is $1"
 echo "-------------------mount ramfs ---------------"
 

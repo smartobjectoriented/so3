@@ -2,7 +2,7 @@
 
 if [ "$PLATFORM" == "" ]; then
     if [ "$2" == "" ]; then
-        echo "PLATFORM must be defined (vexpress, rpi3, rpi4, bpi)"
+        echo "PLATFORM must be defined (vexpress, rpi4)"
         echo "You can invoke mount.sh <partition_nr> <platform>"
         exit 0
     fi
@@ -10,9 +10,9 @@ if [ "$PLATFORM" == "" ]; then
     PLATFORM=$2
 fi
 
-if [ "$PLATFORM" == "vexpress" ]; then
-    devname=$(sudo losetup --partscan --find --show sdcard.img)
-    FS_IMG=sdcard.img
+if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" = "merida" ]; then
+    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
+    FS_IMG=sdcard.img.${PLATFORM}
 
     #sudo losetup -P --find --show flash
     mkdir -p fs

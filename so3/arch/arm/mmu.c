@@ -43,8 +43,7 @@ unsigned int get_domain(void)
 {
 	unsigned int domain;
 
-	asm(
-	"mrc	p15, 0, %0, c3, c0	@ get domain" : "=r" (domain) :);
+	asm("mrc	p15, 0, %0, c3, c0	@ get domain" : "=r" (domain) :);
 
 	return domain;
 }
@@ -436,7 +435,7 @@ void duplicate_user_space(pcb_t *from, pcb_t *to) {
 					/* Copy the contents */
 					memcpy((void *) TRANSITIONAL_MAPPING, (void *) ((i << L1_PAGETABLE_SHIFT) | (j << L2_PAGETABLE_SHIFT)), PAGE_SIZE);
 
-					*l2pte_dst = paddr | L2DESC_SMALL_PAGE_AP01 | 0xc | L2DESC_SMALL_PAGE_AP2 | L2DESC_PAGE_TYPE_SMALL;
+					*l2pte_dst = paddr | L2DESC_SMALL_PAGE_AP01 | DESC_CACHEABLE | L2DESC_SMALL_PAGE_AP2 | L2DESC_PAGE_TYPE_SMALL;
 
 					*l2pte_dst &= ~L1DESC_PT_DOMAIN_MASK;
 					*l2pte_dst |= PTE_DESC_DOMAIN_0;
