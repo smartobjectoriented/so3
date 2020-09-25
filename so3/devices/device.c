@@ -305,9 +305,6 @@ struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_ty
  */
 void devices_init(void) {
 
-#ifdef CONFIG_SO3VIRT
-	board_setup_post();
-#endif
 	/* Interrupt management subsystem initialization */
 	irq_init();
 
