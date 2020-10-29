@@ -16,6 +16,7 @@
  *
  */
 
+#include <memory.h>
 #include <common.h>
 #include <types.h>
 #include <memory.h>
@@ -29,6 +30,7 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
+/* Main system page table */
 uint32_t *__sys_l1pgtable;
 
 page_t *frame_table;
