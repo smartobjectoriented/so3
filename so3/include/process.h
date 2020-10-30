@@ -135,6 +135,8 @@ void add_page_to_proc(pcb_t *pcb, page_t *page);
 
 void create_process(int (*start_routine) (void *), const char *name);
 
+int root_proc(void *args);
+
 uint32_t do_getpid(void);
 
 int do_execve(const char *filename, char **argv, char **envp);

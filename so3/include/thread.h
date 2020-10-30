@@ -111,6 +111,8 @@ extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
 
+int main_kernel(void *args);
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* THREAD_H */
