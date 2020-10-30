@@ -37,8 +37,6 @@
 
 #include <device/driver.h>
 
-#include <apps/main_thread.h>
-
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
 /*
