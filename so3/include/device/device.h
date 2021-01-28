@@ -22,7 +22,8 @@
 #include <list.h>
 #include <vfs.h>
 
-#include <device/fdt/fdt.h>
+#include <device/fdt.h>
+#include <device/irq.h>
 
 /* Filename prefix of a device. */
 #define DEV_PREFIX      "/dev/"
@@ -47,7 +48,8 @@ struct dev {
 	char nodename[MAX_NODE_SIZE];
 	uint32_t base;
 	uint32_t size;
-	int irq;
+	int irq_nr;
+	irq_type_t irq_type;
 	dev_status_t status;
 	int offset_dts;
 	struct dev *parent;
@@ -81,29 +83,33 @@ struct devclass {
  */
 enum inicalls_levels { CORE, POSTCORE };
 
-static inline void *dev_get_drvdata(const dev_t *dev)
-{
-	return dev->driver_data;
-}
-
 static inline void dev_set_drvdata(dev_t *dev, void *data)
 {
 	dev->driver_data = data;
 }
 
-/*
- * Get device information from a device tree
- * This function will be in charge of allocating dev_inf struct;
- */
-int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info);
-int fdt_get_int(dev_t *dev, const char *name);
-bool fdt_device_is_available(int node_offset);
-dev_t *find_device(const char *compat);
+static inline void *dev_get_drvdata(const dev_t *dev)
+{
+	return dev->driver_data;
+}
 
-void devclass_register(dev_t *dev, struct devclass *);
+/*
+ * Attach a private data structure to a devclass.
+ */
+static inline void devclass_set_priv(struct devclass *dev, void *priv) {
+	dev->priv = priv;
+}
+
+static inline void *devclass_get_priv(struct devclass *dev) {
+	return dev->priv;
+}
+
+void devclass_register(dev_t *dev, struct devclass *devclass);
 struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type);
-struct devclass *devclass_get_cdev(const char *filename);
-int devclass_get_id(int fd);
+
+struct devclass *devclass_by_filename(const char *filename);
+struct devclass *devclass_by_fd(int fd);
+int devclass_fd_to_id(int fd);
 
 void devices_init(void);
 

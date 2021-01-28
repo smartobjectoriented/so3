@@ -184,7 +184,8 @@ pid_t sys_waitpid(pid_t pid, int *status, int options);
 void sys_pause(int delay);
 
 /**
- * Suspend the execution during <delay> millisecond(s).
+ * Suspend the execution during <req.tv_usec> microseconds.
+ * <rem> is not used at the moment.
  */
 int sys_nanosleep(const struct timespec *req, struct timespec *rem);
 

@@ -1,8 +1,9 @@
-#ifndef LIBFDT_INTERNAL_H
-#define LIBFDT_INTERNAL_H
+#ifndef FDT_H
+#define FDT_H
 /*
  * libfdt - Flat Device Tree manipulation
  * Copyright (C) 2006 David Gibson, IBM Corporation.
+ * Copyright 2012 Kim Phillips, Freescale Semiconductor.
  *
  * libfdt is dual licensed: you can use it either under the terms of
  * the GPL, or the BSD license, at your option.
@@ -50,47 +51,31 @@
  *     OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *     EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <device/fdt/fdt.h>
 
-#define FDT_ALIGN(x, a)		(((x) + (a) - 1) & ~((a) - 1))
-#define FDT_TAGALIGN(x)		(FDT_ALIGN((x), FDT_TAGSIZE))
+#include <compiler.h>
 
-int fdt_ro_probe_(const void *fdt);
-#define FDT_RO_PROBE(fdt)			\
-	{ \
-		int err_; \
-		if ((err_ = fdt_ro_probe_(fdt)) != 0)	\
-			return err_; \
-	}
+#include <libfdt/libfdt.h>
 
-int fdt_check_node_offset_(const void *fdt, int offset);
-int fdt_check_prop_offset_(const void *fdt, int offset);
-const char *fdt_find_string_(const char *strtab, int tabsize, const char *s);
-int fdt_node_end_offset_(void *fdt, int nodeoffset);
+#define MAX_COMPAT_SIZE		128
+#define MAX_NODE_SIZE 		128
+#define MAX_SUBNODE		4
 
-static inline const void *fdt_offset_ptr_(const void *fdt, int offset)
-{
-	return (const char *)fdt + fdt_off_dt_struct(fdt) + offset;
-}
+extern unsigned int _fdt_addr;
 
-static inline void *fdt_offset_ptr_w_(void *fdt, int offset)
-{
-	return (void *)(uintptr_t)fdt_offset_ptr_(fdt, offset);
-}
+int fdt_find_compatible_node(char *compat);
+const struct fdt_property *fdt_find_property(int offset, const char *propname);
+int fdt_find_node_by_name(int parent, const char *nodename);
 
-static inline const struct fdt_reserve_entry *fdt_mem_rsv_(const void *fdt, int n)
-{
-	const struct fdt_reserve_entry *rsv_table =
-		(const struct fdt_reserve_entry *)
-		((const char *)fdt + fdt_off_mem_rsvmap(fdt));
+int fdt_property_read_string(int offset, const char *propname, const char **out_string);
+int fdt_property_read_u32(int offset, const char *propname, u32 *out_value);
 
-	return rsv_table + n;
-}
-static inline struct fdt_reserve_entry *fdt_mem_rsv_w_(void *fdt, int n)
-{
-	return (void *)(uintptr_t)fdt_mem_rsv_(fdt, n);
-}
+/*
+ * Get device information from a device tree
+ * This function will be in charge of allocating dev_inf struct;
+ */
+int get_dev_info(const void *fdt, int offset, const char *compat, void *info);
+int fdt_get_int(void *dev, const char *name);
+bool fdt_device_is_available(int node_offset);
+void *find_device(const char *compat);
 
-#define FDT_SW_MAGIC		(~FDT_MAGIC)
-
-#endif /* LIBFDT_INTERNAL_H */
+#endif /* FDT_H */

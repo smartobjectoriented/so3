@@ -91,7 +91,6 @@ struct pcb {
 
 	/* Containing thread */
 	tcb_t *main_thread;
-	tcb_t *prev_main_thread;
 
 	/* List of threads of this process, except the main thread which has a specific field <main_thread> */
 	struct list_head threads;
@@ -134,8 +133,6 @@ void free_user_stack_slot(pcb_t *pcb, int slotID);
 void add_page_to_proc(pcb_t *pcb, page_t *page);
 
 void create_process(int (*start_routine) (void *), const char *name);
-
-int root_proc(void *args);
 
 uint32_t do_getpid(void);
 

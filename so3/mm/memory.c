@@ -37,6 +37,9 @@ page_t *frame_table;
 static spinlock_t ft_lock;
 static uint32_t ft_pfn_end;
 
+/* First pfn of available pages */
+uint32_t pfn_start;
+
 /* Page-aligned kernel size (including frame table) */
 static uint32_t kernel_size;
 
@@ -47,40 +50,54 @@ struct list_head io_maplist;
 /* Initialize the frame table */
 void frame_table_init(uint32_t frame_table_start) {
 	uint32_t i, ft_phys, ft_length, ft_pages;
-	uint32_t ramdev_size = 0;
 
 	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
 	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
 
 	frame_table = (page_t *) __va(ft_phys);
 
+	printk("SO3 Memory information:\n");
+
 	/* Size of the available memory (without the kernel region) */
-#ifdef CONFIG_RAMDEV
-	ramdev_size = get_ramdev_size();
-#endif
-	mem_info.avail_pages = (mem_info.size - (ft_phys - mem_info.phys_base) - ramdev_size) >> PAGE_SHIFT;
+
+	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
+
+	printk("  - kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
+			(ft_phys - mem_info.phys_base),
+			(ft_phys - mem_info.phys_base),
+			(ft_phys - mem_info.phys_base) / SZ_1M,
+			(ft_phys - mem_info.phys_base) >> PAGE_SHIFT);
 
 	/* Determine the length of the frame table in bytes */
 	ft_length = mem_info.avail_pages * sizeof(page_t);
 
-	/* Keep the frame table with a page size granularity */
-	ft_pages = (ALIGN_UP(ft_length, PAGE_SIZE)) >> PAGE_SHIFT;
+	/* Number of pages taken by the frame table; keep the frame table with a page size granularity */
+	ft_pages = ALIGN_UP(ft_length, PAGE_SIZE) >> PAGE_SHIFT;
 
-	for (i = 0; i < ft_pages; i++)
+	/* Set the pages allocated by the frame table to busy. */
+	for (i = 0; i < ft_pages; i++) {
 		frame_table[i].free = false;
+		frame_table[i].refcount = 1;
+	}
 
-	for (i = ft_pages; i < mem_info.avail_pages; i++)
+	for (i = ft_pages; i < mem_info.avail_pages; i++) {
 		frame_table[i].free = true;
+		frame_table[i].refcount = 0;
+	}
 
+	/* Refers to the last page frame occupied by the frame table */
 	ft_pfn_end = (ft_phys >> PAGE_SHIFT) + ft_pages - 1;
 
 	/* Set the definitive kernel size */
-	kernel_size = (ft_pfn_end << PAGE_SHIFT) - CONFIG_RAM_BASE + 1;
+	kernel_size = ((ft_pfn_end + 1) << PAGE_SHIFT) - CONFIG_RAM_BASE;
 
-	printk("SO3 Memory information:\n");
+	/* First available pfn (right after the frame table) */
+	pfn_start = ft_pfn_end + 1;
 
-	printk("  - kernel size including frame table is: %d (%x) bytes, %d MB\n", kernel_size, kernel_size, kernel_size / SZ_1M);
-	printk("  - Frame table size is: %d bytes\n", ft_length);
+	printk("  - kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
+	printk("  - Number of available page frames: 0x%x\n", mem_info.avail_pages);
+	printk("  - Frame table size is: %d bytes meaning 0x%0x page frames\n", ft_length, ft_pages);
+	printk("  - Page frame number of the first available page: 0x%x\n", pfn_start);
 
 	spin_lock_init(&ft_lock);
 }
@@ -134,7 +151,7 @@ void free_page(uint32_t paddr) {
 
 	spin_lock(&ft_lock);
 
-	page = phys_to_page(paddr);
+	page = (page_t *) phys_to_page(paddr);
 	page->free = true;
 
 	spin_unlock(&ft_lock);
@@ -203,7 +220,7 @@ void free_contig_pages(uint32_t paddr, uint32_t nrpages) {
 
 	spin_lock(&ft_lock);
 
-	page = phys_to_page(paddr);
+	page = (page_t *) phys_to_page(paddr);
 
 	for (i = 0; i < nrpages; i++)
 		(page + i)->free = true;
@@ -264,7 +281,7 @@ uint32_t io_map(uint32_t phys, size_t size) {
 	/* Sometimes, it may happen than drivers try to map several devices which are located within the same page,
 	 * i.e. the 4-KB page offset is not null.
 	 */
-	offset = phys & (PAGE_SIZE -1);
+	offset = phys & (PAGE_SIZE - 1);
 	phys = phys & PAGE_MASK;
 
 	io_map = find_io_map_by_paddr(phys);
@@ -313,10 +330,7 @@ uint32_t io_map(uint32_t phys, size_t size) {
 		list_add_tail(&io_map->list, &io_maplist);
 
 
-	create_mapping(NULL, io_map->vaddr, io_map->paddr, io_map->size, true, false);
-
-	flush_tlb_all();
-	cache_clean_flush();
+	create_mapping(NULL, io_map->vaddr, io_map->paddr, io_map->size, true);
 
 	return io_map->vaddr + offset;
 

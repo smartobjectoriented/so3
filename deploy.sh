@@ -2,7 +2,7 @@
 
 usage()
 {
-  echo "Usage: $0 [OPTIONS] <ME_NAME>"
+  echo "Usage: $0 [OPTIONS]"
   echo ""
   echo "Where OPTIONS are:"
   echo "  -b    Deploy boot (kernel, U-boot, etc.)"
@@ -50,12 +50,19 @@ fi
 
 if [ "$deploy_usr" == "y" ]; then
  
-    # Deploy the usr apps related to the agency
-    # Only for Linux
+    # Deploy the usr apps into the ramfs
     cd usr
     ./deploy.sh
     sleep 1
-    cd ../..
+    cd ..
+    deploy_boot=y
+fi
+
+if [ "$deploy_rootfs" == "y" ]; then
+    # Deploy of the rootfs (currently first partition)
+    cd rootfs
+    ./deploy.sh
+    cd ..
 fi
 
 if [ "$deploy_boot" == "y" ]; then
@@ -66,7 +73,12 @@ if [ "$deploy_boot" == "y" ]; then
     ./mkuboot.sh ${PLATFORM}
     cd ../filesystem
     ./mount.sh 1
+    
+# Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
+    if [ "$deploy_rootfs" != "y" ]; then
     sudo rm -rf fs/*
+    fi
+    
     [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
     sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
        
@@ -84,11 +96,4 @@ if [ "$deploy_boot" == "y" ]; then
     fi
 fi
 
-if [ "$deploy_rootfs" == "y" ]; then
-    # Deploy of the rootfs (second partition)
-    # Only used for Linux
-    cd rootfs
-    ./deploy.sh
-    cd ..
-fi
     

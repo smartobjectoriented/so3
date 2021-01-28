@@ -19,12 +19,23 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#ifndef __ASSEMBLY__
+
 #include <types.h>
 #include <list.h>
 
 #include <asm/memory.h>
 
 #include <generated/autoconf.h>
+
+#endif /* __ASSEMBLY__ */
+
+/* PAGE_SHIFT determines the page size */
+#define PAGE_SHIFT	12
+#define PAGE_SIZE       (1 << PAGE_SHIFT)
+#define PAGE_MASK       (~(PAGE_SIZE-1))
+
+#ifndef __ASSEMBLY__
 
 /* Transitional page used for temporary mapping */
 #define TRANSITIONAL_MAPPING	0xf0000000
@@ -42,10 +53,6 @@ typedef struct {
 	struct list_head list;
 } io_map_t;
 
-/* PAGE_SHIFT determines the page size */
-#define PAGE_SHIFT	12
-#define PAGE_SIZE       (1 << PAGE_SHIFT)
-#define PAGE_MASK       (~(PAGE_SIZE-1))
 
 struct mem_info {
     uint32_t phys_base;
@@ -72,6 +79,7 @@ struct page {
 typedef struct page page_t;
 
 extern page_t *frame_table;
+extern uint32_t pfn_start;
 
 #define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
 #define phys_to_pfn(phys) (((uint32_t) phys) >> PAGE_SHIFT)
@@ -80,8 +88,8 @@ extern page_t *frame_table;
 #define __pa(vaddr) (((uint32_t) vaddr) - CONFIG_KERNEL_VIRT_ADDR + ((uint32_t) CONFIG_RAM_BASE))
 #define __va(paddr) (((uint32_t) paddr) - ((uint32_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VIRT_ADDR)
 
-#define page_to_pfn(page) ((uint32_t) ((uint32_t) ((page)-frame_table) + phys_to_pfn(__pa((uint32_t) frame_table))))
-#define pfn_to_page(pfn) (&frame_table[((pfn)-(__pa((uint32_t) frame_table) >> PAGE_SHIFT))])
+#define page_to_pfn(page) ((uint32_t) ((uint32_t) (page-frame_table) + pfn_start))
+#define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
 
 #define page_to_phys(page) (pfn_to_phys(page_to_pfn(page)))
 #define phys_to_page(phys) (pfn_to_page(phys_to_pfn(phys)))
@@ -119,5 +127,7 @@ io_map_t *find_io_map_by_paddr(uint32_t paddr);
 void readjust_io_map(unsigned pfn_offset);
 
 void dump_io_maplist(void);
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* MEMORY_H */

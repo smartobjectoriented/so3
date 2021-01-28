@@ -43,7 +43,7 @@ struct file_operations mydev_fops = {
 	.read = mydev_read
 };
 
-struct devclass mydev_cdev = {
+struct devclass mydev_dev = {
 	.class = "mydev",
 	.type = VFS_TYPE_DEV_CHAR,
 	.fops = &mydev_fops,
@@ -51,9 +51,14 @@ struct devclass mydev_cdev = {
 
 
 int mydev_init(dev_t *dev) {
+	int node;
+	const char *propname;
 
 	/* Register the mydev driver so it can be accessed from user space. */
-	devclass_register(dev, &mydev_cdev);
+	devclass_register(dev, &mydev_dev);
+
+	node = fdt_find_node_by_name(0, "mydev");
+	fdt_property_read_string(0, "compatible", &propname);
 
 	return 0;
 }

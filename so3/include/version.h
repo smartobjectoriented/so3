@@ -19,7 +19,7 @@
 
 #ifndef VERSION_H
 
-#define SO3_KERNEL_VERSION "2020.3.2"
+#define SO3_KERNEL_VERSION "2021.4.0"
 
 
 #endif /* VERSION_H */

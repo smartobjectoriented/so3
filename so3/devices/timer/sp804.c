@@ -84,7 +84,14 @@ static void periodic_timer_start(void) {
 	iowrite32(&sp804->timercontrol, ctrl);
 
 	/* Enable interrupt (IRQ controller) */
-	irq_ops.irq_enable(periodic_timer.dev->irq);
+	irq_ops.irq_enable(periodic_timer.dev->irq_nr);
+}
+
+static void periodic_timer_stop(void) {
+	uint32_t ctrl = ~TIMER_CTRL_ENABLE;
+	struct sp804_timer *sp804 = (struct sp804_timer *) periodic_timer.dev->base;
+
+	iowrite32(&sp804->timercontrol, ctrl);
 }
 
 /* Clocksource */
@@ -109,10 +116,11 @@ static int periodic_timer_init(dev_t *dev) {
 	/* Initialize Timer */
 
 	periodic_timer.start = periodic_timer_start;
+	periodic_timer.stop = periodic_timer_stop;
 	periodic_timer.period = NSECS / HZ;
 
 	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq, timer_isr, NULL, NULL);
+	irq_bind(dev->irq_nr, timer_isr, NULL, NULL);
 
 	return 0;
 }

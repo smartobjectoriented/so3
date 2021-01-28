@@ -58,16 +58,17 @@ __start:
 	.globl	\name
 \name:
 
-  stmfd sp!, {r7, r10, r11}
+  stmfd sp!, {r7, r10, ip}
 
   mov	r7, #\number
+
   ldr	r10, =errno
-  mov	r11, #0
-  str	r11, [r10]
+  mov	ip, #0
+  str	ip, [r10]
 
   swi	0
 
-  ldmfd sp!, {r7, r10, r11}
+  ldmfd sp!, {r7, r10, ip}
 
   mov pc, lr
 

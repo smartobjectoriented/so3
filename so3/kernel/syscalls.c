@@ -18,7 +18,6 @@
  *
  */
 
-#include <asm/syscall.h>
 #include <common.h>
 #include <process.h>
 #include <thread.h>
@@ -28,6 +27,8 @@
 #include <process.h>
 #include <signal.h>
 #include <timer.h>
+
+#include <asm/syscall.h>
 
 static uint32_t *errno_addr = NULL;
 

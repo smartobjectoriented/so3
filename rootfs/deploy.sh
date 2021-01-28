@@ -12,12 +12,12 @@ if [ "$PLATFORM" == "" ]; then
     PLATFORM=$1
 fi
 
-./mount_rootfs.sh ${PLATFORM}
+./mount_ramfs.sh ${PLATFORM}
 cd ../filesystem
-./mount.sh 2
+./mount.sh 1
 sudo rm -rf fs/*
 sudo cp -rf ../rootfs/fs/* fs/
 ./umount.sh 
 cd ../rootfs
-./umount_rootfs.sh ${PLATFORM}
+./umount_ramfs.sh ${PLATFORM}
 

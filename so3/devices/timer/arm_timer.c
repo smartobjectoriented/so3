@@ -98,7 +98,7 @@ static int periodic_timer_init(dev_t *dev) {
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
         
 	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq, timer_isr, NULL, NULL);
+	irq_bind(dev->irq_nr, timer_isr, NULL, NULL);
 
 	/* Shutdown the timer */
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);

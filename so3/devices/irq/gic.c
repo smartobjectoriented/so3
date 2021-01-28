@@ -73,6 +73,30 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
 	} while (true);
 }
 
+void gic_set_type(unsigned int irq, unsigned int type)
+{
+	u32 confmask = 0x2 << ((irq % 16) * 2);
+	u32 val, oldval;
+
+	/*
+	 * Read current configuration register, and insert the config
+	 * for "irq", depending on "type".
+	 */
+
+	val = oldval = ioread32(&regs->gicd_icfgr[irq/16]);
+
+	if (type & IRQ_TYPE_LEVEL_MASK)
+		val &= ~confmask;
+	else if (type & IRQ_TYPE_EDGE_BOTH)
+		val |= confmask;
+
+	/* If the current configuration is the same, then we are done */
+	if (val == oldval)
+		return ;
+
+	iowrite32(&regs->gicd_icfgr[irq/16], val);
+
+}
 
 static int gic_init(dev_t *dev) {
 
@@ -91,10 +115,10 @@ static int gic_init(dev_t *dev) {
 	/* Disable distributor */
 	iowrite32(&regs->gicd_ctlr, ioread32(((void *) &regs->gicd_ctlr) + INTC_CPU_CTRL_REG0) & ~INTC_DISABLE);
 
-	/* All interrupts level triggered, active low by default */
-	for (i = 32; i < NR_IRQS; i += 16) {
-		iowrite32(&regs->gicd_icfgr[i/16], 0);
-	}
+
+	/* All interrupts level triggered, active high by default */
+	for (i = 32; i < NR_IRQS; i++)
+		gic_set_type(i, IRQ_TYPE_LEVEL_HIGH);
 
 	/* Target CPU for all IRQs is CPU0 */
 	for (i = 32; i < NR_IRQS; i += 4) {
@@ -130,8 +154,6 @@ static int gic_init(dev_t *dev) {
 
 	/* Enable CPU interface */
 	iowrite32(&regs->gicc_ctlr, GICC_ENABLE);
-
-	DBG("%s 0x%08x bit %d\n", __func__, (unsigned int) &regs->gicd_spendsgirn[54/32], 54 % 32);
 
 	irq_ops.irq_enable = gic_enable;
 	irq_ops.irq_disable = gic_disable;

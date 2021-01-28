@@ -18,15 +18,17 @@
  */
 
 #include <string.h>
-#include <linker.h>
 #include <common.h>
 #include <memory.h>
 
 #include <device/device.h>
 #include <device/driver.h>
+#include <device/irq.h>
+#include <device/fdt.h>
 
-#include <device/fdt/fdt.h>
-#include <device/fdt/libfdt.h>
+#include <device/arch/gic.h>
+
+#include <libfdt/libfdt_env.h>
 
 /* Now supported only one level of sub node */
 struct fdt_status {
@@ -35,8 +37,8 @@ struct fdt_status {
 };
 
 static struct fdt_status fdt_cur_status =  {
-			  .fdt_parent = {NULL},
-			  .fdt_cur_lvl = 0,
+	.fdt_parent = { NULL },
+	.fdt_cur_lvl = 0,
 };
 
 
@@ -49,7 +51,10 @@ static void init_dev_info(dev_t *dev) {
 
 	/* Initialize specific fields to default/invalid values */
 	dev->base = 0xFFFFFFFF;
-	dev->irq = -1;
+
+	dev->irq_nr = -1;
+	dev->irq_type = IRQ_TYPE_NONE;
+
 	dev->status = STATUS_UNKNOWN;
 	dev->offset_dts = -1;
 	dev->parent = NULL;
@@ -72,9 +77,9 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	prop = fdt_get_property(fdt, offset, "reg", NULL);
 
 	if (prop) {
-		
+
 		p = (const fdt32_t *)prop->data;
-				
+
 		info->phys_base = fdt32_to_cpu(p[0]);
 		info->size = fdt32_to_cpu(p[1]);
 	}
@@ -83,12 +88,13 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 }
 
 
-int fdt_get_int(dev_t *dev, const char *name) {
+int fdt_get_int(void *dev, const char *name) {
 	const struct fdt_property *prop;
 	int prop_len;
 	fdt32_t *p;
+	dev_t *__dev = (dev_t *) dev;
 
-	prop = fdt_get_property((void *) _fdt_addr, dev->offset_dts, name, &prop_len);
+	prop = fdt_get_property((void *) _fdt_addr, __dev->offset_dts, name, &prop_len);
 
 	if (prop) {
 		p = (fdt32_t *) prop->data;
@@ -98,20 +104,62 @@ int fdt_get_int(dev_t *dev, const char *name) {
 		return -1;
 }
 
-const struct fdt_property *find_prop(const char *propname) {
+const struct fdt_property *fdt_find_property(int offset, const char *propname) {
 	const struct fdt_property *prop;
-	int offset;
 
 	while (true) {
-		offset = fdt_next_node((const void *) _fdt_addr, offset, NULL);
-		if (offset < 0)
-			return NULL;
-		prop = fdt_get_property((const void *) _fdt_addr, offset, "realtime", NULL);
+
+		prop = fdt_get_property((const void *) _fdt_addr, offset, propname, NULL);
 		if (prop)
 			return prop;
 	}
 
 	return NULL;
+}
+
+int fdt_property_read_string(int offset, const char *propname, const char **out_string) {
+	const struct fdt_property *prop;
+
+	prop = fdt_find_property(offset, propname);
+	if (prop) {
+		*out_string = prop->data;
+		return 0;
+	}
+
+	return -1;
+}
+
+int fdt_property_read_u32(int offset, const char *propname, u32 *out_value) {
+	const fdt32_t *val;
+
+	val = fdt_getprop((void *) _fdt_addr, offset, propname, NULL);
+
+	if (val) {
+		*out_value = fdt32_to_cpu(val[0]);
+		return 0;
+	}
+
+	return -1;
+}
+
+
+int fdt_find_node_by_name(int parent, const char *nodename) {
+	int node;
+	const char *__nodename, *node_name;
+	int len;
+
+	fdt_for_each_subnode(node, (void *) _fdt_addr, parent) {
+		__nodename = fdt_get_name((void *) _fdt_addr, node, &len);
+
+		node_name = kbasename(__nodename);
+		len = strchrnul(node_name, '@') - node_name;
+
+		if ((strlen(nodename) == len) && (strncmp(node_name, nodename, len) == 0))
+			return node;
+
+	}
+
+	return -1;
 }
 
 /*
@@ -127,13 +175,15 @@ int fdt_find_compatible_node(char *compat) {
 }
 
 /* Get device informations/parameters from a device tree */
-int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
+int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 	int new_offset;
 	const struct fdt_property *prop;
 	int prop_len;
 	const fdt32_t *p;
 	const char *compat_str, *node_str;
 	static int depth = 0;
+	uint32_t irq_gic_type;
+	dev_t *__info = (dev_t *) info;
 
 	/* Need to reset the depth? */
 	if (offset == 0)
@@ -162,7 +212,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 	fdt_cur_status.fdt_parent[fdt_cur_status.fdt_cur_lvl] = info;
 
 	if (!depth) {
-		info->parent = NULL;
+		__info->parent = NULL;
 	}
 	else if (depth > fdt_cur_status.fdt_cur_lvl) {
 		fdt_cur_status.fdt_cur_lvl++;
@@ -171,11 +221,11 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 		fdt_cur_status.fdt_cur_lvl--;
 	}
 	else {
-		info->parent = fdt_cur_status.fdt_parent[fdt_cur_status.fdt_cur_lvl-1];
+		__info->parent = fdt_cur_status.fdt_parent[fdt_cur_status.fdt_cur_lvl-1];
 	}
 
-	info->offset_dts = new_offset;
-	info->fdt = (void *) fdt;
+	__info->offset_dts = new_offset;
+	__info->fdt = (void *) fdt;
 
 	compat_str = fdt_getprop(fdt, new_offset, "compatible", &prop_len);
 
@@ -188,7 +238,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 		return new_offset;
 	}
 
-	strncpy(info->compatible, compat_str, prop_len);
+	strncpy(__info->compatible, compat_str, prop_len);
 
 	node_str = fdt_get_name(fdt, new_offset, &prop_len);
 	if (prop_len > MAX_COMPAT_SIZE) {
@@ -196,15 +246,15 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 		return new_offset;
 	}
 
-	strncpy(info->nodename, node_str, prop_len);
+	strncpy(__info->nodename, node_str, prop_len);
 
 	prop = fdt_get_property(fdt, new_offset, "status", &prop_len);
 
 	if (prop) {
 		if (!strcmp(prop->data, "disabled"))
-			info->status = STATUS_DISABLED;
+			__info->status = STATUS_DISABLED;
 		else if (!strcmp(prop->data, "ok"))
-			info->status = STATUS_INIT_PENDING;
+			__info->status = STATUS_INIT_PENDING;
 	}
 
 	prop = fdt_get_property(fdt, new_offset, "reg", &prop_len);
@@ -213,31 +263,47 @@ int get_dev_info(const void *fdt, int offset, const char *compat, dev_t *info) {
 		
 		p = (const fdt32_t *) prop->data;
 				
-			info->base = fdt32_to_cpu(p[0]);
+		__info->base = fdt32_to_cpu(p[0]);
 
-			if (prop_len > sizeof(uint32_t)) {
-				/* We have a size information */
-				info->size = fdt32_to_cpu(p[1]);
-			} else {
-				info->size = 0;
-			}
-		
+		if (prop_len > sizeof(uint32_t)) {
+			/* We have a size information */
+			__info->size = fdt32_to_cpu(p[1]);
+		} else {
+			__info->size = 0;
+		}
+		__info->irq_type = fdt32_to_cpu(p[2]);
 	} 
 	
+	/* Interrupts - as described in the bindings - have 3 specific cells */
 	prop = fdt_get_property(fdt, new_offset, "interrupts", &prop_len);
 
 	if (prop) {		
 		p = (const fdt32_t *) prop->data;
-		
-		if (prop_len == sizeof(uint32_t))
-			info->irq = fdt32_to_cpu(p[0]);
-		else
+
+		if (prop_len == 3 * sizeof(uint32_t)) {
+
+			/* Retrieve the 3-cell values */
+			irq_gic_type = fdt32_to_cpu(p[0]);
+			__info->irq_nr = fdt32_to_cpu(p[1]);
+			__info->irq_type = fdt32_to_cpu(p[3]);
+
+			/* Not all combinations are currently handled. */
+
+			if (irq_gic_type != GIC_IRQ_TYPE_SGI)
+				__info->irq_nr += 16; /* Possibly for a Private Peripheral Interrupt (PPI) */
+
+			if (irq_gic_type == GIC_IRQ_TYPE_SPI) /* It is a Shared Peripheral Interrupt (SPI) */
+				__info->irq_nr += 16;
+
+		} else {
 			/* Unsupported size of interrupts property */
-			return -1;
+			lprintk("%s: unsupported size of interrupts property\n");
+			BUG();
+		}
 	}
 
 	/* We got all required information, the device is ready to be initialized */
-	info->status = STATUS_INIT_PENDING;
+	__info->status = STATUS_INIT_PENDING;
 
 	return new_offset;
 }

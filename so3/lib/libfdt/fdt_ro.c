@@ -51,10 +51,9 @@
 
 #include <string_helpers.h>
 
-#include <device/fdt/libfdt_env.h>
-#include <device/fdt/fdt.h>
-#include <device/fdt/libfdt.h>
-#include <device/fdt/libfdt_internal.h>
+#include <libfdt/libfdt_env.h>
+#include <libfdt/libfdt.h>
+#include <libfdt/libfdt_internal.h>
 
 static int fdt_nodename_eq_(const void *fdt, int offset,
 			    const char *s, int len)

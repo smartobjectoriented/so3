@@ -21,13 +21,6 @@
 
 #include <asm/processor.h>
 
-void cache_clean_flush(void);
-void dcache_flush(uint32_t *pte);
-
-void flush_all(void);
-
-void flush_icache_range(uint32_t start, uint32_t end);
-
 /*
  *	flush_pte_entry
  *
@@ -43,8 +36,20 @@ static inline void flush_pte_entry(void *pte)
 	} while (0);
 
 	dsb();
+	isb();
 }
 
+void invalidate_dcache_all(void);
+void flush_dcache_all(void);
+void invalidate_dcache_range(unsigned long start, unsigned long stop);
+void flush_dcache_range(unsigned long start, unsigned long stop);
 
+void v7_inval_tlb(void);
+
+void arm_init_before_mmu(void);
+
+void mmu_page_table_flush(unsigned long start, unsigned long stop);
+
+void invalidate_icache_all(void);
 
 #endif /* CACHEFLUSH_H */

@@ -71,13 +71,27 @@ void setup_exception_stacks(void) {
 		"msr	cpsr_c, %9"
 		    :
 		    : "r" (stk),
-		      "I" (PSR_F_BIT | PSR_I_BIT | IRQ_MODE), "I" (offsetof(struct stack, irq[0])),
-		      "I" (PSR_F_BIT | PSR_I_BIT | ABT_MODE), "I" (offsetof(struct stack, abt[0])),
-		      "I" (PSR_F_BIT | PSR_I_BIT | UND_MODE), "I" (offsetof(struct stack, und[0])),
-		      "I" (PSR_F_BIT | PSR_I_BIT | FIQ_MODE), "I" (offsetof(struct stack, fiq[0])),
-		      "I" (PSR_F_BIT | PSR_I_BIT | SVC_MODE)
+		      "I" (PSR_F_BIT | PSR_I_BIT | PSR_IRQ_MODE), "I" (offsetof(struct stack, irq[0])),
+		      "I" (PSR_F_BIT | PSR_I_BIT | PSR_ABT_MODE), "I" (offsetof(struct stack, abt[0])),
+		      "I" (PSR_F_BIT | PSR_I_BIT | PSR_UND_MODE), "I" (offsetof(struct stack, und[0])),
+		      "I" (PSR_F_BIT | PSR_I_BIT | PSR_FIQ_MODE), "I" (offsetof(struct stack, fiq[0])),
+		      "I" (PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE)
 		    : "r14");
 
+}
+
+void arm_init_domains(void)
+{
+	u32 reg;
+
+	reg = get_dacr();
+	/*
+	* Set DOMAIN to client access so that all permissions
+	* set in pagetables are validated by the mmu.
+	*/
+	reg &= ~DOMAIN_MASK;
+	reg |= DOMAIN_MANAGER;
+	set_dacr(reg);
 }
 
 /**
@@ -96,16 +110,23 @@ void vfp_enable(void)
 	 */
 	set_copro_access(access | CPACC_FULL(10) | CPACC_FULL(11));
 
-	__enable_vfp();
 }
 
-/*
+/**
  * Low-level initialization before the main boostrap process.
  */
 void setup_arch(void) {
+	int offset;
 
 	/* Clear BSS - DO NOT ASSIGN VALUES TO NON-INITIALIZED VARIABLES BEFORE THIS POINT.*/
 	clear_bss();
+
+	/* Retrieve information about the main memory (RAM) */
+
+	/* Access to device tree */
+	offset = get_mem_info((void *) _fdt_addr, &mem_info);
+	if (offset >= 0)
+		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 
 	/* Original boot CPU identification to prevent undesired activities on another CPU . */
 	origin_cpu = smp_processor_id();
@@ -115,7 +136,7 @@ void setup_arch(void) {
 
 	/* Keep a reference to the 1st-level system page table */
 #ifdef CONFIG_MMU
-	__sys_l1pgtable = (unsigned int *) (CONFIG_RAM_BASE + L1_SYS_PAGE_TABLE_OFFSET);
+	__sys_l1pgtable = (unsigned int *) (CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET);
 #endif
 
 #if 0 /* At the moment, we do not handle security in user space */
@@ -123,6 +144,8 @@ void setup_arch(void) {
 	set_domain(0xfffffffd);
 #endif
 	vfp_enable();
+
+	lprintk("%s: CPU control register (CR) = %x\n", __func__, get_cr());
 
 	/* A low-level UART should be initialized here so that subsystems initialization (like MMC) can already print out logs ... */
 

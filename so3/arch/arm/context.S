@@ -152,8 +152,8 @@ __thread_prologue_user:
 
  	@ Switch into user mode
  	mrs  r4, cpsr
-	bic	r4, r4, #MODE_MASK
-	orr	r4, r4, #USR_MODE
+	bic	r4, r4, #PSR_MODE_MASK
+	orr	r4, r4, #PSR_USR_MODE
  	msr	 cpsr, r4
 
 	@ User stack initialisation
@@ -187,18 +187,29 @@ load_ctx:
 
 @ Switch the MMU to a L1 page table
 @ r0 contains the physical address of the L1 page table
-__mmu_switch:
-	mov	r2, #0
-	orr	r0, r0, #TTB_FLAGS_SMP
+@ r1 and r2 are used as scratch registers.
 
-	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
+__mmu_switch:
 
 	dsb
+	isb
 
-_out:
-	mcr		p15, 0, r0, c2, c0, 0	@ set TTB 0
-	mcr		p15, 0, r0, c2, c0, 1	@ set TTB 1
+	@ So far, we do not use ASID/Context ID
 
+	mrc p15, 0, r1, c2, c0, 0
+	isb
+
+	ldr	r2, =TTBR0_BASE_ADDR_MASK
+	bic r1, r1, r2
+
+	orr r1, r1, r0
+
+	mcr	p15, 0, r1, c2, c0, 0		@ set TTBR0
+
+	mov r0, #0
+	mcr p15, 0, r0, c7, c5, 0		@ I+BTB cache invalidate
+
+	dsb
 	isb
 
 	mov		pc, lr

@@ -179,7 +179,7 @@ static void time_fat_fat2so3(unsigned short date, unsigned short time, struct ti
 
 int fat_read(int fd, void *buffer, int count)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 	int rc = 0;
 	int bread = 0;
 
@@ -201,7 +201,7 @@ int fat_read(int fd, void *buffer, int count)
 
 int fat_write(int fd, const void *buffer, int count)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 	int rc = 0;
 	int bwritten = 0;
 
@@ -259,7 +259,7 @@ int fat_open(int fd, const char *path)
 			break;
 	}
 
-	vfs_set_privdata(fd, (void *)ptrent);
+	vfs_set_priv(fd, (void *)ptrent);
 	return 0;
 
 open_fail:
@@ -270,7 +270,7 @@ open_fail:
 int fat_close(int fd)
 {
 	int rc;
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 
 	switch (ptrent->tentry) {
 		case TYPE_FILE:
@@ -318,7 +318,7 @@ int fat_unmount(const char *mount_point)
 
 struct dirent *fat_readdir(int fd)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 	struct dirent *dent;
 	DIR *tmp_dir;
 	FILINFO fno;
@@ -419,7 +419,7 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
  *
  */
 static off_t fat_lseek(int fd, off_t off, int whence) {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_privdata(fd);
+	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 	off_t ret;
 	uint32_t eof, cur;
 

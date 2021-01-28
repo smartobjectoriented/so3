@@ -12,13 +12,8 @@ endchoice
 choice
   prompt "Target"
 	
-       	depends on STANDALONE
 	config VEXPRESS
     		bool "Vexpress"
-	config MERIDAv2
-		bool "Merida V2"
-	config BPI
-		bool "BananaPi M2 Zero"
         config RPI4
         	bool "Raspberry Pi 4 B"
         

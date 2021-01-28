@@ -148,12 +148,12 @@ static int pl011_init(dev_t *dev) {
 	serial_ops.dev = dev;
 
 	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq, pl011_int, NULL, NULL);
+	irq_bind(dev->irq_nr, pl011_int, NULL, NULL);
 
 	/* Enable interrupt (IRQ controller) */
 	iowrite16(pl011_dev.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
 
-	irq_ops.irq_enable(dev->irq);
+	irq_ops.irq_enable(dev->irq_nr);
 
 	return 0;
 }

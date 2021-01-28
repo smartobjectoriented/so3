@@ -31,8 +31,7 @@
 .global _fdt_addr
 
 .extern clear_bss
-.extern configure_l1pgtable
-.extern cpu_setup
+.extern mmu_configure
 .extern __stack_top
 .extern __vectors_start
 
@@ -49,10 +48,10 @@
 .macro safe_svcmode_maskall reg:req
 
 	mrs	\reg , cpsr
-	eor	\reg, \reg, #HYP_MODE
-	tst	\reg, #MODE_MASK
-	bic	\reg , \reg , #MODE_MASK
-	orr	\reg , \reg , #PSR_I_BIT | PSR_F_BIT | SVC_MODE
+	eor	\reg, \reg, #PSR_HYP_MODE
+	tst	\reg, #PSR_MODE_MASK
+	bic	\reg , \reg , #PSR_MODE_MASK
+	orr	\reg , \reg , #PSR_I_BIT | PSR_F_BIT | PSR_SVC_MODE
 
 	bne	1f
 	orr	\reg, \reg, #PSR_A_BIT
@@ -76,27 +75,30 @@ _start:
 
   safe_svcmode_maskall r9
 
-  msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | SVC_MODE @ ensure svc mode and irqs disabled
+  msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
 
-  @ Set vector table at address ___vectors_start
-  ldr 	r1, .LCvectors
-  mcr 	p15, 0, r1, c12, c0, 0
+
+  @ Configure address of the vector table
+  ldr 	r1, =.LCvectors
+  ldr	r1, [r1]
+
+  mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
   @ Preserve the (physical address of) device tree base in r9
   mov 	r9, r2
 
   @ Initialize stack pointers for current mode (normal case if no MMU is used)
-  ldr  	sp, .LCstack_top
+  ldr  	sp, =.LCstack_top
+  ldr 	sp, [sp]
 
   @ Up to here, a stack should be initialized
 
 #ifdef CONFIG_MMU
-  @ Set up the MMU
 
+  @ Set up the MMU and other flags of the system control register
   b		mmu_setup
 
 #endif /* CONFIG_MMU */
-
 
 __kernel_main:
 
@@ -109,7 +111,6 @@ __kernel_main:
   @ never returns...
 
 
-
 #ifdef CONFIG_MMU
 
   .align 2
@@ -120,44 +121,23 @@ mmu_setup:
   adrl	sp, temp_stack
 
   @ Refer to the 1st-level page table
-  ldr	r4, =CONFIG_RAM_BASE + L1_SYS_PAGE_TABLE_OFFSET
+  ldr	r4, =CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET
 
   mov	r0, r4
   mov	r1, r9 @ fdt addr
-  mov   r7, lr
-  bl 	configure_l1pgtable
-  mov 	lr, r7
 
-  mov 	r8, r4
-
-  @ r8 contains the reference for TTBR1 (which is equal to TTBR0)
-  bl 	cpu_setup
-
-__enable_mmu:
-
-  bic	r0, r0, #CR_A
-
-  mov	r5, #0xffffffff				@ all domains are manager at the beginning
-  mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
-  mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
-
-  mov	r0, r0
-
-  isb
-
-  mcr	p15, 0, r0, c1, c0, 0		@ write control reg
-  mrc	p15, 0, r3, c0, c0, 0		@ read id reg
-
-  isb
+  bl mmu_configure
 
   @ Readjust the stack
-  ldr	sp, .LCstack_top
+  ldr	sp, =.LCstack_top
+  ldr	sp, [sp]
 
   @ Keep executing in the kernel space
 
   @ Store the virtual address which will be used to continue
   @ the execution after the MMU enabled.
-  ldr	pc, .LCvirt_entry
+  ldr	r0, =.LCvirt_entry
+  ldr	pc, [r0]
 
  #endif /* CONFIG_MMU */
 
@@ -167,15 +147,11 @@ __enable_mmu:
 _fdt_addr:
   .word 	0
 
-.align	2
-__v7_setup_stack:
-	.space	4 * 11				@ 11 registers
-
-.align 8
+.align 4
 
 @ Before MMU is enabled, we cannot refer to the normal stack as declared in the linker script
 temp_stack_bottom:
-	.space 1024
+	.space 4096
 temp_stack:
 
 .LCvirt_entry:

@@ -332,18 +332,6 @@ endif # $(dot-config)
 ifeq ($(CONFIG_VEXPRESS),y)
 TARGET = vexpress
 endif
-ifeq ($(CONFIG_A20),y)
-TARGET = olinuxino
-endif
-ifeq ($(CONFIG_PINE64),y)
-TARGET = pine64
-endif
-ifeq ($(CONFIG_MERIDAv2),y)
-TARGET = merida
-endif
-ifeq ($(CONFIG_BPI),y)
-TARGET = bpi
-endif
 ifeq ($(CONFIG_RPI4),y)
 TARGET = rpi4
 endif
@@ -355,17 +343,13 @@ endif
 
 ELF	= so3
 BIN	= so3.bin
-DTB	= arch/arm/boot/dts/$(TARGET).dtb
+DTB	= dts/$(TARGET).dtb
 
 include scripts/Makefile.build
  
-ifeq ($(CONFIG_BIN),y)
 all: $(BIN) $(DTB)
-endif
 
-ifeq ($(CONFIG_ELF),y)
 all: $(ELF)
-endif
 
 objs-y		:= kernel mm fs ipc arch/arm devices apps 
 libs-y		:= lib
@@ -374,7 +358,7 @@ libs-y 		+= lib/libfdt
 so3-dirs	:= $(objs-y) $(libs-y)
 so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))
 so3-libs	:= $(patsubst %,%/lib.a, $(libs-y))
-so3-all	:= $(so3-objs) $(so3-libs)
+so3-all		:= $(so3-objs) $(so3-libs)
 
 # Do modpost on a prelinked vmlinux. The finally linked vmlinux has
 # relevant sections renamed as per the linker script.
@@ -385,9 +369,9 @@ LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
 ifdef CONFIG_MMU
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VIRT_ADDR) -T arch/arm/so3.lds -o $@ $^ -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VIRT_ADDR) -T arch/arm/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 else
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/arm/so3.lds -o $@ $^ -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/arm/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 endif
 
 	 
@@ -399,12 +383,12 @@ $(BIN): $(ELF)
 	
 dtbs: $(DTB)
 
-$(DTB): arch/arm/boot/dts/$(TARGET).dts
-	$(Q)$(CC) -P -E -nostdinc -I. -undef -D__DTS__ -x assembler-with-cpp -o arch/arm/boot/dts/$(TARGET)-complete.dts arch/arm/boot/dts/$(TARGET).dts
-	dtc arch/arm/boot/dts/$(TARGET)-complete.dts -O dtb -o $@
-	$(Q)rm -f arch/arm/boot/dts/$(TARGET)-complete.dts
+$(DTB): dts/$(TARGET).dts
+	$(Q)$(CC) -P -E -nostdinc -I. -undef -D__DTS__ -x assembler-with-cpp -o dts/$(TARGET)-complete.dts dts/$(TARGET).dts
+	dtc dts/$(TARGET)-complete.dts -O dtb -o $@
+	$(Q)rm -f dts/$(TARGET)-complete.dts
 	
-$(ELF): $(so3-all)
+$(ELF): $(so3-all) arch/arm/so3.lds
 	$(call if_changed,so3)
 
 # The actual objects are generated when descending, 
@@ -436,7 +420,7 @@ $(so3-dirs): prepare scripts_basic
 
 # Directories & files removed with 'make clean'
 CLEAN_DIRS  +=
-CLEAN_FILES +=	so3 so3.bin arch/arm/boot/dts/*.dtb
+CLEAN_FILES +=	so3 so3.bin dts/*.dtb
 
 # Directories & files removed with 'make mrproper'
 MRPROPER_DIRS  += include/config include/generated

@@ -25,5 +25,6 @@
 void ramdev_init(void);
 bool valid_ramdev(void);
 uint32_t get_ramdev_size(void);
+uint32_t get_ramdev_start(void);
 
 #endif /* RAMDEV_H */

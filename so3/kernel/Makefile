@@ -7,9 +7,8 @@ obj-y += 	main.o \
 		mutex.o  \
 		spinlock.o \
 		syscalls.o \
+		softirq.o \
 		timer.o 
 		
 obj-$(CONFIG_MMU) += process.o ptrace.o
 
-obj-y += softirq.o
-obj-y += fdt.o

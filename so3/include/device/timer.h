@@ -50,6 +50,7 @@ typedef struct {
 	dev_t *dev; /* Associated hardware */
 	uint64_t period; /* Period in ns of the periodic timer */
 	void (*start)(void);
+	void (*stop)(void);
 } periodic_timer_t;
 
 /* Structure for a oneshot timer */

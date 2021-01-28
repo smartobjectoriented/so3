@@ -40,6 +40,23 @@
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
 /*
+ * Remaining initialization which can be performed with IRQs on and full scheduling.
+ */
+void post_init(void) {
+	/*
+	 * Perform all initialization at late bootstrap when IRQs are on with full scheduling.
+	 */
+
+	postinit_t *postinit;
+	int i;
+
+	postinit = ll_entry_start(postinit_t, core);
+
+	for (i = 0; i < ll_entry_count(postinit_t, core); i++)
+		postinit[i]();
+}
+
+/*
  * Initial (root) process which will start the first process running in SO3.
  * The process is running in user mode.
  */
@@ -59,6 +76,8 @@ int root_proc(void *args)
 }
 
 int rest_init(void *dummy) {
+
+	post_init();
 
 	/* Start a first SO3 thread (main app thread) */
 #if defined(CONFIG_THREAD_ENV)

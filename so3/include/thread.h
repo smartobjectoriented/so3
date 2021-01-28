@@ -26,7 +26,7 @@
 #define THREAD_NAME_LEN 	80
 
 /* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */
-#define	THREAD_STACK_SIZE	(32 * 1024)
+#define	THREAD_STACK_SIZE	(64 * 1024)
 
 /* Default priority is set to 10 */
 #define THREAD_PRIO_DEFAULT	10
@@ -110,8 +110,6 @@ extern void __thread_prologue_user(void);
 extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
-
-int main_kernel(void *args);
 
 #endif /* __ASSEMBLY__ */
 

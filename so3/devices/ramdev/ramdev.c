@@ -21,7 +21,7 @@
 #include <part.h>
 #include <div64.h>
 
-#include <device/fdt/fdt.h>
+#include <device/fdt.h>
 #include <device/ramdev.h>
 
 #include <asm/mmu.h>
@@ -29,10 +29,7 @@
 
 static block_dev_desc_t ramdev_block_dev;
 static int ramdev_size = 0;
-
-extern const void *fdt_getprop(const void *fdt, int nodeoffset,
-                const char *name, int *lenp);
-extern int fdt_next_node(const void *fdt, int offset, int *depth);
+static uint32_t ramdev_start, ramdev_end;
 
 /*
  * Check if there is a valid ramdev which could be used for rootfs.
@@ -43,6 +40,13 @@ bool valid_ramdev(void) {
 
 uint32_t get_ramdev_size(void) {
 	return ramdev_size;
+}
+
+/*
+ * Get the physical address of ramdev start
+ */
+uint32_t get_ramdev_start(void) {
+	return ramdev_start;
 }
 
 unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt, void *buffer) {
@@ -111,9 +115,8 @@ block_dev_desc_t *ramdev_get_dev(int dev)
 size_t get_ramdev(const void *fdt) {
 	int nodeoffset = 0;
 	const fdt32_t *initrd_start, *initrd_end;
-	uint32_t ramdev_start, ramdev_end;
 	int lenp;
-	int depth;
+	int depth = 0;
 	bool found = false;
 
 	while (!found) {
@@ -140,12 +143,13 @@ size_t get_ramdev(const void *fdt) {
 
 	/* Do the virtual mapping */
 
-	create_mapping(NULL, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false, false);
+	create_mapping(NULL, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false);
 
-	flush_tlb_all();
-	cache_clean_flush();
-
-	return ramdev_end-ramdev_start;
+	/*
+	 * About the size of ramdev: ramdev_end is the address *after* the initrd region according to U-boot which
+	 * computes the size in the same way.
+	 */
+	return ramdev_end - ramdev_start;
 }
 
 /*
@@ -153,10 +157,23 @@ size_t get_ramdev(const void *fdt) {
  * Called by devices_init() in devce.c
  */
 void ramdev_init(void) {
+	int i;
+	uint32_t ramdev_pfn_start;
 
 	ramdev_size = get_ramdev((void *) _fdt_addr);
 
-	if (ramdev_size > 0)
+	if (ramdev_size > 0) {
 		printk("so3: rootfs in RAM detected (ramdev enabled) with size of %d bytes...\n", ramdev_size);
+
+		/* Mark all pfns dedicated to the (possible) ramdev as busy. */
+
+		ramdev_pfn_start = get_ramdev_start() >> PAGE_SHIFT;
+
+		for (i = ramdev_pfn_start; i <= ramdev_pfn_start + (ALIGN_UP(ramdev_size, PAGE_SIZE) >> PAGE_SHIFT); i++) {
+			pfn_to_page(i)->free = false;
+			pfn_to_page(i)->refcount++;
+		}
+
+	}
 }
 

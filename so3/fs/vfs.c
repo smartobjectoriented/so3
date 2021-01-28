@@ -159,7 +159,7 @@ static int vfs_inc_ref(int gfd)
  * @param fd: This is the index on the open_fds
  * @param data: This is a pointer onto the "private data" to reuse later
  */
-void vfs_set_privdata(int gfd, void *data)
+void vfs_set_priv(int gfd, void *data)
 {
 	open_fds[gfd]->priv = data;
 }
@@ -169,7 +169,7 @@ void vfs_set_privdata(int gfd, void *data)
  * @param fd: This is the index on the open_fds
  * @return data: This is a pointer onto the "private data" to retrieve. It must be casted.
  */
-void *vfs_get_privdata(int gfd)
+void *vfs_get_priv(int gfd)
 {
 	return open_fds[gfd]->priv;
 }
@@ -579,7 +579,6 @@ int do_open(const char *filename, int flags)
 		/* Get index of open_fds*/
 		gfd = current()->pcb->fd_array[fd];
 
-		vfs_set_privdata(gfd, dev_get_drvdata(devclass_get_cdev(filename + DEV_PREFIX_LEN)->dev));
 	}
 	else {
 		/* FIXME: Should find the mounted point regarding the path */
@@ -905,10 +904,8 @@ off_t do_lseek(int fd, off_t off, int whence) {
 
 	if (open_fds[gfd]->fops->lseek)
 		rc = open_fds[gfd]->fops->lseek(fd, off, whence);
-	else {
-		set_errno(EPERM);
-		rc = -1;
-	}
+	else
+		rc = 0; /* Nothing if no specific callback found. */
 
 	mutex_unlock(&vfs_lock);
 

@@ -44,6 +44,7 @@
 .extern current_thread
 .extern irq_handle
 .extern syscall_handle
+
 .extern dumpstack
 
 .extern __prefetch_abort
@@ -124,7 +125,7 @@ __prepare_sig_handler:
 
 	@ Make sure the spsr is with Thumb de-activated to perform normal execution of the handler
 
-	mov		r1, #USR_MODE		@ Ensure the handler will run in user mode (situation where
+	mov		r1, #PSR_USR_MODE		@ Ensure the handler will run in user mode (situation where
 								@ the current frame inherits from code running in SVC).
 
 	str		r1, [sp, #OFFSET_PSR]		@ Save the updated SPSR
@@ -192,10 +193,6 @@ syscall_interrupt:
     mrs 	lr, spsr        		@ Get spsr
 	str		lr, [sp, #OFFSET_PSR]	@ Store spsr
 
-	@ Check if it is necessary to preserve sp_usr and lr_usr
-	and		lr, lr, #MODE_MASK
-	cmp		lr, #USR_MODE
-
 	@ Saving user mode registers (sp_usr, lr_usr)
 	add		lr, sp, #OFFSET_SP_USR
 	stmia	lr, {sp, lr}^
@@ -252,19 +249,19 @@ __ret_from_fork:
     ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
     msr		spsr, lr
 
-	@ Check if it is necessary to restore sp_usr and lr_usr
-	and		lr, lr, #MODE_MASK
-	cmp		lr, #USR_MODE
-
 	@ Restoring user mode registers (sp_usr, lr_usr)
-	addeq	lr, sp, #OFFSET_SP_USR
-	ldmeqia	lr, {sp, lr}^
-
+	add		lr, sp, #OFFSET_SP_USR
+	ldmia	lr, {sp, lr}^
 
  	ldmia 	sp, {r0-r12}
 	add		sp, sp, #OFFSET_SP
 
-    ldmia 	sp, {sp, lr, pc}^
+	dsb
+	isb
+
+	ldmia 	sp, {sp, lr, pc}^
+
+
 
 @ Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
@@ -318,8 +315,8 @@ irq:
     @ Now switch back to SVC. IRQs are disabled
     mrs		lr, cpsr
 
-    bic		lr, lr, #MODE_MASK
-    orr		lr, lr, #SVC_MODE
+    bic		lr, lr, #PSR_MODE_MASK
+    orr		lr, lr, #PSR_SVC_MODE
 
     @ switch to SVC
     msr		cpsr, lr
@@ -349,8 +346,8 @@ irq:
     str		lr, [sp, #OFFSET_PSR]	@ location of spsr_svc (hence cpsr right before the interrupt)
 
 	@ Check if it is necessary to preserve sp_usr and lr_usr
-	and		lr, lr, #MODE_MASK
-	cmp		lr, #USR_MODE
+	and		lr, lr, #PSR_MODE_MASK
+	cmp		lr, #PSR_USR_MODE
 
 	@ Saving user mode registers (sp_usr, lr_usr)
 	addeq	lr, sp, #OFFSET_SP_USR
@@ -389,19 +386,20 @@ irq:
     msr		spsr, lr
 
 	@ Check if it is necessary to restore sp_usr and lr_usr
-	and		lr, lr, #MODE_MASK
-	cmp		lr, #USR_MODE
+	and		lr, lr, #PSR_MODE_MASK
+	cmp		lr, #PSR_USR_MODE
 
 	@ Restoring user mode registers (sp_usr, lr_usr)
 	addeq	lr, sp, #OFFSET_SP_USR
 	ldmeqia	lr, {sp, lr}^
 
 	@ Restore registers
-	ldr		r0, [sp, #OFFSET_SP]
-
-  	ldmia 	sp, {r0-r12}
+   	ldmia 	sp, {r0-r12}
 
 	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
 
     @ Now, we retrieve the final registers, sp will be adjusted automatically
     ldmia 	sp, {sp, lr, pc}^

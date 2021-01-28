@@ -66,6 +66,7 @@ static struct mem_chunk *quick_list;
 void heap_init(void)
 {
 	quick_list = (mem_chunk_t *) sbrk(0);
+
 	quick_list->next_list = NULL;
 	quick_list->next_chunk = NULL;
 	quick_list->head = quick_list;

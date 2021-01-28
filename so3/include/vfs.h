@@ -85,7 +85,7 @@
 
 #define VFS_TYPE_DEV_FB		4	/* framebuffer device */
 #define VFS_TYPE_DEV_INPUT	5	/* input device (e.g. mouse) */
-#define VFS_TYPE_DEV_CHAR	6       /* Generic device character */
+#define VFS_TYPE_DEV_CHAR	6       /* Generic character device */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
@@ -160,8 +160,8 @@ int vfs_refcount(int gfd);
 void vfs_init(void);
 int vfs_open(const char *filename, struct file_operations *fops, uint32_t type);
 int vfs_close(int gfd);
-void vfs_set_privdata(int gfd, void *data);
-void *vfs_get_privdata(int gfd);
+void vfs_set_priv(int gfd, void *data);
+void *vfs_get_priv(int gfd);
 int vfs_clone_fd(int *gfd_src, int *gfd_dst);
 
 uint32_t vfs_get_access_mode(int fd);

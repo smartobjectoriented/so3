@@ -158,6 +158,7 @@ void process_cmd(void) {
 		argv[arg_pos] = NULL;
 
 	pid_child = fork();
+
 	if (!pid_child) { /* Execution in the child */
 
 		if (pipe_on) {

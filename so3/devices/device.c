@@ -28,8 +28,6 @@
 #include <ctype.h>
 #include <vfs.h>
 
-#include <device/fdt/libfdt.h>
-
 #include <asm/setup.h>
 
 #include <device/device.h>
@@ -70,7 +68,7 @@ char *dev_state_str(dev_status_t status) {
 /*
  * Get a dev_t entry based on the compatible string
  */
-dev_t *find_device(const char *compat) {
+void *find_device(const char *compat) {
 	dev_t *dev;
 
 	list_for_each_entry(dev, &devices, list)
@@ -113,17 +111,17 @@ bool fdt_device_is_available(int node_offset) {
  */
 void parse_dtb(void) {
 	unsigned int drivers_count[INITCALLS_LEVELS];
-	driver_entry_t *driver_entries[INITCALLS_LEVELS];
+	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
 	dev_t *dev;
 	int i, level;
 	int offset, new_off;
 	bool found;
 
-	drivers_count[CORE] = ll_entry_count(driver_entry_t, core);
-	driver_entries[CORE] = ll_entry_start(driver_entry_t, core);
+	drivers_count[CORE] = ll_entry_count(driver_initcall_t, core);
+	driver_entries[CORE] = ll_entry_start(driver_initcall_t, core);
 
-	drivers_count[POSTCORE] = ll_entry_count(driver_entry_t, postcore);
-	driver_entries[POSTCORE] = ll_entry_start(driver_entry_t, postcore);	
+	drivers_count[POSTCORE] = ll_entry_count(driver_initcall_t, postcore);
+	driver_entries[POSTCORE] = ll_entry_start(driver_initcall_t, postcore);
 
 	DBG("%s: # entries for core drivers : %d\n", __func__, drivers_count[CORE]);
 	DBG("%s: # entries for postcore drivers : %d\n", __func__, drivers_count[POSTCORE]);
@@ -149,7 +147,7 @@ void parse_dtb(void) {
 						DBG("    Compatible:      %s\n", dev->compatible);
 						DBG("    Base address:    0x%08X\n", dev->base);
 						DBG("    Size:            0x%08X\n", dev->size);
-						DBG("    IRQ:             %d\n", dev->irq);
+						DBG("    IRQ:             %d\n", dev->irq_nr);
 						DBG("    Status:          %s\n", dev_state_str(dev->status));
 						DBG("    Initcall level:  %d\n", level);
 
@@ -188,36 +186,13 @@ void parse_dtb(void) {
 	free(dev);
 }
 
-/*
- * Get the device id of a specific fd.
- * Returns by-default id 0 if no number is specified at the end of the class name.
- */
-int devclass_get_id(int fd) {
-	char *pos;
-	int val;
-
-	pos = vfs_get_filename(fd);
-
-	while (*pos) {
-	    if (isdigit(*pos)) {
-	        /* Found a number */
-	        val = simple_strtoul(pos, NULL, 10);
-	        return val;
-	    } else
-	        /* Otherwise, move on to the next character. */
-	        pos++;
-	}
-
-	return -1;
-}
-
 /* Register a device. Usually called from the device driver. */
-void devclass_register(dev_t *dev, struct devclass *cdev)
+void devclass_register(dev_t *dev, struct devclass *devclass)
 {
-	cdev->dev = dev;
-	INIT_LIST_HEAD(&cdev->list);
+	devclass->dev = dev;
+	INIT_LIST_HEAD(&devclass->list);
 
-	list_add(&cdev->list, &registered_dev);
+	list_add(&devclass->list, &registered_dev);
 }
 
 /*
@@ -228,13 +203,13 @@ void devclass_register(dev_t *dev, struct devclass *cdev)
  *   /dev/<dev-class>[dev-id]
  *   e.g. /dev/fb0, /dev/input1
  *
- * If dev-id is not specified, 0 is assumed.
+ * If dev-id is not specified, there will be no digit appended to the <dev-class>.
  *
  * Note: the given `filename' must not include the /dev/ prefix.
  */
-struct devclass *devclass_get_cdev(const char *filename)
+struct devclass *devclass_by_filename(const char *filename)
 {
-	uint32_t dev_id, i;
+	uint32_t dev_id;
 	char *dev_id_s;
 	size_t dev_class_len;
 	struct devclass *cur_dev;
@@ -262,7 +237,7 @@ struct devclass *devclass_get_cdev(const char *filename)
 	dev_class_len = dev_id_s - filename;
 
 	/* Loop through registered_dev. */
-	i = 0;
+
 	list_for_each_entry(cur_dev, &registered_dev, list) {
 
 		/*
@@ -271,7 +246,7 @@ struct devclass *devclass_get_cdev(const char *filename)
 		 */
 		if ((strlen(cur_dev->class) == dev_class_len) && !strncmp(filename, cur_dev->class, dev_class_len)) {
 
-			if ((dev_id == i++) || ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end)))
+			if ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end))
 				return cur_dev;
 		}
 	}
@@ -279,6 +254,33 @@ struct devclass *devclass_get_cdev(const char *filename)
 	lprintk("%s: device not found.\n", __func__);
 
 	return NULL;
+}
+
+/*
+ * Get the device id of a specific fd.
+ * Returns by-default id 0 if no number is specified at the end of the class name.
+ */
+int devclass_fd_to_id(int fd) {
+	char *pos;
+	int val;
+
+	pos = vfs_get_filename(fd);
+
+	while (*pos) {
+	    if (isdigit(*pos)) {
+	        /* Found a number */
+	        val = simple_strtoul(pos, NULL, 10);
+	        return val;
+	    } else
+	        /* Otherwise, move on to the next character. */
+	        pos++;
+	}
+
+	return -1;
+}
+
+struct devclass *devclass_by_fd(int fd) {
+	return devclass_by_filename(vfs_get_filename(fd) + DEV_PREFIX_LEN);
 }
 
 /*
@@ -290,7 +292,7 @@ struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_ty
 {
 	struct devclass *cdev;
 
-	cdev = devclass_get_cdev(filename);
+	cdev = devclass_by_filename(filename);
 	if (!cdev)
 		return NULL;
 
@@ -298,7 +300,6 @@ struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_ty
 
 	return cdev->fops;
 }
-
 
 /*
  * Main device initialization function.

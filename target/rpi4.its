@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,12 +19,11 @@
 /dts-v1/;
 
 / {
-	description = "SO3 image containing so3 kernel and FDT blob";
+	description = "Kernel and rootfs components for Raspberry Pi 4 environment";
 
 	images {
 
-		kernel {
-			/*reg = <>; Make dtc happy ;-) */
+		so3 {
 			description = "SO3 OS kernel";
 			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
@@ -36,11 +35,12 @@
 		};
 		
 		fdt {
-			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/arch/arm/boot/dts/rpi4.dtb");
+			description = "SO3 device tree blob";
+			data = /incbin/("../so3/dts/rpi4.dtb");
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";
+			load = <0x04a00000>;
 	};
 
 /* Uncomment if ramdisk is used. */
@@ -52,7 +52,7 @@
             arch = "arm";
             os = "linux";
             compression = "none";
-            load = <0x14000000>;
+            load = <0x04c00000>; 
        };
 
    	};
@@ -61,7 +61,7 @@
 			default = "conf";
 			conf {
 				description = "SO3 kernel image including device tree";
-				kernel = "kernel";
+				kernel = "so3";
 				fdt = "fdt";
          	   ramdisk = "ramdisk";
 			};

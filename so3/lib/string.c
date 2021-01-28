@@ -181,7 +181,7 @@ char *strncpy(char *dest, const char *src, size_t n)
     return ret;
 }
 
-char *__strchrnul(const char *s, int c)
+char *strchrnul(const char *s, int c)
 {
 	size_t *w, k;
 
@@ -202,7 +202,7 @@ size_t strcspn(const char *s, const char *c)
 	const char *a = s;
 	size_t byteset[32/sizeof(size_t)];
 
-	if (!c[0] || !c[1]) return __strchrnul(s, *c)-a;
+	if (!c[0] || !c[1]) return strchrnul(s, *c)-a;
 
 	memset(byteset, 0, sizeof byteset);
 	for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++);

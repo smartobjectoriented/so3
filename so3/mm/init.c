@@ -23,8 +23,7 @@
 #include <heap.h>
 #include <sizes.h>
 
-#include <device/fdt/fdt.h>
-#include <device/fdt/libfdt.h>
+#include <device/fdt.h>
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
@@ -54,8 +53,8 @@ void clear_bss(void) {
 
 void memory_init(void) {
 #ifdef CONFIG_MMU
+
 	uint32_t *new_sys_pgtable;
-	int offset;
 	uint32_t vectors_paddr;
 
 #endif /* CONFIG_MMU */
@@ -64,18 +63,12 @@ void memory_init(void) {
 	/* Initialize the list of I/O virt/phys maps */
 	INIT_LIST_HEAD(&io_maplist);
 #endif
-
 	/* Initialize the kernel heap */
 	heap_init();
 
 #ifdef CONFIG_MMU
 	/* Set the virtual address of the real system page table */
-	__sys_l1pgtable = (uint32_t *) (CONFIG_KERNEL_VIRT_ADDR + L1_SYS_PAGE_TABLE_OFFSET);
-
-	/* Access to device tree */
-	offset = get_mem_info((void *) _fdt_addr, &mem_info);
-	if (offset >= 0)
-		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+	__sys_l1pgtable = (uint32_t *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
 
 	init_io_mapping();
 
@@ -91,10 +84,10 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_pgtable = new_l1pgtable();
 
-	create_mapping(new_sys_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false, false);
+	create_mapping(new_sys_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
-	create_mapping(new_sys_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true, false);
+	create_mapping(new_sys_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true);
 
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
@@ -104,7 +97,7 @@ void memory_init(void) {
 	mmu_switch(new_sys_pgtable);
 
 	/* Re-configuring the original system page table */
-	memcpy((void *) __sys_l1pgtable, (unsigned char *) new_sys_pgtable, L1_PAGETABLE_SIZE);
+	memcpy((void *) __sys_l1pgtable, (unsigned char *) new_sys_pgtable, TTB_L1_SIZE);
 
 	/* Finally, switch back to the original location of the system page table */
 	mmu_switch(__sys_l1pgtable);
@@ -112,7 +105,7 @@ void memory_init(void) {
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
-	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true, false);
+	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
 
 	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
 

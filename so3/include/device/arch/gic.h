@@ -39,7 +39,7 @@
  *  122-127 are unused but declared to fit in GIC multiple of 32 bits structures
  */
 
-#define NR_IRQS          128
+#define NR_IRQS	160
 
 #define GICD_ENABLE			0x1
 #define GICD_DISABLE			0x0
@@ -72,6 +72,12 @@
 
 #define INTC_CPU_CTRL_REG0		0x28
 #define INTC_DISABLE			(1<<4)
+
+typedef enum {
+	GIC_IRQ_TYPE_SPI	= 0,
+	GIC_IRQ_TYPE_PPI	= 1,
+	GIC_IRQ_TYPE_SGI	= 2
+} gic_irq_type_t;
 
 /* Bits and regs definitions */
 struct intc_regs {

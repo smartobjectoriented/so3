@@ -20,6 +20,7 @@
 #include <schedule.h>
 #include <spinlock.h>
 #include <softirq.h>
+#include <string.h>
 
 #include <device/irq.h>
 

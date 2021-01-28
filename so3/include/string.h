@@ -16,7 +16,6 @@
  *
  */
 
-
 #ifndef STRING_H
 #define STRING_H
 
@@ -67,5 +66,19 @@ unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
 long simple_strtol(const char *cp, char **endp, unsigned int base);
 unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
 long long simple_strtoll(const char *cp, char **endp, unsigned int base);
+
+char *strrchr(const char *s, int c);
+char *strchrnul(const char *s, int c);
+
+/**
+ * kbasename - return the last part of a pathname.
+ *
+ * @path: path to extract the filename from.
+ */
+static inline const char *kbasename(const char *path)
+{
+	const char *tail = strrchr(path, '/');
+	return tail ? tail + 1 : path;
+}
 
 #endif /* STRING_H */

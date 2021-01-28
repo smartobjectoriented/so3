@@ -28,7 +28,7 @@ fi
 
 if [ "$1" == "vexpress" -o "$1" == "rpi4" ]; then
 # Create the partition layout this way
-    (echo o; echo n; echo p; echo; echo; echo +64M; echo t; echo c; echo n; echo p; echo; echo; echo +180M; echo w)   | sudo fdisk /dev/"$devname";
+    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +180M; echo w)   | sudo fdisk /dev/"$devname";
 fi
 
 # Give a chance to the real SD-card to be sync'd

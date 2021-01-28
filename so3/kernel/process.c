@@ -38,6 +38,7 @@
 
 #include <device/serial.h>
 
+#include <asm/cacheflush.h>
 #include <asm/syscall.h>
 #include <asm/mmu.h>
 #include <asm/processor.h>
@@ -252,26 +253,6 @@ void dump_proc_pages(pcb_t *pcb){
 	printk("\n");
 }
 
-static void copy_proc_pages(pcb_t *from, pcb_t *to) {
-	page_list_t *cur;
-	page_list_t *page_list_entry;
-
-	list_for_each_entry(cur, &from->page_list, list) {
-
-		page_list_entry = malloc(sizeof(page_list_t));
-		if (page_list_entry == NULL) {
-			printk("%s: failed to allocate memory!\n", __func__);
-			kernel_panic();
-		}
-
-		page_list_entry->page = cur->page;
-		cur->page->refcount++;
-
-		/* Insert our page at the end of the list */
-		list_add_tail(&page_list_entry->list, &to->page_list);
-	}
-}
-
 void add_page_to_proc(pcb_t *pcb, page_t *page) {
 	page_list_t *page_list_entry;
 
@@ -300,8 +281,9 @@ static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr
 	/* Perform the mapping of a new physical memory region at the region started at @virt_addr  */
 	for (i = 0; i < nr_pages; i++) {
 		page = get_free_page();
+		BUG_ON(!page);
 
-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false, usr);
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
 
 		add_page_to_proc(pcb, phys_to_page(page));
 	}
@@ -654,6 +636,9 @@ void load_process(elf_img_info_t *elf_img_info)
 			memcpy((void *) elf_img_info->sections[j].sh_addr, (void *) (elf_img_info->file_buffer + elf_img_info->sections[j].sh_offset), elf_img_info->sections[j].sh_size);
 		}
 	}
+
+	/* Make sure all data are flushed for future context switch. */
+	flush_dcache_all();
 }
 
 int do_execve(const char *filename, char **argv, char **envp)
@@ -765,9 +750,6 @@ pcb_t *duplicate_process(pcb_t *parent)
 	/* Set up the same stack origin */
 	pcb->stack_top = parent->stack_top;
 
-	/* Duplicate the page list */
-	copy_proc_pages(parent, pcb);
-
 	/* Update the heap pointer from the parent */
 	pcb->heap_base = parent->heap_base;
 	pcb->heap_pointer = parent->heap_pointer;
@@ -828,6 +810,8 @@ int do_fork(void)
 
 	/* The main process thread is ready to be scheduled for its execution.*/
 	newp->state = PROC_STATE_READY;
+
+	BUG_ON(!local_irq_is_disabled());
 
 	/* Prepare to perform scheduling to check if a context switch is required. */
 	raise_softirq(SCHEDULE_SOFTIRQ);

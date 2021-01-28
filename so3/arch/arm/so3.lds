@@ -13,7 +13,7 @@ ENTRY(_start)
  * Indeed a user thread (running in the user space) will also involve kernel activities
  * with syscalls and other.
  */
-SVC_STACK_SIZE = 32*1024 + 32 * 32*1024;  /* Initial system stack + 320 KB stack available for max. 10 kernel threads */
+SVC_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack + 640 KB stack available for max. 10 kernel threads */
 
 HEAP_SIZE = 2 * 1024 * 1024;     /* 2 MB dedicated to kernel heap */
 TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */ 
@@ -39,7 +39,6 @@ SECTIONS
   
     . = ALIGN(16384);
     
-
     .head.text :
     {
         *(.head.text);
@@ -74,25 +73,37 @@ SECTIONS
 
     . = ALIGN(4096);
     
-    __initcall_driver_core = .;
+    __initcall_driver_initcall_t_core = .;
     
-	.initcall_driver_core : {
-		*(.initcall_driver_core);
+	.initcall_driver_initcall_t_core : {
+		*(.initcall_driver_initcall_t_core);
 	}
 	
-	__initcall_driver_core_end = .;
+	__initcall_driver_initcall_t_core_end = .;
 	
     . = ALIGN(4096);
     
-    __initcall_driver_postcore = .;
+    __initcall_driver_initcall_t_postcore = .;
     
-	.initcall_driver_postcore : {
-		*(.initcall_driver_postcore);
+	.initcall_driver_initcall_t_postcore : {
+		*(.initcall_driver_initcall_t_postcore);
 	}
 	
-	__initcall_driver_postcore_end = .;
+	__initcall_driver_initcall_t_postcore_end = .;
     
-    . = ALIGN(4096);
+      . = ALIGN(4096);
+    
+    __initcall_postinit_t_core = .;
+    
+	.initcall_postinit_t_core : {
+		*(.initcall_postinit_t_core);
+	}
+	
+	__initcall_postinit_t_core_end = .;
+    
+    /* Alignment is required for subsequent allocation of L1 page tables */
+  
+    . = ALIGN(16384);
 
     .heap :
     {
@@ -106,7 +117,7 @@ SECTIONS
     .stack : 
     { 
         . += SVC_STACK_SIZE;
-        . = ALIGN (8);
+      
         __stack_top = . ;
         
     }

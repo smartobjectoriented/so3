@@ -20,6 +20,8 @@ DIR *opendir(const char *name)
 #endif
 		return 0;
 	}
+
 	dir->fd = fd;
+
 	return dir;
 }

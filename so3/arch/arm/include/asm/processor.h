@@ -72,6 +72,14 @@
 #define CPACC_SVC(n)            (1 << (n * 2))
 #define CPACC_DISABLE(n)        (0 << (n * 2))
 
+/* CCSIDR */
+#define CCSIDR_LINE_SIZE_OFFSET		0
+#define CCSIDR_LINE_SIZE_MASK		0x7
+#define CCSIDR_ASSOCIATIVITY_OFFSET	3
+#define CCSIDR_ASSOCIATIVITY_MASK	(0x3FF << 3)
+#define CCSIDR_NUM_SETS_OFFSET		13
+#define CCSIDR_NUM_SETS_MASK		(0x7FFF << 13)
+
 /*
  * The stack frame which is built at the entry in the kernel current.
  */
@@ -90,20 +98,20 @@
 /*
  * PSR bits
  */
-#define USR26_MODE	0x00000000
-#define FIQ26_MODE	0x00000001
-#define IRQ26_MODE	0x00000002
-#define SVC26_MODE	0x00000003
-#define USR_MODE	0x00000010
-#define FIQ_MODE	0x00000011
-#define IRQ_MODE	0x00000012
-#define SVC_MODE	0x00000013
-#define ABT_MODE	0x00000017
-#define UND_MODE	0x0000001b
-#define HYP_MODE 	0x0000001a
-#define SYSTEM_MODE	0x0000001f
-#define MODE32_BIT	0x00000010
-#define MODE_MASK	0x0000001f
+#define PSR_USR26_MODE	0x00000000
+#define PSR_FIQ26_MODE	0x00000001
+#define PSR_IRQ26_MODE	0x00000002
+#define PSR_SVC26_MODE	0x00000003
+#define PSR_USR_MODE	0x00000010
+#define PSR_FIQ_MODE	0x00000011
+#define PSR_IRQ_MODE	0x00000012
+#define PSR_SVC_MODE	0x00000013
+#define PSR_ABT_MODE	0x00000017
+#define PSR_UND_MODE	0x0000001b
+#define PSR_HYP_MODE 	0x0000001a
+#define PSR_SYSTEM_MODE	0x0000001f
+#define PSR_MODE32_BIT	0x00000010
+#define PSR_MODE_MASK	0x0000001f
 #define PSR_T_BIT	0x00000020
 #define PSR_F_BIT	0x00000040
 #define PSR_I_BIT	0x00000080
@@ -155,14 +163,35 @@
 	0xF7F08000 | (((imm4) & 0xF) << 16)				\
 )
 
+/*
+ * Domain numbers
+ *
+ *  DOMAIN_IO     - domain 2 includes all IO only
+ *  DOMAIN_KERNEL - domain 1 includes all kernel memory only
+ *  DOMAIN_USER   - domain 0 includes all user memory only
+ */
+#define DOMAIN_USER	0
+#define DOMAIN_KERNEL	1
+#define DOMAIN_IO	2
+
+/*
+ * Domain types
+ */
+#define DOMAIN_MASK	(0x3 << 0)
+
+#define DOMAIN_NOACCESS	0
+#define DOMAIN_CLIENT	1
+#define DOMAIN_MANAGER	3
+
+#define domain_val(dom,type)	((type) << 2*(dom))
+
 #ifndef __ASSEMBLY__
 
 #include <types.h>
 #include <compiler.h>
 #include <common.h>
 
-extern void __enable_vfp(void);
-extern void inject_syscall_vector(void);
+void arm_init_domains(void);
 
 #define FP_SIZE 35
 
@@ -226,7 +255,7 @@ static inline int cpu_mode(void)
 		"mrs     %0, cpsr"
 		: "=r" (mode) : : "memory", "cc");
 
-	return mode & MODE_MASK;
+	return mode & PSR_MODE_MASK;
 }
 
 /*
@@ -360,6 +389,22 @@ static inline void set_copro_access(unsigned int val)
 			: : "r" (val) : "cc");
 	isb();
 }
+
+static inline unsigned int get_dacr(void)
+{
+	unsigned int val;
+	asm("mrc p15, 0, %0, c3, c0, 0	@ get DACR" : "=r" (val) : : "cc");
+
+	return val;
+}
+
+static inline void set_dacr(unsigned int val)
+{
+	asm volatile("mcr p15, 0, %0, c3, c0, 0	@ set DACR"
+	  : : "r" (val) : "cc");
+	isb();
+}
+
 
 #endif /* __ASSEMBLY__ */
 

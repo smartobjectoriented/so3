@@ -30,7 +30,7 @@
  * Get the other end (extremity) based on a gfd.
  */
 static int otherend(uint32_t gfd) {
-	struct pipe_desc *pd = (struct pipe_desc *) vfs_get_privdata(gfd);
+	struct pipe_desc *pd = (struct pipe_desc *) vfs_get_priv(gfd);
 
 	if (!pd)
 		return -EINVAL;
@@ -61,7 +61,7 @@ bool pipe_empty(pipe_desc_t *pd) {
  */
 static int pipe_read_byte(int gfd, char *value, bool suspend)
 {
-	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_privdata(gfd);
+	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_priv(gfd);
 
 	/* While no data to read, place thread in waiting state */
 	while (suspend && pipe_empty(pd) && (otherend(gfd) != -1)) {
@@ -94,7 +94,7 @@ static int pipe_read(int gfd, void *buffer, int count)
 {
 	int pos, ret;
 	bool first;
-	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_privdata(gfd);
+	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_priv(gfd);
 
 	/* Sanity checks*/
 	if (!buffer || (count <= 0)) {
@@ -175,7 +175,7 @@ static int pipe_write_byte(pipe_desc_t *pd, char value)
 static int pipe_write(int gfd, const void *buffer, int count)
 {
 	int pos, ret;
-	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_privdata(gfd);
+	pipe_desc_t *pd = (pipe_desc_t *) vfs_get_priv(gfd);
 
 	/* Do Sanity checks */
 	if (!buffer || (count <= 0)) {
@@ -217,11 +217,11 @@ static int pipe_write(int gfd, const void *buffer, int count)
  */
 static int pipe_close(int gfd)
 {
-	struct pipe_desc *pd = vfs_get_privdata(gfd);
+	struct pipe_desc *pd = vfs_get_priv(gfd);
 	uint32_t opflags = vfs_get_access_mode(gfd);
 	void *privdata;
 
-	privdata = vfs_get_privdata(gfd);
+	privdata = vfs_get_priv(gfd);
 	ASSERT(privdata != NULL);
 
 	/* Check if some threads are waiting on it, and if yes and the pipe has nobody
@@ -321,8 +321,8 @@ int do_pipe(int pipefd[2]) {
 	/* Set private data of both global fds to
 	 * pd to not loose track of the structure
 	 */
-	vfs_set_privdata(pd->gfd[0], pd);
-	vfs_set_privdata(pd->gfd[1], pd);
+	vfs_set_priv(pd->gfd[0], pd);
+	vfs_set_priv(pd->gfd[1], pd);
 
 	mutex_unlock(&pd->lock);
 

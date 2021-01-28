@@ -20,27 +20,26 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
-#include <linker.h>
+#include <initcall.h>
 
-#include <device/fdt/fdt.h>
 #include <device/device.h>
 
 /* driver registering */
 
-struct driver_entry {
-	char *compatible; /* compatible Name */
+struct driver_initcall {
+	char *compatible; /* compatible string */
 
 	int (*init)(dev_t *dev);
 };
-typedef struct driver_entry driver_entry_t;
+typedef struct driver_initcall driver_initcall_t;
 
-#define REGISTER_DRIVER_GENERIC(_compatible, _init, _level) ll_entry_declare(driver_entry_t, _level, _init) = { \
+#define REGISTER_DRIVER_INITCALL(_compatible, _level, _init) ll_entry_declare(driver_initcall_t, _level, _init) = { \
 		.compatible = _compatible,	\
 		.init = _init, \
 }
 
-#define REGISTER_DRIVER_CORE(_compatible, _init) REGISTER_DRIVER_GENERIC(_compatible, _init, core)
-#define REGISTER_DRIVER_POSTCORE(_compatible, _init) REGISTER_DRIVER_GENERIC(_compatible, _init, postcore)
+#define REGISTER_DRIVER_CORE(_compatible, _init) REGISTER_DRIVER_INITCALL(_compatible, core, _init)
+#define REGISTER_DRIVER_POSTCORE(_compatible, _init) REGISTER_DRIVER_INITCALL(_compatible, postcore, _init)
 
 
 void init_driver_from_dtb(void);

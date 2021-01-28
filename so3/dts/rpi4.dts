@@ -31,14 +31,14 @@
 
 	memory@0 {
 		device_type = "memory";
-		reg = <0x00000000 0x10000000>; /* 256 MB */
+		reg = <0x00000000 0x20000000>; /* 512 MB */
 	};
 
 	/* GIC interrupt controller */
 	gic:interrupt-controller@ff841000 {
 		compatible = "intc,gic";
 		interrupt-controller;
-		#interrupt-cells = <1>;
+		#interrupt-cells = <3>;
 		
 		reg = <0xff841000 0x3000>;
 		status = "ok";
@@ -51,11 +51,23 @@
 		status = "ok";
 	};
 
+	/* I2C1 controller (Broadcom Serial Controller BSC1) */
+	i2c1:i2c1@fe804000 {
+		compatible = "bcm,i2c_bsc";
+		reg = <0xfe804000 0x400>;
+		status = "ok";
+		interrupt-parent = <&gic>;
+        	
+		/* IRQ 53 of VC which start at SPI96 -> 96 + 53 = 149 */
+		interrupts = <0 117 4>;
+	};
+
+
 	/* Periodic timer based on ARM CP15 timer */
 	periodic-timer {
 		compatible = "arm,periodic-timer";
 		interrupt-parent = <&gic>;
-		interrupts = <27>;
+		interrupts = <1 11 4>;
 		status = "ok";
 	};
 	
@@ -64,5 +76,12 @@
 		compatible = "arm,clocksource-timer";
 		status = "ok";
 	};
+
+    	rpisense {
+        	compatible = "bcm,rpisense";
+		interrupt-parent = <&gic>;
+		interrupts = <0 113 4>;
+		status = "ok";
+    	};
 	
 };

@@ -24,10 +24,20 @@
 
 #include <asm/atomic.h>
 
-#include <device/fdt/fdt.h>
-
 /* Maximum physical interrupts than can be managed by SO3 */
-#define NR_IRQS 		128
+#define NR_IRQS 		160
+
+typedef enum {
+	IRQ_TYPE_NONE		= 0x00000000,
+	IRQ_TYPE_EDGE_RISING	= 0x00000001,
+	IRQ_TYPE_EDGE_FALLING	= 0x00000002,
+	IRQ_TYPE_EDGE_BOTH	= (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING),
+	IRQ_TYPE_LEVEL_HIGH	= 0x00000004,
+	IRQ_TYPE_LEVEL_LOW	= 0x00000008,
+	IRQ_TYPE_LEVEL_MASK	= (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH),
+	IRQ_TYPE_SENSE_MASK	= 0x0000000f,
+	IRQ_TYPE_DEFAULT	= IRQ_TYPE_SENSE_MASK,
+} irq_type_t;
 
 typedef enum {
 	IRQ_COMPLETED = 0,

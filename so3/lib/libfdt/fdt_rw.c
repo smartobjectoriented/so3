@@ -48,10 +48,9 @@
  *     OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *     EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include <device/fdt/libfdt_env.h>
-#include <device/fdt/fdt.h>
-#include <device/fdt/libfdt.h>
-#include <device/fdt/libfdt_internal.h>
+#include <libfdt/libfdt_env.h>
+#include <libfdt/libfdt.h>
+#include <libfdt/libfdt_internal.h>
 
 static int fdt_blocks_misordered_(const void *fdt,
 				  int mem_rsv_size, int struct_size)
