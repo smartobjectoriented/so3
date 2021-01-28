@@ -1,0 +1,15 @@
+
+v2021.4.0
+
+Major changes have been made at the system and device level:
+
+•	Improvements of fdt parsing and file organization
+•	Revisited device model based on devclass with private structure
+•	Improvements of initcall processing, adding post_initcall 
+•	Fixed numerous bugs in cache handling especially on Cortex-A72
+•	Simplified model of the MMU configuration at bootstrap
+•	Added support of rpi 4 Sense-hat extension
+•	Added post-init initcall for late initialization
+•	64 KB Stack size of all threads
+•	Fixed bugs related to process loading and page list management
+•	Fixed bugs in frame table management
