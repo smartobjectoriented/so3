@@ -25,6 +25,13 @@
 /* SCHEDULE_FREQ is the scheduler tick expressed in ms */
 #define SCHEDULE_FREQ	10
 
+#ifdef CONFIG_SCHED_PRIO_DYN
+
+/* Maximum delay in ms in ready state */
+#define PRIO_MAX_DELAY 500
+
+#endif /* CONFIG_SCHED_PRIO_DYN */
+
 extern u64 jiffies;
 extern u64 jiffies_ref;
 
@@ -67,6 +74,8 @@ static inline void reset_thread_timeout(void) {
 
 void remove_ready(struct tcb *tcb);
 
+void dump_ready(void);
+
 void schedule_isr(void);
 
 typedef struct queue_thread {
@@ -76,7 +85,8 @@ typedef struct queue_thread {
 
 typedef enum {
 	SCHED_POLICY_RR = 0x1,
-	SCHED_POLICY_PRIO = 0x2
+	SCHED_POLICY_PRIO = 0x2,
+	SCHED_POLICY_PRIO_DYN = 0x3
 } sched_policy_t;
 
 #endif /* SCHEDULE_H */

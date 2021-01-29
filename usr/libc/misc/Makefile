@@ -1,7 +1,7 @@
  
 -include $(USR_DIR)/Makefile.common
 
-LIB =  ioctl
+LIB =  ioctl stat
 
 all: $(patsubst %,%.o,$(LIB))
 

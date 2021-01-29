@@ -1,7 +1,7 @@
  
 -include $(USR_DIR)/Makefile.common
 
-LIB = atoi
+LIB = atoi strtod atof
 
 all: $(patsubst %,%.o,$(LIB))
 

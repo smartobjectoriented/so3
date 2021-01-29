@@ -22,7 +22,7 @@
 #include <asm/memory.h>
 
 /* The number of max threads must be aligned with the definition in so3.lds regarding the stack size. */
-#define	THREAD_MAX		32
+#define	THREAD_MAX			32
 #define THREAD_NAME_LEN 	80
 
 /* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */
@@ -61,6 +61,16 @@ struct tcb {
 
 	/* Timeout value to keep track of possible scheduling after a timeout. */
 	int64_t timeout;
+
+#ifdef CONFIG_SCHED_PRIO_DYN
+
+	/* Used by the adaptative priority algorithm */
+	uint32_t current_prio;
+
+	/* Store the last time that the current_prio field has been incremented (ns). */
+        u64 last_prio_inc_time;
+
+#endif /* CONFIG_SCHED_PRIO_DYN */
 
 	/* Threaded function */
 	int (*th_fn)(void *);
@@ -110,6 +120,8 @@ extern void __thread_prologue_user(void);
 extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
+
+int app_thread_main(void *args);
 
 #endif /* __ASSEMBLY__ */
 

@@ -21,6 +21,7 @@
 
 #ifndef __ASSEMBLY__
 #include <sys/ptrace.h>
+#include <sys/stat.h>
 #endif
 
 /* System call codes, passed in r0 to tell the kernel which system call to do. */
@@ -62,13 +63,16 @@
 #define syscallStat			34
 #define syscallMmap			35
 #define syscallEndProc			36
+
 /* getPID syscall */
 #define syscallGetpid			37
+
 /* time management */
 #define syscallGetTimeOfDay		38
 #define syscallSetTimeOfDay		39
+#define syscallClockGetTime		40
 
-#define syscallThreadYield		40
+#define syscallThreadYield		43
 
 #define syscallSbrk			45
 
@@ -87,6 +91,9 @@
 
 #define syscallSysinfo			99
 
+#define syscallSetsockopt		110
+#define syscallRecvfrom			111
+
 
 #define SYSINFO_DUMP_HEAP	0
 #define SYSINFO_DUMP_SCHED	1
@@ -97,6 +104,7 @@
 
 #include <bits/alltypes.h>
 
+#include <netinet/in.h>
 #include <pthread.h>
 #include <types.h>
 #include <inet.h>
@@ -400,7 +408,7 @@ int sys_socket(int domain, int type, int protocol);
  *
  * Returns 0 on success, or -1 on error and set errno.
  */
-int sys_bind(int socket, int port);
+int sys_bind(int socket, const struct sockaddr *addr, int port);
 
 /**
  * Marks the socket as passive and ready to accept incoming
@@ -418,7 +426,7 @@ int sys_listen(int socket, int backlog);
  *
  * Returns a new file descriptor on success, or -1 on error and set errno.
  */
-int sys_accept(int socket, int *cli_addr, int *cli_port);
+int sys_accept(int socket, struct sockaddr *cli_addr, socklen_t *cli_port);
 
 /**
  * Attempt to initiate a new connection (client side) to the specified port
@@ -428,7 +436,7 @@ int sys_accept(int socket, int *cli_addr, int *cli_port);
  *
  * Returns 0 on success, or -1 on error and set errno.
  */
-int sys_connect(int socket, struct sockaddr_in *si, socklen_t addrlen);
+int sys_connect(int socket, const struct sockaddr *si, socklen_t addrlen);
 
 /**
  * This system call is used to receive messages from a socket. If no messages are
@@ -439,6 +447,18 @@ int sys_connect(int socket, struct sockaddr_in *si, socklen_t addrlen);
  * See errno variable to have more information on the error.
  */
 int sys_recv(int socket_fd, void *buffer, int count, int flags);
+
+/**
+ * This system call is used to receive messages from a socket, and may be
+ * used to receive data on a socket whether or not it is connection-oriented.
+ * If no messages are available on the socket, the receive calls wait for a
+ * message to arrive.
+ *
+ * Returns the number of byte read. On error, -1 is returned, this can append if
+ * a network stream has been terminated by the remote host and no more data is available.
+ * See errno variable to have more information on the error.
+ */
+int sys_recvfrom(int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 
 /**
  * This system call is used to transmit a messages to another socket.
@@ -456,18 +476,29 @@ int sys_send(int socket_fd, void *buffer, int count, int flags);
  * Returns the number of byte written. On error, -1 is returned,
  * and errno is set appropriately.
  */
-int sys_sendto(int socket_fd, void *buffer, int count, struct sockaddr_in *si);
+int sys_sendto(int fd, const void *buf, size_t len, int flags, const struct sockaddr *addr, socklen_t alen);
+
+/* 
+ * This system call returns information about a file in the buffer
+ * pointed by <statbuf>.
+ */
+int sys_stat(const char *pathname, struct stat *statbuf);
+
+
+int sys_setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen);
+
 
 /**
  * This system call is used to map a file (or a portion of it) to a memory buffer
- * in Virtualmemory. You have to open a file prior this call.
+ * in virtual memory. You have to open a file prior this call.
  *
+ * start: start of the virtual memory somewhere in the heap area of the process
  * length: represents how many bytes you want to map
  * prot: is the mode of accessing mapped memory (READ, WRITE, READ/WRITE)
  * fd: is the file descriptor of the opened file
  * offset: is where to start mapping in the file
  */
-void *sys_mmap(size_t length, int prot, int fd, off_t offset);
+void *sys_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
 
 /**
  * The ptrace() system call provides a means by which one process (the "tracer")
@@ -500,10 +531,12 @@ int sys_ioctl(int fd, int cmd, void *val);
 int sys_getpid();
 
 /**
- * time management
- */
-int sys_gettimeofday(struct timeval *tv);
-int sys_settimeofday(struct timeval *tv);
+* Time management - time zone is not supported yet.
+*/
+int sys_gettimeofday(struct timespec *ts, void *tz);
+int sys_settimeofday(struct timespec *ts, void *tz);
+
+int sys_clock_gettime(clockid_t clk, struct timespec *ts);
 
 /*
  * sbrk syscall

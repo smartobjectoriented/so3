@@ -13,8 +13,6 @@ CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
 #
 CONFIG_STANDALONE=y
 CONFIG_VEXPRESS=y
-# CONFIG_MERIDAv2 is not set
-# CONFIG_BPI is not set
 # CONFIG_RPI4 is not set
 CONFIG_RAM_BASE=0x80000000
 # CONFIG_THREAD_ENV is not set
@@ -31,6 +29,10 @@ CONFIG_SCHED_FREQ_PREEMPTION=y
 # Drivers
 #
 CONFIG_UART=y
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
 # CONFIG_DW_APB_UART is not set
 CONFIG_PL011_UART=y
 # CONFIG_MMC is not set
@@ -38,6 +40,8 @@ CONFIG_RAMDEV=y
 CONFIG_SP804=y
 # CONFIG_ARM_TIMER is not set
 CONFIG_GIC=y
+# CONFIG_PL111_CLCD is not set
+# CONFIG_PL050_KMI is not set
 
 #
 # SO3 Applications

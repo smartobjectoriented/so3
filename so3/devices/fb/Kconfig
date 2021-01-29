@@ -1,0 +1,3 @@
+config PL111_CLCD
+	bool "PL111 CLCD framebuffer device"
+	depends on VEXPRESS

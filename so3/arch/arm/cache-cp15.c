@@ -17,6 +17,8 @@
 
 #define CONFIG_SYS_CACHELINE_SIZE 64
 
+#ifdef CONFIG_MMU
+
 void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option option)
 {
 	u32 value;
@@ -99,6 +101,7 @@ int mmu_enabled(void)
 	return get_cr() & CR_M;
 }
 
+#endif /* CONFIG_MMU */
 
 /* cache_bit must be either CR_I or CR_C */
 void cache_enable(uint32_t cache_bit)

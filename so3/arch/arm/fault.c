@@ -17,6 +17,7 @@
  */
 
 #include <common.h>
+#include <schedule.h>
 
 #include <generated/asm-offsets.h>
 

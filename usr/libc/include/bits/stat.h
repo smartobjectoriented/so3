@@ -1,8 +1,12 @@
 /* copied from kernel definition, but with padding replaced
  * by the corresponding correctly-sized userspace types. */
 
+#define FILENAME_SIZE 	256
+
 struct stat {
-	dev_t st_dev;
+        
+#if 0 /* Not yet available */
+dev_t st_dev;
 	int __st_dev_padding;
 	long __st_ino_truncated;
 	mode_t st_mode;
@@ -18,4 +22,11 @@ struct stat {
 	struct timespec st_mtim;
 	struct timespec st_ctim;
 	ino_t st_ino;
+#endif /* 0 */
+
+	char st_name[FILENAME_SIZE];	/* Filename */
+	unsigned long st_size; 		/* Size of file */
+	unsigned long st_mtim;		/* Time of last modification in sec*/
+	unsigned char st_flags;		/* Regular file flag (not supported on fat) */
+	mode_t st_mode;		        /* Protection not used (not supported on fat) */
 };

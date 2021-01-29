@@ -22,6 +22,21 @@ extern "C" {
 
 #include <bits/stat.h>
 
+/*
+ * Currently, in so3, only FAT is supported and following
+ * mode attributes.
+ */
+#define	AM_RDO	0x01	/* Read only */
+#define	AM_HID	0x02	/* Hidden */
+#define	AM_SYS	0x04	/* System */
+#define AM_DIR	0x10	/* Directory */
+#define AM_ARC	0x20	/* Archive */
+#define AM_SYM	0x40	/* Symbolic link */
+#define AM_RD   0x100   /* Read permissions */
+#define AM_WR   0x200   /* Write permissions */
+#define AM_EX   0x400   /* Execution permissions */
+
+
 #define st_atime st_atim.tv_sec
 #define st_mtime st_mtim.tv_sec
 #define st_ctime st_ctim.tv_sec
@@ -84,8 +99,12 @@ int mkdirat(int, const char *, mode_t);
 int mkfifoat(int, const char *, mode_t);
 
 #if defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
+
+#if 0 /* Not available yet */
 int mknod(const char *, mode_t, dev_t);
 int mknodat(int, const char *, mode_t, dev_t);
+#endif /* 0 */
+
 #endif
 
 int futimens(int, const struct timespec [2]);

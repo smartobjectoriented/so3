@@ -110,6 +110,7 @@ void vfp_enable(void)
 	 */
 	set_copro_access(access | CPACC_FULL(10) | CPACC_FULL(11));
 
+	__enable_vfp();
 }
 
 /**

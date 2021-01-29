@@ -379,7 +379,7 @@ int fat_stat(const char *path, struct stat *st)
 	}
 
 	time_fat_fat2so3(finfo.fdate, finfo.ftime, &tm);
-	st->ctime = tm.tv_sec;
+	st->st_mtim = tm.tv_sec;
 	strcpy(st->st_name, path);
 	st->st_size = finfo.fsize;
 

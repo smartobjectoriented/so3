@@ -82,7 +82,7 @@ int rest_init(void *dummy) {
 	/* Start a first SO3 thread (main app thread) */
 #if defined(CONFIG_THREAD_ENV)
 
-	kernel_thread(main_kernel, "main_kernel", NULL, 0);
+	kernel_thread(app_thread_main, "main_kernel", NULL, 0);
 
 	thread_exit(NULL);
 

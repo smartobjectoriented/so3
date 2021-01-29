@@ -27,6 +27,7 @@
 #include <process.h>
 #include <signal.h>
 #include <timer.h>
+#include <net.h>
 
 #include <asm/syscall.h>
 
@@ -77,6 +78,26 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 #ifdef CONFIG_MMU
 		case SYSCALL_GETPID:
 			result = do_getpid();
+			break;
+
+		case SYSCALL_GETTIMEOFDAY:
+			/* r1 contains a pointer to the timezone structure. */
+			/* Currently, this is not supported yet. */
+
+			result = do_get_time_of_day((struct timespec *) r0);
+			break;
+
+		case SYSCALL_CLOCK_GETTIME:
+
+			result = do_get_clock_time(r0, (struct timespec *) r1);
+			break;
+
+		case SYSCALL_SETTIMEOFDAY:
+
+			printk("## settimeofday not yet supported by so3\n");
+
+			set_errno(-ENOSYS);
+			result = -1;
 			break;
 
 		case SYSCALL_EXIT:
@@ -166,7 +187,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_MMAP:
-			result = (int) do_mmap((size_t) r0, (int) r1, (int) r2, (off_t) r3);
+			result = (int) do_mmap((uint32_t) r0, (size_t) r1, (int) r2, (int) r3, (off_t) __get_syscall_stack_arg(0));
 			break;
 
 		case SYSCALL_NANOSLEEP:
@@ -197,6 +218,67 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 #endif
 
+#ifdef CONFIG_IPC_SIGNAL
+		case SYSCALL_SIGACTION:
+			result = do_sigaction((int) r0, (sigaction_t *) r1, (sigaction_t *) r2);
+			break;
+
+		case SYSCALL_KILL:
+			result = do_kill((int) r0, (int) r1);
+			break;
+
+		case SYSCALL_SIGRETURN:
+			do_sigreturn();
+			break;
+
+#endif /* CONFIG_IPC_SIGNAL */
+
+#ifdef CONFIG_NET
+		case SYSCALL_SOCKET:
+			result = do_socket((int)r0, (int)r1, (int)r2);
+			break;
+
+		case SYSCALL_BIND:
+			result = do_bind((int)r0, (const struct sockaddr*)r1, (socklen_t) r2);
+			break;
+
+		case SYSCALL_LISTEN:
+			result = do_listen((int)r0, (int) r1);
+			break;
+
+		case SYSCALL_ACCEPT:
+			result = do_accept((int)r0, (struct sockaddr*)r1, (socklen_t*) r2);
+			break;
+
+		case SYSCALL_CONNECT:
+			result = do_connect((int)r0, (const struct sockaddr *)r1, (socklen_t) r2);
+			break;
+
+		case SYSCALL_RECV:
+			result = do_recv((int)r0, (void*)r1, (size_t)r2, (int)r3);
+			break;
+
+		case SYSCALL_SEND:
+			result = do_send((int)r0, (const void *)r1, (size_t)r2, (int)r3);
+			break;
+
+		case SYSCALL_SENDTO:
+			result = do_sendto((int)r0, (const void *)r1, (size_t)r2, (int)r3,
+					(const struct sockaddr *) __get_syscall_stack_arg(0),
+					(socklen_t) __get_syscall_stack_arg(1));
+			break;
+
+		case SYSCALL_SETSOCKOPT:
+			result = do_setsockopt((int)r0, (int)r1, (int)r2, (const void *)r3, (socklen_t)__get_syscall_stack_arg(0));
+			break;
+
+		case SYSCALL_RECVFROM:
+			result = do_recvfrom((int)r0, (void *)r1, (size_t)r2, (int)r3, (struct sockaddr *)__get_syscall_stack_arg(0),
+					(socklen_t *)__get_syscall_stack_arg(1));
+			break;
+
+#endif /* CONFIG_NET */
+
 		/* Sysinfo syscalls */
 		case SYSCALL_SYSINFO:
 			switch (r0) {
@@ -225,24 +307,11 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			}
 			result = 0;
 			break;
-#ifdef CONFIG_IPC_SIGNAL
-		case SYSCALL_SIGACTION:
-			result = do_sigaction((int) r0, (sigaction_t *) r1, (sigaction_t *) r2);
-			break;
-
-		case SYSCALL_KILL:
-			result = do_kill((int) r0, (int) r1);
-			break;
-
-		case SYSCALL_SIGRETURN:
-			do_sigreturn();
-			break;
-#endif /* CONFIG_IPC_SIGNAL */
 
 		default:
 			printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
 			break;
-		}
+	}
 
 	return result;
 }

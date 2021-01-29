@@ -86,6 +86,8 @@
 #define VFS_TYPE_DEV_FB		4	/* framebuffer device */
 #define VFS_TYPE_DEV_INPUT	5	/* input device (e.g. mouse) */
 #define VFS_TYPE_DEV_CHAR	6       /* Generic character device */
+#define VFS_TYPE_DEV_SOCK	7   	/* Sockets */
+#define VFS_TYPE_DEV_NIC	8   	/* Network Interface Cards (NIC) */
 
 /* Device type (borrowed from Linux) */
 #define DT_UNKNOWN	0
@@ -146,7 +148,7 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
-void *do_mmap(size_t length, int prot, int fd, off_t offset);
+void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);

@@ -117,4 +117,55 @@
 		compatible = "arm,mydev";
 		status = "ok";
 	};
+
+	/* PL111 Color LCD Controller
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0293c/index.html
+	 */
+	clcd@1c1f0000 {
+		compatible = "arm,pl111";
+		reg = <0x1c1f0000 0x1000>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
+	kmi@1c060000 { /* keyboard */
+		compatible = "arm,pl050,keyboard";
+		reg = <0x1c060000 0x100>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 12 4>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
+	kmi@1c070000 { /* mouse */
+		compatible = "arm,pl050,mouse";
+		reg = <0x1c070000 0x100>;
+		
+		interrupt-parent = <&gic>;
+		interrupts = <0 13 4>;
+
+		status = "ok";
+	};
+	
+	/*
+        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
+        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
+   	 */
+    ethernet@1a000000 {
+        compatible = "smsc,smc911x";
+        reg = <0x1a000000 0x1000>;
+        
+    	interrupt-parent = <&gic>;
+        interrupts = <0 15 4>;
+        switch = "br0";
+
+        status = "ok";
+    };
+    	
 };

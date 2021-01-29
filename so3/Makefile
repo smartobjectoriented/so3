@@ -189,7 +189,7 @@ LINUXINCLUDE    := -Iinclude  -I.  \
 
 KBUILD_CPPFLAGS := -D__KERNEL__ 
 
-KBUILD_CPPFLAGS += -I$(TOPDIR)include
+KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)  
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -marm  -mno-thumb-interwork -march=armv7-a -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
@@ -351,7 +351,7 @@ all: $(BIN) $(DTB)
 
 all: $(ELF)
 
-objs-y		:= kernel mm fs ipc arch/arm devices apps 
+objs-y		:= kernel mm fs ipc arch/arm devices apps net
 libs-y		:= lib
 libs-y 		+= lib/libfdt
 

@@ -111,6 +111,16 @@ void ready(tcb_t *tcb) {
 
 	cur = (queue_thread_t *) malloc(sizeof(queue_thread_t));
 	BUG_ON(cur == NULL);
+	
+#ifdef CONFIG_SCHED_PRIO_DYN
+	
+	/* Reset priority increment timer */
+	tcb->last_prio_inc_time = NOW();
+
+	if (tcb->current_prio > tcb->prio)
+		tcb->current_prio--;
+
+#endif /* CONFIG_SCHED_PRIO_DYN */
 
 	cur->tcb = tcb;
 
@@ -250,6 +260,67 @@ void remove_ready(struct tcb *tcb) {
 	BUG();
 }
 
+#ifdef CONFIG_SCHED_PRIO_DYN
+/*
+ * Pick up the next ready thread to be scheduled according
+ * to the scheduling policy. Increment priority if the thread is in the ready
+ * list for too long.
+ * IRQs are off.
+ */
+static tcb_t *next_thread(void) {
+	tcb_t *tcb, *__current;
+	queue_thread_t *entry;
+	struct list_head *pos, *q;
+	u64 current_time;
+
+	tcb_t *tcb_to_schedule = NULL;
+	__current = current();
+
+	/* Check if the current thread is still in the running state, otherwise we skip it */
+	if ((__current != NULL) && (__current->state != THREAD_STATE_RUNNING))
+		__current = NULL;
+
+	ASSERT(local_irq_is_disabled());
+
+	spin_lock(&schedule_lock);
+
+	/* Increase priority for every ready threads left */
+	list_for_each_safe(pos, q, &readyThreads)
+	{
+		entry = list_entry(pos, queue_thread_t, list);
+		tcb = entry->tcb;
+
+		current_time = NOW();
+		if (tcb->last_prio_inc_time + MILLISECS(PRIO_MAX_DELAY) < current_time) {
+			if (tcb->current_prio < 99)
+				tcb->current_prio++;
+
+			tcb->last_prio_inc_time = current_time;
+		}
+	}
+
+	tcb_to_schedule = __current;
+	list_for_each_safe(pos, q, &readyThreads)
+	{
+		entry = list_entry(pos, queue_thread_t, list);
+		tcb = entry->tcb;
+
+		/* First, compare with the running tcb if any... */
+		if (!tcb_to_schedule)
+			tcb_to_schedule = tcb;
+	        else if (tcb->current_prio > tcb_to_schedule->current_prio)
+			tcb_to_schedule = tcb;
+	}
+
+	spin_unlock(&schedule_lock);
+
+	if (tcb_to_schedule != __current)
+		remove_ready(tcb_to_schedule);
+
+	return tcb_to_schedule;
+}
+#endif /* CONFIG_SCHED_PRIO_DYN */
+
 #ifdef CONFIG_SCHED_PRIO
 /*
  * Pick up the next ready thread to be scheduled according
@@ -257,48 +328,39 @@ void remove_ready(struct tcb *tcb) {
  * IRQs are off.
  */
 static tcb_t *next_thread(void) {
-	tcb_t *tcb;
+	tcb_t *tcb, *__current;
 	queue_thread_t *entry;
 	struct list_head *pos, *q;
 
 	tcb_t *tcb_to_schedule = NULL;
+	__current = current();
 
 	/* Check if the current thread is still in the running state, otherwise we skip it */
-	if ((current != NULL) && (current->state != THREAD_STATE_RUNNING))
-		current = NULL;
+	if ((__current != NULL) && (__current->state != THREAD_STATE_RUNNING))
+		__current = NULL;
 
 	ASSERT(local_irq_is_disabled());
 
 	spin_lock(&schedule_lock);
 
+	tcb_to_schedule = __current;
 	list_for_each_safe(pos, q, &readyThreads)
 	{
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
-		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY)) {
-
-			if (tcb_to_schedule == NULL) {
-				if ((current == NULL) || (tcb->prio >= current->prio))
-					tcb_to_schedule = tcb;
-			} else {
-				if (tcb->prio > tcb_to_schedule->prio)
-					tcb_to_schedule = tcb;
-			}
-			continue;  /* Go over the entire list */
-
-			spin_unlock(&schedule_lock);
-
-			/* Warning ! entry will be freed in remove_ready() */
-			remove_ready(tcb);
-
-			return tcb;
+		/* First, compare with the running tcb if any... */
+		if (!tcb_to_schedule)
+			tcb_to_schedule = tcb;
+	    else if (tcb->prio > tcb_to_schedule->prio) {
+			printk("%s\n", tcb_to_schedule->name);
+	        tcb_to_schedule = tcb;
 		}
 	}
 
 	spin_unlock(&schedule_lock);
 
-	if (tcb_to_schedule)
+	if (tcb_to_schedule != __current)
 		remove_ready(tcb_to_schedule);
 
 	return tcb_to_schedule;
@@ -378,7 +440,7 @@ void schedule(void) {
 
 	if (next && (next != prev)) {
 
-		DBG("Now scheduling thread ID: %d name: %s PID: %d\n", next->tid, next->name, ((next->pcb != NULL) ? next->pcb->pid : -1));
+		DBG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n", next->tid, next->name, ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
 
 		/*
 		 * The current threads (here prev) can be in different states, not only running; it may be in *waiting* or *zombie*
@@ -467,7 +529,7 @@ void dump_ready(void) {
 	list_for_each(pos, &readyThreads)
 	{
 		cur = list_entry(pos, queue_thread_t, list);
-		lprintk("  Thread ID: %d name: %s state: %d\n", cur->tcb->tid, cur->tcb->name, cur->tcb->state);
+		lprintk("  Thread ID: %d name: %s state: %d prio: %d\n", cur->tcb->tid, cur->tcb->name, cur->tcb->state, cur->tcb->prio);
 
 	}
 
@@ -518,9 +580,11 @@ void scheduler_init(void) {
 	threads_init();
 
 	/* Initialization of the scheduling policy */
-#ifdef CONFIG_SCHED_PRIO
+#if defined(CONFIG_SCHED_PRIO_DYN)
+	sched_policy = SCHED_POLICY_PRIO_DYN;
+#elif defined(CONFIG_SCHED_PRIO)
 	sched_policy = SCHED_POLICY_PRIO;
-#elif CONFIG_SCHED_RR
+#elif defined(CONFIG_SCHED_RR)
 	sched_policy = SCHED_POLICY_RR;
 #endif
 

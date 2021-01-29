@@ -29,6 +29,11 @@ struct __libc {
 	struct __locale_struct global_locale;
 };
 
+/* so3 */
+/* Make a 8 MB heap size of the user space */
+#define PAGE_SIZE 4096
+#define HEAP_SIZE (2048 * PAGE_SIZE)
+
 #ifndef PAGE_SIZE
 #define PAGE_SIZE libc.page_size
 #endif

@@ -82,6 +82,7 @@ static void __sleep(u64 ns) {
 
 	/* Put the thread in waiting state *only* if the timer still makes sense. */
 	if (__timer.status == TIMER_STATUS_in_list) {
+
 		waiting();
 
 		/* We are resumed, but not necessarly by the timer handler (in case of a semaphore timeout based synchronization

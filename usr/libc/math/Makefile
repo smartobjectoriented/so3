@@ -1,7 +1,7 @@
  
 -include $(USR_DIR)/Makefile.common
 
-LIB = frexpl frexp scalbn scalbnl fmodl fabs copysignl copysignf copysign fmod
+LIB = frexpl frexp scalbn scalbnl fmodl fabs copysignl copysignf copysign fmod fminf fmaxf log floor pow sqrt
 
 all: $(patsubst %,%.o,$(LIB))
 

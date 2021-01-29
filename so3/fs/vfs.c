@@ -822,12 +822,14 @@ int do_stat(const char *path, struct stat *st)
 	return ret;
 }
 
-void *do_mmap(size_t length, int prot, int fd, off_t offset)
+/**
+ * An mmap() implementation in VFS.
+ */
+void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset)
 {
 	int gfd;
-	uint32_t page_count, virt_addr;
+	uint32_t page_count;
 	struct file_operations *fops;
-	pcb_t* pcb;
 
 	/* Get the fops associated to the file descriptor. */
 
@@ -853,12 +855,8 @@ void *do_mmap(size_t length, int prot, int fd, off_t offset)
 		page_count++;
 	}
 
-	/* Get the process' virtual address base. */
-	pcb = current()->pcb;
-	virt_addr = pcb->stack_top - (pcb->page_count + page_count) * PAGE_SIZE;
-
 	/* Call the mmap fops that will do the actual mapping. */
-	return fops->mmap(fd, virt_addr, page_count);
+	return fops->mmap(fd, start, page_count);
 }
 
 int do_ioctl(int fd, unsigned long cmd, unsigned long args)

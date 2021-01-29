@@ -43,6 +43,8 @@
 .global __write
 .global __save_context
 
+.global __enable_vfp
+
 .extern thread_prologue
 .extern current_thread
 
@@ -53,6 +55,13 @@
 .extern pre_launch_proc
 
 #endif
+
+@ Enable VFP
+__enable_vfp:
+
+	mov r1, #0x40000000
+    fmxr fpexc, r1 ; fpexc = r1
+    bx lr
 
 @ Get the arguments of the syscall which are stored on the stack
 @ (greather than 4 args (r0-r3))

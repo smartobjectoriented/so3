@@ -26,6 +26,7 @@
 #include <div64.h>
 #include <delay.h>
 #include <schedule.h>
+#include <errno.h>
 
 #include <device/timer.h>
 #include <device/irq.h>
@@ -352,5 +353,48 @@ void timer_init(void) {
 	periodic_timer.start();
 #endif /* !CONFIG_RTOS */
 
+}
+
+/*
+ * This function gets the current time and put it in the parameter tv
+ */
+int do_get_time_of_day(struct timespec *ts)
+{
+        u64 time;
+
+        if (!ts) {
+                set_errno(EINVAL);
+                return -1;
+        }
+
+        time = NOW();
+
+        ts->tv_sec = time / 1000000000ull;
+        ts->tv_nsec = (long) time;
+
+        return 0;
+}
+
+/*
+ *  This function retrieves the time of the specified clock clk_id.
+ *
+ *  <clk_id> should be equal to CLOCK_REALTIME or CLOCK_MONOTONIC.
+ *
+ *  Currently, we only support CLOCK_MONOTONIC since we do not manage a RTC yet.
+ */
+int do_get_clock_time(int clk_id, struct timespec *ts)
+{
+        u64 time;
+
+        if (!ts) {
+                set_errno(EINVAL);
+                return -1;
+        }
+
+        time = NOW();
+        ts->tv_sec = time / 1000000000ull;
+        ts->tv_nsec = (long) time;
+
+        return 0;
 }
 

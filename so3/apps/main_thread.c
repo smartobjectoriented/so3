@@ -162,7 +162,7 @@ extern int schedcount;
  * Main entry point of so3 app in kernel standalone configuration.
  * Mainly for debugging purposes.
  */
-int main_kernel(void *args)
+int app_thread_main(void *args)
 {
 #if 0
 	int ret;

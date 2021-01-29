@@ -192,6 +192,7 @@
 #include <common.h>
 
 void arm_init_domains(void);
+void __enable_vfp(void);
 
 #define FP_SIZE 35
 

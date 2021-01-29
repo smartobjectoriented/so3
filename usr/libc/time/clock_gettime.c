@@ -1,9 +1,9 @@
 #include <time.h>
 #include <errno.h>
 #include <stdint.h>
-#include "syscall.h"
-#include "libc.h"
-#include "atomic.h"
+#include <syscall.h>
+#include <libc.h>
+#include <atomic.h>
 
 #ifdef VDSO_CGT_SYM
 
@@ -42,17 +42,26 @@ int __clock_gettime(clockid_t clk, struct timespec *ts)
 		 * a vdso function to use. */
 	}
 #endif
-
+#if 0
 	r = __syscall(SYS_clock_gettime, clk, ts);
+#endif
+	r = sys_clock_gettime(clk, ts);
+
 	if (r == -ENOSYS) {
 		if (clk == CLOCK_REALTIME) {
+#if 0
 			__syscall(SYS_gettimeofday, ts, 0);
-			ts->tv_nsec = (int)ts->tv_nsec * 1000;
+#endif
+			sys_gettimeofday(ts, NULL);
+			/* ts->tv_nsec = (int)ts->tv_nsec * 1000; */
 			return 0;
 		}
 		r = -EINVAL;
 	}
+#if 0
 	return __syscall_ret(r);
+#endif
+	return r;
 }
 
 weak_alias(__clock_gettime, clock_gettime);

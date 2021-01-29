@@ -10,6 +10,12 @@ obj-$(CONFIG_RPI_SENSE) += rpisense/
 
 obj-$(CONFIG_RAMDEV) += ramdev/
 
+obj-$(CONFIG_NET) += net.o
+obj-$(CONFIG_NET) += net/
+
+obj-$(CONFIG_FB) += fb/
+obj-$(CONFIG_INPUT) += input/
+
 obj-y += timer/ irq/
 
 obj-y += mydev.o

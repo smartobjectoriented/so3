@@ -17,6 +17,10 @@ cd ../filesystem
 ./mount.sh 1
 sudo rm -rf fs/*
 sudo cp -rf ../rootfs/fs/* fs/
+
+# Sometimes, syncing between RAM and FS takes some time
+sleep 1
+
 ./umount.sh 
 cd ../rootfs
 ./umount_ramfs.sh ${PLATFORM}

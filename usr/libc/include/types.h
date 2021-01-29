@@ -1,8 +1,19 @@
 /*
- * types.h
+ * Copyright (C) 2014-2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
- *  Created on: Sep 5, 2013
- *      Author: romain
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
  */
 
 #ifndef TYPES_H_
@@ -14,18 +25,5 @@ typedef unsigned int mode_t;
 typedef int pid_t;
 
 typedef uint32_t in_addr_t;
-
-struct in_addr {
-    in_addr_t s_addr;
-};
-
-struct sockaddr_in {
-    u_short         sin_family;
-    u_short         sin_port;
-    struct in_addr  sin_addr;
-    char            sin_zero[8];
-};
-
-typedef uint32_t socklen_t;
 
 #endif /* TYPES_H_ */
