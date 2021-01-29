@@ -1,5 +1,15 @@
 
-v2021.4.0
+v2021.4.1 (29 jan 2021)
+
+This release includes support for graphics (LVGL) and networking based on “lwip”.
+
+•	Added support for LVGL (https://lvgl.io) (early stage)
+•	Added support for gettimeofday() and clock_gettime()
+•	New scheduling policy based on dynamic priorities
+•	Added support for networking based on lwip (early stage)
+
+
+v2021.4.0 (28 jan 2021)
 
 Major changes have been made at the system and device level:
 
