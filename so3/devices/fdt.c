@@ -88,13 +88,13 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 }
 
 
-int fdt_get_int(void *dev, const char *name) {
+int fdt_get_int(void *fdt_addr, void *dev, const char *name) {
 	const struct fdt_property *prop;
 	int prop_len;
 	fdt32_t *p;
 	dev_t *__dev = (dev_t *) dev;
 
-	prop = fdt_get_property((void *) _fdt_addr, __dev->offset_dts, name, &prop_len);
+	prop = fdt_get_property((void *) fdt_addr, __dev->offset_dts, name, &prop_len);
 
 	if (prop) {
 		p = (fdt32_t *) prop->data;
@@ -104,12 +104,12 @@ int fdt_get_int(void *dev, const char *name) {
 		return -1;
 }
 
-const struct fdt_property *fdt_find_property(int offset, const char *propname) {
+const struct fdt_property *fdt_find_property(void *fdt_addr, int offset, const char *propname) {
 	const struct fdt_property *prop;
 
 	while (true) {
 
-		prop = fdt_get_property((const void *) _fdt_addr, offset, propname, NULL);
+		prop = fdt_get_property((const void *) fdt_addr, offset, propname, NULL);
 		if (prop)
 			return prop;
 	}
@@ -117,10 +117,10 @@ const struct fdt_property *fdt_find_property(int offset, const char *propname) {
 	return NULL;
 }
 
-int fdt_property_read_string(int offset, const char *propname, const char **out_string) {
+int fdt_property_read_string(void *fdt_addr, int offset, const char *propname, const char **out_string) {
 	const struct fdt_property *prop;
 
-	prop = fdt_find_property(offset, propname);
+	prop = fdt_find_property(fdt_addr, offset, propname);
 	if (prop) {
 		*out_string = prop->data;
 		return 0;
@@ -129,10 +129,10 @@ int fdt_property_read_string(int offset, const char *propname, const char **out_
 	return -1;
 }
 
-int fdt_property_read_u32(int offset, const char *propname, u32 *out_value) {
+int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 *out_value) {
 	const fdt32_t *val;
 
-	val = fdt_getprop((void *) _fdt_addr, offset, propname, NULL);
+	val = fdt_getprop(fdt_addr, offset, propname, NULL);
 
 	if (val) {
 		*out_value = fdt32_to_cpu(val[0]);
@@ -143,13 +143,13 @@ int fdt_property_read_u32(int offset, const char *propname, u32 *out_value) {
 }
 
 
-int fdt_find_node_by_name(int parent, const char *nodename) {
+int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename) {
 	int node;
 	const char *__nodename, *node_name;
 	int len;
 
-	fdt_for_each_subnode(node, (void *) _fdt_addr, parent) {
-		__nodename = fdt_get_name((void *) _fdt_addr, node, &len);
+	fdt_for_each_subnode(node, fdt_addr, parent) {
+		__nodename = fdt_get_name(fdt_addr, node, &len);
 
 		node_name = kbasename(__nodename);
 		len = strchrnul(node_name, '@') - node_name;
@@ -166,16 +166,16 @@ int fdt_find_node_by_name(int parent, const char *nodename) {
  * Retrieve a node matching with a specific compat string.
  * Returns -1 if no node is present.
  */
-int fdt_find_compatible_node(char *compat) {
+int fdt_find_compatible_node(void *fdt_addr, char *compat) {
 	int offset;
 
-	offset = fdt_node_offset_by_compatible((void *) _fdt_addr, 0, compat);
+	offset = fdt_node_offset_by_compatible(fdt_addr, 0, compat);
 
 	return offset;
 }
 
 /* Get device informations/parameters from a device tree */
-int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
+int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *info) {
 	int new_offset;
 	const struct fdt_property *prop;
 	int prop_len;
@@ -194,9 +194,9 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 
 	/* Find first compatible node in tree */
 	if (strcmp(compat, "*") == 0)
-		new_offset = fdt_next_node(fdt, offset, &depth);
+		new_offset = fdt_next_node(fdt_addr, offset, &depth);
 	else
-		new_offset = fdt_node_offset_by_compatible(fdt, offset, compat);
+		new_offset = fdt_node_offset_by_compatible(fdt_addr, offset, compat);
 
 
 	if (new_offset < 0)
@@ -225,9 +225,9 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 	}
 
 	__info->offset_dts = new_offset;
-	__info->fdt = (void *) fdt;
+	__info->fdt = (void *) fdt_addr;
 
-	compat_str = fdt_getprop(fdt, new_offset, "compatible", &prop_len);
+	compat_str = fdt_getprop(fdt_addr, new_offset, "compatible", &prop_len);
 
 	if (!compat_str) {
 		return new_offset;
@@ -240,7 +240,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 
 	strncpy(__info->compatible, compat_str, prop_len);
 
-	node_str = fdt_get_name(fdt, new_offset, &prop_len);
+	node_str = fdt_get_name(fdt_addr, new_offset, &prop_len);
 	if (prop_len > MAX_COMPAT_SIZE) {
 	 	DBG("Length of Compatible string > %d chars\n", MAX_NODE_SIZE);
 		return new_offset;
@@ -248,7 +248,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 
 	strncpy(__info->nodename, node_str, prop_len);
 
-	prop = fdt_get_property(fdt, new_offset, "status", &prop_len);
+	prop = fdt_get_property(fdt_addr, new_offset, "status", &prop_len);
 
 	if (prop) {
 		if (!strcmp(prop->data, "disabled"))
@@ -257,7 +257,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 			__info->status = STATUS_INIT_PENDING;
 	}
 
-	prop = fdt_get_property(fdt, new_offset, "reg", &prop_len);
+	prop = fdt_get_property(fdt_addr, new_offset, "reg", &prop_len);
 	
 	if (prop) {
 		
@@ -275,7 +275,7 @@ int get_dev_info(const void *fdt, int offset, const char *compat, void *info) {
 	} 
 	
 	/* Interrupts - as described in the bindings - have 3 specific cells */
-	prop = fdt_get_property(fdt, new_offset, "interrupts", &prop_len);
+	prop = fdt_get_property(fdt_addr, new_offset, "interrupts", &prop_len);
 
 	if (prop) {		
 		p = (const fdt32_t *) prop->data;

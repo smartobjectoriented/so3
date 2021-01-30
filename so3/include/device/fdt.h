@@ -58,24 +58,25 @@
 
 #define MAX_COMPAT_SIZE		128
 #define MAX_NODE_SIZE 		128
-#define MAX_SUBNODE		4
+#define MAX_SUBNODE			4
 
-extern unsigned int _fdt_addr;
+/* Reference to the current device tree */
+extern uint32_t *__fdt_addr;
 
-int fdt_find_compatible_node(char *compat);
-const struct fdt_property *fdt_find_property(int offset, const char *propname);
-int fdt_find_node_by_name(int parent, const char *nodename);
+int fdt_find_compatible_node(void *fdt_addr, char *compat);
+const struct fdt_property *fdt_find_property(void *fdt_addr, int offset, const char *propname);
+int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename);
 
-int fdt_property_read_string(int offset, const char *propname, const char **out_string);
-int fdt_property_read_u32(int offset, const char *propname, u32 *out_value);
+int fdt_property_read_string(void *fdt_addr, int offset, const char *propname, const char **out_string);
+int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 *out_value);
 
 /*
  * Get device information from a device tree
  * This function will be in charge of allocating dev_inf struct;
  */
-int get_dev_info(const void *fdt, int offset, const char *compat, void *info);
-int fdt_get_int(void *dev, const char *name);
-bool fdt_device_is_available(int node_offset);
+int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *info);
+int fdt_get_int(void *fdt_addr, void *dev, const char *name);
+bool fdt_device_is_available(void *fdt_addr, int node_offset);
 void *find_device(const char *compat);
 
 #endif /* FDT_H */

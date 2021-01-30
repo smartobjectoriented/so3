@@ -125,7 +125,7 @@ void setup_arch(void) {
 	/* Retrieve information about the main memory (RAM) */
 
 	/* Access to device tree */
-	offset = get_mem_info((void *) _fdt_addr, &mem_info);
+	offset = get_mem_info((void *) __fdt_addr, &mem_info);
 	if (offset >= 0)
 		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 

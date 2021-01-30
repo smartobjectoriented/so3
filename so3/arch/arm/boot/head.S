@@ -28,7 +28,7 @@
 #include <thread.h>
 
 .global _start
-.global _fdt_addr
+.global __fdt_addr
 
 .extern clear_bss
 .extern mmu_configure
@@ -102,7 +102,7 @@ _start:
 
 __kernel_main:
 
-  ldr	r0, =_fdt_addr
+  ldr	r0, =__fdt_addr
   str	r9, [r0]
 
   @ C main entry point
@@ -144,7 +144,7 @@ mmu_setup:
 
 .ltorg
 
-_fdt_addr:
+__fdt_addr:
   .word 	0
 
 .align 4

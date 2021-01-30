@@ -82,14 +82,14 @@ void *find_device(const char *compat) {
  * Check if a certain node has the property "status" and check for the availability.
  * Only "ok" means a valid device.
  */
-bool fdt_device_is_available(int node_offset) {
+bool fdt_device_is_available(void * fdt_addr, int node_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
 
 	if (node_offset == -1)
 		return false;
 
-	prop = fdt_get_property((void *) _fdt_addr, node_offset, "status", &prop_len);
+	prop = fdt_get_property(fdt_addr, node_offset, "status", &prop_len);
 
 	if (prop) {
 		if (!strcmp(prop->data, "disabled"))
@@ -109,7 +109,7 @@ bool fdt_device_is_available(int node_offset) {
  * nodes at the same level. Managing further sub-node levels require to adapt kernel/fdt.c
  *
  */
-void parse_dtb(void) {
+void parse_dtb(void *fdt_addr) {
 	unsigned int drivers_count[INITCALLS_LEVELS];
 	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
 	dev_t *dev;
@@ -135,8 +135,8 @@ void parse_dtb(void) {
 		found = false;
 		offset = 0;
 
-		while ((new_off = get_dev_info((void *) _fdt_addr, offset, "*", dev)) != -1) {
-			if (fdt_device_is_available(new_off)) {
+		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
+			if (fdt_device_is_available(fdt_addr, new_off)) {
 				for (i = 0; i < drivers_count[level]; i++) {
 
 					if (strcmp(dev->compatible, driver_entries[level][i].compatible) == 0) {
@@ -321,5 +321,5 @@ void devices_init(void) {
 #endif
 
 	/* Pare the associated dtb to initialize all devices */
-	parse_dtb();
+	parse_dtb(__fdt_addr);
 }
