@@ -72,14 +72,14 @@ void memory_init(void) {
 
 	init_io_mapping();
 
-	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, _fdt_addr, &__end, fdt_totalsize(_fdt_addr));
+	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, __fdt_addr, &__end, fdt_totalsize(__fdt_addr));
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
-	fdt_move((const void *) _fdt_addr, &__end, fdt_totalsize(_fdt_addr));
-	_fdt_addr = (uint32_t) &__end;
+	fdt_move((const void *) __fdt_addr, &__end, fdt_totalsize(__fdt_addr));
+	__fdt_addr = (uint32_t) &__end;
 
 	/* Initialize the free page list */
-	frame_table_init(((uint32_t) &__end) + fdt_totalsize(_fdt_addr));
+	frame_table_init(((uint32_t) &__end) + fdt_totalsize(__fdt_addr));
 
 	/* Re-setup a system page table with a better granularity */
 	new_sys_pgtable = new_l1pgtable();

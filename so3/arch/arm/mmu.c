@@ -214,7 +214,6 @@ static void free_l2_mapping(uint32_t *l1pte, unsigned long addr, unsigned long e
 
 }
 
-
 /* Empty the corresponding l1 entries */
 static void free_l1_mapping(uint32_t *l1pte, uint32_t addr, uint32_t end) {
 	uint32_t *__l1pte = l1pte;

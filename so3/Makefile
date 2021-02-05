@@ -10,7 +10,6 @@
 # o  print "Entering directory ...";
 MAKEFLAGS += -rR --no-print-directory
 
-
 # To put more focus on warnings, be less verbose as default
 # Use 'make V=1' to see the full commands
 
