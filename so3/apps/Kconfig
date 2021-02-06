@@ -1,10 +1,7 @@
 
 menu "SO3 Applications"
 
-	config APP_TEST_MALLOC
-		bool "malloc() stress test application"
-	
-	config APP_DEFAULT
-		bool "Default application with thread environment"
+	config APP_SAMPLE
+		bool "Sample application with thread environment"
 	
 endmenu

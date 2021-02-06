@@ -275,14 +275,9 @@ void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size) {
  * MMU is off
  */
 void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
-
-#ifndef CONFIG_SO3VIRT
 	unsigned int i;
-#endif /* CONFIG_SO3VIRT */
 
 	uint32_t *__pgtable = (uint32_t *) l1pgtable;
-
-#ifndef CONFIG_SO3VIRT
 
 	icache_disable();
 	dcache_disable();
@@ -309,9 +304,7 @@ void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
 
-#endif /* !CONFIG_SO3VIRT */
-
-	/* At the moment, we keep a virtual mapping on the device tree - _fdt_addr contains the physical address. */
+	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
 	__pgtable[l1pte_index(fdt_addr)] = fdt_addr;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(fdt_addr)], L1_SECT_DCACHE_WRITEALLOC);
 
@@ -319,18 +312,10 @@ void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
 	__pgtable[l1pte_index(UART_BASE)] = UART_BASE;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(UART_BASE)], L1_SECT_DCACHE_OFF);
 
-#ifndef CONFIG_SO3VIRT
-
 	mmu_setup(__pgtable);
 
 	dcache_enable();
 	icache_enable();
-#else
-
-	mmu_page_table_flush((uint32_t) __pgtable, (uint32_t) (__pgtable + TTB_L1_ENTRIES));
-
-#endif /* !CONFIG_SO3VIRT */
-
 }
 
 /*
@@ -356,9 +341,6 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
  */
 uint32_t *new_l1pgtable(void) {
 	uint32_t *pgtable;
-#ifdef CONFIG_SO3VIRT
-	int i;
-#endif /* CONFIG_SO3VIRT */
 
 	pgtable = memalign(4 * TTB_L1_ENTRIES, SZ_16K);
 	if (!pgtable) {
@@ -368,16 +350,6 @@ uint32_t *new_l1pgtable(void) {
 
 	/* Empty the page table */
 	memset(pgtable, 0, 4 * TTB_L1_ENTRIES);
-
-#ifdef CONFIG_SO3VIRT
-	/* Preserve the AVZ hypervisor, taking into account the UART mapping done by AVZ (at '0xf800'0000)
-	 * We do not preserve the vectors however since we will handle our own vectors.
-	 */
-
-	for (i = HYPERVISOR_VIRT_ADDR_DBG >> TTB_I1_SHIFT; i < (VECTOR_VADDR >> TTB_I1_SHIFT); i++)
-		pgtable[i] = __sys_l1pgtable[i];
-
-#endif /* CONFIG_SO3VIRT */
 
 	return pgtable;
 }

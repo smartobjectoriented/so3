@@ -35,7 +35,6 @@ uint32_t *__sys_l1pgtable;
 
 page_t *frame_table;
 static spinlock_t ft_lock;
-static uint32_t ft_pfn_end;
 
 /* First pfn of available pages */
 uint32_t pfn_start;
@@ -50,6 +49,7 @@ struct list_head io_maplist;
 /* Initialize the frame table */
 void frame_table_init(uint32_t frame_table_start) {
 	uint32_t i, ft_phys, ft_length, ft_pages;
+	uint32_t ft_pfn_end;
 
 	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
 	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
@@ -383,14 +383,3 @@ void io_unmap(uint32_t vaddr) {
 	free(cur);
 }
 
-void readjust_io_map(unsigned pfn_offset) {
-	io_map_t *io_map;
-	struct list_head *pos;
-
-	list_for_each(pos, &io_maplist) {
-		io_map = list_entry(pos, io_map_t, list);
-		io_map->paddr += pfn_to_phys(pfn_offset);
-	}
-
-
-}

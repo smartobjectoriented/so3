@@ -1,4 +1,4 @@
 
  
-obj-y += gic.o
+obj-$(CONFIG_GIC) += gic.o
 

@@ -85,10 +85,11 @@ void arm_init_domains(void)
 	u32 reg;
 
 	reg = get_dacr();
+
 	/*
-	* Set DOMAIN to client access so that all permissions
-	* set in pagetables are validated by the mmu.
+	* Set DOMAIN to manager access so that all access are permitted.
 	*/
+
 	reg &= ~DOMAIN_MASK;
 	reg |= DOMAIN_MANAGER;
 	set_dacr(reg);
@@ -118,9 +119,6 @@ void vfp_enable(void)
  */
 void setup_arch(void) {
 	int offset;
-
-	/* Clear BSS - DO NOT ASSIGN VALUES TO NON-INITIALIZED VARIABLES BEFORE THIS POINT.*/
-	clear_bss();
 
 	/* Retrieve information about the main memory (RAM) */
 

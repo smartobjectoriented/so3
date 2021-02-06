@@ -37,7 +37,6 @@
  */
 .section ".vectors.text", "ax"
 
-.globl _vectors
 .globl ret_from_fork
 .global __call_sig_handler
 
@@ -85,7 +84,7 @@
 
 #endif /* 0 */
 
-ENTRY(_vectors)
+ENTRY(__vectors)
 		    b   _start @ reset
             ldr pc, _undefined_instruction
             ldr pc, _syscall_interrupt

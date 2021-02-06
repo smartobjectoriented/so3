@@ -32,20 +32,8 @@
 
 #include <generated/autoconf.h>
 
-extern unsigned long __bss_start, __bss_end;
 extern unsigned long __vectors_start, __vectors_end;
 mem_info_t mem_info;
-
-/*
- * Clear the .bss section in the kernel memory layout.
- */
-void clear_bss(void) {
-	unsigned char *cp = (unsigned char *) &__bss_start;
-
-	/* Zero out BSS */
-	while (cp < (unsigned char *) &__bss_end)
-		*cp++ = 0;
-}
 
 /*
  * Main memory init function

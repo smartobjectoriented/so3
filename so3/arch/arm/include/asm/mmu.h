@@ -124,14 +124,21 @@
 
 #ifndef __ASSEMBLY__
 
+#include <types.h>
+
 #ifdef CONFIG_MMU
 
 static inline bool l1pte_is_sect(uint32_t l1pte) {
 
 	/* Check if the L1 pte is for mapping of section or not */
-	return (l1pte & 0x2);
+	return (l1pte & TTB_L1_SECT);
 }
 
+static inline bool l1pte_is_pt(uint32_t l1pte) {
+
+	/* Check if the L1 pte is for mapping of section or not */
+	return ((l1pte & TTB_L1_L2) && !(l1pte & TTB_L1_SECT));
+}
 
 /* Options available for data cache related to section */
 enum ttb_l1_sect_dcache_option {

@@ -47,8 +47,7 @@ CONFIG_SMC911X=y
 #
 # SO3 Applications
 #
-# CONFIG_APP_TEST_MALLOC is not set
-# CONFIG_APP_DEFAULT is not set
+# CONFIG_APP_SAMPLE is not set
 CONFIG_KERNEL_VIRT_ADDR=0xc0000000
 
 #

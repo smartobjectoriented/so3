@@ -361,13 +361,13 @@ static int arm_pl180_mmci_init(dev_t *dev) {
 
 	mmc_host.base = (struct sdi_registers *) dev->base;
 
-	mmc_host.pwr_init = fdt_get_int(dev, "power");
-	mmc_host.clkdiv_init = fdt_get_int(dev, "clkdiv");
-	mmc_host.caps = fdt_get_int(dev, "caps");
-	mmc_host.voltages = fdt_get_int(dev, "voltages");
-	mmc_host.clock_min = fdt_get_int(dev, "clock_min");
-	mmc_host.clock_max = fdt_get_int(dev, "clock_max");
-	mmc_host.b_max = fdt_get_int(dev, "b_max");
+	mmc_host.pwr_init = fdt_get_int(__fdt_addr, dev, "power");
+	mmc_host.clkdiv_init = fdt_get_int(__fdt_addr, dev, "clkdiv");
+	mmc_host.caps = fdt_get_int(__fdt_addr, dev, "caps");
+	mmc_host.voltages = fdt_get_int(__fdt_addr, dev, "voltages");
+	mmc_host.clock_min = fdt_get_int(__fdt_addr, dev, "clock_min");
+	mmc_host.clock_max = fdt_get_int(__fdt_addr, dev, "clock_max");
+	mmc_host.b_max = fdt_get_int(__fdt_addr, dev, "b_max");
 
 	iowrite32(&mmc_host.base->power, mmc_host.pwr_init);
 	iowrite32(&mmc_host.base->clock, mmc_host.clkdiv_init);

@@ -73,6 +73,8 @@ SECTIONS
 
     . = ALIGN(4096);
     
+    /* Initcall section for core drivers */
+    
     __initcall_driver_initcall_t_core = .;
     
 	.initcall_driver_initcall_t_core : {
@@ -81,7 +83,7 @@ SECTIONS
 	
 	__initcall_driver_initcall_t_core_end = .;
 	
-    . = ALIGN(4096);
+    /* Initcall section for post core drivers */
     
     __initcall_driver_initcall_t_postcore = .;
     
@@ -91,7 +93,17 @@ SECTIONS
 	
 	__initcall_driver_initcall_t_postcore_end = .;
     
-      . = ALIGN(4096);
+    /* Initcall section for pre IRQ init functions which cannot be done with IRQs on */
+    
+    __initcall_pre_irq_init_t_core = .;
+    
+	.initcall_pre_init_t_core : {
+		*(.initcall_pre_irq_init_t_core);
+	}
+	
+	__initcall_pre_irq_init_t_core_end = .;
+	
+	/* Initcall section for remaining init functions which can be performed with IRQs on */
     
     __initcall_postinit_t_core = .;
     
