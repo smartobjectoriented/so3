@@ -64,7 +64,7 @@ void memory_init(void) {
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
 	fdt_move((const void *) __fdt_addr, &__end, fdt_totalsize(__fdt_addr));
-	__fdt_addr = (uint32_t) &__end;
+	__fdt_addr = (uint32_t *) &__end;
 
 	/* Initialize the free page list */
 	frame_table_init(((uint32_t) &__end) + fdt_totalsize(__fdt_addr));

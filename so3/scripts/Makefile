@@ -33,4 +33,4 @@
 
 # Let clean descend into subdirs
 #subdir-	+= basic kconfig package selinux
-subdir-	+= basic kconfig
+subdir-	+= basic kconfig dtc

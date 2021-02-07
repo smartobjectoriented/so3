@@ -342,13 +342,10 @@ endif
 
 ELF	= so3
 BIN	= so3.bin
-DTB	= dts/$(TARGET).dtb
 
 include scripts/Makefile.build
  
-all: $(BIN) $(DTB)
-
-all: $(ELF)
+all: $(BIN) dtbs
 
 objs-y		:= kernel mm fs ipc arch/arm devices apps net
 libs-y		:= lib
@@ -380,13 +377,35 @@ KBUILD_AFLAGS_KERNEL += -Iarch/arm/include/ -Iarch/arm/$(TARGET)/include/
 $(BIN): $(ELF)
 	$(OBJCOPY) --set-section-flags .bss=alloc,load,contents -O binary $< $@ 2>/dev/null
 	
-dtbs: $(DTB)
+# ---------------------------------------------------------------------------
+# Devicetree files
 
-$(DTB): dts/$(TARGET).dts
-	$(Q)$(CC) -P -E -nostdinc -I. -undef -D__DTS__ -x assembler-with-cpp -o dts/$(TARGET)-complete.dts dts/$(TARGET).dts
-	dtc dts/$(TARGET)-complete.dts -O dtb -o $@
-	$(Q)rm -f dts/$(TARGET)-complete.dts
-	
+dtstree := dts
+ 
+ifneq ($(dtstree),)
+
+%.dtb: scripts_dtc
+	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@
+
+%.dtbo: scripts_dtc
+	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@
+
+PHONY += dtbs dtbs_check
+dtbs: scripts_dtc
+	$(Q)$(MAKE) $(build)=$(dtstree)
+
+dtbs: scripts_dtc  
+
+dtbs_check: export CHECK_DTBS=1
+dtbs_check: dtbs
+
+endif
+
+PHONY += scripts_dtc
+scripts_dtc: scripts_basic
+	$(Q)$(MAKE) $(build)=scripts/dtc
+
+ 
 $(ELF): $(so3-all) arch/arm/so3.lds
 	$(call if_changed,so3)
 

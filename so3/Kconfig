@@ -7,7 +7,6 @@ menu "General"
 		string "Cross-compiler tool prefix"
 		default "arm-linux-gnueabihf-"
 endmenu
-
  
 source "arch/arm/Kconfig"
 
