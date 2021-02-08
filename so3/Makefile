@@ -175,14 +175,16 @@ OBJDUMP		= $(CROSS_COMPILE)objdump
 AWK		= awk
 INSTALLKERNEL  := installkernel
 PERL		= perl
+LEX		= flex
+YACC	= bison
 
 
-# Use LINUXINCLUDE when you must reference the include/ directory.
+# Use SO3INCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
-LINUXINCLUDE    := -Iinclude  -I.  \
+SO3INCLUDE    := -Iinclude  -I.  \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
                    -include include/generated/autoconf.h
 
@@ -203,11 +205,11 @@ KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
 KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))$(EXTRAVERSION)
 
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
-export CPP AR NM STRIP OBJCOPY OBJDUMP
+export CPP AR NM STRIP OBJCOPY OBJDUMP LEX YACC
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS
 
-export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
+export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
 export KBUILD_CFLAGS CFLAGS_KERNEL
 export KBUILD_AFLAGS AFLAGS_KERNEL
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
