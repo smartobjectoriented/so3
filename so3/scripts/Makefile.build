@@ -249,7 +249,10 @@ intermediate_targets = $(foreach sfx, $(2), \
                                 $(patsubst %$(strip $(1)),%$(sfx), \
                                         $(filter %$(strip $(1)), $(targets))))
 # %.dtb.o <- %.dtb.S <- %.dtb <- %.dts
-targets += $(call intermediate_targets, .dtb.o, .dtb.S .dtb)
+targets += $(call intermediate_targets, .dtb.o, .dtb.S .dtb) \
+	   $(call intermediate_targets, .lex.o, .lex.c) \
+	   $(call intermediate_targets, .asn1.o, .asn1.c .asn1.h) \
+	   $(call intermediate_targets, .tab.o, .tab.c .tab.h)
 
 
 #

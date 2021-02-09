@@ -100,6 +100,8 @@ export srctree objtree VPATH
 #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 CROSS_COMPILE = arm-linux-gnueabihf-
 
+SRCARCH := arm
+
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
@@ -178,15 +180,14 @@ PERL		= perl
 LEX		= flex
 YACC	= bison
 
-
 # Use SO3INCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
 SO3INCLUDE    := -Iinclude  -I.  \
-                   $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                   -include include/generated/autoconf.h
+                  $(if $(KBUILD_SRC), -I$(srctree)/include) \
+                  -include include/generated/autoconf.h
 
 KBUILD_CPPFLAGS := -D__KERNEL__ 
 
@@ -210,8 +211,6 @@ export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
-export KBUILD_CFLAGS CFLAGS_KERNEL
-export KBUILD_AFLAGS AFLAGS_KERNEL
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
 export KBUILD_ARFLAGS
 export TARGET CONFIG_BIN CONFIG_ELF
@@ -303,15 +302,10 @@ config: scripts_basic outputmakefile FORCE
 
 else
 
-
-ifeq ($(dot-config),1)
-# Read in config
--include include/config/auto.conf
-
-
-# Read in dependencies to all Kconfig* files, make sure to run
-# oldconfig if changes are detected.
--include include/config/auto.conf.cmd
+# Read in dependencies to all Kconfig* files, make sure to run syncconfig if
+# changes are detected. This should be included after arch/$(SRCARCH)/Makefile
+# because some architectures define CROSS_COMPILE there.
+include include/config/auto.conf.cmd
 
 $(KCONFIG_CONFIG):
 	@echo >&2 '***'
@@ -322,19 +316,16 @@ $(KCONFIG_CONFIG):
 	@echo >&2 '***'
 	@/bin/false
 
-# If .config is newer than include/config/auto.conf, someone tinkered
-# with it and forgot to run make oldconfig.
-# if auto.conf.cmd is missing then we are probably in a cleaned tree so
-# we execute the config step to be sure to catch updated Kconfig files
-include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
-	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
+# The actual configuration files used during the build are stored in
+# include/generated/ and include/config/. Update them if .config is newer than
+# include/config/auto.conf (which mirrors .config).
+#
+# This exploits the 'multi-target pattern rule' trick.
+# The syncconfig should be executed only once to make all the targets.
+%/auto.conf %/auto.conf.cmd %/tristate.conf: $(KCONFIG_CONFIG)
+	$(Q)$(MAKE) -f $(srctree)/Makefile syncconfig
 
-
-else
-# Dummy target needed, because used as prerequisite
-include/config/auto.conf: ;
-endif # $(dot-config)
-
+include include/config/auto.conf
 
 ifeq ($(CONFIG_VEXPRESS),y)
 TARGET = vexpress
@@ -353,7 +344,7 @@ BIN	= so3.bin
 
 include scripts/Makefile.build
  
-all: $(BIN) dtbs
+all:  $(BIN) dtbs 
 
 objs-y		:= kernel mm fs ipc arch/arm devices apps net
 libs-y		:= lib
@@ -373,14 +364,17 @@ LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
 ifdef CONFIG_MMU
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VIRT_ADDR) -T arch/arm/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VIRT_ADDR) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 else
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/arm/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 endif
 
 	 
-KBUILD_CFLAGS_KERNEL += -Iarch/arm/include/ -Iarch/arm/$(TARGET)/include/	
-KBUILD_AFLAGS_KERNEL += -Iarch/arm/include/ -Iarch/arm/$(TARGET)/include/
+KBUILD_CFLAGS_KERNEL += -Iarch/$(SRCARCH)/include/ -Iarch/$(SRCARCH)/$(TARGET)/include/	
+KBUILD_AFLAGS_KERNEL += -Iarch/$(SRCARCH)/include/ -Iarch/$(SRCARCH)/$(TARGET)/include/
+
+export KBUILD_CFLAGS CFLAGS_KERNEL
+export KBUILD_AFLAGS AFLAGS_KERNEL
 
 $(BIN): $(ELF)
 	$(OBJCOPY) --set-section-flags .bss=alloc,load,contents -O binary $< $@ 2>/dev/null
@@ -414,7 +408,7 @@ scripts_dtc: scripts_basic
 	$(Q)$(MAKE) $(build)=scripts/dtc
 
  
-$(ELF): $(so3-all) arch/arm/so3.lds
+$(ELF): $(so3-all) arch/$(SRCARCH)/so3.lds
 	$(call if_changed,so3)
 
 # The actual objects are generated when descending, 
