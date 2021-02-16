@@ -65,7 +65,7 @@ following script:
 Compiling the user space
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To build the user space applications, go to *usr/* directory and simply
+To build the user space applications, go to ``usr/`` directory and simply
 do make:
 
 .. code-block:: bash
@@ -76,7 +76,7 @@ do make:
 Compiling the kernel space
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The kernel has to be compiled in *so3*/ after choosing a configuration:
+The kernel has to be compiled in ``*so3*/`` after choosing a configuration:
 
 .. code-block:: bash
 
