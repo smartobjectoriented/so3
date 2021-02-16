@@ -12,7 +12,8 @@
   
    user_guide
    so3_jtag_rpi4
-   
+   lvgl
+   lwip
    
 ============================================
 Smart Object Oriented (SO3) Operating System

@@ -1,7 +1,7 @@
 .. _so3_jtag_rpi4:
 
-JTAG Debugging on the Raspberry Pi 4
-====================================
+Debugging SO3 with JTAG on RPi4
+===============================
 
 This pages gives instructions on how to debug SO3 or SO3 applications on
 the Raspberry Pi 4 through the JTAG interface.

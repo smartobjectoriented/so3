@@ -1,17 +1,17 @@
 .. _user_guide:
 
-Initial setup
-=============
+User Guide
+==========
 
 Pre-requisite
-~~~~~~~~~~~~~
+-------------
 
 The Linaro arm-linux-gnueabihf toolchain must be installed. Version
 6.4.1 has been successfully tested, but more recent versions should be
 fine.
 
 Files and directory organization
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The SO3 tree is organized in two main parts: **kernel** and **user**
 space files. All kernel space related files are located in “**so3/**”
@@ -32,10 +32,10 @@ The emulator must be built in *qemu/* using the command line described
 in README.so3 followed by invoking make (-j8 means parallel building on
 8 cores):
 
-::
+.. code-block:: bash 
 
    cd qemu
-   ./configure \--target-list=arm-softmmu \--disable-attr \--disable-werror \--disable-docs
+   ./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
    make -j8
 
 Compiling U-boot
@@ -45,10 +45,10 @@ U-boot is used as initial bootloader. It will be possible to start an
 ITB image file containing the kernel, the device tree and an initrd
 filesystem. In u-boot/ directory:
 
-::
+.. code-block:: bash
 
    cd u-boot
-   make vexpress\_defconfig\
+   make vexpress_defconfig
    make -j8
 
 Creating the virtual disk image
@@ -57,10 +57,10 @@ Creating the virtual disk image
 In *filesystem/* directory, create a virtual disk image with the
 following script:
 
-::
+.. code-block:: bash
 
-   cd filesystem\
-   ./create\_img.sh vexpress
+   cd filesystem
+   ./create_img.sh vexpress
 
 Compiling the user space
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,9 +68,9 @@ Compiling the user space
 To build the user space applications, go to *usr/* directory and simply
 do make:
 
-::
+.. code-block:: bash
 
-   cd usr\
+   cd usr
    make
 
 Compiling the kernel space
@@ -78,10 +78,10 @@ Compiling the kernel space
 
 The kernel has to be compiled in *so3*/ after choosing a configuration:
 
-.. code:: bash
+.. code-block:: bash
 
    cd so3
-   make vexpress\_mmc\_defconfig
+   make vexpress_mmc_defconfig
    make
 
 At this point, all necessary components have been built. Now comes the
@@ -89,7 +89,7 @@ phase of deployment in the virtual disk. This done by means of the
 deploy.sh script located at the root tree. Currently, you should only
 use option b and u to deploy the ITB image as well as the user apps.
 
-.. code:: bash
+.. code-block:: bash
 
    ./deploy.sh -bu
 
@@ -98,7 +98,7 @@ Starting SO3
 
 Simply invoking the script st as following:
 
-.. code:: bash
+.. code-block:: bash
 
    ./st
 
