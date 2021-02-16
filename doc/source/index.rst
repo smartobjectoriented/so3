@@ -1,8 +1,8 @@
 .. doc Documentation master file.
 
-.. image:: img/SO3_Logo.png
+.. image:: img/SO3-Logo.png
    :align: center
-   :width: 170px
+   :width: 200px
    :height: 150px
 
 .. toctree::
@@ -10,20 +10,23 @@
    :numbered:
    :hidden:
   
-   setup
-   aarch64
+   user_guide
+   so3_jtag_rpi4
+   
    
 ============================================
 Smart Object Oriented (SO3) Operating System
 ============================================
 
-For any information and discussions related to the SOO framework, please
-visit our main discussion forum at https://discourse.heig-vd.ch/c/soo
+For any information and discussions related to SO3, please
+visit our main discussion forum at https://discourse.heig-vd.ch/c/so3/6
 
-Setup, Build and Usage
-======================
+Setup and Environment
+=====================
 
--  :ref:`Initial Build and First Test <setup>`
+-  :ref:`User Guide <user_guide>`
+-  :ref:`Debugging with JTAG on Raspberry Pi 4 <so3_jtag_rpi4>`
+
   
 Development flow
 ================
