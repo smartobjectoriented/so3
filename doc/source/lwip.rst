@@ -1,5 +1,5 @@
-lwIP - Lightweith IP
-====================
+lwIP - Lightweigth IP
+=====================
 
 lwIP is a small independent implementation of the TCP/IP protocol suite.
 
@@ -12,4 +12,5 @@ The major work of porting lwIP in SO3 has been done by Julien Quartier in the co
 
 
 
-This section will be completed soon...
+This part will be completed very soon...
+

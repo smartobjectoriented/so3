@@ -13,5 +13,5 @@ The major work of porting LVGL in SO3 has been done by Nikolaos Garanis in the c
 Some details about the porting can be found in our `discussion forum <https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18>`__.
 
 
-This section will be completed soon...
+This part will be completed very soon...
 

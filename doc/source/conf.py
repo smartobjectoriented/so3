@@ -146,7 +146,7 @@ html_context = {
         '_static/theme_overrides.css',
     ],
 }
-
+    
 # -- Options for HTMLHelp output ------------------------------------------
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.

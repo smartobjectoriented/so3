@@ -10,6 +10,8 @@
    :numbered:
    :hidden:
   
+   introduction
+   architecture
    user_guide
    so3_jtag_rpi4
    lvgl
@@ -19,8 +21,17 @@
 Smart Object Oriented (SO3) Operating System
 ============================================
 
-For any information and discussions related to SO3, please
-visit our main discussion forum at https://discourse.heig-vd.ch/c/so3/6
+Smart Object Oriented Operating system is a compact, lightweight, full featured and extensible
+operating system particularly well-suited for embedded systems in general.
+
+The documentation is constantly evolving over the time and further details will be
+available soon.
+
+SO3 Concepts and Architecture
+=============================
+
+- :ref:`Introduction to SO3 <introduction>`
+- :ref:`Architecture <architecture>`
 
 Setup and Environment
 =====================
@@ -42,7 +53,7 @@ The master contains the last released version of the SO3 operating system.
 Discussion forum
 ================
 
-A `dedicated discussion forum <https://discourse.heig-vd.ch/c/so3/10>`__
+A `dedicated discussion forum <https://discourse.heig-vd.ch/c/so3>`__
 is available for all questions/remarks/suggestions related to SO3.
 Do not hesitate to create topics and to contribute.
      

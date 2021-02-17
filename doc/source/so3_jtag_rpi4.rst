@@ -22,7 +22,7 @@ Requirements
 JTAG Probe
 ----------
 
-To enable JTAG on the Raspberry Pi 4 add ``enable_jtag_gpio=1``\ in the
+To enable JTAG on the Raspberry Pi 4 add ``enable_jtag_gpio=1`` in the
 ``config.txt`` file. This will select Alt4 mode for GPIO pins 22-27, and
 set up some internal SoC connections, thus enabling the JTAG interface
 for the ARM CPU. It works on all models of Raspberry Pi. (See `Raspberry
@@ -32,10 +32,8 @@ Documentation <https://www.raspberrypi.org/documentation/configuration/config-tx
 J-Link Probe
 ~~~~~~~~~~~~
 
-The `SEGGER J-Link EDU
-probe <https://www.segger.com/products/debug-probes/j-link/models/j-link-edu/>`__
-has been used for this project. The pinout for the 20-pin interface can
-be found here :
+The `SEGGER J-Link EDU probe <https://www.segger.com/products/debug-probes/j-link/models/j-link-edu/>`__
+has been used for this project. The pinout for the 20-pin interface can be found here :
 https://www.segger.com/products/debug-probes/j-link/technology/interface-description/
 
 |image0|
@@ -75,7 +73,7 @@ https://sourceforge.net/p/openocd/code/ci/master/tree/
 Building OpenOCD
 ~~~~~~~~~~~~~~~~
 
-::
+.. code-block:: bash 
 
    git clone https://git.code.sf.net/p/openocd/code openocd-code
    cd openocd-code
@@ -86,7 +84,7 @@ Building OpenOCD
 
 OpenOCD can be launched from the ``./src/`` directory e.g.,
 
-::
+.. code-block:: bash 
 
    ./src/openocd -v
 
@@ -96,7 +94,7 @@ Configuration file for the Raspberry Pi 4
 Create a configuration file (e.g., ``rpi4.cfg``) with the following
 contents :
 
-::
+.. code-block:: console
 
    adapter driver jlink
     
