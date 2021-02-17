@@ -15,7 +15,7 @@ been publicly released in early 2020 (see also `HEIG-VD newsletter <heig-vd_news
 lecture focusing on the port of operating systems on different embedded platforms. The OS has been constantly evolved
 and used in other lectures (like operating systems of course) and since 2018 became SO3 to be used as
 a full *migrating* execution environment between connected devices; this novel approach leads to the 
-`SOO framework <gitlab.soo.tech>`__ which is still in development.
+`SOO framework <https://gitlab.com/smartobject/soo>`__ which is still in development.
 
 
 Approach and philosophy
