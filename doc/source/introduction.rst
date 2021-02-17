@@ -40,7 +40,7 @@ It is also one of the main reason why SO3 is released under the GPLv2 licence.
 Emulation is a **key** concept
 ------------------------------
 
-From the beginning, the QEMU emulator constituted a crucial tool to understand and to grasp concepts in an operating system
+From the beginning, the ``QEMU`` emulator constituted a crucial tool to understand and to grasp concepts in an operating system
 like Linux, and it also essential to elaborate and to debug an OS in a deep and affordable way. At the REDS Institute,
 we used QEMU since 2006 and have a strong experience in emulated environment.
 Now, the emulated *vExpress* machine in QEMU is used as a reference platform for the 32-bit configuration (virt64 will
@@ -70,7 +70,8 @@ SO3 is evolving constantly. Here is a non-exhaustive list of future work:
 
 And finally, we are looking for passoniated contributors :-) Please do not hesitate to `contact us <DRE_mail_>`__.
 
-
+.. _REDS: http://www.reds.ch
+.. _HEIG-VD: http://www.heig-vd.ch
 .. _heig-vd_news: https://heig-vd.ch/actualites?utm_medium=email&utm_campaign=Newsletter%20externe%2039&utm_content=Newsletter%20externe%2039+CID_db69309487920998ee2eaa75dc3cab5a&utm_source=heig%20vd&utm_term=PLUS%20DINFORMATIONS#/2020/02/11/so3systemeexploitation
 .. _DRE: https://reds.heig-vd.ch/en/team/details/daniel.rossier
 .. _DRE_mail: info@soo.tech
