@@ -88,7 +88,7 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
 
 	}
 
-	l2pgtable = (uint32_t *) __va((*l1pte & TTB_L1_PAGE_ADDR_MASK));
+	l2pgtable = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
 
 	l2pte = l2pte_offset(l1pte, addr);
 
@@ -123,7 +123,6 @@ static void alloc_init_section(uint32_t *l1pte, uint32_t addr, uint32_t end, uin
 	if (((addr | end | phys) & ~TTB_SECT_MASK) == 0) {
 
 		do {
-
 			*l1pte = phys;
 
 			set_l1_pte_sect_dcache(l1pte, (nocache ? L1_SECT_DCACHE_OFF : L1_SECT_DCACHE_WRITEALLOC));

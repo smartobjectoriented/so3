@@ -15,5 +15,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
- 
-#define	UART_BASE	0xfe215040
+
+#ifndef MACH_UART_H
+#define MACH_UART_H
+
+#define UART_BASE 0xfe215040
+
+#endif /* MACH_UART_H */
+

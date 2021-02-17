@@ -52,4 +52,13 @@ void mmu_page_table_flush(unsigned long start, unsigned long stop);
 
 void invalidate_icache_all(void);
 
+void cache_enable(uint32_t cache_bit);
+void cache_disable(uint32_t cache_bit);
+void icache_enable(void);
+void icache_disable(void);
+int icache_status(void);
+void dcache_enable(void);
+void dcache_disable(void);
+int dcache_status(void);
+
 #endif /* CACHEFLUSH_H */

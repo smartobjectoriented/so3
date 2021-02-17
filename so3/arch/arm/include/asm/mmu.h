@@ -47,7 +47,6 @@
 #define TTB_L1_PAGE_ADDR_OFFSET	(1 << TTB_L1_PAGE_ADDR_SHIFT)
 #define TTB_L1_PAGE_ADDR_MASK	(~(TTB_L1_PAGE_ADDR_OFFSET - 1))
 
-
 #define TTB_SECT_SIZE	(0x100000)
 #define TTB_SECT_MASK   (~(TTB_SECT_SIZE - 1))
 
@@ -60,8 +59,8 @@
 #define pte_index_to_vaddr(i1, i2) ((i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT))
 
 #define l1pte_offset(pgtable, addr)     (pgtable + l1pte_index(addr))
-#define l2pte_offset(l1pte, addr) 	(((uint32_t *) (__va(*l1pte) & TTB_L1_PAGE_ADDR_MASK)) + l2pte_index(addr))
-#define l2pte_first(l1pte)		(((uint32_t *) (__va(*l1pte) & TTB_L1_PAGE_ADDR_MASK)))
+#define l2pte_offset(l1pte, addr) 	((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
+#define l2pte_first(l1pte)		((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
 
 #define l1sect_addr_end(addr, end)                                         \
  ({      unsigned long __boundary = ((addr) + TTB_SECT_SIZE) & TTB_SECT_MASK;  \
@@ -199,15 +198,6 @@ void dump_current_pgtable(void);
 void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option option);
 void set_l1_pte_page_dcache(uint32_t *l1pte, enum ttb_l1_page_dcache_option option);
 void set_l2_pte_dcache(uint32_t *l2pte, enum ttb_l2_dcache_option option);
-
-void cache_enable(uint32_t cache_bit);
-void cache_disable(uint32_t cache_bit);
-void icache_enable(void);
-void icache_disable(void);
-int icache_status(void);
-void dcache_enable(void);
-void dcache_disable(void);
-int dcache_status(void);
 
 void mmu_setup(uint32_t *pgtable);
 
