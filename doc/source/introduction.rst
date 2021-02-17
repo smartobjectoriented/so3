@@ -7,7 +7,7 @@ SO3 (*Smart Object Oriented*) is a compact, extensible and full featured operati
 such as IoT devices, real-time environment, academic development, etc.
 
 SO3 Operating System results from several Years of research and development at 
-REDS (*Reconfigurable and Embedded Digital Systems* Institute of `HEIG-VD <http://heig-vd.ch>`__)
+`REDS <REDS_>`__ (Reconfigurable Embedded Digital Systems) Institute from `HEIG-VD <HEIG-VD_>`__,
 in the field of embedded operating systems and execution environment with ARM 32-bit multicore systems. SO3 has
 been publicly released in early 2020 (see also `HEIG-VD newsletter <heig-vd_news_>`__).
 

@@ -43,12 +43,20 @@ Setup and Environment
 Development flow
 ================
 
-The master contains the last released version of the SO3 operating system.
+The master contains the last released version of the SOO framework.
 
--  It is not allowed to push directly to the master. If you want to
-   contribute, please create a new issue and we will create a dedicated
-   branch in which you can develop as you want. A merge request will
-   then be processed to validate and merge your contributions.
+.. important::
+
+   It is not allowed to push directly to the master. Please do a merge
+   request as soon as your development is stable.
+   
+If you want to contribute, please first contact `the maintainer <SOO_mail_>`__ and explain your motivation so that
+you can be granted as developer. 
+Each development leads to a new issue with its related branch. You can develop freely, add comments along the issue
+and perform a merge request as soon as your development gets stable enough. A review will be done and your contributions
+will be merged in the master branch. 
+
+
 
 Discussion forum
 ================
@@ -57,4 +65,4 @@ A `dedicated discussion forum <https://discourse.heig-vd.ch/c/so3>`__
 is available for all questions/remarks/suggestions related to SO3.
 Do not hesitate to create topics and to contribute.
      
-
+.. _SOO_mail: info@soo.tech
