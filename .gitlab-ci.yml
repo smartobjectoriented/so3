@@ -11,7 +11,6 @@ pages:
     - pip3 install sphinx_rtd_theme
     - pip3 install sphinxcontrib-plantuml
     - pip3 install sphinxcontrib-bibtex
-    - pip3 install sphinxcontrib-video
     - apk --no-cache add make
     - cd doc
     - make html
