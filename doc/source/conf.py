@@ -37,6 +37,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.plantuml',
     'rstFlatTable',
+    'sphinxcontrib.video',
 #    'sphinxcontrib.bibtex',
     'sphinx.ext.extlinks',
     'sphinx.ext.imgmath',

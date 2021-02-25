@@ -27,6 +27,10 @@ The MUSL libc user space library
 
 SO3 integrates the `MUSL library <MUSL_libc_>`__ as *libc* for its user space application.
 
+Not all functions are available in SO3, but the functions are enabled as soon as there is a necessity to have it.
+Furthermore, more complex functions such as those used to manage ``pthreads`` for example are not activated since
+only a minimal set of functionalities and features are present.
+ 
 
 *to be completed*
 
