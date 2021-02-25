@@ -303,7 +303,7 @@ uint32_t io_map(uint32_t phys, size_t size) {
 			break;
 		else {
 			target = cur->vaddr + cur->size;
-			target = ALIGN_UP(target, ((size < SZ_1M) ? PAGE_SIZE : SZ_1M));
+			target = ALIGN_UP(target, PAGE_SIZE);
 
 			/* If we reach the end of the list, we can detect it. */
 			cur = NULL;

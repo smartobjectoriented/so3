@@ -103,9 +103,8 @@ _start:
 __kernel_main:
 
   @ prepare to clear bss and zero fp
-  ldr	r5, =.LCbss
-  ldr	r6, [r5], #4	@ __bss_start
-  ldr 	r7, [r5]		@ __bss_end
+  ldr	r6, =__bss_start
+  ldr	r7, =__bss_end
 
   mov	fp, #0			@ Clear BSS (and zero fp)
 1:
@@ -164,10 +163,6 @@ __fdt_addr:
 temp_stack_bottom:
 	.space 4096
 temp_stack:
-
-.LCbss:
-	.long __bss_start
-	.long __bss_end
 
 .LCvirt_entry:
   .word __kernel_main
