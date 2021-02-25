@@ -12,15 +12,11 @@ The major work of porting LVGL in SO3 has been done by Nikolaos Garanis in the c
 
 Some details about the porting can be found in our `discussion forum <https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18>`__.
 
-A small video to show LVGL running in the QEMU/vExpress framebuffer emulated environment.
+There is `a small video <LVGL_qemu_>`__ to show LVGL running in the QEMU/vExpress framebuffer emulated environment.
 
-
-.. video:: img/LittlevGL_on_SO3.mp4
-   :width: 800
-   :height: 400
-   :autoplay:
-   :nocontrols:
- 
 
 This part will be completed very soon...
+
+
+.. _LVGL_qemu: https://youtu.be/skn_mp3ZBhI
 
