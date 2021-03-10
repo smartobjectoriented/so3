@@ -64,7 +64,7 @@
 
     };
 	configurations {
-		default = "so3_ramfs";
+		default = "so3_mmc";
                 
 		so3_ramfs {
 			description = "SO3 kernel image including device tree";

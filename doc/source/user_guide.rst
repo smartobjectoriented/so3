@@ -174,3 +174,56 @@ Currently, there is only one default configuration file called
 *rpi4_defconfig* which has a basic environment, without networking and
 framebuffer support. The drivers required for networking and graphics
 are not available yet.
+
+Deployment of a *Hello World* application
+-----------------------------------------
+
+Using a *ramfs* configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All user applications reside in ``usr/src`` directory. Adding a C file requires to update
+the ``TARGETS`` variable in the *Makefile* and launch *make* in ``usr/``.
+
+The binaries are stored in ``usr/out`` directory.
+
+The deployment into the virtual SD-card is simply done with the ``deploy.sh`` script
+at the root dir as follows:
+
+.. code-block:: bash
+
+   ./deploy.sh -u
+
+.. note::
+
+   This manner of deploying user applications requires to have a ramfs 
+   configuration. All user apps are actually transfered into the *itb* file
+   which is deployed in the unique partition of the SD-card.
+   
+   The next section shows how you should deploy with the MMC configuration.
+
+Using a *mmc* configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you intend to use the *vexpress_mmc_defconfig* configuration for example, you
+will need to deploy the user apps manually (the ``deploy.sh`` script will be
+extended very soon). The deployment can be achieved as follows (from the root dir):
+
+.. code-block:: bash
+
+   cd filesystem
+   ./mount.sh 1 vexpress
+   sudo cp -r ../usr/out/* .
+   ./umount.sh
+
+The ``1`` refers to the partition #1.
+
+.. warning::
+
+   Do not forget that ``deploy.sh -b`` will erase the whole partition
+   of the SD-card. You then need to re-deploy the user apps.
+   
+
+
+
+
+ 

@@ -1,5 +1,7 @@
 .. _codingstyle:
 
+SO3 is based on the Linux kernel coding style as described below.
+
 Linux kernel coding style
 =========================
 
