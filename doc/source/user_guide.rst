@@ -6,13 +6,63 @@ User Guide
 Pre-requisite
 -------------
 
-For the AArch32 (32-bit) version (the only one supported currently),
-a `Linaro arm-linux-gnueabihf toolchain <https://releases.linaro.org/components/toolchain/binaries/>`__ 
-must be installed. Version 6.4.1 has been successfully tested, but more recent versions should be
-fine.
+We need to run some i386 executables, and we need to install some i386
+libraries too.
 
-In the next sections, we assume working on the AArch32 (32-bit) ARM architecture (since are
-are working with ARM cores having *armv7* or *armv8* micro-architectures).
+.. code:: bash
+
+   sudo dpkg --add-architecture i386
+   sudo apt-get update
+   sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386
+   sudo apt-get install lib32z1-dev
+   sudo apt-get install zlib1g:i386
+
+Various other packages are required:
+
+.. code:: bash
+
+   sudo apt-get install pkg-config libgtk2.0-dev bridge-utils
+   sudo apt-get install unzip bc
+   sudo apt-get install elfutils u-boot-tools
+   sudo apt-get install device-tree-compiler
+   sudo apt-get install fdisk
+
+The following packets are not mandatory, but they can be installed to
+prevent annoying warnings:
+
+.. code:: bash
+
+   sudo apt-get install bison flex
+
+Toolchain
+~~~~~~~~~
+
+The toolchain has been created by Linaro, with the version 2018-05. It
+includes an arm-linux-gnueabihf GCC 6.4.1 compiler. For now, nothing has
+been tested with a version greater than this one.
+
+You can download the toolchain at the following address:
+http://releases.linaro.org/components/toolchain/binaries/6.4-2018.05/arm-linux-gnueabihf/gcc-linaro-6.4.1-2018.05-x86_64_arm-linux-gnueabihf.tar.xz.asc
+
+Uncompress the archive and add the *bin* subdirectory to your path.
+
+You can check the version by running the following command:
+
+.. code:: bash
+
+   arm-linux-gnueabihf-gcc --version
+
+The output should look like:
+
+::
+
+   Using built-in specs.
+   COLLECT_GCC=/opt/gcc-linaro-6.4.1-2018.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc
+   COLLECT_LTO_WRAPPER=/opt/gcc-linaro-6.4.1-2018.05-x86_64_arm-linux-gnueabihf/bin/../libexec/gcc/arm-linux-gnueabihf/6.4.1/lto-wrapper
+   Target: arm-linux-gnueabihf
+   Configured with: '/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/snapshots/gcc.git~linaro-6.4-2018.05/configure' SHELL=/bin/bash --with-mpc=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/builds/destdir/x86_64-unknown-linux-gnu --with-mpfr=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/builds/destdir/x86_64-unknown-linux-gnu --with-gmp=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/builds/destdir/x86_64-unknown-linux-gnu --with-gnu-as --with-gnu-ld --disable-libmudflap --enable-lto --enable-shared --without-included-gettext --enable-nls --with-system-zlib --disable-sjlj-exceptions --enable-gnu-unique-object --enable-linker-build-id --disable-libstdcxx-pch --enable-c99 --enable-clocale=gnu --enable-libstdcxx-debug --enable-long-long --with-cloog=no --with-ppl=no --with-isl=no --disable-multilib --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb --with-tune=cortex-a9 --with-arch=armv7-a --enable-threads=posix --enable-multiarch --enable-libstdcxx-time=yes --enable-gnu-indirect-function --with-build-sysroot=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/sysroots/arm-linux-gnueabihf --with-sysroot=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/builds/destdir/x86_64-unknown-linux-gnu/arm-linux-gnueabihf/libc --enable-checking=release --disable-bootstrap --enable-languages=c,c++,fortran,lto --build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu --target=arm-linux-gnueabihf --prefix=/home/tcwg-buildslave/workspace/tcwg-make-release/builder_arch/amd64/label/tcwg-x86_64-build/target/arm-linux-gnueabihf/_build/builds/destdir/x86_64-unknown-linux-gnu
+   Thread model: posix
+   gcc version 6.4.1 20180425 [linaro-6.4-2018.05 revision 7b15d0869c096fe39603ad63dc19ab7cf035eb70] (Linaro GCC 6.4-2018.05)
 
 Files and directory organization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,6 +151,19 @@ do make:
 
    cd usr
    make
+   
+In order to support the configuration with an embedded ``ramfs``, you also need to create
+a FAT-32 image which will contain the user apps. This is achieved with
+the following script:
+
+.. code-block:: bash
+
+   cd rootfs
+   ./create_ramfs.sh vexpress
+
+The deployment of user applications into this *ramfs* will be done below during
+the deployment into the SD-card (option ``-u`` of the ``deploy.sh`` script at 
+the root directory).
 
 Compiling the kernel space
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,16 +173,21 @@ The kernel has to be compiled in ``*so3*/`` after choosing a configuration:
 .. code-block:: bash
 
    cd so3
-   make vexpress_mmc_defconfig
+   make vexpress_ramfs_defconfig
    make
+
+In this example, we are working with an embedded *ramfs* which will be packed
+in the ITB image file.
 
 Deployment into the SD-card
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At this point, all necessary components have been built. Now comes the
-phase of deployment in the virtual disk. This done by means of the
-deploy.sh script located at the root tree. Currently, you should only
-use option b and u to deploy the ITB image as well as the user apps.
+phase of deployment in the virtual disk. This is done by means of the
+``deploy.sh`` script located at the root tree. 
+Currently, you should only use option ``-b`` and ``-u`` to deploy the **kernel**, 
+the **device tree** and the **ramfs** into the ITB file. This image file is 
+then copied in the first partition of the SD-card.
 
 .. code-block:: bash
 

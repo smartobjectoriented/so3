@@ -20,3 +20,16 @@ This part will be completed very soon...
 
 .. _LVGL_qemu: https://youtu.be/skn_mp3ZBhI
 
+Using LVGL in the emulated environment
+--------------------------------------
+
+In order to have a graphical framebuffer in the emulated QEMU/vExpress 
+environment, it is necessary to start the emulator with the ``stg`` script:
+
+.. code-block:: bash
+
+   ./stg
+   
+QEMU will start a new GUI window used as framebuffer.
+
+
