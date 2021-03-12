@@ -24,6 +24,8 @@ Various other packages are required:
    sudo apt-get install pkg-config libgtk2.0-dev bridge-utils
    sudo apt-get install unzip bc
    sudo apt-get install elfutils u-boot-tools
+   sudo apt-get install device-tree-compiler
+   sudo apt-get install fdisk
 
 The following packets are not mandatory, but they can be installed to
 prevent annoying warnings:
@@ -149,6 +151,19 @@ do make:
 
    cd usr
    make
+   
+In order to support the configuration with an embedded ``ramfs``, you also need to create
+a FAT-32 image which will contain the user apps. This is achieved with
+the following script:
+
+.. code-block:: bash
+
+   cd rootfs
+   ./create_ramfs.sh vexpress
+
+The deployment of user applications into this *ramfs* will be done below during
+the deployment into the SD-card (option ``-u`` of the ``deploy.sh`` script at 
+the root directory).
 
 Compiling the kernel space
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -165,9 +180,11 @@ Deployment into the SD-card
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At this point, all necessary components have been built. Now comes the
-phase of deployment in the virtual disk. This done by means of the
-deploy.sh script located at the root tree. Currently, you should only
-use option b and u to deploy the ITB image as well as the user apps.
+phase of deployment in the virtual disk. This is done by means of the
+``deploy.sh`` script located at the root tree. 
+Currently, you should only use option ``-b`` and ``-u`` to deploy the **kernel**, 
+the **device tree** and the **ramfs** into the ITB file. This image file is 
+then copied in the first partition of the SD-card.
 
 .. code-block:: bash
 
