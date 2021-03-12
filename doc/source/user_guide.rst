@@ -173,8 +173,11 @@ The kernel has to be compiled in ``*so3*/`` after choosing a configuration:
 .. code-block:: bash
 
    cd so3
-   make vexpress_mmc_defconfig
+   make vexpress_ramfs_defconfig
    make
+
+In this example, we are working with an embedded *ramfs* which will be packed
+in the ITB image file.
 
 Deployment into the SD-card
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
