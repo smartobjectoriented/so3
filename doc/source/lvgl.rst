@@ -23,6 +23,11 @@ This part will be completed very soon...
 Using LVGL in the emulated environment
 --------------------------------------
 
+.. note::
+
+   First, make sure you compiled the kernel with a configuration
+   which has the framebuffer enabled (for example, *vexpress_fb_defconfig*)
+   
 In order to have a graphical framebuffer in the emulated QEMU/vExpress 
 environment, it is necessary to start the emulator with the ``stg`` script:
 
