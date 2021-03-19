@@ -204,6 +204,10 @@ Simply invoking the script st as following:
 
 and you should run into the shell…
 
+.. note::
+
+   To quit QEMU, type ``Ctrl+x`` followed by ``a`` (not Ctrl+a).
+
 Default configurations
 ----------------------
 
