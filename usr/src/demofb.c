@@ -33,7 +33,8 @@
 #include <bits/ioctl_fix.h>
 #include <pthread.h>
 
-#include "lvgl/lvgl.h"
+#include <lvgl.h>
+
 #include "demofb.h"
 
 /* Screen resolution. */

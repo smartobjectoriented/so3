@@ -1,0 +1,19 @@
+
+target_sources(c 
+	PRIVATE
+		socket.c
+		inet_ntoa.c
+		send.c
+		sendto.c
+		inet_pton.c
+		inet_ntop.c
+		recv.c
+		recvfrom.c
+		setsockopt.c
+		htonl.c
+		htons.c
+		bind.c
+		listen.c
+		accept.c
+		connect.c
+)
