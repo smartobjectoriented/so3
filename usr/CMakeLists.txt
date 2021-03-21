@@ -1,5 +1,6 @@
 
 # CMake for building all SO3 usr applications
+# Copyright (c) 2021 Daniel Rossier, REDS Institute - HEIG-VD
 
 cmake_minimum_required(VERSION 3.16)
 
