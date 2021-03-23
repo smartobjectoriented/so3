@@ -14,6 +14,7 @@ Some details about the porting can be found in our `discussion forum <https://di
 
 There is `a small video <LVGL_qemu_>`__ to show LVGL running in the QEMU/vExpress framebuffer emulated environment.
 
+In addition, from LVGL v8, the ``lv_demo_widgets`` is now fully supported. And yes, SO3 integrates LVGL v8.
 
 This part will be completed very soon...
 

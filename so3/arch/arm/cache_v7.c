@@ -99,16 +99,22 @@ static void v7_dcache_maint_range(u32 start, u32 stop, u32 range_op)
 /* Invalidate TLB */
 void v7_inval_tlb(void)
 {
+#if 0 /* Not really necessary in our case. */
 	/* Invalidate entire unified TLB */
 	asm volatile ("mcr p15, 0, %0, c8, c7, 0" : : "r" (0));
+#endif
+
 	/* Invalidate entire data TLB */
 	asm volatile ("mcr p15, 0, %0, c8, c6, 0" : : "r" (0));
+
+#if 0 /* Not really necessary in our case. */
 	/* Invalidate entire instruction TLB */
+
 	asm volatile ("mcr p15, 0, %0, c8, c5, 0" : : "r" (0));
 
 	/* (Cortex-A72) Invalidate entire instruction TLB */
 	asm volatile ("mcr p15, 0, %0, c8, c3, 0" : : "r" (0));
-
+#endif
 
 	/* Full system DSB - make sure that the invalidation is complete */
 	dsb();

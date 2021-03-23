@@ -82,8 +82,6 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
 
 		set_l1_pte_page_dcache(l1pte, (nocache ? L1_PAGE_DCACHE_OFF : L1_PAGE_DCACHE_WRITEALLOC));
 
-		flush_pte_entry(l1pte);
-
 		DBG("Allocating a L2 page table at %p in l1pte: %p with contents: %x\n", l2pte, l1pte, *l1pte);
 
 	}
@@ -97,8 +95,6 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
 		*l2pte = pfn << PAGE_SHIFT;
 
 		set_l2_pte_dcache(l2pte, (nocache ? L2_DCACHE_OFF : L2_DCACHE_WRITEALLOC));
-
-		flush_pte_entry(l2pte);
 
 		DBG("Setting l2pte %p with contents: %x\n", l2pte, *l2pte);
 
@@ -128,8 +124,6 @@ static void alloc_init_section(uint32_t *l1pte, uint32_t addr, uint32_t end, uin
 			set_l1_pte_sect_dcache(l1pte, (nocache ? L1_SECT_DCACHE_OFF : L1_SECT_DCACHE_WRITEALLOC));
 			DBG("Allocating a section at l1pte: %p content: %x\n", l1pte, *l1pte);
 
-			flush_pte_entry(l1pte);
-
 			phys += TTB_SECT_SIZE;
 
 		} while (l1pte++, addr += TTB_SECT_SIZE, addr != end);
@@ -139,6 +133,7 @@ static void alloc_init_section(uint32_t *l1pte, uint32_t addr, uint32_t end, uin
 		 * No need to loop; L2 pte's aren't interested in the
 		 * individual L1 entries.
 		 */
+
 		alloc_init_pte(l1pte, addr, end, phys >> PAGE_SHIFT, nocache);
 	}
 }
@@ -177,7 +172,11 @@ void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base,
 
 	} while (l1pte++, addr != end);
 
-	mmu_page_table_flush((uint32_t) l1pgtable, (uint32_t) (l1pgtable + TTB_L1_ENTRIES));
+	/* Invalidate TLBs whenever the mapping is applied on the current page table.
+	 * In other cases, the memory context switch will invalidate anyway.
+	 */
+	if (l1pgtable == __sys_l1pgtable)
+		v7_inval_tlb();
 }
 
 /* Empty the corresponding l2 entries */
@@ -297,7 +296,7 @@ void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_RAM_BASE)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Now, create a virtual mapping in the kernel space */
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 64; i++) {
 		__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
 
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i], L1_SECT_DCACHE_WRITEALLOC);

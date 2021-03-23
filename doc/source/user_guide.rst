@@ -144,13 +144,15 @@ second partition).
 Compiling the user space
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+The user space build system is based on cmake (CMakeList.txt files).
+
 To build the user space applications, go to ``usr/`` directory and simply
 do make:
 
 .. code-block:: bash
 
    cd usr
-   make
+   ./build.sh
    
 In order to support the configuration with an embedded ``ramfs``, you also need to create
 a FAT-32 image which will contain the user apps. This is achieved with
@@ -254,9 +256,16 @@ Using a *ramfs* configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All user applications reside in ``usr/src`` directory. Adding a C file requires to update
-the ``TARGETS`` variable in the *Makefile* and launch *make* in ``usr/``.
+the ``CMakeLists.txt`` file.
 
-The binaries are stored in ``usr/out`` directory.
+All binaries are produced in the ``usr/build`` directory by *cmake*. And all files which
+will be deployed by the deployment script are stored in ``usr/build/deploy``.
+
+.. note:: 
+
+   Currently, the ``cd`` command is not implemented in the shell of SO3.
+   For this reason, all executables (and other files) are stored in the root directory,
+   except the entries of ``dev/`` used to access the drivers.
 
 The deployment into the virtual SD-card is simply done with the ``deploy.sh`` script
 at the root dir as follows:
@@ -284,7 +293,7 @@ extended very soon). The deployment can be achieved as follows (from the root di
 
    cd filesystem
    ./mount.sh 1 vexpress
-   sudo cp -r ../usr/out/* .
+   sudo cp -r ../usr/build/deploy/* .
    ./umount.sh
 
 The ``1`` refers to the partition #1.
