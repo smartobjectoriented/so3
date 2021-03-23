@@ -55,7 +55,7 @@
 	i2c1:i2c1@fe804000 {
 		compatible = "bcm,i2c_bsc";
 		reg = <0xfe804000 0x400>;
-		status = "ok";
+		status = "disabled";
 		interrupt-parent = <&gic>;
         	
 		/* IRQ 53 of VC which start at SPI96 -> 96 + 53 = 149 */
@@ -77,11 +77,11 @@
 		status = "ok";
 	};
 
-    	rpisense {
-        	compatible = "bcm,rpisense";
+    rpisense {
+        compatible = "bcm,rpisense";
 		interrupt-parent = <&gic>;
 		interrupts = <0 113 4>;
-		status = "ok";
-    	};
+		status = "disabled";
+    };
 	
 };

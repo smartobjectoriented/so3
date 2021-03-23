@@ -30,7 +30,7 @@
  * The heap size is defined in arch/arm/so3.lds
  * The value must be strictly the same.
 */
-#define HEAP_SIZE 	(2 * SZ_1M)
+#define HEAP_SIZE 	(SZ_32M)
 
 #define CHUNK_SIG	0xbeefdead
 
