@@ -45,10 +45,10 @@ void *tick_routine (void *args);
 /* File system driver functions. */
 
 bool fs_ready_cb(struct _lv_fs_drv_t *drv);
-lv_fs_res_t fs_open_cb(struct _lv_fs_drv_t *drv, void *file_p, const char *path, lv_fs_mode_t mode);
+void *fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
 lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p);
 lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos);
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence);
 lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 
 /* Mouse driver-related structures. */

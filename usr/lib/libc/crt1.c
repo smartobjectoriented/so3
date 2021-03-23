@@ -56,7 +56,7 @@ void term_default(int signum) {
 	exit(0);
 }
 
-int __entryC(void *args) {
+__attribute__((__section__(".head"))) int __entryC(void *args) {
 	struct sigaction sa;
 
 	memset(&sa, 0, sizeof(struct sigaction));

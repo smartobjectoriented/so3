@@ -28,6 +28,7 @@ SECTIONS
 {
 	.text       0x1000	:
 	{
+	  *(.head)
 	  *(.text*)
 	}
 

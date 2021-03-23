@@ -18,5 +18,6 @@ echo Deploying user apps into the ramfs partition
 cd ../rootfs
 ./mount_ramfs.sh  ${PLATFORM}
 sudo cp -r ../usr/out/* fs
+sudo cp -r ../usr/build/deploy/* fs
 ./umount_ramfs.sh  ${PLATFORM}
 

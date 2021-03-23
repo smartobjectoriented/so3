@@ -129,6 +129,11 @@ int fb_init(void)
 {
 	int fd;
 	uint32_t fb_size;
+	static lv_disp_drv_t disp_drv;
+
+	/* LVGL will use this buffer to render the screen. See my_fb_cb. */
+	static lv_color_t buf[LVGL_BUF_SIZE];
+	static lv_disp_draw_buf_t disp_buf;
 
 	/* Get file descriptor. */
 	fd = open("/dev/fb0", 0);
@@ -153,9 +158,6 @@ int fb_init(void)
 		return -1;
 	}
 
-	/* LVGL will use this buffer to render the screen. See my_fb_cb. */
-	static lv_color_t buf[LVGL_BUF_SIZE];
-	static lv_disp_draw_buf_t disp_buf;
 	lv_disp_draw_buf_init(&disp_buf, buf, NULL, LVGL_BUF_SIZE);
 
 	/*
@@ -163,7 +165,7 @@ int fb_init(void)
 	 * Also setting the flush callback function (flush_cb) which will write
 	 * the lvgl buffer (buf) into our real framebuffer.
 	 */
-	static lv_disp_drv_t disp_drv;
+
 	lv_disp_drv_init(&disp_drv);
 	disp_drv.hor_res = scr_hres;
 	disp_drv.ver_res = scr_vres;
@@ -205,8 +207,11 @@ void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
  */
 int mouse_init(void)
 {
+	struct display_res res = { .h = scr_hres, .v = scr_vres };
+	static lv_indev_drv_t mouse_drv;
+
 	mfd = open("/dev/mouse0", 0);
-	if (-1 == mfd) {
+	if (mfd == -1) {
 		printf("Couldn't open input device.\n");
 		return -1;
 	}
@@ -215,7 +220,7 @@ int mouse_init(void)
 	 * Informing the driver of the screen size so it knows the bounds for
 	 * the cursor coordinates.
 	 */
-	struct display_res res = { .h = scr_hres, .v = scr_vres };
+
 	ioctl(mfd, IOCTL_MOUSE_SET_RES, &res);
 
 	/*
@@ -224,8 +229,8 @@ int mouse_init(void)
 	 * by lvgl periodically. This function queries the mouse driver for the
 	 * xy coordinates and button states.
 	 */
-	static lv_indev_drv_t mouse_drv;
 	lv_indev_drv_init(&mouse_drv);
+
 	mouse_drv.type = LV_INDEV_TYPE_POINTER;
 	mouse_drv.read_cb = my_mouse_cb;
 
@@ -257,8 +262,10 @@ bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
  */
 int keyboard_init(void)
 {
+	static lv_indev_drv_t keyboard_drv;
+
 	kfd = open("/dev/keyboard0", 0);
-	if (-1 == kfd) {
+	if (kfd == -1) {
 		printf("Couldn't open input device.\n");
 		return -1;
 	}
@@ -266,7 +273,7 @@ int keyboard_init(void)
 	/**
 	 * Initialisation of the keyboard input driver.
 	 */
-	lv_indev_drv_t keyboard_drv;
+
 	lv_indev_drv_init(&keyboard_drv);
 	keyboard_drv.type = LV_INDEV_TYPE_KEYPAD;
 	keyboard_drv.read_cb = my_keyboard_cb;

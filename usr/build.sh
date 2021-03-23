@@ -9,6 +9,10 @@ function usage {
   echo "  -h        Print this help"
 }
 
+function install_file_elf {
+  [ -f $1 ] && echo "Installing $1" && mv build/src/*.elf build/deploy && mv build/src/**/*.elf build/deploy
+}
+
 function install_file_root {
   [ -f $1 ] && echo "Installing $1" && cp $1 build/deploy
 }
@@ -76,8 +80,7 @@ mkdir -p build/deploy/
 # SO3 shell
 install_directory_root usr/out
 
-install_file_root build/src/sh.elf
-install_file_root build/src/demofb.elf
+install_file_elf
 
 
 

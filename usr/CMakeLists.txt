@@ -12,7 +12,9 @@ project(so3-usr LANGUAGES C ASM)
 # Where the header files are located
 include_directories(  
      src
+     lib
      lib/libc/include
+     lib/lvgl
      lib/lvgl/src
 )
  

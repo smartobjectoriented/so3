@@ -14,7 +14,7 @@
             do { if (DEBUG) fprintf(stderr, __VA_ARGS__); } while (0)
 
 #ifdef DEBUG
-#define DBG(...) printf("Malloc: Debug" __func__ __VA_ARGS__)
+#define DBG(...) printf("Malloc: Debug", __func__, __VA_ARGS__)
 #else
 #define DBG(...)
 #endif

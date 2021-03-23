@@ -37,6 +37,7 @@ errno:
  */
 
 	.globl	__start
+	.section ".head", "ax"
 __start:
 
 	@ r0 points to the argument page
