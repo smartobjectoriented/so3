@@ -1,5 +1,11 @@
 .. doc Documentation master file.
 
+.. image:: img/heigvd-reds.png
+   :align: right
+   :width: 180px
+   :height: 70px
+   :target: http://reds.heig-vd.ch/en/rad
+   
 .. image:: img/SO3-Logo.png
    :align: center
    :width: 200px
