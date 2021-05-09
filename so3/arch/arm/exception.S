@@ -372,9 +372,6 @@ irq:
 
     bl 		irq_handle
 
-	@ Give the opportunity to pending softirq to be executed (IRQs off, but can be (synchronously) preempted)
-    bl 		do_softirq
-
 #ifdef CONFIG_IPC_SIGNAL
 	@ Is there any pending signals for this process?
 

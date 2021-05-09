@@ -77,7 +77,6 @@ _start:
 
   msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
 
-
   @ Configure address of the vector table
   ldr 	r1, =.LCvectors
   ldr	r1, [r1]
