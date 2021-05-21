@@ -557,7 +557,37 @@ int do_open(const char *filename, int flags)
 
 	mutex_lock(&vfs_lock);
 
-	/* A filename starting with `/dev/' is considered a device. */
+	/* FIXME: Should find the mounted point regarding the path */
+	fops = registered_fs_ops[0];
+
+	if (flags & O_DIRECTORY)
+		type = VFS_TYPE_DIR;
+	else
+		type = VFS_TYPE_FILE;
+
+	/* vfs_open is already clean fops and open_fds */
+	fd = vfs_open(filename, fops, type);
+
+	if (fd < 0) {
+		/* fd already open */
+		set_errno(EBADF);
+		mutex_unlock(&vfs_lock);
+		return -1;
+	}
+
+	/* Get index of open_fds*/
+	gfd = current()->pcb->fd_array[fd];
+
+	vfs_set_open_mode(gfd, flags);
+
+	/* The open() callback operation in the sub-layers must NOT suspend. */
+	if (fops->open && fops->open(gfd, filename))
+		goto open_failed;
+
+	/*
+	 * Check if the entry is a /dev entry and associates the right fops.
+	 */
+
 	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
 
 		fops = devclass_get_fops(filename + DEV_PREFIX_LEN, &type);
@@ -566,49 +596,8 @@ int do_open(const char *filename, int flags)
 			return -1;
 		}
 
-		/* vfs_open is already clean fops and open_fds */
-		fd = vfs_open(filename, fops, type);
-
-		if (fd < 0) {
-			/* fd already open */
-			set_errno(EBADF);
-			mutex_unlock(&vfs_lock);
-			return -1;
-		}
-
-		/* Get index of open_fds*/
-		gfd = current()->pcb->fd_array[fd];
-
+		open_fds[gfd]->fops = fops;
 	}
-	else {
-		/* FIXME: Should find the mounted point regarding the path */
-		fops = registered_fs_ops[0];
-
-		if (flags & O_DIRECTORY)
-			type = VFS_TYPE_DIR;
-		else
-			type = VFS_TYPE_FILE;
-
-		/* vfs_open is already clean fops and open_fds */
-		fd = vfs_open(filename, fops, type);
-
-		if (fd < 0) {
-			/* fd already open */
-			set_errno(EBADF);
-			mutex_unlock(&vfs_lock);
-			return -1;
-		}
-
-		/* Get index of open_fds*/
-		gfd = current()->pcb->fd_array[fd];
-
-	}
-
-	vfs_set_open_mode(gfd, flags);
-
-	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (fops->open && fops->open(gfd, filename))
-		goto open_failed;
 
 	mutex_unlock(&vfs_lock);
 
@@ -712,6 +701,11 @@ void do_close(int fd)
 	if (!open_fds[gfd]->ref_count) {
 
 		ASSERT(gfd > STDERR); /* Abnormal situation if we attempt to remove the std* file descriptors */
+
+		if (!strncmp(DEV_PREFIX, open_fds[gfd]->filename, DEV_PREFIX_LEN))
+			/* Back to the filesystem medium */
+			open_fds[gfd]->fops = registered_fs_ops[0];
+
 		/* The close() callback operation in the sub-layers must NOT suspend. */
 		if (open_fds[gfd]->fops->close)
 			open_fds[gfd]->fops->close(gfd);
