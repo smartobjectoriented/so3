@@ -30,8 +30,8 @@ status=1	# failure is the default!
 _cleanup()
 {
     _cleanup_test_img
-    rm -f "$TEST_IMG.overlay"
-    rm -f "$TEST_DIR/nbd.socket"
+    _rm_test_img "$TEST_IMG.overlay"
+    rm -f "$SOCK_DIR/nbd.socket"
 }
 trap "_cleanup; exit \$status" 0 1 2 3 15
 
@@ -133,7 +133,7 @@ success_or_failure=y _send_qemu_cmd $QEMU_HANDLE \
           'addr': {
               'type': 'unix',
               'data': {
-                  'path': '$TEST_DIR/nbd.socket'
+                  'path': '$SOCK_DIR/nbd.socket'
               } } } }" \
     'return' \
     'error'
@@ -151,6 +151,27 @@ success_or_failure=y _send_qemu_cmd $QEMU_HANDLE \
     'error'
 
 _cleanup_qemu
+
+echo
+echo '=== Testing failure to loosen restrictions ==='
+echo
+
+_launch_qemu -drive file=$TEST_IMG,if=none,file.locking=on
+
+_send_qemu_cmd $QEMU_HANDLE \
+    "{'execute': 'qmp_capabilities'}" \
+    'return'
+
+_cleanup_test_img
+
+# When quitting qemu, it will try to drop its locks on the test image.
+# Because that file no longer exists, it will be unable to do so.
+# However, that is not fatal, so it should just move on.
+_send_qemu_cmd $QEMU_HANDLE \
+    "{'execute': 'quit'}" \
+    'return'
+
+wait=1 _cleanup_qemu
 
 # success, all done
 echo "*** done"

@@ -26,7 +26,8 @@ sub_file="${sub_tdir}/submodule.tar"
 # independent of what the developer currently has initialized
 # in their checkout, because the build environment is completely
 # different to the host OS.
-submodules="dtc slirp ui/keycodemapdb tests/fp/berkeley-softfloat-3 tests/fp/berkeley-testfloat-3"
+submodules="dtc slirp meson ui/keycodemapdb"
+submodules="$submodules tests/fp/berkeley-softfloat-3 tests/fp/berkeley-testfloat-3"
 sub_deinit=""
 
 function cleanup() {
@@ -39,14 +40,16 @@ function cleanup() {
 }
 trap "cleanup" 0 1 2 3 15
 
-if git diff-index --quiet HEAD -- &>/dev/null
-then
-    HEAD=HEAD
-else
-    HEAD=$(git stash create)
-fi
+function tree_ish() {
+    local retval='HEAD'
+    if ! git diff-index --quiet --ignore-submodules=all HEAD -- &>/dev/null
+    then
+        retval=$(git stash create)
+    fi
+    echo "$retval"
+}
 
-git archive --format tar $HEAD > "$tar_file"
+git archive --format tar "$(tree_ish)" > "$tar_file"
 test $? -ne 0 && error "failed to archive qemu"
 for sm in $submodules; do
     status="$(git submodule status "$sm")"
@@ -62,7 +65,7 @@ for sm in $submodules; do
             echo "WARNING: submodule $sm is out of sync"
             ;;
     esac
-    (cd $sm; git archive --format tar --prefix "$sm/" $smhash) > "$sub_file"
+    (cd $sm; git archive --format tar --prefix "$sm/" $(tree_ish)) > "$sub_file"
     test $? -ne 0 && error "failed to archive submodule $sm ($smhash)"
     tar --concatenate --file "$tar_file" "$sub_file"
     test $? -ne 0 && error "failed append submodule $sm to $tar_file"

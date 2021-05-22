@@ -42,8 +42,8 @@ static void cf_rte(CPUM68KState *env)
     uint32_t fmt;
 
     sp = env->aregs[7];
-    fmt = cpu_ldl_kernel(env, sp);
-    env->pc = cpu_ldl_kernel(env, sp + 4);
+    fmt = cpu_ldl_mmuidx_ra(env, sp, MMU_KERNEL_IDX, 0);
+    env->pc = cpu_ldl_mmuidx_ra(env, sp + 4, MMU_KERNEL_IDX, 0);
     sp |= (fmt >> 28) & 3;
     env->aregs[7] = sp + 8;
 
@@ -58,13 +58,13 @@ static void m68k_rte(CPUM68KState *env)
 
     sp = env->aregs[7];
 throwaway:
-    sr = cpu_lduw_kernel(env, sp);
+    sr = cpu_lduw_mmuidx_ra(env, sp, MMU_KERNEL_IDX, 0);
     sp += 2;
-    env->pc = cpu_ldl_kernel(env, sp);
+    env->pc = cpu_ldl_mmuidx_ra(env, sp, MMU_KERNEL_IDX, 0);
     sp += 4;
     if (m68k_feature(env, M68K_FEATURE_QUAD_MULDIV)) {
         /*  all except 68000 */
-        fmt = cpu_lduw_kernel(env, sp);
+        fmt = cpu_lduw_mmuidx_ra(env, sp, MMU_KERNEL_IDX, 0);
         sp += 2;
         switch (fmt >> 12) {
         case 0:
@@ -260,12 +260,12 @@ static void cf_interrupt_all(CPUM68KState *env, int is_hw)
     /* ??? This could cause MMU faults.  */
     sp &= ~3;
     sp -= 4;
-    cpu_stl_kernel(env, sp, retaddr);
+    cpu_stl_mmuidx_ra(env, sp, retaddr, MMU_KERNEL_IDX, 0);
     sp -= 4;
-    cpu_stl_kernel(env, sp, fmt);
+    cpu_stl_mmuidx_ra(env, sp, fmt, MMU_KERNEL_IDX, 0);
     env->aregs[7] = sp;
     /* Jump to vector.  */
-    env->pc = cpu_ldl_kernel(env, env->vbr + vector);
+    env->pc = cpu_ldl_mmuidx_ra(env, env->vbr + vector, MMU_KERNEL_IDX, 0);
 }
 
 static inline void do_stack_frame(CPUM68KState *env, uint32_t *sp,
@@ -278,23 +278,24 @@ static inline void do_stack_frame(CPUM68KState *env, uint32_t *sp,
         switch (format) {
         case 4:
             *sp -= 4;
-            cpu_stl_kernel(env, *sp, env->pc);
+            cpu_stl_mmuidx_ra(env, *sp, env->pc, MMU_KERNEL_IDX, 0);
             *sp -= 4;
-            cpu_stl_kernel(env, *sp, addr);
+            cpu_stl_mmuidx_ra(env, *sp, addr, MMU_KERNEL_IDX, 0);
             break;
         case 3:
         case 2:
             *sp -= 4;
-            cpu_stl_kernel(env, *sp, addr);
+            cpu_stl_mmuidx_ra(env, *sp, addr, MMU_KERNEL_IDX, 0);
             break;
         }
         *sp -= 2;
-        cpu_stw_kernel(env, *sp, (format << 12) + (cs->exception_index << 2));
+        cpu_stw_mmuidx_ra(env, *sp, (format << 12) + (cs->exception_index << 2),
+                          MMU_KERNEL_IDX, 0);
     }
     *sp -= 4;
-    cpu_stl_kernel(env, *sp, retaddr);
+    cpu_stl_mmuidx_ra(env, *sp, retaddr, MMU_KERNEL_IDX, 0);
     *sp -= 2;
-    cpu_stw_kernel(env, *sp, sr);
+    cpu_stw_mmuidx_ra(env, *sp, sr, MMU_KERNEL_IDX, 0);
 }
 
 static void m68k_interrupt_all(CPUM68KState *env, int is_hw)
@@ -353,36 +354,52 @@ static void m68k_interrupt_all(CPUM68KState *env, int is_hw)
             cpu_abort(cs, "DOUBLE MMU FAULT\n");
         }
         env->mmu.fault = true;
+        /* push data 3 */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* push data 3 */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* push data 2 */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* push data 2 */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* push data 1 */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* push data 1 */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 1 / push data 0 */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* write back 1 / push data 0 */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 1 address */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* write back 1 address */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 2 data */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* write back 2 data */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 2 address */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* write back 2 address */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 3 data */
         sp -= 4;
-        cpu_stl_kernel(env, sp, 0); /* write back 3 data */
+        cpu_stl_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 3 address */
         sp -= 4;
-        cpu_stl_kernel(env, sp, env->mmu.ar); /* write back 3 address */
+        cpu_stl_mmuidx_ra(env, sp, env->mmu.ar, MMU_KERNEL_IDX, 0);
+        /* fault address */
         sp -= 4;
-        cpu_stl_kernel(env, sp, env->mmu.ar); /* fault address */
+        cpu_stl_mmuidx_ra(env, sp, env->mmu.ar, MMU_KERNEL_IDX, 0);
+        /* write back 1 status */
         sp -= 2;
-        cpu_stw_kernel(env, sp, 0); /* write back 1 status */
+        cpu_stw_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 2 status */
         sp -= 2;
-        cpu_stw_kernel(env, sp, 0); /* write back 2 status */
+        cpu_stw_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* write back 3 status */
         sp -= 2;
-        cpu_stw_kernel(env, sp, 0); /* write back 3 status */
+        cpu_stw_mmuidx_ra(env, sp, 0, MMU_KERNEL_IDX, 0);
+        /* special status word */
         sp -= 2;
-        cpu_stw_kernel(env, sp, env->mmu.ssw); /* special status word */
+        cpu_stw_mmuidx_ra(env, sp, env->mmu.ssw, MMU_KERNEL_IDX, 0);
+        /* effective address */
         sp -= 4;
-        cpu_stl_kernel(env, sp, env->mmu.ar); /* effective address */
+        cpu_stl_mmuidx_ra(env, sp, env->mmu.ar, MMU_KERNEL_IDX, 0);
+
         do_stack_frame(env, &sp, 7, oldsr, 0, retaddr);
         env->mmu.fault = false;
         if (qemu_loglevel_mask(CPU_LOG_INT)) {
@@ -414,7 +431,7 @@ static void m68k_interrupt_all(CPUM68KState *env, int is_hw)
 
     env->aregs[7] = sp;
     /* Jump to vector.  */
-    env->pc = cpu_ldl_kernel(env, env->vbr + vector);
+    env->pc = cpu_ldl_mmuidx_ra(env, env->vbr + vector, MMU_KERNEL_IDX, 0);
 }
 
 static void do_interrupt_all(CPUM68KState *env, int is_hw)
@@ -494,10 +511,12 @@ bool m68k_cpu_exec_interrupt(CPUState *cs, int interrupt_request)
 
     if (interrupt_request & CPU_INTERRUPT_HARD
         && ((env->sr & SR_I) >> SR_I_SHIFT) < env->pending_level) {
-        /* Real hardware gets the interrupt vector via an IACK cycle
-           at this point.  Current emulated hardware doesn't rely on
-           this, so we provide/save the vector when the interrupt is
-           first signalled.  */
+        /*
+         * Real hardware gets the interrupt vector via an IACK cycle
+         * at this point.  Current emulated hardware doesn't rely on
+         * this, so we provide/save the vector when the interrupt is
+         * first signalled.
+         */
         cs->exception_index = env->pending_vector;
         do_interrupt_m68k_hardirq(env);
         return true;
@@ -537,7 +556,8 @@ void HELPER(divuw)(CPUM68KState *env, int destr, uint32_t den)
     env->cc_c = 0; /* always cleared, even if overflow */
     if (quot > 0xffff) {
         env->cc_v = -1;
-        /* real 68040 keeps N and unset Z on overflow,
+        /*
+         * real 68040 keeps N and unset Z on overflow,
          * whereas documentation says "undefined"
          */
         env->cc_z = 1;
@@ -564,7 +584,8 @@ void HELPER(divsw)(CPUM68KState *env, int destr, int32_t den)
     if (quot != (int16_t)quot) {
         env->cc_v = -1;
         /* nothing else is modified */
-        /* real 68040 keeps N and unset Z on overflow,
+        /*
+         * real 68040 keeps N and unset Z on overflow,
          * whereas documentation says "undefined"
          */
         env->cc_z = 1;
@@ -647,7 +668,8 @@ void HELPER(divull)(CPUM68KState *env, int numr, int regr, uint32_t den)
     env->cc_c = 0; /* always cleared, even if overflow */
     if (quot > 0xffffffffULL) {
         env->cc_v = -1;
-        /* real 68040 keeps N and unset Z on overflow,
+        /*
+         * real 68040 keeps N and unset Z on overflow,
          * whereas documentation says "undefined"
          */
         env->cc_z = 1;
@@ -681,7 +703,8 @@ void HELPER(divsll)(CPUM68KState *env, int numr, int regr, int32_t den)
     env->cc_c = 0; /* always cleared, even if overflow */
     if (quot != (int32_t)quot) {
         env->cc_v = -1;
-        /* real 68040 keeps N and unset Z on overflow,
+        /*
+         * real 68040 keeps N and unset Z on overflow,
          * whereas documentation says "undefined"
          */
         env->cc_z = 1;
@@ -838,14 +861,18 @@ static struct bf_data bf_prep(uint32_t addr, int32_t ofs, uint32_t len)
         addr -= 1;
     }
 
-    /* Compute the number of bytes required (minus one) to
-       satisfy the bitfield.  */
+    /*
+     * Compute the number of bytes required (minus one) to
+     * satisfy the bitfield.
+     */
     blen = (bofs + len - 1) / 8;
 
-    /* Canonicalize the bit offset for data loaded into a 64-bit big-endian
-       word.  For the cases where BLEN is not a power of 2, adjust ADDR so
-       that we can use the next power of two sized load without crossing a
-       page boundary, unless the field itself crosses the boundary.  */
+    /*
+     * Canonicalize the bit offset for data loaded into a 64-bit big-endian
+     * word.  For the cases where BLEN is not a power of 2, adjust ADDR so
+     * that we can use the next power of two sized load without crossing a
+     * page boundary, unless the field itself crosses the boundary.
+     */
     switch (blen) {
     case 0:
         bofs += 56;
@@ -937,8 +964,10 @@ uint64_t HELPER(bfextu_mem)(CPUM68KState *env, uint32_t addr,
     struct bf_data d = bf_prep(addr, ofs, len);
     uint64_t data = bf_load(env, d.addr, d.blen, ra);
 
-    /* Put CC_N at the top of the high word; put the zero-extended value
-       at the bottom of the low word.  */
+    /*
+     * Put CC_N at the top of the high word; put the zero-extended value
+     * at the bottom of the low word.
+     */
     data <<= d.bofs;
     data >>= 64 - d.len;
     data |= data << (64 - d.len);
@@ -1016,15 +1045,18 @@ uint64_t HELPER(bfffo_mem)(CPUM68KState *env, uint32_t addr,
     uint64_t n = (data & mask) << d.bofs;
     uint32_t ffo = helper_bfffo_reg(n >> 32, ofs, d.len);
 
-    /* Return FFO in the low word and N in the high word.
-       Note that because of MASK and the shift, the low word
-       is already zero.  */
+    /*
+     * Return FFO in the low word and N in the high word.
+     * Note that because of MASK and the shift, the low word
+     * is already zero.
+     */
     return n | ffo;
 }
 
 void HELPER(chk)(CPUM68KState *env, int32_t val, int32_t ub)
 {
-    /* From the specs:
+    /*
+     * From the specs:
      *   X: Not affected, C,V,Z: Undefined,
      *   N: Set if val < 0; cleared if val > ub, undefined otherwise
      * We implement here values found from a real MC68040:
@@ -1054,7 +1086,8 @@ void HELPER(chk)(CPUM68KState *env, int32_t val, int32_t ub)
 
 void HELPER(chk2)(CPUM68KState *env, int32_t val, int32_t lb, int32_t ub)
 {
-    /* From the specs:
+    /*
+     * From the specs:
      *   X: Not affected, N,V: Undefined,
      *   Z: Set if val is equal to lb or ub
      *   C: Set if val < lb or val > ub, cleared otherwise

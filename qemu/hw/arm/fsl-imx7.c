@@ -22,6 +22,7 @@
 #include "qapi/error.h"
 #include "hw/arm/fsl-imx7.h"
 #include "hw/misc/unimp.h"
+#include "hw/boards.h"
 #include "sysemu/sysemu.h"
 #include "qemu/error-report.h"
 #include "qemu/module.h"
@@ -30,31 +31,29 @@
 
 static void fsl_imx7_init(Object *obj)
 {
+    MachineState *ms = MACHINE(qdev_get_machine());
     FslIMX7State *s = FSL_IMX7(obj);
     char name[NAME_SIZE];
     int i;
 
-
-    for (i = 0; i < MIN(smp_cpus, FSL_IMX7_NUM_CPUS); i++) {
+    for (i = 0; i < MIN(ms->smp.cpus, FSL_IMX7_NUM_CPUS); i++) {
         snprintf(name, NAME_SIZE, "cpu%d", i);
-        object_initialize_child(obj, name, &s->cpu[i], sizeof(s->cpu[i]),
-                                ARM_CPU_TYPE_NAME("cortex-a7"), &error_abort,
-                                NULL);
+        object_initialize_child(obj, name, &s->cpu[i],
+                                ARM_CPU_TYPE_NAME("cortex-a7"));
     }
 
     /*
      * A7MPCORE
      */
-    sysbus_init_child_obj(obj, "a7mpcore", &s->a7mpcore, sizeof(s->a7mpcore),
-                          TYPE_A15MPCORE_PRIV);
+    object_initialize_child(obj, "a7mpcore", &s->a7mpcore,
+                            TYPE_A15MPCORE_PRIV);
 
     /*
      * GPIOs 1 to 7
      */
     for (i = 0; i < FSL_IMX7_NUM_GPIOS; i++) {
         snprintf(name, NAME_SIZE, "gpio%d", i);
-        sysbus_init_child_obj(obj, name, &s->gpio[i], sizeof(s->gpio[i]),
-                          TYPE_IMX_GPIO);
+        object_initialize_child(obj, name, &s->gpio[i], TYPE_IMX_GPIO);
     }
 
     /*
@@ -62,38 +61,33 @@ static void fsl_imx7_init(Object *obj)
      */
     for (i = 0; i < FSL_IMX7_NUM_GPTS; i++) {
         snprintf(name, NAME_SIZE, "gpt%d", i);
-        sysbus_init_child_obj(obj, name, &s->gpt[i], sizeof(s->gpt[i]),
-                              TYPE_IMX7_GPT);
+        object_initialize_child(obj, name, &s->gpt[i], TYPE_IMX7_GPT);
     }
 
     /*
      * CCM
      */
-    sysbus_init_child_obj(obj, "ccm", &s->ccm, sizeof(s->ccm), TYPE_IMX7_CCM);
+    object_initialize_child(obj, "ccm", &s->ccm, TYPE_IMX7_CCM);
 
     /*
      * Analog
      */
-    sysbus_init_child_obj(obj, "analog", &s->analog, sizeof(s->analog),
-                          TYPE_IMX7_ANALOG);
+    object_initialize_child(obj, "analog", &s->analog, TYPE_IMX7_ANALOG);
 
     /*
      * GPCv2
      */
-    sysbus_init_child_obj(obj, "gpcv2", &s->gpcv2, sizeof(s->gpcv2),
-                          TYPE_IMX_GPCV2);
+    object_initialize_child(obj, "gpcv2", &s->gpcv2, TYPE_IMX_GPCV2);
 
     for (i = 0; i < FSL_IMX7_NUM_ECSPIS; i++) {
         snprintf(name, NAME_SIZE, "spi%d", i + 1);
-        sysbus_init_child_obj(obj, name, &s->spi[i], sizeof(s->spi[i]),
-                              TYPE_IMX_SPI);
+        object_initialize_child(obj, name, &s->spi[i], TYPE_IMX_SPI);
     }
 
 
     for (i = 0; i < FSL_IMX7_NUM_I2CS; i++) {
         snprintf(name, NAME_SIZE, "i2c%d", i + 1);
-        sysbus_init_child_obj(obj, name, &s->i2c[i], sizeof(s->i2c[i]),
-                              TYPE_IMX_I2C);
+        object_initialize_child(obj, name, &s->i2c[i], TYPE_IMX_I2C);
     }
 
     /*
@@ -101,8 +95,7 @@ static void fsl_imx7_init(Object *obj)
      */
     for (i = 0; i < FSL_IMX7_NUM_UARTS; i++) {
             snprintf(name, NAME_SIZE, "uart%d", i);
-            sysbus_init_child_obj(obj, name, &s->uart[i], sizeof(s->uart[i]),
-                                  TYPE_IMX_SERIAL);
+            object_initialize_child(obj, name, &s->uart[i], TYPE_IMX_SERIAL);
     }
 
     /*
@@ -110,8 +103,7 @@ static void fsl_imx7_init(Object *obj)
      */
     for (i = 0; i < FSL_IMX7_NUM_ETHS; i++) {
             snprintf(name, NAME_SIZE, "eth%d", i);
-            sysbus_init_child_obj(obj, name, &s->eth[i], sizeof(s->eth[i]),
-                                  TYPE_IMX_ENET);
+            object_initialize_child(obj, name, &s->eth[i], TYPE_IMX_ENET);
     }
 
     /*
@@ -119,47 +111,44 @@ static void fsl_imx7_init(Object *obj)
      */
     for (i = 0; i < FSL_IMX7_NUM_USDHCS; i++) {
             snprintf(name, NAME_SIZE, "usdhc%d", i);
-            sysbus_init_child_obj(obj, name, &s->usdhc[i], sizeof(s->usdhc[i]),
-                              TYPE_IMX_USDHC);
+            object_initialize_child(obj, name, &s->usdhc[i], TYPE_IMX_USDHC);
     }
 
     /*
      * SNVS
      */
-    sysbus_init_child_obj(obj, "snvs", &s->snvs, sizeof(s->snvs),
-                          TYPE_IMX7_SNVS);
+    object_initialize_child(obj, "snvs", &s->snvs, TYPE_IMX7_SNVS);
 
     /*
      * Watchdog
      */
     for (i = 0; i < FSL_IMX7_NUM_WDTS; i++) {
             snprintf(name, NAME_SIZE, "wdt%d", i);
-            sysbus_init_child_obj(obj, name, &s->wdt[i], sizeof(s->wdt[i]),
-                                  TYPE_IMX2_WDT);
+            object_initialize_child(obj, name, &s->wdt[i], TYPE_IMX2_WDT);
     }
 
     /*
      * GPR
      */
-    sysbus_init_child_obj(obj, "gpr", &s->gpr, sizeof(s->gpr), TYPE_IMX7_GPR);
+    object_initialize_child(obj, "gpr", &s->gpr, TYPE_IMX7_GPR);
 
-    sysbus_init_child_obj(obj, "pcie", &s->pcie, sizeof(s->pcie),
-                          TYPE_DESIGNWARE_PCIE_HOST);
+    object_initialize_child(obj, "pcie", &s->pcie, TYPE_DESIGNWARE_PCIE_HOST);
 
     for (i = 0; i < FSL_IMX7_NUM_USBS; i++) {
         snprintf(name, NAME_SIZE, "usb%d", i);
-        sysbus_init_child_obj(obj, name, &s->usb[i], sizeof(s->usb[i]),
-                              TYPE_CHIPIDEA);
+        object_initialize_child(obj, name, &s->usb[i], TYPE_CHIPIDEA);
     }
 }
 
 static void fsl_imx7_realize(DeviceState *dev, Error **errp)
 {
+    MachineState *ms = MACHINE(qdev_get_machine());
     FslIMX7State *s = FSL_IMX7(dev);
     Object *o;
     int i;
     qemu_irq irq;
     char name[NAME_SIZE];
+    unsigned int smp_cpus = ms->smp.cpus;
 
     if (smp_cpus > FSL_IMX7_NUM_CPUS) {
         error_setg(errp, "%s: Only %d CPUs are supported (%d requested)",
@@ -170,35 +159,33 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
     for (i = 0; i < smp_cpus; i++) {
         o = OBJECT(&s->cpu[i]);
 
-        object_property_set_int(o, QEMU_PSCI_CONDUIT_SMC,
-                                "psci-conduit", &error_abort);
+        object_property_set_int(o, "psci-conduit", QEMU_PSCI_CONDUIT_SMC,
+                                &error_abort);
 
         /* On uniprocessor, the CBAR is set to 0 */
         if (smp_cpus > 1) {
-            object_property_set_int(o, FSL_IMX7_A7MPCORE_ADDR,
-                                    "reset-cbar", &error_abort);
+            object_property_set_int(o, "reset-cbar", FSL_IMX7_A7MPCORE_ADDR,
+                                    &error_abort);
         }
 
         if (i) {
             /* Secondary CPUs start in PSCI powered-down state */
-            object_property_set_bool(o, true,
-                                     "start-powered-off", &error_abort);
+            object_property_set_bool(o, "start-powered-off", true,
+                                     &error_abort);
         }
 
-        object_property_set_bool(o, true, "realized", &error_abort);
+        qdev_realize(DEVICE(o), NULL, &error_abort);
     }
 
     /*
      * A7MPCORE
      */
-    object_property_set_int(OBJECT(&s->a7mpcore), smp_cpus, "num-cpu",
+    object_property_set_int(OBJECT(&s->a7mpcore), "num-cpu", smp_cpus,
                             &error_abort);
-    object_property_set_int(OBJECT(&s->a7mpcore),
-                            FSL_IMX7_MAX_IRQ + GIC_INTERNAL,
-                            "num-irq", &error_abort);
+    object_property_set_int(OBJECT(&s->a7mpcore), "num-irq",
+                            FSL_IMX7_MAX_IRQ + GIC_INTERNAL, &error_abort);
 
-    object_property_set_bool(OBJECT(&s->a7mpcore), true, "realized",
-                             &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->a7mpcore), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->a7mpcore), 0, FSL_IMX7_A7MPCORE_ADDR);
 
     for (i = 0; i < smp_cpus; i++) {
@@ -233,8 +220,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
         };
 
         s->gpt[i].ccm = IMX_CCM(&s->ccm);
-        object_property_set_bool(OBJECT(&s->gpt[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->gpt[i]), &error_abort);
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->gpt[i]), 0, FSL_IMX7_GPTn_ADDR[i]);
     }
 
@@ -249,8 +235,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_GPIO7_ADDR,
         };
 
-        object_property_set_bool(OBJECT(&s->gpio[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->gpio[i]), &error_abort);
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->gpio[i]), 0, FSL_IMX7_GPIOn_ADDR[i]);
     }
 
@@ -271,21 +256,19 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
     /*
      * CCM
      */
-    object_property_set_bool(OBJECT(&s->ccm), true, "realized", &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->ccm), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->ccm), 0, FSL_IMX7_CCM_ADDR);
 
     /*
      * Analog
      */
-    object_property_set_bool(OBJECT(&s->analog), true, "realized",
-                             &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->analog), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->analog), 0, FSL_IMX7_ANALOG_ADDR);
 
     /*
      * GPCv2
      */
-    object_property_set_bool(OBJECT(&s->gpcv2), true,
-                             "realized", &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->gpcv2), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->gpcv2), 0, FSL_IMX7_GPC_ADDR);
 
     /* Initialize all ECSPI */
@@ -305,8 +288,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
         };
 
         /* Initialize the SPI */
-        object_property_set_bool(OBJECT(&s->spi[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->spi[i]), &error_abort);
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->spi[i]), 0,
                         FSL_IMX7_SPIn_ADDR[i]);
         sysbus_connect_irq(SYS_BUS_DEVICE(&s->spi[i]), 0,
@@ -329,8 +311,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_I2C4_IRQ,
         };
 
-        object_property_set_bool(OBJECT(&s->i2c[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->i2c[i]), &error_abort);
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->i2c[i]), 0, FSL_IMX7_I2Cn_ADDR[i]);
 
         sysbus_connect_irq(SYS_BUS_DEVICE(&s->i2c[i]), 0,
@@ -365,8 +346,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
 
         qdev_prop_set_chr(DEVICE(&s->uart[i]), "chardev", serial_hd(i));
 
-        object_property_set_bool(OBJECT(&s->uart[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->uart[i]), &error_abort);
 
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->uart[i]), 0, FSL_IMX7_UARTn_ADDR[i]);
 
@@ -383,11 +363,12 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_ENET2_ADDR,
         };
 
-        object_property_set_uint(OBJECT(&s->eth[i]), FSL_IMX7_ETH_NUM_TX_RINGS,
-                                 "tx-ring-num", &error_abort);
+        object_property_set_uint(OBJECT(&s->eth[i]), "phy-num",
+                                 s->phy_num[i], &error_abort);
+        object_property_set_uint(OBJECT(&s->eth[i]), "tx-ring-num",
+                                 FSL_IMX7_ETH_NUM_TX_RINGS, &error_abort);
         qdev_set_nic_properties(DEVICE(&s->eth[i]), &nd_table[i]);
-        object_property_set_bool(OBJECT(&s->eth[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->eth[i]), &error_abort);
 
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->eth[i]), 0, FSL_IMX7_ENETn_ADDR[i]);
 
@@ -413,8 +394,9 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_USDHC3_IRQ,
         };
 
-        object_property_set_bool(OBJECT(&s->usdhc[i]), true, "realized",
-                                 &error_abort);
+        object_property_set_uint(OBJECT(&s->usdhc[i]), "vendor",
+                                 SDHCI_VENDOR_IMX, &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->usdhc[i]), &error_abort);
 
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->usdhc[i]), 0,
                         FSL_IMX7_USDHCn_ADDR[i]);
@@ -426,7 +408,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
     /*
      * SNVS
      */
-    object_property_set_bool(OBJECT(&s->snvs), true, "realized", &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->snvs), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->snvs), 0, FSL_IMX7_SNVS_ADDR);
 
     /*
@@ -444,11 +426,21 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_WDOG3_ADDR,
             FSL_IMX7_WDOG4_ADDR,
         };
+        static const int FSL_IMX7_WDOGn_IRQ[FSL_IMX7_NUM_WDTS] = {
+            FSL_IMX7_WDOG1_IRQ,
+            FSL_IMX7_WDOG2_IRQ,
+            FSL_IMX7_WDOG3_IRQ,
+            FSL_IMX7_WDOG4_IRQ,
+        };
 
-        object_property_set_bool(OBJECT(&s->wdt[i]), true, "realized",
-                                 &error_abort);
+        object_property_set_bool(OBJECT(&s->wdt[i]), "pretimeout-support",
+                                 true, &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->wdt[i]), &error_abort);
 
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->wdt[i]), 0, FSL_IMX7_WDOGn_ADDR[i]);
+        sysbus_connect_irq(SYS_BUS_DEVICE(&s->wdt[i]), 0,
+                           qdev_get_gpio_in(DEVICE(&s->a7mpcore),
+                                            FSL_IMX7_WDOGn_IRQ[i]));
     }
 
     /*
@@ -456,13 +448,35 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
      */
     create_unimplemented_device("sdma", FSL_IMX7_SDMA_ADDR, FSL_IMX7_SDMA_SIZE);
 
+    /*
+     * CAAM
+     */
+    create_unimplemented_device("caam", FSL_IMX7_CAAM_ADDR, FSL_IMX7_CAAM_SIZE);
 
-    object_property_set_bool(OBJECT(&s->gpr), true, "realized",
-                             &error_abort);
+    /*
+     * PWM
+     */
+    create_unimplemented_device("pwm1", FSL_IMX7_PWM1_ADDR, FSL_IMX7_PWMn_SIZE);
+    create_unimplemented_device("pwm2", FSL_IMX7_PWM2_ADDR, FSL_IMX7_PWMn_SIZE);
+    create_unimplemented_device("pwm3", FSL_IMX7_PWM3_ADDR, FSL_IMX7_PWMn_SIZE);
+    create_unimplemented_device("pwm4", FSL_IMX7_PWM4_ADDR, FSL_IMX7_PWMn_SIZE);
+
+    /*
+     * CAN
+     */
+    create_unimplemented_device("can1", FSL_IMX7_CAN1_ADDR, FSL_IMX7_CANn_SIZE);
+    create_unimplemented_device("can2", FSL_IMX7_CAN2_ADDR, FSL_IMX7_CANn_SIZE);
+
+    /*
+     * OCOTP
+     */
+    create_unimplemented_device("ocotp", FSL_IMX7_OCOTP_ADDR,
+                                FSL_IMX7_OCOTP_SIZE);
+
+    sysbus_realize(SYS_BUS_DEVICE(&s->gpr), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->gpr), 0, FSL_IMX7_GPR_ADDR);
 
-    object_property_set_bool(OBJECT(&s->pcie), true,
-                             "realized", &error_abort);
+    sysbus_realize(SYS_BUS_DEVICE(&s->pcie), &error_abort);
     sysbus_mmio_map(SYS_BUS_DEVICE(&s->pcie), 0, FSL_IMX7_PCIE_REG_ADDR);
 
     irq = qdev_get_gpio_in(DEVICE(&s->a7mpcore), FSL_IMX7_PCI_INTA_IRQ);
@@ -494,8 +508,7 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
             FSL_IMX7_USB3_IRQ,
         };
 
-        object_property_set_bool(OBJECT(&s->usb[i]), true, "realized",
-                                 &error_abort);
+        sysbus_realize(SYS_BUS_DEVICE(&s->usb[i]), &error_abort);
         sysbus_mmio_map(SYS_BUS_DEVICE(&s->usb[i]), 0,
                         FSL_IMX7_USBn_ADDR[i]);
 
@@ -526,12 +539,30 @@ static void fsl_imx7_realize(DeviceState *dev, Error **errp)
      */
     create_unimplemented_device("lcdif", FSL_IMX7_LCDIF_ADDR,
                                 FSL_IMX7_LCDIF_SIZE);
+
+    /*
+     * DMA APBH
+     */
+    create_unimplemented_device("dma-apbh", FSL_IMX7_DMA_APBH_ADDR,
+                                FSL_IMX7_DMA_APBH_SIZE);
+    /*
+     * PCIe PHY
+     */
+    create_unimplemented_device("pcie-phy", FSL_IMX7_PCIE_PHY_ADDR,
+                                FSL_IMX7_PCIE_PHY_SIZE);
 }
+
+static Property fsl_imx7_properties[] = {
+    DEFINE_PROP_UINT32("fec1-phy-num", FslIMX7State, phy_num[0], 0),
+    DEFINE_PROP_UINT32("fec2-phy-num", FslIMX7State, phy_num[1], 1),
+    DEFINE_PROP_END_OF_LIST(),
+};
 
 static void fsl_imx7_class_init(ObjectClass *oc, void *data)
 {
     DeviceClass *dc = DEVICE_CLASS(oc);
 
+    device_class_set_props(dc, fsl_imx7_properties);
     dc->realize = fsl_imx7_realize;
 
     /* Reason: Uses serial_hds and nd_table in realize() directly */

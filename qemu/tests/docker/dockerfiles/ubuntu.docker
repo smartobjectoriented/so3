@@ -9,21 +9,20 @@
 # system won't pick up that it has changed.
 #
 
-FROM ubuntu:19.04
-ENV PACKAGES flex bison \
+FROM ubuntu:20.04
+ENV PACKAGES \
     ccache \
     clang \
+    dbus \
     gcc \
     gettext \
     git \
     glusterfs-common \
     libaio-dev \
     libattr1-dev \
-    libbluetooth-dev \
     libbrlapi-dev \
     libbz2-dev \
     libcacard-dev \
-    libcap-dev \
     libcap-ng-dev \
     libcurl4-gnutls-dev \
     libdrm-dev \
@@ -53,18 +52,20 @@ ENV PACKAGES flex bison \
     libsnappy-dev \
     libspice-protocol-dev \
     libspice-server-dev \
-    libssh2-1-dev \
+    libssh-dev \
     libusb-1.0-0-dev \
     libusbredirhost-dev \
     libvdeplug-dev \
     libvte-2.91-dev \
     libxen-dev \
+    libzstd-dev \
     make \
-    python-yaml \
+    ninja-build \
+    python3-yaml \
+    python3-sphinx \
     sparse \
-    texinfo \
     xfslibs-dev
 RUN apt-get update && \
-    apt-get -y install $PACKAGES
+    DEBIAN_FRONTEND=noninteractive apt-get -y install $PACKAGES
 RUN dpkg -l $PACKAGES | sort > /packages.txt
-ENV FEATURES clang pyyaml sdl2
+ENV FEATURES clang pyyaml sdl2 docs

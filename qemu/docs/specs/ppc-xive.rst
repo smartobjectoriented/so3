@@ -20,10 +20,11 @@ The XIVE IC is composed of three sub-engines, each taking care of a
 processing layer of external interrupts:
 
 - Interrupt Virtualization Source Engine (IVSE), or Source Controller
-  (SC). These are found in PCI PHBs, in the PSI host bridge
-  controller, but also inside the main controller for the core IPIs
-  and other sub-chips (NX, CAP, NPU) of the chip/processor. They are
-  configured to feed the IVRE with events.
+  (SC). These are found in PCI PHBs, in the Processor Service
+  Interface (PSI) host bridge Controller, but also inside the main
+  controller for the core IPIs and other sub-chips (NX, CAP, NPU) of
+  the chip/processor. They are configured to feed the IVRE with
+  events.
 - Interrupt Virtualization Routing Engine (IVRE) or Virtualization
   Controller (VC). It handles event coalescing and perform interrupt
   routing by matching an event source number with an Event
@@ -162,7 +163,7 @@ Interrupt Priority Register (PIPR) is also updated using the IPB. This
 register represent the priority of the most favored pending
 notification.
 
-The PIPR is then compared to the the Current Processor Priority
+The PIPR is then compared to the Current Processor Priority
 Register (CPPR). If it is more favored (numerically less than), the
 CPU interrupt line is raised and the EO bit of the Notification Source
 Register (NSR) is updated to notify the presence of an exception for

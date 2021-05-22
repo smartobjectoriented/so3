@@ -11,10 +11,11 @@
  */
 
 #include "qemu/osdep.h"
-#include "hw/hw.h"
-#include "bitbang_i2c.h"
+#include "hw/irq.h"
+#include "hw/i2c/bitbang_i2c.h"
 #include "hw/sysbus.h"
 #include "qemu/module.h"
+#include "qom/object.h"
 
 //#define DEBUG_BITBANG_I2C
 
@@ -24,39 +25,6 @@ do { printf("bitbang_i2c: " fmt , ## __VA_ARGS__); } while (0)
 #else
 #define DPRINTF(fmt, ...) do {} while(0)
 #endif
-
-typedef enum bitbang_i2c_state {
-    STOPPED = 0,
-    SENDING_BIT7,
-    SENDING_BIT6,
-    SENDING_BIT5,
-    SENDING_BIT4,
-    SENDING_BIT3,
-    SENDING_BIT2,
-    SENDING_BIT1,
-    SENDING_BIT0,
-    WAITING_FOR_ACK,
-    RECEIVING_BIT7,
-    RECEIVING_BIT6,
-    RECEIVING_BIT5,
-    RECEIVING_BIT4,
-    RECEIVING_BIT3,
-    RECEIVING_BIT2,
-    RECEIVING_BIT1,
-    RECEIVING_BIT0,
-    SENDING_ACK,
-    SENT_NACK
-} bitbang_i2c_state;
-
-struct bitbang_i2c_interface {
-    I2CBus *bus;
-    bitbang_i2c_state state;
-    int last_data;
-    int last_clock;
-    int device_out;
-    uint8_t buffer;
-    int current_addr;
-};
 
 static void bitbang_i2c_enter_stop(bitbang_i2c_interface *i2c)
 {
@@ -184,39 +152,33 @@ int bitbang_i2c_set(bitbang_i2c_interface *i2c, int line, int level)
     abort();
 }
 
-bitbang_i2c_interface *bitbang_i2c_init(I2CBus *bus)
+void bitbang_i2c_init(bitbang_i2c_interface *s, I2CBus *bus)
 {
-    bitbang_i2c_interface *s;
-
-    s = g_malloc0(sizeof(bitbang_i2c_interface));
-
     s->bus = bus;
     s->last_data = 1;
     s->last_clock = 1;
     s->device_out = 1;
-
-    return s;
 }
 
 /* GPIO interface.  */
 
 #define TYPE_GPIO_I2C "gpio_i2c"
-#define GPIO_I2C(obj) OBJECT_CHECK(GPIOI2CState, (obj), TYPE_GPIO_I2C)
+OBJECT_DECLARE_SIMPLE_TYPE(GPIOI2CState, GPIO_I2C)
 
-typedef struct GPIOI2CState {
+struct GPIOI2CState {
     SysBusDevice parent_obj;
 
     MemoryRegion dummy_iomem;
-    bitbang_i2c_interface *bitbang;
+    bitbang_i2c_interface bitbang;
     int last_level;
     qemu_irq out;
-} GPIOI2CState;
+};
 
 static void bitbang_i2c_gpio_set(void *opaque, int irq, int level)
 {
     GPIOI2CState *s = opaque;
 
-    level = bitbang_i2c_set(s->bitbang, irq, level);
+    level = bitbang_i2c_set(&s->bitbang, irq, level);
     if (level != s->last_level) {
         s->last_level = level;
         qemu_set_irq(s->out, level);
@@ -234,7 +196,7 @@ static void gpio_i2c_init(Object *obj)
     sysbus_init_mmio(sbd, &s->dummy_iomem);
 
     bus = i2c_init_bus(dev, "i2c");
-    s->bitbang = bitbang_i2c_init(bus);
+    bitbang_i2c_init(&s->bitbang, bus);
 
     qdev_init_gpio_in(dev, bitbang_i2c_gpio_set, 2);
     qdev_init_gpio_out(dev, &s->out, 1);

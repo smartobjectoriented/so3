@@ -17,7 +17,9 @@ toolchain = $(shell source ./edk2-funcs.sh && qemu_edk2_get_toolchain $(1))
 
 licenses := \
 	edk2/License.txt \
+	edk2/License-History.txt \
 	edk2/OvmfPkg/License.txt \
+	edk2/ArmPkg/Library/ArmSoftFloatLib/berkeley-softfloat-3/COPYING.txt \
 	edk2/CryptoPkg/Library/OpensslLib/openssl/LICENSE
 
 # The "edk2-arm-vars.fd" varstore template is suitable for aarch64 as well.
@@ -44,8 +46,13 @@ all: $(foreach flashdev,$(flashdevs),../pc-bios/edk2-$(flashdev).fd.bz2) \
 # files.
 .INTERMEDIATE: $(foreach flashdev,$(flashdevs),../pc-bios/edk2-$(flashdev).fd)
 
+# Fetch edk2 submodule's submodules. If it is not in a git tree, assume
+# we're building from a tarball and that they've already been fetched by
+# make-release/tarball scripts.
 submodules:
-	cd edk2 && git submodule update --init --force
+	if test -d edk2/.git; then \
+		cd edk2 && git submodule update --init --force; \
+	fi
 
 # See notes on the ".NOTPARALLEL" target and the "+" indicator in
 # "tests/uefi-test-tools/Makefile".
@@ -57,7 +64,10 @@ submodules:
 		--arch=AARCH64 \
 		--platform=ArmVirtPkg/ArmVirtQemu.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM2_ENABLE \
+		-D TPM2_CONFIG_ENABLE
 	cp edk2/Build/ArmVirtQemu-AARCH64/DEBUG_$(call toolchain,aarch64)/FV/QEMU_EFI.fd \
 		$@
 	truncate --size=64M $@
@@ -68,7 +78,10 @@ submodules:
 		--arch=ARM \
 		--platform=ArmVirtPkg/ArmVirtQemu.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM2_ENABLE \
+		-D TPM2_CONFIG_ENABLE
 	cp edk2/Build/ArmVirtQemu-ARM/DEBUG_$(call toolchain,arm)/FV/QEMU_EFI.fd \
 		$@
 	truncate --size=64M $@
@@ -79,10 +92,10 @@ submodules:
 		--arch=IA32 \
 		--platform=OvmfPkg/OvmfPkgIa32.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE \
-		-D TLS_ENABLE \
-		-D TPM2_ENABLE \
-		-D TPM2_CONFIG_ENABLE
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM_ENABLE \
+		-D TPM_CONFIG_ENABLE
 	cp edk2/Build/OvmfIa32/DEBUG_$(call toolchain,i386)/FV/OVMF_CODE.fd $@
 
 ../pc-bios/edk2-i386-secure-code.fd: submodules
@@ -91,10 +104,10 @@ submodules:
 		--arch=IA32 \
 		--platform=OvmfPkg/OvmfPkgIa32.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE \
-		-D TLS_ENABLE \
-		-D TPM2_ENABLE \
-		-D TPM2_CONFIG_ENABLE \
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM_ENABLE \
+		-D TPM_CONFIG_ENABLE \
 		-D SECURE_BOOT_ENABLE \
 		-D SMM_REQUIRE
 	cp edk2/Build/OvmfIa32/DEBUG_$(call toolchain,i386)/FV/OVMF_CODE.fd $@
@@ -105,10 +118,10 @@ submodules:
 		--arch=X64 \
 		--platform=OvmfPkg/OvmfPkgX64.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE \
-		-D TLS_ENABLE \
-		-D TPM2_ENABLE \
-		-D TPM2_CONFIG_ENABLE
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM_ENABLE \
+		-D TPM_CONFIG_ENABLE
 	cp edk2/Build/OvmfX64/DEBUG_$(call toolchain,x86_64)/FV/OVMF_CODE.fd $@
 
 ../pc-bios/edk2-x86_64-secure-code.fd: submodules
@@ -118,10 +131,10 @@ submodules:
 		--arch=X64 \
 		--platform=OvmfPkg/OvmfPkgIa32X64.dsc \
 		-D NETWORK_IP6_ENABLE \
-		-D HTTP_BOOT_ENABLE \
-		-D TLS_ENABLE \
-		-D TPM2_ENABLE \
-		-D TPM2_CONFIG_ENABLE \
+		-D NETWORK_HTTP_BOOT_ENABLE \
+		-D NETWORK_TLS_ENABLE \
+		-D TPM_ENABLE \
+		-D TPM_CONFIG_ENABLE \
 		-D SECURE_BOOT_ENABLE \
 		-D SMM_REQUIRE
 	cp edk2/Build/Ovmf3264/DEBUG_$(call toolchain,x86_64)/FV/OVMF_CODE.fd $@

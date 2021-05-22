@@ -24,6 +24,8 @@
 #include "hw/pci/msi.h"
 #include "hw/pci/pcie.h"
 #include "hw/pci/pcie_port.h"
+#include "hw/qdev-properties.h"
+#include "migration/vmstate.h"
 #include "qapi/error.h"
 #include "qemu/module.h"
 
@@ -41,9 +43,12 @@
 static void xio3130_downstream_write_config(PCIDevice *d, uint32_t address,
                                          uint32_t val, int len)
 {
+    uint16_t slt_ctl, slt_sta;
+
+    pcie_cap_slot_get(d, &slt_ctl, &slt_sta);
     pci_bridge_write_config(d, address, val, len);
     pcie_cap_flr_write_config(d, address, val, len);
-    pcie_cap_slot_write_config(d, address, val, len);
+    pcie_cap_slot_write_config(d, slt_ctl, slt_sta, address, val, len);
     pcie_aer_write_config(d, address, val, len);
 }
 
@@ -89,7 +94,7 @@ static void xio3130_downstream_realize(PCIDevice *d, Error **errp)
     }
     pcie_cap_flr_init(d);
     pcie_cap_deverr_init(d);
-    pcie_cap_slot_init(d, s->slot);
+    pcie_cap_slot_init(d, s);
     pcie_cap_arifwd_init(d);
 
     pcie_chassis_create(s->chassis);
@@ -164,7 +169,7 @@ static void xio3130_downstream_class_init(ObjectClass *klass, void *data)
     dc->desc = "TI X3130 Downstream Port of PCI Express Switch";
     dc->reset = xio3130_downstream_reset;
     dc->vmsd = &vmstate_xio3130_downstream;
-    dc->props = xio3130_downstream_props;
+    device_class_set_props(dc, xio3130_downstream_props);
 }
 
 static const TypeInfo xio3130_downstream_info = {
