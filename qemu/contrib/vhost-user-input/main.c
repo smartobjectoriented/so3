@@ -17,6 +17,10 @@
 #include "standard-headers/linux/virtio_input.h"
 #include "qapi/error.h"
 
+enum {
+    VHOST_USER_INPUT_MAX_QUEUES = 2,
+};
+
 typedef struct virtio_input_event virtio_input_event;
 typedef struct virtio_input_config virtio_input_config;
 
@@ -73,7 +77,7 @@ static void vi_input_send(VuInput *vi, struct virtio_input_event *event)
         len = iov_from_buf(elem->in_sg, elem->in_num,
                            0, &vi->queue[i].event, sizeof(virtio_input_event));
         vu_queue_push(dev, vq, elem, len);
-        g_free(elem);
+        free(elem);
     }
 
     vu_queue_notify(&vi->dev.parent, vq);
@@ -149,7 +153,7 @@ static void vi_handle_sts(VuDev *dev, int qidx)
                          0, &event, sizeof(event));
         vi_handle_status(vi, &event);
         vu_queue_push(dev, vq, elem, len);
-        g_free(elem);
+        free(elem);
     }
 
     vu_queue_notify(&vi->dev.parent, vq);
@@ -183,7 +187,7 @@ vi_queue_set_started(VuDev *dev, int qidx, bool started)
     }
 
     if (!started && vi->evsrc) {
-        g_source_destroy(vi->evsrc);
+        vug_source_destroy(vi->evsrc);
         vi->evsrc = NULL;
     }
 }
@@ -342,7 +346,11 @@ main(int argc, char *argv[])
 
     vi.config = g_array_new(false, false, sizeof(virtio_input_config));
     memset(&id, 0, sizeof(id));
-    ioctl(vi.evdevfd, EVIOCGNAME(sizeof(id.u.string) - 1), id.u.string);
+    if (ioctl(vi.evdevfd, EVIOCGNAME(sizeof(id.u.string) - 1),
+              id.u.string) < 0) {
+        g_printerr("Failed to get evdev name: %s\n", g_strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     id.select = VIRTIO_INPUT_CFG_ID_NAME;
     id.size = strlen(id.u.string);
     g_array_append_val(vi.config, id);
@@ -367,16 +375,25 @@ main(int argc, char *argv[])
 
     if (opt_socket_path) {
         int lsock = unix_listen(opt_socket_path, &error_fatal);
+        if (lsock < 0) {
+            g_printerr("Failed to listen on %s.\n", opt_socket_path);
+            exit(EXIT_FAILURE);
+        }
         fd = accept(lsock, NULL, NULL);
         close(lsock);
     } else {
         fd = opt_fdnum;
     }
     if (fd == -1) {
-        g_printerr("Invalid socket");
+        g_printerr("Invalid vhost-user socket.\n");
         exit(EXIT_FAILURE);
     }
-    vug_init(&vi.dev, fd, vi_panic, &vuiface);
+
+    if (!vug_init(&vi.dev, VHOST_USER_INPUT_MAX_QUEUES, fd, vi_panic,
+                  &vuiface)) {
+        g_printerr("Failed to initialize libvhost-user-glib.\n");
+        exit(EXIT_FAILURE);
+    }
 
     loop = g_main_loop_new(NULL, FALSE);
     g_main_loop_run(loop);
@@ -384,9 +401,7 @@ main(int argc, char *argv[])
 
     vug_deinit(&vi.dev);
 
-    if (vi.evsrc) {
-        g_source_unref(vi.evsrc);
-    }
+    vug_source_destroy(vi.evsrc);
     g_array_free(vi.config, TRUE);
     g_free(vi.queue);
     return 0;

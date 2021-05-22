@@ -25,17 +25,20 @@
 #include "trace.h"
 #include "signal-common.h"
 
-struct target_sigaltstack target_sigaltstack_used = {
-    .ss_sp = 0,
-    .ss_size = 0,
-    .ss_flags = TARGET_SS_DISABLE,
-};
-
 static struct target_sigaction sigact_table[TARGET_NSIG];
 
 static void host_signal_handler(int host_signum, siginfo_t *info,
                                 void *puc);
 
+
+/*
+ * System includes define _NSIG as SIGRTMAX + 1,
+ * but qemu (like the kernel) defines TARGET_NSIG as TARGET_SIGRTMAX
+ * and the first signal is SIGHUP defined as 1
+ * Signal number 0 is reserved for use as kill(pid, 0), to test whether
+ * a process exists without sending it a signal.
+ */
+QEMU_BUILD_BUG_ON(__SIGRTMAX + 1 != _NSIG);
 static uint8_t host_to_target_signal_table[_NSIG] = {
     [SIGHUP] = TARGET_SIGHUP,
     [SIGINT] = TARGET_SIGINT,
@@ -72,26 +75,25 @@ static uint8_t host_to_target_signal_table[_NSIG] = {
     [SIGPWR] = TARGET_SIGPWR,
     [SIGSYS] = TARGET_SIGSYS,
     /* next signals stay the same */
-    /* Nasty hack: Reverse SIGRTMIN and SIGRTMAX to avoid overlap with
-       host libpthread signals.  This assumes no one actually uses SIGRTMAX :-/
-       To fix this properly we need to do manual signal delivery multiplexed
-       over a single host signal.  */
-    [__SIGRTMIN] = __SIGRTMAX,
-    [__SIGRTMAX] = __SIGRTMIN,
 };
-static uint8_t target_to_host_signal_table[_NSIG];
 
+static uint8_t target_to_host_signal_table[TARGET_NSIG + 1];
+
+/* valid sig is between 1 and _NSIG - 1 */
 int host_to_target_signal(int sig)
 {
-    if (sig < 0 || sig >= _NSIG)
+    if (sig < 1 || sig >= _NSIG) {
         return sig;
+    }
     return host_to_target_signal_table[sig];
 }
 
+/* valid sig is between 1 and TARGET_NSIG */
 int target_to_host_signal(int sig)
 {
-    if (sig < 0 || sig >= _NSIG)
+    if (sig < 1 || sig > TARGET_NSIG) {
         return sig;
+    }
     return target_to_host_signal_table[sig];
 }
 
@@ -112,11 +114,15 @@ static inline int target_sigismember(const target_sigset_t *set, int signum)
 void host_to_target_sigset_internal(target_sigset_t *d,
                                     const sigset_t *s)
 {
-    int i;
+    int host_sig, target_sig;
     target_sigemptyset(d);
-    for (i = 1; i <= TARGET_NSIG; i++) {
-        if (sigismember(s, i)) {
-            target_sigaddset(d, host_to_target_signal(i));
+    for (host_sig = 1; host_sig < _NSIG; host_sig++) {
+        target_sig = host_to_target_signal(host_sig);
+        if (target_sig < 1 || target_sig > TARGET_NSIG) {
+            continue;
+        }
+        if (sigismember(s, host_sig)) {
+            target_sigaddset(d, target_sig);
         }
     }
 }
@@ -134,11 +140,15 @@ void host_to_target_sigset(target_sigset_t *d, const sigset_t *s)
 void target_to_host_sigset_internal(sigset_t *d,
                                     const target_sigset_t *s)
 {
-    int i;
+    int host_sig, target_sig;
     sigemptyset(d);
-    for (i = 1; i <= TARGET_NSIG; i++) {
-        if (target_sigismember(s, i)) {
-            sigaddset(d, target_to_host_signal(i));
+    for (target_sig = 1; target_sig <= TARGET_NSIG; target_sig++) {
+        host_sig = target_to_host_signal(target_sig);
+        if (host_sig < 1 || host_sig >= _NSIG) {
+            continue;
+        }
+        if (target_sigismember(s, target_sig)) {
+            sigaddset(d, host_sig);
         }
     }
 }
@@ -185,7 +195,7 @@ int block_signals(void)
     sigfillset(&set);
     sigprocmask(SIG_SETMASK, &set, 0);
 
-    return atomic_xchg(&ts->signal_pending, 1);
+    return qatomic_xchg(&ts->signal_pending, 1);
 }
 
 /* Wrapper for sigprocmask function
@@ -251,13 +261,17 @@ void set_sigmask(const sigset_t *set)
 
 int on_sig_stack(unsigned long sp)
 {
-    return (sp - target_sigaltstack_used.ss_sp
-            < target_sigaltstack_used.ss_size);
+    TaskState *ts = (TaskState *)thread_cpu->opaque;
+
+    return (sp - ts->sigaltstack_used.ss_sp
+            < ts->sigaltstack_used.ss_size);
 }
 
 int sas_ss_flags(unsigned long sp)
 {
-    return (target_sigaltstack_used.ss_size == 0 ? SS_DISABLE
+    TaskState *ts = (TaskState *)thread_cpu->opaque;
+
+    return (ts->sigaltstack_used.ss_size == 0 ? SS_DISABLE
             : on_sig_stack(sp) ? SS_ONSTACK : 0);
 }
 
@@ -266,17 +280,21 @@ abi_ulong target_sigsp(abi_ulong sp, struct target_sigaction *ka)
     /*
      * This is the X/Open sanctioned signal stack switching.
      */
+    TaskState *ts = (TaskState *)thread_cpu->opaque;
+
     if ((ka->sa_flags & TARGET_SA_ONSTACK) && !sas_ss_flags(sp)) {
-        return target_sigaltstack_used.ss_sp + target_sigaltstack_used.ss_size;
+        return ts->sigaltstack_used.ss_sp + ts->sigaltstack_used.ss_size;
     }
     return sp;
 }
 
 void target_save_altstack(target_stack_t *uss, CPUArchState *env)
 {
-    __put_user(target_sigaltstack_used.ss_sp, &uss->ss_sp);
+    TaskState *ts = (TaskState *)thread_cpu->opaque;
+
+    __put_user(ts->sigaltstack_used.ss_sp, &uss->ss_sp);
     __put_user(sas_ss_flags(get_sp_from_cpustate(env)), &uss->ss_flags);
-    __put_user(target_sigaltstack_used.ss_size, &uss->ss_size);
+    __put_user(ts->sigaltstack_used.ss_size, &uss->ss_size);
 }
 
 /* siginfo conversion */
@@ -478,37 +496,72 @@ static int core_dump_signal(int sig)
     }
 }
 
+static void signal_table_init(void)
+{
+    int host_sig, target_sig, count;
+
+    /*
+     * Signals are supported starting from TARGET_SIGRTMIN and going up
+     * until we run out of host realtime signals.
+     * glibc at least uses only the lower 2 rt signals and probably
+     * nobody's using the upper ones.
+     * it's why SIGRTMIN (34) is generally greater than __SIGRTMIN (32)
+     * To fix this properly we need to do manual signal delivery multiplexed
+     * over a single host signal.
+     * Attempts for configure "missing" signals via sigaction will be
+     * silently ignored.
+     */
+    for (host_sig = SIGRTMIN; host_sig <= SIGRTMAX; host_sig++) {
+        target_sig = host_sig - SIGRTMIN + TARGET_SIGRTMIN;
+        if (target_sig <= TARGET_NSIG) {
+            host_to_target_signal_table[host_sig] = target_sig;
+        }
+    }
+
+    /* generate signal conversion tables */
+    for (target_sig = 1; target_sig <= TARGET_NSIG; target_sig++) {
+        target_to_host_signal_table[target_sig] = _NSIG; /* poison */
+    }
+    for (host_sig = 1; host_sig < _NSIG; host_sig++) {
+        if (host_to_target_signal_table[host_sig] == 0) {
+            host_to_target_signal_table[host_sig] = host_sig;
+        }
+        target_sig = host_to_target_signal_table[host_sig];
+        if (target_sig <= TARGET_NSIG) {
+            target_to_host_signal_table[target_sig] = host_sig;
+        }
+    }
+
+    if (trace_event_get_state_backends(TRACE_SIGNAL_TABLE_INIT)) {
+        for (target_sig = 1, count = 0; target_sig <= TARGET_NSIG; target_sig++) {
+            if (target_to_host_signal_table[target_sig] == _NSIG) {
+                count++;
+            }
+        }
+        trace_signal_table_init(count);
+    }
+}
+
 void signal_init(void)
 {
     TaskState *ts = (TaskState *)thread_cpu->opaque;
     struct sigaction act;
     struct sigaction oact;
-    int i, j;
+    int i;
     int host_sig;
 
-    /* generate signal conversion tables */
-    for(i = 1; i < _NSIG; i++) {
-        if (host_to_target_signal_table[i] == 0)
-            host_to_target_signal_table[i] = i;
-    }
-    for(i = 1; i < _NSIG; i++) {
-        j = host_to_target_signal_table[i];
-        target_to_host_signal_table[j] = i;
-    }
+    /* initialize signal conversion tables */
+    signal_table_init();
 
     /* Set the signal mask from the host mask. */
     sigprocmask(0, 0, &ts->signal_mask);
-
-    /* set all host signal handlers. ALL signals are blocked during
-       the handlers to serialize them. */
-    memset(sigact_table, 0, sizeof(sigact_table));
 
     sigfillset(&act.sa_mask);
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = host_signal_handler;
     for(i = 1; i <= TARGET_NSIG; i++) {
-#ifdef TARGET_GPROF
-        if (i == SIGPROF) {
+#ifdef CONFIG_GPROF
+        if (i == TARGET_SIGPROF) {
             continue;
         }
 #endif
@@ -635,7 +688,7 @@ int queue_signal(CPUArchState *env, int sig, int si_type,
     ts->sync_signal.info = *info;
     ts->sync_signal.pending = sig;
     /* signal that a new signal is pending */
-    atomic_set(&ts->signal_pending, 1);
+    qatomic_set(&ts->signal_pending, 1);
     return 1; /* indicates that the signal was queued */
 }
 
@@ -708,12 +761,13 @@ abi_long do_sigaltstack(abi_ulong uss_addr, abi_ulong uoss_addr, abi_ulong sp)
 {
     int ret;
     struct target_sigaltstack oss;
+    TaskState *ts = (TaskState *)thread_cpu->opaque;
 
     /* XXX: test errors */
     if(uoss_addr)
     {
-        __put_user(target_sigaltstack_used.ss_sp, &oss.ss_sp);
-        __put_user(target_sigaltstack_used.ss_size, &oss.ss_size);
+        __put_user(ts->sigaltstack_used.ss_sp, &oss.ss_sp);
+        __put_user(ts->sigaltstack_used.ss_size, &oss.ss_size);
         __put_user(sas_ss_flags(sp), &oss.ss_flags);
     }
 
@@ -760,8 +814,8 @@ abi_long do_sigaltstack(abi_ulong uss_addr, abi_ulong uoss_addr, abi_ulong sp)
             }
         }
 
-        target_sigaltstack_used.ss_sp = ss.ss_sp;
-        target_sigaltstack_used.ss_size = ss.ss_size;
+        ts->sigaltstack_used.ss_sp = ss.ss_sp;
+        ts->sigaltstack_used.ss_size = ss.ss_size;
     }
 
     if (uoss_addr) {
@@ -783,6 +837,8 @@ int do_sigaction(int sig, const struct target_sigaction *act,
     struct sigaction act1;
     int host_sig;
     int ret = 0;
+
+    trace_signal_do_sigaction_guest(sig, TARGET_NSIG);
 
     if (sig < 1 || sig > TARGET_NSIG || sig == TARGET_SIGKILL || sig == TARGET_SIGSTOP) {
         return -TARGET_EINVAL;
@@ -814,6 +870,23 @@ int do_sigaction(int sig, const struct target_sigaction *act,
 
         /* we update the host linux signal state */
         host_sig = target_to_host_signal(sig);
+        trace_signal_do_sigaction_host(host_sig, TARGET_NSIG);
+        if (host_sig > SIGRTMAX) {
+            /* we don't have enough host signals to map all target signals */
+            qemu_log_mask(LOG_UNIMP, "Unsupported target signal #%d, ignored\n",
+                          sig);
+            /*
+             * we don't return an error here because some programs try to
+             * register an handler for all possible rt signals even if they
+             * don't need it.
+             * An error here can abort them whereas there can be no problem
+             * to not have the signal available later.
+             * This is the case for golang,
+             *   See https://github.com/golang/go/issues/33746
+             * So we silently ignore the error.
+             */
+            return 0;
+        }
         if (host_sig != SIGSEGV && host_sig != SIGBUS) {
             sigfillset(&act1.sa_mask);
             act1.sa_flags = SA_SIGINFO;
@@ -861,7 +934,7 @@ static void handle_pending_signal(CPUArchState *cpu_env, int sig,
         handler = sa->_sa_handler;
     }
 
-    if (do_strace) {
+    if (unlikely(qemu_loglevel_mask(LOG_STRACE))) {
         print_taken_signal(sig, &k->info);
     }
 
@@ -932,7 +1005,7 @@ void process_pending_signals(CPUArchState *cpu_env)
     sigset_t set;
     sigset_t *blocked_set;
 
-    while (atomic_read(&ts->signal_pending)) {
+    while (qatomic_read(&ts->signal_pending)) {
         /* FIXME: This is not threadsafe.  */
         sigfillset(&set);
         sigprocmask(SIG_SETMASK, &set, 0);
@@ -976,7 +1049,7 @@ void process_pending_signals(CPUArchState *cpu_env)
          * of unblocking might cause us to take another host signal which
          * will set signal_pending again).
          */
-        atomic_set(&ts->signal_pending, 0);
+        qatomic_set(&ts->signal_pending, 0);
         ts->in_sigsuspend = 0;
         set = ts->signal_mask;
         sigdelset(&set, SIGSEGV);

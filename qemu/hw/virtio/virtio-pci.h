@@ -15,11 +15,10 @@
 #ifndef QEMU_VIRTIO_PCI_H
 #define QEMU_VIRTIO_PCI_H
 
-#include "qapi/error.h"
 #include "hw/pci/msi.h"
 #include "hw/virtio/virtio-bus.h"
+#include "qom/object.h"
 
-typedef struct VirtIOPCIProxy VirtIOPCIProxy;
 
 /* virtio-pci-bus */
 
@@ -27,12 +26,8 @@ typedef struct VirtioBusState VirtioPCIBusState;
 typedef struct VirtioBusClass VirtioPCIBusClass;
 
 #define TYPE_VIRTIO_PCI_BUS "virtio-pci-bus"
-#define VIRTIO_PCI_BUS(obj) \
-        OBJECT_CHECK(VirtioPCIBusState, (obj), TYPE_VIRTIO_PCI_BUS)
-#define VIRTIO_PCI_BUS_GET_CLASS(obj) \
-        OBJECT_GET_CLASS(VirtioPCIBusClass, obj, TYPE_VIRTIO_PCI_BUS)
-#define VIRTIO_PCI_BUS_CLASS(klass) \
-        OBJECT_CLASS_CHECK(VirtioPCIBusClass, klass, TYPE_VIRTIO_PCI_BUS)
+DECLARE_OBJ_CHECKERS(VirtioPCIBusState, VirtioPCIBusClass,
+                     VIRTIO_PCI_BUS, TYPE_VIRTIO_PCI_BUS)
 
 enum {
     VIRTIO_PCI_FLAG_BUS_MASTER_BUG_MIGRATION_BIT,
@@ -45,6 +40,7 @@ enum {
     VIRTIO_PCI_FLAG_INIT_DEVERR_BIT,
     VIRTIO_PCI_FLAG_INIT_LNKCTL_BIT,
     VIRTIO_PCI_FLAG_INIT_PM_BIT,
+    VIRTIO_PCI_FLAG_INIT_FLR_BIT,
 };
 
 /* Need to activate work-arounds for buggy guests at vmstate load. */
@@ -81,6 +77,9 @@ enum {
 /* Init Power Management */
 #define VIRTIO_PCI_FLAG_INIT_PM (1 << VIRTIO_PCI_FLAG_INIT_PM_BIT)
 
+/* Init Function Level Reset capability */
+#define VIRTIO_PCI_FLAG_INIT_FLR (1 << VIRTIO_PCI_FLAG_INIT_FLR_BIT)
+
 typedef struct {
     MSIMessage msg;
     int virq;
@@ -91,18 +90,13 @@ typedef struct {
  * virtio-pci: This is the PCIDevice which has a virtio-pci-bus.
  */
 #define TYPE_VIRTIO_PCI "virtio-pci"
-#define VIRTIO_PCI_GET_CLASS(obj) \
-        OBJECT_GET_CLASS(VirtioPCIClass, obj, TYPE_VIRTIO_PCI)
-#define VIRTIO_PCI_CLASS(klass) \
-        OBJECT_CLASS_CHECK(VirtioPCIClass, klass, TYPE_VIRTIO_PCI)
-#define VIRTIO_PCI(obj) \
-        OBJECT_CHECK(VirtIOPCIProxy, (obj), TYPE_VIRTIO_PCI)
+OBJECT_DECLARE_TYPE(VirtIOPCIProxy, VirtioPCIClass, VIRTIO_PCI)
 
-typedef struct VirtioPCIClass {
+struct VirtioPCIClass {
     PCIDeviceClass parent_class;
     DeviceRealize parent_dc_realize;
     void (*realize)(VirtIOPCIProxy *vpci_dev, Error **errp);
-} VirtioPCIClass;
+};
 
 typedef struct VirtIOPCIRegion {
     MemoryRegion mr;
@@ -118,12 +112,6 @@ typedef struct VirtIOPCIQueue {
   uint32_t avail[2];
   uint32_t used[2];
 } VirtIOPCIQueue;
-
-typedef enum {
-    VIRTIO_PCI_MODE_LEGACY,
-    VIRTIO_PCI_MODE_TRANSITIONAL,
-    VIRTIO_PCI_MODE_MODERN,
-} VirtIOPCIMode;
 
 struct VirtIOPCIProxy {
     PCIDevice pci_dev;
@@ -149,7 +137,6 @@ struct VirtIOPCIProxy {
     bool disable_modern;
     bool ignore_backend_features;
     OnOffAuto disable_legacy;
-    VirtIOPCIMode mode;
     uint32_t class_code;
     uint32_t nvectors;
     uint32_t dfselect;
@@ -164,34 +151,23 @@ struct VirtIOPCIProxy {
 
 static inline bool virtio_pci_modern(VirtIOPCIProxy *proxy)
 {
-    return proxy->mode != VIRTIO_PCI_MODE_LEGACY;
+    return !proxy->disable_modern;
 }
 
 static inline bool virtio_pci_legacy(VirtIOPCIProxy *proxy)
 {
-    return proxy->mode != VIRTIO_PCI_MODE_MODERN;
+    return proxy->disable_legacy == ON_OFF_AUTO_OFF;
 }
 
-static inline bool virtio_pci_force_virtio_1(VirtIOPCIProxy *proxy,
-                                             Error **errp)
+static inline void virtio_pci_force_virtio_1(VirtIOPCIProxy *proxy)
 {
-    if (proxy->disable_legacy == ON_OFF_AUTO_OFF) {
-        error_setg(errp, "Unable to set disable-legacy=off on a virtio-1.0 "
-                   "only device");
-        return false;
-    }
-    if (proxy->disable_modern == true) {
-        error_setg(errp, "Unable to set disable-modern=on on a virtio-1.0 "
-                   "only device");
-        return false;
-    }
-    proxy->mode = VIRTIO_PCI_MODE_MODERN;
-    return true;
+    proxy->disable_modern = false;
+    proxy->disable_legacy = ON_OFF_AUTO_ON;
 }
 
 static inline void virtio_pci_disable_modern(VirtIOPCIProxy *proxy)
 {
-    proxy->mode = VIRTIO_PCI_MODE_LEGACY;
+    proxy->disable_modern = true;
 }
 
 /*
@@ -252,9 +228,19 @@ typedef struct VirtioPCIDeviceTypeInfo {
     size_t class_size;
     void (*instance_init)(Object *obj);
     void (*class_init)(ObjectClass *klass, void *data);
+    InterfaceInfo *interfaces;
 } VirtioPCIDeviceTypeInfo;
 
 /* Register virtio-pci type(s).  @t must be static. */
 void virtio_pci_types_register(const VirtioPCIDeviceTypeInfo *t);
+
+/**
+ * virtio_pci_optimal_num_queues:
+ * @fixed_queues: number of queues that are always present
+ *
+ * Returns: The optimal number of queues for a multi-queue device, excluding
+ * @fixed_queues.
+ */
+unsigned virtio_pci_optimal_num_queues(unsigned fixed_queues);
 
 #endif
