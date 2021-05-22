@@ -1,0 +1,64 @@
+/dts-v1/;
+
+/ {
+	description = "Kernel and rootfs components for virt-risc-v 64 bits environment";
+
+	images {
+
+		so3 {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
+			type = "kernel";
+			arch = "riscv";
+			os = "linux";
+			compression = "none";
+			load = <0x80008000>;
+			entry = <0x80008000>;
+
+			hash {
+				algo = "crc32";
+			};
+		};
+
+		fdt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../so3/dts/virt-riscv64.dtb");
+			type = "flat_dt";
+			arch = "riscv";
+			compression = "none";
+			load = <0x84a00000>;
+
+			hash {
+				algo = "crc32";
+			};
+		};
+
+        ramdisk {
+                description = "SO3 environment minimal rootfs";
+                data = /incbin/("../rootfs/board/virt-riscv64/rootfs.fat");
+                type = "ramdisk";
+                arch = "riscv";
+                os = "linux";
+                compression = "none";
+                load = <0x84c00000>;
+        };
+
+
+    };
+	configurations {
+		default = "so3_ramfs";
+
+		so3_ramfs {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+            ramdisk = "ramdisk";
+		};
+
+        so3_mmc {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+		};
+	};
+};

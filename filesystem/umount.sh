@@ -2,6 +2,6 @@
 
 sudo umount fs
 
-if [ "$PLATFORM" == "vexpress" ]; then
+if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" = "virt-riscv64" ]; then
     sudo losetup -D
 fi
