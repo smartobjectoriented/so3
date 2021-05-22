@@ -12,12 +12,18 @@
 
 #include "qemu/osdep.h"
 #include <iscsi/iscsi.h>
+#define inline __attribute__((gnu_inline))  /* required for libiscsi v1.9.0 */
 #include <iscsi/scsi-lowlevel.h>
+#undef inline
 #include "contrib/libvhost-user/libvhost-user-glib.h"
 #include "standard-headers/linux/virtio_scsi.h"
 
 
 #define VUS_ISCSI_INITIATOR "iqn.2016-11.com.nutanix:vhost-user-scsi"
+
+enum {
+    VHOST_USER_SCSI_MAX_QUEUES = 8,
+};
 
 typedef struct VusIscsiLun {
     struct iscsi_context *iscsi_ctx;
@@ -111,7 +117,7 @@ static int get_cdb_len(uint8_t *cdb)
     case 4: return 16;
     case 5: return 12;
     }
-    g_warning("Unable to determine cdb len (0x%02hhX)", cdb[0] >> 5);
+    g_warning("Unable to determine cdb len (0x%02hhX)", (uint8_t)(cdb[0] >> 5));
     return -1;
 }
 
@@ -231,11 +237,6 @@ static void vus_proc_req(VuDev *vu_dev, int idx)
 
     gdev = container_of(vu_dev, VugDev, parent);
     vdev_scsi = container_of(gdev, VusDev, parent);
-    if (idx < 0 || idx >= VHOST_MAX_NR_VIRTQUEUE) {
-        g_warning("VQ Index out of range: %d", idx);
-        vus_panic_cb(vu_dev, NULL);
-        return;
-    }
 
     vq = vu_get_queue(vu_dev, idx);
     if (!vq) {
@@ -295,12 +296,6 @@ static void vus_queue_set_started(VuDev *vu_dev, int idx, bool started)
 
     assert(vu_dev);
 
-    if (idx < 0 || idx >= VHOST_MAX_NR_VIRTQUEUE) {
-        g_warning("VQ Index out of range: %d", idx);
-        vus_panic_cb(vu_dev, NULL);
-        return;
-    }
-
     vq = vu_get_queue(vu_dev, idx);
 
     if (idx == 0 || idx == 1) {
@@ -325,7 +320,7 @@ static int unix_sock_new(char *unix_fn)
     assert(unix_fn);
 
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sock <= 0) {
+    if (sock < 0) {
         perror("socket");
         return -1;
     }
@@ -398,7 +393,11 @@ int main(int argc, char **argv)
         goto err;
     }
 
-    vug_init(&vdev_scsi->parent, csock, vus_panic_cb, &vus_iface);
+    if (!vug_init(&vdev_scsi->parent, VHOST_USER_SCSI_MAX_QUEUES, csock,
+                  vus_panic_cb, &vus_iface)) {
+        g_printerr("Failed to initialize libvhost-user-glib\n");
+        goto err;
+    }
 
     g_main_loop_run(vdev_scsi->loop);
 

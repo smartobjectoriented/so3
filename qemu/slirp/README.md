@@ -14,13 +14,15 @@ of dependencies on Fedora)
 
 ### Building
 
-QEMU uses a static library built with ``make``. But you may also build
-and install the shared library with meson:
+You may build and install the shared library with meson:
 
 ``` sh
 meson build
 ninja -C build install
 ```
+And configure QEMU with --enable-slirp=system to link against it.
+
+(QEMU may build with the submodule static library using --enable-slirp=git)
 
 ### Testing
 

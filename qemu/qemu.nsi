@@ -106,6 +106,9 @@ RequestExecutionLevel admin
 ;--------------------------------
 
 ; The stuff to install.
+;
+; Remember to keep the "Uninstall" section in sync.
+
 Section "${PRODUCT} (required)"
 
     SectionIn RO
@@ -116,12 +119,16 @@ Section "${PRODUCT} (required)"
     File "${SRCDIR}\Changelog"
     File "${SRCDIR}\COPYING"
     File "${SRCDIR}\COPYING.LIB"
-    File "${SRCDIR}\README"
+    File "${SRCDIR}\README.rst"
     File "${SRCDIR}\VERSION"
 
     File "${BINDIR}\*.bmp"
     File "${BINDIR}\*.bin"
     File "${BINDIR}\*.dtb"
+    File "${BINDIR}\*.fd"
+    File "${BINDIR}\*.img"
+    File "${BINDIR}\*.lid"
+    File "${BINDIR}\*.ndrv"
     File "${BINDIR}\*.rom"
     File "${BINDIR}\openbios-*"
 
@@ -170,9 +177,20 @@ SectionEnd
 !ifdef CONFIG_DOCUMENTATION
 Section "Documentation" SectionDoc
     SetOutPath "$INSTDIR"
-    File "${BINDIR}\qemu-doc.html"
+    File "${BINDIR}\index.html"
+    SetOutPath "$INSTDIR\interop"
+    FILE /r "${BINDIR}\interop\*.*"
+    SetOutPath "$INSTDIR\specs"
+    FILE /r "${BINDIR}\specs\*.*"
+    SetOutPath "$INSTDIR\system"
+    FILE /r "${BINDIR}\system\*.*"
+    SetOutPath "$INSTDIR\tools"
+    FILE /r "${BINDIR}\tools\*.*"
+    SetOutPath "$INSTDIR\user"
+    FILE /r "${BINDIR}\user\*.*"
+    SetOutPath "$INSTDIR"
     CreateDirectory "$SMPROGRAMS\${PRODUCT}"
-    CreateShortCut "$SMPROGRAMS\${PRODUCT}\User Documentation.lnk" "$INSTDIR\qemu-doc.html" "" "$INSTDIR\qemu-doc.html" 0
+    CreateShortCut "$SMPROGRAMS\${PRODUCT}\User Documentation.lnk" "$INSTDIR\index.html" "" "$INSTDIR\index.html" 0
 SectionEnd
 !endif
 
@@ -204,19 +222,28 @@ Section "Uninstall"
     Delete "$INSTDIR\Changelog"
     Delete "$INSTDIR\COPYING"
     Delete "$INSTDIR\COPYING.LIB"
-    Delete "$INSTDIR\README"
+    Delete "$INSTDIR\README.rst"
     Delete "$INSTDIR\VERSION"
     Delete "$INSTDIR\*.bmp"
     Delete "$INSTDIR\*.bin"
     Delete "$INSTDIR\*.dll"
     Delete "$INSTDIR\*.dtb"
+    Delete "$INSTDIR\*.fd"
+    Delete "$INSTDIR\*.img"
+    Delete "$INSTDIR\*.lid"
+    Delete "$INSTDIR\*.ndrv"
     Delete "$INSTDIR\*.rom"
     Delete "$INSTDIR\openbios-*"
     Delete "$INSTDIR\qemu-img.exe"
     Delete "$INSTDIR\qemu-io.exe"
     Delete "$INSTDIR\qemu.exe"
     Delete "$INSTDIR\qemu-system-*.exe"
-    Delete "$INSTDIR\qemu-doc.html"
+    Delete "$INSTDIR\index.html"
+    RMDir /r "$INSTDIR\interop"
+    RMDir /r "$INSTDIR\specs"
+    RMDir /r "$INSTDIR\system"
+    RMDir /r "$INSTDIR\tools"
+    RMDir /r "$INSTDIR\user"
     RMDir /r "$INSTDIR\keymaps"
     RMDir /r "$INSTDIR\share"
     ; Remove generated files

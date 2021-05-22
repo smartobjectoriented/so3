@@ -1,8 +1,8 @@
-. This is the top level page for the 'specs' manual
+.. This is the top level page for the 'specs' manual
 
 
-QEMU full-system emulation guest hardware specifications
-========================================================
+QEMU System Emulation Guest Hardware Specifications
+===================================================
 
 
 Contents:
@@ -10,4 +10,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   xive
+   ppc-xive
+   ppc-spapr-xive
+   ppc-spapr-numa
+   acpi_hw_reduced_hotplug
+   tpm
+   acpi_hest_ghes

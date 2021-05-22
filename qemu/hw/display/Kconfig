@@ -91,6 +91,10 @@ config TCX
 config CG3
     bool
 
+config ARTIST
+    bool
+    select FRAMEBUFFER
+
 config VGA
     bool
 
@@ -130,3 +134,10 @@ config ATI_VGA
     default y if PCI_DEVICES
     depends on PCI
     select VGA
+    select BITBANG_I2C
+    select DDC
+
+config MACFB
+    bool
+    select FRAMEBUFFER
+    depends on NUBUS

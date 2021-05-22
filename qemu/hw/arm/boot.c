@@ -12,13 +12,13 @@
 #include "qemu/error-report.h"
 #include "qapi/error.h"
 #include <libfdt.h>
-#include "hw/hw.h"
 #include "hw/arm/boot.h"
 #include "hw/arm/linux-boot-if.h"
 #include "sysemu/kvm.h"
 #include "sysemu/sysemu.h"
 #include "sysemu/numa.h"
 #include "hw/boards.h"
+#include "sysemu/reset.h"
 #include "hw/loader.h"
 #include "elf.h"
 #include "sysemu/device_tree.h"
@@ -240,6 +240,9 @@ void arm_write_secure_board_setup_dummy_smc(ARMCPU *cpu,
     };
     uint32_t board_setup_blob[] = {
         /* board setup addr */
+        0xee110f51, /* mrc     p15, 0, r0, c1, c1, 2  ;read NSACR */
+        0xe3800b03, /* orr     r0, #0xc00             ;set CP11, CP10 */
+        0xee010f51, /* mcr     p15, 0, r0, c1, c1, 2  ;write NSACR */
         0xe3a00e00 + (mvbar_addr >> 4), /* mov r0, #mvbar_addr */
         0xee0c0f30, /* mcr     p15, 0, r0, c12, c0, 1 ;set MVBAR */
         0xee110f11, /* mrc     p15, 0, r0, c1 , c1, 0 ;read SCR */
@@ -324,8 +327,7 @@ static void set_kernel_args(const struct arm_boot_info *info, AddressSpace *as)
 
         cmdline_size = strlen(info->kernel_cmdline);
         address_space_write(as, p + 8, MEMTXATTRS_UNSPECIFIED,
-                            (const uint8_t *)info->kernel_cmdline,
-                            cmdline_size + 1);
+                            info->kernel_cmdline, cmdline_size + 1);
         cmdline_size = (cmdline_size >> 2) + 1;
         WRITE_WORD(p, cmdline_size + 2);
         WRITE_WORD(p, 0x54410009);
@@ -417,8 +419,7 @@ static void set_kernel_args_old(const struct arm_boot_info *info,
     }
     s = info->kernel_cmdline;
     if (s) {
-        address_space_write(as, p, MEMTXATTRS_UNSPECIFIED,
-                            (const uint8_t *)s, strlen(s) + 1);
+        address_space_write(as, p, MEMTXATTRS_UNSPECIFIED, s, strlen(s) + 1);
     } else {
         WRITE_WORD(p, 0);
     }
@@ -524,7 +525,7 @@ static void fdt_add_psci_node(void *fdt)
 }
 
 int arm_load_dtb(hwaddr addr, const struct arm_boot_info *binfo,
-                 hwaddr addr_limit, AddressSpace *as)
+                 hwaddr addr_limit, AddressSpace *as, MachineState *ms)
 {
     void *fdt = NULL;
     int size, rc, n = 0;
@@ -575,7 +576,7 @@ int arm_load_dtb(hwaddr addr, const struct arm_boot_info *binfo,
         goto fail;
     }
 
-    if (scells < 2 && binfo->ram_size >= (1ULL << 32)) {
+    if (scells < 2 && binfo->ram_size >= 4 * GiB) {
         /* This is user error so deserves a friendlier error message
          * than the failure of setprop_sized_cells would provide
          */
@@ -598,10 +599,10 @@ int arm_load_dtb(hwaddr addr, const struct arm_boot_info *binfo,
     }
     g_strfreev(node_path);
 
-    if (nb_numa_nodes > 0) {
+    if (ms->numa_state != NULL && ms->numa_state->num_nodes > 0) {
         mem_base = binfo->loader_start;
-        for (i = 0; i < nb_numa_nodes; i++) {
-            mem_len = numa_info[i].node_mem;
+        for (i = 0; i < ms->numa_state->num_nodes; i++) {
+            mem_len = ms->numa_state->nodes[i].node_mem;
             rc = fdt_add_memory_node(fdt, acells, mem_base,
                                      scells, mem_len, i);
             if (rc < 0) {
@@ -627,9 +628,9 @@ int arm_load_dtb(hwaddr addr, const struct arm_boot_info *binfo,
         qemu_fdt_add_subnode(fdt, "/chosen");
     }
 
-    if (binfo->kernel_cmdline && *binfo->kernel_cmdline) {
+    if (ms->kernel_cmdline && *ms->kernel_cmdline) {
         rc = qemu_fdt_setprop_string(fdt, "/chosen", "bootargs",
-                                     binfo->kernel_cmdline);
+                                     ms->kernel_cmdline);
         if (rc < 0) {
             fprintf(stderr, "couldn't set /chosen/bootargs\n");
             goto fail;
@@ -735,6 +736,15 @@ static void do_cpu_reset(void *opaque)
                     } else {
                         env->pstate = PSTATE_MODE_EL1h;
                     }
+                    if (cpu_isar_feature(aa64_pauth, cpu)) {
+                        env->cp15.scr_el3 |= SCR_API | SCR_APK;
+                    }
+                    if (cpu_isar_feature(aa64_mte, cpu)) {
+                        env->cp15.scr_el3 |= SCR_ATA;
+                    }
+                    if (cpu_isar_feature(aa64_sve, cpu)) {
+                        env->cp15.cptr_el[3] |= CPTR_EZ;
+                    }
                     /* AArch64 kernels never boot in secure mode */
                     assert(!info->secure_boot);
                     /* This hook is only supported for AArch32 currently:
@@ -754,6 +764,8 @@ static void do_cpu_reset(void *opaque)
                     (cs != first_cpu || !info->secure_board_setup)) {
                     /* Linux expects non-secure state */
                     env->cp15.scr_el3 |= SCR_NS;
+                    /* Set NSACR.{CP11,CP10} so NS can access the FPU */
+                    env->cp15.nsacr |= 3 << 10;
                 }
             }
 
@@ -784,6 +796,7 @@ static void do_cpu_reset(void *opaque)
                 info->secondary_cpu_reset_hook(cpu, info);
             }
         }
+        arm_rebuild_hflags(env);
     }
 }
 
@@ -897,7 +910,7 @@ static int64_t arm_load_elf(struct arm_boot_info *info, uint64_t *pentry,
     }
 
     ret = load_elf_as(info->kernel_filename, NULL, NULL, NULL,
-                      pentry, lowaddr, highaddr, big_endian, elf_machine,
+                      pentry, lowaddr, highaddr, NULL, big_endian, elf_machine,
                       1, data_swab, as);
     if (ret <= 0) {
         /* The header loaded but the image didn't */
@@ -911,6 +924,7 @@ static uint64_t load_aarch64_image(const char *filename, hwaddr mem_base,
                                    hwaddr *entry, AddressSpace *as)
 {
     hwaddr kernel_load_offset = KERNEL64_LOAD_ADDR;
+    uint64_t kernel_size = 0;
     uint8_t *buffer;
     int size;
 
@@ -938,7 +952,10 @@ static uint64_t load_aarch64_image(const char *filename, hwaddr mem_base,
          * is only valid if the image_size is non-zero.
          */
         memcpy(&hdrvals, buffer + ARM64_TEXT_OFFSET_OFFSET, sizeof(hdrvals));
-        if (hdrvals[1] != 0) {
+
+        kernel_size = le64_to_cpu(hdrvals[1]);
+
+        if (kernel_size != 0) {
             kernel_load_offset = le64_to_cpu(hdrvals[0]);
 
             /*
@@ -956,12 +973,21 @@ static uint64_t load_aarch64_image(const char *filename, hwaddr mem_base,
         }
     }
 
+    /*
+     * Kernels before v3.17 don't populate the image_size field, and
+     * raw images have no header. For those our best guess at the size
+     * is the size of the Image file itself.
+     */
+    if (kernel_size == 0) {
+        kernel_size = size;
+    }
+
     *entry = mem_base + kernel_load_offset;
     rom_add_blob_fixed_as(filename, buffer, size, *entry, as);
 
     g_free(buffer);
 
-    return size;
+    return kernel_size;
 }
 
 static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
@@ -973,10 +999,13 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
     int kernel_size;
     int initrd_size;
     int is_linux = 0;
-    uint64_t elf_entry, elf_low_addr, elf_high_addr;
+    uint64_t elf_entry;
+    /* Addresses of first byte used and first byte not used by the image */
+    uint64_t image_low_addr = 0, image_high_addr = 0;
     int elf_machine;
     hwaddr entry;
     static const ARMInsnFixup *primary_loader;
+    uint64_t ram_end = info->loader_start + info->ram_size;
 
     if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64)) {
         primary_loader = bootloader_aarch64;
@@ -999,6 +1028,70 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
     if (info->nb_cpus == 0)
         info->nb_cpus = 1;
 
+    /* Assume that raw images are linux kernels, and ELF images are not.  */
+    kernel_size = arm_load_elf(info, &elf_entry, &image_low_addr,
+                               &image_high_addr, elf_machine, as);
+    if (kernel_size > 0 && have_dtb(info)) {
+        /*
+         * If there is still some room left at the base of RAM, try and put
+         * the DTB there like we do for images loaded with -bios or -pflash.
+         */
+        if (image_low_addr > info->loader_start
+            || image_high_addr < info->loader_start) {
+            /*
+             * Set image_low_addr as address limit for arm_load_dtb if it may be
+             * pointing into RAM, otherwise pass '0' (no limit)
+             */
+            if (image_low_addr < info->loader_start) {
+                image_low_addr = 0;
+            }
+            info->dtb_start = info->loader_start;
+            info->dtb_limit = image_low_addr;
+        }
+    }
+    entry = elf_entry;
+    if (kernel_size < 0) {
+        uint64_t loadaddr = info->loader_start + KERNEL_NOLOAD_ADDR;
+        kernel_size = load_uimage_as(info->kernel_filename, &entry, &loadaddr,
+                                     &is_linux, NULL, NULL, as);
+        if (kernel_size >= 0) {
+            image_low_addr = loadaddr;
+            image_high_addr = image_low_addr + kernel_size;
+        }
+    }
+    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64) && kernel_size < 0) {
+        kernel_size = load_aarch64_image(info->kernel_filename,
+                                         info->loader_start, &entry, as);
+        is_linux = 1;
+        if (kernel_size >= 0) {
+            image_low_addr = entry;
+            image_high_addr = image_low_addr + kernel_size;
+        }
+    } else if (kernel_size < 0) {
+        /* 32-bit ARM */
+        entry = info->loader_start + KERNEL_LOAD_ADDR;
+        kernel_size = load_image_targphys_as(info->kernel_filename, entry,
+                                             ram_end - KERNEL_LOAD_ADDR, as);
+        is_linux = 1;
+        if (kernel_size >= 0) {
+            image_low_addr = entry;
+            image_high_addr = image_low_addr + kernel_size;
+        }
+    }
+    if (kernel_size < 0) {
+        error_report("could not load kernel '%s'", info->kernel_filename);
+        exit(1);
+    }
+
+    if (kernel_size > info->ram_size) {
+        error_report("kernel '%s' is too large to fit in RAM "
+                     "(kernel size %d, RAM size %" PRId64 ")",
+                     info->kernel_filename, kernel_size, info->ram_size);
+        exit(1);
+    }
+
+    info->entry = entry;
+
     /*
      * We want to put the initrd far enough into RAM that when the
      * kernel is uncompressed it will not clobber the initrd. However
@@ -1009,71 +1102,46 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
      * So for boards with less  than 256MB of RAM we put the initrd
      * halfway into RAM, and for boards with 256MB of RAM or more we put
      * the initrd at 128MB.
+     * We also refuse to put the initrd somewhere that will definitely
+     * overlay the kernel we just loaded, though for kernel formats which
+     * don't tell us their exact size (eg self-decompressing 32-bit kernels)
+     * we might still make a bad choice here.
      */
     info->initrd_start = info->loader_start +
-        MIN(info->ram_size / 2, 128 * 1024 * 1024);
+        MIN(info->ram_size / 2, 128 * MiB);
+    if (image_high_addr) {
+        info->initrd_start = MAX(info->initrd_start, image_high_addr);
+    }
+    info->initrd_start = TARGET_PAGE_ALIGN(info->initrd_start);
 
-    /* Assume that raw images are linux kernels, and ELF images are not.  */
-    kernel_size = arm_load_elf(info, &elf_entry, &elf_low_addr,
-                               &elf_high_addr, elf_machine, as);
-    if (kernel_size > 0 && have_dtb(info)) {
-        /*
-         * If there is still some room left at the base of RAM, try and put
-         * the DTB there like we do for images loaded with -bios or -pflash.
-         */
-        if (elf_low_addr > info->loader_start
-            || elf_high_addr < info->loader_start) {
-            /*
-             * Set elf_low_addr as address limit for arm_load_dtb if it may be
-             * pointing into RAM, otherwise pass '0' (no limit)
-             */
-            if (elf_low_addr < info->loader_start) {
-                elf_low_addr = 0;
-            }
-            info->dtb_start = info->loader_start;
-            info->dtb_limit = elf_low_addr;
-        }
-    }
-    entry = elf_entry;
-    if (kernel_size < 0) {
-        uint64_t loadaddr = info->loader_start + KERNEL_NOLOAD_ADDR;
-        kernel_size = load_uimage_as(info->kernel_filename, &entry, &loadaddr,
-                                     &is_linux, NULL, NULL, as);
-    }
-    if (arm_feature(&cpu->env, ARM_FEATURE_AARCH64) && kernel_size < 0) {
-        kernel_size = load_aarch64_image(info->kernel_filename,
-                                         info->loader_start, &entry, as);
-        is_linux = 1;
-    } else if (kernel_size < 0) {
-        /* 32-bit ARM */
-        entry = info->loader_start + KERNEL_LOAD_ADDR;
-        kernel_size = load_image_targphys_as(info->kernel_filename, entry,
-                                             info->ram_size - KERNEL_LOAD_ADDR,
-                                             as);
-        is_linux = 1;
-    }
-    if (kernel_size < 0) {
-        error_report("could not load kernel '%s'", info->kernel_filename);
-        exit(1);
-    }
-    info->entry = entry;
     if (is_linux) {
         uint32_t fixupcontext[FIXUP_MAX];
 
         if (info->initrd_filename) {
+
+            if (info->initrd_start >= ram_end) {
+                error_report("not enough space after kernel to load initrd");
+                exit(1);
+            }
+
             initrd_size = load_ramdisk_as(info->initrd_filename,
                                           info->initrd_start,
-                                          info->ram_size - info->initrd_start,
-                                          as);
+                                          ram_end - info->initrd_start, as);
             if (initrd_size < 0) {
                 initrd_size = load_image_targphys_as(info->initrd_filename,
                                                      info->initrd_start,
-                                                     info->ram_size -
+                                                     ram_end -
                                                      info->initrd_start,
                                                      as);
             }
             if (initrd_size < 0) {
                 error_report("could not load initrd '%s'",
+                             info->initrd_filename);
+                exit(1);
+            }
+            if (info->initrd_start + initrd_size > ram_end) {
+                error_report("could not load initrd '%s': "
+                             "too big to fit into RAM after the kernel",
                              info->initrd_filename);
                 exit(1);
             }
@@ -1100,18 +1168,22 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
                  *
                  * Let's play safe and prealign it to 2MB to give us some space.
                  */
-                align = 2 * 1024 * 1024;
+                align = 2 * MiB;
             } else {
                 /*
                  * Some 32bit kernels will trash anything in the 4K page the
                  * initrd ends in, so make sure the DTB isn't caught up in that.
                  */
-                align = 4096;
+                align = 4 * KiB;
             }
 
             /* Place the DTB after the initrd in memory with alignment. */
             info->dtb_start = QEMU_ALIGN_UP(info->initrd_start + initrd_size,
                                            align);
+            if (info->dtb_start >= ram_end) {
+                error_report("Not enough space for DTB after kernel/initrd");
+                exit(1);
+            }
             fixupcontext[FIXUP_ARGPTR_LO] = info->dtb_start;
             fixupcontext[FIXUP_ARGPTR_HI] = info->dtb_start >> 32;
         } else {
@@ -1119,7 +1191,7 @@ static void arm_setup_direct_kernel_boot(ARMCPU *cpu,
                 info->loader_start + KERNEL_ARGS_ADDR;
             fixupcontext[FIXUP_ARGPTR_HI] =
                 (info->loader_start + KERNEL_ARGS_ADDR) >> 32;
-            if (info->ram_size >= (1ULL << 32)) {
+            if (info->ram_size >= 4 * GiB) {
                 error_report("RAM size must be less than 4GB to boot"
                              " Linux kernel using ATAGS (try passing a device tree"
                              " using -dtb)");
@@ -1202,7 +1274,7 @@ static void arm_setup_firmware_boot(ARMCPU *cpu, struct arm_boot_info *info)
      */
 }
 
-void arm_load_kernel(ARMCPU *cpu, struct arm_boot_info *info)
+void arm_load_kernel(ARMCPU *cpu, MachineState *ms, struct arm_boot_info *info)
 {
     CPUState *cs;
     AddressSpace *as = arm_boot_address_space(cpu, info);
@@ -1223,7 +1295,9 @@ void arm_load_kernel(ARMCPU *cpu, struct arm_boot_info *info)
      * doesn't support secure.
      */
     assert(!(info->secure_board_setup && kvm_enabled()));
-
+    info->kernel_filename = ms->kernel_filename;
+    info->kernel_cmdline = ms->kernel_cmdline;
+    info->initrd_filename = ms->initrd_filename;
     info->dtb_filename = qemu_opt_get(qemu_get_machine_opts(), "dtb");
     info->dtb_limit = 0;
 
@@ -1235,7 +1309,7 @@ void arm_load_kernel(ARMCPU *cpu, struct arm_boot_info *info)
     }
 
     if (!info->skip_dtb_autoload && have_dtb(info)) {
-        if (arm_load_dtb(info->dtb_start, info, info->dtb_limit, as) < 0) {
+        if (arm_load_dtb(info->dtb_start, info, info->dtb_limit, as, ms) < 0) {
             exit(1);
         }
     }
