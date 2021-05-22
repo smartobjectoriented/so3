@@ -1,0 +1,4 @@
+fdt_high=ffffffffffffffff
+initrd_high=ffffffffffffffff
+so3=fatload mmc 0 0xb0000000 virt-riscv64.itb; bootm 0xb0000000
+start=run so3

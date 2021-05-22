@@ -42,7 +42,7 @@ done < build.conf
 # and ${PLATFORM_TYPE} to be used when the type is required.
 # Note that ${PLATFORM_TYPE} can be equal to ${PLATFORM} if no type is specified.
 
-if [ "$PLATFORM" != "vexpress" ]; then
+if [ "$PLATFORM" != "vexpress" -a "$PLATFORM" != "virt-riscv64" ]; then
     echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
     read devname
     export devname="$devname"
@@ -75,14 +75,14 @@ if [ "$deploy_boot" == "y" ]; then
     ./mount.sh 1
     
 # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
-    if [ "$deploy_rootfs" != "y" ]; then
+if [ "$deploy_rootfs" != "y" ]; then
     sudo rm -rf fs/*
     fi
     
     [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
     sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
        
-    if [ "$PLATFORM" == "vexpress" ]; then
+    if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt-riscv64" ]; then
 	# Nothing else ...
         ./umount.sh
         cd ..

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 1 ]; then
-	echo "Please provide the board name (vexpress, rpi4)"
+	echo "Please provide the board name (vexpress, rpi4, virt-riscv64)"
 	exit 0
 fi 
 
@@ -9,7 +9,7 @@ fi
 # - Partition #1: 64 MB (u-boot, kernel, etc.)
 # - Partition #2: 180 MB (agency main rootfs)
 
-if [ "$1" == "vexpress" ]; then
+if [ "$1" == "vexpress" -o "$1" == "virt-riscv64" ]; then
     #create image first
     echo Creating sdcard.img.$1 ... 
     dd_size=450M
@@ -26,7 +26,7 @@ if [ "$1" == "rpi4" ]; then
 fi
 
 
-if [ "$1" == "vexpress" -o "$1" == "rpi4" ]; then
+if [ "$1" == "vexpress" -o "$1" == "rpi4"  -o "$1" == "virt-riscv64" ]; then
 # Create the partition layout this way
     (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +180M; echo w)   | sudo fdisk /dev/"$devname";
 fi
@@ -41,6 +41,6 @@ fi
 sudo mkfs.vfat /dev/"$devname"1
 sudo mkfs.ext4 /dev/"$devname"2
 
-if [ "$1" == "vexpress" -o "$1" == "rpi4" ]; then
+if [ "$1" == "vexpress" -o "$1" == "rpi4"  -o "$1" == "virt-riscv64" ]; then
     sudo losetup -D
 fi
