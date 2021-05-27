@@ -200,7 +200,7 @@
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 		CONFIG_PLATFORM_ENV_SETTINGS \
-		"bootdelay=0\0" \
+		"bootdelay=2\0" \
 		"serverip=10.0.2.2\0" \
 		"ipaddr=10.0.2.15\0" \
 		"console=ttyAMA0,38400n8\0" \
@@ -227,7 +227,7 @@
 #endif /* 0 */
 #define CONFIG_BOOTCOMMAND \
             "fatload mmc 0 0x82000000 uEnv.txt; env import 0x82000000; run start\0" \
-            "bootdelay=0\0"
+            "bootdelay=2\0"
 
             
             
