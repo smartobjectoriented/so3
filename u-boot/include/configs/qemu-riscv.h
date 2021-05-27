@@ -42,15 +42,22 @@
 
 #include <config_distro_bootcmd.h>
 
+#if 0 /* TODO remove if */
 #define BOOTENV_DEV_QEMU(devtypeu, devtypel, instance) \
 	"bootcmd_qemu=" \
 		"if env exists kernel_start; then " \
 			"bootm ${kernel_start} - ${fdtcontroladdr};" \
 		"fi;\0"
+#endif
+
+#define BOOTENV_DEV_QEMU(devtypeu, devtypel, instance) \
+	"bootcmd_qemu=load virtio 0 0x40000000 uEnv.txt; env import 0x40000000; run start;\0"
+
 
 #define BOOTENV_DEV_NAME_QEMU(devtypeu, devtypel, instance) \
 	"qemu "
 
+#if 0 /* TODO remove */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"fdt_high=0xffffffffffffffff\0" \
 	"initrd_high=0xffffffffffffffff\0" \
@@ -58,8 +65,10 @@
 	"fdt_addr_r=0x88000000\0" \
 	"scriptaddr=0x88100000\0" \
 	"pxefile_addr_r=0x88200000\0" \
-	"ramdisk_addr_r=0x88300000\0" \
+	"ramdisk_addr_r=0x88300000\0"    \
 	BOOTENV
+#endif
+
 #endif
 
 #endif /* __CONFIG_H */

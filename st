@@ -17,9 +17,14 @@ done < build.conf
 
 if [ "$PLATFORM" == "virt-riscv64" ]; then
     sudo qemu/build/qemu-system-riscv64 $@ \
+        -smp 4 \
+        -m 4096 \
         -M virt \
-        -bios u-boot/u-boot \
-        -nographic
+        -bios none \
+        -kernel u-boot/u-boot \
+        -nographic \
+        -device virtio-blk-device,drive=hd0 \
+        -drive file=filesystem/sdcard.img.virt-riscv64,format=raw,id=hd0
 
 else
     sudo qemu/arm-softmmu/qemu-system-arm $@ \
