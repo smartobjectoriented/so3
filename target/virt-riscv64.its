@@ -12,8 +12,8 @@
 			arch = "riscv";
 			os = "linux";
 			compression = "none";
-			load = <0x80008000>;
-			entry = <0x80008000>;
+			load = <0x84000000>;
+			entry = <0x84000000>;
 
 			hash {
 				algo = "crc32";
@@ -26,33 +26,20 @@
 			type = "flat_dt";
 			arch = "riscv";
 			compression = "none";
-			load = <0x84a00000>;
+			load = <0x88000000>;
 
 			hash {
 				algo = "crc32";
 			};
 		};
-
-        ramdisk {
-                description = "SO3 environment minimal rootfs";
-                data = /incbin/("../rootfs/board/virt-riscv64/rootfs.fat");
-                type = "ramdisk";
-                arch = "riscv";
-                os = "linux";
-                compression = "none";
-                load = <0x84c00000>;
-        };
-
-
     };
 	configurations {
-		default = "so3_ramfs";
+		default = "so3_basic";
 
-		so3_ramfs {
+		so3_basic {
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-            ramdisk = "ramdisk";
 		};
 
         so3_mmc {
