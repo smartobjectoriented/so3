@@ -74,25 +74,25 @@ if [ "$deploy_boot" == "y" ]; then
     cd ../filesystem
     ./mount.sh 1
     
-# Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
-if [ "$deploy_rootfs" != "y" ]; then
-    sudo rm -rf fs/*
+    # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
+    if [ "$deploy_rootfs" != "y" ]; then
+        sudo rm -rf fs/*
     fi
-    
+
     [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
     sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
-       
+
     if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt-riscv64" ]; then
-	# Nothing else ...
-        ./umount.sh
-        cd ..
+      # Nothing else ...
+      ./umount.sh
+      cd ..
     fi
- 
+
     if [ "$PLATFORM" == "rpi4" ]; then
-        sudo cp -r ../bsp/rpi4/* fs/
-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
-        ./umount.sh
-        cd ..
+      sudo cp -r ../bsp/rpi4/* fs/
+      sudo cp ../u-boot/u-boot.bin fs/kernel7.img
+      ./umount.sh
+      cd ..
     fi
 fi
 
