@@ -127,11 +127,11 @@ void _lv_inv_area(lv_disp_t * disp, const lv_area_t * area_p)
     suc = _lv_area_intersect(&com_area, area_p, &scr_area);
     if(suc == false)  return; /*Out of the screen*/
 
-    /*If there were at least 1 invalid area in true double buffered mode, redraw the whole screen*/
-    if(lv_disp_is_true_double_buf(disp)) {
+    /*If there were at least 1 invalid area in full refresh mode, redraw the whole screen*/
+    if(disp->driver->full_refresh) {
         disp->inv_areas[0] = scr_area;
         disp->inv_p = 1;
-        lv_timer_pause(disp->refr_timer, false);
+        lv_timer_resume(disp->refr_timer);
         return;
     }
 
@@ -152,7 +152,7 @@ void _lv_inv_area(lv_disp_t * disp, const lv_area_t * area_p)
         lv_area_copy(&disp->inv_areas[disp->inv_p], &scr_area);
     }
     disp->inv_p++;
-    lv_timer_pause(disp->refr_timer, false);
+    lv_timer_resume(disp->refr_timer);
 }
 
 /**
@@ -188,19 +188,17 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
 
     disp_refr = tmr->user_data;
 
-#if LV_USE_PERF_MONITOR == 0
+#if LV_USE_PERF_MONITOR == 0 && LV_USE_MEM_MONITOR == 0
     /**
      * Ensure the timer does not run again automatically.
      * This is done before refreshing in case refreshing invalidates something else.
      */
-    lv_timer_pause(tmr, true);
+    lv_timer_pause(tmr);
 #endif
 
     /*Refresh the screen's layout if required*/
-    uint32_t i;
-    for(i = 0; i < disp_refr->screen_cnt; i++) {
-        lv_obj_update_layout(disp_refr->screens[i]);
-    }
+    lv_obj_update_layout(disp_refr->act_scr);
+    if(disp_refr->prev_scr) lv_obj_update_layout(disp_refr->prev_scr);
 
     lv_obj_update_layout(disp_refr->top_layer);
     lv_obj_update_layout(disp_refr->sys_layer);
@@ -219,7 +217,7 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
 
     /*If refresh happened ...*/
     if(disp_refr->inv_p != 0) {
-        if(lv_disp_is_true_double_buf(disp_refr)) {
+        if(disp_refr->driver->full_refresh) {
             draw_buf_flush();
         }
 
@@ -241,17 +239,17 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
 #if LV_USE_PERF_MONITOR && LV_USE_LABEL
     static lv_obj_t * perf_label = NULL;
     if(perf_label == NULL) {
-        perf_label = lv_label_create(lv_layer_sys(), NULL);
-        lv_obj_set_style_bg_opa(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_50);
-        lv_obj_set_style_bg_color(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, lv_color_black());
-        lv_obj_set_style_text_color(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, lv_color_white());
-        lv_obj_set_style_pad_top(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_bottom(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_left(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_right(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_text_align(perf_label, LV_PART_MAIN, LV_STATE_DEFAULT, LV_TEXT_ALIGN_RIGHT);
+        perf_label = lv_label_create(lv_layer_sys());
+        lv_obj_set_style_bg_opa(perf_label, LV_OPA_50, 0);
+        lv_obj_set_style_bg_color(perf_label, lv_color_black(), 0);
+        lv_obj_set_style_text_color(perf_label, lv_color_white(), 0);
+        lv_obj_set_style_pad_top(perf_label, 3, 0);
+        lv_obj_set_style_pad_bottom(perf_label, 3, 0);
+        lv_obj_set_style_pad_left(perf_label, 3, 0);
+        lv_obj_set_style_pad_right(perf_label, 3, 0);
+        lv_obj_set_style_text_align(perf_label, LV_TEXT_ALIGN_RIGHT, 0);
         lv_label_set_text(perf_label, "?");
-        lv_obj_align(perf_label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
+        lv_obj_align(perf_label, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
     }
 
     static uint32_t perf_last_time = 0;
@@ -279,23 +277,22 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
         fps_sum_cnt ++;
         uint32_t cpu = 100 - lv_timer_get_idle();
         lv_label_set_text_fmt(perf_label, "%d FPS\n%d%% CPU", fps, cpu);
-        lv_obj_align(perf_label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
     }
 #endif
 
 #if LV_USE_MEM_MONITOR && LV_MEM_CUSTOM == 0 && LV_USE_LABEL
     static lv_obj_t * mem_label = NULL;
     if(mem_label == NULL) {
-        mem_label = lv_label_create(lv_layer_sys(), NULL);
-        lv_obj_set_style_bg_opa(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_50);
-        lv_obj_set_style_bg_color(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, lv_color_black());
-        lv_obj_set_style_text_color(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, lv_color_white());
-        lv_obj_set_style_pad_top(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_bottom(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_left(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
-        lv_obj_set_style_pad_right(mem_label, LV_PART_MAIN, LV_STATE_DEFAULT, 3);
+        mem_label = lv_label_create(lv_layer_sys());
+        lv_obj_set_style_bg_opa(mem_label, LV_OPA_50, 0);
+        lv_obj_set_style_bg_color(mem_label, lv_color_black(), 0);
+        lv_obj_set_style_text_color(mem_label, lv_color_white(), 0);
+        lv_obj_set_style_pad_top(mem_label, 3, 0);
+        lv_obj_set_style_pad_bottom(mem_label, 3, 0);
+        lv_obj_set_style_pad_left(mem_label, 3, 0);
+        lv_obj_set_style_pad_right(mem_label, 3, 0);
         lv_label_set_text(mem_label, "?");
-        lv_obj_align(mem_label, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
+        lv_obj_align(mem_label, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     }
 
     static uint32_t mem_last_time = 0;
@@ -307,7 +304,6 @@ void _lv_disp_refr_timer(lv_timer_t * tmr)
         uint32_t used_kb = used_size / 1024;
         uint32_t used_kb_tenth = (used_size - (used_kb * 1024)) / 102;
         lv_label_set_text_fmt(mem_label, "%d.%d kB used (%d %%)\n%d%% frag.", used_kb,  used_kb_tenth, mon.used_pct, mon.frag_pct);
-        lv_obj_align(mem_label, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
     }
 #endif
 
@@ -403,9 +399,8 @@ static void lv_refr_areas(void)
  */
 static void lv_refr_area(const lv_area_t * area_p)
 {
-    /*True double buffering: there are two screen sized buffers. Just redraw directly into a
-     * buffer*/
-    if(lv_disp_is_true_double_buf(disp_refr)) {
+    /*With full refresh just redraw directly into the buffer*/
+    if(disp_refr->driver->full_refresh) {
         lv_disp_draw_buf_t * draw_buf = lv_disp_get_draw_buf(disp_refr);
         draw_buf->area.x1        = 0;
         draw_buf->area.x2        = lv_disp_get_hor_res(disp_refr) - 1;
@@ -414,7 +409,7 @@ static void lv_refr_area(const lv_area_t * area_p)
         disp_refr->driver->draw_buf->last_part = 1;
         lv_refr_area_part(area_p);
     }
-    /*The buffer is smaller: refresh the area in parts*/
+    /*Normal refresh: draw the area in parts*/
     else {
         lv_disp_draw_buf_t * draw_buf = lv_disp_get_draw_buf(disp_refr);
         /*Calculate the max row num*/
@@ -561,7 +556,7 @@ static void lv_refr_area_part(const lv_area_t * area_p)
 
     /*In true double buffered mode flush only once when all areas were rendered.
      *In normal mode flush after every area*/
-    if(lv_disp_is_true_double_buf(disp_refr) == false) {
+    if(disp_refr->driver->full_refresh == false) {
         draw_buf_flush();
     }
 }
@@ -579,10 +574,10 @@ static lv_obj_t * lv_refr_get_top_obj(const lv_area_t * area_p, lv_obj_t * obj)
     /*If this object is fully cover the draw area check the children too*/
     if(_lv_area_is_in(area_p, &obj->coords, 0) && lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) == false) {
         lv_cover_check_info_t info;
-        info.res = LV_DRAW_RES_COVER;
-        info.clip_area = area_p;
+        info.res = LV_COVER_RES_COVER;
+        info.area = area_p;
         lv_event_send(obj, LV_EVENT_COVER_CHECK, &info);
-        if(info.res == LV_DRAW_RES_MASKED) return NULL;
+        if(info.res == LV_COVER_RES_MASKED) return NULL;
 
         uint32_t i;
         for(i = 0; i < lv_obj_get_child_cnt(obj); i++) {
@@ -597,7 +592,7 @@ static lv_obj_t * lv_refr_get_top_obj(const lv_area_t * area_p, lv_obj_t * obj)
 
         /*If no better children use this object*/
         if(found_p == NULL) {
-            if(info.res == LV_DRAW_RES_COVER) {
+            if(info.res == LV_COVER_RES_COVER) {
                 found_p = obj;
             }
         }
@@ -755,7 +750,7 @@ static void draw_buf_rotate_180(lv_disp_drv_t *drv, lv_area_t *area, lv_color_t 
 }
 
 static LV_ATTRIBUTE_FAST_MEM void draw_buf_rotate_90(bool invert_i, lv_coord_t area_w, lv_coord_t area_h, lv_color_t *orig_color_p, lv_color_t *rot_buf) {
-    
+
     uint32_t invert = (area_w * area_h) - 1;
     uint32_t initial_i = ((area_w - 1) * area_h);
     for(lv_coord_t y = 0; y < area_h; y++) {
@@ -818,8 +813,8 @@ static void draw_buf_rotate_90_sqr(bool is_270, lv_coord_t w, lv_color_t * color
  */
 static void draw_buf_rotate(lv_area_t *area, lv_color_t *color_p) {
     lv_disp_drv_t * drv = disp_refr->driver;
-    if(lv_disp_is_true_double_buf(disp_refr) && drv->sw_rotate) {
-        LV_LOG_ERROR("cannot rotate a true double-buffered display!");
+    if(disp_refr->driver->full_refresh && drv->sw_rotate) {
+        LV_LOG_ERROR("cannot rotate a full refreshed display!");
         return;
     }
     if(drv->rotated == LV_DISP_ROT_180) {
@@ -827,7 +822,7 @@ static void draw_buf_rotate(lv_area_t *area, lv_color_t *color_p) {
         call_flush_cb(drv, area, color_p);
     } else if(drv->rotated == LV_DISP_ROT_90 || drv->rotated == LV_DISP_ROT_270) {
         /*Allocate a temporary buffer to store rotated image*/
-        lv_color_t * rot_buf = NULL; 
+        lv_color_t * rot_buf = NULL;
         lv_disp_draw_buf_t * draw_buf = lv_disp_get_draw_buf(disp_refr);
         lv_coord_t area_w = lv_area_get_width(area);
         lv_coord_t area_h = lv_area_get_height(area);
@@ -866,7 +861,7 @@ static void draw_buf_rotate(lv_area_t *area, lv_color_t *color_p) {
                 /*Rotate other areas using a maximum buffer size*/
                 if(rot_buf == NULL) rot_buf = lv_mem_buf_get(LV_DISP_ROT_MAX_BUF);
                 draw_buf_rotate_90(drv->rotated == LV_DISP_ROT_270, area_w, height, color_p, rot_buf);
-                
+
                 if(drv->rotated == LV_DISP_ROT_90) {
                     area->x1 = init_y_off + row;
                     area->x2 = init_y_off + row + height - 1;
@@ -925,6 +920,6 @@ static void draw_buf_flush(void)
 
 static void call_flush_cb(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p)
 {
-    TRACE_REFR("Calling flush_cb on (%d;%d)(%d;%d) area with 0x%p image pointer", area->x1, area->y1, area->x2, area->y2, color_p);
+    TRACE_REFR("Calling flush_cb on (%d;%d)(%d;%d) area with %p image pointer", area->x1, area->y1, area->x2, area->y2, color_p);
     drv->flush_cb(drv, area, color_p);
 }

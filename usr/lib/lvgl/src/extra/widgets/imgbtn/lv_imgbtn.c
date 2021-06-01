@@ -23,9 +23,9 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void lv_imgbtn_constructor(lv_obj_t * obj, const lv_obj_t * copy);
-static void draw_main(lv_obj_t * obj);
-static void lv_imgbtn_event(lv_obj_t * imgbtn, lv_event_t e);
+static void lv_imgbtn_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
+static void draw_main(lv_event_t * e);
+static void lv_imgbtn_event(const lv_obj_class_t * class_p, lv_event_t * e);
 static void refr_img(lv_obj_t * imgbtn);
 static lv_imgbtn_state_t suggest_state(lv_obj_t * imgbtn, lv_imgbtn_state_t state);
 lv_imgbtn_state_t get_state(const lv_obj_t * imgbtn);
@@ -51,13 +51,14 @@ const lv_obj_class_t lv_imgbtn_class = {
 /**
  * Create a image button object
  * @param par pointer to an object, it will be the parent of the new image button
- * @param copy pointer to a image button object, if not NULL then the new object will be copied from
- * it
  * @return pointer to the created image button
  */
 lv_obj_t * lv_imgbtn_create(lv_obj_t * parent)
 {
-   return lv_obj_create_from_class(&lv_imgbtn_class, parent, NULL);
+    LV_LOG_INFO("begin")
+    lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
+    lv_obj_class_init_obj(obj);
+    return obj;
 }
 
 /*=====================
@@ -79,13 +80,6 @@ void lv_imgbtn_set_src(lv_obj_t * obj, lv_imgbtn_state_t state, const void * src
                              const void * src_right)
 {
     LV_ASSERT_OBJ(obj, MY_CLASS);
-
-    if(lv_img_src_get_type(src_left) == LV_IMG_SRC_SYMBOL ||
-       lv_img_src_get_type(src_mid) == LV_IMG_SRC_SYMBOL ||
-       lv_img_src_get_type(src_right) == LV_IMG_SRC_SYMBOL) {
-        LV_LOG_WARN("lv_imgbtn_set_src: symbols are not supported in tiled mode");
-        return;
-    }
 
     lv_imgbtn_t * imgbtn = (lv_imgbtn_t *)obj;
 
@@ -149,10 +143,9 @@ const void * lv_imgbtn_get_src_right(lv_obj_t * obj, lv_imgbtn_state_t state)
  *   STATIC FUNCTIONS
  **********************/
 
-static void lv_imgbtn_constructor(lv_obj_t * obj, const lv_obj_t * copy)
+static void lv_imgbtn_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
-    LV_UNUSED(copy);
-
+    LV_UNUSED(class_p);
    lv_imgbtn_t * imgbtn = (lv_imgbtn_t *)obj;
    /*Initialize the allocated 'ext'*/
    lv_memset_00((void *)imgbtn->img_src_mid, sizeof(imgbtn->img_src_mid));
@@ -163,37 +156,38 @@ static void lv_imgbtn_constructor(lv_obj_t * obj, const lv_obj_t * copy)
 }
 
 
-static void lv_imgbtn_event(lv_obj_t * obj, lv_event_t e)
+static void lv_imgbtn_event(const lv_obj_class_t * class_p, lv_event_t * e)
 {
-    lv_res_t res = lv_obj_event_base(&lv_imgbtn_class, obj, e);
+    LV_UNUSED(class_p);
+
+    lv_res_t res = lv_obj_event_base(&lv_imgbtn_class, e);
     if(res != LV_RES_OK) return;
 
-    if(e == LV_EVENT_PRESSED || e == LV_EVENT_RELEASED || e == LV_EVENT_PRESS_LOST) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_PRESSED || code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
         refr_img(obj);
     }
-    else if(e == LV_EVENT_DRAW_MAIN) {
-        draw_main(obj);
+    else if(code == LV_EVENT_DRAW_MAIN) {
+        draw_main(e);
     }
-    else if(e == LV_EVENT_COVER_CHECK) {
-        lv_cover_check_info_t * info = lv_event_get_param();
-        if(info->res != LV_DRAW_RES_MASKED) info->res = LV_DRAW_RES_NOT_COVER;
+    else if(code == LV_EVENT_COVER_CHECK) {
+        lv_cover_check_info_t * info = lv_event_get_param(e);
+        if(info->res != LV_COVER_RES_MASKED) info->res = LV_COVER_RES_NOT_COVER;
     }
 }
 
-static void draw_main(lv_obj_t * obj)
+static void draw_main(lv_event_t * e)
 {
+    lv_obj_t * obj = lv_event_get_target(e);
     lv_imgbtn_t * imgbtn = (lv_imgbtn_t *)obj;
-    const lv_area_t * clip_area = lv_event_get_param();
+    const lv_area_t * clip_area = lv_event_get_param(e);
 
     /*Just draw_main an image*/
     lv_imgbtn_state_t state  = suggest_state(obj, get_state(obj));
 
     /*Simply draw the middle src if no tiled*/
     const void * src = imgbtn->img_src_left[state];
-    if(lv_img_src_get_type(src) == LV_IMG_SRC_SYMBOL) {
-        LV_LOG_WARN("lv_imgbtn_draw: SYMBOLS are not supported in tiled mode")
-                            return;
-    }
 
     lv_coord_t tw = lv_obj_get_style_transform_width(obj, LV_PART_MAIN);
     lv_coord_t th = lv_obj_get_style_transform_height(obj, LV_PART_MAIN);
@@ -273,16 +267,7 @@ static void refr_img(lv_obj_t * obj)
     if(src == NULL) return;
 
     lv_res_t info_res = LV_RES_OK;
-    if(lv_img_src_get_type(src) == LV_IMG_SRC_SYMBOL) {
-        const lv_font_t * font = lv_obj_get_style_text_font(obj, LV_PART_MAIN);
-        header.h = lv_font_get_line_height(font);
-        header.w = _lv_txt_get_width(src, (uint16_t)strlen(src), font, 0, LV_TEXT_FLAG_NONE);
-        header.always_zero = 0;
-        header.cf = LV_IMG_CF_ALPHA_1BIT;
-    }
-    else {
-        info_res = lv_img_decoder_get_info(src, &header);
-    }
+    info_res = lv_img_decoder_get_info(src, &header);
 
     if(info_res == LV_RES_OK) {
         imgbtn->act_cf = header.cf;

@@ -36,6 +36,9 @@ void lv_example_style_8(void);
 void lv_example_style_9(void);
 void lv_example_style_10(void);
 void lv_example_style_11(void);
+void lv_example_style_12(void);
+void lv_example_style_13(void);
+void lv_example_style_14(void);
 
 /**********************
  *      MACROS

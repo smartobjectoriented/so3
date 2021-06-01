@@ -10,11 +10,12 @@
 
 #include <stdint.h>
 
-/*Handle special Kconfig options*/
-#include "lv_conf_kconfig.h"
-
-#ifdef CONFIG_LV_CONF_SKIP
-#define LV_CONF_SKIP
+/* Handle special Kconfig options */
+#ifndef LV_KCONFIG_IGNORE
+#   include "lv_conf_kconfig.h"
+#   ifdef CONFIG_LV_CONF_SKIP
+#       define LV_CONF_SKIP
+#   endif
 #endif
 
 /*If "lv_conf.h" is available from here try to use it later.*/
@@ -41,6 +42,10 @@
 #  endif
 #endif
 
+
+/*----------------------------------
+ * Start parsing lv_conf_template.h
+ -----------------------------------*/
 /*clang-format off*/
 
 #include <stdint.h>
@@ -560,8 +565,6 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #    define  LV_USE_USER_DATA      1
 #  endif
 #endif
-#if LV_USE_USER_DATA
-#endif
 
 /*Garbage Collector settings
  *Used if lvgl is binded to higher level language and the memory is managed by that language*/
@@ -880,8 +883,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  endif
 #endif
 
-/*Pixel perfect monospace fonts
- *http://pelulamu.net/unscii/*/
+/*Pixel perfect monospace fonts*/
 #ifndef LV_FONT_UNSCII_8
 #  ifdef CONFIG_LV_FONT_UNSCII_8
 #    define LV_FONT_UNSCII_8 CONFIG_LV_FONT_UNSCII_8
@@ -1034,14 +1036,14 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #endif
 #if LV_USE_BIDI
 /*Set the default direction. Supported values:
- *`LV_BIDI_DIR_LTR` Left-to-Right
- *`LV_BIDI_DIR_RTL` Right-to-Left
- *`LV_BIDI_DIR_AUTO` detect texts base direction*/
+ *`LV_BASE_DIR_LTR` Left-to-Right
+ *`LV_BASE_DIR_RTL` Right-to-Left
+ *`LV_BASE_DIR_AUTO` detect texts base direction*/
 #ifndef LV_BIDI_BASE_DIR_DEF
 #  ifdef CONFIG_LV_BIDI_BASE_DIR_DEF
 #    define LV_BIDI_BASE_DIR_DEF CONFIG_LV_BIDI_BASE_DIR_DEF
 #  else
-#    define  LV_BIDI_BASE_DIR_DEF  LV_BIDI_DIR_AUTO
+#    define  LV_BIDI_BASE_DIR_DEF  LV_BASE_DIR_AUTO
 #  endif
 #endif
 #endif
@@ -1067,6 +1069,14 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #    define LV_USE_ARC CONFIG_LV_USE_ARC
 #  else
 #    define  LV_USE_ARC          1
+#  endif
+#endif
+
+#ifndef LV_USE_ANIMIMG
+#  ifdef CONFIG_LV_USE_ANIMIMG
+#    define LV_USE_ANIMIMG CONFIG_LV_USE_ANIMIMG
+#  else
+#    define  LV_USE_ANIMIMG	    1
 #  endif
 #endif
 
@@ -1110,13 +1120,6 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  endif
 #endif
 
-#ifndef LV_USE_CHART
-#  ifdef CONFIG_LV_USE_CHART
-#    define LV_USE_CHART CONFIG_LV_USE_CHART
-#  else
-#    define  LV_USE_CHART        1
-#  endif
-#endif
 
 #ifndef LV_USE_DROPDOWN
 #  ifdef CONFIG_LV_USE_DROPDOWN
@@ -1142,11 +1145,11 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  endif
 #endif
 #if LV_USE_LABEL
-#ifndef LV_LABEL_TEXT_SEL
-#  ifdef CONFIG_LV_LABEL_TEXT_SEL
-#    define LV_LABEL_TEXT_SEL CONFIG_LV_LABEL_TEXT_SEL
+#ifndef LV_LABEL_TEXT_SELECTION
+#  ifdef CONFIG_LV_LABEL_TEXT_SELECTION
+#    define LV_LABEL_TEXT_SELECTION CONFIG_LV_LABEL_TEXT_SELECTION
 #  else
-#    define  LV_LABEL_TEXT_SEL         1   /*Enable selecting text of the label*/
+#    define  LV_LABEL_TEXT_SELECTION         1   /*Enable selecting text of the label*/
 #  endif
 #endif
 #ifndef LV_LABEL_LONG_TXT_HINT
@@ -1163,14 +1166,6 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #    define LV_USE_LINE CONFIG_LV_USE_LINE
 #  else
 #    define  LV_USE_LINE         1
-#  endif
-#endif
-
-#ifndef LV_USE_METER
-#  ifdef CONFIG_LV_USE_METER
-#    define LV_USE_METER CONFIG_LV_USE_METER
-#  else
-#    define  LV_USE_METER        1
 #  endif
 #endif
 
@@ -1295,6 +1290,14 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #endif
 #endif  /*LV_USE_CALENDAR*/
 
+#ifndef LV_USE_CHART
+#  ifdef CONFIG_LV_USE_CHART
+#    define LV_USE_CHART CONFIG_LV_USE_CHART
+#  else
+#    define  LV_USE_CHART        1
+#  endif
+#endif
+
 #ifndef LV_USE_COLORWHEEL
 #  ifdef CONFIG_LV_USE_COLORWHEEL
 #    define LV_USE_COLORWHEEL CONFIG_LV_USE_COLORWHEEL
@@ -1332,6 +1335,14 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #    define LV_USE_LIST CONFIG_LV_USE_LIST
 #  else
 #    define  LV_USE_LIST         1
+#  endif
+#endif
+
+#ifndef LV_USE_METER
+#  ifdef CONFIG_LV_USE_METER
+#    define LV_USE_METER CONFIG_LV_USE_METER
+#  else
+#    define  LV_USE_METER        1
 #  endif
 #endif
 
@@ -1383,6 +1394,24 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  endif
 #endif
 
+#ifndef LV_USE_SPAN
+#  ifdef CONFIG_LV_USE_SPAN
+#    define LV_USE_SPAN CONFIG_LV_USE_SPAN
+#  else
+#    define  LV_USE_SPAN         1
+#  endif
+#endif
+#if LV_USE_SPAN
+/*A line text can contain maximum num of span descriptor */
+#ifndef LV_SPAN_SNIPPET_STACK_SIZE
+#  ifdef CONFIG_LV_SPAN_SNIPPET_STACK_SIZE
+#    define LV_SPAN_SNIPPET_STACK_SIZE CONFIG_LV_SPAN_SNIPPET_STACK_SIZE
+#  else
+#    define  LV_SPAN_SNIPPET_STACK_SIZE   64
+#  endif
+#endif
+#endif
+
 /*-----------
  * Themes
  *----------*/
@@ -1396,12 +1425,12 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #endif
 #if LV_USE_THEME_DEFAULT
 
-/*1: Light mode; 0: Dark mode*/
-#ifndef LV_THEME_DEFAULT_PALETTE_LIGHT
-#  ifdef CONFIG_LV_THEME_DEFAULT_PALETTE_LIGHT
-#    define LV_THEME_DEFAULT_PALETTE_LIGHT CONFIG_LV_THEME_DEFAULT_PALETTE_LIGHT
+/*0: Light mode; 1: Dark mode*/
+#ifndef LV_THEME_DEFAULT_DARK
+#  ifdef CONFIG_LV_THEME_DEFAULT_DARK
+#    define LV_THEME_DEFAULT_DARK CONFIG_LV_THEME_DEFAULT_DARK
 #  else
-#    define  LV_THEME_DEFAULT_PALETTE_LIGHT     1
+#    define  LV_THEME_DEFAULT_DARK     0
 #  endif
 #endif
 
@@ -1410,7 +1439,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  ifdef CONFIG_LV_THEME_DEFAULT_GROW
 #    define LV_THEME_DEFAULT_GROW CONFIG_LV_THEME_DEFAULT_GROW
 #  else
-#    define  LV_THEME_DEFAULT_GROW        		1
+#    define  LV_THEME_DEFAULT_GROW              1
 #  endif
 #endif
 
@@ -1424,7 +1453,7 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #endif
 #endif /*LV_USE_THEME_DEFAULT*/
 
- /*An very simple them that is a good starting point for a custom theme*/
+/*An very simple them that is a good starting point for a custom theme*/
 #ifndef LV_USE_THEME_BASIC
 #  ifdef CONFIG_LV_USE_THEME_BASIC
 #    define LV_USE_THEME_BASIC CONFIG_LV_USE_THEME_BASIC
@@ -1433,9 +1462,20 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #  endif
 #endif
 
+/*A theme designed for monochrome displays*/
+#ifndef LV_USE_THEME_MONO
+#  ifdef CONFIG_LV_USE_THEME_MONO
+#    define LV_USE_THEME_MONO CONFIG_LV_USE_THEME_MONO
+#  else
+#    define  LV_USE_THEME_MONO       1
+#  endif
+#endif
+
 /*-----------
  * Layouts
  *----------*/
+
+/*A layout similar to Flexbox in CSS.*/
 #ifndef LV_USE_FLEX
 #  ifdef CONFIG_LV_USE_FLEX
 #    define LV_USE_FLEX CONFIG_LV_USE_FLEX
@@ -1443,6 +1483,8 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 #    define  LV_USE_FLEX     1
 #  endif
 #endif
+
+/*A layout similar to Grid in CSS.*/
 #ifndef LV_USE_GRID
 #  ifdef CONFIG_LV_USE_GRID
 #    define LV_USE_GRID CONFIG_LV_USE_GRID
@@ -1466,13 +1508,14 @@ e.g. "stm32f769xx.h" or "stm32f429xx.h"*/
 
 
 
+/*----------------------------------
+ * End of parsing lv_conf_template.h
+ -----------------------------------*/
+
+LV_EXPORT_CONST_INT(LV_DPI_DEF);
+
 /*If running without lv_conf.h add typdesf with default value*/
 #if defined(LV_CONF_SKIP)
-
-
-# if LV_USE_USER_DATA
-  typedef void * lv_obj_user_data_t;
-# endif
 
 # if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)    /*Disable warnings for Visual Studio*/
 #  define _CRT_SECURE_NO_WARNINGS

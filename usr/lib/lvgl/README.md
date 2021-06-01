@@ -1,4 +1,5 @@
-**The master branch now contains the test version of v8. For the last v7 version use the release/v7 branch.**
+**The master branch now contains the test version of v8. For the last v7 version use the release/v7 branch.** 
+
 
 <h1 align="center"> LVGL - Light and Versatile Graphics Library</h1>
 
@@ -161,3 +162,4 @@ lv.scr_load(scr)
 LVGL is an open project and contribution is very welcome. There are many ways to contribute from simply speaking about your project, through writing examples, improving the documentation, fixing bugs to hosing your own project under in LVGL.
 
 For a detailed description of contribution opportunities visit the [Contributing](https://docs.lvgl.io/latest/en/html/contributing/index.html) section of the documentation.
+ 

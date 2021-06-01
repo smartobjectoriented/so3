@@ -36,13 +36,13 @@ enum {
     LV_BTNMATRIX_CTRL_HIDDEN     = 0x0008, /**< Button hidden*/
     LV_BTNMATRIX_CTRL_NO_REPEAT  = 0x0010, /**< Do not repeat press this button.*/
     LV_BTNMATRIX_CTRL_DISABLED   = 0x0020, /**< Disable this button.*/
-    LV_BTNMATRIX_CTRL_CHECKABLE  = 0x0040, /**< Button *can* be toggled.*/
+    LV_BTNMATRIX_CTRL_CHECKABLE  = 0x0040, /**< The button can be toggled.*/
     LV_BTNMATRIX_CTRL_CHECKED    = 0x0080, /**< Button is currently toggled (e.g. checked).*/
     LV_BTNMATRIX_CTRL_CLICK_TRIG = 0x0100, /**< 1: Send LV_EVENT_VALUE_CHANGE on CLICK, 0: Send LV_EVENT_VALUE_CHANGE on PRESS*/
-    LV_BTNMATRIX_CTRL_CUSTOM_1   = 0x1000, /**< Custom free to use flag*/
-    LV_BTNMATRIX_CTRL_CUSTOM_2   = 0x2000, /**< Custom free to use flag*/
-    LV_BTNMATRIX_CTRL_CUSTOM_3   = 0x4000, /**< Custom free to use flag*/
-    LV_BTNMATRIX_CTRL_CUSTOM_4   = 0x8000, /**< Custom free to use flag*/
+    LV_BTNMATRIX_CTRL_RECOLOR    = 0x1000, /**< Enable text recoloring with `#color`*/
+    _LV_BTNMATRIX_CTRL_RESERVED  = 0x2000, /**< Reserved for later use*/
+    LV_BTNMATRIX_CTRL_CUSTOM_1   = 0x4000, /**< Custom free to use flag*/
+    LV_BTNMATRIX_CTRL_CUSTOM_2   = 0x8000, /**< Custom free to use flag*/
 };
 
 typedef uint16_t lv_btnmatrix_ctrl_t;
@@ -57,10 +57,8 @@ typedef struct {
     lv_btnmatrix_ctrl_t * ctrl_bits;                       /*Array of control bytes*/
     uint16_t btn_cnt;                                 /*Number of button in 'map_p'(Handled by the library)*/
     uint16_t btn_id_sel;    /*Index of the active button (being pressed/released etc) or LV_BTNMATRIX_BTN_NONE*/
-    uint8_t recolor : 1;    /*Enable button recoloring*/
     uint8_t one_check : 1;  /*Single button toggled at once*/
 } lv_btnmatrix_t;
-
 
 extern const lv_obj_class_t lv_btnmatrix_class;
 
@@ -71,11 +69,9 @@ extern const lv_obj_class_t lv_btnmatrix_class;
 /**
  * Create a button matrix objects
  * @param parent    pointer to an object, it will be the parent of the new button matrix
- * @param copy      DEPRECATED, will be removed in v9.
- *                  Pointer to an other button matrix to copy.
  * @return          pointer to the created button matrix
  */
-lv_obj_t * lv_btnmatrix_create(lv_obj_t * parent, const lv_obj_t * copy);
+lv_obj_t * lv_btnmatrix_create(lv_obj_t * parent);
 
 /*=====================
  * Setter functions
@@ -111,12 +107,6 @@ void lv_btnmatrix_set_ctrl_map(lv_obj_t * obj, const lv_btnmatrix_ctrl_t ctrl_ma
  */
 void lv_btnmatrix_set_selected_btn(lv_obj_t * obj, uint16_t btn_id);
 
-/**
- * Enable recoloring of button's texts. E.g. "a #ff0000 red# word"
- * @param obj       pointer to button matrix object
- * @param en        true: enable recoloring; false: disable
- */
-void lv_btnmatrix_set_recolor(const lv_obj_t * obj, bool en);
 /**
  * Set the attributes of a button of the button matrix
  * @param obj       pointer to button matrix object
@@ -178,13 +168,6 @@ void lv_btnmatrix_set_one_checked(lv_obj_t * obj, bool en);
  * @return          the current map
  */
 const char ** lv_btnmatrix_get_map(const lv_obj_t * obj);
-
-/**
- * Check whether the button's text can use recolor or not
- * @param obj       pointer to button matrix object
- * @return          true: text recolor enable; false: disabled
- */
-bool lv_btnmatrix_get_recolor(const lv_obj_t * obj);
 
 /**
  * Get the index of the lastly "activated" button by the user (pressed, released, focused etc)

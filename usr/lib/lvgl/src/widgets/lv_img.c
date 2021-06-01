@@ -28,10 +28,10 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void lv_img_constructor(lv_obj_t * obj, const lv_obj_t * copy);
-static void lv_img_destructor(lv_obj_t * obj);
-static void lv_img_event(lv_obj_t * obj, lv_event_t e);
-static void draw_img(lv_obj_t * obj, lv_event_t e);
+static void lv_img_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
+static void lv_img_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
+static void lv_img_event(const lv_obj_class_t * class_p, lv_event_t * e);
+static void draw_img(lv_event_t * e);
 
 /**********************
  *  STATIC VARIABLES
@@ -40,6 +40,8 @@ const lv_obj_class_t lv_img_class = {
          .constructor_cb = lv_img_constructor,
          .destructor_cb = lv_img_destructor,
          .event_cb = lv_img_event,
+         .width_def = LV_SIZE_CONTENT,
+         .height_def = LV_SIZE_CONTENT,
          .instance_size = sizeof(lv_img_t),
          .base_class = &lv_obj_class
      };
@@ -52,10 +54,12 @@ const lv_obj_class_t lv_img_class = {
  *   GLOBAL FUNCTIONS
  **********************/
 
-lv_obj_t * lv_img_create(lv_obj_t * parent, const lv_obj_t * copy)
+lv_obj_t * lv_img_create(lv_obj_t * parent)
 {
     LV_LOG_INFO("begin")
-    return lv_obj_create_from_class(&lv_img_class, parent, copy);
+    lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
+    lv_obj_class_init_obj(obj);
+    return obj;
 }
 
 /*=====================
@@ -147,7 +151,7 @@ void lv_img_set_src(lv_obj_t * obj, const void * src)
     img->pivot.x = header.w / 2;
     img->pivot.y = header.h / 2;
 
-    lv_obj_handle_self_size_chg(obj);
+    lv_obj_refresh_self_size(obj);
 
     /*Provide enough room for the rotated corners*/
     if(img->angle || img->zoom != LV_IMG_ZOOM_NONE) lv_obj_refresh_ext_draw_size(obj);
@@ -358,8 +362,9 @@ bool lv_img_get_antialias(lv_obj_t * obj)
  *   STATIC FUNCTIONS
  **********************/
 
-static void lv_img_constructor(lv_obj_t * obj, const lv_obj_t * copy)
+static void lv_img_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
+    LV_UNUSED(class_p);
     LV_TRACE_OBJ_CREATE("begin");
 
     lv_img_t * img = (lv_img_t *)obj;
@@ -377,30 +382,15 @@ static void lv_img_constructor(lv_obj_t * obj, const lv_obj_t * copy)
     img->pivot.x = 0;
     img->pivot.y = 0;
 
-    if(copy == NULL) {
-        lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_add_flag(obj, LV_OBJ_FLAG_ADV_HITTEST);
-
-        /*Enable auto size for non screens
-         *because image screens are wallpapers
-         *and must be screen sized*/
-        if(obj->parent) lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    }
-    else {
-        lv_img_t * copy_img = (lv_img_t *)copy;
-        img->zoom      = copy_img->zoom;
-        img->angle     = copy_img->angle;
-        img->antialias = copy_img->antialias;
-        img->offset  = copy_img->offset;
-        img->pivot   = copy_img->pivot;
-        lv_img_set_src(obj, copy_img->src);
-    }
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_ADV_HITTEST);
 
     LV_TRACE_OBJ_CREATE("finished");
 }
 
-static void lv_img_destructor(lv_obj_t * obj)
+static void lv_img_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
+    LV_UNUSED(class_p);
     lv_img_t * img = (lv_img_t *)obj;
     if(img->src_type == LV_IMG_SRC_FILE || img->src_type == LV_IMG_SRC_SYMBOL) {
         lv_mem_free((void*)img->src);
@@ -409,26 +399,34 @@ static void lv_img_destructor(lv_obj_t * obj)
     }
 }
 
-static void lv_img_event(lv_obj_t * obj, lv_event_t e)
+static void lv_img_event(const lv_obj_class_t * class_p, lv_event_t * e)
 {
+    LV_UNUSED(class_p);
+
+    lv_event_code_t code = lv_event_get_code(e);
+
     /*Ancestor events will be called during drawing*/
-    if(e != LV_EVENT_DRAW_MAIN && e != LV_EVENT_DRAW_POST) {
+    if(code != LV_EVENT_DRAW_MAIN && code != LV_EVENT_DRAW_POST) {
         /*Call the ancestor's event handler*/
-        lv_res_t res = lv_obj_event_base(MY_CLASS, obj, e);
+        lv_res_t res = lv_obj_event_base(MY_CLASS, e);
         if(res != LV_RES_OK) return;
     }
 
-   lv_img_t * img = (lv_img_t *)obj;
+    lv_obj_t * obj = lv_event_get_target(e);
+    lv_img_t * img = (lv_img_t *)obj;
 
-  if(e == LV_EVENT_STYLE_CHANGED) {
+    if(code == LV_EVENT_STYLE_CHANGED) {
         /*Refresh the file name to refresh the symbol text size*/
         if(img->src_type == LV_IMG_SRC_SYMBOL) {
             lv_img_set_src(obj, img->src);
+        } else {
+            /*With transformation it might change*/
+            lv_obj_refresh_ext_draw_size(obj);
         }
     }
-    else if(e == LV_EVENT_REFR_EXT_DRAW_SIZE) {
+    else if(code == LV_EVENT_REFR_EXT_DRAW_SIZE) {
 
-        lv_coord_t * s = lv_event_get_param();
+        lv_coord_t * s = lv_event_get_param(e);
         lv_coord_t transf_zoom = lv_obj_get_style_transform_zoom(obj, LV_PART_MAIN);
         transf_zoom = (transf_zoom * img->zoom) >> 8;
 
@@ -448,8 +446,8 @@ static void lv_img_event(lv_obj_t * obj, lv_event_t e)
             *s = LV_MAX(*s, pad_ori + a.y2 - h);
         }
     }
-    else if(e == LV_EVENT_HIT_TEST) {
-        lv_hit_test_info_t * info = lv_event_get_param();
+    else if(code == LV_EVENT_HIT_TEST) {
+        lv_hit_test_info_t * info = lv_event_get_param(e);
         lv_coord_t zoom = lv_obj_get_style_transform_zoom(obj, LV_PART_MAIN);
         zoom = (zoom * img->zoom) >> 8;
 
@@ -459,7 +457,7 @@ static void lv_img_event(lv_obj_t * obj, lv_event_t e)
         /*If the object is exactly image sized (not cropped, not mosaic) and transformed
          *perform hit test on it's transformed area*/
         if(img->w == lv_obj_get_width(obj) && img->h == lv_obj_get_height(obj) &&
-           (zoom != LV_IMG_ZOOM_NONE || angle != 0 || img->pivot.x != img->w / 2 || img->pivot.y != img->h / 2)) {
+                (zoom != LV_IMG_ZOOM_NONE || angle != 0 || img->pivot.x != img->w / 2 || img->pivot.y != img->h / 2)) {
 
             lv_coord_t w = lv_obj_get_width(obj);
             lv_coord_t h = lv_obj_get_height(obj);
@@ -470,44 +468,46 @@ static void lv_img_event(lv_obj_t * obj, lv_event_t e)
             coords.x2 += obj->coords.x1;
             coords.y2 += obj->coords.y1;
 
-            info->result = _lv_area_is_point_on(&coords, info->point, 0);
+            info->res = _lv_area_is_point_on(&coords, info->point, 0);
         }
         else {
             lv_area_t a;
             lv_obj_get_click_area(obj, &a);
-            info->result = _lv_area_is_point_on(&a, info->point, 0);
+            info->res = _lv_area_is_point_on(&a, info->point, 0);
         }
     }
-    else if(e == LV_EVENT_GET_SELF_SIZE) {
-        lv_point_t * p = lv_event_get_param();;
+    else if(code == LV_EVENT_GET_SELF_SIZE) {
+        lv_point_t * p = lv_event_get_param(e);;
         p->x = img->w;
         p->y = img->h;
     }
-    else if(e == LV_EVENT_DRAW_MAIN || e == LV_EVENT_DRAW_POST || e == LV_EVENT_COVER_CHECK) {
-        draw_img(obj, e);
+    else if(code == LV_EVENT_DRAW_MAIN || code == LV_EVENT_DRAW_POST || code == LV_EVENT_COVER_CHECK) {
+        draw_img(e);
     }
 }
 
-static void draw_img(lv_obj_t * obj, lv_event_t e)
+static void draw_img(lv_event_t * e)
 {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
     lv_img_t * img = (lv_img_t *)obj;
-    if(e == LV_EVENT_COVER_CHECK) {
-        lv_cover_check_info_t * info = lv_event_get_param();
-        if(info->res == LV_DRAW_RES_MASKED) return;
+    if(code == LV_EVENT_COVER_CHECK) {
+        lv_cover_check_info_t * info = lv_event_get_param(e);
+        if(info->res == LV_COVER_RES_MASKED) return;
         if(img->src_type == LV_IMG_SRC_UNKNOWN || img->src_type == LV_IMG_SRC_SYMBOL) {
-            info->res = LV_DRAW_RES_NOT_COVER;
+            info->res = LV_COVER_RES_NOT_COVER;
             return;
         }
 
         /*Non true color format might have "holes"*/
         if(img->cf != LV_IMG_CF_TRUE_COLOR && img->cf != LV_IMG_CF_RAW) {
-            info->res = LV_DRAW_RES_NOT_COVER;
+            info->res = LV_COVER_RES_NOT_COVER;
             return;
         }
 
         /*With not LV_OPA_COVER images can't cover an area */
         if(lv_obj_get_style_img_opa(obj, LV_PART_MAIN) != LV_OPA_COVER) {
-            info->res = LV_DRAW_RES_NOT_COVER;
+            info->res = LV_COVER_RES_NOT_COVER;
             return;
         }
 
@@ -515,18 +515,17 @@ static void draw_img(lv_obj_t * obj, lv_event_t e)
         angle_final += img->angle;
 
         if(angle_final != 0) {
-            info->res = LV_DRAW_RES_NOT_COVER;
+            info->res = LV_COVER_RES_NOT_COVER;
             return;
         }
 
         int32_t zoom_final = lv_obj_get_style_transform_zoom(obj, LV_PART_MAIN);
         zoom_final = (zoom_final * img->zoom) >> 8;
 
-
-        const lv_area_t * clip_area = lv_event_get_param();
+        const lv_area_t * clip_area = lv_event_get_param(e);
         if(zoom_final == LV_IMG_ZOOM_NONE) {
             if(_lv_area_is_in(clip_area, &obj->coords, 0) == false) {
-                info->res = LV_DRAW_RES_NOT_COVER;
+                info->res = LV_COVER_RES_NOT_COVER;
                 return;
             }
         }
@@ -539,12 +538,12 @@ static void draw_img(lv_obj_t * obj, lv_event_t e)
             a.y2 += obj->coords.y1;
 
             if(_lv_area_is_in(clip_area, &a, 0) == false) {
-                info->res = LV_DRAW_RES_NOT_COVER;
+                info->res = LV_COVER_RES_NOT_COVER;
                 return;
             }
         }
     }
-    else if(e == LV_EVENT_DRAW_MAIN || e == LV_EVENT_DRAW_POST) {
+    else if(code == LV_EVENT_DRAW_MAIN || code == LV_EVENT_DRAW_POST) {
 
         int32_t zoom_final = lv_obj_get_style_transform_zoom(obj, LV_PART_MAIN);
         zoom_final = (zoom_final * img->zoom) >> 8;
@@ -555,10 +554,11 @@ static void draw_img(lv_obj_t * obj, lv_event_t e)
         lv_coord_t obj_w = lv_obj_get_width(obj);
         lv_coord_t obj_h = lv_obj_get_height(obj);
 
-        lv_coord_t pleft = lv_obj_get_style_pad_left(obj, LV_PART_MAIN);
-        lv_coord_t pright = lv_obj_get_style_pad_right(obj, LV_PART_MAIN);
-        lv_coord_t ptop = lv_obj_get_style_pad_top(obj, LV_PART_MAIN);
-        lv_coord_t pbottom = lv_obj_get_style_pad_bottom(obj, LV_PART_MAIN);
+        lv_coord_t border_width = lv_obj_get_style_border_width(obj, LV_PART_MAIN);
+        lv_coord_t pleft = lv_obj_get_style_pad_left(obj, LV_PART_MAIN) + border_width;
+        lv_coord_t pright = lv_obj_get_style_pad_right(obj, LV_PART_MAIN) + border_width;
+        lv_coord_t ptop = lv_obj_get_style_pad_top(obj, LV_PART_MAIN) + border_width;
+        lv_coord_t pbottom = lv_obj_get_style_pad_bottom(obj, LV_PART_MAIN) + border_width;
 
         lv_point_t bg_pivot;
         bg_pivot.x = img->pivot.x + pleft;
@@ -577,16 +577,16 @@ static void draw_img(lv_obj_t * obj, lv_event_t e)
         lv_area_copy(&ori_coords, &obj->coords);
         lv_area_copy(&obj->coords, &bg_coords);
 
-        lv_res_t res = lv_obj_event_base(MY_CLASS, obj, e);
+        lv_res_t res = lv_obj_event_base(MY_CLASS, e);
         if(res != LV_RES_OK) return;
 
         lv_area_copy(&obj->coords, &ori_coords);
 
-        if(e == LV_EVENT_DRAW_MAIN) {
+        if(code == LV_EVENT_DRAW_MAIN) {
             if(img->h == 0 || img->w == 0) return;
             if(zoom_final == 0) return;
 
-            const lv_area_t * clip_area = lv_event_get_param();
+            const lv_area_t * clip_area = lv_event_get_param(e);
 
             lv_area_t img_max_area;
             lv_area_copy(&img_max_area, &obj->coords);

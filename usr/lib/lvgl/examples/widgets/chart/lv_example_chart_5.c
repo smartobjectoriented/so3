@@ -1,4 +1,4 @@
-#include "../../../lvgl.h"
+#include "../../lv_examples.h"
 #if LV_USE_CHART && LV_USE_SLIDER && LV_BUILD_EXAMPLES
 
 static lv_obj_t * chart;
@@ -46,19 +46,18 @@ static const lv_coord_t ecg_sample[] = {
     70, 74, 76, 79, 82, 79, 75, 62,
 };
 
-static void slider_x_event_cb(lv_obj_t * obj, lv_event_t e)
+static void slider_x_event_cb(lv_event_t * e)
 {
-    if(e == LV_EVENT_VALUE_CHANGED) {
-        int32_t v = lv_slider_get_value(obj);
-        lv_chart_set_zoom_x(chart, v);
-    }
+    lv_obj_t * obj = lv_event_get_target(e);
+    int32_t v = lv_slider_get_value(obj);
+    lv_chart_set_zoom_x(chart, v);
 }
 
-static void slider_y_event_cb(lv_obj_t * obj, lv_event_t e)
+static void slider_y_event_cb(lv_event_t * e)
 {
-    if(e == LV_EVENT_VALUE_CHANGED) {
-        lv_chart_set_zoom_y(chart, lv_slider_get_value(obj));
-    }
+    lv_obj_t * obj = lv_event_get_target(e);
+    int32_t v = lv_slider_get_value(obj);
+    lv_chart_set_zoom_y(chart, v);
 }
 
 /**
@@ -69,32 +68,32 @@ static void slider_y_event_cb(lv_obj_t * obj, lv_event_t e)
 void lv_example_chart_5(void)
 {
     /*Create a chart*/
-    chart = lv_chart_create(lv_scr_act(), NULL);
+    chart = lv_chart_create(lv_scr_act());
     lv_obj_set_size(chart, 200, 150);
-    lv_obj_align(chart, NULL, LV_ALIGN_CENTER, -30, -30);
+    lv_obj_align(chart, LV_ALIGN_CENTER, -30, -30);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -1000, 1000);
 
     /*Do not display points on the data*/
-    lv_obj_set_style_size(chart, LV_PART_ITEMS, LV_STATE_DEFAULT, 0);
+    lv_obj_set_style_size(chart, 0, LV_PART_INDICATOR);
 
-    lv_chart_series_t * ser = lv_chart_add_series(chart, lv_color_red(), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
 
     uint32_t pcnt = sizeof(ecg_sample) / sizeof(ecg_sample[0]);
     lv_chart_set_point_count(chart, pcnt);
-    lv_chart_set_ext_array(chart, ser, (lv_coord_t *)ecg_sample);
+    lv_chart_set_ext_y_array(chart, ser, (lv_coord_t *)ecg_sample);
 
     lv_obj_t * slider;
-    slider = lv_slider_create(lv_scr_act(), NULL);
+    slider = lv_slider_create(lv_scr_act());
     lv_slider_set_range(slider, LV_IMG_ZOOM_NONE, LV_IMG_ZOOM_NONE * 10);
-    lv_obj_add_event_cb(slider, slider_x_event_cb, NULL);
-    lv_obj_set_size(slider, lv_obj_get_width(chart), 10);
-    lv_obj_align(slider, chart, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
+    lv_obj_add_event_cb(slider, slider_x_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_set_size(slider, 200, 10);
+    lv_obj_align_to(slider, chart, LV_ALIGN_OUT_BOTTOM_MID, 0, 20);
 
-    slider = lv_slider_create(lv_scr_act(), NULL);
+    slider = lv_slider_create(lv_scr_act());
     lv_slider_set_range(slider, LV_IMG_ZOOM_NONE, LV_IMG_ZOOM_NONE * 10);
-    lv_obj_add_event_cb(slider, slider_y_event_cb, NULL);
-    lv_obj_set_size(slider, 10, lv_obj_get_height(chart));
-    lv_obj_align(slider, chart, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
+    lv_obj_add_event_cb(slider, slider_y_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_set_size(slider, 10, 150);
+    lv_obj_align_to(slider, chart, LV_ALIGN_OUT_RIGHT_MID, 20, 0);
 }
 
 #endif

@@ -13,12 +13,15 @@ extern "C" {
 /*********************
  *      INCLUDES
  *********************/
+#include "animimg/lv_animimg.h"
 #include "calendar/lv_calendar.h"
 #include "calendar/lv_calendar_header_arrow.h"
 #include "calendar/lv_calendar_header_dropdown.h"
+#include "chart/lv_chart.h"
 #include "keyboard/lv_keyboard.h"
 #include "list/lv_list.h"
 #include "msgbox/lv_msgbox.h"
+#include "meter/lv_meter.h"
 #include "spinbox/lv_spinbox.h"
 #include "spinner/lv_spinner.h"
 #include "tabview/lv_tabview.h"
@@ -27,7 +30,7 @@ extern "C" {
 #include "colorwheel/lv_colorwheel.h"
 #include "led/lv_led.h"
 #include "imgbtn/lv_imgbtn.h"
-
+#include "span/lv_span.h"
 
 /*********************
  *      DEFINES

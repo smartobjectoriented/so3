@@ -59,15 +59,17 @@ typedef struct {
 
 /** Alignments*/
 enum {
-    LV_ALIGN_CENTER = 0,
-    LV_ALIGN_IN_TOP_LEFT,
-    LV_ALIGN_IN_TOP_MID,
-    LV_ALIGN_IN_TOP_RIGHT,
-    LV_ALIGN_IN_BOTTOM_LEFT,
-    LV_ALIGN_IN_BOTTOM_MID,
-    LV_ALIGN_IN_BOTTOM_RIGHT,
-    LV_ALIGN_IN_LEFT_MID,
-    LV_ALIGN_IN_RIGHT_MID,
+    LV_ALIGN_DEFAULT = 0,
+    LV_ALIGN_TOP_LEFT,
+    LV_ALIGN_TOP_MID,
+    LV_ALIGN_TOP_RIGHT,
+    LV_ALIGN_BOTTOM_LEFT,
+    LV_ALIGN_BOTTOM_MID,
+    LV_ALIGN_BOTTOM_RIGHT,
+    LV_ALIGN_LEFT_MID,
+    LV_ALIGN_RIGHT_MID,
+    LV_ALIGN_CENTER,
+
     LV_ALIGN_OUT_TOP_LEFT,
     LV_ALIGN_OUT_TOP_MID,
     LV_ALIGN_OUT_TOP_RIGHT,
@@ -172,6 +174,10 @@ void _lv_area_set_pos(lv_area_t * area_p, lv_coord_t x, lv_coord_t y);
  */
 uint32_t lv_area_get_size(const lv_area_t * area_p);
 
+void lv_area_increase(lv_area_t * area, lv_coord_t w_extra, lv_coord_t h_extra);
+
+void lv_area_move(lv_area_t * area, lv_coord_t x_ofs, lv_coord_t y_ofs);
+
 /**
  * Get the common parts of two areas
  * @param res_p pointer to an area, the result will be stored her
@@ -220,9 +226,8 @@ bool _lv_area_is_in(const lv_area_t * ain_p, const lv_area_t * aholder_p, lv_coo
  * @param base an are where the other will be aligned
  * @param to_align the area to align
  * @param align `LV_ALIGN_...`
- * @param res x/y coordinates where `to_align` align area should be placed
  */
-void _lv_area_align(const lv_area_t * base, const lv_area_t * to_align, lv_align_t align, lv_point_t * res);
+void lv_area_align(const lv_area_t * base, lv_area_t * to_align, lv_align_t align, lv_coord_t ofs_x, lv_coord_t ofs_y);
 
 /**********************
  *      MACROS
@@ -234,22 +239,31 @@ void _lv_area_align(const lv_area_t * base, const lv_area_t * to_align, lv_align
 
 #define _LV_COORD_TYPE_PX       (0 << _LV_COORD_TYPE_SHIFT)
 #define _LV_COORD_TYPE_SPEC     (1 << _LV_COORD_TYPE_SHIFT)
-#define _LV_COORD_TYPE_LAYOUT   (2 << _LV_COORD_TYPE_SHIFT)
 #define _LV_COORD_TYPE_RESERVED (3 << _LV_COORD_TYPE_SHIFT)
 
 #define LV_COORD_IS_PX(x)     ((((x) & _LV_COORD_TYPE_MASK) == _LV_COORD_TYPE_PX) ? true : false)
 #define LV_COORD_IS_SPEC(x)   ((((x) & _LV_COORD_TYPE_MASK) == _LV_COORD_TYPE_SPEC) ? true : false)
-#define LV_COORD_IS_LAYOUT(x) ((((x) & _LV_COORD_TYPE_MASK) == _LV_COORD_TYPE_LAYOUT) ? true : false)
 
 #define LV_COORD_SET_SPEC(x)   ((x) | _LV_COORD_TYPE_SPEC)
-#define LV_COORD_SET_LAYOUT(x) ((x) | _LV_COORD_TYPE_LAYOUT)
 
 /*Special coordinates*/
-#define LV_SIZE_PCT(x)      LV_COORD_SET_SPEC(x)
-#define LV_COORD_IS_PCT(x)   ((LV_COORD_IS_SPEC(x) && _LV_COORD_PLAIN(x) <= 1000) ? true : false)
-#define LV_COORD_GET_PCT(x)  _LV_COORD_PLAIN(x)
-#define LV_SIZE_CONTENT         LV_COORD_SET_SPEC(1001)
-#define LV_SIZE_LAYOUT    LV_COORD_SET_SPEC(1002) /*The size is managed by the layout therefore `lv_obj_set_width/height/size()` can't change is*/
+#define LV_PCT(x)               (x < 0 ? LV_COORD_SET_SPEC(1000 - (x)) : LV_COORD_SET_SPEC(x))
+#define LV_COORD_IS_PCT(x)      ((LV_COORD_IS_SPEC(x) && _LV_COORD_PLAIN(x) <= 2000) ? true : false)
+#define LV_COORD_GET_PCT(x)     (_LV_COORD_PLAIN(x) > 1000 ? 1000 - _LV_COORD_PLAIN(x) : _LV_COORD_PLAIN(x))
+#define LV_SIZE_CONTENT         LV_COORD_SET_SPEC(2001)
+
+LV_EXPORT_CONST_INT(LV_SIZE_CONTENT);
+
+/**
+ * Convert a percentage value to `lv_coord_t`.
+ * Percentage values are stored in special range
+ * @param x the percentage (0..1000)
+ * @return a coordinate that stores the percentage
+ */
+static inline lv_coord_t lv_pct(lv_coord_t x)
+{
+    return LV_PCT(x);
+}
 
 #ifdef __cplusplus
 } /*extern "C"*/

@@ -39,7 +39,7 @@ typedef struct {
     lv_coord_t ofs_x;
     lv_coord_t ofs_y;
     lv_opa_t opa;
-    lv_bidi_dir_t bidi_dir;
+    lv_base_dir_t bidi_dir;
     lv_text_flag_t flag;
     lv_text_align_t align :2;
     lv_text_decor_t decor : 3;
@@ -51,7 +51,7 @@ typedef struct {
  * all the previous characters needs to be checked to calculate the positions.
  * This structure stores an earlier (e.g. at -1000 px) coordinate and the index of that line.
  * Therefore the calculations can start from here.*/
-typedef struct {
+typedef struct _lv_draw_label_hint_t {
     /** Index of the line at `y` coordinate*/
     int32_t line_start;
 
@@ -84,6 +84,9 @@ LV_ATTRIBUTE_FAST_MEM void lv_draw_label(const lv_area_t * coords, const lv_area
                                          const lv_draw_label_dsc_t * dsc,
                                          const char * txt, lv_draw_label_hint_t * hint);
 
+LV_ATTRIBUTE_FAST_MEM void lv_draw_letter(const lv_point_t * pos_p, const lv_area_t * clip_area,
+                                          const lv_font_t * font_p,
+                                          uint32_t letter, lv_color_t color, lv_opa_t opa, lv_blend_mode_t blend_mode);
 //! @endcond
 /***********************
  * GLOBAL VARIABLES

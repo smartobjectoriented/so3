@@ -1,15 +1,12 @@
-#include "../../../lvgl.h"
+#include "../../lv_examples.h"
 #if LV_USE_CHART && LV_BUILD_EXAMPLES
 
-static void event_cb(lv_obj_t * chart, lv_event_t e)
+static void draw_event_cb(lv_event_t * e)
 {
-    LV_UNUSED(chart);
-    if(e == LV_EVENT_DRAW_PART_BEGIN) {
-        lv_obj_draw_dsc_t * dsc = lv_event_get_param();
-        if(dsc->part == LV_PART_TICKS && dsc->id == LV_CHART_AXIS_X) {
-            const char * month[] = {"Jan", "Febr", "March", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
-            lv_snprintf(dsc->text, sizeof(dsc->text), "%s", month[dsc->value]);
-        }
+    lv_obj_draw_part_dsc_t * dsc = lv_event_get_param(e);
+    if(dsc->part == LV_PART_TICKS && dsc->id == LV_CHART_AXIS_PRIMARY_X) {
+        const char * month[] = {"Jan", "Febr", "March", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"};
+        lv_snprintf(dsc->text, sizeof(dsc->text), "%s", month[dsc->value]);
     }
 }
 
@@ -20,17 +17,17 @@ void lv_example_chart_3(void)
 {
     /*Create a chart*/
     lv_obj_t * chart;
-    chart = lv_chart_create(lv_scr_act(), NULL);
+    chart = lv_chart_create(lv_scr_act());
     lv_obj_set_size(chart, 200, 150);
-    lv_obj_align(chart, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_center(chart);
     lv_chart_set_type(chart, LV_CHART_TYPE_BAR);
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 100);
     lv_chart_set_range(chart, LV_CHART_AXIS_SECONDARY_Y, 0, 400);
     lv_chart_set_point_count(chart, 12);
-    lv_obj_add_event_cb(chart, event_cb, NULL);
+    lv_obj_add_event_cb(chart, draw_event_cb, LV_EVENT_DRAW_PART_BEGIN, NULL);
 
     /*Add ticks and label to every axis*/
-    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_X, 10, 5, 12, 3, true, 40);
+    lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_X, 10, 5, 12, 3, true, 40);
     lv_chart_set_axis_tick(chart, LV_CHART_AXIS_PRIMARY_Y, 10, 5, 6, 2, true, 50);
     lv_chart_set_axis_tick(chart, LV_CHART_AXIS_SECONDARY_Y, 10, 5, 3, 4, true, 50);
 
@@ -38,8 +35,8 @@ void lv_example_chart_3(void)
     lv_chart_set_zoom_x(chart, 800);
 
     /*Add two data series*/
-    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_color_green_lighten_2(), LV_CHART_AXIS_PRIMARY_Y);
-    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_color_green_darken_2(), LV_CHART_AXIS_SECONDARY_Y);
+    lv_chart_series_t * ser1 = lv_chart_add_series(chart, lv_palette_lighten(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_PRIMARY_Y);
+    lv_chart_series_t * ser2 = lv_chart_add_series(chart, lv_palette_darken(LV_PALETTE_GREEN, 2), LV_CHART_AXIS_SECONDARY_Y);
 
     /*Set the next points on 'ser1'*/
     lv_chart_set_next_value(chart, ser1, 31);
@@ -55,7 +52,7 @@ void lv_example_chart_3(void)
     lv_chart_set_next_value(chart, ser1, 22);
     lv_chart_set_next_value(chart, ser1, 58);
 
-    lv_coord_t * ser2_array =  lv_chart_get_array(chart, ser2);
+    lv_coord_t * ser2_array =  lv_chart_get_y_array(chart, ser2);
     /*Directly set points on 'ser2'*/
     ser2_array[0] = 92;
     ser2_array[1] = 71;

@@ -34,10 +34,7 @@ int fb_init(void);
 void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p);
 
 int mouse_init(void);
-bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data);
-
 int keyboard_init(void);
-bool my_keyboard_cb(lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
 
 void create_ui(void);
 void *tick_routine (void *args);
