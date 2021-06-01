@@ -56,8 +56,8 @@ void *tick_routine(void *args)
 {
 	while (1) {
 		/* Tell LittlevGL that 5 milliseconds were elapsed */
-		usleep(5000);
-		lv_tick_inc(5);
+		usleep(1000);
+		lv_tick_inc(1);
 	}
 }
 
@@ -84,7 +84,7 @@ bool fs_ready_cb(struct _lv_fs_drv_t *drv)
 	return true;
 }
 
-void * fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
+void *fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
 {
 	FILE *fp = fopen(path, (mode & LV_FS_MODE_WR) ? "w" : "r");
 	if (!fp) {
@@ -213,6 +213,7 @@ void my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 	ioctl(mfd, IOCTL_MOUSE_GET_STATE, &mouse);
 
 	data->state = mouse.left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+
 	data->point.x = mouse.x;
 	data->point.y = mouse.y;
 }
