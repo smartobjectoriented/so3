@@ -51,11 +51,14 @@
 #endif
 
 #define BOOTENV_DEV_QEMU(devtypeu, devtypel, instance) \
-	"bootcmd_qemu=load virtio 0 0x40000000 uEnv.txt; env import 0x40000000; run start;\0"
+	"bootcmd_qemu=load virtio 0 0x80000000 uEnv.txt; env import 0x80000000; run start;\0"
 
 
 #define BOOTENV_DEV_NAME_QEMU(devtypeu, devtypel, instance) \
 	"qemu "
+
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	BOOTENV
 
 #if 0 /* TODO remove */
 #define CONFIG_EXTRA_ENV_SETTINGS \
