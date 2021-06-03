@@ -98,9 +98,9 @@ VPATH		:= $(srctree)
 export srctree objtree VPATH
 
 #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-CROSS_COMPILE = arm-linux-gnueabihf-
+CROSS_COMPILE = riscv64-unknown-linux-gnu-
 
-SRCARCH := arm
+SRCARCH := riscv64
 
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
@@ -333,6 +333,9 @@ endif
 ifeq ($(CONFIG_RPI4),y)
 TARGET = rpi4
 endif
+ifeq ($(CONFIG_VIRT_RISCV64),y)
+TARGET = virt_riscv64
+endif
 
 # The all: target is the default when no target is given on the
 # command line.
@@ -346,7 +349,7 @@ include scripts/Makefile.build
  
 all:  $(BIN) dtbs 
 
-objs-y		:= kernel mm fs ipc arch/arm devices apps net
+objs-y		:= kernel mm fs ipc arch/riscv64 devices apps net
 libs-y		:= lib
 libs-y 		+= lib/libfdt
 

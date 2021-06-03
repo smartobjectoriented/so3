@@ -8,7 +8,7 @@ menu "General"
 		default "arm-linux-gnueabihf-"
 endmenu
  
-source "arch/arm/Kconfig"
+source "arch/riscv64/Kconfig"
 
 source "kernel/Kconfig"
  

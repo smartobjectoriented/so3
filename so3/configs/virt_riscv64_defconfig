@@ -1,0 +1,74 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# SO3 Configuration
+#
+
+#
+# General
+#
+CONFIG_CROSS_COMPILE="riscv64-unknown-linux-gnu-"
+# end of General
+
+#
+# Platform
+#
+CONFIG_STANDALONE=y
+CONFIG_VIRT_RISCV64=y
+# end of Platform
+
+CONFIG_THREAD_ENV=y
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+# end of SO3 Scheduling configuration
+
+#
+# Drivers
+#
+# CONFIG_UART is not set
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+# CONFIG_DW_APB_UART is not set
+# CONFIG_MMC is not set
+# CONFIG_ARM_TIMER is not set
+# CONFIG_GIC is not set
+# end of Drivers
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_SAMPLE is not set
+# end of SO3 Applications
+
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
+
+#
+# Filesystems
+#
+CONFIG_ROOTFS_NONE=y
+# CONFIG_ROOTFS_MMC is not set
+# end of Filesystems
+
+#
+# IPC
+#
+# CONFIG_IPC_SIGNAL is not set
+# CONFIG_IPC_PIPE is not set
+# end of IPC
+
+# CONFIG_RTOS is not set
+# CONFIG_MMU is not set
+CONFIG_DEBUG_PRINTK=y
+
+#
+# Generated files
+#
+CONFIG_ELF=y
+CONFIG_BIN=y
+# end of Generated files
