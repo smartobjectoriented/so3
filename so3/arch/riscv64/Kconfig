@@ -1,0 +1,19 @@
+menu "Platform"
+
+choice
+	prompt "SO3 OS type"
+
+config STANDALONE
+        bool "Standalone OS"
+
+endchoice
+
+choice
+  prompt "Target"
+
+	config VIRT_RISCV64
+    		bool "Virt Riscv64"
+
+endchoice
+
+endmenu
