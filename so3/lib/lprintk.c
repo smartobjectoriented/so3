@@ -34,6 +34,8 @@ void llprintk(char *format, ...) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
+	BUG_ON(strlen(buf) > CONSOLEIO_BUFFER_SIZE);
+
 	for (i = 0; i < strlen(buf); i++)
 		__ll_put_byte(buf[i]);
 
