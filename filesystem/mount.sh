@@ -12,7 +12,6 @@ fi
 
 if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" = "merida" -o "$PLATFORM" = "virt-riscv64" ]; then
     devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
-    FS_IMG=sdcard.img.${PLATFORM} # TODO unused???
 
     #sudo losetup -P --find --show flash
     mkdir -p fs
