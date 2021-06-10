@@ -22,7 +22,7 @@
 
 		fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/virt-riscv64.dtb");
+			data = /incbin/("../so3/dts/virt_riscv64.dtb");
 			type = "flat_dt";
 			arch = "riscv";
 			compression = "none";

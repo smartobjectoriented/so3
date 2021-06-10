@@ -16,4 +16,8 @@ choice
 
 endchoice
 
+config RAM_BASE
+	hex "RAM Memory physical base address"
+	default 0x00000000
+
 endmenu
