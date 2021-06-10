@@ -194,12 +194,12 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)  
 
-KBUILD_CFLAGS   := -g  -O0 -fno-common  -marm  -mno-thumb-interwork -march=armv7-a -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
-KBUILD_CFLAGS	:= -mabi=aapcs-linux -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -fno-delete-null-pointer-checks -Wno-frame-address --param=allow-store-data-races=0 -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections -DBITS_PER_LONG=32
+KBUILD_CFLAGS   := -march=rv64ifd -mabi=lp64f -g  -O0 -fno-common -mno-thumb-interwork -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
+KBUILD_CFLAGS	:= -march=rv64ifd -mabi=lp64f -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections -DBITS_PER_LONG=32
 
 KBUILD_AFLAGS_KERNEL := -I. 
 KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt 
-KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
+KBUILD_AFLAGS   := -march=rv64ifd -mabi=lp64f -g -D__ASSEMBLY__ -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
 KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
@@ -349,9 +349,11 @@ include scripts/Makefile.build
  
 all:  $(BIN) dtbs 
 
-objs-y		:= kernel mm fs ipc arch/riscv64 devices apps net
-libs-y		:= lib
-libs-y 		+= lib/libfdt
+# objs-y		:= kernel mm fs ipc arch/riscv64 devices apps net
+objs-y		:= kernel arch/riscv64
+libs-y		:=
+# libs-y		:= lib
+# libs-y 		+= lib/libfdt
 
 so3-dirs	:= $(objs-y) $(libs-y)
 so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))
