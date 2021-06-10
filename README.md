@@ -4,5 +4,8 @@ Feel free to post any comments/suggestions/remarks about SO3. If you wish to par
 
 Go to the [full documentation of SO3](https://smartobject.gitlab.io/so3)
 
+RISC-V
 
+The toolchain can be downloaded here:
+http://reds-data.heig-vd.ch/toolchains/riscv64-unknown-linux-gnu.tar.gz
 
