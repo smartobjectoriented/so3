@@ -1,17 +1,16 @@
 #
-# Automatically generated make config: don't edit
+# Automatically generated file; DO NOT EDIT.
 # SO3 Configuration
 #
-
-#
-# General
-#
-CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+CONFIG_STANDALONE=y
+CONFIG_ARCH_ARM32=y
+# CONFIG_ARCH_ARM64 is not set
+CONFIG_ARCH="arm32"
+CONFIG_CROSS_COMPILE="arm-none-linux-gnueabihf-"
 
 #
 # Platform
 #
-CONFIG_STANDALONE=y
 # CONFIG_VEXPRESS is not set
 CONFIG_RPI4=y
 CONFIG_RAM_BASE=0x00000000
@@ -72,10 +71,3 @@ CONFIG_IPC_PIPE=y
 # CONFIG_RTOS is not set
 CONFIG_MMU=y
 CONFIG_DEBUG_PRINTK=y
-
-#
-# Generated files
-#
-CONFIG_ELF=y
-CONFIG_BIN=y
-# end of Generated files

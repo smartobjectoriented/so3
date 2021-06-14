@@ -964,8 +964,8 @@ static char *address_val(char *buf, char *end, const void *addr,
 	switch (fmt[1]) {
 	case 'p':
 	default:
-		num = *(const phys_addr_t *)addr;
-		spec.field_width = sizeof(phys_addr_t) * 2 + 2;
+		num = *(const addr_t *)addr;
+		spec.field_width = sizeof(addr_t) * 2 + 2;
 		break;
 	}
 

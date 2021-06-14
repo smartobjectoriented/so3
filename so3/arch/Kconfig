@@ -1,0 +1,36 @@
+choice
+	prompt "SO3 OS type"
+
+config STANDALONE
+        bool "Standalone OS"
+        
+endchoice
+
+choice
+	prompt "CPU Architecture"
+	
+	config ARCH_ARM32
+		bool "ARM 32-bit"
+		
+	config ARCH_ARM64
+		bool "ARM 64-bit"
+		
+endchoice
+
+
+config ARCH
+	string
+	default "arm32" if ARCH_ARM32
+	default "arm64" if ARCH_ARM64
+
+config CROSS_COMPILE
+	string
+	default "arm-none-linux-gnueabihf-" if ARCH_ARM32
+	default "aarch64-none-linux-gnu-" if ARCH_ARM64
+
+
+source "arch/arm32/Kconfig"
+source "arch/arm64/Kconfig"
+
+
+	

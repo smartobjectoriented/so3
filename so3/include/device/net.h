@@ -34,7 +34,7 @@ struct eth_dev {
 
     char name[ETH_NAME_LEN];
     unsigned char enetaddr[ARP_HLEN];
-    phys_addr_t iobase;
+    addr_t iobase;
     int state;
 
     int (*init)(struct eth_dev *);
