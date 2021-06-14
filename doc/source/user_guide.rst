@@ -26,6 +26,7 @@ Various other packages are required:
    sudo apt-get install elfutils u-boot-tools
    sudo apt-get install device-tree-compiler
    sudo apt-get install fdisk
+   sudo apt-get install libncurses-dev
 
 The following packets are not mandatory, but they can be installed to
 prevent annoying warnings:

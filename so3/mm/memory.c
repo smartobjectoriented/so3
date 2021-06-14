@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -283,7 +283,7 @@ void dump_io_maplist(void) {
 }
 
 /* Map a I/O address range to its physical range */
-uint32_t io_map(uint32_t phys, size_t size) {
+uint32_t io_map(addr_t phys, size_t size) {
 	io_map_t *io_map;
 	struct list_head *pos;
 	io_map_t *cur = NULL;
@@ -348,9 +348,9 @@ uint32_t io_map(uint32_t phys, size_t size) {
 }
 
 /*
- * Try to find an io_map entry corresponding to a specific pvaddr .
+ * Try to find an io_map entry corresponding to a specific paddr .
  */
-io_map_t *find_io_map_by_paddr(uint32_t paddr) {
+io_map_t *find_io_map_by_paddr(addr_t paddr) {
 	struct list_head *pos;
 	io_map_t *io_map;
 
@@ -366,7 +366,7 @@ io_map_t *find_io_map_by_paddr(uint32_t paddr) {
 /*
  * Remove a mapping.
  */
-void io_unmap(uint32_t vaddr) {
+void io_unmap(addr_t vaddr) {
 	io_map_t *cur = NULL;
 	struct list_head *pos, *q;
 

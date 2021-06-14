@@ -16,11 +16,12 @@
  *
  */
 
-#include <asm/processor.h>
-#include <asm/types.h>
 #include <compiler.h>
 #include <thread.h>
 #include <signal.h>
+
+#include <asm/processor.h>
+#include <asm/types.h>
 
 /*
  * Make sure that the compiler and target are compatible.

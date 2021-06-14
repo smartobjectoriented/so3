@@ -1,0 +1,22 @@
+
+if ARCH_ARM64
+
+menu "Platform"
+
+	choice
+  		prompt "Target"
+	
+		config VIRT64
+    		bool "Generic QEMU virt64 model"
+	
+		config RPI4_64
+			bool "Raspberry Pi 4 64-bit"
+			
+	endchoice
+		
+source "arch/arm64/virt64/Kconfig"
+source "arch/arm64/rpi4_64/Kconfig"
+
+endmenu
+
+endif

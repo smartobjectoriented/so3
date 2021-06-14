@@ -121,9 +121,9 @@ uint32_t get_kernel_size(void);
 uint32_t *current_pgtable(void);
 
 void init_io_mapping(void);
-uint32_t io_map(uint32_t phys, size_t size);
-void io_unmap(uint32_t vaddr);
-io_map_t *find_io_map_by_paddr(uint32_t paddr);
+uint32_t io_map(addr_t phys, size_t size);
+void io_unmap(addr_t vaddr);
+io_map_t *find_io_map_by_paddr(addr_t paddr);
 void readjust_io_map(unsigned pfn_offset);
 
 void dump_io_maplist(void);

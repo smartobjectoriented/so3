@@ -8,7 +8,7 @@
 offsets-file := include/generated/asm-offsets.h 
 always  := $(offsets-file) 
 targets := $(offsets-file) 
-targets += arch/arm/asm-offsets.s
+targets += arch/$(SRCARCH)/asm-offsets.s
  
 # Default sed regexp - multiline due to syntax constraints
 define sed-y
@@ -35,12 +35,12 @@ define cmd_offsets
 endef
 
 # We use internal kbuild rules to avoid the "is up to date" message from make
-arch/arm/asm-offsets.s: arch/arm/asm-offsets.c  FORCE
+arch/$(SRCARCH)/asm-offsets.s: arch/$(SRCARCH)/asm-offsets.c  FORCE
 	$(Q)mkdir -p $(dir $@)
 	$(call if_changed_dep,cc_s_c)
 
 
-$(obj)/$(offsets-file): arch/arm/asm-offsets.s Kbuild
+$(obj)/$(offsets-file): arch/$(SRCARCH)/asm-offsets.s Kbuild
 	$(call cmd,offsets)
 
  
