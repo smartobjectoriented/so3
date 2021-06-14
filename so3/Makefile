@@ -309,26 +309,26 @@ KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
-KBUILD_CFLAGS	:= -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 \
+KBUILD_CFLAGS	:= -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 \
 				   -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack \
 				   -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections
 
 KBUILD_AFLAGS_KERNEL := -I.
 KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt
-KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
+KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
 # Specific CFLAGS/AFLAGS according to ARCH
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
 
 ifeq ($(CONFIG_ARCH_ARM32),y)
-KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 --param allow-store-data-races=0
-KBUILD_AFLAGS   += -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
+KBUILD_CFLAGS	+= -mlittle-endian -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 --param allow-store-data-races=0
+KBUILD_AFLAGS   += -mlittle-endian -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
 endif
 
 ifeq ($(CONFIG_ARCH_ARM64),y)
-KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -fno-allow-store-data-races
-KBUILD_AFLAGS   +=
+KBUILD_CFLAGS	+= -mlittle-endian -DBITS_PER_LONG=64 -fno-allow-store-data-races
+KBUILD_AFLAGS   += -mlittle-endian
 endif
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)

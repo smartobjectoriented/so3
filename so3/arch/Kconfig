@@ -15,6 +15,9 @@ choice
 	config ARCH_ARM64
 		bool "ARM 64-bit"
 		
+	config ARCH_RISCV64
+		bool "RISC-V 64-bit"
+		
 endchoice
 
 
@@ -22,15 +25,18 @@ config ARCH
 	string
 	default "arm32" if ARCH_ARM32
 	default "arm64" if ARCH_ARM64
+	default "riscv64" if ARCH_RISCV64
 
 config CROSS_COMPILE
 	string
 	default "arm-none-linux-gnueabihf-" if ARCH_ARM32
 	default "aarch64-none-linux-gnu-" if ARCH_ARM64
+	default "riscv64-unknown-linux-gnu-" if ARCH_RISCV64
 
 
 source "arch/arm32/Kconfig"
 source "arch/arm64/Kconfig"
+source "arch/riscv64/Kconfig"
 
 
 	
