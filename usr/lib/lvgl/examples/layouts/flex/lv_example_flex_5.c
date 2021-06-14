@@ -1,14 +1,14 @@
-#include "../../../lvgl.h"
+#include "../../lv_examples.h"
 #if LV_USE_FLEX && LV_BUILD_EXAMPLES
 
 static void row_gap_anim(void * obj, int32_t v)
 {
-    lv_obj_set_style_pad_row(obj, LV_PART_MAIN, LV_STATE_DEFAULT, v);
+    lv_obj_set_style_pad_row(obj, v, 0);
 }
 
 static void column_gap_anim(void * obj, int32_t v)
 {
-    lv_obj_set_style_pad_column(obj, LV_PART_MAIN, LV_STATE_DEFAULT, v);
+    lv_obj_set_style_pad_column(obj, v, 0);
 }
 
 /**
@@ -16,19 +16,19 @@ static void column_gap_anim(void * obj, int32_t v)
  */
 void lv_example_flex_5(void)
 {
-    lv_obj_t * cont = lv_obj_create(lv_scr_act(), NULL);
+    lv_obj_t * cont = lv_obj_create(lv_scr_act());
     lv_obj_set_size(cont, 300, 220);
-    lv_obj_align(cont, NULL, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_layout(cont, &lv_flex_row_wrap);
+    lv_obj_center(cont);
+    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
 
     uint32_t i;
     for(i = 0; i < 9; i++) {
-        lv_obj_t * obj = lv_obj_create(cont, NULL);
+        lv_obj_t * obj = lv_obj_create(cont);
         lv_obj_set_size(obj, 70, LV_SIZE_CONTENT);
 
-        lv_obj_t * label = lv_label_create(obj, NULL);
+        lv_obj_t * label = lv_label_create(obj);
         lv_label_set_text_fmt(label, "%d", i);
-        lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_center(label);
     }
 
     lv_anim_t a;

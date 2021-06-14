@@ -53,13 +53,15 @@ enum {
 
 typedef uint8_t lv_font_subpx_t;
 
+struct _lv_font_t;
+
 /** Describe the properties of a font*/
-typedef struct _lv_font_struct {
+typedef struct _lv_font_t {
     /** Get a glyph's descriptor from a font*/
-    bool (*get_glyph_dsc)(const struct _lv_font_struct *, lv_font_glyph_dsc_t *, uint32_t letter, uint32_t letter_next);
+    bool (*get_glyph_dsc)(const struct _lv_font_t *, lv_font_glyph_dsc_t *, uint32_t letter, uint32_t letter_next);
 
     /** Get a glyph's bitmap from a font*/
-    const uint8_t * (*get_glyph_bitmap)(const struct _lv_font_struct *, uint32_t);
+    const uint8_t * (*get_glyph_bitmap)(const struct _lv_font_t *, uint32_t);
 
     /*Pointer to the font in a font pack (must have the same line height)*/
     lv_coord_t line_height;         /**< The real line height where any text fits*/
@@ -236,6 +238,15 @@ LV_FONT_DECLARE(lv_font_simsun_16_cjk)
 #ifdef LV_FONT_CUSTOM_DECLARE
 LV_FONT_CUSTOM_DECLARE
 #endif
+
+/**
+ * Just a wrapper around LV_FONT_DEFAULT because it might be more convenient to use a function is some cases
+ * @return  pointer to LV_FONT_DEFAULT
+ */
+static inline const lv_font_t * lv_font_default(void)
+{
+    return LV_FONT_DEFAULT;
+}
 
 #ifdef __cplusplus
 } /*extern "C"*/

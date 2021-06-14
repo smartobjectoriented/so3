@@ -94,9 +94,8 @@ irq_return_t pl050_int_mouse(int irq, void *dummy)
 	}
 
 	/* Set mouse coordinates and button states. */
-	if (i == 3) {
+	if (i == 3)
 		get_mouse_state(packet, &state, res.h, res.v);
-	}
 
 	return IRQ_COMPLETED;
 }
@@ -122,10 +121,6 @@ int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
 		/* Return the mouse coordinates and button states. */
 		*((struct ps2_mouse *) args) = state;
 
-		/* Reset the button states. */
-		state.left = 0;
-		state.right = 0;
-		state.middle = 0;
 		break;
 
 	case SET_SIZE:

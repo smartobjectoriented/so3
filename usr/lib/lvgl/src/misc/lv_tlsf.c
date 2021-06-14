@@ -4,12 +4,8 @@
 #include <assert.h>
 #include <limits.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "lv_tlsf.h"
-
+#include "lv_mem.h"
 #include "lv_log.h"
 #define printf LV_LOG_ERROR
 
@@ -818,7 +814,7 @@ static void* block_prepare_used(control_t* control, block_header_t* block, size_
 }
 
 /* Clear structure and point all empty lists at the null block. */
-static void control_construct(control_t* control)
+static void control_constructor(control_t* control)
 {
 	int i, j;
 
@@ -1113,7 +1109,7 @@ tlsf_t tlsf_create(void* mem)
 		return 0;
 	}
 
-	control_construct(tlsf_cast(control_t*, mem));
+	control_constructor(tlsf_cast(control_t*, mem));
 
 	return tlsf_cast(tlsf_t, mem);
 }
@@ -1265,7 +1261,7 @@ void* tlsf_realloc(tlsf_t tlsf, void* ptr, size_t size)
 			if (p)
 			{
 				const size_t minsize = tlsf_min(cursize, size);
-				memcpy(p, ptr, minsize);
+				lv_memcpy(p, ptr, minsize);
 				tlsf_free(tlsf, ptr);
 			}
 		}

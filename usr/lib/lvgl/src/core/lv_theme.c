@@ -49,14 +49,9 @@ void lv_theme_apply(lv_obj_t * obj)
     lv_theme_t * th = lv_theme_get_from_obj(obj);
     if(th == NULL) return;
 
-    lv_obj_enable_style_refresh(false);
-
-    lv_obj_remove_style(obj, LV_PART_ANY, LV_STATE_ANY, NULL);
+    lv_obj_remove_style_all(obj);
 
     apply_theme(th, obj);    /*Apply the theme including the base theme(s)*/
-
-    lv_obj_enable_style_refresh(true);
-    lv_obj_refresh_style(obj, LV_PART_ANY, LV_STYLE_PROP_ALL);
 }
 
 /**
@@ -100,28 +95,16 @@ const lv_font_t * lv_theme_get_font_large(lv_obj_t * obj)
     return th ? th->font_large : LV_FONT_DEFAULT;
 }
 
-lv_color_palette_t lv_theme_get_palette_primary(lv_obj_t * obj)
-{
-    lv_theme_t * th = lv_theme_get_from_obj(obj);
-    return th ? th->palette_primary : LV_COLOR_PALETTE_BLUE_GREY;
-}
-
-lv_color_palette_t lv_theme_get_palette_secondary(lv_obj_t * obj)
-{
-    lv_theme_t * th = lv_theme_get_from_obj(obj);
-    return th ? th->palette_secondary : LV_COLOR_PALETTE_BLUE;
-}
-
 lv_color_t lv_theme_get_color_primary(lv_obj_t * obj)
 {
     lv_theme_t * th = lv_theme_get_from_obj(obj);
-    return th ? th->color_primary : lv_color_blue_grey();
+    return th ? th->color_primary : lv_palette_main(LV_PALETTE_BLUE_GREY);
 }
 
 lv_color_t lv_theme_get_color_secondary(lv_obj_t * obj)
 {
     lv_theme_t * th = lv_theme_get_from_obj(obj);
-    return th ? th->color_secondary : lv_color_blue();
+    return th ? th->color_secondary : lv_palette_main(LV_PALETTE_BLUE);
 }
 
 /**********************

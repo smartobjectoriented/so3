@@ -23,7 +23,7 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void lv_keyboard_constructor(lv_obj_t * obj, const lv_obj_t * copy);
+static void lv_keyboard_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
 
 static void lv_keyboard_update_map(lv_obj_t * obj);
 
@@ -32,6 +32,8 @@ static void lv_keyboard_update_map(lv_obj_t * obj);
  **********************/
 const lv_obj_class_t lv_keyboard_class = {
     .constructor_cb = lv_keyboard_constructor,
+    .width_def = LV_PCT(100),
+    .height_def = LV_PCT(50),
     .instance_size = sizeof(lv_keyboard_t),
     .editable = 1,
     .base_class = &lv_btnmatrix_class
@@ -115,12 +117,14 @@ static const lv_btnmatrix_ctrl_t * kb_ctrl[5] = {
 /**
  * Create a keyboard objects
  * @param par pointer to an object, it will be the parent of the new keyboard
- * @param copy pointer to a keyboard object, if not NULL then the new object will be copied from it
  * @return pointer to the created keyboard
  */
 lv_obj_t * lv_keyboard_create(lv_obj_t * parent)
 {
-    return lv_obj_create_from_class(&lv_keyboard_class, parent, NULL);
+    LV_LOG_INFO("begin")
+    lv_obj_t * obj = lv_obj_class_create_obj(&lv_keyboard_class, parent);
+    lv_obj_class_init_obj(obj);
+    return obj;
 }
 
 /*=====================
@@ -219,15 +223,13 @@ lv_keyboard_mode_t lv_keyboard_get_mode(const lv_obj_t * obj)
  * @param kb pointer to a  keyboard
  * @param event the triggering event
  */
-void lv_keyboard_def_event_cb(lv_obj_t * obj, lv_event_t event)
+void lv_keyboard_def_event_cb(lv_event_t * e)
 {
-    if(event != LV_EVENT_VALUE_CHANGED) return;
+    lv_obj_t * obj = lv_event_get_target(e);
 
     lv_keyboard_t * keyboard = (lv_keyboard_t *)obj;
     uint16_t btn_id   = lv_btnmatrix_get_selected_btn(obj);
     if(btn_id == LV_BTNMATRIX_BTN_NONE) return;
-    if(lv_btnmatrix_has_btn_ctrl(obj, btn_id, LV_BTNMATRIX_CTRL_HIDDEN | LV_BTNMATRIX_CTRL_DISABLED)) return;
-    if(lv_btnmatrix_has_btn_ctrl(obj, btn_id, LV_BTNMATRIX_CTRL_NO_REPEAT) && event == LV_EVENT_LONG_PRESSED_REPEAT) return;
 
     const char * txt = lv_btnmatrix_get_btn_text(obj, lv_btnmatrix_get_selected_btn(obj));
     if(txt == NULL) return;
@@ -258,7 +260,6 @@ void lv_keyboard_def_event_cb(lv_obj_t * obj, lv_event_t event)
             res = lv_event_send(keyboard->ta, LV_EVENT_CANCEL, NULL);
             if(res != LV_RES_OK) return;
         }
-        lv_keyboard_set_textarea(obj, NULL); /*De-assign the text area  to hide it cursor if needed*/
         return;
     }
     else if(strcmp(txt, LV_SYMBOL_OK) == 0) {
@@ -269,8 +270,6 @@ void lv_keyboard_def_event_cb(lv_obj_t * obj, lv_event_t event)
             res = lv_event_send(keyboard->ta, LV_EVENT_READY, NULL);
             if(res != LV_RES_OK) return;
         }
-
-        lv_keyboard_set_textarea(obj, NULL); /*De-assign the text area  to hide it cursor if needed*/
         return;
     }
 
@@ -319,21 +318,18 @@ void lv_keyboard_def_event_cb(lv_obj_t * obj, lv_event_t event)
  *   STATIC FUNCTIONS
  **********************/
 
-static void lv_keyboard_constructor(lv_obj_t * obj, const lv_obj_t * copy)
+static void lv_keyboard_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
-    LV_UNUSED(copy);
-
+    LV_UNUSED(class_p);
     lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
 
     lv_keyboard_t * keyboard = (lv_keyboard_t *)obj;
     keyboard->ta         = NULL;
     keyboard->mode       = LV_KEYBOARD_MODE_TEXT_LOWER;
 
-    lv_obj_t * parent = lv_obj_get_parent(obj);
-    lv_obj_set_size(obj, lv_obj_get_width_fit(parent), lv_obj_get_height_fit(parent) / 2);
-    lv_obj_align(obj, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-    lv_obj_add_event_cb(obj, lv_keyboard_def_event_cb, NULL);
-    lv_obj_set_base_dir(obj, LV_BIDI_DIR_LTR);
+    lv_obj_align(obj, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_add_event_cb(obj, lv_keyboard_def_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_set_style_base_dir(obj, LV_BASE_DIR_LTR, 0);
 
     lv_btnmatrix_set_map(obj, kb_map[keyboard->mode]);
     lv_btnmatrix_set_ctrl_map(obj, kb_ctrl[keyboard->mode]);

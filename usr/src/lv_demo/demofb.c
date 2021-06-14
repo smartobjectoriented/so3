@@ -56,8 +56,8 @@ void *tick_routine(void *args)
 {
 	while (1) {
 		/* Tell LittlevGL that 5 milliseconds were elapsed */
-		usleep(5000);
-		lv_tick_inc(5);
+		usleep(1000);
+		lv_tick_inc(1);
 	}
 }
 
@@ -84,7 +84,7 @@ bool fs_ready_cb(struct _lv_fs_drv_t *drv)
 	return true;
 }
 
-void * fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
+void *fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode)
 {
 	FILE *fp = fopen(path, (mode & LV_FS_MODE_WR) ? "w" : "r");
 	if (!fp) {
@@ -204,6 +204,19 @@ void my_fb_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 	lv_disp_flush_ready(disp);
 }
 
+/* Mouse callback. */
+void my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
+{
+	/* Retrieve mouse state from the driver. */
+	static struct ps2_mouse mouse;
+
+	ioctl(mfd, IOCTL_MOUSE_GET_STATE, &mouse);
+
+	data->state = mouse.left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+
+	data->point.x = mouse.x;
+	data->point.y = mouse.y;
+}
 
 /*
  * Mouse initialisation.
@@ -238,26 +251,24 @@ int mouse_init(void)
 	mouse_drv.read_cb = my_mouse_cb;
 
 	lv_indev_t *mouse_dev = lv_indev_drv_register(&mouse_drv);
-	lv_obj_t *cursor_obj = lv_img_create(lv_disp_get_scr_act(NULL), NULL);
+	lv_obj_t *cursor_obj = lv_img_create(lv_disp_get_scr_act(NULL));
 	lv_img_set_src(cursor_obj, LV_SYMBOL_PLUS);
 	lv_indev_set_cursor(mouse_dev, cursor_obj);
 
 	return 0;
 }
 
-/* Mouse callback. */
-bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
+/* Keyboard callback. */
+void my_keyboard_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 {
 	/* Retrieve mouse state from the driver. */
-	static struct ps2_mouse mouse;
+	static struct ps2_key key;
+	ioctl(kfd, IOCTL_KB_GET_KEY, &key);
 
-	ioctl(mfd, IOCTL_MOUSE_GET_STATE, &mouse);
-
-	data->state = mouse.left ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
-	data->point.x = mouse.x;
-	data->point.y = mouse.y;
-
-	return false;
+	if (key.value != 0) {
+		data->key = key.value;
+		data->state = key.state & 1;
+	}
 }
 
 /*
@@ -266,6 +277,7 @@ bool my_mouse_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
 int keyboard_init(void)
 {
 	static lv_indev_drv_t keyboard_drv;
+	lv_indev_t *keyboard_dev;
 
 	kfd = open("/dev/keyboard0", 0);
 	if (kfd == -1) {
@@ -281,27 +293,12 @@ int keyboard_init(void)
 	keyboard_drv.type = LV_INDEV_TYPE_KEYPAD;
 	keyboard_drv.read_cb = my_keyboard_cb;
 
-	lv_indev_t *keyboard_dev = lv_indev_drv_register(&keyboard_drv);
+	keyboard_dev = lv_indev_drv_register(&keyboard_drv);
 
 	keyboard_group = lv_group_create();
 	lv_indev_set_group(keyboard_dev, keyboard_group);
 
 	return 0;
-}
-
-/* Keyboard callback. */
-bool my_keyboard_cb(lv_indev_drv_t *indev, lv_indev_data_t *data)
-{
-	/* Retrieve mouse state from the driver. */
-	static struct ps2_key key;
-	ioctl(kfd, IOCTL_KB_GET_KEY, &key);
-
-	if (key.value != 0) {
-		data->key = key.value;
-		data->state = key.state & 1;
-	}
-
-	return false;
 }
 
 /* Main code. */

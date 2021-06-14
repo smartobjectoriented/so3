@@ -59,34 +59,19 @@ struct _lv_indev_t;
 struct _lv_indev_drv_t;
 
 /** Possible input device types*/
-enum {
+typedef enum {
     LV_INDEV_TYPE_NONE,    /**< Uninitialized state*/
     LV_INDEV_TYPE_POINTER, /**< Touch pad, mouse, external button*/
     LV_INDEV_TYPE_KEYPAD,  /**< Keypad or keyboard*/
     LV_INDEV_TYPE_BUTTON,  /**< External (hardware button) which is assigned to a specific point of the screen*/
     LV_INDEV_TYPE_ENCODER, /**< Encoder with only Left, Right turn and a Button*/
-};
-typedef uint8_t lv_indev_type_t;
+} lv_indev_type_t;
 
 /** States for input devices*/
-enum { LV_INDEV_STATE_RELEASED = 0, LV_INDEV_STATE_PRESSED };
-typedef uint8_t lv_indev_state_t;
-
-enum {
-    LV_INDEV_SCROLL_DIR_NONE,
-    LV_INDEV_SCROLL_DIR_HOR,
-    LV_INDEV_SCROLL_DIR_VER,
-};
-
-typedef uint8_t lv_indev_scroll_dir_t;
-
-enum {
-    LV_GESTURE_DIR_TOP,     /**< Gesture dir up.*/
-    LV_GESTURE_DIR_BOTTOM,  /**< Gesture dir down.*/
-    LV_GESTURE_DIR_LEFT,    /**< Gesture dir left.*/
-    LV_GESTURE_DIR_RIGHT,   /**< Gesture dir right.*/
-};
-typedef uint8_t lv_gesture_dir_t;
+typedef enum {
+    LV_INDEV_STATE_RELEASED = 0,
+    LV_INDEV_STATE_PRESSED
+} lv_indev_state_t;
 
 /** Data structure passed to an input driver to fill*/
 typedef struct {
@@ -96,6 +81,7 @@ typedef struct {
     int16_t enc_diff; /**< For LV_INDEV_TYPE_ENCODER number of steps since the previous read*/
 
     lv_indev_state_t state; /**< LV_INDEV_STATE_REL or LV_INDEV_STATE_PR*/
+    bool continue_reading;  /**< Call the read callback until it's set to true*/
 } lv_indev_data_t;
 
 /** Initialized by the user and registered by 'lv_indev_add()'*/
@@ -104,10 +90,8 @@ typedef struct _lv_indev_drv_t {
     /**< Input device type*/
     lv_indev_type_t type;
 
-    /**< Function pointer to read input device data.
-     * Return 'true' if there is more data to be read (buffered).
-     * Most drivers can safely return 'false'*/
-    bool (*read_cb)(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+    /**< Function pointer to read input device data.*/
+    void (*read_cb)(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
 
     /** Called when an action happened on the input device.
      * The second parameter is the event from `lv_event_t`*/
@@ -139,7 +123,7 @@ typedef struct _lv_indev_drv_t {
     uint16_t long_press_time;
 
     /**< Repeated trigger period in long press [ms]*/
-    uint16_t long_press_rep_time;
+    uint16_t long_press_repeat_time;
 } lv_indev_drv_t;
 
 /** Run time data of input devices
@@ -158,6 +142,7 @@ typedef struct _lv_indev_proc_t {
             /*Pointer and button data*/
             lv_point_t act_point; /**< Current point of input device.*/
             lv_point_t last_point; /**< Last point of input device.*/
+            lv_point_t last_raw_point; /**< Last point read from read_cb. */
             lv_point_t vect; /**< Difference between `act_point` and `last_point`.*/
             lv_point_t scroll_sum; /*Count the dragged pixels to check LV_INDEV_DEF_SCROLL_LIMIT*/
             lv_point_t scroll_throw_vect;
@@ -170,8 +155,8 @@ typedef struct _lv_indev_proc_t {
 
             lv_point_t gesture_sum; /*Count the gesture pixels to check LV_INDEV_DEF_GESTURE_LIMIT*/
             /*Flags*/
-            lv_indev_scroll_dir_t scroll_dir : 2;
-            lv_gesture_dir_t gesture_dir : 2;
+            lv_dir_t scroll_dir : 4;
+            lv_dir_t gesture_dir : 4;
             uint8_t gesture_sent : 1;
         } pointer;
         struct {
@@ -183,13 +168,13 @@ typedef struct _lv_indev_proc_t {
 
     uint32_t pr_timestamp;         /**< Pressed time stamp*/
     uint32_t longpr_rep_timestamp; /**< Long press repeat time stamp*/
-} lv_indev_proc_t;
+} _lv_indev_proc_t;
 
 /** The main input device descriptor with driver, runtime data ('proc') and some additional
  * information*/
 typedef struct _lv_indev_t {
-    lv_indev_drv_t * driver;
-    lv_indev_proc_t proc;
+    struct _lv_indev_drv_t * driver;
+    _lv_indev_proc_t proc;
     struct _lv_obj_t * cursor;     /**< Cursor for LV_INPUT_TYPE_POINTER*/
     struct _lv_group_t * group;    /**< Keypad destination group*/
     const lv_point_t * btn_points; /**< Array points assigned to the button ()screen will be pressed
@@ -206,21 +191,21 @@ typedef struct _lv_indev_t {
  * After it you can set the fields.
  * @param driver pointer to driver variable to initialize
  */
-void lv_indev_drv_init(lv_indev_drv_t * driver);
+void lv_indev_drv_init(struct _lv_indev_drv_t * driver);
 
 /**
  * Register an initialized input device driver.
  * @param driver pointer to an initialized 'lv_indev_drv_t' variable (can be local variable)
  * @return pointer to the new input device or NULL on error
  */
-lv_indev_t * lv_indev_drv_register(lv_indev_drv_t * driver);
+lv_indev_t * lv_indev_drv_register(struct _lv_indev_drv_t * driver);
 
 /**
  * Update the driver in run time.
  * @param indev pointer to a input device. (return value of `lv_indev_drv_register`)
  * @param new_drv pointer to the new driver
  */
-void lv_indev_drv_update(lv_indev_t * indev, lv_indev_drv_t * new_drv);
+void lv_indev_drv_update(lv_indev_t * indev, struct _lv_indev_drv_t * new_drv);
 
 /**
  * Get the next input device.
@@ -234,9 +219,8 @@ lv_indev_t * lv_indev_get_next(lv_indev_t * indev);
  * Read data from an input device.
  * @param indev pointer to an input device
  * @param data input device will write its data here
- * @return false: no more data; true: there more data to read (buffered)
  */
-bool _lv_indev_read(lv_indev_t * indev, lv_indev_data_t * data);
+void _lv_indev_read(lv_indev_t * indev, lv_indev_data_t * data);
 
 /**********************
  *      MACROS

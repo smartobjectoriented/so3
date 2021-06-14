@@ -36,7 +36,7 @@
  *   GLOBAL FUNCTIONS
  **********************/
 
-void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t * draw_dsc)
+void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint32_t part, lv_draw_rect_dsc_t * draw_dsc)
 {
 
 #if LV_DRAW_COMPLEX
@@ -60,7 +60,7 @@ void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t 
             draw_dsc->bg_color = lv_obj_get_style_bg_color_filtered(obj, part);
             draw_dsc->bg_grad_dir =  lv_obj_get_style_bg_grad_dir(obj, part);
             if(draw_dsc->bg_grad_dir != LV_GRAD_DIR_NONE) {
-                draw_dsc->bg_grad_color = lv_obj_get_style_bg_grad_color(obj, part);
+                draw_dsc->bg_grad_color = lv_obj_get_style_bg_grad_color_filtered(obj, part);
                 draw_dsc->bg_main_color_stop =  lv_obj_get_style_bg_main_stop(obj, part);
                 draw_dsc->bg_grad_color_stop =  lv_obj_get_style_bg_grad_stop(obj, part);
             }
@@ -94,26 +94,14 @@ void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t 
         if(draw_dsc->bg_img_src) {
             draw_dsc->bg_img_opa = lv_obj_get_style_bg_img_opa(obj, part);
             if(draw_dsc->bg_img_opa > LV_OPA_MIN) {
-                draw_dsc->bg_img_recolor = lv_obj_get_style_bg_img_recolor(obj, part);
-                draw_dsc->bg_img_recolor_opa = lv_obj_get_style_bg_img_recolor_opa(obj, part);
-                draw_dsc->bg_img_tiled = lv_obj_get_style_bg_img_tiled(obj, part);
-            }
-        }
-    }
-
-    if(draw_dsc->content_opa != LV_OPA_TRANSP) {
-        draw_dsc->content_text = lv_obj_get_style_content_text(obj, part);
-        if(draw_dsc->content_text) {
-
-            draw_dsc->content_opa = lv_obj_get_style_content_opa(obj, part);
-            if(draw_dsc->content_opa > LV_OPA_MIN) {
-                draw_dsc->content_ofs_y = lv_obj_get_style_content_ofs_y(obj, part);
-                draw_dsc->content_ofs_x = lv_obj_get_style_content_ofs_x(obj, part);
-                draw_dsc->content_align = lv_obj_get_style_content_align(obj, part);
-                draw_dsc->content_font = lv_obj_get_style_content_font(obj, part);
-                draw_dsc->content_color = lv_obj_get_style_content_color_filtered(obj, part);
-                draw_dsc->content_letter_space = lv_obj_get_style_content_letter_space(obj, part);
-                draw_dsc->content_line_space = lv_obj_get_style_content_line_space(obj, part);
+                if(lv_img_src_get_type(draw_dsc->bg_img_src) == LV_IMG_SRC_SYMBOL) {
+                    draw_dsc->bg_img_symbol_font= lv_obj_get_style_text_font(obj, part);
+                    draw_dsc->bg_img_recolor = lv_obj_get_style_text_color(obj, part);
+                } else {
+                    draw_dsc->bg_img_recolor = lv_obj_get_style_bg_img_recolor(obj, part);
+                    draw_dsc->bg_img_recolor_opa = lv_obj_get_style_bg_img_recolor_opa(obj, part);
+                    draw_dsc->bg_img_tiled = lv_obj_get_style_bg_img_tiled(obj, part);
+                }
             }
         }
     }
@@ -141,7 +129,6 @@ void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t 
         draw_dsc->bg_opa = (uint16_t)((uint16_t)draw_dsc->bg_opa * opa) >> 8;
         draw_dsc->border_opa = (uint16_t)((uint16_t)draw_dsc->border_opa * opa) >> 8;
         draw_dsc->shadow_opa = (uint16_t)((uint16_t)draw_dsc->shadow_opa * opa) >> 8;
-        draw_dsc->content_opa = (uint16_t)((uint16_t)draw_dsc->content_opa * opa) >> 8;
         draw_dsc->outline_opa = (uint16_t)((uint16_t)draw_dsc->outline_opa * opa) >> 8;
     }
 #else /*LV_DRAW_COMPLEX*/
@@ -158,6 +145,7 @@ void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t 
             draw_dsc->border_opa = lv_obj_get_style_border_opa(obj, part);
             if(draw_dsc->border_opa > LV_OPA_MIN) {
                 draw_dsc->border_color = lv_obj_get_style_border_color_filtered(obj, part);
+                draw_dsc->border_side = lv_obj_get_style_border_side(obj, part);
             }
         }
     }
@@ -178,25 +166,21 @@ void lv_obj_init_draw_rect_dsc(lv_obj_t * obj, uint8_t part, lv_draw_rect_dsc_t 
         if(draw_dsc->bg_img_src) {
             draw_dsc->bg_img_opa = lv_obj_get_style_bg_img_opa(obj, part);
             if(draw_dsc->bg_img_opa > LV_OPA_MIN) {
-                draw_dsc->bg_img_tiled = lv_obj_get_style_bg_img_tiled(obj, part);
+                if(lv_img_src_get_type(draw_dsc->bg_img_src) == LV_IMG_SRC_SYMBOL) {
+                   draw_dsc->bg_img_symbol_font= lv_obj_get_style_text_font(obj, part);
+                   draw_dsc->bg_img_recolor = lv_obj_get_style_text_color(obj, part);
+               } else {
+                   draw_dsc->bg_img_recolor = lv_obj_get_style_bg_img_recolor(obj, part);
+                   draw_dsc->bg_img_recolor_opa = lv_obj_get_style_bg_img_recolor_opa(obj, part);
+                   draw_dsc->bg_img_tiled = lv_obj_get_style_bg_img_tiled(obj, part);
+               }
             }
         }
-    }
-
-    draw_dsc->content_text = lv_obj_get_style_content_text(obj, part);
-    if(draw_dsc->content_text) {
-        draw_dsc->content_ofs_y = lv_obj_get_style_content_ofs_y(obj, part);
-        draw_dsc->content_ofs_x = lv_obj_get_style_content_ofs_x(obj, part);
-        draw_dsc->content_align = lv_obj_get_style_content_align(obj, part);
-        draw_dsc->content_font = lv_obj_get_style_content_font(obj, part);
-        draw_dsc->content_color = lv_obj_get_style_content_color_filtered(obj, part);
-        draw_dsc->content_letter_space = lv_obj_get_style_content_letter_space(obj, part);
-        draw_dsc->content_line_space = lv_obj_get_style_content_line_space(obj, part);
     }
 #endif
 }
 
-void lv_obj_init_draw_label_dsc(lv_obj_t * obj, uint8_t part, lv_draw_label_dsc_t * draw_dsc)
+void lv_obj_init_draw_label_dsc(lv_obj_t * obj, uint32_t part, lv_draw_label_dsc_t * draw_dsc)
 {
     draw_dsc->opa = lv_obj_get_style_text_opa(obj, part);
     if(draw_dsc->opa <= LV_OPA_MIN) return;
@@ -217,18 +201,18 @@ void lv_obj_init_draw_label_dsc(lv_obj_t * obj, uint8_t part, lv_draw_label_dsc_
 
     draw_dsc->font = lv_obj_get_style_text_font(obj, part);
 
-#if LV_USE_BIDI == 0
-    draw_dsc->bidi_dir = lv_obj_get_base_dir(obj);
+#if LV_USE_BIDI
+    draw_dsc->bidi_dir = lv_obj_get_style_base_dir(obj, LV_PART_MAIN);
 #endif
 
     draw_dsc->align = lv_obj_get_style_text_align(obj, part);
     if(draw_dsc->align == LV_TEXT_ALIGN_AUTO) {
-        if(draw_dsc->bidi_dir == LV_BIDI_DIR_RTL) draw_dsc->align = LV_TEXT_ALIGN_RIGHT;
-        draw_dsc->align = LV_TEXT_ALIGN_LEFT;
+        if(draw_dsc->bidi_dir == LV_BASE_DIR_RTL) draw_dsc->align = LV_TEXT_ALIGN_RIGHT;
+        else draw_dsc->align = LV_TEXT_ALIGN_LEFT;
     }
 }
 
-void lv_obj_init_draw_img_dsc(lv_obj_t * obj, uint8_t part, lv_draw_img_dsc_t * draw_dsc)
+void lv_obj_init_draw_img_dsc(lv_obj_t * obj, uint32_t part, lv_draw_img_dsc_t * draw_dsc)
 {
     draw_dsc->opa = lv_obj_get_style_img_opa(obj, part);
     if(draw_dsc->opa <= LV_OPA_MIN)  return;
@@ -253,7 +237,7 @@ void lv_obj_init_draw_img_dsc(lv_obj_t * obj, uint8_t part, lv_draw_img_dsc_t * 
 #endif
 }
 
-void lv_obj_init_draw_line_dsc(lv_obj_t * obj, uint8_t part, lv_draw_line_dsc_t * draw_dsc)
+void lv_obj_init_draw_line_dsc(lv_obj_t * obj, uint32_t part, lv_draw_line_dsc_t * draw_dsc)
 {
     draw_dsc->width = lv_obj_get_style_line_width(obj, part);
     if(draw_dsc->width == 0) return;
@@ -282,7 +266,7 @@ void lv_obj_init_draw_line_dsc(lv_obj_t * obj, uint8_t part, lv_draw_line_dsc_t 
 #endif
 }
 
-void lv_obj_init_draw_arc_dsc(lv_obj_t * obj, uint8_t part, lv_draw_arc_dsc_t * draw_dsc)
+void lv_obj_init_draw_arc_dsc(lv_obj_t * obj, uint32_t part, lv_draw_arc_dsc_t * draw_dsc)
 {
     draw_dsc->width = lv_obj_get_style_arc_width(obj, part);
     if(draw_dsc->width == 0) return;
@@ -306,7 +290,7 @@ void lv_obj_init_draw_arc_dsc(lv_obj_t * obj, uint8_t part, lv_draw_arc_dsc_t * 
 #endif
 }
 
-lv_coord_t lv_obj_calculate_ext_draw_size(lv_obj_t * obj, uint8_t part)
+lv_coord_t lv_obj_calculate_ext_draw_size(lv_obj_t * obj, uint32_t part)
 {
     lv_coord_t s = 0;
 
@@ -332,41 +316,6 @@ lv_coord_t lv_obj_calculate_ext_draw_size(lv_obj_t * obj, uint8_t part)
         }
     }
 
-    const void * content_text = lv_obj_get_style_content_text(obj, part);
-    if(content_text) {
-        lv_opa_t content_opa;
-        lv_point_t content_size;
-        content_opa = lv_obj_get_style_text_opa(obj, part);
-        if(content_opa > 0) {
-            lv_coord_t letter_space = lv_obj_get_style_text_letter_space(obj, part);
-            lv_coord_t line_space = lv_obj_get_style_text_letter_space(obj, part);
-            const lv_font_t * font = lv_obj_get_style_text_font(obj, part);
-            lv_txt_get_size(&content_size, content_text, font, letter_space, line_space, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-
-            lv_area_t content_area;
-            content_area.x1 = 0;
-            content_area.y1 = 0;
-            content_area.x2 = content_size.x - 1;
-            content_area.y2 = content_size.y - 1;
-
-            lv_align_t align = lv_obj_get_style_content_align(obj, part);
-            lv_coord_t xofs = lv_obj_get_style_content_ofs_x(obj, part);
-            lv_coord_t yofs = lv_obj_get_style_content_ofs_y(obj, part);
-            lv_point_t p_align;
-            _lv_area_align(&obj->coords, &content_area, align, &p_align);
-
-            content_area.x1 += p_align.x + xofs;
-            content_area.y1 += p_align.y + yofs;
-            content_area.x2 += p_align.x + xofs;
-            content_area.y2 += p_align.y + yofs;
-
-            s = LV_MAX(s, obj->coords.x1 - content_area.x1);
-            s = LV_MAX(s, obj->coords.y1 - content_area.y1);
-            s = LV_MAX(s, content_area.x2 - obj->coords.x2);
-            s = LV_MAX(s, content_area.y2 - obj->coords.y2);
-        }
-    }
-
     lv_coord_t w = lv_obj_get_style_transform_width(obj, part);
     lv_coord_t h = lv_obj_get_style_transform_height(obj, part);
     lv_coord_t wh = LV_MAX(w, h);
@@ -375,9 +324,9 @@ lv_coord_t lv_obj_calculate_ext_draw_size(lv_obj_t * obj, uint8_t part)
     return s;
 }
 
-void lv_obj_draw_dsc_init(lv_obj_draw_dsc_t * dsc, const lv_area_t * clip_area)
+void lv_obj_draw_dsc_init(lv_obj_draw_part_dsc_t * dsc, const lv_area_t * clip_area)
 {
-    lv_memset_00(dsc, sizeof(lv_obj_draw_dsc_t));
+    lv_memset_00(dsc, sizeof(lv_obj_draw_part_dsc_t));
     dsc->clip_area = clip_area;
 }
 

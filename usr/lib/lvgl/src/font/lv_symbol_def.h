@@ -62,6 +62,7 @@ extern "C" {
 #define LV_SYMBOL_CUT             "\xef\x83\x84" /*61636, 0xF0C4*/
 #define LV_SYMBOL_COPY            "\xef\x83\x85" /*61637, 0xF0C5*/
 #define LV_SYMBOL_SAVE            "\xef\x83\x87" /*61639, 0xF0C7*/
+#define LV_SYMBOL_BARS            "\xef\x83\x89" /*61641, 0xF0C9*/
 #define LV_SYMBOL_CHARGE          "\xef\x83\xa7" /*61671, 0xF0E7*/
 #define LV_SYMBOL_PASTE           "\xef\x83\xAA" /*61674, 0xF0EA*/
 #define LV_SYMBOL_BELL            "\xef\x83\xb3" /*61683, 0xF0F3*/
@@ -91,7 +92,7 @@ extern "C" {
 
 /*
  * The following list is generated using
- * cat src/lv_font/lv_symbol_def.h | sed -E -n 's/^#define\s+LV_(SYMBOL_\w+).*".*$/    _LV_STR_\1,/p'
+ * cat src/font/lv_symbol_def.h | sed -E -n 's/^#define\s+LV_(SYMBOL_\w+).*".*$/    _LV_STR_\1,/p'
  */
 enum {
     _LV_STR_SYMBOL_AUDIO,

@@ -14,11 +14,23 @@ extern "C" {
  *      INCLUDES
  *********************/
 #include "../../../core/lv_obj.h"
+#if LV_USE_GRID
 
 /*********************
  *      DEFINES
  *********************/
-#if LV_USE_GRID
+/**
+ * Can be used track size to make the track fill the free space.
+ * @param x how much space to take proportionally to other FR tracks
+ * @return a special track size
+ */
+#define LV_GRID_FR(x)          (LV_COORD_MAX - 100 + x)
+
+#define LV_GRID_CONTENT        (LV_COORD_MAX - 101)
+LV_EXPORT_CONST_INT(LV_GRID_CONTENT);
+
+#define LV_GRID_TEMPLATE_LAST  (LV_COORD_MAX)
+LV_EXPORT_CONST_INT(LV_GRID_TEMPLATE_LAST);
 
 /**********************
  *      TYPEDEFS
@@ -28,65 +40,40 @@ extern "C" {
 struct _lv_obj_t;
 
 typedef enum {
-    LV_GRID_START,
-    LV_GRID_CENTER,
-    LV_GRID_END,
-    LV_GRID_STRETCH,
-    LV_GRID_SPACE_EVENLY,
-    LV_GRID_SPACE_AROUND,
-    LV_GRID_SPACE_BETWEEN,
-}lv_grid_place_t;
+    LV_GRID_ALIGN_START,
+    LV_GRID_ALIGN_CENTER,
+    LV_GRID_ALIGN_END,
+    LV_GRID_ALIGN_STRETCH,
+    LV_GRID_ALIGN_SPACE_EVENLY,
+    LV_GRID_ALIGN_SPACE_AROUND,
+    LV_GRID_ALIGN_SPACE_BETWEEN,
+}lv_grid_align_t;
 
-typedef struct {
-    lv_layout_dsc_t base; /*The first element must be the update callback*/
-    const lv_coord_t * col_dsc;
-    const lv_coord_t * row_dsc;
-    uint8_t col_dsc_len;
-    uint8_t row_dsc_len;
-    uint8_t col_place;
-    uint8_t row_place;
-}lv_grid_t;
+/**********************
+ * GLOBAL VARIABLES
+ **********************/
 
-typedef struct {
-    lv_coord_t * x;
-    lv_coord_t * y;
-    lv_coord_t * w;
-    lv_coord_t * h;
-    uint32_t col_num;
-    uint32_t row_num;
-    lv_coord_t grid_w;
-    lv_coord_t grid_h;
-}_lv_grid_calc_t;
+extern uint32_t LV_LAYOUT_GRID;
+extern lv_style_prop_t LV_STYLE_GRID_COLUMN_DSC_ARRAY;
+extern lv_style_prop_t LV_STYLE_GRID_COLUMN_ALIGN;
+extern lv_style_prop_t LV_STYLE_GRID_ROW_DSC_ARRAY;
+extern lv_style_prop_t LV_STYLE_GRID_ROW_ALIGN;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_COLUMN_POS;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_COLUMN_SPAN;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_X_ALIGN;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_ROW_POS;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_ROW_SPAN;
+extern lv_style_prop_t LV_STYLE_GRID_CELL_Y_ALIGN;
 
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
 
+void lv_grid_init(void);
 
-/**
- * Initialize a grid layout the default values
- * @param grid pointer to a grid layout descriptor
- */
-void lv_grid_init(lv_grid_t * grid);
+void lv_obj_set_grid_dsc_array(lv_obj_t * obj, const lv_coord_t col_dsc[], const lv_coord_t row_dsc[]);
 
-/**
- * Set the number of rows and columns and their sizes
- * @param grid pointer to a grid layout descriptor
- * @param col_dsc an array with the column widths
- * @param col_cnt number of columns (max 16)
- * @param row_dsc an array with the row heights
- * @param row_cnt number of rows (max 16)
- * @note `LV_GRID_FR(x)` can be used as track size.
- */
-void lv_grid_set_template(lv_grid_t * grid, const lv_coord_t * col_dsc, uint8_t col_cnt, const lv_coord_t * row_dsc, uint8_t row_cnt);
-
-/**
- * Set how to place (where to align) the rows and columns
- * @param grid
- * @param col_place
- * @param row_place
- */
-void lv_grid_set_place(lv_grid_t * grid, uint8_t col_place, uint8_t row_place);
+void lv_obj_set_grid_align(lv_obj_t * obj, lv_grid_align_t column_align, lv_grid_align_t row_align);
 
 /**
  * Set the cell of an object. The object's parent needs to have grid layout, else nothing will happen
@@ -98,17 +85,8 @@ void lv_grid_set_place(lv_grid_t * grid, uint8_t col_place, uint8_t row_place);
  * @param row_pos row ID
  * @param row_span number of rows to take (>= 1)
  */
-void lv_obj_set_grid_cell(struct _lv_obj_t * obj, lv_grid_place_t hor_place, uint8_t col_pos, uint8_t col_span,
-                                          lv_grid_place_t ver_place, uint8_t row_pos, uint8_t row_span);
-
-/**
- * Can be used track size to make the track fill the free space.
- * @param x how much space to take proportionally to other FR tracks
- * @return a special track size
- */
-#define LV_GRID_FR(x)          (LV_COORD_SET_LAYOUT(x))
-
-#define LV_GRID_CONTENT        (LV_COORD_SET_LAYOUT(100))
+void lv_obj_set_grid_cell(lv_obj_t * obj, lv_grid_align_t column_align, uint8_t col_pos, uint8_t col_span,
+                                          lv_grid_align_t row_align, uint8_t row_pos, uint8_t row_span);
 
 /**
  * Just a wrapper to `LV_GRID_FR` for bindings.
@@ -118,10 +96,91 @@ static inline lv_coord_t lv_grid_fr(uint8_t x)
     return LV_GRID_FR(x);
 }
 
+void lv_style_set_grid_row_dsc_array(lv_style_t * style, const lv_coord_t value[]);
+void lv_style_set_grid_column_dsc_array(lv_style_t * style, const lv_coord_t value[]);
+void lv_style_set_grid_row_align(lv_style_t * style, lv_grid_align_t value);
+void lv_style_set_grid_column_align(lv_style_t * style, lv_grid_align_t value);
+void lv_style_set_grid_cell_column_pos(lv_style_t * style, lv_coord_t value);
+void lv_style_set_grid_cell_column_span(lv_style_t * style, lv_coord_t value);
+void lv_style_set_grid_cell_row_pos(lv_style_t * style, lv_coord_t value);
+void lv_style_set_grid_cell_row_span(lv_style_t * style, lv_coord_t value);
+void lv_style_set_grid_cell_x_align(lv_style_t * style, lv_coord_t value);
+void lv_style_set_grid_cell_y_align(lv_style_t * style, lv_coord_t value);
+
+void lv_obj_set_style_grid_row_dsc_array(lv_obj_t * obj, const lv_coord_t value[], lv_style_selector_t selector);
+void lv_obj_set_style_grid_column_dsc_array(lv_obj_t * obj, const lv_coord_t value[], lv_style_selector_t selector);
+void lv_obj_set_style_grid_row_align(lv_obj_t * obj, lv_grid_align_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_column_align(lv_obj_t * obj, lv_grid_align_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_column_pos(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_column_span(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_row_pos(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_row_span(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_x_align(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+void lv_obj_set_style_grid_cell_y_align(lv_obj_t * obj, lv_coord_t value, lv_style_selector_t selector);
+
+static inline const lv_coord_t * lv_obj_get_style_grid_row_dsc_array(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_ROW_DSC_ARRAY);
+    return (const lv_coord_t *)v.ptr;
+}
+
+static inline const lv_coord_t * lv_obj_get_style_grid_column_dsc_array(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_COLUMN_DSC_ARRAY);
+    return (const lv_coord_t *)v.ptr;
+}
+
+static inline lv_grid_align_t lv_obj_get_style_grid_row_align(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_ROW_ALIGN);
+    return (lv_grid_align_t)v.num;
+}
+
+static inline lv_grid_align_t lv_obj_get_style_grid_column_align(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_COLUMN_ALIGN);
+    return (lv_grid_align_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_column_pos(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_COLUMN_POS);
+    return (lv_coord_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_column_span(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_COLUMN_SPAN);
+    return (lv_coord_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_row_pos(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_ROW_POS);
+    return (lv_coord_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_row_span(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_ROW_SPAN);
+    return (lv_coord_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_x_align(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_X_ALIGN);
+    return (lv_coord_t)v.num;
+}
+
+static inline lv_coord_t lv_obj_get_style_grid_cell_y_align(const lv_obj_t * obj, uint32_t part)
+{
+    lv_style_value_t v = lv_obj_get_style_prop(obj, part, LV_STYLE_GRID_CELL_Y_ALIGN);
+    return (lv_coord_t)v.num;
+}
+
 /**********************
  * GLOBAL VARIABLES
  **********************/
-extern const lv_grid_t grid_12;
 
 /**********************
  *      MACROS

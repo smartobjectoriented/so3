@@ -123,7 +123,7 @@ void lv_txt_get_size(lv_point_t * size_res, const char * text, const lv_font_t *
         }
 
         /*Calculate the longest line*/
-        lv_coord_t act_line_length = _lv_txt_get_width(&text[line_start], new_line_start - line_start, font, letter_space,
+        lv_coord_t act_line_length = lv_txt_get_width(&text[line_start], new_line_start - line_start, font, letter_space,
                                                        flag);
 
         size_res->x = LV_MAX(act_line_length, size_res->x);
@@ -353,7 +353,7 @@ uint32_t _lv_txt_get_next_line(const char * txt, const lv_font_t * font,
  * @param flags settings for the text from 'txt_flag_t' enum
  * @return length of a char_num long text
  */
-lv_coord_t _lv_txt_get_width(const char * txt, uint32_t length, const lv_font_t * font, lv_coord_t letter_space,
+lv_coord_t lv_txt_get_width(const char * txt, uint32_t length, const lv_font_t * font, lv_coord_t letter_space,
                              lv_text_flag_t flag)
 {
     if(txt == NULL) return 0;
@@ -366,8 +366,10 @@ lv_coord_t _lv_txt_get_width(const char * txt, uint32_t length, const lv_font_t 
 
     if(length != 0) {
         while(i < length) {
-            uint32_t letter      = _lv_txt_encoded_next(txt, &i);
-            uint32_t letter_next = _lv_txt_encoded_next(&txt[i], NULL);
+            uint32_t letter;
+            uint32_t letter_next;
+            _lv_txt_encoded_letter_next_2(txt, &letter, &letter_next, &i);
+
             if((flag & LV_TEXT_FLAG_RECOLOR) != 0) {
                 if(_lv_txt_is_cmd(&cmd_state, letter) != false) {
                     continue;
@@ -523,6 +525,12 @@ char * _lv_txt_set_text_vfmt(const char * fmt, va_list ap)
 #endif
 
     return text;
+}
+
+void _lv_txt_encoded_letter_next_2(const char * txt, uint32_t * letter, uint32_t * letter_next, uint32_t *ofs)
+{
+    *letter = _lv_txt_encoded_next(txt, ofs);
+    *letter_next = *letter != '\0' ? _lv_txt_encoded_next(&txt[*ofs], NULL) : 0;
 }
 
 #if LV_TXT_ENC == LV_TXT_ENC_UTF8

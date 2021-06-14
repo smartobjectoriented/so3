@@ -97,11 +97,6 @@ VPATH		:= $(srctree)
 
 export srctree objtree VPATH
 
-#CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-CROSS_COMPILE = riscv64-unknown-linux-gnu-
-
-SRCARCH := riscv64
-
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
@@ -126,7 +121,7 @@ HOSTCXXFLAGS = -O2
 #         cmd_cc_o_c       = $(CC) $(c_flags) -c -o $@ $<
 #
 # If $(quiet) is empty, the whole command will be printed.
-# If it is set to "quiet_", only the short version will be printed. 
+# If it is set to "quiet_", only the short version will be printed.
 # If it is set to "silent_", nothing will be printed at all, since
 # the variable $(silent_cmd_cc_o_c) doesn't exist.
 #
@@ -163,58 +158,14 @@ MAKEFLAGS += --include-dir=$(srctree)
 $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
-# Make variables (CC, etc...)
-
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
-CPP		= $(CC) -E
-AR		= $(CROSS_COMPILE)ar
-NM		= $(CROSS_COMPILE)nm
-STRIP		= $(CROSS_COMPILE)strip
-OBJCOPY		= $(CROSS_COMPILE)objcopy
-OBJDUMP		= $(CROSS_COMPILE)objdump
 AWK		= awk
-INSTALLKERNEL  := installkernel
-PERL		= perl
+PERL	= perl
 LEX		= flex
 YACC	= bison
 
-# Use SO3INCLUDE when you must reference the include/ directory.
-# Needed to be compatible with the O= option
+export LEX YACC
+export HOSTCXX HOSTCXXFLAGS HOSTCC HOSTCFLAGS
 
-gccincdir := $(shell $(CC) -print-file-name=include)
-
-SO3INCLUDE    := -Iinclude  -I.  \
-                  $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                  -include include/generated/autoconf.h
-
-KBUILD_CPPFLAGS := -D__KERNEL__ 
-
-KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
-KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)  
-
-KBUILD_CFLAGS   := -march=rv64ifd -mabi=lp64f -g  -O0 -fno-common -mno-thumb-interwork -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
-KBUILD_CFLAGS	:= -march=rv64ifd -mabi=lp64f -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections -DBITS_PER_LONG=32
-
-KBUILD_AFLAGS_KERNEL := -I. 
-KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt 
-KBUILD_AFLAGS   := -march=rv64ifd -mabi=lp64f -g -D__ASSEMBLY__ -fno-PIE -funwind-tables -Wa,-gdwarf-2
-
-# Read KERNELRELEASE from include/config/kernel.release (if it exists)
-KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
-KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))$(EXTRAVERSION)
-
-export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
-export CPP AR NM STRIP OBJCOPY OBJDUMP LEX YACC
-export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
-export HOSTCXX HOSTCXXFLAGS
-
-export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
-export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
-export KBUILD_ARFLAGS
-export TARGET CONFIG_BIN CONFIG_ELF
- 
 # Files to ignore in find ... statements
 
 RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS -o -name .pc -o -name .hg -o -name .git \) -prune -o
@@ -327,15 +278,84 @@ $(KCONFIG_CONFIG):
 
 include include/config/auto.conf
 
+# From here, we can rely CONFIG_* variables stored in .config
+CROSS_COMPILE = $(CONFIG_CROSS_COMPILE)
+
+
+# Make variables (CC, etc...)
+
+AS		= $(CROSS_COMPILE)as
+LD		= $(CROSS_COMPILE)ld
+CC		= $(CROSS_COMPILE)gcc
+CPP		= $(CC) -E
+AR		= $(CROSS_COMPILE)ar
+NM		= $(CROSS_COMPILE)nm
+STRIP		= $(CROSS_COMPILE)strip
+OBJCOPY		= $(CROSS_COMPILE)objcopy
+OBJDUMP		= $(CROSS_COMPILE)objdump
+
+# Use SO3INCLUDE when you must reference the include/ directory.
+# Needed to be compatible with the O= option
+
+gccincdir := $(shell $(CC) -print-file-name=include)
+
+SO3INCLUDE    := -Iinclude  -I.  \
+                  $(if $(KBUILD_SRC), -I$(srctree)/include) \
+                  -include include/generated/autoconf.h
+
+KBUILD_CPPFLAGS := -D__KERNEL__
+
+KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
+KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
+
+KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
+KBUILD_CFLAGS	:= -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 \
+				   -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack \
+				   -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections
+
+KBUILD_AFLAGS_KERNEL := -I.
+KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt
+KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
+
+# Specific CFLAGS/AFLAGS according to ARCH
+
+SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
+
+ifeq ($(CONFIG_ARCH_ARM32),y)
+KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 --param allow-store-data-races=0
+KBUILD_AFLAGS   += -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
+endif
+
+ifeq ($(CONFIG_ARCH_ARM64),y)
+KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -fno-allow-store-data-races
+KBUILD_AFLAGS   +=
+endif
+
+# Read KERNELRELEASE from include/config/kernel.release (if it exists)
+KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))$(EXTRAVERSION)
+
+export ARCH SRCARCH CONFIG_SHELL CROSS_COMPILE AS LD CC
+export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
+export CPP AR NM STRIP OBJCOPY OBJDUMP
+
+export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
+export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
+export KBUILD_ARFLAGS
+
 ifeq ($(CONFIG_VEXPRESS),y)
 TARGET = vexpress
 endif
 ifeq ($(CONFIG_RPI4),y)
 TARGET = rpi4
 endif
-ifeq ($(CONFIG_VIRT_RISCV64),y)
-TARGET = virt_riscv64
+ifeq ($(CONFIG_RPI4_64),y)
+TARGET = rpi4_64
 endif
+ifeq ($(CONFIG_VIRT64),y)
+TARGET = virt64
+endif
+
 
 # The all: target is the default when no target is given on the
 # command line.
@@ -349,11 +369,9 @@ include scripts/Makefile.build
  
 all:  $(BIN) dtbs 
 
-# objs-y		:= kernel mm fs ipc arch/riscv64 devices apps net
-objs-y		:= kernel arch/riscv64
-libs-y		:=
-# libs-y		:= lib
-# libs-y 		+= lib/libfdt
+objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
+libs-y		:= lib
+libs-y 		+= lib/libfdt
 
 so3-dirs	:= $(objs-y) $(libs-y)
 so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))
@@ -425,7 +443,7 @@ $(sort $(so3-all)): $(so3-dirs) ;
 # tweaks to this spot to avoid wrong language settings when running
 # make menuconfig etc.
 # Error messages still appears in the original language
- 
+
 prepare0: scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=.
 

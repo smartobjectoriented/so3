@@ -2,7 +2,7 @@
  * @file lvgl.h
  * Include all LVGL related headers
  */
- 
+
 #ifndef LVGL_H
 #define LVGL_H
 
@@ -47,7 +47,6 @@ extern "C" {
 #include "src/widgets/lv_img.h"
 #include "src/widgets/lv_label.h"
 #include "src/widgets/lv_line.h"
-#include "src/widgets/lv_chart.h"
 #include "src/widgets/lv_table.h"
 #include "src/widgets/lv_checkbox.h"
 #include "src/widgets/lv_bar.h"
@@ -57,21 +56,19 @@ extern "C" {
 #include "src/widgets/lv_roller.h"
 #include "src/widgets/lv_textarea.h"
 #include "src/widgets/lv_canvas.h"
-#include "src/widgets/lv_meter.h"
 #include "src/widgets/lv_switch.h"
 
-#include "src/draw/lv_img_cache.h"
+#include "src/draw/lv_draw.h"
 
 #include "src/lv_api_map.h"
 
 /*-----------------
  * EXTRAS
  *----------------*/
+#include "src/extra/lv_extra.h"
 #include "src/extra/widgets/lv_widgets.h"
 #include "src/extra/layouts/lv_layouts.h"
 #include "src/extra/themes/lv_themes.h"
-
-#include "examples/lv_examples.h"
 
 /*********************
  *      DEFINES

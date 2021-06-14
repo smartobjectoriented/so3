@@ -35,11 +35,7 @@ extern "C" {
  */
 void lv_indev_read_timer_cb(lv_timer_t * timer);
 
-/**
- * Enable or disable an input devices
- * @param indev pointer to an input device
- * @param en true: enable; false: disable
- */
+
 void lv_indev_enable(lv_indev_t * indev, bool en);
 
 /**
@@ -103,7 +99,7 @@ void lv_indev_get_point(const lv_indev_t * indev, lv_point_t * point);
 * @param indev pointer to an input device
 * @return current gesture direct
 */
-lv_gesture_dir_t lv_indev_get_gesture_dir(const lv_indev_t * indev);
+lv_dir_t lv_indev_get_gesture_dir(const lv_indev_t * indev);
 
 /**
  * Get the last pressed key of an input device (for LV_INDEV_TYPE_KEYPAD)
@@ -116,10 +112,10 @@ uint32_t lv_indev_get_key(const lv_indev_t * indev);
  * Check the current scroll direction of an input device (for LV_INDEV_TYPE_POINTER and
  * LV_INDEV_TYPE_BUTTON)
  * @param indev pointer to an input device
- * @return LV_SCROLL_DIR_NONE: no scrolling now
- *         LV_SCROLL_DIR_HOR/VER
+ * @return LV_DIR_NONE: no scrolling now
+ *         LV_DIR_HOR/VER
  */
-lv_indev_scroll_dir_t lv_indev_get_scroll_dir(const lv_indev_t * indev);
+lv_dir_t lv_indev_get_scroll_dir(const lv_indev_t * indev);
 
 /**
  * Get the currently scrolled object (for LV_INDEV_TYPE_POINTER and

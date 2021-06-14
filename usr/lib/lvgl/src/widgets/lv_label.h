@@ -30,11 +30,11 @@ extern "C" {
 #define LV_LABEL_WAIT_CHAR_COUNT        3
 #define LV_LABEL_DOT_NUM 3
 #define LV_LABEL_POS_LAST 0xFFFF
-#define LV_LABEL_TEXT_SEL_OFF LV_DRAW_LABEL_NO_TXT_SEL
+#define LV_LABEL_TEXT_SELECTION_OFF LV_DRAW_LABEL_NO_TXT_SEL
 
 LV_EXPORT_CONST_INT(LV_LABEL_DOT_NUM);
 LV_EXPORT_CONST_INT(LV_LABEL_POS_LAST);
-LV_EXPORT_CONST_INT(LV_LABEL_TEXT_SEL_OFF);
+LV_EXPORT_CONST_INT(LV_LABEL_TEXT_SELECTION_OFF);
 
 /**********************
  *      TYPEDEFS
@@ -42,7 +42,6 @@ LV_EXPORT_CONST_INT(LV_LABEL_TEXT_SEL_OFF);
 
 /** Long mode behaviors. Used in 'lv_label_ext_t'*/
 enum {
-    LV_LABEL_LONG_EXPAND,           /**< Expand the object size to the text size*/
     LV_LABEL_LONG_WRAP,             /**< Keep the object width, wrap the too long lines and expand the object height*/
     LV_LABEL_LONG_DOT,              /**< Keep the size and write dots at the end if the text is too long*/
     LV_LABEL_LONG_SCROLL,           /**< Keep the size and roll the text back and forth*/
@@ -64,7 +63,7 @@ typedef struct {
     lv_draw_label_hint_t hint;
 #endif
 
-#if LV_LABEL_TEXT_SEL
+#if LV_LABEL_TEXT_SELECTION
     uint32_t sel_start; uint32_t sel_end;
 #endif
 
@@ -84,12 +83,10 @@ extern const lv_obj_class_t lv_label_class;
 
 /**
  * Create a label objects
- * @param parent    pointer to an object, it will be the parent of the new label
- * @param copy      DEPRECATED, will be removed in v9.
- *                  Pointer to an other label to copy.
+ * @param parent    pointer to an object, it will be the parent of the new labely.
  * @return          pointer to the created button
  */
-lv_obj_t * lv_label_create(lv_obj_t * parent, const lv_obj_t * copy);
+lv_obj_t * lv_label_create(lv_obj_t * parent);
 
 /*=====================
  * Setter functions
@@ -137,14 +134,14 @@ void lv_label_set_recolor(lv_obj_t * obj, bool en);
 /**
  * Set where text selection should start
  * @param obj       pointer to a label object
- * @param index     character index from where selection should start. `LV_LABEL_TEXT_SEL_OFF` for no selection
+ * @param index     character index from where selection should start. `LV_LABEL_TEXT_SELECTION_OFF` for no selection
  */
 void lv_label_set_text_sel_start(lv_obj_t * obj, uint32_t index);
 
 /**
  * Set where text selection should end
  * @param obj       pointer to a label object
- * @param index     character index where selection should end.  `LV_LABEL_TEXT_SEL_OFF` for no selection
+ * @param index     character index where selection should end.  `LV_LABEL_TEXT_SELECTION_OFF` for no selection
  */
 void lv_label_set_text_sel_end(lv_obj_t * obj, uint32_t index);
 
@@ -161,20 +158,8 @@ char * lv_label_get_text(const lv_obj_t * obj);
 
 /**
  * Get the long mode of a label
-<<<<<<< HEAD
  * @param obj       pointer to a label object
  * @return          the current long mode
-=======
- * @param label pointer to a label object
- * @return the long mode
- */
-lv_label_long_mode_t lv_label_get_long_mode(const lv_obj_t * label);
-
-/**
- * Get the align attribute
- * @param label pointer to a label object
- * @return LV_LABEL_ALIGN_LEFT/RIGHT/CENTER
->>>>>>> master
  */
 lv_label_long_mode_t lv_label_get_long_mode(const lv_obj_t * obj);
 
@@ -214,16 +199,16 @@ bool lv_label_is_char_under_pos(const lv_obj_t * obj, lv_point_t * pos);
 /**
  * @brief Get the selection start index.
  * @param obj       pointer to a label object.
- * @return          selection start index. `LV_LABEL_TEXT_SEL_OFF` if nothing is selected.
+ * @return          selection start index. `LV_LABEL_TEXT_SELECTION_OFF` if nothing is selected.
  */
-uint32_t lv_label_get_text_sel_start(const lv_obj_t * obj);
+uint32_t lv_label_get_text_selection_start(const lv_obj_t * obj);
 
 /**
  * @brief Get the selection end index.
  * @param obj       pointer to a label object.
  * @return          selection end index. `LV_LABEL_TXT_SEL_OFF` if nothing is selected.
  */
-uint32_t lv_label_get_text_sel_end(const lv_obj_t * obj);
+uint32_t lv_label_get_text_selection_end(const lv_obj_t * obj);
 
 /*=====================
  * Other functions

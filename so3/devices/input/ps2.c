@@ -102,26 +102,17 @@ uint8_t sce[] = {
 /* Extract mouse coordinates and button states from the given packet. */
 void get_mouse_state(uint8_t *packet, struct ps2_mouse *state, uint16_t max_x, uint16_t max_y)
 {
-	if ((packet[PS2_STATE] & AO)
-		/* discard packet if there are overflows, as advised. */
-		&& ~(packet[PS2_STATE] & Y_OF)
-		&& ~(packet[PS2_STATE] & X_OF)) {
+	/* Discard packet if there are overflows, as advised. */
+	if ((packet[PS2_STATE] & AO) && ~(packet[PS2_STATE] & Y_OF) && ~(packet[PS2_STATE] & X_OF)) {
 
 		/*
 		 * Do not unset the button value, this is done in the ioctl.
 		 * This way the driver has time to read the button state values.
 		 */
-		if (!state->left) {
-			state->left = packet[PS2_STATE] & BL;
-		}
 
-		if (!state->right) {
-			state->right = packet[PS2_STATE] & BR;
-		}
-
-		if (!state->middle) {
-			state->middle = packet[PS2_STATE] & BM;
-		}
+		state->left = packet[PS2_STATE] & BL;
+		state->right = packet[PS2_STATE] & BR;
+		state->middle = packet[PS2_STATE] & BM;
 
 		/* Retrieve dx and dy values to compute the mouse coordinates. */
 		state->x += GET_DX(packet[PS2_STATE], packet[PS2_X]);

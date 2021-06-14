@@ -2,13 +2,7 @@
 
 mainmenu "SO3 Configuration"
 
-menu "General"
-	config CROSS_COMPILE
-		string "Cross-compiler tool prefix"
-		default "arm-linux-gnueabihf-"
-endmenu
- 
-source "arch/riscv64/Kconfig"
+source "arch/Kconfig"
 
 source "kernel/Kconfig"
  
@@ -29,14 +23,4 @@ config MMU
 config DEBUG_PRINTK
 	bool "Debug printk"
 	
-	
-menu "Generated files"
-	config ELF
-		bool "Generate ELF"
-		default y
-	config BIN
-		bool "Generate BIN"
-		default y
-		depends on ELF
-endmenu
 
