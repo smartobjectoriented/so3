@@ -58,7 +58,7 @@ int mydev_init(dev_t *dev) {
 	devclass_register(dev, &mydev_dev);
 
 	node = fdt_find_node_by_name(__fdt_addr, 0, "mydev");
-	fdt_property_read_string(__fdt_addr, 0, "compatible", &propname);
+	fdt_property_read_string(__fdt_addr, node, "compatible", &propname);
 
 	return 0;
 }
