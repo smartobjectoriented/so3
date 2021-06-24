@@ -25,7 +25,7 @@ TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */
 SECTIONS
 {
 
-     . = ENTRY_ADDR + 0x8000;
+     . = ENTRY_ADDR;
 
     __vectors_start = .;
 

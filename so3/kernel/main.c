@@ -17,9 +17,11 @@
  *
  */
 
+#include <asm/setup.h>
+
 #if 0
 #define DEBUG
-#endif
+//#endif
 
 #include <common.h>
 #include <calibrate.h>
@@ -111,11 +113,13 @@ int rest_init(void *dummy) {
 
 	return 0;
 }
+#endif
 
 void kernel_start(void) {
 
 	/* Basic low-level initialization */
 	setup_arch();
+#if 0
 
 	lprintk("\n\n********** Smart Object Oriented SO3 Operating System **********\n");
 	lprintk("Copyright (c) 2014-2020 REDS Institute, HEIG-VD, Yverdon\n");
@@ -160,5 +164,5 @@ void kernel_start(void) {
 	 */
 
 	schedule();
-
+#endif
 }
