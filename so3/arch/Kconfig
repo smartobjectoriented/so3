@@ -1,12 +1,4 @@
 choice
-	prompt "SO3 OS type"
-
-config STANDALONE
-        bool "Standalone OS"
-        
-endchoice
-
-choice
 	prompt "CPU Architecture"
 	
 	config ARCH_ARM32
