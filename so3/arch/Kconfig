@@ -23,7 +23,7 @@ config CROSS_COMPILE
 	string
 	default "arm-none-linux-gnueabihf-" if ARCH_ARM32
 	default "aarch64-none-linux-gnu-" if ARCH_ARM64
-	default "riscv64-unknown-linux-gnu-" if ARCH_RISCV64
+	default "riscv64-unknown-elf-" if ARCH_RISCV64
 
 
 source "arch/arm32/Kconfig"

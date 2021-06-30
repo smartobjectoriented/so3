@@ -331,6 +331,11 @@ KBUILD_CFLAGS	+= -mlittle-endian -DBITS_PER_LONG=64 -fno-allow-store-data-races
 KBUILD_AFLAGS   += -mlittle-endian
 endif
 
+ifeq ($(CONFIG_ARCH_RISCV64),y)
+KBUILD_CFLAGS	+= -march=rv64ima -mabi=lp64
+KBUILD_AFLAGS   += -march=rv64ima -mabi=lp64
+endif
+
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
 KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
 KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(SUBLEVEL)))$(EXTRAVERSION)

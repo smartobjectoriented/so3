@@ -12,7 +12,7 @@ ENTRY(_start)
  * Indeed a user thread (running in the user space) will also involve kernel activities
  * with syscalls and other.
  */
-SVC_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack + 640 KB stack available for max. 10 kernel threads */
+SMODE_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack + 640 KB stack available for max. 10 kernel threads */
 
 HEAP_SIZE = 32 * 1024 * 1024;     /* 32 MB dedicated to kernel heap */
 TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */
@@ -25,6 +25,7 @@ TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */
 SECTIONS
 {
 
+    /* TODO add offset here for vectors once we need them */
      . = ENTRY_ADDR;
 
     __vectors_start = .;
@@ -127,7 +128,7 @@ SECTIONS
 
     .stack :
     {
-        . += SVC_STACK_SIZE;
+        . += SMODE_STACK_SIZE;
 
         __stack_top = . ;
 
