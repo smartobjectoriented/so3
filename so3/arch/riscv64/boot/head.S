@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021      Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,49 +17,39 @@
  *
  */
 
- # SO3 Kernel entry point
-
-#include <linkage.h>
-
-#include <generated/autoconf.h>
-
-#include <asm/processor.h>
-#include <asm/mmu.h>
-#include <asm/memory.h>
-#include <thread.h>
+#include <asm/csr.h>
 
 .global _start
 .global __fdt_addr
 
-.extern clear_bss
 .extern __stack_top
 .extern __vectors_start
 
 .section ".head.text","ax"
 
-
-/*
- * TODO enter supervisor mode
- */
 .macro enter_smode
     # Nothing yet
     # Set CSR to disable all irqs and enter Smode
 .endm
 
+ # SO3 Kernel entry point
 _start:
 
   enter_smode
 
+# Vectors not useful yet
+#if 0
   # Configure address of the vector table
   la   t0, .LCvectors
   ld   t0, (t0)
 
 # TODO Find a way to set vector table to replace arm instruction
 #  mcr   p15, 0, r1, c12, c0, 0      @ vector table
+#endif
 
-/*
- *  TODO define where the device tree address is and store it in label
- */
+  # Preserve the (physical address of) device tree base in s9,
+  # a1 contains device tree adress
+  mv s9, a1
 
   # Initialize stack pointer to the stack defined in the link script
   la   sp, .LCstack_top
@@ -78,16 +69,12 @@ __kernel_main:
         add t0, t0, 8
         blt t0, t1, priv_clear_bss
 
-/* TODO see what to do with de DT */
-  # ldr   r0, =__fdt_addr
-  # str   r9, [r0]
+    # Store DT at label
+    la t0, __fdt_addr
+    sd s9, (t0)
 
   # C main entry point, never returns
   j     kernel_start
-
-
-# TODO find equivalent?
-# .ltorg
 
 # Addr on 64 bits => 8 bytes to store it
 __fdt_addr:
