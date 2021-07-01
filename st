@@ -19,7 +19,7 @@ if [ "$PLATFORM" == "virt-riscv64" ]; then
     sudo qemu/build/qemu-system-riscv64 $@ \
         -gdb tcp::$QEMU_GDB_PORT \
         -serial mon:stdio  \
-        -smp 4 \
+        -smp 1 \
         -m 4096 \
         -M virt \
         -bios none \
