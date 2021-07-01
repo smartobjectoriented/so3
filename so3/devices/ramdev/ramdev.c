@@ -19,11 +19,11 @@
 #include <common.h>
 #include <memory.h>
 #include <part.h>
-#include <div64.h>
 
 #include <device/fdt.h>
 #include <device/ramdev.h>
 
+#include <asm/div64.h>
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 

@@ -661,6 +661,17 @@ void *memalign_log(size_t size, unsigned int alignment, const char *filename, co
 }
 #endif
 
+void *calloc(size_t nmemb, size_t size) {
+	void *ptr;
+
+	ptr = malloc(nmemb*size);
+	if (!ptr)
+		return ptr;
+
+	memset(ptr, 0, nmemb*size);
+
+	return ptr;
+}
 
 /*
  * Free an allocated area

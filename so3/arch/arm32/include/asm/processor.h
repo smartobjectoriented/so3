@@ -406,6 +406,13 @@ static inline void set_dacr(unsigned int val)
 	isb();
 }
 
+/*
+ * Put the CPU in idle/standby until an interrupt is raised up.
+ */
+static inline void cpu_standby(void) {
+	__asm("dsb");
+	__asm("wfi");
+}
 
 #endif /* __ASSEMBLY__ */
 

@@ -17,7 +17,6 @@
 #include <part.h>
 #include <heap.h>
 #include <list.h>
-#include <div64.h>
 #include <delay.h>
 #include <string.h>
 
