@@ -27,15 +27,14 @@
 
 .section ".head.text","ax"
 
-.macro enter_smode
-    # Nothing yet
-    # Set CSR to disable all irqs and enter Smode
-.endm
-
  # SO3 Kernel entry point
 _start:
 
-  enter_smode
+  # Disable IRQs for smode in reg directly
+  csrw CSR_IE, zero
+  csrw CSR_IP, zero
+  # clear sie flag (smode interrupt enable)
+  csrci CSR_STATUS, SR_SIE
 
 # Vectors not useful yet
 #if 0
@@ -73,8 +72,8 @@ __kernel_main:
     la t0, __fdt_addr
     sd s9, (t0)
 
-  # C main entry point, never returns
-  j     kernel_start
+    # C main entry point, never returns
+    j     kernel_start
 
 # Addr on 64 bits => 8 bytes to store it
 __fdt_addr:
