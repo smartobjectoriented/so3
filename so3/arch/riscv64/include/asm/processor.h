@@ -2,6 +2,7 @@
  *  linux/include/asm-arm/processor.h
  *
  *  Copyright (C) 1995-2002 Russell King
+ *  Copyright (C) 2012 Regents of the University of California
  *  Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,6 +23,9 @@
 #ifndef __ASM_ARM_PROCESSOR_H
 #define __ASM_ARM_PROCESSOR_H
 
+#include <asm/csr.h>
+
+#if 0
 #define NR_CPUS 		1
 
 #define VECTOR_VADDR		0xffff0000
@@ -185,8 +189,11 @@
 
 #define domain_val(dom,type)	((type) << 2*(dom))
 
+#endif
+
 #ifndef __ASSEMBLY__
 
+#if 0
 #include <types.h>
 #include <compiler.h>
 #include <common.h>
@@ -214,51 +221,69 @@ union fp_state {
 #define dsb(option) __asm__ __volatile__ ("dsb " #option : : : "memory")
 #define dmb(option) __asm__ __volatile__ ("dmb " #option : : : "memory")
 
+#endif
+
 /*
  * CPU regs matches with the stack frame layout.
  * It has to be 8 bytes aligned.
  */
 typedef struct cpu_regs {
-	__u32   r0;
-	__u32   r1;
-	__u32   r2;
-	__u32   r3;
-	__u32   r4;
-	__u32   r5;
-	__u32   r6;
-	__u32   r7;
-	__u32   r8;
-	__u32   r9;
-	__u32   r10;
-	__u32   fp;
-	__u32   ip;
-	__u32   sp;
-	__u32   lr;
-	__u32   pc;
-	__u32   psr;
-	__u32	sp_usr;
-	__u32   lr_usr;
-	__u32   padding;  /* padding to keep 8-bytes alignment */
+	__u64   zero;
+	__u64   ra;
+	__u64   sp;
+	__u64   gp;
+	__u64   tp;
+	__u64   t0;
+	__u64   t1;
+	__u64   t2;
+	__u64   fp; // Also called s0
+	__u64   s1;
+	__u64   a0;
+	__u64   a1;
+	__u64   a2;
+	__u64   a3;
+	__u64   a4;
+	__u64   a5;
+	__u64   a6;
+	__u64	a7;
+	__u64	s2;
+	__u64	s3;
+	__u64	s4;
+	__u64	s5;
+	__u64	s6;
+	__u64	s7;
+	__u64	s8;
+	__u64	s9;
+	__u64	s10;
+	__u64	s11;
+	__u64	t3;
+	__u64	t4;
+	__u64	t5;
+	__u64	t6;
 } cpu_regs_t;
 
+#if 0
 #define cpu_relax()	barrier()
+#endif
 
 static inline int irqs_disabled_flags(unsigned long flags)
 {
-
+	return !(flags & SR_IE);
 }
 
+#if 0
 static inline int cpu_mode(void)
 {
 
 }
+#endif
 
 /*
  * Enable IRQs
  */
 static inline void local_irq_enable(void)
 {
-
+	csr_set(CSR_STATUS, SR_IE);
 }
 
 /*
@@ -266,39 +291,38 @@ static inline void local_irq_enable(void)
  */
 static inline void local_irq_disable(void)
 {
-
+	csr_clear(CSR_STATUS, SR_IE);
 }
 
 /*
  * Save the current interrupt enable state.
  */
-static inline uint32_t local_save_flags(void)
+static inline uint64_t local_save_flags(void)
 {
-
+	return csr_read(CSR_STATUS);
 }
 
 static inline uint32_t local_irq_save(void)
 {
-
+	return csr_read_clear(CSR_STATUS, SR_IE);
 }
 
 /*
  * restore saved IRQ & FIQ state
  */
-static inline void local_irq_restore(uint32_t flags)
+static inline void local_irq_restore(uint64_t flags)
 {
-
+	csr_set(CSR_STATUS, flags & SR_IE);
 }
 
 #define local_irq_is_enabled() \
-	({ unsigned long flags; \
-	flags = local_save_flags(); \
-	!(flags & PSR_I_BIT); \
+	({!irqs_disabled_flags(local_save_flags());\
 })
 
 #define local_irq_is_disabled() \
 	(!local_irq_is_enabled())
 
+#if 0
 #define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
 
 static inline unsigned int get_cr(void)
@@ -311,17 +335,24 @@ static inline void set_cr(unsigned int val)
 
 }
 
-#define mb() __asm__ __volatile__ ("" : : : "memory")
-#define rmb() mb()
-#define wmb() mb()
-#define smp_wmb()		wmb()
+#endif
 
-#define smp_mb()		mb()
-#define smp_rmb()		rmb()
-#define smp_wmb()		wmb()
+#define nop()		__asm__ __volatile__ ("nop")
 
-#define barrier() __asm__ __volatile__("": : :"memory")
+#define RISCV_FENCE(p, s) \
+	__asm__ __volatile__ ("fence " #p "," #s : : : "memory")
 
+/* These barriers need to enforce ordering on both devices or memory. */
+#define mb()		RISCV_FENCE(iorw,iorw)
+#define rmb()		RISCV_FENCE(ir,ir)
+#define wmb()		RISCV_FENCE(ow,ow)
+
+/* These barriers do not need to enforce ordering on devices, just memory. */
+#define smp_mb()	RISCV_FENCE(rw,rw)
+#define smp_rmb()	RISCV_FENCE(r,r)
+#define smp_wmb()	RISCV_FENCE(w,w)
+
+#if 0
 #define cpu_get_l1pgtable()	\
 ({						\
 	unsigned long pg;			\
@@ -354,6 +385,7 @@ static inline void set_dacr(unsigned int val)
 
 }
 
+#endif
 
 #endif /* __ASSEMBLY__ */
 

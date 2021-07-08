@@ -11,18 +11,25 @@
 #ifndef ASM_ATOMIC_H
 #define ASM_ATOMIC_H
 
+#if 0
+
 #include <common.h>
 #include <compiler.h>
 
 #include <asm/processor.h>
 
+#endif
+
 typedef struct { volatile int counter; } atomic_t;
+
+
 
 #define ATOMIC_INIT(i)	{ (i) }
 
 #define _atomic_read(v) ((v).counter)
 #define atomic_read(v)	((v)->counter)
 
+#if 0
 /*
  * ARMv6 UP and SMP safe atomic ops.  We use load exclusive and
  * store exclusive to ensure that these are atomic.  We may loop
@@ -120,5 +127,6 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
 # define atomic_compareandswap(old, new, v)	\
 	((atomic_t) { atomic_cmpxchg(v, atomic_read(&old), atomic_read(&new)) })
 
+#endif
 
 #endif /* ASM_ATOMIC_H */

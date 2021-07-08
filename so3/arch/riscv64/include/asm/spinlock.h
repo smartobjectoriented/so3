@@ -19,6 +19,8 @@
 #ifndef ASM_SPINLOCK_H
 #define ASM_SPINLOCK_H
 
+
+
 #include <asm/atomic.h>
 
 
@@ -32,7 +34,7 @@ typedef struct {
 	volatile unsigned int lock  __attribute__((__packed__));
 } raw_rwlock_t;
 
-
+#if 0
 /*
  * ARMv6 Spin-locking.
  *
@@ -133,5 +135,6 @@ static inline int _raw_read_trylock(raw_rwlock_t *rw)
 #define LOCK_BIGLOCK(_d) spin_lock_recursive(&(_d)->domain_lock)
 #define UNLOCK_BIGLOCK(_d) spin_unlock_recursive(&(_d)->domain_lock)
 
+#endif
 
 #endif /* ASM_SPINLOCK_H */

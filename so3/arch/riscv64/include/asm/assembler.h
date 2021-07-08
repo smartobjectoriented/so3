@@ -14,6 +14,8 @@
  *  assembler source.
  */
 
+#if 0
+
 /*
  * Endian independent macros for shifting bytes within registers.
  */
@@ -66,3 +68,5 @@
  * Cache alligned
  */
 #define CALGN(code...) code
+
+#endif

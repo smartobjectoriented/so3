@@ -13,6 +13,8 @@
 #ifndef __ARCH_ARM_POSIX_TYPES_H
 #define __ARCH_ARM_POSIX_TYPES_H
 
+#if 0
+
 /*
  * This file is generally used by user-level software, so you need to
  * be a little careful about namespace pollution etc.  Also, we cannot
@@ -49,6 +51,8 @@ typedef struct {
 #undef	__FD_ZERO
 #define __FD_ZERO(fdsetp) \
 		(memset (fdsetp, 0, sizeof (*(fd_set *)fdsetp)))
+
+#endif
 
 #endif
 

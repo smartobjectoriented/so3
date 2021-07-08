@@ -6,6 +6,12 @@
 #ifndef _ASM_RISCV_CSR_H
 #define _ASM_RISCV_CSR_H
 
+#ifdef __ASSEMBLY__
+#define __ASM_STR(x)	x
+#else
+#define __ASM_STR(x)	#x
+#endif
+
 /* Status register flags */
 #define SR_SIE			0x00000002 /* Supervisor Interrupt Enable */
 #define SR_MIE			0x00000008 /* Machine Interrupt Enable */
@@ -123,5 +129,70 @@
 #define IE_SIE		(0x1 << RV_IRQ_SOFT)
 #define IE_TIE		(0x1 << RV_IRQ_TIMER)
 #define IE_EIE		(0x1 << RV_IRQ_EXT)
+
+
+#ifndef __ASSEMBLY__
+
+#define csr_swap(csr, val)									\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrrw %0, " __ASM_STR(csr) ", %1"\
+			      : "=r" (__v) : "rK" (__v)					\
+			      : "memory");								\
+	__v;													\
+})
+
+#define csr_read(csr)										\
+({															\
+	register unsigned long __v;								\
+	__asm__ __volatile__ ("csrr %0, " __ASM_STR(csr)		\
+			      : "=r" (__v) :							\
+			      : "memory");								\
+	__v;													\
+})
+
+#define csr_write(csr, val)									\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrw " __ASM_STR(csr) ", %0"		\
+			      : : "rK" (__v)							\
+			      : "memory");								\
+})
+
+#define csr_read_set(csr, val)								\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrrs %0, " __ASM_STR(csr) ", %1"\
+			      : "=r" (__v) : "rK" (__v)					\
+			      : "memory");								\
+	__v;													\
+})
+
+#define csr_set(csr, val)									\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrs " __ASM_STR(csr) ", %0"		\
+			      : : "rK" (__v)							\
+			      : "memory");								\
+})
+
+#define csr_read_clear(csr, val)							\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrrc %0, " __ASM_STR(csr) ", %1"\
+			      : "=r" (__v) : "rK" (__v)					\
+			      : "memory");								\
+	__v;													\
+})
+
+#define csr_clear(csr, val)									\
+({															\
+	unsigned long __v = (unsigned long)(val);				\
+	__asm__ __volatile__ ("csrc " __ASM_STR(csr) ", %0"		\
+			      : : "rK" (__v)							\
+			      : "memory");								\
+})
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* _ASM_RISCV_CSR_H */

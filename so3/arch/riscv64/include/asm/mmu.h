@@ -19,6 +19,8 @@
 #ifndef MMU_H
 #define MMU_H
 
+#if 0
+
 #define TTB_L1_SYS_OFFSET	0x4000
 
 /* Define the number of entries in each page table */
@@ -205,6 +207,7 @@ void mmu_setup(uint32_t *pgtable);
 
 #endif
 
+#endif
 
 #endif /* MMU_H */
 

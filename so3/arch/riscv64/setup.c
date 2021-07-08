@@ -1,17 +1,25 @@
-//
-// Created by nico on 10.06.21.
-//
+/*
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
 
 /**
  * Low-level initialization before the main boostrap process.
  */
 void setup_arch(void) {
 
-        int i, tmp0, tmp1;
-
-        /* Do something just to see if boot gets here */
-        for (i = 0; i < 10; i++) {
-        	tmp0 = i % 2;
-        	tmp1 = tmp0 + 1;
-        }
+        /* Nothing yet... */
 }
