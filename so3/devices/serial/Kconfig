@@ -4,7 +4,7 @@ config DW_APB_UART
 
 config NS16550
 	bool "NS16550 UART"
-	depends on PINE64 || A20 || MERIDAv2 || BPI
+	depends on PINE64 || A20 || MERIDAv2 || BPI || VIRT_RISCV64
 
 config PL011_UART
 	bool "PL011 UART serial interface"

@@ -27,7 +27,6 @@
 #include <device/serial.h>
 
 #include <asm/processor.h>
-#include <asm/processor.h>
 
 serial_ops_t serial_ops;
 mutex_t read_lock;

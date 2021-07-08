@@ -38,12 +38,13 @@ CONFIG_SCHED_FREQ_PREEMPTION=y
 #
 # Drivers
 #
-# CONFIG_UART is not set
+CONFIG_UART=y
 # CONFIG_I2C is not set
 # CONFIG_NET is not set
 # CONFIG_FB is not set
 # CONFIG_INPUT is not set
 # CONFIG_DW_APB_UART is not set
+CONFIG_NS16550=y
 # CONFIG_MMC is not set
 # CONFIG_ARM_TIMER is not set
 # CONFIG_GIC is not set

@@ -19,8 +19,9 @@
 #include <common.h>
 
 #include <device/serial.h>
-#include <process.h>
-#include <vfs.h>
+
+//#include <process.h>
+//#include <vfs.h>
 
 #define CONSOLEIO_BUFFER_SIZE 256
 
@@ -47,10 +48,15 @@ void __lprintk(const char *format, const va_list va) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
+#if 0 /* This is only usable with ARM */
 	if (cpu_mode() == PSR_USR_MODE)
 		__write(STDOUT, buf, strlen(buf));
 	else
 		ll_serial_write(buf, strlen(buf));
+#endif
+
+	/* Since so3 for risc-v still has no userspace, there is no risk for a problem yet */
+	ll_serial_write(buf, strlen(buf));
 }
 
 void lprintk(char *format, ...) {

@@ -332,8 +332,8 @@ KBUILD_AFLAGS   += -mlittle-endian
 endif
 
 ifeq ($(CONFIG_ARCH_RISCV64),y)
-KBUILD_CFLAGS	+= -march=rv64ima -mabi=lp64
-KBUILD_AFLAGS   += -march=rv64ima -mabi=lp64
+KBUILD_CFLAGS	+= -march=rv64ima -mabi=lp64 -mcmodel=medany
+KBUILD_AFLAGS   += -march=rv64ima -mabi=lp64 -mcmodel=medany
 endif
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -361,6 +361,11 @@ ifeq ($(CONFIG_VIRT64),y)
 TARGET = virt64
 endif
 
+# For now, if its a riscv64 bits, it is on virt64
+ifeq ($(CONFIG_ARCH_RISCV64),y)
+TARGET = virt64
+endif
+
 
 # The all: target is the default when no target is given on the
 # command line.
@@ -375,8 +380,8 @@ include scripts/Makefile.build
 all:  $(BIN) dtbs 
 
 # objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
-objs-y		:= arch/$(SRCARCH) kernel
-# libs-y		:= lib
+objs-y		:= arch/$(SRCARCH) kernel devices
+libs-y		:= lib
 # libs-y 		+= lib/libfdt
 
 so3-dirs	:= $(objs-y) $(libs-y)

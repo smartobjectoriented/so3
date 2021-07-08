@@ -89,6 +89,7 @@ static int ns16550_init(dev_t *dev)
 {
 	int baudrate = UART_BAUDRATE;
 	int divider;
+	ns16550_t *ns16550 = (ns16550_t *) ns16550_dev.base;
 
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */

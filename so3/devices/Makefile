@@ -1,4 +1,6 @@
-obj-y = fdt.o device.o irq.o timer.o console.o
+#obj-y = fdt.o device.o irq.o timer.o console.o
+
+obj-y = device.o
 
 obj-$(CONFIG_UART) += serial.o
 obj-$(CONFIG_I2C) += i2c.o
@@ -16,6 +18,6 @@ obj-$(CONFIG_NET) += net/
 obj-$(CONFIG_FB) += fb/
 obj-$(CONFIG_INPUT) += input/
 
-obj-y += timer/ irq/
+# obj-y += timer/ irq/
 
-obj-y += mydev.o
+# obj-y += mydev.o
