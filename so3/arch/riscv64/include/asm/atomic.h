@@ -29,6 +29,22 @@ typedef struct { volatile int counter; } atomic_t;
 #define _atomic_read(v) ((v).counter)
 #define atomic_read(v)	((v)->counter)
 
+static inline void atomic_set(atomic_t *v, int i)
+{
+
+}
+
+#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+
+static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
+{
+
+}
+
+#define xchg(ptr,x) \
+	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+
+
 #if 0
 /*
  * ARMv6 UP and SMP safe atomic ops.  We use load exclusive and

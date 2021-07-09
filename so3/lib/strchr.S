@@ -21,6 +21,8 @@
 .text
                 .align  5
 strchr:
+/* _MNR_ TODO this is ARM assembly */
+/*
                 and     r1, r1, #0xff
 1:              ldrb    r2, [r0], #1
                 teq     r2, r1
@@ -31,6 +33,4 @@ strchr:
                 subeq   r0, r0, #1
 
                 mov		pc, lr
-
-
-
+*/
