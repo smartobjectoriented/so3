@@ -23,10 +23,11 @@
 #include <types.h>
 #include <spinlock.h>
 #include <softirq.h>
-#include <div64.h>
 #include <delay.h>
 #include <schedule.h>
 #include <errno.h>
+
+#include <asm/div64.h>
 
 #include <device/timer.h>
 #include <device/irq.h>

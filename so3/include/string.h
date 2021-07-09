@@ -53,6 +53,7 @@ size_t strlen(const char *);
 char *strncpy(char *, const char *, size_t);
 char *strcat(char *dest, const char *src);
 
+int vsprintf(char *s, const char *fmt, va_list ap);
 int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 int vsscanf(const char *buf, const char *fmt, va_list args);
 int sscanf(const char * buf, const char * fmt, ...);

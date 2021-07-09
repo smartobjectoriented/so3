@@ -21,8 +21,9 @@
 
 #include <types.h>
 #include <string.h>
-#include <div64.h>
 #include <ctype.h>
+
+#include <asm/div64.h>
 
 /* Descriptions of the types of units to
  * print in */

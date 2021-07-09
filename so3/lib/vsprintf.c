@@ -18,13 +18,14 @@
 
 #include <limits.h>
 #include <types.h>
-#include <div64.h>
 #include <string.h>
 #include <ctype.h>
 #include <common.h>
 #include <heap.h>
 #include <memory.h>
 #include <string_helpers.h>
+
+#include <asm/div64.h>
 
 #include <device/irq.h>
 
@@ -1612,6 +1613,10 @@ int vscnprintf(char *buf, size_t size, const char *fmt, va_list args)
     return (i > 0) ? i : 0;
 }
 
+int vsprintf(char *s, const char *fmt, va_list ap)
+{
+	return vsnprintf(s, INT_MAX, fmt, ap);
+}
 
 /**
  * vsscanf - Unformat a buffer into a list of arguments

@@ -77,6 +77,9 @@ void *memalign_log(size_t size, unsigned int alignment, const char *filename, co
 
 #endif
 
+void *calloc(size_t nmemb, size_t size);
+void *realloc(void *__ptr, size_t __size);
+
 void free(void *ptr);
 void printHeap(void);
 

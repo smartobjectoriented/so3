@@ -359,8 +359,7 @@ int thread_idle(void *dummy)
 
 #endif /* CONFIG_RTOS */
 
-		__asm("dsb");
-		__asm("wfi");
+		cpu_standby();
  
 	}
 
