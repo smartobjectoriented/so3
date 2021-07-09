@@ -380,7 +380,7 @@ include scripts/Makefile.build
 all:  $(BIN) dtbs 
 
 # objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
-objs-y		:= arch/$(SRCARCH) kernel devices
+objs-y		:= arch/$(SRCARCH) kernel
 libs-y		:= lib
 # libs-y 		+= lib/libfdt
 

@@ -20,8 +20,8 @@
 
 #include <device/serial.h>
 
-//#include <process.h>
-//#include <vfs.h>
+#include <process.h>
+#include <vfs.h>
 
 #define CONSOLEIO_BUFFER_SIZE 256
 
@@ -48,7 +48,7 @@ void __lprintk(const char *format, const va_list va) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
-#if 0 /* This is only usable with ARM */
+#if 0 /* This is only usable with ARM _NMR_*/
 	if (cpu_mode() == PSR_USR_MODE)
 		__write(STDOUT, buf, strlen(buf));
 	else

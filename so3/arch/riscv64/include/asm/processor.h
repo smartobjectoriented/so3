@@ -4,6 +4,7 @@
  *  Copyright (C) 1995-2002 Russell King
  *  Copyright (C) 2012 Regents of the University of California
  *  Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *  Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -24,6 +25,7 @@
 #define __ASM_ARM_PROCESSOR_H
 
 #include <asm/csr.h>
+#include <asm/types.h>
 
 #if 0
 #define NR_CPUS 		1
@@ -297,12 +299,12 @@ static inline void local_irq_disable(void)
 /*
  * Save the current interrupt enable state.
  */
-static inline uint64_t local_save_flags(void)
+static inline __u64 local_save_flags(void)
 {
 	return csr_read(CSR_STATUS);
 }
 
-static inline uint32_t local_irq_save(void)
+static inline __u64 local_irq_save(void)
 {
 	return csr_read_clear(CSR_STATUS, SR_IE);
 }
@@ -310,7 +312,7 @@ static inline uint32_t local_irq_save(void)
 /*
  * restore saved IRQ & FIQ state
  */
-static inline void local_irq_restore(uint64_t flags)
+static inline void local_irq_restore(__u64 flags)
 {
 	csr_set(CSR_STATUS, flags & SR_IE);
 }
