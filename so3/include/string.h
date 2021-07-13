@@ -36,7 +36,7 @@ void downcase(char *str);
 
 void uppercase(char *str, int len);
 
-char *strchr(const char *, int);
+char *strchr(const char *s, int c) ;
 char *strsep(char **str, const char *sep);
 char *strsep(char **str, const char *sep);
 

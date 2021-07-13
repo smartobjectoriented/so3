@@ -17,15 +17,9 @@
  *
  */
 
-#include <asm/setup.h>
-#include <version.h>
-#include <common.h>
-
-boot_stage_t boot_stage = BOOT_STAGE_INIT;
-
 #if 0
 #define DEBUG
-//#endif
+#endif
 
 #include <common.h>
 #include <calibrate.h>
@@ -43,8 +37,9 @@ boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
 #include <device/driver.h>
 
+boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
-
+#if 0
 /**
  * Initialization of initcalls which have to be done right before IRQs are enabled.
  */
@@ -117,6 +112,7 @@ int rest_init(void *dummy) {
 
 	return 0;
 }
+
 #endif
 
 void kernel_start(void) {
@@ -129,12 +125,12 @@ void kernel_start(void) {
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
 	lprintk("\n\nNow bootstraping the kernel ...\n");
-#if 0
+
 	/* Memory manager subsystem initialization */
 	memory_init();
 
 
-
+#if 0
 	devices_init();
 
 	/* At this point of time, we are able to use the standard printk() */
