@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -35,6 +36,8 @@ static dev_t ns16550_dev =
   .base = UART_BASE,
 };
 
+static void *base_addr = (void*)UART_BASE;
+
 static int baudrate_div_calc(int baudrate)
 {
 	int divider;
@@ -52,24 +55,19 @@ static int baudrate_div_calc(int baudrate)
 
 static int ns16550_put_byte(char c)
 {
-	ns16550_t *ns16550 = (ns16550_t *) ns16550_dev.base;
 
-	uint32_t* lsr_addr = &ns16550->lsr;
-	uint32_t read_result = ioread32(lsr_addr);
-
-	while ((read_result & UART_LSR_THRE) == 0) ;
+	while ((ioread8(base_addr + UART_LSR_REG_OFFSET) & UART_LSR_THRE) == 0);
 
 	if (c == '\n') {
-		iowrite8(&ns16550->rbr, '\n');	/* Line Feed */
+		iowrite8(base_addr + UART_RBR_REG_OFFSET, '\n');	/* Line Feed */
 
-		while ((ioread32(&ns16550->lsr) & UART_LSR_THRE) == 0) ;
+		while ((ioread8(base_addr + UART_LSR_REG_OFFSET) & UART_LSR_THRE) == 0);
 
-		iowrite8(&ns16550->rbr, '\r');	/* Carriage return */
+		iowrite8(base_addr + UART_RBR_REG_OFFSET, '\r');	/* Carriage return */
 
 	} else {
 		/* Output character */
-		
-		iowrite8(&ns16550->rbr, c); /* Transmit char */
+		iowrite8(base_addr + UART_RBR_REG_OFFSET, c); /* Transmit char */
 	}
 
 	return 0;
@@ -80,19 +78,16 @@ void __ll_put_byte(char c) {
 }
 
 static char ns16550_get_byte(bool polling)
-{	 
-	ns16550_t *ns16550 = (ns16550_t *) ns16550_dev.base;
+{
+	while ((ioread8(base_addr + UART_LSR_REG_OFFSET) & UART_LSR_DR) == 0);
 
-	while ((ioread32(&ns16550->lsr) & UART_LSR_DR) == 0);
-
-	return ioread32(&ns16550->rbr);
+	return ioread8(base_addr + UART_RBR_REG_OFFSET);
 }
 
 static int ns16550_init(dev_t *dev)
 {
 	int baudrate = UART_BAUDRATE;
 	int divider;
-	ns16550_t *ns16550 = (ns16550_t *) ns16550_dev.base;
 
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */
@@ -104,10 +99,10 @@ static int ns16550_init(dev_t *dev)
 	serial_ops.get_byte = ns16550_get_byte;
 
 	/* Ensure all interrupts are disabled */
-	iowrite32(&ns16550->ier, 0);
+	iowrite8(base_addr + UART_IER_REG_OFFSET, 0);
 
 	/* Put the UART in 'Configuration mode A' to allow baudrate configuration */
-	iowrite32(&ns16550->lcr, UART_LCR_DLAB);
+	iowrite8(base_addr + UART_LCR_REG_OFFSET, UART_LCR_DLAB);
 
 	/* Configure baudrate */
 	divider = baudrate_div_calc(baudrate);
@@ -115,14 +110,14 @@ static int ns16550_init(dev_t *dev)
 		return -1;
 	}
 
-	iowrite32(&ns16550->dll, divider & 0xFF);
-	iowrite32(&ns16550->dlh, (divider >> 8) & 0xFF);
+	iowrite8(base_addr + UART_DLL_REG_OFFSET, divider & 0xFF);
+	iowrite8(base_addr + UART_DLH_REG_OFFSET, (divider >> 8) & 0xFF);
 
 	/* 8N1 standard configuration */
-	iowrite32(&ns16550->lcr, UART_PARITY_DIS | UART_1_STOP | UART_8BITS );
+	iowrite8(base_addr + UART_LCR_REG_OFFSET, UART_PARITY_DIS | UART_1_STOP | UART_8BITS );
 
 	/* Force RTS and DTR lines */
-	iowrite32(&ns16550->mcr, UART_RTS | UART_DTR);
+	iowrite8(base_addr + UART_MCR_REG_OFFSET, UART_RTS | UART_DTR);
 
 	return 0;
 

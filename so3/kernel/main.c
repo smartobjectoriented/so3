@@ -129,11 +129,11 @@ void kernel_start(void) {
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
 	lprintk("\n\nNow bootstraping the kernel ...\n");
-
 #if 0
-
 	/* Memory manager subsystem initialization */
 	memory_init();
+
+
 
 	devices_init();
 
