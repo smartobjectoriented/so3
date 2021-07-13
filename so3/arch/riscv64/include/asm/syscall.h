@@ -21,7 +21,6 @@
 #ifndef ASM_ARM_SYSCALL_H
 #define ASM_ARM_SYSCALL_H
 
-#if 0
 
 #define SYSINFO_DUMP_HEAP	0
 #define SYSINFO_DUMP_SCHED	1
@@ -97,7 +96,5 @@ int syscall_handle(uint32_t, uint32_t, uint32_t, uint32_t);
 
 void set_errno(uint32_t val);
 #endif /* __ASSEMBLY__ */
-
-#endif
 
 #endif /* ASM_ARM_SYSCALL_H */

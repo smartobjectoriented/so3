@@ -11,41 +11,22 @@
 #ifndef ASM_ATOMIC_H
 #define ASM_ATOMIC_H
 
-#if 0
-
 #include <common.h>
 #include <compiler.h>
 
 #include <asm/processor.h>
 
-#endif
-
 typedef struct { volatile int counter; } atomic_t;
-
-
+typedef struct { volatile long long counter; } atomic64_t;
 
 #define ATOMIC_INIT(i)	{ (i) }
 
 #define _atomic_read(v) ((v).counter)
 #define atomic_read(v)	((v)->counter)
 
-static inline void atomic_set(atomic_t *v, int i)
-{
-
-}
-
 #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
 
-static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
-{
 
-}
-
-#define xchg(ptr,x) \
-	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
-
-
-#if 0
 /*
  * ARMv6 UP and SMP safe atomic ops.  We use load exclusive and
  * store exclusive to ensure that these are atomic.  We may loop
@@ -103,8 +84,34 @@ static void __bad_xchg(volatile void *ptr, int size) {
 
 }
 
+/* _NMR_ TODO check *__ptr seems to be a void* */
 static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
 {
+	unsigned long ret;
+	unsigned int tmp;
+	__typeof__(ptr) __ptr = ptr;
+
+	switch (size) {
+	case 4:
+		__asm__ __volatile__ (
+			"	amoswap.w.aqrl %0, %2, %1\n"
+			: "=r" (ret), "+A" (*__ptr)
+			: "r" (x)
+			: "memory");
+		break;
+	case 8:
+		__asm__ __volatile__ (
+			"	amoswap.d.aqrl %0, %2, %1\n"
+			: "=r" (ret), "+A" (*__ptr)
+			: "r" (x)
+			: "memory");
+		break;
+	default:
+		__bad_xchg(ptr, size), ret = 0;
+		break;
+	}
+
+	return ret;
 
 }
 
@@ -142,7 +149,5 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
 
 # define atomic_compareandswap(old, new, v)	\
 	((atomic_t) { atomic_cmpxchg(v, atomic_read(&old), atomic_read(&new)) })
-
-#endif
 
 #endif /* ASM_ATOMIC_H */

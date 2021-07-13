@@ -54,7 +54,10 @@ static int ns16550_put_byte(char c)
 {
 	ns16550_t *ns16550 = (ns16550_t *) ns16550_dev.base;
 
-	while ((ioread32(&ns16550->lsr) & UART_LSR_THRE) == 0) ;
+	uint32_t* lsr_addr = &ns16550->lsr;
+	uint32_t read_result = ioread32(lsr_addr);
+
+	while ((read_result & UART_LSR_THRE) == 0) ;
 
 	if (c == '\n') {
 		iowrite8(&ns16550->rbr, '\n');	/* Line Feed */

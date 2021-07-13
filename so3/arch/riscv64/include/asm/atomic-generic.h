@@ -10,8 +10,6 @@
 #ifndef ASM_GENERIC_ATOMIC_H
 #define ASM_GENERIC_ATOMIC_H
 
-#if 0
-
 #include <asm/types.h>
 
 /*
@@ -92,8 +90,6 @@ static inline void atomic_long_sub(long i, atomic_long_t *l)
 {
 
 }
-
-#endif
 
 #endif
 

@@ -6,6 +6,7 @@
 .global _find_first_bit
 .global _find_next_bit
 
+#if 0 /* _NMR_ */
 /*
  * Purpose  : Find a 'zero' bit
  * Prototype: int find_first_zero_bit(void *addr, unsigned int maxbit);
@@ -87,3 +88,12 @@ _find_next_bit:
 
  		mov pc, lr
 
+#endif /* _NMR_ */
+
+_find_first_zero_bit:
+
+_find_next_zero_bit:
+
+_find_first_bit:
+
+_find_next_bit:

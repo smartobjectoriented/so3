@@ -20,6 +20,7 @@
 #include <asm/processor.h>
 #include <asm/atomic.h>
 #include <compiler.h>
+#include <types.h>
 
 #include <device/irq.h>
 #include <device/serial.h>

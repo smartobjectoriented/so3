@@ -389,6 +389,7 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  */
 tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
+#if 0 /* _NMR_ */
 	tcb_t *tcb;
 	uint32_t flags;
 
@@ -460,6 +461,7 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	local_irq_restore(flags);
 
 	return tcb;
+#endif /* _NMR_ */
 }
 
 tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, uint32_t prio)

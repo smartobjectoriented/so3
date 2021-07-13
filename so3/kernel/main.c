@@ -21,6 +21,8 @@
 #include <version.h>
 #include <common.h>
 
+boot_stage_t boot_stage = BOOT_STAGE_INIT;
+
 #if 0
 #define DEBUG
 //#endif
@@ -41,7 +43,7 @@
 
 #include <device/driver.h>
 
-boot_stage_t boot_stage = BOOT_STAGE_INIT;
+
 
 /**
  * Initialization of initcalls which have to be done right before IRQs are enabled.

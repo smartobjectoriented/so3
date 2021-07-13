@@ -27,9 +27,9 @@
 #include <asm/csr.h>
 #include <asm/types.h>
 
-#if 0
 #define NR_CPUS 		1
 
+#if 0
 #define VECTOR_VADDR		0xffff0000
 
 #define CPU_ARCH_UNKNOWN	0
@@ -264,9 +264,8 @@ typedef struct cpu_regs {
 	__u64	t6;
 } cpu_regs_t;
 
-#if 0
+
 #define cpu_relax()	barrier()
-#endif
 
 static inline int irqs_disabled_flags(unsigned long flags)
 {
@@ -353,6 +352,18 @@ static inline void set_cr(unsigned int val)
 #define smp_mb()	RISCV_FENCE(rw,rw)
 #define smp_rmb()	RISCV_FENCE(r,r)
 #define smp_wmb()	RISCV_FENCE(w,w)
+
+#define smp_store_release(p, v)					\
+do {									\
+} while (0)
+
+static inline int smp_processor_id(void) {
+
+}
+
+static inline void cpu_standby(void) {
+	__asm("wfi");
+}
 
 #if 0
 #define cpu_get_l1pgtable()	\

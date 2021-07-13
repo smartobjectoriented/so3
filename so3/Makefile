@@ -332,7 +332,7 @@ KBUILD_AFLAGS   += -mlittle-endian
 endif
 
 ifeq ($(CONFIG_ARCH_RISCV64),y)
-KBUILD_CFLAGS	+= -march=rv64ima -mabi=lp64 -mcmodel=medany
+KBUILD_CFLAGS	+= -march=rv64ima -DBITS_PER_LONG=64 -mabi=lp64 -mcmodel=medany
 KBUILD_AFLAGS   += -march=rv64ima -mabi=lp64 -mcmodel=medany
 endif
 
@@ -379,8 +379,7 @@ include scripts/Makefile.build
  
 all:  $(BIN) dtbs 
 
-# objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
-objs-y		:= arch/$(SRCARCH) kernel mm devices
+objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
 libs-y		:= lib
 libs-y 		+= lib/libfdt
 
