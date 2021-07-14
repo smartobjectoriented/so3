@@ -129,12 +129,10 @@ void kernel_start(void) {
 	/* Memory manager subsystem initialization */
 	memory_init();
 
-
-#if 0
 	devices_init();
 
 	/* At this point of time, we are able to use the standard printk() */
-
+#if 0
 	timer_init();
 
 	vfs_init();

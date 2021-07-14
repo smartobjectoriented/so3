@@ -306,10 +306,12 @@ struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_ty
  */
 void devices_init(void) {
 
+#if 0 /* _NMR_ */
 	/* Interrupt management subsystem initialization */
 	irq_init();
 
 	boot_stage = BOOT_STAGE_IRQ_INIT;
+#endif
 
 	serial_init();
 
