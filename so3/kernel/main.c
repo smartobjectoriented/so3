@@ -131,6 +131,8 @@ void kernel_start(void) {
 
 	devices_init();
 
+	printk("\nDevices initialized successfully\n");
+
 	/* At this point of time, we are able to use the standard printk() */
 #if 0
 	timer_init();
