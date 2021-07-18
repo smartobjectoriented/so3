@@ -134,9 +134,8 @@ void kernel_start(void) {
 	printk("\nDevices initialized successfully\n");
 
 	/* At this point of time, we are able to use the standard printk() */
-#if 0
 	timer_init();
-
+#if 0
 	vfs_init();
 
 	/* Scheduler init */

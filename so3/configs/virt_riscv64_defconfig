@@ -47,6 +47,7 @@ CONFIG_UART=y
 CONFIG_NS16550=y
 # CONFIG_MMC is not set
 # CONFIG_ARM_TIMER is not set
+CONFIG_RISCV_TIMER=y
 # CONFIG_GIC is not set
 # end of Drivers
 

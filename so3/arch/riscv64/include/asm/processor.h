@@ -150,6 +150,10 @@ static inline void cpu_standby(void) {
 	__asm("wfi");
 }
 
+static inline void isb(void) {
+	__asm("fence.i; fence r,r");
+}
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* __ASM_ARM_PROCESSOR_H */

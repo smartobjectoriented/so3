@@ -34,4 +34,17 @@
 		compatible = "serial,ns16550";
 		status = "ok";
 	};
+	
+	periodic-timer@0 {
+		compatible = "riscv,periodic-timer";
+		reg = <0 0>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer@0 {
+		compatible = "riscv,clocksource-timer";
+		reg = <0 0>;
+		status = "ok";
+	};
 };
