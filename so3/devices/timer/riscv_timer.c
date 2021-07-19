@@ -30,22 +30,27 @@
 
 static unsigned long reload;
 
-/* ARM CP15 Timer */
-
 static void next_event(u32 next) {
 
-	unsigned long ctrl;
+	u64 test_value = 1;
 
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	/* Enables IRQs from timer */
+	csr_set(CSR_IE, IE_TIE);
+//	__asm__ __volatile__ (
+//			"la t0, mtimecmp\t\n"
+//			"sd %0, (t0)"
+//			:
+//			: "r" (test_value)
+//			:);
 
-	ctrl |= ARCH_TIMER_CTRL_ENABLE;
-	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
-
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_TVAL, next);
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+#if 0 /* _NMR_ ecall not working for now.. Coming back later while working on interrupts */
+	sbi_set_timer(arch_get_time() + next);
+#endif
 }
 
 static irq_return_t timer_isr(int irq, void *dummy) {
+
+#if 0 /* _NMR_ no irqs yet */
 	unsigned long ctrl;
 
 	/* Clear the interrupt */
@@ -63,6 +68,7 @@ static irq_return_t timer_isr(int irq, void *dummy) {
 
 		raise_softirq(TIMER_SOFTIRQ);
 	}
+#endif
 
 	return IRQ_COMPLETED;
 }
@@ -77,14 +83,13 @@ static void periodic_timer_start(void) {
  *
  */
 u64 clocksource_read(void) {
-	return arch_counter_get_cntvct();
+	return arch_get_time();
 }
 
 /*
  * Initialize the periodic timer used by the kernel.
  */
 static int periodic_timer_init(dev_t *dev) {
-	unsigned long ctrl;
 
 	periodic_timer.dev = dev;
 
@@ -98,13 +103,13 @@ static int periodic_timer_init(dev_t *dev) {
 
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 
+#if 0 /* _NMR_ no irq yet*/
 	/* Bind ISR into interrupt controller */
 	irq_bind(dev->irq_nr, timer_isr, NULL, NULL);
+#endif
 
-	/* Shutdown the timer */
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+	/* Disable the timer interrupts */
+	csr_clear(CSR_IE, IE_TIE);
 
 	return 0;
 }

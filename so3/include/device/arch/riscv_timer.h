@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (c) 2020 Western Digital Corporation or its affiliates.
  * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,106 +24,62 @@
 
 #include <asm/processor.h>
 
-#define ARCH_TIMER_PHYS_ACCESS		0
-#define ARCH_TIMER_VIRT_ACCESS		1
-#define ARCH_TIMER_MEM_PHYS_ACCESS	2
-#define ARCH_TIMER_MEM_VIRT_ACCESS	3
+#define SBI_EXT_TIME 			0x54494D45
+#define SBI_EXT_TIME_SET_TIMER  0
 
-#define ARCH_TIMER_CTRL_ENABLE		(1 << 0)
-#define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
-#define ARCH_TIMER_CTRL_IT_STAT		(1 << 2)
-
-enum arch_timer_reg {
-	ARCH_TIMER_REG_CTRL,
-	ARCH_TIMER_REG_TVAL,
+struct sbiret {
+	long error;
+	long value;
 };
 
-/*
- * These register accessors are marked inline so the compiler can
- * nicely work out which register we want, and chuck away the rest of
- * the code. At least it does so with a recent GCC (4.6.3).
- */
-static inline void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
+struct sbiret sbi_ecall(int ext, int fid, unsigned long arg0,
+			unsigned long arg1, unsigned long arg2,
+			unsigned long arg3, unsigned long arg4,
+			unsigned long arg5)
 {
-//	if (access == ARCH_TIMER_PHYS_ACCESS) {
-//		switch (reg) {
-//		case ARCH_TIMER_REG_CTRL:
-//			asm volatile("mcr p15, 0, %0, c14, c2, 1" : : "r" (val));
-//			break;
-//		case ARCH_TIMER_REG_TVAL:
-//			asm volatile("mcr p15, 0, %0, c14, c2, 0" : : "r" (val));
-//			break;
-//		}
-//	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
-//		switch (reg) {
-//		case ARCH_TIMER_REG_CTRL:
-//			asm volatile("mcr p15, 0, %0, c14, c3, 1" : : "r" (val));
-//			break;
-//		case ARCH_TIMER_REG_TVAL:
-//			asm volatile("mcr p15, 0, %0, c14, c3, 0" : : "r" (val));
-//			break;
-//		}
-//	}
-//
-//	isb();
-}
+	struct sbiret ret;
 
-static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
-{
-	u32 val = 0;
+	register uintptr_t a0 asm ("a0") = (uintptr_t)(arg0);
+	register uintptr_t a1 asm ("a1") = (uintptr_t)(arg1);
+	register uintptr_t a2 asm ("a2") = (uintptr_t)(arg2);
+	register uintptr_t a3 asm ("a3") = (uintptr_t)(arg3);
+	register uintptr_t a4 asm ("a4") = (uintptr_t)(arg4);
+	register uintptr_t a5 asm ("a5") = (uintptr_t)(arg5);
+	register uintptr_t a6 asm ("a6") = (uintptr_t)(fid);
+	register uintptr_t a7 asm ("a7") = (uintptr_t)(ext);
+	asm volatile ("ecall"
+		      : "+r" (a0), "+r" (a1)
+		      : "r" (a2), "r" (a3), "r" (a4), "r" (a5), "r" (a6), "r" (a7)
+		      : "memory");
+	ret.error = a0;
+	ret.value = a1;
 
-//	if (access == ARCH_TIMER_PHYS_ACCESS) {
-//		switch (reg) {
-//		case ARCH_TIMER_REG_CTRL:
-//			asm volatile("mrc p15, 0, %0, c14, c2, 1" : "=r" (val));
-//			break;
-//		case ARCH_TIMER_REG_TVAL:
-//			asm volatile("mrc p15, 0, %0, c14, c2, 0" : "=r" (val));
-//			break;
-//		}
-//	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
-//		switch (reg) {
-//		case ARCH_TIMER_REG_CTRL:
-//			asm volatile("mrc p15, 0, %0, c14, c3, 1" : "=r" (val));
-//			break;
-//		case ARCH_TIMER_REG_TVAL:
-//			asm volatile("mrc p15, 0, %0, c14, c3, 0" : "=r" (val));
-//			break;
-//		}
-//	}
-
-	return val;
+	return ret;
 }
 
 static inline u32 arch_timer_get_cntfrq(void)
 {
-	u32 val;
-//	asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r" (val));
-	return val;
+	/* It seems RISC-V time registers reflect a real time wall-clock to avoid multiple frequency on multiple
+	 * hardware */
+	return NSECS;
 }
 
-static inline u64 arch_counter_get_cntvct(void)
+static void sbi_set_timer(uint64_t stime_value)
 {
-	u64 cval;
-
-	isb();
-//	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (cval));
-	return cval;
+	sbi_ecall(SBI_EXT_TIME, SBI_EXT_TIME_SET_TIMER, stime_value, 0,
+		  0, 0, 0, 0);
 }
 
-static inline u32 arch_timer_get_cntkctl(void)
-{
-	u32 cntkctl;
-//	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-	return cntkctl;
+static inline u64 arch_get_time(void) {
+
+		u64 n;
+
+		__asm__ __volatile__ (
+			"rdtime %0"
+			: "=r" (n));
+
+		return n;
 }
-
-static inline void arch_timer_set_cntkctl(u32 cntkctl)
-{
-//	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-}
-
-
 
 #endif /* ARM_TIMER_H */
 

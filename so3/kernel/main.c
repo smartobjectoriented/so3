@@ -39,7 +39,7 @@
 
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
-#if 0
+
 /**
  * Initialization of initcalls which have to be done right before IRQs are enabled.
  */
@@ -92,6 +92,7 @@ int rest_init(void *dummy) {
 
 	post_init();
 
+#if 0 /* _NMR_ nothing useful yet */
 	/* Start a first SO3 thread (main app thread) */
 #if defined(CONFIG_THREAD_ENV)
 
@@ -109,11 +110,10 @@ int rest_init(void *dummy) {
 #else
 #error "Can not start initial SO3 environment"
 #endif
+#endif /* _NMR_ */
 
 	return 0;
 }
-
-#endif
 
 void kernel_start(void) {
 
@@ -135,7 +135,7 @@ void kernel_start(void) {
 
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
-#if 0
+
 	vfs_init();
 
 	/* Scheduler init */
@@ -164,5 +164,4 @@ void kernel_start(void) {
 	 */
 
 	schedule();
-#endif
 }
