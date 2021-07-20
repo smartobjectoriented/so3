@@ -136,7 +136,9 @@ void kernel_start(void) {
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
 
+#if 0 /* _NMR_ no file system yet */
 	vfs_init();
+#endif
 
 	/* Scheduler init */
 	scheduler_init();

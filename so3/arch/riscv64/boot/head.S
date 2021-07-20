@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
- * Copyright (C) 2021      Nicolas Müller <nicolas.muller1@heig-vd.ch>
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,7 +22,6 @@
 .global __fdt_addr
 
 .extern __stack_top
-.extern __vectors_start
 
 .section ".head.text","ax"
 
@@ -33,20 +31,10 @@ _start:
   # Disable IRQs for smode in reg directly
   csrw CSR_IE, zero
   csrw CSR_IP, zero
-  # clear sie flag (smode interrupt enable)
-  csrci CSR_STATUS, SR_SIE
+  # clear ie flag (interrupt enable)
+  csrci CSR_STATUS, SR_IE
 
-# Vectors not useful yet
-#if 0
-  # Configure address of the vector table
-  la   t0, .LCvectors
-  ld   t0, (t0)
-
-# TODO Find a way to set vector table to replace arm instruction
-#  mcr   p15, 0, r1, c12, c0, 0      @ vector table
-#endif
-
-  # Preserve the (physical address of) device tree base in s9,
+  # Preserve the (physical address) of device tree base in s9,
   # a1 contains device tree adress
   mv s9, a1
 
@@ -86,6 +74,3 @@ __fdt_addr:
 
 .LCstack_top:
   .8byte __stack_top
-
-.LCvectors:
-  .8byte __vectors_start

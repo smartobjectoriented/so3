@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
+ * Copyright (C) 2021      Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,31 +16,14 @@
  *
  */
 
-#ifndef ARM_TIMER_H
-#define ARM_TIMER_H
+.section ".vectors.text", "ax"
 
-#include <types.h>
+.globl _vectors
 
-#include <asm/processor.h>
+.extern _start
 
-
-static inline u32 arch_timer_get_cntfrq(void)
-{
-	/* It seems RISC-V time registers reflect a real time wall-clock to avoid multiple frequency on multiple
-	 * hardware */
-	return NSECS;
-}
-
-static inline u64 arch_get_time(void) {
-
-		u64 n;
-
-		__asm__ __volatile__ (
-			"rdtime %0"
-			: "=r" (n));
-
-		return n;
-}
-
-#endif /* ARM_TIMER_H */
-
+/* RISC-V uses one address that handles every trap. There is no need for a vector table.
+ * Note: There is an option to do it with a vector table if really needed. */
+_vectors:
+    # reset
+    j   _start

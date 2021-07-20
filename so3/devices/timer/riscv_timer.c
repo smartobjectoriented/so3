@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,25 +26,21 @@
 #include <device/timer.h>
 
 #include <device/arch/riscv_timer.h>
+#include <mach/timer.h>
 
 static unsigned long reload;
 
 static void next_event(u32 next) {
 
-	u64 test_value = 1;
+	u64 *mtimecmp_addr = (u64*) TIMER_MTIMECMP_REG;
 
 	/* Enables IRQs from timer */
 	csr_set(CSR_IE, IE_TIE);
-//	__asm__ __volatile__ (
-//			"la t0, mtimecmp\t\n"
-//			"sd %0, (t0)"
-//			:
-//			: "r" (test_value)
-//			:);
 
-#if 0 /* _NMR_ ecall not working for now.. Coming back later while working on interrupts */
-	sbi_set_timer(arch_get_time() + next);
-#endif
+	/* Set new CMP register value. This clears interrupt as well. Interrupt is only the
+	 * result of the comparator between mtime and mtimecmp. If correct value is written,
+	 * interrupt is cleared */
+	*mtimecmp_addr = arch_get_time() + next;
 }
 
 static irq_return_t timer_isr(int irq, void *dummy) {
@@ -61,7 +56,7 @@ static irq_return_t timer_isr(int irq, void *dummy) {
 		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
 		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
 
-		/* Periodic timer */
+		/* Periodic timer. Reloading here will clear the interrupt */
 		next_event(reload);
 
 		jiffies++;

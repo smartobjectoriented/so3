@@ -16,31 +16,9 @@
  *
  */
 
-#ifndef ARM_TIMER_H
-#define ARM_TIMER_H
+#ifndef MACH_TIMER_H
+#define MACH_TIMER_H
 
-#include <types.h>
+#define TIMER_MTIMECMP_REG 	0x2004000
 
-#include <asm/processor.h>
-
-
-static inline u32 arch_timer_get_cntfrq(void)
-{
-	/* It seems RISC-V time registers reflect a real time wall-clock to avoid multiple frequency on multiple
-	 * hardware */
-	return NSECS;
-}
-
-static inline u64 arch_get_time(void) {
-
-		u64 n;
-
-		__asm__ __volatile__ (
-			"rdtime %0"
-			: "=r" (n));
-
-		return n;
-}
-
-#endif /* ARM_TIMER_H */
-
+#endif /* MACH_TIMER_H */

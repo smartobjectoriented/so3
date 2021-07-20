@@ -107,23 +107,24 @@
 #define CSR_PMPADDR0	0x3b0
 #define CSR_MHARTID		0xf14
 
-/* Usable names. At OS level, we want supervisor regs */
-# define CSR_STATUS		CSR_SSTATUS
-# define CSR_IE			CSR_SIE
-# define CSR_TVEC		CSR_STVEC
-# define CSR_SCRATCH	CSR_SSCRATCH
-# define CSR_EPC		CSR_SEPC
-# define CSR_CAUSE		CSR_SCAUSE
-# define CSR_TVAL		CSR_STVAL
-# define CSR_IP			CSR_SIP
+/* Usable names. At OS level, we want supervisor regs normally. For this
+ * porting, we'll stay in machine mode for now */
+# define CSR_STATUS	CSR_MSTATUS
+# define CSR_IE		CSR_MIE
+# define CSR_TVEC	CSR_MTVEC
+# define CSR_SCRATCH	CSR_MSCRATCH
+# define CSR_EPC	CSR_MEPC
+# define CSR_CAUSE	CSR_MCAUSE
+# define CSR_TVAL	CSR_MTVAL
+# define CSR_IP		CSR_MIP
 
-# define SR_IE		SR_SIE
-# define SR_PIE		SR_SPIE
-# define SR_PP		SR_SPP
+# define SR_IE		SR_MIE
+# define SR_PIE		SR_MPIE
+# define SR_PP		SR_MPP
 
-# define RV_IRQ_SOFT	IRQ_S_SOFT
-# define RV_IRQ_TIMER	IRQ_S_TIMER
-# define RV_IRQ_EXT		IRQ_S_EXT
+# define RV_IRQ_SOFT	IRQ_M_SOFT
+# define RV_IRQ_TIMER	IRQ_M_TIMER
+# define RV_IRQ_EXT		IRQ_M_EXT
 
 /* IE/IP (Supervisor/Machine Interrupt Enable/Pending) flags */
 #define IE_SIE		(0x1 << RV_IRQ_SOFT)

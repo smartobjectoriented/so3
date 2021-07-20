@@ -3,7 +3,7 @@
  */
 
 OUTPUT_ARCH(riscv)
-ENTRY(_start)
+ENTRY(_vectors)
 
 /* The sizes of the stacks used by the application. */
 
