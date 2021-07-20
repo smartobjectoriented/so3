@@ -20,6 +20,7 @@
 #define ARM_TIMER_H
 
 #include <types.h>
+#include <timer.h>
 
 #include <asm/processor.h>
 
@@ -41,6 +42,12 @@ static inline u64 arch_get_time(void) {
 
 		return n;
 }
+
+/*TODO  _NMR_ no irqs yet */
+static void timer_isr(void) {
+	printk("Hello from ISR\n");
+}
+
 
 #endif /* ARM_TIMER_H */
 

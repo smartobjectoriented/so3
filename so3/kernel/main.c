@@ -136,13 +136,13 @@ void kernel_start(void) {
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
 
-#if 0 /* _NMR_ no file system yet */
+#if 0 /* _NMR_ no file system yet and scheduler needs a thread to work */
 	vfs_init();
-#endif
+
 
 	/* Scheduler init */
 	scheduler_init();
-
+#endif
 	pre_irq_init();
 
 	boot_stage = BOOT_STAGE_IRQ_ENABLE;

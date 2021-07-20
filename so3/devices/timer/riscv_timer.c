@@ -43,9 +43,10 @@ static void next_event(u32 next) {
 	*mtimecmp_addr = arch_get_time() + next;
 }
 
+#if 0 /* _NMR_ no irqs yet */
 static irq_return_t timer_isr(int irq, void *dummy) {
 
-#if 0 /* _NMR_ no irqs yet */
+
 	unsigned long ctrl;
 
 	/* Clear the interrupt */
@@ -63,10 +64,11 @@ static irq_return_t timer_isr(int irq, void *dummy) {
 
 		raise_softirq(TIMER_SOFTIRQ);
 	}
-#endif
+
 
 	return IRQ_COMPLETED;
 }
+#endif
 
 static void periodic_timer_start(void) {
 	/* Start the periodic timer */

@@ -22,6 +22,7 @@
 .global __fdt_addr
 
 .extern __stack_top
+.extern handle_trap
 
 .section ".head.text","ax"
 
@@ -41,6 +42,12 @@ _start:
   # Initialize stack pointer to the stack defined in the link script
   la   sp, .LCstack_top
   ld   sp, (sp)
+
+  # RISC-V does not have a vector table (it could but it is not used for now).
+  # It has a single address that then redirects to correct handlers. Base address
+  # is defined here
+  la t0, handle_trap
+  csrw CSR_TVEC, t0;
 
 __kernel_main:
 

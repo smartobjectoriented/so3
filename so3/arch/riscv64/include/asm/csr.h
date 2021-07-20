@@ -44,7 +44,7 @@
 #define SATP_ASID_MASK		0xFFFF
 
 /* Exception cause high bit - is an interrupt if set */
-#define CAUSE_IRQ_FLAG		1 << 63
+#define CAUSE_IRQ_FLAG		1UL << 63
 
 /* Interrupt causes (minus the high bit) */
 #define IRQ_S_SOFT		1
@@ -109,14 +109,14 @@
 
 /* Usable names. At OS level, we want supervisor regs normally. For this
  * porting, we'll stay in machine mode for now */
-# define CSR_STATUS	CSR_MSTATUS
-# define CSR_IE		CSR_MIE
-# define CSR_TVEC	CSR_MTVEC
+# define CSR_STATUS		CSR_MSTATUS
+# define CSR_IE			CSR_MIE
+# define CSR_TVEC		CSR_MTVEC
 # define CSR_SCRATCH	CSR_MSCRATCH
-# define CSR_EPC	CSR_MEPC
-# define CSR_CAUSE	CSR_MCAUSE
-# define CSR_TVAL	CSR_MTVAL
-# define CSR_IP		CSR_MIP
+# define CSR_EPC		CSR_MEPC
+# define CSR_CAUSE		CSR_MCAUSE
+# define CSR_TVAL		CSR_MTVAL
+# define CSR_IP			CSR_MIP
 
 # define SR_IE		SR_MIE
 # define SR_PIE		SR_MPIE
