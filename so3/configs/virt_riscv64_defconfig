@@ -49,6 +49,7 @@ CONFIG_NS16550=y
 # CONFIG_ARM_TIMER is not set
 CONFIG_RISCV_TIMER=y
 # CONFIG_GIC is not set
+CONFIG_PLIC=y
 # end of Drivers
 
 #

@@ -149,6 +149,9 @@ void kernel_start(void) {
 
 	local_irq_enable();
 
+	/* _NMR_ working on irqs */
+	while(1);
+
 	calibrate_delay();
 
 	/*

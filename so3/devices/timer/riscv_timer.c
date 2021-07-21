@@ -27,7 +27,9 @@
 
 #include <device/arch/riscv_timer.h>
 #include <mach/timer.h>
+#include <asm/csr.h>
 
+extern void register_isr_for_trap(int no_irq, irq_handler_t handler);
 static unsigned long reload;
 
 static void next_event(u32 next) {
@@ -43,32 +45,17 @@ static void next_event(u32 next) {
 	*mtimecmp_addr = arch_get_time() + next;
 }
 
-#if 0 /* _NMR_ no irqs yet */
 static irq_return_t timer_isr(int irq, void *dummy) {
 
+	printk("Hi from timer ISR\n");
 
-	unsigned long ctrl;
-
-	/* Clear the interrupt */
-
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
-		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
-
-		/* Periodic timer. Reloading here will clear the interrupt */
-		next_event(reload);
-
-		jiffies++;
-
-		raise_softirq(TIMER_SOFTIRQ);
-	}
-
+	/* Periodic timer. Reloading here will clear the interrupt */
+	next_event(reload);
+	jiffies++;
+	raise_softirq(TIMER_SOFTIRQ);
 
 	return IRQ_COMPLETED;
 }
-#endif
 
 static void periodic_timer_start(void) {
 	/* Start the periodic timer */
@@ -94,16 +81,15 @@ static int periodic_timer_init(dev_t *dev) {
 	/* Clocks init skipped here for simplicity (done by bootloader) */
 
 	/* Initialize Timer */
-
 	periodic_timer.start = periodic_timer_start;
 	periodic_timer.period = NSECS / HZ;
 
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 
-#if 0 /* _NMR_ no irq yet*/
-	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq_nr, timer_isr, NULL, NULL);
-#endif
+	/* Bind ISR into interrupt controller. Timer is the only IRQ (software IRQs too but
+	 * they are not used in SO3) that does not go through the PLIC. We bind it directly
+	 * to the trap handler */
+	register_isr_for_trap(RV_IRQ_TIMER, timer_isr);
 
 	/* Disable the timer interrupts */
 	csr_clear(CSR_IE, IE_TIE);

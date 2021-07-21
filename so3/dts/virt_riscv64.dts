@@ -1,5 +1,5 @@
 /*
- * TODO
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,8 +28,19 @@
 		device_type = "memory";
 		reg = <0x80000000 0x8000000>;
 	};
+	
+	plic:platform-level-interrupt-controller@c000000 {
+		interrupt-controller;
+		#interrupt-cells = <0x3>;
+		
+		reg = <0xc000000 0x210000>;
+		compatible = "intc,plic";
+		status = "ok";
+	};
 
 	uart@10000000 {
+		/* _NMR_ interrupts = <0x0a>;
+		 * interrupt-parent = <&plic>; */
 		reg = <0x10000000 0x100>;
 		compatible = "serial,ns16550";
 		status = "ok";
@@ -41,7 +52,6 @@
 		status = "ok";
 	};
 	
-	/* Clocksource free-running timer based on ARM CP15 timer */
 	clocksource-timer@0 {
 		compatible = "riscv,clocksource-timer";
 		reg = <0 0>;

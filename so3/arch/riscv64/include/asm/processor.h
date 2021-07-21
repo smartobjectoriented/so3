@@ -72,14 +72,21 @@ typedef struct cpu_regs {
 	__u64	t4;
 	__u64	t5;
 	__u64	t6;
+	__u64	status;
 } cpu_regs_t;
 
 
 #define cpu_relax()	barrier()
 
-static inline int irqs_disabled_flags(unsigned long flags)
+static inline int __irqs_disabled_flags(unsigned long flags)
 {
 	return !(flags & SR_IE);
+}
+
+/* _MNR_ TODO regs not used yet */
+static inline int irqs_disabled_flags(cpu_regs_t *regs)
+{
+	return !(csr_read(CSR_STATUS) & SR_IE);
 }
 
 /*
@@ -120,7 +127,7 @@ static inline void local_irq_restore(__u64 flags)
 }
 
 #define local_irq_is_enabled() \
-	({!irqs_disabled_flags(local_save_flags());\
+	({!__irqs_disabled_flags(local_save_flags());\
 })
 
 #define local_irq_is_disabled() \

@@ -173,11 +173,8 @@ void irq_handle(cpu_regs_t *regs) {
 	/* Now perform the softirq processing if allowed, i.e. if previously we have been upcalled
 	 * with IRQs on.
 	 */
-	/* _NMR_ enable this when reg is corrected for multiplatform */
-#if 0
-	if (!irqs_disabled_flags(regs->psr))
+	if (!irqs_disabled_flags(regs))
 		do_softirq();
-#endif
 }
 
 /*
