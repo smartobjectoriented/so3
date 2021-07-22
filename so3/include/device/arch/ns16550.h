@@ -71,4 +71,8 @@
 #define UART_LSR_DR     (1 << 0)
 #define UART_LSR_THRE   (1 << 5)
 
+/* IRQ defines */
+#define IER_RX_RCV       	0x01  	/* Data recieved irq */
+#define IIR_NOINT       	0x01 	/* No irq */
+
 #endif /* NS16550_H */

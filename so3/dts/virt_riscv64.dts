@@ -39,11 +39,12 @@
 	};
 
 	uart@10000000 {
-		/* _NMR_ interrupts = <0x0a>;
-		 * interrupt-parent = <&plic>; */
 		reg = <0x10000000 0x100>;
 		compatible = "serial,ns16550";
 		status = "ok";
+		
+		interrupts = <0 10 4>;
+		interrupt-parent = <&plic>;
 	};
 	
 	periodic-timer@0 {

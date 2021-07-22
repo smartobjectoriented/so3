@@ -31,6 +31,9 @@
 #include <timer.h>
 #include <version.h>
 
+/* _NMR_ remove */
+#include <device/serial.h>
+
 #include <asm/atomic.h>
 #include <asm/setup.h>
 #include <asm/mmu.h>
@@ -135,8 +138,8 @@ void kernel_start(void) {
 
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
-
-#if 0 /* _NMR_ no file system yet and scheduler needs a thread to work */
+#if 0
+/* _NMR_ no file system yet and scheduler needs a thread to work */
 	vfs_init();
 
 

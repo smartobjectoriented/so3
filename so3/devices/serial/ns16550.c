@@ -84,13 +84,23 @@ static char ns16550_get_byte(bool polling)
 	return ioread8(base_addr + UART_RBR_REG_OFFSET);
 }
 
+static irq_return_t ns16550_int(int irq, void *dummy)
+{
+	u8 pending_char;
+
+    while ( !(ioread8(base_addr + UART_IIR_REG_OFFSET) & IIR_NOINT) )
+    {
+    	pending_char = ioread8(base_addr + UART_RBR_REG_OFFSET);
+        printk("Got IRQ from UART, char = %c\n", pending_char);
+    }
+
+	return IRQ_COMPLETED;
+}
+
 static int ns16550_init(dev_t *dev)
 {
 	int baudrate = UART_BAUDRATE;
 	int divider;
-
-	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
-	/* Clocks init skipped here for simplicity (done by bootloader) */
 
 	/* Initialize UART controller */
 	memcpy(&ns16550_dev, dev, sizeof(dev_t));
@@ -116,8 +126,16 @@ static int ns16550_init(dev_t *dev)
 	/* 8N1 standard configuration */
 	iowrite8(base_addr + UART_LCR_REG_OFFSET, UART_PARITY_DIS | UART_1_STOP | UART_8BITS );
 
-	/* Force RTS and DTR lines */
+	/* Force RTS and DTR lines. */
 	iowrite8(base_addr + UART_MCR_REG_OFFSET, UART_RTS | UART_DTR);
+
+	/* Register an IRQ if a byte is recieved from UART. IRQ is used to test if
+	 * IRQs work. For now, the UART is the only device that is wired to the PLIC
+	 * that can raise an IRQ. */
+	irq_bind(dev->irq_nr, ns16550_int, NULL, NULL);
+
+	/* Enable interrupt from UART */
+	iowrite8(base_addr + UART_IER_REG_OFFSET, IER_RX_RCV);
 
 	return 0;
 

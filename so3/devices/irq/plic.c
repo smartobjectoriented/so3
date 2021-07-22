@@ -26,12 +26,9 @@
 #include <device/driver.h>
 #include <device/irq.h>
 
-#include <device/arch/plic.h>
-
 #include <asm/io.h>
 
-
-#define PLIC_PRIO_OFFSET		0x4 		/* IRQ 0 does not exist, starts at 1 */
+#define PLIC_PRIO_OFFSET		0x0
 #define PLIC_PENDING_OFFSET		0x1000
 #define PLIC_ENABLE_OFFSET		0x2000
 #define PLIC_THRESH_OFFSET		0x200000
@@ -41,25 +38,34 @@ static volatile u32 *base_addr;
 
 static void plic_mask(unsigned int irq) {
 
+	irq -= 32;
 
+	u32 *enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
+	u32 *prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
 
-#if 0
-	/* Disable/mask IRQ using the clear-enable register */
-	iowrite32(&regs->gicd_icenabler[irq/32], 1 << (irq % 32));
+	/* Enable irq */
+	u32 tmp = ioread32(enable_base + irq/32);
+	tmp &= ~( 0x1 << (irq % 32));
+	iowrite32(enable_base + irq/32, tmp);
 
-	newvalue={currentvalue& (¬(0×1<<(intid% 32)))}
-#endif
+	/* Reset prio to 0 again */
+	iowrite32(prio_base + irq, 0x0);
 }
 
 static void plic_unmask(unsigned int irq) {
 
+	irq -= 32;
+
 	u32 *enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
+	u32 *prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
 
-	u32 tmp = enable_base[irq/32];
+	/* Clear enable bit */
+	u32 tmp = ioread32(enable_base + irq/32);
+	tmp |= ( 0x1 << (irq % 32));
+	iowrite32(enable_base + irq/32, tmp);
 
-	tmp |= ( 0x1 << irq % 32);
-
-	enable_base[irq/32] = tmp;
+	/* Set prio to 1 because 0 will be ignored */
+	iowrite32(prio_base + irq, 0x1);
 }
 
 static void plic_enable(unsigned int irq) {
@@ -71,23 +77,25 @@ static void plic_disable(unsigned int irq) {
 }
 
 static void plic_handle(cpu_regs_t *cpu_regs) {
-#if 0
+
 	int irq_nr;
-	int irqstat;
+	u32 *claim_base = (void *)base_addr + PLIC_CLAIM_OFFSET;
 
 	do {
-		irqstat = ioread32(&regs->gicc_iar);
-		irq_nr = irqstat & GICC_IAR_INT_ID_MASK;
+		/* Get number of highest prio irq */
+		irq_nr = ioread32(claim_base);
 
-		if ((irq_nr < 15) || (irq_nr > 1021))
+		/* Read returns 0 if no irq is pending anymore */
+		if (!irq_nr)
 			break;
 
-		irq_process(irq_nr);
+		/* Process irq */
+		irq_process(irq_nr + 32);
 
-		iowrite32(&regs->gicc_eoir, irq_nr);
+		/* Write irq back to claim reg to ack the interrupt */
+		iowrite32(claim_base, irq_nr);
 
 	} while (true);
-#endif
 }
 
 static int plic_init(dev_t *dev) {
@@ -99,31 +107,38 @@ static int plic_init(dev_t *dev) {
 
 	base_addr = (volatile u32*) dev->base;
 
-	enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
-	prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
-	thresh_base 	= (void *) base_addr + PLIC_THRESH_OFFSET;
+	enable_base 	= (void *)base_addr + PLIC_ENABLE_OFFSET;
+	prio_base	 	= (void *)base_addr + PLIC_PRIO_OFFSET;
+	thresh_base 	= (void *)base_addr + PLIC_THRESH_OFFSET;
 
 	/* Ensure that interrupts are disabled. There are 1023 irqs (irq 0 does not exist but is mapped)
 	 * and there are 32 bits per register to set to 0. */
 	for (i = 0; i < 1024/32; i++) {
-			*enable_base = 0x0;
-			enable_base++;
-		}
+		iowrite32(enable_base, 0x0);
+		enable_base++;
+	}
 
-	/* Set priority of each interrupt to 0 (prio is stored on 32 bits) */
-	for (i = 0; i < 1024; i++) {
-		*prio_base = 0x0;
+	/* Set priority of each interrupt to 0 (prio is stored on 32 bits). IRQ 0 doesn't
+	 * exist. Which means we have to start at offset 0x4 for IRQ number 1 */
+	prio_base++;
+	for (i = 1; i < 1024; i++) {
+		iowrite32(prio_base, 0x0);
 		prio_base++;
 	}
 
 	/* Set threshold priority to 0 */
-	*thresh_base = 0x0;
+	iowrite32(thresh_base, 0x0);
 
 	irq_ops.irq_enable = plic_enable;
 	irq_ops.irq_disable = plic_disable;
 	irq_ops.irq_mask = plic_mask;
 	irq_ops.irq_unmask = plic_unmask;
 	irq_ops.irq_handle = plic_handle;
+
+
+
+	/* Enable EXT irqs in status register */
+	csr_set(CSR_IE, IE_EIE);
 
 	return 0;
 }

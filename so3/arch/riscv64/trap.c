@@ -27,7 +27,8 @@ extern void irq_handle(cpu_regs_t *regs);
 
 
 /* There are maximum 16 standard irq sources in register mcause. Can be extended with custom
- * irq if needed. */
+ * irq if needed. IRQs from devices are connected to the PLIC and will always have the same
+ * IRQ number at this level. Number defines a external IRQ */
 static irq_handler_t isr_handlers[16];
 
 /* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
@@ -46,8 +47,6 @@ void handle_trap() {
 	/* If reg MSB is 1, it is an interrupt */
 	if (mcause & CAUSE_IRQ_FLAG) {
 
-		printk("Got IRQ in trap handler :D\n");
-
 		switch(trap_source) {
 
 		/* Goes to timer ISR */
@@ -57,10 +56,13 @@ void handle_trap() {
 
 			isr_handlers[trap_source](0, NULL);
 
-			/* Now perform the softirq processing if allowed, i.e. if previously we have been upcalled
-			 * with IRQs on. _NMR_ TODO update function with registers saved instead of the current ones */
+#if 0 /* Issue is active to define if the check is really relevant */
+			/* _NMR_ TODO update function with registers saved instead of the current ones */
 			if (local_irq_is_disabled())
 				do_softirq();
+#endif
+			/* Perform the softirqs */
+			do_softirq();
 
 			break;
 
