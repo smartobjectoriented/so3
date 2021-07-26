@@ -21,9 +21,6 @@
 #include <asm-offsets.h>
 #include <asm/csr.h>
 
-#define WORD_SIZE 8
-#define CONTEXT_SIZE (33 * WORD_SIZE)
-
 .global __switch_context
 
 .global __thread_prologue_kernel
@@ -33,6 +30,12 @@
 
 .globl __get_syscall_stack_arg
 .globl __get_syscall_args_ext
+.globl __exec
+
+# Not used because there is no userspace for now
+__exec:
+    nop
+    j __exec
 
 # Not used because there is no userspace for now
 __get_syscall_stack_arg:
@@ -73,91 +76,73 @@ __switch_context:
 save_ctx:
 
     # Save regs in tcb var
-    addi    mscratch, a0, #(OFFSET_TCB_CPU_REGS)
-
-    sd ra, OFFSET_RA( mscratch )
-    sd sp, OFFSET_SP( mscratch )
-    sd gp, OFFSET_GP( mscratch )
-    sd tp, OFFSET_TP( mscratch )
-    sd t0, OFFSET_T0( mscratch )
-    sd t1, OFFSET_T1( mscratch )
-    sd t2, OFFSET_T2( mscratch )
-    sd fp, OFFSET_FP( mscratch )
-    sd s1, OFFSET_S1( mscratch )
-    sd a0, OFFSET_A0( mscratch )
-    sd a1, OFFSET_A1( mscratch )
-    sd a2, OFFSET_A2( mscratch )
-    sd a3, OFFSET_A3( mscratch )
-    sd a4, OFFSET_A4( mscratch )
-    sd a5, OFFSET_A5( mscratch )
-    sd a6, OFFSET_A6( mscratch )
-    sd a7, OFFSET_A7( mscratch )
-    sd s2, OFFSET_S2( mscratch )
-    sd s3, OFFSET_S3( mscratch )
-    sd s4, OFFSET_S4( mscratch )
-    sd s5, OFFSET_S5( mscratch )
-    sd s6, OFFSET_S6( mscratch )
-    sd s7, OFFSET_S7( mscratch )
-    sd s8, OFFSET_S8( mscratch )
-    sd s9, OFFSET_S9( mscratch )
-    sd s10, OFFSET_S10( mscratch )
-    sd s11, OFFSET_S11( mscratch )
-    sd t3, OFFSET_T3( mscratch )
-    sd t4, OFFSET_T4( mscratch )
-    sd t5, OFFSET_T5( mscratch )
-    sd t6, OFFSET_T6( mscratch )
-
-    csrr t0, mstatus
-    sd t0, OFFSET_STATUS( mscratch )
-
-    csrr t0, mepc
-    sd t0, OFFSET_EPC( mscratch )
+    sd ra, OFFSET_TCB_CPU_REGS + OFFSET_RA( a0 )
+    sd sp, OFFSET_TCB_CPU_REGS + OFFSET_SP( a0 )
+    sd gp, OFFSET_TCB_CPU_REGS + OFFSET_GP( a0 )
+    sd tp, OFFSET_TCB_CPU_REGS + OFFSET_TP( a0 )
+    sd t0, OFFSET_TCB_CPU_REGS + OFFSET_T0( a0 )
+    sd t1, OFFSET_TCB_CPU_REGS + OFFSET_T1( a0 )
+    sd t2, OFFSET_TCB_CPU_REGS + OFFSET_T2( a0 )
+    sd fp, OFFSET_TCB_CPU_REGS + OFFSET_FP( a0 )
+    sd s1, OFFSET_TCB_CPU_REGS + OFFSET_S1( a0 )
+    sd a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a0 )
+    sd a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a0 )
+    sd a2, OFFSET_TCB_CPU_REGS + OFFSET_A2( a0 )
+    sd a3, OFFSET_TCB_CPU_REGS + OFFSET_A3( a0 )
+    sd a4, OFFSET_TCB_CPU_REGS + OFFSET_A4( a0 )
+    sd a5, OFFSET_TCB_CPU_REGS + OFFSET_A5( a0 )
+    sd a6, OFFSET_TCB_CPU_REGS + OFFSET_A6( a0 )
+    sd a7, OFFSET_TCB_CPU_REGS + OFFSET_A7( a0 )
+    sd s2, OFFSET_TCB_CPU_REGS + OFFSET_S2( a0 )
+    sd s3, OFFSET_TCB_CPU_REGS + OFFSET_S3( a0 )
+    sd s4, OFFSET_TCB_CPU_REGS + OFFSET_S4( a0 )
+    sd s5, OFFSET_TCB_CPU_REGS + OFFSET_S5( a0 )
+    sd s6, OFFSET_TCB_CPU_REGS + OFFSET_S6( a0 )
+    sd s7, OFFSET_TCB_CPU_REGS + OFFSET_S7( a0 )
+    sd s8, OFFSET_TCB_CPU_REGS + OFFSET_S8( a0 )
+    sd s9, OFFSET_TCB_CPU_REGS + OFFSET_S9( a0 )
+    sd s10, OFFSET_TCB_CPU_REGS + OFFSET_S10( a0 )
+    sd s11, OFFSET_TCB_CPU_REGS + OFFSET_S11( a0 )
+    sd t3, OFFSET_TCB_CPU_REGS + OFFSET_T3( a0 )
+    sd t4, OFFSET_TCB_CPU_REGS + OFFSET_T4( a0 )
+    sd t5, OFFSET_TCB_CPU_REGS + OFFSET_T5( a0 )
+    sd t6, OFFSET_TCB_CPU_REGS + OFFSET_T6( a0 )
 
 load_ctx:
 
-    # load new context into cpu_regs stored into tcb_t of a thread (or process)
-    addi    mscratch, a1, #(OFFSET_TCB_CPU_REGS)
-
-    # overwrite csr with new context values
-    ld t0, OFFSET_EPC( mscratch )
-    csrw mepc, t0
-
-
-    ld t0, OFFSET_STATUS( mscratch )
-    csrw mstatus, t0
-
     # Load rest of registers
-    ld ra, OFFSET_RA( mscratch )
-    ld sp, OFFSET_SP( mscratch )
-    ld gp, OFFSET_GP( mscratch )
-    ld tp, OFFSET_TP( mscratch )
-    ld t0, OFFSET_T0( mscratch )
-    ld t1, OFFSET_T1( mscratch )
-    ld t2, OFFSET_T2( mscratch )
-    ld fp, OFFSET_FP( mscratch )
-    ld s1, OFFSET_S1( mscratch )
-    ld a0, OFFSET_A0( mscratch )
-    ld a1, OFFSET_A1( mscratch )
-    ld a2, OFFSET_A2( mscratch )
-    ld a3, OFFSET_A3( mscratch )
-    ld a4, OFFSET_A4( mscratch )
-    ld a5, OFFSET_A5( mscratch )
-    ld a6, OFFSET_A6( mscratch )
-    ld a7, OFFSET_A7( mscratch )
-    ld s2, OFFSET_S2( mscratch )
-    ld s3, OFFSET_S3( mscratch )
-    ld s4, OFFSET_S4( mscratch )
-    ld s5, OFFSET_S5( mscratch )
-    ld s6, OFFSET_S6( mscratch )
-    ld s7, OFFSET_S7( mscratch )
-    ld s8, OFFSET_S8( mscratch )
-    ld s9, OFFSET_S9( mscratch )
-    ld s10, OFFSET_S10( mscratch )
-    ld s11, OFFSET_S11( mscratch )
-    ld t3, OFFSET_T3( mscratch )
-    ld t4, OFFSET_T4( mscratch )
-    ld t5, OFFSET_T5( mscratch )
-    ld t6, OFFSET_T6( mscratch )
+    ld ra, OFFSET_TCB_CPU_REGS + OFFSET_RA( a1 )
+    ld sp, OFFSET_TCB_CPU_REGS + OFFSET_SP( a1 )
+    ld gp, OFFSET_TCB_CPU_REGS + OFFSET_GP( a1 )
+    ld tp, OFFSET_TCB_CPU_REGS + OFFSET_TP( a1 )
+    ld t0, OFFSET_TCB_CPU_REGS + OFFSET_T0( a1 )
+    ld t1, OFFSET_TCB_CPU_REGS + OFFSET_T1( a1 )
+    ld t2, OFFSET_TCB_CPU_REGS + OFFSET_T2( a1 )
+    ld fp, OFFSET_TCB_CPU_REGS + OFFSET_FP( a1 )
+    ld s1, OFFSET_TCB_CPU_REGS + OFFSET_S1( a1 )
+    ld a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a1 )
+    // a1 has to be done last to avoid memory issues
+    ld a2, OFFSET_TCB_CPU_REGS + OFFSET_A2( a1 )
+    ld a3, OFFSET_TCB_CPU_REGS + OFFSET_A3( a1 )
+    ld a4, OFFSET_TCB_CPU_REGS + OFFSET_A4( a1 )
+    ld a5, OFFSET_TCB_CPU_REGS + OFFSET_A5( a1 )
+    ld a6, OFFSET_TCB_CPU_REGS + OFFSET_A6( a1 )
+    ld a7, OFFSET_TCB_CPU_REGS + OFFSET_A7( a1 )
+    ld s2, OFFSET_TCB_CPU_REGS + OFFSET_S2( a1 )
+    ld s3, OFFSET_TCB_CPU_REGS + OFFSET_S3( a1 )
+    ld s4, OFFSET_TCB_CPU_REGS + OFFSET_S4( a1 )
+    ld s5, OFFSET_TCB_CPU_REGS + OFFSET_S5( a1 )
+    ld s6, OFFSET_TCB_CPU_REGS + OFFSET_S6( a1 )
+    ld s7, OFFSET_TCB_CPU_REGS + OFFSET_S7( a1 )
+    ld s8, OFFSET_TCB_CPU_REGS + OFFSET_S8( a1 )
+    ld s9, OFFSET_TCB_CPU_REGS + OFFSET_S9( a1 )
+    ld s10, OFFSET_TCB_CPU_REGS + OFFSET_S10( a1 )
+    ld s11, OFFSET_TCB_CPU_REGS + OFFSET_S11( a1 )
+    ld t3, OFFSET_TCB_CPU_REGS + OFFSET_T3( a1 )
+    ld t4, OFFSET_TCB_CPU_REGS + OFFSET_T4( a1 )
+    ld t5, OFFSET_TCB_CPU_REGS + OFFSET_T5( a1 )
+    ld t6, OFFSET_TCB_CPU_REGS + OFFSET_T6( a1 )
+    ld a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a1 )
 
     ret
 

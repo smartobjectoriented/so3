@@ -68,8 +68,6 @@ void post_init(void) {
 	for (i = 0; i < ll_entry_count(postinit_t, core); i++)
 		postinit[i]();
 }
-
-#if 0 /* _NMR_ nothing useful yet */
 /*
  * Initial (root) process which will start the first process running in SO3.
  * The process is running in user mode.
@@ -88,13 +86,11 @@ int root_proc(void *args)
 
 	return 0; /* Make gcc happy ;-) */
 }
-#endif
 
 int rest_init(void *dummy) {
 
 	post_init();
 
-#if 0 /* _NMR_ nothing useful yet */
 	/* Start a first SO3 thread (main app thread) */
 #if defined(CONFIG_THREAD_ENV)
 
@@ -112,7 +108,6 @@ int rest_init(void *dummy) {
 #else
 #error "Can not start initial SO3 environment"
 #endif
-#endif /* _NMR_ */
 
 	return 0;
 }
@@ -146,6 +141,7 @@ void kernel_start(void) {
 	pre_irq_init();
 
 	boot_stage = BOOT_STAGE_IRQ_ENABLE;
+	printk("\nIRQs are now ON\n");
 
 	local_irq_enable();
 

@@ -55,7 +55,7 @@ CONFIG_PLIC=y
 #
 # SO3 Applications
 #
-# CONFIG_APP_SAMPLE is not set
+CONFIG_APP_SAMPLE=y
 # end of SO3 Applications
 
 CONFIG_KERNEL_VIRT_ADDR=0xc0000000

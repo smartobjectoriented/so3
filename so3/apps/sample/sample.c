@@ -156,6 +156,25 @@ int fn2(void *args) {
 	return 0;
 }
 
+int thread_risc_v_fn(void *arg) {
+
+	int id = *((int*)arg);
+	int local_count = 0;
+	long sleep_amount = id * 1000;
+
+	printk("**************************\n"
+		   "Thread #%d starts counting\n"
+		   "**************************\n", id);
+
+	while (1) {
+		msleep(sleep_amount);
+		printk("Thread #%d current count is : %d\n", id, local_count);
+		local_count++;
+	}
+
+	return 0;
+}
+
 extern int schedcount;
 
 /*
@@ -193,11 +212,14 @@ int app_thread_main(void *args)
 	mutex_init(&lock);
 #endif
 
+#if 0
 	/* Kernel never returns ! */
 	printk("***********************************************\n");
 	printk("Going to infinite loop...\n");
 	printk("Kill Qemu with CTRL-a + x or reset the board\n");
 	printk("***********************************************\n");
+#endif
+
 #if 0
 	while (1) {
 		printk("## Waiting 1 sec...\n");
@@ -205,7 +227,7 @@ int app_thread_main(void *args)
 	}
 #endif
 
-#if 1
+#if 0
 	{
 		int i;
 
@@ -229,6 +251,23 @@ int app_thread_main(void *args)
 
 		while (true);
 	}
+#endif
+
+#if 1 /* RISC-V without MMU multiple thread test app */
+
+	/* Creating two threads counting */
+	int id[5], i;
+
+	printk("***********************************************\n");
+	printk("Starting RISC-V porting test app...\n");
+	printk("***********************************************\n");
+
+	for (i = 0; i < 5; i++) {
+		id[i] = i + 1;
+		kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", &id[i], 0);
+	}
+
+	while (true);
 #endif
 
 	return 0;
