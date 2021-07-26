@@ -22,19 +22,34 @@
 #include <softirq.h>
 
 #include <device/arch/riscv_timer.h>
+#include <asm/trap.h>
+#include <asm/fault.h>
+
+/* Define exception numbers */
+#define INSTR_ADDR_MISALIGNED	0
+#define INSTR_ACCESS_FAULT		1
+#define ILLEGAL_INSTR			2
+#define LOAD_ADDR_MISALIGNED	4
+#define LOAD_ACCESS_FAULT		5
+#define STORE_ADDR_MISALIGNED	6
+#define STORE_ACCESS_FAULT		7
+#define INSTR_PAGE_FAULT		12
+#define LOAD_PAGE_FAULT			13
+#define STORE_PAGE_FAULT		15
+
+#define EXCEPTION_COUNT 	16
 
 extern void irq_handle(cpu_regs_t *regs);
+extern irq_return_t timer_isr(int irq, void *dummy);
 
+/* Store exceptions.. 16 is the number of standard exceptions */
+static exception_handler_t exception_handlers[EXCEPTION_COUNT];
+static bool exception_handler_registred[EXCEPTION_COUNT];
 
-/* There are maximum 16 standard irq sources in register mcause. Can be extended with custom
- * irq if needed. IRQs from devices are connected to the PLIC and will always have the same
- * IRQ number at this level. Number defines a external IRQ */
-static irq_handler_t isr_handlers[16];
 
 /* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
  * to save and restore registers correctly */
 void handle_trap(void) __attribute((interrupt)) ;
-
 void handle_trap() {
 
 	u64 mcause = csr_read(CSR_CAUSE);
@@ -54,7 +69,7 @@ void handle_trap() {
 
 			__in_interrupt = true;
 
-			isr_handlers[trap_source](0, NULL);
+			timer_isr(trap_source, NULL);
 
 #if 0 /* Issue is active to define if the check is really relevant */
 			/* _NMR_ TODO update function with registers saved instead of the current ones */
@@ -75,24 +90,91 @@ void handle_trap() {
 
 			break;
 		default:
+			/* Sould not happen since last type possible here is for SOFT_IRQs and SO3
+			 * doesn't use softirqs as real hardware irqs. */
 			printk("Ignoring unkown IRQ source : No is %d\n", trap_source);
 		}
 	}
 	/* Else it is an exception */
 	else {
 
-		printk("Got exception in trap handler cause = %d\n", trap_source);
-
 		/* Call exception handler of correct cause */
-#if 0
-		exception_handler[trap_source]();
-#endif
+		if (exception_handler_registred[trap_source]) {
+			exception_handlers[trap_source]();
+		}
+		else {
+			printk("Got Environement call (ECALL) or Breakpoint (EBREAK) "
+					": No is %d\n"
+					"There is no implementation for this case yet !\n", trap_source);
+			kernel_panic();
+		}
 
 	}
 }
 
-void register_isr_for_trap(int no_irq, irq_handler_t handler) {
-	isr_handlers[no_irq] = handler;
+void register_exception(int no_exception, exception_handler_t handler) {
+
+	/* standard exceptions go from 0 to 15 */
+	if (no_exception >= EXCEPTION_COUNT) {
+		BUG();
+	}
+
+	exception_handlers[no_exception] = handler;
+	exception_handler_registred[no_exception] = true;
 }
 
+void init_trap() {
+
+	int i;
+
+	for (i = 0; i < EXCEPTION_COUNT; i++) {
+		switch (i) {
+		case INSTR_ADDR_MISALIGNED	:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __instr_addr_misalignment;
+			break;
+		case INSTR_ACCESS_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __instr_access_fault;
+			break;
+		case ILLEGAL_INSTR			:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __illegal_instr;
+			break;
+		case LOAD_ADDR_MISALIGNED	:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __load_addr_misalignement;
+			break;
+		case LOAD_ACCESS_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __load_access_fault;
+			break;
+		case STORE_ADDR_MISALIGNED	:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __store_AMO_addr_misaligned;
+			break;
+		case STORE_ACCESS_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __store_AMO_access_fault;
+			break;
+		case INSTR_PAGE_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __instr_page_fault;
+			break;
+		case LOAD_PAGE_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __load_page_fault;
+			break;
+		case STORE_PAGE_FAULT		:
+			exception_handler_registred[i] = true;
+			exception_handlers[i] = __store_AMO_page_fault;
+			break;
+		default:
+			exception_handler_registred[i] = false;
+			exception_handlers[i] = NULL;
+			break;
+		}
+
+	}
+}
 

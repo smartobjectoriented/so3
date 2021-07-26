@@ -16,12 +16,29 @@
  *
  */
 
-#include <asm/trap.h>
+#ifndef ARCH_RISCV64_INCLUDE_ASM_FAULT_H_
+#define ARCH_RISCV64_INCLUDE_ASM_FAULT_H_
 
-/**
- * Low-level initialization before the main boostrap process.
- */
-void setup_arch(void) {
+void kernel_panic(void);
 
-	init_trap();
-}
+void __instr_addr_misalignment(void);
+
+void __instr_access_fault(void);
+
+void __illegal_instr(void);
+
+void __load_addr_misalignement(void);
+
+void __load_access_fault(void);
+
+void __store_AMO_addr_misaligned(void);
+
+void __store_AMO_access_fault(void);
+
+void __instr_page_fault(void);
+
+void __load_page_fault(void);
+
+void __store_AMO_page_fault(void);
+
+#endif /* ARCH_RISCV64_INCLUDE_ASM_FAULT_H_ */

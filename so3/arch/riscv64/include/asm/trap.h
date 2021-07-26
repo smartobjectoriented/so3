@@ -16,12 +16,15 @@
  *
  */
 
-#include <asm/trap.h>
+#ifndef ARCH_RISCV64_INCLUDE_TRAP_H_
+#define ARCH_RISCV64_INCLUDE_TRAP_H_
 
-/**
- * Low-level initialization before the main boostrap process.
- */
-void setup_arch(void) {
+#include <device/irq.h>
 
-	init_trap();
-}
+typedef void(*exception_handler_t)(void);
+
+void init_trap(void);
+void register_isr_for_trap(int no_irq, irq_handler_t handler);
+void register_exception(int no_exception, exception_handler_t handler);
+
+#endif /* ARCH_RISCV64_INCLUDE_TRAP_H_ */
