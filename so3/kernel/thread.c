@@ -389,7 +389,6 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  */
 tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
-#if 0 /* _NMR_ */
 	tcb_t *tcb;
 	uint32_t flags;
 
@@ -428,9 +427,15 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 		kernel_panic();
 	}
 
+#ifdef CONFIG_ARCH_RISCV64
+	/* Prepare registers for future restore in switch_context() */
+	tcb->cpu_regs.s4 = (u64) tcb->th_fn;
+	tcb->cpu_regs.s5 = (u64) tcb->th_arg; /* First argument */
+#else
 	/* Prepare registers for future restore in switch_context() */
 	tcb->cpu_regs.r4 = (unsigned int) tcb->th_fn;
 	tcb->cpu_regs.r5 = (unsigned int) tcb->th_arg; /* First argument */
+#endif
 
 	/* Prepare the user stack if any related PCB */
 	if (pcb) {
@@ -440,16 +445,25 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 			printk("No available user stack for a new thread\n");
 			kernel_panic();
 		}
-
+/* There is no RISC-V processes yet..*/
+#ifndef CONFIG_ARCH_RISCV64
 		tcb->cpu_regs.r6 = get_user_stack_top(pcb, tcb->pcb_stack_slotID);
+#endif
 	}
 
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
 
+#ifdef CONFIG_ARCH_RISCV64
+	if (pcb)
+		tcb->cpu_regs.ra = (u64) __thread_prologue_user;
+	 else
+		tcb->cpu_regs.ra = (u64) __thread_prologue_kernel;
+#else
 	if (pcb)
 		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_user;
 	 else
 		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_kernel;
+#endif
 
 	/* Initialize the join queue associated to this thread */
 	INIT_LIST_HEAD(&tcb->joinQueue);
@@ -461,7 +475,6 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	local_irq_restore(flags);
 
 	return tcb;
-#endif /* _NMR_ */
 }
 
 tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, uint32_t prio)

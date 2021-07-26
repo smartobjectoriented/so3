@@ -31,9 +31,6 @@
 #include <timer.h>
 #include <version.h>
 
-/* _NMR_ remove */
-#include <device/serial.h>
-
 #include <asm/atomic.h>
 #include <asm/setup.h>
 #include <asm/mmu.h>
@@ -72,6 +69,7 @@ void post_init(void) {
 		postinit[i]();
 }
 
+#if 0 /* _NMR_ nothing useful yet */
 /*
  * Initial (root) process which will start the first process running in SO3.
  * The process is running in user mode.
@@ -90,6 +88,7 @@ int root_proc(void *args)
 
 	return 0; /* Make gcc happy ;-) */
 }
+#endif
 
 int rest_init(void *dummy) {
 
@@ -138,22 +137,17 @@ void kernel_start(void) {
 
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
-#if 0
-/* _NMR_ no file system yet and scheduler needs a thread to work */
-	vfs_init();
 
+	vfs_init();
 
 	/* Scheduler init */
 	scheduler_init();
-#endif
+
 	pre_irq_init();
 
 	boot_stage = BOOT_STAGE_IRQ_ENABLE;
 
 	local_irq_enable();
-
-	/* _NMR_ working on irqs */
-	while(1);
 
 	calibrate_delay();
 
@@ -170,6 +164,5 @@ void kernel_start(void) {
 	 * We loop forever, just the time the scheduler gives the hand to a ready thread.
 	 * After that, this code will never be executed anymore ...
 	 */
-
 	schedule();
 }

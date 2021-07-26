@@ -34,19 +34,32 @@
 #define PLIC_THRESH_OFFSET		0x200000
 #define PLIC_CLAIM_OFFSET		0x200004
 
+/* Irq number has an offset between DT initial number and the number the dev_t gets.
+ * the PLIC uses the number that is in the device tree. But the number it gets from
+ * irq.c is with the offset. In very function used by irq.c we will add or substract the
+ * offset before the operation. */
+#define IRQ_OFFSET				32
+
 static volatile u32 *base_addr;
 
 static void plic_mask(unsigned int irq) {
 
-	irq -= 32;
+	u32 *enable_base;
+	u32 *prio_base;
+	u32 current_state;
 
-	u32 *enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
-	u32 *prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
+	/* Should not happen but assert will avoid problems */
+	ASSERT(irq > IRQ_OFFSET);
+
+	irq -= IRQ_OFFSET;
+
+	enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
+	prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
 
 	/* Enable irq */
-	u32 tmp = ioread32(enable_base + irq/32);
-	tmp &= ~( 0x1 << (irq % 32));
-	iowrite32(enable_base + irq/32, tmp);
+	current_state = ioread32(enable_base + irq/32);
+	current_state &= ~( 0x1 << (irq % 32));
+	iowrite32(enable_base + irq/32, current_state);
 
 	/* Reset prio to 0 again */
 	iowrite32(prio_base + irq, 0x0);
@@ -54,15 +67,22 @@ static void plic_mask(unsigned int irq) {
 
 static void plic_unmask(unsigned int irq) {
 
-	irq -= 32;
+	u32 *enable_base;
+	u32 *prio_base;
+	u32 current_state;
 
-	u32 *enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
-	u32 *prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
+	/* Should not happen but assert will avoid problems */
+	ASSERT(irq > IRQ_OFFSET);
+
+	irq -= IRQ_OFFSET;
+
+	enable_base 	= (void *) base_addr + PLIC_ENABLE_OFFSET;
+	prio_base	 	= (void *) base_addr + PLIC_PRIO_OFFSET;
 
 	/* Clear enable bit */
-	u32 tmp = ioread32(enable_base + irq/32);
-	tmp |= ( 0x1 << (irq % 32));
-	iowrite32(enable_base + irq/32, tmp);
+	current_state = ioread32(enable_base + irq/32);
+	current_state |= ( 0x1 << (irq % 32));
+	iowrite32(enable_base + irq/32, current_state);
 
 	/* Set prio to 1 because 0 will be ignored */
 	iowrite32(prio_base + irq, 0x1);
@@ -90,7 +110,7 @@ static void plic_handle(cpu_regs_t *cpu_regs) {
 			break;
 
 		/* Process irq */
-		irq_process(irq_nr + 32);
+		irq_process(irq_nr + IRQ_OFFSET);
 
 		/* Write irq back to claim reg to ack the interrupt */
 		iowrite32(claim_base, irq_nr);
@@ -134,8 +154,6 @@ static int plic_init(dev_t *dev) {
 	irq_ops.irq_mask = plic_mask;
 	irq_ops.irq_unmask = plic_unmask;
 	irq_ops.irq_handle = plic_handle;
-
-
 
 	/* Enable EXT irqs in status register */
 	csr_set(CSR_IE, IE_EIE);

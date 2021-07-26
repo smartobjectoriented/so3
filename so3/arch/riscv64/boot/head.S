@@ -29,7 +29,7 @@
  # SO3 Kernel entry point
 _start:
 
-  # Disable IRQs for smode in reg directly
+  # Disable IRQs for in reg directly
   csrw CSR_IE, zero
   csrw CSR_IP, zero
   # clear ie flag (interrupt enable)

@@ -40,7 +40,6 @@
  * It has to be 8 bytes aligned.
  */
 typedef struct cpu_regs {
-	__u64   zero;
 	__u64   ra;
 	__u64   sp;
 	__u64   gp;
@@ -73,6 +72,7 @@ typedef struct cpu_regs {
 	__u64	t5;
 	__u64	t6;
 	__u64	status;
+	__u64 	epc;
 } cpu_regs_t;
 
 
