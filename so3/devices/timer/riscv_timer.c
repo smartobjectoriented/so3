@@ -16,6 +16,10 @@
  *
  */
 
+#if 0
+#define DEBUG
+#endif
+
 #include <timer.h>
 #include <softirq.h>
 #include <schedule.h>
@@ -28,8 +32,8 @@
 #include <device/arch/riscv_timer.h>
 #include <mach/timer.h>
 #include <asm/csr.h>
+#include <asm/trap.h>
 
-extern void register_isr_for_trap(int no_irq, irq_handler_t handler);
 static unsigned long reload;
 
 static void next_event(u32 next) {
@@ -45,9 +49,11 @@ static void next_event(u32 next) {
 	*mtimecmp_addr = arch_get_time() + next;
 }
 
-static irq_return_t timer_isr(int irq, void *dummy) {
+irq_return_t timer_isr(int irq, void *dummy) {
 
+#ifdef DEBUG
 	printk("Hi from timer ISR\n");
+#endif
 
 	/* Periodic timer. Reloading here will clear the interrupt */
 	next_event(reload);
@@ -86,10 +92,9 @@ static int periodic_timer_init(dev_t *dev) {
 
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 
-	/* Bind ISR into interrupt controller. Timer is the only IRQ (software IRQs too but
-	 * they are not used in SO3) that does not go through the PLIC. We bind it directly
-	 * to the trap handler */
-	register_isr_for_trap(RV_IRQ_TIMER, timer_isr);
+	/* Timer is the only IRQ (software IRQs too but they are not used in SO3)
+	 * that does not go through the PLIC. ISR is boud directly from the
+	 * trap handler. */
 
 	/* Disable the timer interrupts */
 	csr_clear(CSR_IE, IE_TIE);

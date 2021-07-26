@@ -27,9 +27,7 @@
 
 static inline u32 arch_timer_get_cntfrq(void)
 {
-	/* It seems RISC-V time registers reflect a real time wall-clock to avoid multiple frequency on multiple
-	 * hardware */
-	return NSECS;
+	return 10000000UL;
 }
 
 static inline u64 arch_get_time(void) {
