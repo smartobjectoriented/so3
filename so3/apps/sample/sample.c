@@ -158,16 +158,24 @@ int fn2(void *args) {
 
 int thread_risc_v_fn(void *arg) {
 
-	int id = *((int*)arg);
+	int id;
 	int local_count = 0;
-	long sleep_amount = id * 1000;
+	long sleep_amount;
+
+	if (!arg) {
+		id = 1;
+	} else {
+		id = *((int*)arg);
+	}
+
+	sleep_amount = id * 1000;
 
 	printk("**************************\n"
 		   "Thread #%d starts counting\n"
 		   "**************************\n", id);
 
 	while (1) {
-		msleep(sleep_amount);
+//		msleep(sleep_amount);
 		printk("Thread #%d current count is : %d\n", id, local_count);
 		local_count++;
 	}
@@ -253,9 +261,9 @@ int app_thread_main(void *args)
 	}
 #endif
 
-#if 1 /* RISC-V without MMU multiple thread test app */
+#if 0 /* RISC-V without MMU multiple thread test app */
 
-	/* Creating two threads counting */
+	/* Creating threads counting */
 	int id[5], i;
 
 	printk("***********************************************\n");
@@ -268,6 +276,16 @@ int app_thread_main(void *args)
 	}
 
 	while (true);
+#endif
+
+#if 1 /* RISC-V without MMU single thread test app */
+
+	printk("***********************************************\n");
+	printk("Starting RISC-V porting test app...\n");
+	printk("***********************************************\n");
+
+	kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", NULL, 0);
+
 #endif
 
 	return 0;

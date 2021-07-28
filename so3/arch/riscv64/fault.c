@@ -21,52 +21,52 @@
 #include <asm/fault.h>
 
 void __instr_addr_misalignment(void) {
-    lprintk("### Instruction address misaligned ###");
+    lprintk("### Instruction address misaligned ###\n");
 	kernel_panic();
 }
 
 void __instr_access_fault(void) {
-    lprintk("### Instruction access fault ###");
+    lprintk("### Instruction access fault ###\n");
 	kernel_panic();
 }
 
 void __illegal_instr(void) {
-    lprintk("### Illegal instruction ###");
+    lprintk("### Illegal instruction ###\n");
 	kernel_panic();
 }
 
 void __load_addr_misalignement(void) {
-    lprintk("### Load address misaligned !! ###");
+    lprintk("### Load address misaligned !! ###\n");
 	kernel_panic();
 }
 
 void __load_access_fault(void) {
-    lprintk("### Load access fault ###");
+    lprintk("### Load access fault ###\n");
 	kernel_panic();
 }
 
 void __store_AMO_addr_misaligned(void) {
-    lprintk("### Store/AMO address misaligned ###");
+    lprintk("### Store/AMO address misaligned ###\n");
 	kernel_panic();
 }
 
 void __store_AMO_access_fault(void) {
-    lprintk("### Store/AMO access fault ###");
+    lprintk("### Store/AMO access fault ###\n");
 	kernel_panic();
 }
 
 void __instr_page_fault(void) {
-    lprintk("### Instruction page fault ###");
+    lprintk("### Instruction page fault ###\n");
 	kernel_panic();
 }
 
 void __load_page_fault(void) {
-    lprintk("### Load page fault ###");
+    lprintk("### Load page fault ###\n");
 	kernel_panic();
 }
 
 void __store_AMO_page_fault(void) {
-    lprintk("### Store/AMO page fault ###");
+    lprintk("### Store/AMO page fault ###\n");
 	kernel_panic();
 }
 

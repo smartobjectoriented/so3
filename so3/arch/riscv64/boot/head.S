@@ -22,7 +22,7 @@
 .global __fdt_addr
 
 .extern __stack_top
-.extern handle_trap
+.extern __ll_handle_trap
 
 .section ".head.text","ax"
 
@@ -30,10 +30,14 @@
 _start:
 
   # Disable IRQs for in reg directly
-  csrw CSR_IE, zero
-  csrw CSR_IP, zero
+  csrw CSR_MIE, zero
+  csrw CSR_MIP, zero
+  csrw CSR_SIE, zero
+  csrw CSR_SIP, zero
+
   # clear ie flag (interrupt enable)
   csrci CSR_STATUS, SR_IE
+  csrci CSR_STATUS, SR_SIE
 
   # Preserve the (physical address) of device tree base in s9,
   # a1 contains device tree adress
@@ -46,7 +50,7 @@ _start:
   # RISC-V does not have a vector table (it could but it is not used for now).
   # It has a single address that then redirects to correct handlers. Base address
   # is defined here
-  la t0, handle_trap
+  la t0, __ll_handle_trap
   csrw CSR_TVEC, t0;
 
 __kernel_main:
@@ -67,8 +71,20 @@ __kernel_main:
     la t0, __fdt_addr
     sd s9, (t0)
 
-    # C main entry point, never returns
-    j     kernel_start
+#if 0 /* _NMR_ */
+    # At mret call, the pc is set back to mepc. Here we preload jump address to kernel entry
+    la      t0, kernel_start
+    csrw    mepc, t0
+
+    # At mret, previous mode shift
+    li      t0, (PROCESSOR_SUPERVISOR_MODE << SR_MPP_SHIFT)
+    csrs    mstatus, t0
+
+    # C main entry point, never returns. Enters in supervisor mode
+    mret
+#endif
+    # C main entry point, never returns. Enters in machine mode
+    j kernel_start
 
 # Addr on 64 bits => 8 bytes to store it
 __fdt_addr:

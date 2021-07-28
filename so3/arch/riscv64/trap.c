@@ -46,21 +46,19 @@ extern irq_return_t timer_isr(int irq, void *dummy);
 static exception_handler_t exception_handlers[EXCEPTION_COUNT];
 static bool exception_handler_registred[EXCEPTION_COUNT];
 
+/* Once in a trap, registers are stored in the trap frame */
+cpu_regs_t trap_frame;
 
 /* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
  * to save and restore registers correctly */
-void handle_trap(void) __attribute((interrupt)) ;
-void handle_trap() {
-
-	u64 mcause = csr_read(CSR_CAUSE);
-	u64 flag = CAUSE_IRQ_FLAG;
+u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 	/* Interrupt source is on the other bits of mcause reg.
-	 * Note: Wierd bug won't let the constant be used directly... */
-	u64 trap_source = mcause & ~flag;
+	 * 0xfff is more than enough. There are 15 exceptions and 15 irqs in RISC-V for now */
+	u64 trap_source = cause & 0xfff;
 
 	/* If reg MSB is 1, it is an interrupt */
-	if (mcause & CAUSE_IRQ_FLAG) {
+	if (cause & CAUSE_IRQ_FLAG) {
 
 		switch(trap_source) {
 
@@ -71,13 +69,9 @@ void handle_trap() {
 
 			timer_isr(trap_source, NULL);
 
-#if 0 /* Issue is active to define if the check is really relevant */
-			/* _NMR_ TODO update function with registers saved instead of the current ones */
-			if (local_irq_is_disabled())
+			/* Perform the softirqs if allowed */
+			if (!irqs_disabled_flags(regs))
 				do_softirq();
-#endif
-			/* Perform the softirqs */
-			do_softirq();
 
 			break;
 
@@ -86,7 +80,7 @@ void handle_trap() {
 
 			/* This function is located in irq.c and is the generic way to handle an
 			 * irq. */
-			irq_handle(NULL);
+			irq_handle(regs);
 
 			break;
 		default:
@@ -100,6 +94,10 @@ void handle_trap() {
 
 		/* Call exception handler of correct cause */
 		if (exception_handler_registred[trap_source]) {
+			printk("### Got exception at :\n"
+				   "### instr addr:  %#16x\n"
+				   "### status reg:  %#16x\n"
+				   "### tval:        %#16x\n", epc, status, tval);
 			exception_handlers[trap_source]();
 		}
 		else {
@@ -110,6 +108,8 @@ void handle_trap() {
 		}
 
 	}
+
+	return epc;
 }
 
 void register_exception(int no_exception, exception_handler_t handler) {
@@ -127,6 +127,10 @@ void init_trap() {
 
 	int i;
 
+	/* Set trap frame into mscratch to have it entering the handler */
+	csr_write(CSR_MSCRATCH, &trap_frame);
+
+	/* Set all exception handler*/
 	for (i = 0; i < EXCEPTION_COUNT; i++) {
 		switch (i) {
 		case INSTR_ADDR_MISALIGNED	:
