@@ -128,10 +128,15 @@ void kernel_start(void) {
 
 	devices_init();
 
+	local_irq_enable();
+	while(1);
+
 	printk("\nDevices initialized successfully\n");
 
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
+
+
 
 	vfs_init();
 

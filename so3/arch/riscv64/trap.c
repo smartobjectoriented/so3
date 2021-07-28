@@ -16,6 +16,11 @@
  *
  */
 
+/*
+ * IRQs are handled in supervisor mode
+ * Exceptions are handled in machine mode
+ */
+
 #include <common.h>
 #include <asm/csr.h>
 #include <device/irq.h>
@@ -48,16 +53,53 @@ static bool exception_handler_registred[EXCEPTION_COUNT];
 
 
 /* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
- * to save and restore registers correctly */
-void handle_trap(void) __attribute((interrupt)) ;
-void handle_trap() {
+ * to save and restore registers that are modified correctly */
+void handle_mmode_trap(void) __attribute((interrupt)) ;
+void handle_mmode_trap() {
 
-	u64 mcause = csr_read(CSR_CAUSE);
-	u64 flag = CAUSE_IRQ_FLAG;
+	u64 mcause = csr_read(CSR_MCAUSE);
 
 	/* Interrupt source is on the other bits of mcause reg.
-	 * Note: Wierd bug won't let the constant be used directly... */
-	u64 trap_source = mcause & ~flag;
+	 * max trap source is 15 yet.. Mask 0xfff is more than enough */
+	u64 trap_source = mcause & 0xfff;
+
+	/* If reg MSB is 1, it is an interrupt */
+	if (mcause & CAUSE_IRQ_FLAG) {
+
+		/* Sould not happen because IRQs are forwarded to supervisor mode.
+		 * Kernel panics to know what happend */
+		printk("Irqs should be forwarded to supervisor mode.\n"
+			   "Got IRQ is machine mode : No is %d\n", trap_source);
+		kernel_panic();
+
+	}
+	/* Else it is an exception */
+	else {
+
+		/* Call exception handler of correct cause */
+		if (exception_handler_registred[trap_source]) {
+			exception_handlers[trap_source]();
+		}
+		else {
+			printk("Got Environement call (ECALL) or Breakpoint (EBREAK) "
+					": No is %d\n"
+					"There is no implementation for this case yet !\n", trap_source);
+			kernel_panic();
+		}
+
+	}
+}
+
+/* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
+ * to save and restore registers correctly */
+void handle_smode_trap(void) __attribute((interrupt)) ;
+void handle_smode_trap() {
+
+	u64 mcause = csr_read(CSR_SCAUSE);
+
+	/* Interrupt source is on the other bits of mcause reg.
+	 * max trap source is 15 yet.. Mask 0xfff is more than enough */
+	u64 trap_source = mcause & 0xfff;
 
 	/* If reg MSB is 1, it is an interrupt */
 	if (mcause & CAUSE_IRQ_FLAG) {
@@ -72,11 +114,12 @@ void handle_trap() {
 			timer_isr(trap_source, NULL);
 
 #if 0 /* Issue is active to define if the check is really relevant */
-			/* _NMR_ TODO update function with registers saved instead of the current ones */
+			/* TODO update function with registers saved instead of the current ones */
 			if (local_irq_is_disabled())
 				do_softirq();
 #endif
-			/* Perform the softirqs */
+			/* Perform the softirqs. Since this function is accessed in machine mode with interrupts
+			 * disabled there should be no need to check flags */
 			do_softirq();
 
 			break;
@@ -98,33 +141,17 @@ void handle_trap() {
 	/* Else it is an exception */
 	else {
 
-		/* Call exception handler of correct cause */
-		if (exception_handler_registred[trap_source]) {
-			exception_handlers[trap_source]();
-		}
-		else {
-			printk("Got Environement call (ECALL) or Breakpoint (EBREAK) "
-					": No is %d\n"
-					"There is no implementation for this case yet !\n", trap_source);
-			kernel_panic();
-		}
+		/* Sould not happen because exceptions are handled in machine mode.
+		 * Kernel panics to know what happend */
+		printk("Exceptions should be handled in machine mode.\n"
+			   "Got Exception in supervisor mode : No is %d\n", trap_source);
+		kernel_panic();
 
 	}
 }
 
-void register_exception(int no_exception, exception_handler_t handler) {
-
-	/* standard exceptions go from 0 to 15 */
-	if (no_exception >= EXCEPTION_COUNT) {
-		BUG();
-	}
-
-	exception_handlers[no_exception] = handler;
-	exception_handler_registred[no_exception] = true;
-}
-
+/* Inits all exception handlers */
 void init_trap() {
-
 	int i;
 
 	for (i = 0; i < EXCEPTION_COUNT; i++) {

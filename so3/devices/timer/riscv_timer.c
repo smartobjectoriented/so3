@@ -93,7 +93,7 @@ static int periodic_timer_init(dev_t *dev) {
 	reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 
 	/* Timer is the only IRQ (software IRQs too but they are not used in SO3)
-	 * that does not go through the PLIC. ISR is boud directly from the
+	 * that does not go through the PLIC. ISR is bound directly from the
 	 * trap handler. */
 
 	/* Disable the timer interrupts */

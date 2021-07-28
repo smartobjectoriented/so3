@@ -119,7 +119,7 @@ static inline __u64 local_irq_save(void)
 }
 
 /*
- * restore saved IRQ & FIQ state
+ * restore saved IRQ state
  */
 static inline void local_irq_restore(__u64 flags)
 {

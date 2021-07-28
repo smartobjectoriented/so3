@@ -23,5 +23,6 @@
  */
 void setup_arch(void) {
 
+	/* Only init to do is for traps. This will set all exception handler */
 	init_trap();
 }

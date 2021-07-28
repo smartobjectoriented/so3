@@ -12,6 +12,10 @@
 #define __ASM_STR(x)	#x
 #endif
 
+/* Machine modes */
+#define PROCESSOR_MACHINE_MODE 		3
+#define PROCESSOR_SUPERVISOR_MODE 	1
+
 /* Status register flags */
 #define SR_SIE			0x00000002 /* Supervisor Interrupt Enable */
 #define SR_MIE			0x00000008 /* Machine Interrupt Enable */
@@ -20,6 +24,8 @@
 #define SR_SPP			0x00000100 /* Previously Supervisor */
 #define SR_MPP			0x00001800 /* Previously Machine */
 #define SR_SUM			0x00040000 /* Supervisor User Memory Access */
+
+#define SR_MPP_SHIFT	11 /* get a mask to previous machine mode */
 
 #define SR_FS			0x00006000 	/* Floating-point Status */
 #define SR_FS_OFF		0x00000000
@@ -96,6 +102,8 @@
 
 #define CSR_MSTATUS		0x300
 #define CSR_MISA		0x301
+#define CSR_MEDELEG		0x302
+#define CSR_MIDELEG		0x303
 #define CSR_MIE			0x304
 #define CSR_MTVEC		0x305
 #define CSR_MSCRATCH	0x340
@@ -107,24 +115,23 @@
 #define CSR_PMPADDR0	0x3b0
 #define CSR_MHARTID		0xf14
 
-/* Usable names. At OS level, we want supervisor regs normally. For this
- * porting, we'll stay in machine mode for now */
-# define CSR_STATUS		CSR_MSTATUS
-# define CSR_IE			CSR_MIE
-# define CSR_TVEC		CSR_MTVEC
-# define CSR_SCRATCH	CSR_MSCRATCH
-# define CSR_EPC		CSR_MEPC
-# define CSR_CAUSE		CSR_MCAUSE
-# define CSR_TVAL		CSR_MTVAL
-# define CSR_IP			CSR_MIP
+/* Usable names. At OS level, supervisor regs are used */
+# define CSR_STATUS		CSR_SSTATUS
+# define CSR_IE			CSR_SIE
+# define CSR_TVEC		CSR_STVEC
+# define CSR_SCRATCH	CSR_SSCRATCH
+# define CSR_EPC		CSR_SEPC
+# define CSR_CAUSE		CSR_SCAUSE
+# define CSR_TVAL		CSR_STVAL
+# define CSR_IP			CSR_SIP
 
-# define SR_IE		SR_MIE
-# define SR_PIE		SR_MPIE
-# define SR_PP		SR_MPP
+# define SR_IE		SR_SIE
+# define SR_PIE		SR_SPIE
+# define SR_PP		SR_SPP
 
-# define RV_IRQ_SOFT	IRQ_M_SOFT
-# define RV_IRQ_TIMER	IRQ_M_TIMER
-# define RV_IRQ_EXT		IRQ_M_EXT
+# define RV_IRQ_SOFT	IRQ_S_SOFT
+# define RV_IRQ_TIMER	IRQ_S_TIMER
+# define RV_IRQ_EXT		IRQ_S_EXT
 
 /* IE/IP (Supervisor/Machine Interrupt Enable/Pending) flags */
 #define IE_SIE		(0x1 << RV_IRQ_SOFT)

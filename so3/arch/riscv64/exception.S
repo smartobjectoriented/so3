@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021      Nicolas Müller <nicolas.muller1@heig-vd.ch>
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,14 +16,15 @@
  *
  */
 
-.section ".vectors.text", "ax"
+.section ".text", "ax"
 
 .globl _vectors
 
 .extern _start
 
 /* RISC-V uses one address that handles every trap. There is no need for a vector table.
- * Note: There is an option to do it with a vector table if really needed. */
+ * Note: There is an option to do it with a vector table if really needed.
+ *
+ * Vectors base address is set in head.S */
 _vectors:
-    # reset
-    j   _start
+    j    _start

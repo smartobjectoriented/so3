@@ -158,7 +158,8 @@ int fn2(void *args) {
 
 int thread_risc_v_fn(void *arg) {
 
-	int id = *((int*)arg);
+//	int id = *((int*)arg);
+	int id = 1;
 	int local_count = 0;
 	long sleep_amount = id * 1000;
 
@@ -262,12 +263,21 @@ int app_thread_main(void *args)
 	printk("Starting RISC-V porting test app...\n");
 	printk("***********************************************\n");
 
+#if 0
 	for (i = 0; i < 5; i++) {
 		id[i] = i + 1;
 		kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", &id[i], 0);
 	}
+#endif
 
-	while (true);
+#if 1
+	kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", NULL, 30);
+#endif
+
+#if 0
+	while(1);
+#endif
+
 #endif
 
 	return 0;
