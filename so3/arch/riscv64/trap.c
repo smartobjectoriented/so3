@@ -66,7 +66,6 @@ u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 		case RV_IRQ_TIMER:
 
 			__in_interrupt = true;
-
 			timer_isr(trap_source, NULL);
 
 			/* Perform the softirqs if allowed */
@@ -74,7 +73,6 @@ u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 				do_softirq();
 
 			break;
-
 		/* Will be handled by the PLIC */
 		case RV_IRQ_EXT:
 
@@ -109,6 +107,7 @@ u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 	}
 
+	/* Value is used by low level trap handler to return at old pc */
 	return epc;
 }
 

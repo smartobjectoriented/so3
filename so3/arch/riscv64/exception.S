@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021      Nicolas Müller <nicolas.muller1@heig-vd.ch>
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * Inspired by Stephen Marz low level handling for his rust OS
  *
  */
 
@@ -35,15 +37,10 @@ _vectors:
 /* Saves system state before entering trap handler and restores it afterwards */
 __ll_handle_trap:
 
+    # mscratch has trap frame to store current registers
     csrrw   t6, mscratch, t6
-    # csrrw will atomically swap t6 into mscratch and the old
-    # value of mscratch into t6. This is nice because we just
-    # switched values and didn't destroy anything -- all atomically!
-    # in cpu.rs we have a structure of:
-    #  32 gp regs       0
-    #  32 fp regs       256
-    # We use t6 as the temporary register because it is the very
-    # bottom register (x31)
+
+    # Store all registers into trap frame
     sd ra, OFFSET_RA( t6 )
     sd sp, OFFSET_SP( t6 )
     sd gp, OFFSET_GP( t6 )
@@ -83,11 +80,7 @@ __ll_handle_trap:
     # Restore the kernel trap frame into mscratch
     csrw    mscratch, t5
 
-    # Get ready to go into Rust (trap.rs)
-    # We don't want to write into the user's stack or whomever
-    # messed with us here.
-    # csrw  mie, zero
-
+    # Get ready for C handler and getting debug params ready
     csrr    a0, mepc
     sd      a0, OFFSET_EPC( t5 )
     csrr    a1, mtval
@@ -98,10 +91,7 @@ __ll_handle_trap:
     /* _NMR_ TODO keep stack pointer like that ? */
     call    handle_trap
 
-    # When we get here, we've returned from m_trap, restore registers
-    # and return.
-    # m_trap will return the return address via a0.
-
+    # handle_trap will return the return address via a0
     csrw    mepc, a0
     # Now load the trap frame back into t6
     csrr    t6, mscratch
@@ -139,8 +129,7 @@ __ll_handle_trap:
     # t6 will be reset to old value without anything to here for the load
     ld t6, OFFSET_T6( t6 )
 
-    # Since we ran this loop 31 times starting with i = 1,
-    # the last one loaded t6 back to its original value.
+    # Get back to what we were doing
     mret
 
 .LCstack_top:
