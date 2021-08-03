@@ -175,7 +175,7 @@ int thread_risc_v_fn(void *arg) {
 		   "**************************\n", id);
 
 	while (1) {
-//		msleep(sleep_amount);
+		msleep(sleep_amount);
 		printk("Thread #%d current count is : %d\n", id, local_count);
 		local_count++;
 	}
@@ -275,7 +275,8 @@ int app_thread_main(void *args)
 		kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", &id[i], 0);
 	}
 
-	while (true);
+	/* Don't remove while loop or id references will be lost */
+	while (1);
 #endif
 
 #if 1 /* RISC-V without MMU single thread test app */
@@ -286,6 +287,7 @@ int app_thread_main(void *args)
 
 	kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", NULL, 0);
 
+//	while(1);
 #endif
 
 	return 0;

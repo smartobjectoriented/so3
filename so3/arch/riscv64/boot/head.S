@@ -72,6 +72,7 @@ __kernel_main:
     sd s9, (t0)
 
 #if 0 /* _NMR_ */
+
     # At mret call, the pc is set back to mepc. Here we preload jump address to kernel entry
     la      t0, kernel_start
     csrw    mepc, t0

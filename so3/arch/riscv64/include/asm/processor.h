@@ -89,7 +89,8 @@ static inline int __irqs_disabled_before_irq_flags(unsigned long flags)
 	return !(flags & SR_PIE);
 }
 
-/* _NMR_ TODO make two of those like the __ variants above. Should change irq.c too */
+/* _NMR_ TODO make two of those like the __ variants above. Should change irq.c too.
+ * Working for now because this function is only used in irq.c */
 static inline int irqs_disabled_flags(cpu_regs_t *regs)
 {
 	return __irqs_disabled_before_irq_flags(regs->status);

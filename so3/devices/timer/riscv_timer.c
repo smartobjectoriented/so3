@@ -33,6 +33,7 @@
 #include <mach/timer.h>
 #include <asm/csr.h>
 #include <asm/trap.h>
+#include <asm/io.h>
 
 static unsigned long reload;
 
@@ -46,7 +47,7 @@ static void next_event(u32 next) {
 	/* Set new CMP register value. This clears interrupt as well. Interrupt is only the
 	 * result of the comparator between mtime and mtimecmp. If correct value is written,
 	 * interrupt is cleared */
-	*mtimecmp_addr = arch_get_time() + next;
+	iowrite64(mtimecmp_addr, arch_get_time() + next);
 }
 
 irq_return_t timer_isr(int irq, void *dummy) {

@@ -86,7 +86,7 @@ __ll_handle_trap:
     csrr    a1, mtval
     csrr    a2, mcause
     csrr    a3, mstatus
-    sd      a0, OFFSET_STATUS( t5 )
+    sd      a3, OFFSET_STATUS( t5 )
     csrr    a4, mscratch
     /* _NMR_ TODO keep stack pointer like that ? */
     call    handle_trap
@@ -126,7 +126,7 @@ __ll_handle_trap:
     ld t3, OFFSET_T3( t6 )
     ld t4, OFFSET_T4( t6 )
     ld t5, OFFSET_T5( t6 )
-    # t6 will be reset to old value without anything to here for the load
+    # t6 will be reset to old value without anything special to do here for the load
     ld t6, OFFSET_T6( t6 )
 
     # Get back to what we were doing

@@ -16,6 +16,10 @@
  *
  */
 
+#if 1
+#define DEBUG
+#endif
+
 #include <common.h>
 #include <asm/csr.h>
 #include <device/irq.h>
@@ -45,6 +49,8 @@ extern irq_return_t timer_isr(int irq, void *dummy);
 /* Store exceptions.. 16 is the number of standard exceptions */
 static exception_handler_t exception_handlers[EXCEPTION_COUNT];
 static bool exception_handler_registred[EXCEPTION_COUNT];
+
+void trap_dump_regs(cpu_regs_t *regs);
 
 /* Once in a trap, registers are stored in the trap frame */
 cpu_regs_t trap_frame;
@@ -96,6 +102,9 @@ u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 				   "### instr addr:  %#16x\n"
 				   "### status reg:  %#16x\n"
 				   "### tval:        %#16x\n", epc, status, tval);
+#ifdef DEBUG
+			trap_dump_regs(regs);
+#endif
 			exception_handlers[trap_source]();
 		}
 		else {
@@ -109,17 +118,6 @@ u64 handle_trap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 	/* Value is used by low level trap handler to return at old pc */
 	return epc;
-}
-
-void register_exception(int no_exception, exception_handler_t handler) {
-
-	/* standard exceptions go from 0 to 15 */
-	if (no_exception >= EXCEPTION_COUNT) {
-		BUG();
-	}
-
-	exception_handlers[no_exception] = handler;
-	exception_handler_registred[no_exception] = true;
 }
 
 void init_trap() {
@@ -177,7 +175,41 @@ void init_trap() {
 			exception_handlers[i] = NULL;
 			break;
 		}
-
 	}
+}
+
+void trap_dump_regs(cpu_regs_t *regs) {
+
+	printk("ra:  %#016x\n", regs->ra);
+	printk("sp:  %#016x\n", regs->sp);
+	printk("gp:  %#016x\n", regs->gp);
+	printk("tp:  %#016x\n", regs->tp);
+	printk("t0:  %#016x\n", regs->t0);
+	printk("t1:  %#016x\n", regs->t1);
+	printk("t2:  %#016x\n", regs->t2);
+	printk("fp:  %#016x\n", regs->fp);
+	printk("s1:  %#016x\n", regs->s1);
+	printk("a0:  %#016x\n", regs->a0);
+	printk("a1:  %#016x\n", regs->a1);
+	printk("a2:  %#016x\n", regs->a2);
+	printk("a3:  %#016x\n", regs->a3);
+	printk("a4:  %#016x\n", regs->a4);
+	printk("a5:  %#016x\n", regs->a5);
+	printk("a6:  %#016x\n", regs->a6);
+	printk("a7:  %#016x\n", regs->a7);
+	printk("s2:  %#016x\n", regs->s2);
+	printk("s3:  %#016x\n", regs->s3);
+	printk("s4:  %#016x\n", regs->s4);
+	printk("s5:  %#016x\n", regs->s5);
+	printk("s6:  %#016x\n", regs->s6);
+	printk("s7:  %#016x\n", regs->s7);
+	printk("s8:  %#016x\n", regs->s8);
+	printk("s9:  %#016x\n", regs->s9);
+	printk("s10: %#016x\n", regs->s10);
+	printk("s11: %#016x\n", regs->s11);
+	printk("t3:  %#016x\n", regs->t3);
+	printk("t4:  %#016x\n", regs->t4);
+	printk("t5:  %#016x\n", regs->t5);
+	printk("t6:  %#016x\n", regs->t6);
 }
 
