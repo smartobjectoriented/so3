@@ -445,7 +445,7 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 			printk("No available user stack for a new thread\n");
 			kernel_panic();
 		}
-/* There is no RISC-V processes yet..*/
+/* _NMR_ There is no RISC-V processes yet..*/
 #ifndef CONFIG_ARCH_RISCV64
 		tcb->cpu_regs.r6 = get_user_stack_top(pcb, tcb->pcb_stack_slotID);
 #endif

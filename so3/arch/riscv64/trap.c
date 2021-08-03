@@ -16,10 +16,9 @@
  *
  */
 
-/*
- * IRQs are handled in supervisor mode
- * Exceptions are handled in machine mode
- */
+#if 1
+#define DEBUG
+#endif
 
 #include <common.h>
 #include <asm/csr.h>
@@ -51,33 +50,48 @@ extern irq_return_t timer_isr(int irq, void *dummy);
 static exception_handler_t exception_handlers[EXCEPTION_COUNT];
 static bool exception_handler_registred[EXCEPTION_COUNT];
 
+void trap_dump_regs(cpu_regs_t *regs);
 
-/* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
- * to save and restore registers that are modified correctly */
-void handle_mmode_trap(void) __attribute((interrupt)) ;
-void handle_mmode_trap() {
+/* Once in a trap, registers are stored in the trap frame */
+cpu_regs_t mtrap_frame;
+cpu_regs_t strap_frame;
 
-	u64 mcause = csr_read(CSR_MCAUSE);
+u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 	/* Interrupt source is on the other bits of mcause reg.
 	 * max trap source is 15 yet.. Mask 0xfff is more than enough */
-	u64 trap_source = mcause & 0xfff;
+	u64 trap_source = cause & 0xfff;
 
 	/* If reg MSB is 1, it is an interrupt */
-	if (mcause & CAUSE_IRQ_FLAG) {
+	if (cause & CAUSE_IRQ_FLAG) {
 
-		/* Sould not happen because IRQs are forwarded to supervisor mode.
-		 * Kernel panics to know what happend */
-		printk("Irqs should be forwarded to supervisor mode.\n"
-			   "Got IRQ is machine mode : No is %d\n", trap_source);
-		kernel_panic();
+		/* Only machine trap that can occur is machine timer irq */
+		if (trap_source == IRQ_M_TIMER) {
 
+			/* Clear the machine mode bit to ack and raise S-mode timer irq */
+			csr_clear(CSR_MIP, IE_MTIE);
+			csr_set(CSR_MIP, IE_STIE);
+
+			printk("Got machine timer interrupt, forwarded to s-mode\n");
+		}
+		else if (trap_source == IRQ_M_EXT) {
+			printk("Got machine ext interrupt.. Should not happen anymore\n");
+		}
 	}
 	/* Else it is an exception */
 	else {
 
-		/* Call exception handler of correct cause */
+		/* Print debug info */
 		if (exception_handler_registred[trap_source]) {
+			printk("### Got MACHINE exception at :\n"
+				   "### instr addr:  %#16x\n"
+				   "### mstatus reg:  %#16x\n"
+				   "### stval:        %#16x\n", epc, status, tval);
+#ifdef DEBUG
+			/* Print prq-trap registers */
+			trap_dump_regs(regs);
+#endif
+			/* Call exception handler of correct cause */
 			exception_handlers[trap_source]();
 		}
 		else {
@@ -86,74 +100,77 @@ void handle_mmode_trap() {
 					"There is no implementation for this case yet !\n", trap_source);
 			kernel_panic();
 		}
-
 	}
+	return epc;
 }
 
-/* Attribute interrupt for gcc is used to avoid writing assembly ABI code. It auto generates the handler
- * to save and restore registers correctly */
-void handle_smode_trap(void) __attribute((interrupt)) ;
-void handle_smode_trap() {
-
-	u64 mcause = csr_read(CSR_SCAUSE);
+u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 	/* Interrupt source is on the other bits of mcause reg.
 	 * max trap source is 15 yet.. Mask 0xfff is more than enough */
-	u64 trap_source = mcause & 0xfff;
+	u64 trap_source = cause & 0xfff;
 
 	/* If reg MSB is 1, it is an interrupt */
-	if (mcause & CAUSE_IRQ_FLAG) {
+	if (cause & CAUSE_IRQ_FLAG) {
 
 		switch(trap_source) {
 
-		/* Goes to timer ISR */
-		case RV_IRQ_TIMER:
+			/* Goes to timer ISR */
+			case RV_IRQ_TIMER:
 
-			__in_interrupt = true;
+				__in_interrupt = true;
+				timer_isr(trap_source, NULL);
 
-			timer_isr(trap_source, NULL);
+				/* Perform the softirqs if allowed */
+				if (!irqs_disabled_flags(regs))
+					do_softirq();
 
-#if 0 /* Issue is active to define if the check is really relevant */
-			/* TODO update function with registers saved instead of the current ones */
-			if (local_irq_is_disabled())
-				do_softirq();
-#endif
-			/* Perform the softirqs. Since this function is accessed in machine mode with interrupts
-			 * disabled there should be no need to check flags */
-			do_softirq();
+				break;
+			/* Will be handled by the PLIC */
+			case RV_IRQ_EXT:
 
-			break;
+				/* This function is located in irq.c and is the generic way to handle an
+				 * irq. */
+				irq_handle(regs);
 
-		/* Will be handled by the PLIC */
-		case RV_IRQ_EXT:
-
-			/* This function is located in irq.c and is the generic way to handle an
-			 * irq. */
-			irq_handle(NULL);
-
-			break;
-		default:
-			/* Sould not happen since last type possible here is for SOFT_IRQs and SO3
-			 * doesn't use softirqs as real hardware irqs. */
-			printk("Ignoring unkown IRQ source : No is %d\n", trap_source);
+				break;
+			default:
+				/* Sould not happen since last type possible here is for SOFT_IRQs and SO3
+				 * doesn't use softirqs as real hardware irqs. */
+				printk("Ignoring unkown IRQ source : No is %d\n", trap_source);
 		}
+
 	}
 	/* Else it is an exception */
 	else {
 
-		/* Sould not happen because exceptions are handled in machine mode.
-		 * Kernel panics to know what happend */
-		printk("Exceptions should be handled in machine mode.\n"
-			   "Got Exception in supervisor mode : No is %d\n", trap_source);
-		kernel_panic();
-
+		/* Print debug info */
+		if (exception_handler_registred[trap_source]) {
+			printk("### Got SOFTWARWE exception at :\n"
+				   "### instr addr:  %#16x\n"
+				   "### sstatus reg:  %#16x\n"
+				   "### stval:        %#16x\n", epc, status, tval);
+#ifdef DEBUG
+			/* Print prq-trap registers */
+			trap_dump_regs(regs);
+#endif
+			/* Call exception handler of correct cause */
+			exception_handlers[trap_source]();
+		}
+		else {
+			printk("Got Environement call (ECALL) or Breakpoint (EBREAK) "
+					": No is %d\n"
+					"There is no implementation for this case yet !\n", trap_source);
+			kernel_panic();
+		}
 	}
+	return epc;
 }
 
-/* Inits all exception handlers */
 void init_trap() {
 	int i;
 
+	/* Set all exception handler*/
 	for (i = 0; i < EXCEPTION_COUNT; i++) {
 		switch (i) {
 		case INSTR_ADDR_MISALIGNED	:
@@ -201,7 +218,41 @@ void init_trap() {
 			exception_handlers[i] = NULL;
 			break;
 		}
-
 	}
+}
+
+void trap_dump_regs(cpu_regs_t *regs) {
+
+	printk("ra:  %#016x\n", regs->ra);
+	printk("sp:  %#016x\n", regs->sp);
+	printk("gp:  %#016x\n", regs->gp);
+	printk("tp:  %#016x\n", regs->tp);
+	printk("t0:  %#016x\n", regs->t0);
+	printk("t1:  %#016x\n", regs->t1);
+	printk("t2:  %#016x\n", regs->t2);
+	printk("fp:  %#016x\n", regs->fp);
+	printk("s1:  %#016x\n", regs->s1);
+	printk("a0:  %#016x\n", regs->a0);
+	printk("a1:  %#016x\n", regs->a1);
+	printk("a2:  %#016x\n", regs->a2);
+	printk("a3:  %#016x\n", regs->a3);
+	printk("a4:  %#016x\n", regs->a4);
+	printk("a5:  %#016x\n", regs->a5);
+	printk("a6:  %#016x\n", regs->a6);
+	printk("a7:  %#016x\n", regs->a7);
+	printk("s2:  %#016x\n", regs->s2);
+	printk("s3:  %#016x\n", regs->s3);
+	printk("s4:  %#016x\n", regs->s4);
+	printk("s5:  %#016x\n", regs->s5);
+	printk("s6:  %#016x\n", regs->s6);
+	printk("s7:  %#016x\n", regs->s7);
+	printk("s8:  %#016x\n", regs->s8);
+	printk("s9:  %#016x\n", regs->s9);
+	printk("s10: %#016x\n", regs->s10);
+	printk("s11: %#016x\n", regs->s11);
+	printk("t3:  %#016x\n", regs->t3);
+	printk("t4:  %#016x\n", regs->t4);
+	printk("t5:  %#016x\n", regs->t5);
+	printk("t6:  %#016x\n", regs->t6);
 }
 

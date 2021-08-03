@@ -83,10 +83,17 @@ static inline int __irqs_disabled_flags(unsigned long flags)
 	return !(flags & SR_IE);
 }
 
-/* _MNR_ TODO regs not used yet */
+/* During IRQs, MIE is always false. bit is stored in PIE from status reg */
+static inline int __irqs_disabled_before_irq_flags(unsigned long flags)
+{
+	return !(flags & SR_PIE);
+}
+
+/* _NMR_ TODO make two of those like the __ variants above. Should change irq.c too.
+ * Working for now because this function is only used in irq.c */
 static inline int irqs_disabled_flags(cpu_regs_t *regs)
 {
-	return !(csr_read(CSR_STATUS) & SR_IE);
+	return __irqs_disabled_before_irq_flags(regs->status);
 }
 
 /*

@@ -23,6 +23,7 @@
 #include <timer.h>
 
 #include <asm/processor.h>
+#include <asm/csr.h>
 
 
 static inline u32 arch_timer_get_cntfrq(void)
@@ -32,13 +33,7 @@ static inline u32 arch_timer_get_cntfrq(void)
 
 static inline u64 arch_get_time(void) {
 
-		u64 n;
-
-		__asm__ __volatile__ (
-			"rdtime %0"
-			: "=r" (n));
-
-		return n;
+		return csr_read(CSR_TIME);
 }
 
 #endif /* ARM_TIMER_H */

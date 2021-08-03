@@ -116,28 +116,36 @@
 #define CSR_MHARTID		0xf14
 
 /* Usable names. At OS level, supervisor regs are used */
-# define CSR_STATUS		CSR_SSTATUS
-# define CSR_IE			CSR_SIE
-# define CSR_TVEC		CSR_STVEC
-# define CSR_SCRATCH	CSR_SSCRATCH
-# define CSR_EPC		CSR_SEPC
-# define CSR_CAUSE		CSR_SCAUSE
-# define CSR_TVAL		CSR_STVAL
-# define CSR_IP			CSR_SIP
+# define CSR_STATUS		CSR_MSTATUS
+# define CSR_IE			CSR_MIE
+# define CSR_TVEC		CSR_MTVEC
+# define CSR_SCRATCH	CSR_MSCRATCH
+# define CSR_EPC		CSR_MEPC
+# define CSR_CAUSE		CSR_MCAUSE
+# define CSR_TVAL		CSR_MTVAL
+# define CSR_IP			CSR_MIP
 
-# define SR_IE		SR_SIE
-# define SR_PIE		SR_SPIE
-# define SR_PP		SR_SPP
+# define SR_IE		SR_MIE
+# define SR_PIE		SR_MPIE
+# define SR_PP		SR_MPP
 
-# define RV_IRQ_SOFT	IRQ_S_SOFT
-# define RV_IRQ_TIMER	IRQ_S_TIMER
-# define RV_IRQ_EXT		IRQ_S_EXT
+# define RV_IRQ_SOFT	IRQ_M_SOFT
+# define RV_IRQ_TIMER	IRQ_M_TIMER
+# define RV_IRQ_EXT		IRQ_M_EXT
 
 /* IE/IP (Supervisor/Machine Interrupt Enable/Pending) flags */
 #define IE_SIE		(0x1 << RV_IRQ_SOFT)
 #define IE_TIE		(0x1 << RV_IRQ_TIMER)
 #define IE_EIE		(0x1 << RV_IRQ_EXT)
 
+/* Bonus declaration in case really needed */
+#define IE_MSIE		(0x1 << IRQ_M_SOFT)
+#define IE_MTIE		(0x1 << IRQ_M_TIMER)
+#define IE_MEIE		(0x1 << IRQ_M_EXT)
+
+#define IE_SSIE		(0x1 << IRQ_S_SOFT)
+#define IE_STIE		(0x1 << IRQ_S_TIMER)
+#define IE_SEIE		(0x1 << IRQ_S_EXT)
 
 #ifndef __ASSEMBLY__
 
