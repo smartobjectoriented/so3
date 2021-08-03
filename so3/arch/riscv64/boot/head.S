@@ -91,17 +91,14 @@ __kernel_main:
     la      t0, strap_frame
     csrw    sscratch, t0
 
-#if 0
-dsadsa
-
     # At mret call, the pc is set back to mepc. Here we preload jump address to kernel entry
     la      t0, kernel_start
     csrw    mepc, t0
 
     # Enable irqs in mie (machine mode irq enable) because this is the last time we are in
     # machine mode outside of an interrupt context. And if machine mode irqs are disabled,
-    # supervisor irqs won't be thrown.
-    li      t0, (1 << IRQ_M_TIMER) | (1 << IRQ_M_EXT)
+    # supervisor irqs won't be thrown either.
+    li      t0, IE_STIE | IE_MTIE | IE_SEIE | IE_MEIE
     csrw    mie, t0
 
     # Enable machine irqs globally for the same reasons. MPIE is the previous interrupt enable bit.
@@ -109,12 +106,11 @@ dsadsa
     li      t0, (PROCESSOR_SUPERVISOR_MODE << SR_MPP_SHIFT) | SR_MPIE
     csrs    mstatus, t0
 
+    li      t0, IE_SEIE | IE_STIE
+    csrw    mideleg, t0
+
     # C main entry point, never returns. Enters in supervisor mode
     mret
-#endif
-/* TODO _NMR_ remove */
-    # C main entry point, never returns. Enters in machine mode
-    j kernel_start
 
 # Addr on 64 bits => 8 bytes to store it
 __fdt_addr:

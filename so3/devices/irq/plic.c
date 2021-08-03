@@ -30,9 +30,9 @@
 
 #define PLIC_PRIO_OFFSET		0x0
 #define PLIC_PENDING_OFFSET		0x1000
-#define PLIC_ENABLE_OFFSET		0x2000
-#define PLIC_THRESH_OFFSET		0x200000
-#define PLIC_CLAIM_OFFSET		0x200004
+#define PLIC_ENABLE_OFFSET		0x2080
+#define PLIC_THRESH_OFFSET		0x201000
+#define PLIC_CLAIM_OFFSET		0x201004
 
 /* Irq number has an offset between DT initial number and the number the dev_t gets.
  * the PLIC uses the number that is in the device tree. But the number it gets from

@@ -83,7 +83,7 @@ static inline int __irqs_disabled_flags(unsigned long flags)
 	return !(flags & SR_IE);
 }
 
-/* During IRQs, MIE is always false. bit is stored in PIE from status reg */
+/* During IRQs, MIE or SIE is always false. bit is stored in PSIE/PMIE from status reg */
 static inline int __irqs_disabled_before_irq_flags(unsigned long flags)
 {
 	return !(flags & SR_PIE);

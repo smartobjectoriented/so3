@@ -115,6 +115,7 @@ int rest_init(void *dummy) {
 void kernel_start(void) {
 
 	/* Basic low-level initialization */
+
 	setup_arch();
 
 	lprintk("\n\n********** Smart Object Oriented SO3 Operating System **********\n");
@@ -128,15 +129,14 @@ void kernel_start(void) {
 
 	devices_init();
 
-	local_irq_enable();
-	while(1);
-
 	printk("\nDevices initialized successfully\n");
 
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
 
+	local_irq_enable();
 
+	while(1);
 
 	vfs_init();
 

@@ -28,18 +28,7 @@
 #include <device/arch/riscv_timer.h>
 #include <asm/trap.h>
 #include <asm/fault.h>
-
-/* Define exception numbers */
-#define INSTR_ADDR_MISALIGNED	0
-#define INSTR_ACCESS_FAULT		1
-#define ILLEGAL_INSTR			2
-#define LOAD_ADDR_MISALIGNED	4
-#define LOAD_ACCESS_FAULT		5
-#define STORE_ADDR_MISALIGNED	6
-#define STORE_ACCESS_FAULT		7
-#define INSTR_PAGE_FAULT		12
-#define LOAD_PAGE_FAULT			13
-#define STORE_PAGE_FAULT		15
+#include <asm/sbi.h>
 
 #define EXCEPTION_COUNT 	16
 
@@ -68,21 +57,26 @@ u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 		/* Only machine trap that can occur is machine timer irq */
 		if (trap_source == IRQ_M_TIMER) {
 
-			/* Clear the machine mode bit to ack and raise S-mode timer irq */
-			csr_clear(CSR_MIP, IE_MTIE);
+			/* Clear the machine mode bit to avoid another irq and raise S-mode timer irq */
+			csr_clear(CSR_MIE, IE_MTIE);
 			csr_set(CSR_MIP, IE_STIE);
 
 			printk("Got machine timer interrupt, forwarded to s-mode\n");
 		}
-		else if (trap_source == IRQ_M_EXT) {
-			printk("Got machine ext interrupt.. Should not happen anymore\n");
+		else {
+			printk("Ignoring unkown IRQ source in MACHINE mode: No is %d\n", trap_source);
 		}
 	}
-	/* Else it is an exception */
+	/* Else it is an exception or an ecall */
 	else {
 
-		/* Print debug info */
-		if (exception_handler_registred[trap_source]) {
+		/* If we get an ecall from supervisor mode */
+		if (trap_source == MCAUSE_SUPERVISOR_ECALL) {
+			sbi_ecall_handler(regs);
+		}
+
+		/* Else it's an exception. Print debug info */
+		else if (exception_handler_registred[trap_source]) {
 			printk("### Got MACHINE exception at :\n"
 				   "### instr addr:  %#16x\n"
 				   "### mstatus reg:  %#16x\n"
@@ -95,7 +89,7 @@ u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 			exception_handlers[trap_source]();
 		}
 		else {
-			printk("Got Environement call (ECALL) or Breakpoint (EBREAK) "
+			printk("Got Unimplemented Environement call (ECALL) or Breakpoint (EBREAK) "
 					": No is %d\n"
 					"There is no implementation for this case yet !\n", trap_source);
 			kernel_panic();
@@ -119,6 +113,8 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 			case RV_IRQ_TIMER:
 
 				__in_interrupt = true;
+
+				printk("S-mode handling forwarded interrupt\n");
 				timer_isr(trap_source, NULL);
 
 				/* Perform the softirqs if allowed */
@@ -144,9 +140,11 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 	/* Else it is an exception */
 	else {
 
+		/* Only ecalls we get here are user ecalls.. They don't exist yet */
+
 		/* Print debug info */
 		if (exception_handler_registred[trap_source]) {
-			printk("### Got SOFTWARWE exception at :\n"
+			printk("### Got SUPERVISOR exception at :\n"
 				   "### instr addr:  %#16x\n"
 				   "### sstatus reg:  %#16x\n"
 				   "### stval:        %#16x\n", epc, status, tval);
@@ -173,43 +171,43 @@ void init_trap() {
 	/* Set all exception handler*/
 	for (i = 0; i < EXCEPTION_COUNT; i++) {
 		switch (i) {
-		case INSTR_ADDR_MISALIGNED	:
+		case MCAUSE_INSTR_ADDR_MISALIGNED	:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __instr_addr_misalignment;
 			break;
-		case INSTR_ACCESS_FAULT		:
+		case MCAUSE_INSTR_ACCESS_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __instr_access_fault;
 			break;
-		case ILLEGAL_INSTR			:
+		case MCAUSE_ILLEGAL_INSTR			:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __illegal_instr;
 			break;
-		case LOAD_ADDR_MISALIGNED	:
+		case MCAUSE_LOAD_ADDR_MISALIGNED	:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __load_addr_misalignement;
 			break;
-		case LOAD_ACCESS_FAULT		:
+		case MCAUSE_LOAD_ACCESS_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __load_access_fault;
 			break;
-		case STORE_ADDR_MISALIGNED	:
+		case MCAUSE_STORE_ADDR_MISALIGNED	:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __store_AMO_addr_misaligned;
 			break;
-		case STORE_ACCESS_FAULT		:
+		case MCAUSE_STORE_ACCESS_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __store_AMO_access_fault;
 			break;
-		case INSTR_PAGE_FAULT		:
+		case MCAUSE_INSTR_PAGE_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __instr_page_fault;
 			break;
-		case LOAD_PAGE_FAULT		:
+		case MCAUSE_LOAD_PAGE_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __load_page_fault;
 			break;
-		case STORE_PAGE_FAULT		:
+		case MCAUSE_STORE_PAGE_FAULT		:
 			exception_handler_registred[i] = true;
 			exception_handlers[i] = __store_AMO_page_fault;
 			break;

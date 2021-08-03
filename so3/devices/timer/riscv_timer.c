@@ -34,14 +34,14 @@
 #include <asm/csr.h>
 #include <asm/trap.h>
 #include <asm/io.h>
+#include <asm/sbi.h>
 
 static unsigned long reload;
 
-static void next_event(u32 next) {
+static void next_event(u64 next) {
 
 	u64 *mtimecmp_addr = (u64*) TIMER_MTIMECMP_REG;
 
-	/* Enables IRQs from timer */
 	csr_set(CSR_IE, IE_TIE);
 
 	/* Set new CMP register value. This clears interrupt as well. Interrupt is only the
@@ -56,8 +56,9 @@ irq_return_t timer_isr(int irq, void *dummy) {
 	printk("Hi from timer ISR\n");
 #endif
 
-	/* Periodic timer. Reloading here will clear the interrupt */
-	next_event(reload);
+	/* Periodic timer. Reloading here will clear the interrupt. ISR is called in
+	 * supervisor mode and reseting irq timer needs machine privileges. Needs a sbi call. */
+	sbi_timer_next_event(reload);
 	jiffies++;
 	raise_softirq(TIMER_SOFTIRQ);
 

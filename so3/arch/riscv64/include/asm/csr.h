@@ -116,22 +116,22 @@
 #define CSR_MHARTID		0xf14
 
 /* Usable names. At OS level, supervisor regs are used */
-# define CSR_STATUS		CSR_MSTATUS
-# define CSR_IE			CSR_MIE
-# define CSR_TVEC		CSR_MTVEC
-# define CSR_SCRATCH	CSR_MSCRATCH
-# define CSR_EPC		CSR_MEPC
-# define CSR_CAUSE		CSR_MCAUSE
-# define CSR_TVAL		CSR_MTVAL
-# define CSR_IP			CSR_MIP
+# define CSR_STATUS		CSR_SSTATUS
+# define CSR_IE			CSR_SIE
+# define CSR_TVEC		CSR_STVEC
+# define CSR_SCRATCH	CSR_SSCRATCH
+# define CSR_EPC		CSR_SEPC
+# define CSR_CAUSE		CSR_SCAUSE
+# define CSR_TVAL		CSR_STVAL
+# define CSR_IP			CSR_SIP
 
-# define SR_IE		SR_MIE
-# define SR_PIE		SR_MPIE
-# define SR_PP		SR_MPP
+# define SR_IE		SR_SIE
+# define SR_PIE		SR_SPIE
+# define SR_PP		SR_SPP
 
-# define RV_IRQ_SOFT	IRQ_M_SOFT
-# define RV_IRQ_TIMER	IRQ_M_TIMER
-# define RV_IRQ_EXT		IRQ_M_EXT
+# define RV_IRQ_SOFT	IRQ_S_SOFT
+# define RV_IRQ_TIMER	IRQ_S_TIMER
+# define RV_IRQ_EXT		IRQ_S_EXT
 
 /* IE/IP (Supervisor/Machine Interrupt Enable/Pending) flags */
 #define IE_SIE		(0x1 << RV_IRQ_SOFT)
@@ -146,6 +146,22 @@
 #define IE_SSIE		(0x1 << IRQ_S_SOFT)
 #define IE_STIE		(0x1 << IRQ_S_TIMER)
 #define IE_SEIE		(0x1 << IRQ_S_EXT)
+
+/* Trap Cause Regsiters */
+/* Define exception numbers */
+#define MCAUSE_INSTR_ADDR_MISALIGNED	0
+#define MCAUSE_INSTR_ACCESS_FAULT		1
+#define MCAUSE_ILLEGAL_INSTR			2
+#define MCAUSE_LOAD_ADDR_MISALIGNED		4
+#define MCAUSE_LOAD_ACCESS_FAULT		5
+#define MCAUSE_STORE_ADDR_MISALIGNED	6
+#define MCAUSE_STORE_ACCESS_FAULT		7
+#define MCAUSE_USER_ECALL				8
+#define MCAUSE_SUPERVISOR_ECALL			9
+#define MCAUSE_MACHINE_ECALL			11
+#define MCAUSE_INSTR_PAGE_FAULT			12
+#define MCAUSE_LOAD_PAGE_FAULT			13
+#define MCAUSE_STORE_PAGE_FAULT			15
 
 #ifndef __ASSEMBLY__
 
