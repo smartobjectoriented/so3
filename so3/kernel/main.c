@@ -134,10 +134,6 @@ void kernel_start(void) {
 	/* At this point of time, we are able to use the standard printk() */
 	timer_init();
 
-	local_irq_enable();
-
-	while(1);
-
 	vfs_init();
 
 	/* Scheduler init */

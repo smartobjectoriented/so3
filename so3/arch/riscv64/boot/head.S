@@ -95,17 +95,21 @@ __kernel_main:
     la      t0, kernel_start
     csrw    mepc, t0
 
-    # Enable irqs in mie (machine mode irq enable) because this is the last time we are in
-    # machine mode outside of an interrupt context. And if machine mode irqs are disabled,
-    # supervisor irqs won't be thrown either.
-    li      t0, IE_STIE | IE_MTIE | IE_SEIE | IE_MEIE
+    # Timers interrupts are machine interrupts. They will be forwarded to supervisor timer interrupt
+    # by hand.. Since after this file, we'll switch to supervisor mode, it's the last moment we can
+    # do it.
+    # Supervisor interrupts will be enabled from supervisor kernel from the timer device and from
+    # irq controller device if they are in the device tree.
+    li      t0, IE_MTIE
     csrw    mie, t0
 
-    # Enable machine irqs globally for the same reasons. MPIE is the previous interrupt enable bit.
-    # It's this one that has to be written because its value will be written in MIE at mret instruction.
-    li      t0, (PROCESSOR_SUPERVISOR_MODE << SR_MPP_SHIFT) | SR_MPIE
+    # Enable machine irqs globally for the same reasons. In supervisor mode,
+    # machine irqs will always be active, no need to enable useless things. c.f. in specs section 3.1.6.1 (p.20)
+    # https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf
+    li      t0, (PROCESSOR_SUPERVISOR_MODE << SR_MPP_SHIFT)
     csrs    mstatus, t0
 
+    # Have to be active to allow supervisor timer interrupt and external interrupts
     li      t0, IE_SEIE | IE_STIE
     csrw    mideleg, t0
 

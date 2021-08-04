@@ -60,10 +60,10 @@ u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 			/* Clear the machine mode bit to avoid another irq and raise S-mode timer irq */
 			csr_clear(CSR_MIE, IE_MTIE);
 			csr_set(CSR_MIP, IE_STIE);
-
-			printk("Got machine timer interrupt, forwarded to s-mode\n");
 		}
 		else {
+			/* Sould not happen since external irqs are supervisor irqs and last type of irq
+			 * are soft irq.. There is no softirqs in SO3 */
 			printk("Ignoring unkown IRQ source in MACHINE mode: No is %d\n", trap_source);
 		}
 	}
@@ -73,14 +73,19 @@ u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 		/* If we get an ecall from supervisor mode */
 		if (trap_source == MCAUSE_SUPERVISOR_ECALL) {
 			sbi_ecall_handler(regs);
+			/* instructions are 32 bits => 4 bytes. mepc holds pc of instruction at the time
+			 * of the trap. To continue the execution normally, code has to return one instruction
+			 * further. This is only a problem for ecalls and not for regular traps where mepc also
+			 * holds current instruction but could not be executed because of the trap. */
+			epc += 4;
 		}
 
 		/* Else it's an exception. Print debug info */
 		else if (exception_handler_registred[trap_source]) {
 			printk("### Got MACHINE exception at :\n"
-				   "### instr addr:  %#16x\n"
+				   "### instr addr:   %#16x\n"
 				   "### mstatus reg:  %#16x\n"
-				   "### stval:        %#16x\n", epc, status, tval);
+				   "### mtval:        %#16x\n", epc, status, tval);
 #ifdef DEBUG
 			/* Print prq-trap registers */
 			trap_dump_regs(regs);
@@ -114,7 +119,6 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
 				__in_interrupt = true;
 
-				printk("S-mode handling forwarded interrupt\n");
 				timer_isr(trap_source, NULL);
 
 				/* Perform the softirqs if allowed */
@@ -132,7 +136,7 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 				break;
 			default:
 				/* Sould not happen since last type possible here is for SOFT_IRQs and SO3
-				 * doesn't use softirqs as real hardware irqs. */
+				 * doesn't use softirqs as real hardware irqs. Notify it anyways just ine case. */
 				printk("Ignoring unkown IRQ source : No is %d\n", trap_source);
 		}
 
@@ -145,7 +149,7 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 		/* Print debug info */
 		if (exception_handler_registred[trap_source]) {
 			printk("### Got SUPERVISOR exception at :\n"
-				   "### instr addr:  %#16x\n"
+				   "### instr addr:   %#16x\n"
 				   "### sstatus reg:  %#16x\n"
 				   "### stval:        %#16x\n", epc, status, tval);
 #ifdef DEBUG
