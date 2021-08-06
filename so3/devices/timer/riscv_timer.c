@@ -38,18 +38,6 @@
 
 static unsigned long reload;
 
-static void next_event(u64 next) {
-
-	u64 *mtimecmp_addr = (u64*) TIMER_MTIMECMP_REG;
-
-	csr_set(CSR_IE, IE_TIE);
-
-	/* Set new CMP register value. This clears interrupt as well. Interrupt is only the
-	 * result of the comparator between mtime and mtimecmp. If correct value is written,
-	 * interrupt is cleared */
-	iowrite64(mtimecmp_addr, arch_get_time() + next);
-}
-
 irq_return_t timer_isr(int irq, void *dummy) {
 
 #ifdef DEBUG
@@ -66,8 +54,16 @@ irq_return_t timer_isr(int irq, void *dummy) {
 }
 
 static void periodic_timer_start(void) {
-	/* Start the periodic timer */
-	next_event(reload);
+
+	u64 *mtimecmp_addr = (u64*) TIMER_MTIMECMP_REG;
+
+	/* Enable timer interrupts */
+	csr_set(CSR_IE, IE_TIE);
+
+	/* Set new CMP register value. This clears interrupt as well. Interrupt is only the
+	 * result of the comparator between mtime and mtimecmp. If correct value is written,
+	 * interrupt is cleared */
+	iowrite64(mtimecmp_addr, arch_get_time() + reload);
 }
 
 /*

@@ -58,7 +58,7 @@ __thread_prologue_kernel:
     # Re-enable IRQs
     csrsi CSR_STATUS, SR_IE
 
-    jal ra, thread_prologue
+    jal thread_prologue
 
 # Not used because there is no userspace for now
 __thread_prologue_user:
@@ -85,8 +85,8 @@ save_ctx:
     sd t2, OFFSET_TCB_CPU_REGS + OFFSET_T2( a0 )
     sd fp, OFFSET_TCB_CPU_REGS + OFFSET_FP( a0 )
     sd s1, OFFSET_TCB_CPU_REGS + OFFSET_S1( a0 )
-    sd a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a0 )
-    sd a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a0 )
+    # sd a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a0 )
+    # sd a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a0 )
     sd a2, OFFSET_TCB_CPU_REGS + OFFSET_A2( a0 )
     sd a3, OFFSET_TCB_CPU_REGS + OFFSET_A3( a0 )
     sd a4, OFFSET_TCB_CPU_REGS + OFFSET_A4( a0 )
@@ -120,7 +120,7 @@ load_ctx:
     ld t2, OFFSET_TCB_CPU_REGS + OFFSET_T2( a1 )
     ld fp, OFFSET_TCB_CPU_REGS + OFFSET_FP( a1 )
     ld s1, OFFSET_TCB_CPU_REGS + OFFSET_S1( a1 )
-    ld a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a1 )
+    #ld a0, OFFSET_TCB_CPU_REGS + OFFSET_A0( a1 )
     // a1 has to be done last to avoid memory issues
     ld a2, OFFSET_TCB_CPU_REGS + OFFSET_A2( a1 )
     ld a3, OFFSET_TCB_CPU_REGS + OFFSET_A3( a1 )
@@ -142,7 +142,7 @@ load_ctx:
     ld t4, OFFSET_TCB_CPU_REGS + OFFSET_T4( a1 )
     ld t5, OFFSET_TCB_CPU_REGS + OFFSET_T5( a1 )
     ld t6, OFFSET_TCB_CPU_REGS + OFFSET_T6( a1 )
-    ld a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a1 )
+    #ld a1, OFFSET_TCB_CPU_REGS + OFFSET_A1( a1 )
 
     ret
 

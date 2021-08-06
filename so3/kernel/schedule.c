@@ -75,7 +75,7 @@ inline bool check_consistency_ready(void) {
 #endif /* 0 */
 
 void preempt_disable(void) {
-	uint32_t flags;
+	uint64_t flags;
 
 	spin_lock_irqsave(&schedule_lock, flags);
 	__sched_preempt = false;
@@ -136,7 +136,7 @@ void ready(tcb_t *tcb) {
  * It is assumed that the caller manages the waiting queue.
  */
 void waiting(void) {
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 
@@ -154,7 +154,7 @@ void waiting(void) {
  */
 void zombie(void) {
 	queue_thread_t *cur;
-	uint32_t flags;
+	uint64_t flags;
 
 	ASSERT(current()->state == THREAD_STATE_RUNNING);
 
@@ -213,7 +213,7 @@ void remove_zombie(struct tcb *tcb) {
  * If the thread passed as argument is not sleeping, we just skip it.
  */
 void wake_up(struct tcb *tcb) {
-	uint32_t flags;
+	uint64_t flags;
 
 	spin_lock_irqsave(&schedule_lock, flags);
 
@@ -409,7 +409,7 @@ static tcb_t *next_thread(void) {
 void schedule(void) {
 
 	tcb_t *prev, *next;
-	uint32_t flags;
+	uint64_t flags;
 	static volatile bool __in_scheduling = false;
 
 	if (unlikely(boot_stage < BOOT_STAGE_COMPLETED))
@@ -514,7 +514,7 @@ static inline void raise_schedule(void *__dummy) {
 void dump_ready(void) {
 	struct list_head *pos;
 	queue_thread_t *cur;
-	uint32_t flags;
+	uint64_t flags;
 
 	lprintk("Dumping the ready-threads queue: \n");
 
@@ -542,7 +542,7 @@ void dump_ready(void) {
 void dump_zombie(void) {
 	struct list_head *pos;
 	queue_thread_t *cur;
-	uint32_t flags;
+	uint64_t flags;
 
 	printk("Dumping the zombie-threads queue: \n");
 

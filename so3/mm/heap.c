@@ -568,7 +568,7 @@ next_list:
 	/* Is a specific alignment requested ? (alignment must be a power of 2) */
 
 	if (alignment > 0) {
-		tmp_addr = (void *) (((unsigned int) addr + alignment - 1) & -((signed) alignment));
+		tmp_addr = (void *) (((addr_t) addr + alignment - 1) & -((signed) alignment));
 
 		ASSERT(tmp_addr >= addr);
 

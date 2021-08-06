@@ -31,7 +31,7 @@
  */
 void wait_for_completion(completion_t *completion) {
 	queue_thread_t q_tcb;
-	uint32_t flags;
+	uint64_t flags;
 
 	ASSERT(!__in_interrupt);
 	ASSERT(local_irq_is_enabled());
@@ -58,7 +58,7 @@ void wait_for_completion(completion_t *completion) {
  */
 void complete(completion_t *completion) {
 	queue_thread_t *curr;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 
@@ -85,7 +85,7 @@ void complete(completion_t *completion) {
  */
 void complete_all(completion_t *completion) {
 	queue_thread_t *curr, *tmp;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 

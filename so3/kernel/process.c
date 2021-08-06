@@ -645,7 +645,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 {
 	elf_img_info_t elf_img_info;
 	pcb_t *pcb;
-	uint32_t flags;
+	uint64_t flags;
 	int (*start_routine)(void *);
 	queue_thread_t *cur;
 	int ret, argc;
@@ -772,7 +772,7 @@ pcb_t *duplicate_process(pcb_t *parent)
 int do_fork(void)
 {
 	pcb_t *newp, *parent;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 
@@ -893,7 +893,7 @@ uint32_t do_getpid(void) {
  */
 int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 	pcb_t *child;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 

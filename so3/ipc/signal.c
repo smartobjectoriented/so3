@@ -130,7 +130,7 @@ int do_sigaction(int signum, const sigaction_t *action, sigaction_t *old_action)
 int do_kill(int pid, int sig)
 {
 	pcb_t *proc;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 

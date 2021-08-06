@@ -148,8 +148,8 @@ bool kernel_stack_slot[THREAD_MAX];
  * The first stack area is the initial system stack and remains preserved so far.
  * The first thread stack slot ID #0 starts right under this area.
  */
-uint32_t get_kernel_stack_top(uint32_t slotID) {
-	return (uint32_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
+addr_t get_kernel_stack_top(uint32_t slotID) {
+	return (addr_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
 }
 
 /*
@@ -390,7 +390,7 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
 tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
-	uint32_t flags;
+	uint64_t flags;
 
 	BUG_ON(boot_stage < BOOT_STAGE_SCHED);
 
@@ -429,8 +429,8 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 
 #ifdef CONFIG_ARCH_RISCV64
 	/* Prepare registers for future restore in switch_context() */
-	tcb->cpu_regs.s4 = (u64) tcb->th_fn;
-	tcb->cpu_regs.s5 = (u64) tcb->th_arg; /* First argument */
+	tcb->cpu_regs.s4 = (addr_t) tcb->th_fn;
+	tcb->cpu_regs.s5 = (addr_t) tcb->th_arg; /* First argument */
 #else
 	/* Prepare registers for future restore in switch_context() */
 	tcb->cpu_regs.r4 = (unsigned int) tcb->th_fn;
@@ -455,9 +455,9 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 
 #ifdef CONFIG_ARCH_RISCV64
 	if (pcb)
-		tcb->cpu_regs.ra = (u64) __thread_prologue_user;
+		tcb->cpu_regs.ra = (addr_t) __thread_prologue_user;
 	 else
-		tcb->cpu_regs.ra = (u64) __thread_prologue_kernel;
+		tcb->cpu_regs.ra = (addr_t) __thread_prologue_kernel;
 #else
 	if (pcb)
 		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_user;
@@ -522,7 +522,7 @@ int thread_join(tcb_t *tcb)
 	int exit_status;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
-	uint32_t flags;
+	uint64_t flags;
 	bool is_main_thread;
 	pcb_t *__child_pcb;
 
@@ -626,7 +626,7 @@ int thread_join(tcb_t *tcb)
 
 int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p) {
 
-	uint32_t flags;
+	uint64_t flags;
 	tcb_t *tcb;
 	char *name;
 
@@ -663,7 +663,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 int do_thread_join(uint32_t pthread_id, int **value_p) {
 	tcb_t *tcb;
 	int ret;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 

@@ -48,7 +48,7 @@ typedef enum {
 struct dev {
 	char compatible[MAX_COMPAT_SIZE];
 	char nodename[MAX_NODE_SIZE];
-	uint32_t base;
+	addr_t base;
 	uint32_t size;
 	int irq_nr;
 	irq_type_t irq_type;

@@ -16,11 +16,6 @@ SMODE_STACK_SIZE = 64*1024 + 32*64*1024;    /* Initial system stack + 640 KB sta
 
 HEAP_SIZE = 32 * 1024 * 1024;               /* 32 MB dedicated to kernel heap */
 
-/*
- * The system (1st-level) page table is located at 0xc000'4000 and occupies 16 KB (4096 32-bit entries)
- */
-
-
 SECTIONS
 {
      . = ENTRY_ADDR;
@@ -34,7 +29,7 @@ SECTIONS
 
   	__vectors_end = .;
 
-    . = ALIGN(16384);
+    . = ALIGN(4096);
 
     .head.text :
     {
@@ -110,9 +105,7 @@ SECTIONS
 
 	__initcall_postinit_t_core_end = .;
 
-    /* Alignment is required for subsequent allocation of L1 page tables */
-
-    . = ALIGN(16384);
+    . = ALIGN(4096);
 
     .heap :
     {

@@ -70,7 +70,7 @@ void delay_handler(void *arg) {
 
 static void __sleep(u64 ns) {
 	struct timer __timer;
-	uint32_t flags;
+	uint64_t flags;
 
 	flags = local_irq_save();
 

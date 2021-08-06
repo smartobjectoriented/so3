@@ -18,7 +18,7 @@
  *
  */
 
-.section ".text", "ax"
+.section ".vectors.text", "ax"
 
 #include <asm-offsets.h>
 
