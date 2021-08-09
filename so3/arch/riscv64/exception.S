@@ -194,9 +194,7 @@ __ll_handle_smode_trap:
     # Reload all registers from stack
     # ABI forces callee to save sp, it should always have old value
     ld ra, OFFSET_RA( sp )
-    # sp should not change value
-    /* _NMR_ TODO remove */
-    ld sp, OFFSET_SP( sp )
+    # sp should not change value, there is no need to load it
     ld gp, OFFSET_GP( sp )
     ld tp, OFFSET_TP( sp )
     ld t0, OFFSET_T0( sp )

@@ -275,6 +275,7 @@ int app_thread_main(void *args)
 		kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", &id[i], 0);
 	}
 
+	/* Keep while loop since ids exist only in the main thread */
 	while(1);
 #endif
 
