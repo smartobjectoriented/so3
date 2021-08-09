@@ -75,6 +75,9 @@ typedef struct cpu_regs {
 	__u64 	epc;
 } cpu_regs_t;
 
+/* Size of cpu regs_t */
+//#define TRAP_FRAME_SIZE		33 * sizeof(__u64)
+#define TRAP_FRAME_SIZE 10
 
 #define cpu_relax()	barrier()
 

@@ -103,9 +103,10 @@ __kernel_main:
     li      t0, IE_MTIE
     csrw    mie, t0
 
-    # Enable machine irqs globally for the same reasons. In supervisor mode,
-    # machine irqs will always be active, no need to enable useless things. c.f. in specs section 3.1.6.1 (p.20)
+    # In supervisor mode, machine irqs will always be active, no need to enable useless things.
+    # c.f. in specs section 3.1.6.1 (p.20)
     # https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf
+    # MPP (Machine Previous Privilege) must be set to supervisor
     li      t0, (PROCESSOR_SUPERVISOR_MODE << SR_MPP_SHIFT)
     csrs    mstatus, t0
 

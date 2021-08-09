@@ -261,7 +261,7 @@ int app_thread_main(void *args)
 	}
 #endif
 
-#if 0 /* RISC-V without MMU multiple thread test app */
+#if 1 /* RISC-V without MMU multiple thread test app */
 
 	/* Creating threads counting */
 	int id[5], i;
@@ -275,13 +275,11 @@ int app_thread_main(void *args)
 		kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", &id[i], 0);
 	}
 
-	kernel_thread(thread_risc_v_fn, "thread_risc_v_fn", NULL, 30);
-
 	while(1);
 #endif
 
 
-#if 1 /* RISC-V without MMU single thread test app */
+#if 0 /* RISC-V without MMU single thread test app */
 
 	printk("***********************************************\n");
 	printk("Starting RISC-V porting test app...\n");

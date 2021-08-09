@@ -27,14 +27,14 @@
  * user will call sbi function and not the ecall directly */
 #define ECALL_TIMER_RELOAD		1
 
-/* Called in supervisor privilege */
+/* Called from supervisor privilege */
 void sbi_timer_next_event(u64 next) {
 
 	/* set arguments for ecall instruction */
 	register u64 arg_next asm("a0") = next;
 	register int no_call asm("a7") = ECALL_TIMER_RELOAD;
 
-	/* make the call */
+	/* make the call, will switch to machine mode */
 	asm volatile ("ecall\n"
 			  :
 		      : "r"(arg_next), "r"(no_call)

@@ -55,10 +55,16 @@ __thread_prologue_kernel:
     move a0, s4      # tcb->th_fn
     move a1, s5      # tcb->th_arg
 
-    # Re-enable IRQs
-    csrsi CSR_STATUS, SR_IE
+    # Get manually out of interrupt routine.
+    #la      t0, thread_prologue
+    #csrw    CSR_EPC, t0
 
-    jal thread_prologue
+    # Get out of interrupt context for the cpu. Will restore irqs if they were active
+    # before scheduling and restore previous privliege level.
+    #sret
+    csrsi   CSR_STATUS, SR_IE
+
+    jal     thread_prologue
 
 # Not used because there is no userspace for now
 __thread_prologue_user:
