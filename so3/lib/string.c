@@ -41,19 +41,6 @@ void uppercase(char *str, int len)
 }
 
 /*
- * From https://github.com/twd2/riscv-osdev
- */
-char *strchr(const char *s, int c) {
-    while (*s != '\0') {
-        if (*s == c) {
-            return (char *)s;
-        }
-        s ++;
-    }
-    return NULL;
-}
-
-/*
  * Convert a string to lowercase.
  */
 void downcase(char *str)

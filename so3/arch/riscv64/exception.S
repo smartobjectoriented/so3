@@ -14,7 +14,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- * Inspired by Stephen Marz low level handling for his rust OS
+ * Inspired by Stephen Marz low level handling for his rust OS:
+ * https://osblog.stephenmarz.com/index.html
  *
  */
 
@@ -187,7 +188,8 @@ __ll_handle_smode_trap:
     mv      a4, sp
     call    handle_strap
 
-    # Reload sepc first from the stored one, t0 can be used since it will be reloaded anyway
+    # Reload sepc first from the stored one, t0 can be used since it will be
+    # reloaded later anyways
     ld      t0, OFFSET_EPC( sp )
     csrw    sepc, t0
 

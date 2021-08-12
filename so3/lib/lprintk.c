@@ -48,14 +48,15 @@ void __lprintk(const char *format, const va_list va) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
-#if 0 /* This is only usable with ARM _NMR_*/
+#if 0 /* _NMR_ This is only usable with ARM, no user mode on RISC-V port anyway */
 	if (cpu_mode() == PSR_USR_MODE)
 		__write(STDOUT, buf, strlen(buf));
 	else
 		ll_serial_write(buf, strlen(buf));
 #endif
 
-	/* Since so3 for risc-v still has no userspace, there is no risk for a problem yet */
+	/* Since so3 for risc-v still has no userspace, there is no problem yet
+	 * by doing so */
 	ll_serial_write(buf, strlen(buf));
 }
 

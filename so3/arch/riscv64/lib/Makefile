@@ -1,1 +1,1 @@
-obj-y += findbit.o
+obj-y += findbit.o string.o

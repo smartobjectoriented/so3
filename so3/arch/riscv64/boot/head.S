@@ -23,7 +23,6 @@
 
 .extern __stack_top
 .extern mtrap_frame
-.extern strap_frame
 
 .extern __ll_handle_mmode_trap
 .extern __ll_handle_smode_trap
@@ -84,12 +83,9 @@ __kernel_main:
     la      t0, __ll_handle_smode_trap
     csrw    stvec, t0
 
-    # Init sscratch and msscratch to trap_frame, they can't use same frame
-    # in case a machine irq raises while doing smode isr.
+    # Init msscratch to trap_frame
     la      t0, mtrap_frame
     csrw    mscratch, t0
-    la      t0, strap_frame
-    csrw    sscratch, t0
 
     # At mret call, the pc is set back to mepc. Here we preload jump address to kernel entry
     la      t0, kernel_start

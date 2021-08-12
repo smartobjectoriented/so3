@@ -26,9 +26,6 @@
 #include <asm/processor.h>
 
 typedef struct { volatile int counter; } atomic_t;
-# if 0 /* _NMR_ */
-typedef struct { volatile long long counter; } atomic64_t;
-#endif
 
 #define ATOMIC_INIT(i)	{ (i) }
 
@@ -162,10 +159,6 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
 #define atomic_sub_and_test(i, v) (_priv_atomic_sub(&(v)->counter, i) == 0)
 
 #define atomic_add_negative(i,v) (_priv_atomic_add(&(v)->counter, i) < 0)
-
-#if 0 /* _NMR_ */
-#include <asm/atomic-generic.h>
-#endif
 
 # define atomic_compareandswap(old, new, v)	\
 	((atomic_t) { atomic_cmpxchg(v, atomic_read(&old), atomic_read(&new)) })

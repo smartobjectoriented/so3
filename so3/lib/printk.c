@@ -38,7 +38,7 @@ void printk(const char *fmt, ...)
 	(void)vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-#if 0 /* _NMR_  only works on ARM */
+#if 0 /* _NMR_ This is only usable with ARM, no user mode on RISC-V port anyway */
 	if (cpu_mode() == PSR_USR_MODE)
 		__write(STDOUT, buf, strlen(buf));
 	else {
@@ -57,7 +57,7 @@ void printk(const char *fmt, ...)
 		if (*p != '\0')
 			serial_write(p, strlen(p)+1);
 	}
-#endif
+#else
 
 	p = buf;
 
@@ -73,5 +73,6 @@ void printk(const char *fmt, ...)
 
 	if (*p != '\0')
 		serial_write(p, strlen(p)+1);
+#endif
 }
 

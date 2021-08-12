@@ -170,9 +170,7 @@ int thread_risc_v_fn(void *arg) {
 
 	sleep_amount = id * 1000;
 
-	printk("**************************\n"
-		   "Thread #%d starts counting\n"
-		   "**************************\n", id);
+	printk("Thread #%d starts counting\n", id);
 
 	while (1) {
 		msleep(sleep_amount);

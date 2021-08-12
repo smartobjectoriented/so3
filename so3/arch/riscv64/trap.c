@@ -41,9 +41,9 @@ static bool exception_handler_registred[EXCEPTION_COUNT];
 
 void trap_dump_regs(cpu_regs_t *regs);
 
-/* Once in a trap, registers are stored in the trap frame */
+/* Once in a trap, registers are stored in the trap frame. Only machine mode has a trap frame.
+ * Supervisor traps are stored on the stack directly */
 cpu_regs_t mtrap_frame;
-cpu_regs_t strap_frame;
 
 u64 handle_mtrap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 
@@ -122,7 +122,7 @@ u64 handle_strap(u64 epc, u64 tval, u64 cause, u64 status, cpu_regs_t *regs) {
 				timer_isr(trap_source, NULL);
 
 				/* Perform the softirqs if allowed */
-				if (!irqs_disabled_flags(regs))
+				if (!irqs_disabled_before_irq_flags(regs))
 					do_softirq();
 
 				break;

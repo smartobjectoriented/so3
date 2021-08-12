@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021 Nicolas Müller <nicolas.muller1@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,19 +14,25 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
+ *
+ * Rest of string.c is in lib.. This function is optimized in assembly for ARM.. RISC-V uses
+ * this C version.
  */
 
-.global strchr
-.text
-                .align  5
-strchr:
-                and     r1, r1, #0xff
-1:              ldrb    r2, [r0], #1
-                teq     r2, r1
-                teqne   r2, #0
-                bne     1b
-                teq     r2, r1
-                movne   r0, #0
-                subeq   r0, r0, #1
+#include <compiler.h>
+#include <ctype.h>
+#include <limits.h>
+#include <string.h>
 
-                mov		pc, lr
+/*
+ * From https://github.com/twd2/riscv-osdev
+ */
+char *strchr(const char *s, int c) {
+    while (*s != '\0') {
+        if (*s == c) {
+            return (char *)s;
+        }
+        s ++;
+    }
+    return NULL;
+}

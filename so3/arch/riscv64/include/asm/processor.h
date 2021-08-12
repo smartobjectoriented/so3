@@ -75,10 +75,6 @@ typedef struct cpu_regs {
 	__u64 	epc;
 } cpu_regs_t;
 
-/* Size of cpu regs_t */
-//#define TRAP_FRAME_SIZE		33 * sizeof(__u64)
-#define TRAP_FRAME_SIZE 10
-
 #define cpu_relax()	barrier()
 
 static inline int __irqs_disabled_flags(unsigned long flags)
@@ -92,9 +88,12 @@ static inline int __irqs_disabled_before_irq_flags(unsigned long flags)
 	return !(flags & SR_PIE);
 }
 
-/* _NMR_ TODO make two of those like the __ variants above. Should change irq.c too.
- * Working for now because this function is only used in irq.c */
 static inline int irqs_disabled_flags(cpu_regs_t *regs)
+{
+	return __irqs_disabled_flags(regs->status);
+}
+
+static inline int irqs_disabled_before_irq_flags(cpu_regs_t *regs)
 {
 	return __irqs_disabled_before_irq_flags(regs->status);
 }
