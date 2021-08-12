@@ -12,3 +12,4 @@ config ARM_TIMER
 
 config RISCV_TIMER
     bool "RISC-V architected timer for clocksource & clockevent"
+    
