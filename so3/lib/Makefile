@@ -5,4 +5,4 @@ lib-y += div64.o
 lib-y += findbit.o
 lib-y += strchr.o
 lib-y += strtod.o
-
+lib-y += list_sort.o

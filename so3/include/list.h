@@ -677,7 +677,10 @@ static inline void hlist_add_after(struct hlist_node *n,
          ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;});       \
          pos = n)
 
-
+__attribute__((nonnull(2,3)))
+void list_sort(void *priv, struct list_head *head,
+	       int (*cmp)(void *priv, struct list_head *a,
+			  struct list_head *b));
 
 #endif /* LIST_H */
 
