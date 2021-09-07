@@ -83,6 +83,16 @@ _start:
 
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
+  @ prepare to clear bss and zero fp
+  ldr	r6, =__bss_start
+  ldr	r7, =__bss_end
+
+  mov	fp, #0			@ Clear BSS (and zero fp)
+1:
+  cmp	r6, r7
+  strcc	fp, [r6], #4
+  bcc	1b
+
   @ Preserve the (physical address of) device tree base in r9
   mov 	r9, r2
 
@@ -100,16 +110,6 @@ _start:
 #endif /* CONFIG_MMU */
 
 __kernel_main:
-
-  @ prepare to clear bss and zero fp
-  ldr	r6, =__bss_start
-  ldr	r7, =__bss_end
-
-  mov	fp, #0			@ Clear BSS (and zero fp)
-1:
-  cmp	r6, r7
-  strcc	fp, [r6], #4
-  bcc	1b
 
   ldr	r0, =__fdt_addr
   str	r9, [r0]

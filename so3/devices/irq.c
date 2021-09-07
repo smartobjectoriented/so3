@@ -170,12 +170,9 @@ void irq_handle(cpu_regs_t *regs) {
 
 	irq_ops.irq_handle(regs);
 
-	/* Now perform the softirq processing if allowed, i.e. if previously we have been upcalled
-	 * with IRQs on.
-	 */
+	BUG_ON(irqs_disabled_flags(regs->psr));
 
-	if (!irqs_disabled_flags(regs->psr))
-		do_softirq();
+	do_softirq();
 }
 
 /*

@@ -71,7 +71,6 @@ void lprintk_buffer(void *buffer, uint32_t n) {
 
 	for (i = 0 ; i < n ; i++)
 		lprintk("%02x ", ((char *) buffer)[i]);
-	lprintk("\n");
 }
 
 /**
@@ -82,7 +81,6 @@ void lprintk_buffer_separator(void *buffer, uint32_t n, char separator) {
 
 	for (i = 0 ; i < n ; i++)
 		lprintk("%02x%c", ((char *) buffer)[i], separator);
-	lprintk("\n");
 }
 
 /**

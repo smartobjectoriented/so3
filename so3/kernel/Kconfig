@@ -9,7 +9,9 @@ choice
     config PROC_ENV
         bool "Process mode (looking for a init proc like a shell)"
         depends on MMU
-            
+        depends on !ROOTFS_NONE
+        select FS_FAT
+
 endchoice
  
 menu "SO3 Scheduling configuration"

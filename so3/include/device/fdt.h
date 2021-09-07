@@ -69,6 +69,7 @@ int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename);
 
 int fdt_property_read_string(void *fdt_addr, int offset, const char *propname, const char **out_string);
 int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 *out_value);
+int fdt_property_read_u64(void *fdt_addr, int offset, const char *propname, u64 *out_value);
 
 /*
  * Get device information from a device tree

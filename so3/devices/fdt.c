@@ -139,6 +139,19 @@ int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 
 	return -1;
 }
 
+int fdt_property_read_u64(void *fdt_addr, int offset, const char *propname, u64 *out_value) {
+	const fdt64_t *val;
+
+	val = fdt_getprop(fdt_addr, offset, propname, NULL);
+
+	if (val) {
+		*out_value = fdt64_to_cpu(val[0]);
+		return 0;
+	}
+
+	return -1;
+}
+
 int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename) {
 	int node;
 	const char *__nodename, *node_name;
