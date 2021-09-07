@@ -35,35 +35,6 @@ struct va_format {
 	va_list *va;
 };
 
-#define SOO_AGENCY_UID_SIZE		16
-
-typedef struct {
-
-	/*
-	 * As id is the first attribute, it can be accessed directly by using
-	 * a pointer to the agencyUID_t.
-	 */
-	unsigned char id[SOO_AGENCY_UID_SIZE];
-
-} agencyUID_t;
-
-/* Helper function to display agencyUID */
-static inline void lprintk_printUID(agencyUID_t *uid) {
-
-	/* Normally, the length of agencyUID is SOO_AGENCY_UID_SIZE bytes, but we display less. */
-	if (!uid)
-		lprintk("(null)");
-	else
-		lprintk_buffer(uid, 5);
-}
-
-/* Helper function to display agencyUID */
-static inline void lprintk_printlnUID(agencyUID_t *uid) {
-	lprintk_printUID(uid);
-	lprintk("\n");
-}
-
-
 #endif /* !__ASSEMBLY__ */
 
 #endif /* PRINTK_H */
