@@ -371,7 +371,7 @@ all:  $(BIN) dtbs
 
 objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
 libs-y		:= lib
-libs-y 		+= lib/libfdt
+libs-y 		+= lib/libfdt lib/libroxml
 
 so3-dirs	:= $(objs-y) $(libs-y)
 so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))

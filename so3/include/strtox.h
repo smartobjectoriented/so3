@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2014-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,6 +17,10 @@
  *
  */
 
-#define UART_BASE	0x01c28000
 
- 
+#ifndef STRTOX_H
+#define STRTOX_H
+
+double strtod(const char *s, char **endptr);
+
+#endif /* STRTOX_H */

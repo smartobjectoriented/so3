@@ -1,4 +1,0 @@
-config RAM_BASE
-	depends on BPI
-	hex "RAM Memory physical base address"
-	default 0x44000000

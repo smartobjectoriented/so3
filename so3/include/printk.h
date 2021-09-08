@@ -20,6 +20,7 @@
 #define PRINTK_H
 
 #include <stdarg.h>
+#include <types.h>
 
 void lprintk(char *format, ...);
 void llprintk(char *format, ...);
