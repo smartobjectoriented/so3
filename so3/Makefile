@@ -305,7 +305,7 @@ SO3INCLUDE    := -Iinclude  -I.  \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
+KBUILD_CPPFLAGS += -I$(TOPDIR)include
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)

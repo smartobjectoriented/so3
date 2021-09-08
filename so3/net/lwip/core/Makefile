@@ -22,3 +22,4 @@ obj-y += tcp_out.o
 obj-y += timeouts.o
 obj-y += udp.o
 
+EXTRA_CFLAGS += -I include/net

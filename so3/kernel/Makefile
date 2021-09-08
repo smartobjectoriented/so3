@@ -12,3 +12,4 @@ obj-y += 	main.o \
 		
 obj-$(CONFIG_MMU) += process.o ptrace.o
 
+EXTRA_CFLAGS += -I include/net

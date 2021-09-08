@@ -7,3 +7,5 @@ obj-y += ip6_addr.o
 obj-y += ip6_frag.o
 obj-y += mld6.o
 obj-y += nd6.o
+
+EXTRA_CFLAGS += -I include/net

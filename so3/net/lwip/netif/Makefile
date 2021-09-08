@@ -7,3 +7,5 @@ obj-y += lowpan6_ble.o
 obj-y += lowpan6_common.o
 #obj-y += slipif.o
 obj-y += zepif.o
+
+EXTRA_CFLAGS += -I include/net

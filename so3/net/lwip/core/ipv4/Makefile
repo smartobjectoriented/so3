@@ -7,3 +7,5 @@ obj-y += igmp.o
 obj-y += ip4.o
 obj-y += ip4_addr.o
 obj-y += ip4_frag.o
+
+EXTRA_CFLAGS += -I include/net
