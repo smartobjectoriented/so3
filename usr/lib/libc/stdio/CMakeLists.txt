@@ -5,6 +5,7 @@ target_sources(c
 		fprintf.c
 		sprintf.c
 		vsprintf.c
+		vsnprintf.c
 		snprintf.c
 		stdin.c
 		stdout.c
@@ -14,6 +15,7 @@ target_sources(c
 		vfprintf.c
 		putc.c
 		getc.c
+		puts.c
 		gets.c
 		scanf.c
 		vscanf.c
