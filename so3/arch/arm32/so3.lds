@@ -124,7 +124,7 @@ SECTIONS
       . += HEAP_SIZE;
     }
 
-    . = ALIGN(4096);
+    . = ALIGN(8192);
 
     .stack : 
     { 

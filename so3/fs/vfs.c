@@ -702,7 +702,8 @@ void do_close(int fd)
 
 		ASSERT(gfd > STDERR); /* Abnormal situation if we attempt to remove the std* file descriptors */
 
-		if (!strncmp(DEV_PREFIX, open_fds[gfd]->filename, DEV_PREFIX_LEN))
+		/* For /dev entries, we attach the default callback operations of the regular filesystem */
+		if (open_fds[gfd]->filename && !strncmp(DEV_PREFIX, open_fds[gfd]->filename, DEV_PREFIX_LEN))
 			/* Back to the filesystem medium */
 			open_fds[gfd]->fops = registered_fs_ops[0];
 
