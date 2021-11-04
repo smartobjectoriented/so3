@@ -485,6 +485,9 @@ int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
         /*  TODO check fd ok */
         lwip_fds[gfd] = lwip_bind_fd;
 
+        /* Copy back our sockaddr info in the usr data */
+        memcpy(addr, addr_ptr, sizeof(struct sockaddr_in));
+
         return fd;
 
 
