@@ -13,6 +13,7 @@
 
 import os
 import sys
+import sphinx
 sys.path.insert(0, os.path.abspath('.'))
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -36,7 +37,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.plantuml',
     'rstFlatTable',
-    #    'sphinxcontrib.bibtex',
+#    'sphinxcontrib.bibtex',
     'sphinx.ext.extlinks',
     'sphinx.ext.imgmath',
 ]
@@ -112,19 +113,40 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = u'default'
+
+# The Read the Docs theme is available from
+# - https://github.com/snide/sphinx_rtd_theme
+# - https://pypi.python.org/pypi/sphinx_rtd_theme
+# - python-sphinx-rtd-theme package (on Debian)
+try:
+    import sphinx_rtd_theme
+    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    def setup(app):
+#        app.add_stylesheet('style.css')
+        app.add_css_file('style.css')
+except ImportError:
+    sys.stderr.write('Warning: The Sphinx \'sphinx_rtd_theme\' HTML theme was not found. Make sure you have the theme installed to produce pretty HTML output. Falling back to the default theme.\n')
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+#
+#html_theme_options = {}
+# Add/Update "html_theme_options" like this on your conf.py
 html_theme_options = {'body_max_width': '100%'}
-
+    
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_css_files = ['_static/theme_overrides.css']
-
+html_context = {
+    'css_files': [
+        '_static/theme_overrides.css',
+    ],
+}
+    
 # -- Options for HTMLHelp output ------------------------------------------
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.
@@ -188,13 +210,12 @@ latex_font_size = u'10pt'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [('index', 'SO3.tex', u'SO3 Documentation',
-                    u'HEIG-vD - REDS Institute', 'manual')]
+latex_documents = [('index', 'SO3.tex', u'SO3 Documentation', u'HEIG-vD - REDS Institute', 'manual')]
 
 
-# A dictionary that contains LaTeX snippets that override those Sphinx usually
+# A dictionary that contains LaTeX snippets that override those Sphinx usually 
 # puts into the generated .tex files.
-latex_elements = {'babel': '\\usepackage[english]{babel}'}
+latex_elements = { 'babel': '\\usepackage[english]{babel}' }
 
 
 # The name of an image file (relative to this directory) to place at the top of
