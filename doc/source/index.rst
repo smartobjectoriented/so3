@@ -8,7 +8,7 @@
    
 .. image:: img/SO3-Logo.png
    :align: center
-   :width: 170px
+   :width: 200px
    :height: 150px
 
 .. toctree::
