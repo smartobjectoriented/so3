@@ -1,2 +1,0 @@
-tests/qapi-schema/features-unknown-key.json:1: Unknown key 'colour' in feature of struct FeatureStruct0
-Valid keys are 'if', 'name'.
