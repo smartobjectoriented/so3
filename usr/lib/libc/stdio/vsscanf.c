@@ -1,5 +1,5 @@
-#include "stdio_impl.h"
-#include "libc.h"
+#include <stdio_impl.h>
+#include <libc.h>
 
 static size_t do_read(FILE *f, unsigned char *buf, size_t len)
 {

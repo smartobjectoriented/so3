@@ -206,9 +206,9 @@ int main(int argc, char **argv) {
 		packet.msg[i] = 0;
 		packet.hdr.un.echo.sequence = msg_count++;
 		packet.hdr.checksum = checksum(&packet, sizeof(packet));
-		printf("#3\n");
+
 		gettimeofday(&start, NULL);
-		printf("#4\n");
+
 		if (sendto(s, &packet, sizeof(packet), 0,
 				(struct sockaddr*) &ping_addr,
 				sizeof(ping_addr)) <= 0) {
@@ -228,9 +228,9 @@ int main(int argc, char **argv) {
 		gettimeofday(&end, NULL);
 
 		inet_ntop(AF_INET, &recv_addr.sin_addr, ip, sizeof(ip));
-		printf("#5\n");
+
 		rtt = end.tv_usec / 1000.0 + end.tv_sec * 1000 - (start.tv_usec / 1000.0 + start.tv_sec	* 1000);
-		printf("#6\n");
+
 		if (!(packet.hdr.type == 69 && packet.hdr.code == 0)) {
 			printf(
 					"Error... Packet received with ICMP type %d code %d\n",

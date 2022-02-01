@@ -48,4 +48,7 @@ target_sources(c
 		ofl.c
 		__overflow.c
 		fflush.c
+		sscanf.c
+		vsscanf.c
+		__string_read.c
 )

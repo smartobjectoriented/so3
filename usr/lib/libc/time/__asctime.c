@@ -1,20 +1,19 @@
 #include <time.h>
 #include <stdio.h>
-//#include <langinfo.h>
+#include <langinfo.h>
+#include <locale.h>
+
 #include "locale_impl.h"
 #include "atomic.h"
 
-#if 0
 const char *__nl_langinfo_l(nl_item, locale_t);
-#endif
 
 char *__asctime(const struct tm *restrict tm, char *restrict buf)
 {
 	if (snprintf(buf, 26, "%.3s %.3s%3d %.2d:%.2d:%.2d %d\n",
-#if 0
+
 		__nl_langinfo_l(ABDAY_1+tm->tm_wday, C_LOCALE),
 		__nl_langinfo_l(ABMON_1+tm->tm_mon, C_LOCALE),
-#endif
 
 		tm->tm_mday, tm->tm_hour,
 		tm->tm_min, tm->tm_sec,
