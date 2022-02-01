@@ -352,10 +352,9 @@ static tcb_t *next_thread(void) {
 		/* First, compare with the running tcb if any... */
 		if (!tcb_to_schedule)
 			tcb_to_schedule = tcb;
-	    else if (tcb->prio > tcb_to_schedule->prio) {
-			printk("%s\n", tcb_to_schedule->name);
+	    else if (tcb->prio > tcb_to_schedule->prio)
 	        tcb_to_schedule = tcb;
-		}
+
 	}
 
 	spin_unlock(&schedule_lock);

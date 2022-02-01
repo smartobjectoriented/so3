@@ -467,11 +467,23 @@ tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, 
 	return thread_create(start_routine, name, arg, NULL, prio);
 }
 
-/* Should not be called directly. Call create_process() or create_child_thread() instead. */
-/* FIXME: start_routine() should returns void * instead of int? */
+/**
+ *
+ * Should not be called directly. Call create_process() or create_child_thread() instead.
+ *
+ * The priority is inherited from the calling (main) thread.
+ *
+ * FIXME: start_routine() should returns void * instead of int?
+ *
+ * @param start_routine
+ * @param name
+ * @param arg
+ * @param pcb
+ * @return
+ */
 tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
 {
-	return thread_create(start_routine, name, arg, pcb, 0);
+	return thread_create(start_routine, name, arg, pcb, (pcb->main_thread ? pcb->main_thread->prio : 0));
 }
 
 /*

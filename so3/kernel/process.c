@@ -701,7 +701,9 @@ int do_execve(const char *filename, char **argv, char **envp)
 	/* start main thread */
 	start_routine = (int(*)(void *)) pcb->bin_image_entry;
 
-	/* We start the new thread */
+	/* We start the new thread taking care of the priority of the current (main) thread.
+	 * The priority will be inherited to the new one.
+	 */
 	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb);
 
 	/* Transfer the waiting thread if any */
@@ -810,7 +812,8 @@ int do_fork(void)
 
 	/* The main process thread is ready to be scheduled for its execution.*/
 	newp->state = PROC_STATE_READY;
-
+	
+	/* Prepare to perform scheduling to check if a context switch is required. */
 	BUG_ON(!local_irq_is_disabled());
 
 	/* Prepare to perform scheduling to check if a context switch is required. */

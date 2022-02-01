@@ -239,7 +239,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_BIND:
-			result = do_bind((int)r0, (const struct sockaddr*)r1, (socklen_t) r2);
+			result = do_bind((int) r0, (const struct sockaddr *) r1, (socklen_t) r2);
 			break;
 
 		case SYSCALL_LISTEN:
@@ -247,19 +247,19 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_ACCEPT:
-			result = do_accept((int)r0, (struct sockaddr*)r1, (socklen_t*) r2);
+			result = do_accept((int) r0, (struct sockaddr *) r1, (socklen_t *) r2);
 			break;
 
 		case SYSCALL_CONNECT:
-			result = do_connect((int)r0, (const struct sockaddr *)r1, (socklen_t) r2);
+			result = do_connect((int)r0, (const struct sockaddr *) r1, (socklen_t) r2);
 			break;
 
 		case SYSCALL_RECV:
-			result = do_recv((int)r0, (void*)r1, (size_t)r2, (int)r3);
+			result = do_recv((int)r0, (void*) r1, (size_t) r2, (int) r3);
 			break;
 
 		case SYSCALL_SEND:
-			result = do_send((int)r0, (const void *)r1, (size_t)r2, (int)r3);
+			result = do_send((int)r0, (const void *) r1, (size_t) r2, (int) r3);
 			break;
 
 		case SYSCALL_SENDTO:
@@ -269,11 +269,11 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_SETSOCKOPT:
-			result = do_setsockopt((int)r0, (int)r1, (int)r2, (const void *)r3, (socklen_t)__get_syscall_stack_arg(0));
+			result = do_setsockopt((int) r0, (int) r1, (int) r2, (const void *) r3, (socklen_t) __get_syscall_stack_arg(0));
 			break;
 
 		case SYSCALL_RECVFROM:
-			result = do_recvfrom((int)r0, (void *)r1, (size_t)r2, (int)r3, (struct sockaddr *)__get_syscall_stack_arg(0),
+			result = do_recvfrom((int) r0, (void *) r1, (size_t) r2, (int) r3, (struct sockaddr *) __get_syscall_stack_arg(0),
 					(socklen_t *)__get_syscall_stack_arg(1));
 			break;
 
