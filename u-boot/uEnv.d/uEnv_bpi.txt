@@ -1,6 +1,0 @@
-fdt_high=ffffffff
-initrd_high=ffffffff
-linux=fatload mmc 0 0x50000000 bpi.itb; bootm 0x50000000
-start=run so3
-
-
