@@ -1,0 +1,39 @@
+if ARCH_VEXPRESS
+
+config SYS_BOARD
+	default "vexpress"
+
+config SYS_VENDOR
+	default "armltd"
+
+config SYS_CONFIG_NAME
+	default "vexpress"
+
+config VEXPRESS_EXTENDED_MEMORY_MAP
+	bool
+	default n
+
+choice
+        prompt "Arm VExpress coretile"
+
+config TARGET_VEXPRESS_CA15_TC2
+	bool "Arm Versatile Express TC2 (Cortex-A15/A7)"
+	select CPU_V7_HAS_NONSEC
+	select CPU_V7_HAS_VIRT
+	select VEXPRESS_EXTENDED_MEMORY_MAP
+	select OF_BOARD_SETUP
+
+config TARGET_VEXPRESS_CA5X2
+	bool "Arm Versatile Express Cortex-A5x2"
+	select VEXPRESS_EXTENDED_MEMORY_MAP
+
+config TARGET_VEXPRESS_CA9X4
+	bool "Arm Versatile Express Cortex-A9x4"
+
+endchoice
+
+config SYS_TEXT_BASE
+	default 0x80800000 if VEXPRESS_EXTENDED_MEMORY_MAP
+	default 0x60800000
+
+endif
