@@ -19,23 +19,14 @@
 #ifndef LINKAGE_H
 #define LINKAGE_H
 
-
-#define ASM_NL           ;
-#define __ALIGN .align 0
-#define __ALIGN_STR ".align 0"
-
-#define ALIGN __ALIGN
-
 #ifndef END
 #define END(name) \
 	.size name, .-name
 #endif
 
-
 #ifndef ENTRY
 #define ENTRY(name) \
-	.globl name ASM_NL \
-	ALIGN ASM_NL \
+	.globl name ; \
 	name:
 #endif
 
