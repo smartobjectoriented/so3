@@ -197,7 +197,9 @@ static void pl01x_serial_init_baud(int baudrate)
 	pl01x_type = TYPE_PL011;
 	clock = CONFIG_PL011_CLOCK;
 #endif
-	base_regs = (struct pl01x_regs *)port[CONFIG_CONS_INDEX];
+/* SOO.tech */
+/* Using CONFIG_CONS_INDEX to 0 */
+	base_regs = (struct pl01x_regs *)port[0];
 
 	pl01x_generic_serial_init(base_regs, pl01x_type);
 	pl01x_generic_setbrg(base_regs, pl01x_type, clock, baudrate);

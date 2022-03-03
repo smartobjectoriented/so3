@@ -4,7 +4,7 @@
 
 OUTPUT_FORMAT(elf32-littlearm)
 OUTPUT_ARCH(arm)
-ENTRY(_start)
+ENTRY(__start)
 
 /* The sizes of the stacks used by the application. */
  

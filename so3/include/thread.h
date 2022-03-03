@@ -39,7 +39,7 @@
 typedef enum { THREAD_STATE_NEW, THREAD_STATE_READY, THREAD_STATE_RUNNING, THREAD_STATE_WAITING, THREAD_STATE_ZOMBIE } thread_state_t;
 typedef unsigned int thread_t;
 
-extern unsigned int __stack_top;
+extern addr_t __stack_top;
 
 extern void thread_epilogue(void);
 
@@ -112,7 +112,7 @@ void do_thread_yield(void);
 
 int thread_idle(void *dummy);
 
-uint32_t get_kernel_stack_top(uint32_t slotID);
+addr_t get_kernel_stack_top(uint32_t slotID);
 
 extern void __switch_context(tcb_t *prev, tcb_t *next);
 extern void __thread_prologue_kernel(void);

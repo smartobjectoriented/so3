@@ -37,14 +37,12 @@ void mmu_setup(u64 *pgtable)
 {
 	u64 attr, tcr;
 
-	/* Output address size is 48-bit (tcr.ips = 5) */
-	tcr = TCR_EL1_RSVD | (5UL << 32UL); //  | TCR_EPD1_DISABLE;
+	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 | TCR_TBI0 | TCR_A1;
 
 	/* PTWs cacheable, inner/outer WBWA and inner shareable */
-	tcr |= TCR_TG0_4K | TCR_SHARED_INNER | TCR_ORGN_WBWA | TCR_IRGN_WBWA;
-	tcr |= TCR_T0SZ(48);
+	tcr |= TCR_EL1_RSVD | TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
 
-	attr = MEMORY_ATTRIBUTES;
+	attr = MAIR_EL1_SET;
 
 	asm volatile("dsb sy");
 
@@ -52,15 +50,18 @@ void mmu_setup(u64 *pgtable)
 	asm volatile("msr ttbr1_el1, %0" : : "r" (pgtable) : "memory");
 
 	asm volatile("msr tcr_el1, %0" : : "r" (tcr) : "memory");
+
 	asm volatile("msr mair_el1, %0" : : "r" (attr) : "memory");
+
+	asm volatile("isb");
+
+	/* enable the mmu */
+	set_sctlr(get_sctlr() | CR_M);
 
 	asm volatile("isb");
 
 	invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
-
-	/* enable the mmu */
-	set_sctlr(get_sctlr() | CR_M);
 
 }
 

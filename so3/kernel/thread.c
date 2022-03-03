@@ -148,8 +148,8 @@ bool kernel_stack_slot[THREAD_MAX];
  * The first stack area is the initial system stack and remains preserved so far.
  * The first thread stack slot ID #0 starts right under this area.
  */
-uint32_t get_kernel_stack_top(uint32_t slotID) {
-	return (uint32_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
+addr_t get_kernel_stack_top(uint32_t slotID) {
+	return (addr_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
 }
 
 /*
@@ -184,8 +184,8 @@ void free_kernel_stack_slot(int slotID)
 /* Process thread stack management */
 
 /* Get the kernel stack (top), full descending */
-uint32_t get_user_stack_top(pcb_t *pcb, uint32_t slotID) {
-	return (uint32_t) ((void *) pcb->stack_top - slotID*THREAD_STACK_SIZE);
+addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID) {
+	return (addr_t) ((void *) pcb->stack_top - slotID*THREAD_STACK_SIZE);
 }
 
 /*
@@ -390,7 +390,7 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
 tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
-	uint32_t flags;
+	unsigned long flags;
 
 	BUG_ON(boot_stage < BOOT_STAGE_SCHED);
 
@@ -507,7 +507,7 @@ int thread_join(tcb_t *tcb)
 	int exit_status;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
-	uint32_t flags;
+	unsigned long flags;
 	bool is_main_thread;
 	pcb_t *__child_pcb;
 
@@ -611,7 +611,7 @@ int thread_join(tcb_t *tcb)
 
 int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p) {
 
-	uint32_t flags;
+	unsigned long flags;
 	tcb_t *tcb;
 	char *name;
 
@@ -648,7 +648,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 int do_thread_join(uint32_t pthread_id, int **value_p) {
 	tcb_t *tcb;
 	int ret;
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 

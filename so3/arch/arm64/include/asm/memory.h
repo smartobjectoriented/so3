@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2016-2020 Daniel Rossier <daniel.rossier@soo.tech>
- *
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -16,20 +16,16 @@
  *
  */
 
-#ifndef BACKTRACE_H
-#define BACKTRACE_H
+#ifndef ASM_MEMORY_H
+#define ASM_MEMORY_H
 
-void dump_stack(void);
+#include <generated/autoconf.h>
 
-void show_registers(struct cpu_regs *regs);
+#ifndef __ASSEMBLY__
+#include <types.h>
 
-void dump_execution_state(void);
-void dump_all_execution_state(void);
+extern addr_t *__sys_l1pgtable;
 
-static inline void show_execution_state(struct cpu_regs *regs)
-{
-    show_registers(regs);
-}
+#endif /* __ASSEMBLY__ */
 
-#endif /* BACKTRACE_H */
-
+#endif /* ASM_MEMORY_H */

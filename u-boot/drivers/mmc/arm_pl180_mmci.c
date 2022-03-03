@@ -402,7 +402,7 @@ int arm_pl180_mmci_init(struct pl180_mmc_host *host, struct mmc **mmc)
 }
 #endif
 
-#if 0
+#if 0 /* SOO.tech */
 #ifdef CONFIG_DM_MMC
 static void arm_pl180_mmc_init(struct pl180_mmc_host *host)
 {
@@ -555,5 +555,5 @@ U_BOOT_DRIVER(arm_pl180_mmc) = {
 	.priv_auto	= sizeof(struct pl180_mmc_host),
 	.plat_auto	= sizeof(struct arm_pl180_mmc_plat),
 };
-#endif
+#endif /* SOO.tech */
 #endif

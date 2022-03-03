@@ -19,8 +19,7 @@ SECTIONS
 {
      /* We start at the same entry point than Linux */
      /* to avoid issues on boards like Raspberry Pi 4 */
-     /* where some firmware code is placed at 0x00000000 with a size of 0x1000 */
-     
+  
      . = ENTRY_ADDR + 0x80000;
 
     .head.text :

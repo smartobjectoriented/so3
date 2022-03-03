@@ -26,6 +26,23 @@
 
 extern uint32_t *__sys_l1pgtable;
 
+extern page_t *frame_table;
+extern uint32_t pfn_start;
+
+#define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
+#define phys_to_pfn(phys) (((uint32_t) phys) >> PAGE_SHIFT)
+#define virt_to_pfn(virt) (phys_to_pfn(__va((uint32_t) virt)))
+
+#define __pa(vaddr) (((uint32_t) vaddr) - CONFIG_KERNEL_VIRT_ADDR + ((uint32_t) CONFIG_RAM_BASE))
+#define __va(paddr) (((uint32_t) paddr) - ((uint32_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VIRT_ADDR)
+
+#define page_to_pfn(page) ((uint32_t) ((uint32_t) (page-frame_table) + pfn_start))
+#define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
+
+#define page_to_phys(page) (pfn_to_phys(page_to_pfn(page)))
+#define phys_to_page(phys) (pfn_to_page(phys_to_pfn(phys)))
+
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* ASM_MEMORY_H */

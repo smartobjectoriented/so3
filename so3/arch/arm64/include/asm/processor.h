@@ -33,7 +33,7 @@
 #define wfe()           asm volatile("wfe" : : : "memory")
 #define wfi()           asm volatile("wfi" : : : "memory")
 
-#define isb()           asm volatile("isb" : : : "memory")
+#define isb()           asm volatile("isb sy" : : : "memory")
 #define dsb(scope)      asm volatile("dsb " #scope : : : "memory")
 #define dmb(scope)      asm volatile("dmb " #scope : : : "memory")
 
@@ -994,14 +994,19 @@ static inline void local_irq_disable(void)
 
 }
 
-#define local_irq_save(x)                                   \
-          ({                                                      \
-          __asm__ __volatile__(                                   \
-        		  "mrs	%0, daif"     \
-          : "=r" (x) : : "memory", "cc");                         \
-          })
+static inline unsigned long local_irq_save(void)
+{
+	unsigned long flags;
 
-static inline void local_irq_restore(uint32_t flags)
+	asm volatile(
+			  "mrs	%0, daif"     \
+		: "=r" (flags) : : "memory", "cc");
+
+	return flags;
+}
+
+
+static inline void local_irq_restore(unsigned long flags)
 {
 	asm volatile(
 		"msr	daif, %0"
@@ -1011,9 +1016,9 @@ static inline void local_irq_restore(uint32_t flags)
 /*
  * Save the current interrupt enable state.
  */
-static inline uint32_t local_save_flags(void)
+static inline unsigned long local_save_flags(void)
 {
-	uint32_t flags;
+	unsigned long flags;
 	asm volatile(
 		"mrs	%0, daif"
 		: "=r" (flags) : : "memory", "cc");
@@ -1078,6 +1083,14 @@ typedef struct cpu_sys_regs {
 	u64   vusp;
 } cpu_sys_regs_t;
 
+
+/*
+ * Put the CPU in idle/standby until an interrupt is raised up.
+ */
+static inline void cpu_standby(void) {
+	__asm("dsb");
+	__asm("wfi");
+}
 
 struct vcpu_guest_context;
 struct domain;

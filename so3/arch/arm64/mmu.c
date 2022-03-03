@@ -20,12 +20,10 @@
 #define DEBUG
 #endif
 
-#include <config.h>
 #include <memory.h>
-#include <string.h>
 #include <heap.h>
-
-#include <device/fdt.h>
+#include <sizes.h>
+#include <string.h>
 
 #include <mach/uart.h>
 
@@ -34,24 +32,6 @@
 
 #include <generated/autoconf.h>
 
-
-void get_current_addrspace(addrspace_t *addrspace) {
-	int cpu;
-
-	cpu = smp_processor_id();
-#if 0
-	/* Get the current state of MMU */
-	addrspace->ttbr0[cpu] = READ_CP32(TTBR0_32);
-	addrspace->pgtable_paddr = addrspace->ttbr0[cpu] & TTBR0_BASE_ADDR_MASK;
-#endif
-}
-
-/*
- * Check if two address space are identical regarding the MMU configuration.
- */
-bool is_addrspace_equal(addrspace_t *addrspace1, addrspace_t *addrspace2) {
-	return (addrspace1->pgtable_paddr == addrspace2->pgtable_paddr);
-}
 
 static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache)
 {
@@ -71,13 +51,13 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 		/* L2 page table already exist? */
 		if (!*l2pte) {
 
-			/* A L1 table must be created */
+			/* A L3 table must be created */
 			l3pgtable = (u64 *) memalign(TTB_L3_SIZE, PAGE_SIZE);
 			BUG_ON(!l3pgtable);
 
 			memset(l3pgtable, 0, TTB_L3_SIZE);
 
-			/* Attach the L1 PTE to this L2 page table */
+			/* Attach the L2 PTE to this L3 page table */
 			*l2pte = __pa((addr_t) l3pgtable)  & TTB_L2_TABLE_ADDR_MASK;
 
 			set_pte_table(l2pte, DCACHE_WRITEALLOC);
@@ -119,7 +99,7 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 		/* L1 page table already exist? */
 		if (!*l1pte) {
 
-			/* A L1 table must be created */
+			/* A L2 table must be created */
 			l2pgtable = (u64 *) memalign(TTB_L2_SIZE, PAGE_SIZE);
 			BUG_ON(!l2pgtable);
 
@@ -241,6 +221,7 @@ void create_mapping(u64 *l0pgtable, addr_t virt_base, addr_t phys_base, size_t s
 
 	BUG_ON(!size);
 
+	DBG("Create mapping for virt %llx - phys: %llx - size: %x\n", virt_base, phys_base, size);
 	addr = virt_base & PAGE_MASK;
 	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
 
@@ -334,7 +315,7 @@ void replace_current_pgtable_with(uint64_t *pgtable) {
 	mmu_switch(&__addrspace);
 
 	/* Re-configuring the original system page table */
-	memcpy((void *) __sys_l0pgtable, (unsigned char *) pgtable, TTB_L1_SIZE);
+	memcpy((void *) __sys_l0pgtable, (unsigned char *) pgtable, TTB_L0_SIZE);
 
 	/* Finally, switch back to the original location of the system page table */
 	set_current_pgtable(__sys_l0pgtable);
@@ -383,11 +364,11 @@ void mmu_configure(addr_t fdt_addr) {
 
 	mmu_setup(__sys_l0pgtable);
 
-	dcache_enable();
 	icache_enable();
+	dcache_enable();
 
 	if (smp_processor_id() == AGENCY_CPU) {
-		__fdt_addr = (addr_t*) fdt_addr;
+		__fdt_addr = (addr_t *) fdt_addr;
 
 		/* The device tree is visible in the L_PAGE_OFFSET area */
 		fdt_vaddr = (addr_t *) __lva(fdt_addr);

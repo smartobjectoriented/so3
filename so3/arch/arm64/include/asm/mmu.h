@@ -20,7 +20,6 @@
 #define MMU_H
 
 #ifndef __ASSEMBLY__
-#include <config.h>
 #include <types.h>
 #endif
 
@@ -33,8 +32,7 @@
 #define PAGE_SIZE       (1 << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-#define PAGE_OFFSET	UL(0xffff700000000000)
-#define L_PAGE_OFFSET	UL(0xffff800010000000)
+#define PAGE_OFFSET	UL(0xffff800000080000)
 
 /* Order of size which makes sense in block mapping */
 #define BLOCK_256G_OFFSET	(SZ_256G - 1)
@@ -44,24 +42,6 @@
 #define BLOCK_256G_MASK		(~BLOCK_256G_OFFSET)
 #define BLOCK_1G_MASK		(~BLOCK_1G_OFFSET)
 #define BLOCK_2M_MASK		(~BLOCK_2M_OFFSET)
-
-/*
- * We add two functions for retrieving virt and phys address relative to
- * Linux offset according to the memory map (used to access guest mem)
- */
-#define __lpa(vaddr) ((vaddr) - L_PAGE_OFFSET + CONFIG_RAM_BASE)
-#define __lva(paddr) ((paddr) - CONFIG_RAM_BASE + L_PAGE_OFFSET)
-
-#define __pa(vaddr)             (((addr_t) vaddr) - PAGE_OFFSET + ((addr_t) CONFIG_RAM_BASE))
-#define __va(paddr)             (((addr_t) paddr) - ((addr_t) CONFIG_RAM_BASE) + PAGE_OFFSET)
-
-#define virt_to_phys(x)     (__pa(x))
-#define phys_to_virt(x)     (__va(x))
-
-#define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
-#define phys_to_pfn(phys) (((addr_t) phys) >> PAGE_SHIFT)
-#define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t) virt)))
-#define pfn_to_virt(pfn) (phys_to_virt(pfn_to_phys(pfn)))
 
 /*
  *  With 4k page granule, a virtual address is split into 4 lookup parts
@@ -90,42 +70,70 @@
 #define TTB_L3_ORDER      9
 
 #define TTB_I0_SHIFT	  39
-#define TTB_I0_MASK	  (~((1 << TTB_I0_SHIFT)-1))
+#define TTB_I0_MASK	  (~((1UL << TTB_I0_SHIFT)-1))
 
 #define TTB_I1_SHIFT	  30
-#define TTB_I1_MASK	  (~((1 << TTB_I1_SHIFT)-1))
+#define TTB_I1_MASK	  (~((1UL << TTB_I1_SHIFT)-1))
 
 #define TTB_I2_SHIFT	  21
-#define TTB_I2_MASK	  (~((1 << TTB_I2_SHIFT)-1))
+#define TTB_I2_MASK	  (~((1UL << TTB_I2_SHIFT)-1))
 
 #define TTB_I3_SHIFT	  12
-#define TTB_I3_MASK	  (~((1 << TTB_I3_SHIFT)-1))
+#define TTB_I3_MASK	  (~((1UL << TTB_I3_SHIFT)-1))
 
-#define TTB_L0_ENTRIES    (1 << TTB_L0_ORDER)
-#define TTB_L1_ENTRIES    (1 << TTB_L1_ORDER)
-#define TTB_L2_ENTRIES    (1 << TTB_L2_ORDER)
-#define TTB_L3_ENTRIES    (1 << TTB_L3_ORDER)
+#define TTB_L0_ENTRIES    (1UL << TTB_L0_ORDER)
+#define TTB_L1_ENTRIES    (1UL << TTB_L1_ORDER)
+#define TTB_L2_ENTRIES    (1UL << TTB_L2_ORDER)
+#define TTB_L3_ENTRIES    (1UL << TTB_L3_ORDER)
 
 /* Size of the page tables */
-#define TTB_L0_SIZE    	  (8 << TTB_L0_ORDER)
-#define TTB_L1_SIZE    	  (8 << TTB_L1_ORDER)
-#define TTB_L2_SIZE    	  (8 << TTB_L2_ORDER)
-#define TTB_L3_SIZE    	  (8 << TTB_L3_ORDER)
+#define TTB_L0_SIZE    	  (8UL << TTB_L0_ORDER)
+#define TTB_L1_SIZE    	  (8UL << TTB_L1_ORDER)
+#define TTB_L2_SIZE    	  (8UL << TTB_L2_ORDER)
+#define TTB_L3_SIZE    	  (8UL << TTB_L3_ORDER)
 
 /*
- * Memory types
+ * Memory types available.
+ *
+ * IMPORTANT: MT_NORMAL must be index 0 since vm_get_page_prot() may 'or' in
+ *	      the MT_NORMAL_TAGGED memory type for PROT_MTE mappings. Note
+ *	      that protection_map[] only contains MT_NORMAL attributes.
  */
-#define MT_DEVICE_NGNRNE	0
-#define MT_DEVICE_NGNRE		1
-#define MT_DEVICE_GRE		2
-#define MT_NORMAL_NC		3
-#define MT_NORMAL		4
 
-#define MEMORY_ATTRIBUTES	((0x00 << (MT_DEVICE_NGNRNE * 8)) |	\
-				(0x04 << (MT_DEVICE_NGNRE * 8))   |	\
-				(0x0c << (MT_DEVICE_GRE * 8))     |	\
-				(0x44 << (MT_NORMAL_NC * 8))      |	\
-				(UL(0xff) << (MT_NORMAL * 8)))
+/* WARNING !! The following definitions related to MAIR must absolutely be identical
+ * to the ones in the Linux domain (asm/memory.h, mm/proc.S) because Linux will
+ * configure the MAIR register which should be done with MMU off; if values are identical,
+ * the MMU can remain enabled.
+ */
+#define MT_NORMAL		0
+#define MT_NORMAL_TAGGED	1
+#define MT_NORMAL_NC		2
+#define MT_NORMAL_WT		3
+#define MT_DEVICE_nGnRnE	4
+#define MT_DEVICE_nGnRE		5
+#define MT_DEVICE_GRE		6
+
+/* MAIR_ELx memory attributes (used by Linux) */
+#define MAIR_ATTR_DEVICE_nGnRnE		UL(0x00)
+#define MAIR_ATTR_DEVICE_nGnRE		UL(0x04)
+#define MAIR_ATTR_DEVICE_GRE		UL(0x0c)
+#define MAIR_ATTR_NORMAL_NC		UL(0x44)
+#define MAIR_ATTR_NORMAL_WT		UL(0xbb)
+#define MAIR_ATTR_NORMAL_TAGGED		UL(0xf0)
+#define MAIR_ATTR_NORMAL		UL(0xff)
+#define MAIR_ATTR_MASK			UL(0xff)
+
+/* Position the attr at the correct index */
+#define MAIR_ATTRIDX(attr, idx)		((attr) << ((idx) * 8))
+
+#define MAIR_EL1_SET							\
+	(MAIR_ATTRIDX(MAIR_ATTR_DEVICE_nGnRnE, MT_DEVICE_nGnRnE) |	\
+	 MAIR_ATTRIDX(MAIR_ATTR_DEVICE_nGnRE, MT_DEVICE_nGnRE) |	\
+	 MAIR_ATTRIDX(MAIR_ATTR_DEVICE_GRE, MT_DEVICE_GRE) |		\
+	 MAIR_ATTRIDX(MAIR_ATTR_NORMAL_NC, MT_NORMAL_NC) |		\
+	 MAIR_ATTRIDX(MAIR_ATTR_NORMAL, MT_NORMAL) |			\
+	 MAIR_ATTRIDX(MAIR_ATTR_NORMAL_WT, MT_NORMAL_WT) |		\
+	 MAIR_ATTRIDX(MAIR_ATTR_NORMAL, MT_NORMAL_TAGGED))
 
 /*
  * Hardware page table definitions.
@@ -148,55 +156,131 @@
  * Block
  */
 #define PTE_BLOCK_MEMTYPE(x)	((x) << 2)
-#define PTE_BLOCK_NS            (1 << 5)
-#define PTE_BLOCK_AP1		(1 << 6)
-#define PTE_BLOCK_AP2		(1 << 7)
-#define PTE_BLOCK_NON_SHARE	(0 << 8)
-#define PTE_BLOCK_OUTER_SHARE	(2 << 8)
-#define PTE_BLOCK_INNER_SHARE	(3 << 8)
-#define PTE_BLOCK_AF		(1 << 10)
-#define PTE_BLOCK_NG		(1 << 11)
-#define PTE_BLOCK_PXN		(UL(1) << 53)
-#define PTE_BLOCK_UXN		(UL(1) << 54)
+#define PTE_BLOCK_NS            (1UL << 5)
+#define PTE_BLOCK_AP1		(1UL << 6)
+#define PTE_BLOCK_AP2		(1UL << 7)
+#define PTE_BLOCK_NON_SHARE	(0UL << 8)
+#define PTE_BLOCK_OUTER_SHARE	(2UL << 8)
+#define PTE_BLOCK_INNER_SHARE	(3UL << 8)
+#define PTE_BLOCK_AF		(1UL << 10)
+#define PTE_BLOCK_NG		(1UL << 11)
+#define PTE_BLOCK_PXN		(1UL << 53)
+#define PTE_BLOCK_UXN		(1UL << 54)
 
 /*
  * TCR flags.
  */
-#define TCR_T0SZ(x)		((64 - (x)) << 0)
-#define TCR_IRGN_NC		(0 << 8)
-#define TCR_IRGN_WBWA		(1 << 8)
-#define TCR_IRGN_WT		(2 << 8)
-#define TCR_IRGN_WBNWA		(3 << 8)
-#define TCR_IRGN_MASK		(3 << 8)
-#define TCR_ORGN_NC		(0 << 10)
-#define TCR_ORGN_WBWA		(1 << 10)
-#define TCR_ORGN_WT		(2 << 10)
-#define TCR_ORGN_WBNWA		(3 << 10)
-#define TCR_ORGN_MASK		(3 << 10)
-#define TCR_SHARED_NON		(0 << 12)
-#define TCR_SHARED_OUTER	(2 << 12)
-#define TCR_SHARED_INNER	(3 << 12)
-#define TCR_TG0_4K		(0 << 14)
-#define TCR_TG0_64K		(1 << 14)
-#define TCR_TG0_16K		(2 << 14)
-#define TCR_EPD1_DISABLE	(1 << 23)
+#define TCR_EL1_RSVD		(1UL << 31)
 
-#define TCR_EL1_RSVD		(1 << 31)
-#define TCR_EL2_RSVD		(1 << 31 | 1 << 23)
-#define TCR_EL3_RSVD		(1 << 31 | 1 << 23)
+#define TCR_T0SZ_OFFSET		0
+#define TCR_T1SZ_OFFSET		16
+#define TCR_T0SZ(x)		((UL(64) - (x)) << TCR_T0SZ_OFFSET)
+#define TCR_T1SZ(x)		((UL(64) - (x)) << TCR_T1SZ_OFFSET)
+#define TCR_TxSZ(x)		(TCR_T0SZ(x) | TCR_T1SZ(x))
+#define TCR_TxSZ_WIDTH		6
+#define TCR_T0SZ_MASK		(((UL(1) << TCR_TxSZ_WIDTH) - 1) << TCR_T0SZ_OFFSET)
+
+#define TCR_EPD0_SHIFT		7
+#define TCR_EPD0_MASK		(UL(1) << TCR_EPD0_SHIFT)
+#define TCR_IRGN0_SHIFT		8
+#define TCR_IRGN0_MASK		(UL(3) << TCR_IRGN0_SHIFT)
+#define TCR_IRGN0_NC		(UL(0) << TCR_IRGN0_SHIFT)
+#define TCR_IRGN0_WBWA		(UL(1) << TCR_IRGN0_SHIFT)
+#define TCR_IRGN0_WT		(UL(2) << TCR_IRGN0_SHIFT)
+#define TCR_IRGN0_WBnWA		(UL(3) << TCR_IRGN0_SHIFT)
+
+#define TCR_EPD1_SHIFT		23
+#define TCR_EPD1_MASK		(UL(1) << TCR_EPD1_SHIFT)
+#define TCR_IRGN1_SHIFT		24
+#define TCR_IRGN1_MASK		(UL(3) << TCR_IRGN1_SHIFT)
+#define TCR_IRGN1_NC		(UL(0) << TCR_IRGN1_SHIFT)
+#define TCR_IRGN1_WBWA		(UL(1) << TCR_IRGN1_SHIFT)
+#define TCR_IRGN1_WT		(UL(2) << TCR_IRGN1_SHIFT)
+#define TCR_IRGN1_WBnWA		(UL(3) << TCR_IRGN1_SHIFT)
+
+#define TCR_IRGN_NC		(TCR_IRGN0_NC | TCR_IRGN1_NC)
+#define TCR_IRGN_WBWA		(TCR_IRGN0_WBWA | TCR_IRGN1_WBWA)
+#define TCR_IRGN_WT		(TCR_IRGN0_WT | TCR_IRGN1_WT)
+#define TCR_IRGN_WBnWA		(TCR_IRGN0_WBnWA | TCR_IRGN1_WBnWA)
+#define TCR_IRGN_MASK		(TCR_IRGN0_MASK | TCR_IRGN1_MASK)
+
+#define TCR_ORGN0_SHIFT		10
+#define TCR_ORGN0_MASK		(UL(3) << TCR_ORGN0_SHIFT)
+#define TCR_ORGN0_NC		(UL(0) << TCR_ORGN0_SHIFT)
+#define TCR_ORGN0_WBWA		(UL(1) << TCR_ORGN0_SHIFT)
+#define TCR_ORGN0_WT		(UL(2) << TCR_ORGN0_SHIFT)
+#define TCR_ORGN0_WBnWA		(UL(3) << TCR_ORGN0_SHIFT)
+
+#define TCR_ORGN1_SHIFT		26
+#define TCR_ORGN1_MASK		(UL(3) << TCR_ORGN1_SHIFT)
+#define TCR_ORGN1_NC		(UL(0) << TCR_ORGN1_SHIFT)
+#define TCR_ORGN1_WBWA		(UL(1) << TCR_ORGN1_SHIFT)
+#define TCR_ORGN1_WT		(UL(2) << TCR_ORGN1_SHIFT)
+#define TCR_ORGN1_WBnWA		(UL(3) << TCR_ORGN1_SHIFT)
+
+#define TCR_ORGN_NC		(TCR_ORGN0_NC | TCR_ORGN1_NC)
+#define TCR_ORGN_WBWA		(TCR_ORGN0_WBWA | TCR_ORGN1_WBWA)
+#define TCR_ORGN_WT		(TCR_ORGN0_WT | TCR_ORGN1_WT)
+#define TCR_ORGN_WBnWA		(TCR_ORGN0_WBnWA | TCR_ORGN1_WBnWA)
+#define TCR_ORGN_MASK		(TCR_ORGN0_MASK | TCR_ORGN1_MASK)
+
+#define TCR_SH0_SHIFT		12
+#define TCR_SH0_MASK		(UL(3) << TCR_SH0_SHIFT)
+#define TCR_SH0_INNER		(UL(3) << TCR_SH0_SHIFT)
+
+#define TCR_SH1_SHIFT		28
+#define TCR_SH1_MASK		(UL(3) << TCR_SH1_SHIFT)
+#define TCR_SH1_INNER		(UL(3) << TCR_SH1_SHIFT)
+#define TCR_SHARED		(TCR_SH0_INNER | TCR_SH1_INNER)
+
+#define TCR_TG0_SHIFT		14
+#define TCR_TG0_MASK		(UL(3) << TCR_TG0_SHIFT)
+#define TCR_TG0_4K		(UL(0) << TCR_TG0_SHIFT)
+#define TCR_TG0_64K		(UL(1) << TCR_TG0_SHIFT)
+#define TCR_TG0_16K		(UL(2) << TCR_TG0_SHIFT)
+
+#define TCR_TG1_SHIFT		30
+#define TCR_TG1_MASK		(UL(3) << TCR_TG1_SHIFT)
+#define TCR_TG1_16K		(UL(1) << TCR_TG1_SHIFT)
+#define TCR_TG1_4K		(UL(2) << TCR_TG1_SHIFT)
+#define TCR_TG1_64K		(UL(3) << TCR_TG1_SHIFT)
+
+#define TCR_IPS_SHIFT		32
+#define TCR_IPS_MASK		(UL(7) << TCR_IPS_SHIFT)
+#define TCR_PS_BITS_4GB		0x0ULL
+#define TCR_PS_BITS_64GB	0x1ULL
+#define TCR_PS_BITS_1TB		0x2ULL
+#define TCR_PS_BITS_4TB		0x3ULL
+#define TCR_PS_BITS_16TB	0x4ULL
+#define TCR_PS_BITS_256TB	0x5ULL
+
+#define TCR_A1			(UL(1) << 22)
+#define TCR_ASID16		(UL(1) << 36)
+#define TCR_TBI0		(UL(1) << 37)
+#define TCR_TBI1		(UL(1) << 38)
+#define TCR_HA			(UL(1) << 39)
+#define TCR_HD			(UL(1) << 40)
+#define TCR_NFD0		(UL(1) << 53)
+#define TCR_NFD1		(UL(1) << 54)
+
+#define TCR_SMP_FLAGS	TCR_SHARED
+
+/* PTWs cacheable, inner/outer WBWA */
+#define TCR_CACHE_FLAGS	TCR_IRGN_WBWA | TCR_ORGN_WBWA
+#define TCR_TG_FLAGS	TCR_TG0_4K | TCR_TG1_4K
 
 /* Block related */
 #define TTB_L1_BLOCK_ADDR_SHIFT		30
-#define TTB_L1_BLOCK_ADDR_OFFSET	(1 << TTB_L1_BLOCK_ADDR_SHIFT)
+#define TTB_L1_BLOCK_ADDR_OFFSET	(1UL << TTB_L1_BLOCK_ADDR_SHIFT)
 #define TTB_L1_BLOCK_ADDR_MASK		((~(TTB_L1_BLOCK_ADDR_OFFSET - 1)) & ((1UL << 48) - 1))
 
 #define TTB_L2_BLOCK_ADDR_SHIFT		21
-#define TTB_L2_BLOCK_ADDR_OFFSET	(1 << TTB_L2_BLOCK_ADDR_SHIFT)
+#define TTB_L2_BLOCK_ADDR_OFFSET	(1UL << TTB_L2_BLOCK_ADDR_SHIFT)
 #define TTB_L2_BLOCK_ADDR_MASK		((~(TTB_L2_BLOCK_ADDR_OFFSET - 1)) & ((1UL << 48) - 1))
 
 /* Table related */
 #define TTB_L0_TABLE_ADDR_SHIFT		12
-#define TTB_L0_TABLE_ADDR_OFFSET	(1 << TTB_L0_TABLE_ADDR_SHIFT)
+#define TTB_L0_TABLE_ADDR_OFFSET	(1UL << TTB_L0_TABLE_ADDR_SHIFT)
 #define TTB_L0_TABLE_ADDR_MASK		((~(TTB_L0_TABLE_ADDR_OFFSET - 1)) & ((1UL << 48) - 1))
 
 #define TTB_L1_TABLE_ADDR_SHIFT		TTB_L0_TABLE_ADDR_SHIFT
@@ -208,7 +292,7 @@
 #define TTB_L2_TABLE_ADDR_MASK		TTB_L0_TABLE_ADDR_MASK
 
 #define TTB_L3_PAGE_ADDR_SHIFT		12
-#define TTB_L3_PAGE_ADDR_OFFSET		(1 << TTB_L3_PAGE_ADDR_SHIFT)
+#define TTB_L3_PAGE_ADDR_OFFSET		(1UL << TTB_L3_PAGE_ADDR_SHIFT)
 #define TTB_L3_PAGE_ADDR_MASK		((~(TTB_L3_PAGE_ADDR_OFFSET - 1)) & ((1UL << 48) - 1))
 
 /* Given a virtual address, get an entry offset into a page table. */
@@ -253,7 +337,7 @@
 
 /* These constants need to be synced to the MT_ types */
 enum dcache_option {
-	DCACHE_OFF = MT_DEVICE_NGNRNE,
+	DCACHE_OFF = MT_DEVICE_nGnRnE,
 	DCACHE_WRITETHROUGH = MT_NORMAL_NC,
 	DCACHE_WRITEBACK = MT_NORMAL,
 	DCACHE_WRITEALLOC = MT_NORMAL,
@@ -288,17 +372,7 @@ static inline int pte_type(u64 *pte)
 	return *pte & PTE_TYPE_MASK;
 }
 
-/*
- * This structure holds internal fields required to
- * manage the MMU configuration regarding address space.
- */
-typedef struct {
-	uint64_t ttbr1[NR_CPUS];
-	addr_t pgtable_paddr;
-	addr_t pgtable_vaddr;
-} addrspace_t;
-
-#define cpu_get_l1pgtable()	\
+#define cpu_get_l0pgtable()	\
 ({						\
 	unsigned long ttbr;			\
 	__asm__("mrs	%0, ttbr1_el1"	\
@@ -345,8 +419,8 @@ void reset_l1pgtable(uint32_t *l1pgtable, bool remove);
 
 void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr);
 
-void mmu_switch(addrspace_t *addrspace);
-void dump_pgtable(u64 *l1pgtable);
+void mmu_switch(uint32_t *l0pgtable);
+void dump_pgtable(u64 *l0pgtable);
 
 void dump_current_pgtable(void);
 

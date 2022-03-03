@@ -59,8 +59,10 @@
 #define BOOT_CPU_MODE_EL2	(0xe12)
 
 /* Current Exception Level values, as contained in CurrentEL */
+#define CurrentEL_EL0           (0)
 #define CurrentEL_EL1		(1 << 2)
 #define CurrentEL_EL2		(2 << 2)
+#define CurrentEL_EL3           (3 << 2)
 
 /* Hyp Debug Configuration Register bits */
 #define MDCR_EL2_TPMS		(1 << 14)

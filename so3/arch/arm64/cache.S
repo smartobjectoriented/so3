@@ -25,6 +25,7 @@ ENTRY(__flush_tlb_all)
 ENTRY(__asm_invalidate_tlb)
 
 	dsb ish         	// Barrier instructions
+
 	tlbi vaae1is, x0	// Invalidate VA specified by X0, in EL0/1
                      	// virtual address space for all ASIDs
 	dsb ish	            // Barrier instructions - not covered in this guide
@@ -41,8 +42,10 @@ ENTRY(__asm_invalidate_tlb)
 
 ENTRY(__asm_invalidate_tlb_all)
 
-	tlbi	vmalle1
-	dsb	sy
+	dsb		sy
+	tlbi	vmalle1is
+
+	dsb		ish
 	isb
 
 	ret

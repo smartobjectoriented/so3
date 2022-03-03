@@ -79,16 +79,16 @@ struct page {
 typedef struct page page_t;
 
 extern page_t *frame_table;
-extern uint32_t pfn_start;
+extern addr_t pfn_start;
 
 #define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
-#define phys_to_pfn(phys) (((uint32_t) phys) >> PAGE_SHIFT)
-#define virt_to_pfn(virt) (phys_to_pfn(__va((uint32_t) virt)))
+#define phys_to_pfn(phys) (((addr_t) phys) >> PAGE_SHIFT)
+#define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t) virt)))
 
-#define __pa(vaddr) (((uint32_t) vaddr) - CONFIG_KERNEL_VIRT_ADDR + ((uint32_t) CONFIG_RAM_BASE))
-#define __va(paddr) (((uint32_t) paddr) - ((uint32_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VIRT_ADDR)
+#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VIRT_ADDR + ((addr_t) CONFIG_RAM_BASE))
+#define __va(paddr) (((addr_t) paddr) - ((addr_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VIRT_ADDR)
 
-#define page_to_pfn(page) ((uint32_t) ((uint32_t) (page-frame_table) + pfn_start))
+#define page_to_pfn(page) ((addr_t) ((addr_t) (page-frame_table) + pfn_start))
 #define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
 
 #define page_to_phys(page) (pfn_to_phys(page_to_pfn(page)))
@@ -106,15 +106,15 @@ int get_mem_info(const void *fdt, mem_info_t *info);
 void dump_frame_table(void);
 
 uint32_t get_free_page(void);
-void free_page(uint32_t paddr);
+void free_page(addr_t paddr);
 
 uint32_t get_free_vpage(void);
-void free_vpage(uint32_t vaddr);
+void free_vpage(addr_t vaddr);
 
 uint32_t get_contig_free_pages(uint32_t nrpages);
 uint32_t get_contig_free_vpages(uint32_t nrpages);
-void free_contig_pages(uint32_t page_phys, uint32_t nrpages);
-void free_contig_vpages(uint32_t page_phys, uint32_t nrpages);
+void free_contig_pages(addr_t page_phys, uint32_t nrpages);
+void free_contig_vpages(addr_t page_phys, uint32_t nrpages);
 
 uint32_t get_kernel_size(void);
 

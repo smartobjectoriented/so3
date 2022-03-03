@@ -22,14 +22,13 @@
 /* For timer, QEMU emulates an ARMv7/ARMv8 architected timer */
 #define CONFIG_SYS_HZ                       1000
 
-/* Environment options */
-
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(SCSI, scsi, 0) \
 	func(VIRTIO, virtio, 0) \
 	func(DHCP, dhcp, na)
 
+#if 0 /* SOO.tech */
 #include <config_distro_bootcmd.h>
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -41,12 +40,25 @@
 	"kernel_addr_r=0x40400000\0" \
 	"ramdisk_addr_r=0x44000000\0" \
 	BOOTENV
+#endif /* 0 */
 
+#define CONFIG_BOOTCOMMAND \
+        "load virtio 0 0x40000000 uEnv.txt; env import 0x40000000; run start\0" \
+         "bootdelay=0\0"
+            
 #define CONFIG_SYS_CBSIZE 512
 
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
+#ifdef CONFIG_TFABOOT
+#define CONFIG_SYS_FLASH_BASE           0x4000000
+#else
+#define CONFIG_SYS_FLASH_BASE           0x0
+#endif
 #define CONFIG_SYS_MAX_FLASH_BANKS_DETECT	2
 #define CONFIG_SYS_MAX_FLASH_SECT	256 /* Sector: 256K, Bank: 64M */
 #define CONFIG_CFI_FLASH_USE_WEAK_ACCESSORS
+
+/* SOO.tech */
+#define CONFIG_SYS_BOOTM_LEN		SZ_64M
 
 #endif /* __CONFIG_H */

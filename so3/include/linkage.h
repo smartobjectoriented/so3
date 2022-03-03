@@ -19,29 +19,36 @@
 #ifndef LINKAGE_H
 #define LINKAGE_H
 
-
-#define ASM_NL           ;
-#define __ALIGN .align 0
-#define __ALIGN_STR ".align 0"
-
-#define ALIGN __ALIGN
-
-#ifndef END
-#define END(name) \
-	.size name, .-name
-#endif
-
+#ifdef __ASSEMBLY__
 
 #ifndef ENTRY
 #define ENTRY(name) \
-	.globl name ASM_NL \
-	ALIGN ASM_NL \
-	name:
+  .globl name; \
+  .align 4, 0x90; \
+  name:
 #endif
 
+#ifndef END
+#define END(name) \
+  .size name, .-name
+#endif
 
-#define _AC(X,Y)        X
-#define UL(x) _AC(x, UL)
+#endif
 
+#ifndef ENDPROC
+#define ENDPROC(name) \
+  .type name, %function; \
+  END(name)
+#endif
+
+/*
+ * Allow for constants defined here to be used from assembly code
+ * by prepending the UL suffix only with actual C code compilation.
+ */
+#ifndef __ASSEMBLY__
+#define UL(x) (x##UL)
+#else
+#define UL(x) (x)
+#endif
 
 #endif /* LINKAGE_H */

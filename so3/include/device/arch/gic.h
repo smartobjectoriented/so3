@@ -30,8 +30,6 @@
 #ifndef GIC_H
 #define GIC_H
 
-#include <types.h>
-
 /* Total number of IRQ sources handled by the controller
  *   0- 15 are SGI interrupts: SGI = Software Generated Interrupts
  *  16- 31 are PPI interrupts: PPI = Private Peripheral Interrupts
@@ -41,37 +39,44 @@
 
 #define NR_IRQS	160
 
-#define GICD_ENABLE			0x1
+#define ICC_SRE_EL2_SRE			(1 << 0)
+#define ICC_SRE_EL2_ENABLE		(1 << 3)
+
+#define GICD_ENABLE				0x1
 #define GICD_DISABLE			0x0
-#define GICD_INT_ACTLOW_LVLTRIG		0x0
+#define GICD_INT_ACTLOW_LVLTRIG	0x0
 #define GICD_INT_EN_CLR_X32		0xffffffff
 #define GICD_INT_EN_SET_SGI		0x0000ffff
 #define GICD_INT_EN_CLR_PPI		0xffff0000
 #define GICD_INT_DEF_PRI		0xa0
 #define GICD_INT_DEF_PRI_X4		((GICD_INT_DEF_PRI << 24) |\
-					(GICD_INT_DEF_PRI << 16) |\
-					(GICD_INT_DEF_PRI << 8) |\
-					GICD_INT_DEF_PRI)
+								 (GICD_INT_DEF_PRI << 16) |\
+								 (GICD_INT_DEF_PRI << 8) |\
+								 GICD_INT_DEF_PRI)
 
 #define GIC_CPU_CTRL			0x00
 #define GIC_CPU_PRIMASK			0x04
 #define GIC_CPU_BINPOINT		0x08
 #define GIC_CPU_INTACK			0x0c
-#define GIC_CPU_EOI			0x10
+#define GIC_CPU_EOI				0x10
 #define GIC_CPU_RUNNINGPRI		0x14
 #define GIC_CPU_HIGHPRI			0x18
-#define GIC_CPU_ALIAS_BINPOINT		0x1c
+#define GIC_CPU_ALIAS_BINPOINT	0x1c
 #define GIC_CPU_ACTIVEPRIO		0xd0
 #define GIC_CPU_IDENT			0xfc
 
-#define GICC_ENABLE			0x1
-#define GICC_INT_PRI_THRESHOLD		0xf0
-#define GICC_IAR_INT_ID_MASK		0x3ff
+#define GICC_ENABLE				0x1
+#define GICC_INT_PRI_THRESHOLD	0xf0
+#define GICC_IAR_INT_ID_MASK	0x3ff
 #define GICC_INT_SPURIOUS		1023
-#define GICC_DIS_BYPASS_MASK		0x1e0
+#define GICC_DIS_BYPASS_MASK	0x1e0
 
 #define INTC_CPU_CTRL_REG0		0x28
 #define INTC_DISABLE			(1<<4)
+
+#ifndef __ASSEMBLY__
+
+#include <types.h>
 
 typedef enum {
 	GIC_IRQ_TYPE_SPI	= 0,
@@ -142,5 +147,7 @@ struct intc_regs {
     volatile uint32_t gicc_iidr;       /* 0x00fc */
 
 };
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* GIC_H */

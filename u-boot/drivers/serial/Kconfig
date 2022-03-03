@@ -709,7 +709,8 @@ config PL011_SERIAL
 
 config PL01X_SERIAL
 	bool "ARM PL010 and PL011 driver"
-	depends on DM_SERIAL
+	#SOO.tech
+	#depends on DM_SERIAL
 	help
 	  Select this to enable a UART for platforms using PL010 or PL011.
 

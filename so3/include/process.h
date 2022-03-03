@@ -61,19 +61,19 @@ struct pcb {
 	char name[PROC_NAME_LEN];
 
 	/* Initial entry point used to configure the PC */
-	uint32_t bin_image_entry;
+	addr_t bin_image_entry;
 
 	/* Full descending stack - refers to a "full" word */
-	uint32_t stack_top;
+	addr_t stack_top;
 
 	/* Thread stack slots */
 	bool stack_slotID[PROC_THREAD_MAX];
 
 	/* Heap management */
-	uint32_t heap_base;
+	addr_t heap_base;
 
 	/* current position of the heap pointer */
-	uint32_t heap_pointer;
+	addr_t heap_pointer;
 
 	/* Number of pages required by this process (including binary image) */
 	size_t page_count;
@@ -82,7 +82,7 @@ struct pcb {
 	struct list_head page_list;
 
 	/* Process 1st-level page table */
-	uint32_t *pgtable;
+	addr_t *pgtable;
 
 	uint32_t exit_status;
 

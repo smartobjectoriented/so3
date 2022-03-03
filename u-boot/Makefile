@@ -264,7 +264,7 @@ export	HOSTARCH HOSTOS
 
 # set default to nothing for native builds
 # (SOO.tech) Usual toolchains for our systems
-include ../agency/build.conf
+include ../build.conf
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),rpi4_64 virt64))
 ARCH	= arm64
@@ -273,7 +273,7 @@ endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),vexpress rpi4))
 ARCH = arm
-CROSS_COMPILE = arm-linux-gnueabihf-
+CROSS_COMPILE = arm-none-linux-gnueabihf-
 endif
 
 KCONFIG_CONFIG	?= .config

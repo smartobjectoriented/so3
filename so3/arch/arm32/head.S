@@ -27,7 +27,7 @@
 #include <asm/memory.h>
 #include <thread.h>
 
-.global _start
+.global __start
 .global __fdt_addr
 
 .extern clear_bss
@@ -66,7 +66,7 @@
 
 .endm
 
-_start:
+__start:
 
   @ r1 = machine id
   @ r2 = dtb address
