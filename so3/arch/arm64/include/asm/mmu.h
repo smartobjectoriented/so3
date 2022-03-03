@@ -411,13 +411,13 @@ extern void __mmu_switch(uint32_t l1pgtable_phys);
 
 void pgtable_copy_kernel_area(uint32_t *l1pgtable);
 
-void create_mapping(u64 *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
-void release_mapping(u64 *pgtable, addr_t virt_base, addr_t size);
+void create_mapping(addr_t *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
+void release_mapping(addr_t *pgtable, addr_t virt_base, addr_t size);
 
 u64 *new_sys_pgtable(void);
-void reset_l1pgtable(uint32_t *l1pgtable, bool remove);
+void reset_l1pgtable(addr_t *l1pgtable, bool remove);
 
-void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr);
+void clear_l1pte(addr_t *l1pgtable, addr_t vaddr);
 
 void mmu_switch(uint32_t *l0pgtable);
 void dump_pgtable(u64 *l0pgtable);

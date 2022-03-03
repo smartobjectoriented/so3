@@ -56,7 +56,7 @@
 .extern sig_check
 .extern __stack_alignment_fault
 
-.extern _start
+.extern __start
 
 #if 0 /* Debugging purposes */
 .extern __log
@@ -85,7 +85,7 @@
 #endif /* 0 */
 
 ENTRY(__vectors)
-		    b   _start @ reset
+		    b   __start @ reset
             ldr pc, _undefined_instruction
             ldr pc, _syscall_interrupt
             ldr pc, _prefetch_abort

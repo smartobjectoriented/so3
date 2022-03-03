@@ -135,7 +135,7 @@ void setup_arch(void) {
 
 	/* Keep a reference to the 1st-level system page table */
 #ifdef CONFIG_MMU
-	__sys_l1pgtable = (unsigned int *) (CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET);
+	__sys_l1pgtable = (addr_t *) (CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET);
 #endif
 
 #if 0 /* At the moment, we do not handle security in user space */

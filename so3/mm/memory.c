@@ -26,6 +26,9 @@
 #include <heap.h>
 
 #include <device/ramdev.h>
+#include <device/fdt.h>
+
+#include <mach/uart.h>
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
@@ -39,19 +42,20 @@ page_t *frame_table;
 static spinlock_t ft_lock;
 
 /* First pfn of available pages */
-uint32_t pfn_start;
+addr_t pfn_start;
 
 /* Page-aligned kernel size (including frame table) */
 static uint32_t kernel_size;
 
 /* Current available I/O range address */
-uint32_t io_mapping_current;
+addr_t io_mapping_current;
 struct list_head io_maplist;
 
 /* Initialize the frame table */
-void frame_table_init(uint32_t frame_table_start) {
-	uint32_t i, ft_phys, ft_length, ft_pages;
-	uint32_t ft_pfn_end;
+void frame_table_init(addr_t frame_table_start) {
+	addr_t ft_phys;
+	uint32_t i, ft_length, ft_pages;
+	addr_t ft_pfn_end;
 
 	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
 	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
@@ -111,7 +115,7 @@ uint32_t get_kernel_size(void) {
 /*
  * Get a free page. Return the physical address of the page (or 0 if not available).
  */
-uint32_t get_free_page(void) {
+addr_t get_free_page(void) {
 	uint32_t loop_mark;
 	static uint32_t __next_free_page = 0;
 
@@ -145,8 +149,8 @@ uint32_t get_free_page(void) {
 /*
  * Get a free page with a virtual mapping.
  */
-uint32_t get_free_vpage(void) {
-	uint32_t paddr, vaddr;
+addr_t get_free_vpage(void) {
+	addr_t paddr, vaddr;
 
 	paddr = get_free_page();
 	ASSERT(paddr);
@@ -159,7 +163,7 @@ uint32_t get_free_vpage(void) {
 /*
  * Release a page, mark as free.
  */
-void free_page(uint32_t paddr) {
+void free_page(addr_t paddr) {
 	page_t *page;
 
 	spin_lock(&ft_lock);
@@ -170,8 +174,8 @@ void free_page(uint32_t paddr) {
 	spin_unlock(&ft_lock);
 }
 
-void free_vpage(uint32_t vaddr) {
-	uint32_t paddr;
+void free_vpage(addr_t vaddr) {
+	addr_t paddr;
 
 	paddr = virt_to_phys_pt(vaddr);
 
@@ -185,7 +189,7 @@ void free_vpage(uint32_t vaddr) {
  * Search for a number of contiguous pages.
  * Returns 0 if not available.
  */
-uint32_t get_contig_free_pages(uint32_t nrpages) {
+addr_t get_contig_free_pages(uint32_t nrpages) {
 	uint32_t i, base = 0;
 
 	spin_lock(&ft_lock);
@@ -215,8 +219,8 @@ uint32_t get_contig_free_pages(uint32_t nrpages) {
  * Search for a number of contiguous physical and virtual pages.
  * Returns 0 if not available.
  */
-uint32_t get_contig_free_vpages(uint32_t nrpages) {
-	uint32_t vaddr, paddr;
+addr_t get_contig_free_vpages(uint32_t nrpages) {
+	addr_t vaddr, paddr;
 
 	paddr = get_contig_free_pages(nrpages);
 	ASSERT(paddr);
@@ -227,7 +231,7 @@ uint32_t get_contig_free_vpages(uint32_t nrpages) {
 }
 
 
-void free_contig_pages(uint32_t paddr, uint32_t nrpages) {
+void free_contig_pages(addr_t paddr, uint32_t nrpages) {
 	uint32_t i;
 	page_t *page;
 
@@ -242,8 +246,8 @@ void free_contig_pages(uint32_t paddr, uint32_t nrpages) {
 
 }
 
-void free_contig_vpages(uint32_t vaddr, uint32_t nrpages) {
-	uint32_t paddr;
+void free_contig_vpages(addr_t vaddr, uint32_t nrpages) {
+	addr_t paddr;
 
 	paddr = virt_to_phys_pt(vaddr);
 
@@ -257,7 +261,7 @@ void dump_frame_table(void) {
 	printk("** Dump of frame table contents **\n\n");
 
 	for (i = 0; i < mem_info.avail_pages; i++)
-		printk("  - Page address (phys) :%x, free: %d\n", virt_to_phys_pt((uint32_t) &frame_table[i]), frame_table[i].free);
+		printk("  - Page address (phys) :%x, free: %d\n", virt_to_phys_pt((addr_t) &frame_table[i]), frame_table[i].free);
 }
 
 /*
@@ -285,11 +289,11 @@ void dump_io_maplist(void) {
 }
 
 /* Map a I/O address range to its physical range */
-uint32_t io_map(addr_t phys, size_t size) {
+addr_t io_map(addr_t phys, size_t size) {
 	io_map_t *io_map;
 	struct list_head *pos;
 	io_map_t *cur = NULL;
-	uint32_t target, offset;
+	addr_t target, offset;
 
 	/* Sometimes, it may happen than drivers try to map several devices which are located within the same page,
 	 * i.e. the 4-KB page offset is not null.
@@ -405,8 +409,8 @@ void io_unmap(addr_t vaddr) {
 void memory_init(void) {
 #ifdef CONFIG_MMU
 
-	uint32_t *new_sys_pgtable;
-	uint32_t vectors_paddr;
+	addr_t *new_sys_pgtable;
+	addr_t vectors_paddr;
 
 #endif /* CONFIG_MMU */
 
@@ -419,7 +423,7 @@ void memory_init(void) {
 
 #ifdef CONFIG_MMU
 	/* Set the virtual address of the real system page table */
-	__sys_l1pgtable = (uint32_t *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
+	__sys_l1pgtable = (addr_t *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
 
 	init_io_mapping();
 
@@ -427,10 +431,10 @@ void memory_init(void) {
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
 	fdt_move((const void *) __fdt_addr, &__end, fdt_totalsize(__fdt_addr));
-	__fdt_addr = (uint32_t *) &__end;
+	__fdt_addr = (addr_t *) &__end;
 
 	/* Initialize the free page list */
-	frame_table_init(((uint32_t) &__end) + fdt_totalsize(__fdt_addr));
+	frame_table_init(((addr_t) &__end) + fdt_totalsize(__fdt_addr));
 
 	/* Re-setup a system page table with a better granularity */
 	new_sys_pgtable = new_l1pgtable();

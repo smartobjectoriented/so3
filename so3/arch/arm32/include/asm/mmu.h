@@ -59,8 +59,8 @@
 #define pte_index_to_vaddr(i1, i2) ((i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT))
 
 #define l1pte_offset(pgtable, addr)     (pgtable + l1pte_index(addr))
-#define l2pte_offset(l1pte, addr) 	((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
-#define l2pte_first(l1pte)		((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
+#define l2pte_offset(l1pte, addr) 	((addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
+#define l2pte_first(l1pte)		((addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
 
 #define l1sect_addr_end(addr, end)                                         \
  ({      unsigned long __boundary = ((addr) + TTB_SECT_SIZE) & TTB_SECT_MASK;  \
@@ -164,30 +164,30 @@ enum ttb_l2_dcache_option {
 
 #include <process.h>
 
-uint32_t *current_pgtable(void);
+addr_t *current_pgtable(void);
 
-extern uint32_t *__current_pgtable;
+extern addr_t *__current_pgtable;
 
-static inline void set_pgtable(uint32_t *pgtable) {
+static inline void set_pgtable(addr_t *pgtable) {
 	__current_pgtable = pgtable;
 }
 
-extern void __mmu_switch(uint32_t l1pgtable_phys);
+extern void __mmu_switch(addr_t l1pgtable_phys);
 
-void pgtable_copy_kernel_area(uint32_t *l1pgtable);
+void pgtable_copy_kernel_area(addr_t *l1pgtable);
 
-void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base, uint32_t size, bool nocache);
-void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size);
+void create_mapping(addr_t *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache);
+void release_mapping(addr_t *pgtable, addr_t virt_base, uint32_t size);
 
-uint32_t *new_l1pgtable(void);
-void reset_l1pgtable(uint32_t *l1pgtable, bool remove);
+addr_t *new_l1pgtable(void);
+void reset_l1pgtable(addr_t *l1pgtable, bool remove);
 
-void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr);
+void clear_l1pte(addr_t *l1pgtable, addr_t vaddr);
 
-void mmu_switch(uint32_t *l1pgtable);
-void dump_pgtable(uint32_t *l1pgtable);
+void mmu_switch(addr_t *l1pgtable);
+void dump_pgtable(addr_t *l1pgtable);
 
-uint32_t virt_to_phys_pt(uint32_t vaddr);
+addr_t virt_to_phys_pt(addr_t vaddr);
 
 void duplicate_user_space(pcb_t *from, pcb_t *to);
 
@@ -195,11 +195,11 @@ void flush_tlb_all(void);
 
 void dump_current_pgtable(void);
 
-void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option option);
-void set_l1_pte_page_dcache(uint32_t *l1pte, enum ttb_l1_page_dcache_option option);
-void set_l2_pte_dcache(uint32_t *l2pte, enum ttb_l2_dcache_option option);
+void set_l1_pte_sect_dcache(addr_t *l1pte, enum ttb_l1_sect_dcache_option option);
+void set_l1_pte_page_dcache(addr_t *l1pte, enum ttb_l1_page_dcache_option option);
+void set_l2_pte_dcache(addr_t *l2pte, enum ttb_l2_dcache_option option);
 
-void mmu_setup(uint32_t *pgtable);
+void mmu_setup(addr_t *pgtable);
 
 #endif /* CONFIG_MMU */
 

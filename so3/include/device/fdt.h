@@ -53,6 +53,7 @@
  */
 
 #include <compiler.h>
+#include <types.h>
 
 #include <libfdt/libfdt.h>
 
@@ -61,7 +62,7 @@
 #define MAX_SUBNODE			4
 
 /* Reference to the current device tree */
-extern uint32_t *__fdt_addr;
+extern addr_t *__fdt_addr;
 
 int fdt_find_compatible_node(void *fdt_addr, char *compat);
 const struct fdt_property *fdt_find_property(void *fdt_addr, int offset, const char *propname);
