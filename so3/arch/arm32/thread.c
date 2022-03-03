@@ -21,10 +21,10 @@
 void prepare_cpu_regs(tcb_t *tcb) {
 
 	tcb->cpu_regs.r4 = (unsigned long) tcb->th_fn;
-        tcb->cpu_regs.r5 = (unsigned long) tcb->th_arg; /* First argument */
+	tcb->cpu_regs.r5 = (unsigned long) tcb->th_arg; /* First argument */
 
-        if (tcb->pcb)
-        	tcb->cpu_regs.r6 = get_user_stack_top(tcb->pcb, tcb->pcb_stack_slotID);
+	if (tcb->pcb)
+		tcb->cpu_regs.r6 = get_user_stack_top(tcb->pcb, tcb->pcb_stack_slotID);
 }
 
 

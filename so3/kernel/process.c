@@ -293,7 +293,7 @@ static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr
  * Create a process from scratch, without fork'd. Typically used by the kernel main
  * at the end of the bootstrap.
  */
-void create_process(int (*start_routine)(void *), const char *name)
+void create_process(int *(*start_routine)(void *), const char *name)
 {
 	pcb_t *pcb;
 	int i;
@@ -646,7 +646,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 	elf_img_info_t elf_img_info;
 	pcb_t *pcb;
 	uint32_t flags;
-	int (*start_routine)(void *);
+	int *(*start_routine)(void *);
 	queue_thread_t *cur;
 	int ret, argc;
 
@@ -699,7 +699,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 
 	/* Now, we need to create the main user thread associated to this binary image. */
 	/* start main thread */
-	start_routine = (int(*)(void *)) pcb->bin_image_entry;
+	start_routine = (int *(*)(void *)) pcb->bin_image_entry;
 
 	/* We start the new thread */
 	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb);

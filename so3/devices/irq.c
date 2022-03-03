@@ -38,8 +38,8 @@ irqdesc_t *irq_to_desc(uint32_t irq) {
  * Main thread entry point for deferred processing.
  * At the entry, IRQs are on.
  */
-int __irq_deferred_fn(void *args) {
-	int ret;
+int *__irq_deferred_fn(void *args) {
+	int *ret;
 	uint32_t irq = *((uint32_t *) args);
 
 	while (atomic_read(&irqdesc[irq].deferred_pending)) {
@@ -49,7 +49,7 @@ int __irq_deferred_fn(void *args) {
 		local_irq_enable();
 
 		/* Perform the deferred processing bound to this IRQ */
-		ret = irqdesc[irq].irq_deferred_fn(irq, irqdesc[irq].data);
+		ret = (int *) irqdesc[irq].irq_deferred_fn(irq, irqdesc[irq].data);
 
 		local_irq_disable();
 

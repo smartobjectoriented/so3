@@ -72,7 +72,7 @@ void post_init(void) {
  * Initial (root) process which will start the first process running in SO3.
  * The process is running in user mode.
  */
-int root_proc(void *args)
+int *root_proc(void *args)
 {
 	printk("SO3: starting the initial process (shell) ...\n\n\n");
 
@@ -84,7 +84,7 @@ int root_proc(void *args)
 
 	kernel_panic();
 
-	return 0; /* Make gcc happy ;-) */
+	return NULL; /* Make gcc happy ;-) */
 }
 
 int *rest_init(void *dummy) {

@@ -84,7 +84,7 @@ struct pcb {
 	/* Process 1st-level page table */
 	addr_t *pgtable;
 
-	uint32_t *exit_status;
+	uint32_t exit_status;
 
 	/* Reference to the parent process */
 	pcb_t *parent;
@@ -132,7 +132,7 @@ void free_user_stack_slot(pcb_t *pcb, int slotID);
 
 void add_page_to_proc(pcb_t *pcb, page_t *page);
 
-void create_process(int (*start_routine) (void *), const char *name);
+void create_process(int *(*start_routine) (void *), const char *name);
 
 uint32_t do_getpid(void);
 

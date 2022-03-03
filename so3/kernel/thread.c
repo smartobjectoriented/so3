@@ -427,22 +427,23 @@ tcb_t *thread_create(int *(*start_routine)(void *), const char *name, void *arg,
 		kernel_panic();
 	}
 
-	/* Prepare registers for future restore in switch_context() */
-	prepare_cpu_regs(tcb);
-
 	/* Prepare the user stack if any related PCB */
-	if (pcb) {
+	if (tcb->pcb) {
 		/* Prepare the user stack */
-		tcb->pcb_stack_slotID = get_user_stack_slot(pcb);
+		tcb->pcb_stack_slotID = get_user_stack_slot(tcb->pcb);
 		if (tcb->pcb_stack_slotID < 0) {
 			printk("No available user stack for a new thread\n");
 			kernel_panic();
 		}
 	}
 
+	/* Prepare registers for future restore in switch_context() */
+	prepare_cpu_regs(tcb);
+
+	/* Quite common registers on various architectures */
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
 
-	if (pcb)
+	if (tcb->pcb)
 		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_user;
 	 else
 		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_kernel;
@@ -569,7 +570,7 @@ int *thread_join(tcb_t *tcb)
 		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
 		if (is_main_thread)
-			exit_status = tcb->pcb->exit_status;
+			exit_status = (int *) tcb->pcb->exit_status;
 		else
 			exit_status = tcb->exit_status;
 
