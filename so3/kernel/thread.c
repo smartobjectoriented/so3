@@ -29,6 +29,7 @@
 #include <softirq.h>
 
 #include <asm/processor.h>
+#include <asm/thread.h>
  
 static unsigned int tid_next = 0;
 
@@ -428,8 +429,7 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	}
 
 	/* Prepare registers for future restore in switch_context() */
-	tcb->cpu_regs.r4 = (unsigned int) tcb->th_fn;
-	tcb->cpu_regs.r5 = (unsigned int) tcb->th_arg; /* First argument */
+	prepare_cpu_regs(tcb);
 
 	/* Prepare the user stack if any related PCB */
 	if (pcb) {
