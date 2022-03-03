@@ -562,7 +562,7 @@ int *thread_join(tcb_t *tcb)
 	/* Check if the child is a tracee (and therefore we have a tracer on it) */
 	if ((tcb != NULL) && (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
 		
-		exit_status = 0;
+		exit_status = NULL;
 
 	} else {
 		
@@ -570,7 +570,7 @@ int *thread_join(tcb_t *tcb)
 		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
 		if (is_main_thread)
-			exit_status = (int *) tcb->pcb->exit_status;
+			exit_status = (void *) ((unsigned long) tcb->pcb->exit_status);
 		else
 			exit_status = tcb->exit_status;
 
