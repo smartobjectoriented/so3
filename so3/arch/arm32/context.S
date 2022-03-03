@@ -59,7 +59,7 @@
 @ Enable VFP
 __enable_vfp:
 
-        mov r1, #0x40000000
+    mov r1, #0x40000000
     vmsr fpexc, r1 ; fpexc = r1
     bx lr
 

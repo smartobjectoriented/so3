@@ -136,23 +136,6 @@ static irq_return_t pl011_int(int irq, void *dummy)
 }
 
 
-static int fc_write(int fd, const void *buffer, int size) {
-
-	return 0;
-}
-
-struct file_operations fc_fops = {
-	.write = fc_write,
-};
-
-struct devclass dummydev = {
-	.class = "fc",
-	.type = VFS_TYPE_DEV_FB,
-	.fops = &fc_fops,
-};
-
-
-
 static int pl011_init(dev_t *dev) {
 
 	/* Init pl011 UART */
@@ -171,8 +154,6 @@ static int pl011_init(dev_t *dev) {
 	iowrite16(pl011_dev.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
 
 	irq_ops.irq_enable(dev->irq_nr);
-
-	devclass_register(dev, &dummydev);
 
 	return 0;
 }
