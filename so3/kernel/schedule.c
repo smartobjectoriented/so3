@@ -485,8 +485,8 @@ void schedule(void) {
  * Can be used for debugging purposes.
  *
  */
-void __dump_regs(uint32_t regs) {
-	uint32_t *cpuregs = (uint32_t *) regs;
+void __dump_regs(unsigned long regs) {
+	unsigned long *cpuregs = (unsigned long *) regs;
 
 	lprintk("r4: %x ", *cpuregs);
 	lprintk("r5: %x ", *(cpuregs+1));

@@ -87,7 +87,7 @@ int root_proc(void *args)
 	return 0; /* Make gcc happy ;-) */
 }
 
-int rest_init(void *dummy) {
+int *rest_init(void *dummy) {
 
 	post_init();
 
@@ -109,7 +109,7 @@ int rest_init(void *dummy) {
 #error "Can not start initial SO3 environment"
 #endif
 
-	return 0;
+	return NULL;
 }
 
 void kernel_start(void) {

@@ -29,8 +29,7 @@
 #include <softirq.h>
 
 #include <asm/processor.h>
-#include <asm/thread.h>
- 
+
 static unsigned int tid_next = 0;
 
 char *state_str[] = {
@@ -343,7 +342,7 @@ void thread_prologue(void(*th_fn)(void *arg), void *arg)
 /*
  * Thread idle
  */
-int thread_idle(void *dummy)
+int *thread_idle(void *dummy)
 {
 	/* Endless loop */
 	while (true) {
@@ -364,7 +363,7 @@ int thread_idle(void *dummy)
  
 	}
 
-	return 0;
+	return NULL;
 }
 
 /*
@@ -388,7 +387,7 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  * @pcb: NULL means it is a pure kernel thread, otherwise is is a user thread.
  * @prio: 0 means the default priority, otherwise set to the thread to the corresponding priority
  */
-tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *thread_create(int *(*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
 	unsigned long flags;
@@ -439,16 +438,14 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 			printk("No available user stack for a new thread\n");
 			kernel_panic();
 		}
-
-		tcb->cpu_regs.r6 = get_user_stack_top(pcb, tcb->pcb_stack_slotID);
 	}
 
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
 
 	if (pcb)
-		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_user;
+		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_user;
 	 else
-		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_kernel;
+		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_kernel;
 
 	/* Initialize the join queue associated to this thread */
 	INIT_LIST_HEAD(&tcb->joinQueue);
@@ -462,14 +459,14 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	return tcb;
 }
 
-tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, uint32_t prio)
+tcb_t *kernel_thread(int *(*start_routine)(void *), const char *name, void *arg, uint32_t prio)
 {
 	return thread_create(start_routine, name, arg, NULL, prio);
 }
 
 /* Should not be called directly. Call create_process() or create_child_thread() instead. */
 /* FIXME: start_routine() should returns void * instead of int? */
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
+tcb_t *user_thread(int *(*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
 {
 	return thread_create(start_routine, name, arg, pcb, 0);
 }
@@ -500,11 +497,10 @@ void clean_thread(tcb_t *tcb) {
  * The target thread which we are trying to join will be definitively removed
  * from the system when no other threads are joining it too.
  */
-#warning Should return an int * (void *)
-int thread_join(tcb_t *tcb) 
+int *thread_join(tcb_t *tcb)
 {
 	queue_thread_t *cur;
-	int exit_status;
+	int *exit_status;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
 	unsigned long flags;
@@ -575,7 +571,7 @@ int thread_join(tcb_t *tcb)
 		if (is_main_thread)
 			exit_status = tcb->pcb->exit_status;
 		else
-                    exit_status = (int) tcb->exit_status;
+			exit_status = tcb->exit_status;
 
 		/*
 		 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
@@ -609,7 +605,7 @@ int thread_join(tcb_t *tcb)
  * The function returns 0 if successful.
  */
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p) {
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p) {
 
 	unsigned long flags;
 	tcb_t *tcb;
@@ -627,7 +623,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 	}
 	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
-	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
+	tcb = user_thread((int *(*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
 
 	/* The name has been copied in thread creation */
 	free(name);
@@ -647,7 +643,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
  */
 int do_thread_join(uint32_t pthread_id, int **value_p) {
 	tcb_t *tcb;
-	int ret;
+	int *ret;
 	unsigned long flags;
 
 	flags = local_irq_save();
@@ -661,11 +657,8 @@ int do_thread_join(uint32_t pthread_id, int **value_p) {
 
 	ret = thread_join(tcb);
 
-	if (value_p != NULL) {
-	    /* A joined POSIX thread should return a void * (here int*) */
-            *value_p = (int*)ret; 
-#warning This value is simply passed into value_p (normally a void**)
-	}
+	if (value_p != NULL)
+		*value_p = ret;
 
 	local_irq_restore(flags);
 

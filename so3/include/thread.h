@@ -73,7 +73,7 @@ struct tcb {
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
 	/* Threaded function */
-	int (*th_fn)(void *);
+	int *(*th_fn)(void *);
 	void *th_arg;
 
 	thread_t state;
@@ -94,23 +94,25 @@ struct tcb {
 };
 typedef struct tcb tcb_t;
 
+addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
+
 typedef int(*th_fn_t)(void *);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p);
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
-tcb_t *kernel_thread(int (*start_routine) (void *), const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
+tcb_t *kernel_thread(int *(*start_routine) (void *), const char *name, void *arg, uint32_t prio);
+tcb_t *user_thread(int *(*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
 
-int thread_join(tcb_t *tcb);
+int *thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);
 void clean_thread(tcb_t *tcb);
 void do_thread_yield(void);
 
-int thread_idle(void *dummy);
+int *thread_idle(void *dummy);
 
 addr_t get_kernel_stack_top(uint32_t slotID);
 
@@ -121,7 +123,9 @@ extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
 
-int app_thread_main(void *args);
+int *app_thread_main(void *args);
+
+void prepare_cpu_regs(tcb_t *tcb);
 
 #endif /* __ASSEMBLY__ */
 

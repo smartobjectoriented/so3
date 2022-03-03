@@ -1088,8 +1088,8 @@ typedef struct cpu_sys_regs {
  * Put the CPU in idle/standby until an interrupt is raised up.
  */
 static inline void cpu_standby(void) {
-	__asm("dsb");
-	__asm("wfi");
+	dsb(sy);
+	wfi();
 }
 
 struct vcpu_guest_context;

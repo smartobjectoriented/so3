@@ -365,7 +365,7 @@ typedef struct {
  * Main entry point of so3 app in kernel standalone configuration.
  * Mainly for debugging purposes.
  */
-int app_thread_main(void *args)
+int *app_thread_main(void *args)
 {
 	char *buffer;
 	int i;
@@ -617,6 +617,6 @@ dump_heap("C");
 	}
 #endif
 
-	return 0;
+	return NULL;
 }
 

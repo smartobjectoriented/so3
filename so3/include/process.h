@@ -84,7 +84,7 @@ struct pcb {
 	/* Process 1st-level page table */
 	addr_t *pgtable;
 
-	uint32_t exit_status;
+	uint32_t *exit_status;
 
 	/* Reference to the parent process */
 	pcb_t *parent;
