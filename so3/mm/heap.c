@@ -208,7 +208,7 @@ uint32_t heap_size(void) {
 	uint32_t total_size = 0;
 	uint32_t flags;
 
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 	while (list) {
 		while (chunk) {
@@ -524,7 +524,7 @@ static void *__malloc_log(size_t requested, unsigned int alignment, const char *
 	* We disable the IRQs to be safe. Using a mutex is dangerous since, a context switch may lead
 	* to a (re-)malloc in a waitqueue.
 	*/
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 	DBG("[malloc] requested size = %d, mem_chunk_size = %d bytes\n", requested, sizeof(mem_chunk_t));
 
@@ -682,7 +682,7 @@ void free(void *ptr)
 	mem_chunk_t *chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
 	mem_chunk_t tmp_memchunk;
 
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 #ifdef TRACKING
 	demand_tracking_clear(ptr);

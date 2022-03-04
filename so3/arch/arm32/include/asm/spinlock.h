@@ -21,17 +21,14 @@
 
 #include <asm/atomic.h>
 
-
 typedef struct {
 	volatile unsigned int lock;
 } raw_spinlock_t;
 
-#define _RAW_SPIN_LOCK_UNLOCKED	{ 0 }
 
 typedef struct {
 	volatile unsigned int lock  __attribute__((__packed__));
 } raw_rwlock_t;
-
 
 /*
  * ARMv6 Spin-locking.
@@ -251,10 +248,6 @@ static inline int _raw_read_trylock(raw_rwlock_t *rw)
 
 #define _raw_rw_is_locked(x) ((x)->lock < RW_LOCK_BIAS)
 #define _raw_rw_is_write_locked(x) ((x)->lock <= 0)
-
-/* Per-domain lock can be recursively acquired in fault handlers. */
-#define LOCK_BIGLOCK(_d) spin_lock_recursive(&(_d)->domain_lock)
-#define UNLOCK_BIGLOCK(_d) spin_unlock_recursive(&(_d)->domain_lock)
 
 
 #endif /* ASM_SPINLOCK_H */

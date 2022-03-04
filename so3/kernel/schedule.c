@@ -77,7 +77,7 @@ inline bool check_consistency_ready(void) {
 void preempt_disable(void) {
 	uint32_t flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 	__sched_preempt = false;
 	spin_unlock_irqrestore(&schedule_lock, flags);
 }
@@ -85,7 +85,7 @@ void preempt_disable(void) {
 void preempt_enable(void) {
 	uint32_t flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 	__sched_preempt = true;
 	spin_unlock_irqrestore(&schedule_lock, flags);
 }
@@ -105,7 +105,7 @@ void ready(tcb_t *tcb) {
 	already_locked = (spin_is_locked(&schedule_lock) ? true : false);
 
 	if (!already_locked)
-		spin_lock_irqsave(&schedule_lock, flags);
+		flags = spin_lock_irqsave(&schedule_lock);
 
 	tcb->state = THREAD_STATE_READY;
 
@@ -215,7 +215,7 @@ void remove_zombie(struct tcb *tcb) {
 void wake_up(struct tcb *tcb) {
 	uint32_t flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 
 	if (tcb->state == THREAD_STATE_WAITING)
 		ready(tcb);
