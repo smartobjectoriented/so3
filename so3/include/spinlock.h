@@ -24,14 +24,6 @@
 
 #define DEFINE_SPINLOCK(l) spinlock_t l = { 0 };
 
-#define spin_lock_init_prof(s, l) spin_lock_init(&((s)->l))
-#define lock_profile_register_struct(type, ptr, idx, print)
-#define lock_profile_deregister_struct(type, ptr)
-
-typedef struct {
-    raw_spinlock_t raw;
-} spinlock_t;
-
 #define spin_lock_init(l) (*(l) = (spinlock_t){ 0 })
 
 void spin_lock(spinlock_t *lock);
@@ -42,9 +34,7 @@ void spin_unlock(spinlock_t *lock);
 void spin_unlock_irq(spinlock_t *lock);
 void spin_unlock_irqrestore(spinlock_t *lock, uint32_t flags);
 
-int spin_is_locked(spinlock_t *lock);
-int spin_trylock(spinlock_t *lock);
-
+#define spin_is_locked(x)	((x)->lock != 0)
 
 #endif /* SPINLOCK_H */
 

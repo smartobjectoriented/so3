@@ -25,10 +25,14 @@
 #include <roxml.h>
 #include <heap.h>
 #include <list.h>
+#include <spinlock.h>
 
 #include <device/timer.h>
 
+#if 0
+
 #include "common.h"
+
 
 LIST_HEAD(visits);
 LIST_HEAD(known_soo_list);
@@ -67,9 +71,10 @@ typedef struct {
 	char shortdesc[ME_SHORTDESC_SIZE];
 } ME_id_t;
 
+#endif
 struct mutex lock;
 
-static volatile int count = 0;
+static volatile long long count = 0;
 int counter;
 
 char serial_getc(void);
@@ -129,16 +134,33 @@ int thread_fn1(void *arg)
 	return 0;
 }
 
-int thread_example(void *arg)
+spinlock_t spinlock;
+int threads = 0;
+
+int *thread_example(void *arg)
 {
-	long long ii = 0;
+	unsigned long long ii = 0;
 
-	printk("### entering thread_example.\n");
+	//printk("### entering thread_example.\n");
 
-	for (ii = 0; ii < 100000; ii++)
+	for (ii = 0; ii < 10000000; ii++) {
+		spin_lock(&spinlock);
 		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		spin_unlock(&spinlock);
 
-	return 0;
+	}
+	threads++;
+
+	return NULL;
 }
 
 int fn(void *args) {
@@ -301,6 +323,8 @@ void xml_parse_event(char *buffer, char *id, char *action) {
 
 }
 
+#if 0
+
 /**
  * Prepare a well-formated XML string which is compliant with the
  * table UI application.
@@ -354,6 +378,7 @@ void *xml_prepare_id_array(char *buffer, ME_id_t *ME_id_array) {
 
 }
 
+
 typedef struct {
 
 	me_common_t me_common;
@@ -361,12 +386,36 @@ typedef struct {
 
 } ctrl_t;
 
+#endif
+
 /*
  * Main entry point of so3 app in kernel standalone configuration.
  * Mainly for debugging purposes.
  */
 int *app_thread_main(void *args)
 {
+	tcb_t *t1, *t2, *t3, *t4;
+
+	/* Kernel never returns ! */
+	printk("***********************************************\n");
+	printk("Going to infinite loop...\n");
+	printk("Kill Qemu with CTRL-a + x or reset the board\n");
+	printk("***********************************************\n");
+
+	spin_lock_init(&spinlock);
+
+	t1 = kernel_thread(thread_example, "fn1", (void *) 1, 0);
+	t2 = kernel_thread(thread_example, "fn2", (void *) 2, 0);
+	t3 = kernel_thread(thread_example, "fn2", (void *) 3, 0);
+	t4 = kernel_thread(thread_example, "fn2", (void *) 4, 0);
+
+	while (threads != 4) ;
+
+
+	printk("### Total = %lld\n", count);
+	while(1);
+
+#if 0
 	char *buffer;
 	int i;
 	char src[800];
@@ -475,6 +524,7 @@ dump_heap("A");
 
 dump_heap("C");
 	while(1);
+#endif
 
 #if 0
 	void *ptr;
@@ -507,17 +557,6 @@ dump_heap("C");
 #if 0
 	mutex_init(&lock);
 #endif
-
-	/* Kernel never returns ! */
-	printk("***********************************************\n");
-	printk("Going to infinite loop...\n");
-	printk("Kill Qemu with CTRL-a + x or reset the board\n");
-	printk("***********************************************\n");
-
-
-
-
-
 
 
 #if 0

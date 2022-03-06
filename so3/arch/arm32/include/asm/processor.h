@@ -135,6 +135,8 @@
 #define IRQMASK_REG_NAME_R "cpsr"
 #define IRQMASK_REG_NAME_W "cpsr_c"
 
+#define wfe()           asm volatile("wfe" : : : "memory")
+
 #define ___asm_opcode_identity32(x) ((x) & 0xFFFFFFFF)
 
 #define __inst_arm(x) ___inst_arm((___asm_opcode_identity32(x)))
@@ -241,7 +243,7 @@ typedef struct cpu_regs {
 	__u32   padding;  /* padding to keep 8-bytes alignment */
 } cpu_regs_t;
 
-#define cpu_relax()	barrier()
+#define cpu_relax()	wfe()
 
 static inline int irqs_disabled_flags(unsigned long flags)
 {

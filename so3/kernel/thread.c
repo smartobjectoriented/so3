@@ -304,6 +304,8 @@ void thread_exit(int *exit_status)
 		 * In this case, we do not leave the thread in zombie since we assume that no other threads are joining on it.
 		 * (This is currently a limitation: kernel threads can not join other threads).
 		 */
+#warning Kernel threads cannot join other threads!
+
 		if (current()->pcb != NULL)
 			zombie();
 		else {
