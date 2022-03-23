@@ -21,16 +21,10 @@
 
 #include <asm/atomic.h>
 
-typedef struct {
-    uint32_t lock;
-} spinlock_t;
-
-
 /*
  * ARMv6 Spin-locking.
  *
  */
-#define spin_is_locked(x)		((x)->lock != 0)
 
 static inline int spin_trylock(spinlock_t *lock)
 {

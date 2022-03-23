@@ -148,7 +148,7 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
-void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
+void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);

@@ -170,7 +170,7 @@ void irq_handle(cpu_regs_t *regs) {
 
 	irq_ops.irq_handle(regs);
 
-	BUG_ON(irqs_disabled_flags(regs->psr));
+	BUG_ON(irqs_disabled_flags(regs));
 
 	do_softirq();
 }

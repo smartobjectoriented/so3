@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
- *
+ * Copyright (C) 2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -16,30 +16,15 @@
  *
  */
 
-#ifndef SPINLOCK_H
-#define SPINLOCK_H
+#include <thread.h>
 
-#include <asm/processor.h>
+void prepare_cpu_regs(tcb_t *tcb) {
 
-typedef struct {
-    uint32_t lock;
-} spinlock_t;
+	tcb->cpu_regs.x9 = (unsigned long) tcb->th_fn;
+	tcb->cpu_regs.x10 = (unsigned long) tcb->th_arg; /* First argument */
 
-#include <asm/spinlock.h>
+	if (tcb->pcb)
+		tcb->cpu_regs.x11 = get_user_stack_top(tcb->pcb, tcb->pcb_stack_slotID);
+}
 
-#define DEFINE_SPINLOCK(l) spinlock_t l = { 0 };
-
-#define spin_lock_init(l) (*(l) = (spinlock_t){ 0 })
-
-void spin_lock(spinlock_t *lock);
-void spin_lock_irq(spinlock_t *lock);
-uint32_t spin_lock_irqsave(spinlock_t *lock);
-
-void spin_unlock(spinlock_t *lock);
-void spin_unlock_irq(spinlock_t *lock);
-void spin_unlock_irqrestore(spinlock_t *lock, uint32_t flags);
-
-#define spin_is_locked(x)	((x)->lock != 0)
-
-#endif /* SPINLOCK_H */
 

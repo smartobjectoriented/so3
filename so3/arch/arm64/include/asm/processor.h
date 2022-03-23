@@ -27,7 +27,7 @@
 
 #include <asm/mmu.h>
 
-#define BIT(nr)                 (1UL << (nr))
+#define BIT(nr)         (1UL << (nr))
 
 #define sev()           asm volatile("sev" : : : "memory")
 #define wfe()           asm volatile("wfe" : : : "memory")
@@ -113,18 +113,18 @@
 #define PSR_MODE_MASK	0x0000000f
 
 /* AArch64 SPSR bits */
-#define PSR_F_BIT		0x00000040
-#define PSR_I_BIT		0x00000080
-#define PSR_A_BIT		0x00000100
-#define PSR_D_BIT		0x00000200
+#define PSR_F_BIT	0x00000040
+#define PSR_I_BIT	0x00000080
+#define PSR_A_BIT	0x00000100
+#define PSR_D_BIT	0x00000200
 #define PSR_SSBS_BIT	0x00001000
-#define PSR_PAN_BIT		0x00400000
-#define PSR_UAO_BIT		0x00800000
-#define PSR_DIT_BIT		0x01000000
-#define PSR_V_BIT		0x10000000
-#define PSR_C_BIT		0x20000000
-#define PSR_Z_BIT		0x40000000
-#define PSR_N_BIT		0x80000000
+#define PSR_PAN_BIT	0x00400000
+#define PSR_UAO_BIT	0x00800000
+#define PSR_DIT_BIT	0x01000000
+#define PSR_V_BIT	0x10000000
+#define PSR_C_BIT	0x20000000
+#define PSR_Z_BIT	0x40000000
+#define PSR_N_BIT	0x80000000
 
 /*
  * Instructions for modifying PSTATE fields.
@@ -966,80 +966,6 @@ static inline int cpu_mode(void)
 #define GIC_PRIO_IRQOFF			(GIC_PRIO_IRQON & ~0x80)
 #define GIC_PRIO_PSR_I_SET		(1 << 4)
 
-static inline int smp_processor_id(void) {
-	int cpu;
-
-	/* Read Multiprocessor ID register */
-	asm volatile ("mrs %0, mpidr_el1": "=r" (cpu));
-
-	/* Mask out all but CPU ID bits */
-	return (cpu & 0x3);
-}
-
-static inline void local_irq_enable(void)
-{
-	asm volatile(
-		"msr	daifclr, #2		// arch_local_irq_enable\n"
-		"nop"
-		::: "memory");
-
-}
-
-static inline void local_irq_disable(void)
-{
-	asm volatile(
-		"msr	daifset, #2		// arch_local_irq_disable\n"
-		"nop"
-		::: "memory");
-
-}
-
-static inline unsigned long local_irq_save(void)
-{
-	unsigned long flags;
-
-	asm volatile(
-			  "mrs	%0, daif"     \
-		: "=r" (flags) : : "memory", "cc");
-
-	return flags;
-}
-
-
-static inline void local_irq_restore(unsigned long flags)
-{
-	asm volatile(
-		"msr	daif, %0"
-		:: "r" (flags) : "memory", "cc");
-}
-
-/*
- * Save the current interrupt enable state.
- */
-static inline unsigned long local_save_flags(void)
-{
-	unsigned long flags;
-	asm volatile(
-		"mrs	%0, daif"
-		: "=r" (flags) : : "memory", "cc");
-
-	return flags;
-}
-
-
-#define local_irq_is_enabled() \
-	({ unsigned long flags; \
-	flags = local_save_flags(); \
-	!(flags & PSR_I_BIT); \
-})
-
-#define local_irq_is_disabled() \
-	(!local_irq_is_enabled())
-
-static inline void cpu_relax(void)
-{
-	asm volatile("yield" ::: "memory");
-}
 
 typedef struct cpu_regs {
 	u64 x0;
@@ -1083,6 +1009,86 @@ typedef struct cpu_sys_regs {
 	u64   vusp;
 } cpu_sys_regs_t;
 
+static inline int smp_processor_id(void) {
+	int cpu;
+
+	/* Read Multiprocessor ID register */
+	asm volatile ("mrs %0, mpidr_el1": "=r" (cpu));
+
+	/* Mask out all but CPU ID bits */
+	return (cpu & 0x3);
+}
+
+static inline int irqs_disabled_flags(cpu_regs_t *regs)
+{
+	return (int)((regs->pstate) & PSR_I_BIT);
+}
+
+static inline void local_irq_enable(void)
+{
+	asm volatile(
+		"msr	daifclr, #2		// arch_local_irq_enable\n"
+		"nop"
+		::: "memory");
+
+}
+
+static inline void local_irq_disable(void)
+{
+	asm volatile(
+		"msr	daifset, #2		// arch_local_irq_disable\n"
+		"nop"
+		::: "memory");
+
+}
+
+static inline unsigned long local_irq_save(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs	%0, daif"     \
+		: "=r" (flags) : : "memory", "cc");
+
+	return flags;
+}
+
+
+static inline void local_irq_restore(unsigned long flags)
+{
+	asm volatile(
+		"msr	daif, %0"
+		:: "r" (flags) : "memory", "cc");
+}
+
+/*
+ * Save the current interrupt enable state.
+ */
+static inline unsigned long local_save_flags(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs	%0, daif"
+		: "=r" (flags) : : "memory", "cc");
+
+	return flags;
+}
+
+
+#define local_irq_is_enabled() \
+	({ unsigned long flags; \
+	flags = local_save_flags(); \
+	!(flags & PSR_I_BIT); \
+})
+
+#define local_irq_is_disabled() \
+	(!local_irq_is_enabled())
+
+static inline void cpu_relax(void)
+{
+	asm volatile("yield" ::: "memory");
+}
 
 /*
  * Put the CPU in idle/standby until an interrupt is raised up.

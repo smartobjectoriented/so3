@@ -6,10 +6,6 @@
  * Copyright (C) 2013 ARM Ltd.
  */
 
-#include <linkage.h>
-
-.global strchr
-
 /*
  * Find the first occurrence of a character in a string.
  *

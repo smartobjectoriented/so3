@@ -17,9 +17,10 @@
  */
 
 #include <spinlock.h>
+#include <compiler.h>
+
 #include <asm/processor.h>
 #include <asm/atomic.h>
-#include <compiler.h>
 
 #include <device/irq.h>
 #include <device/serial.h>

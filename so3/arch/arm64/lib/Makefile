@@ -1,3 +1,1 @@
-
 obj-y += strchr.o
-

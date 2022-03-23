@@ -28,8 +28,7 @@
 #include <signal.h>
 #include <timer.h>
 #include <net.h>
-
-#include <asm/syscall.h>
+#include <syscall.h>
 
 static uint32_t *errno_addr = NULL;
 
@@ -63,9 +62,9 @@ void set_errno(uint32_t val) {
  * and then on the (user) stack.
  */
 
-int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
+long syscall_handle(unsigned long r0, unsigned long r1, unsigned long r2, unsigned long r3)
 {
-	int result = -1;
+	long result = -1;
 	uint32_t syscall_no, *__errno_addr;
 
 	/* Get addtional args of the syscall according to the ARM & SO3 ABI */
@@ -187,7 +186,7 @@ int syscall_handle(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
 			break;
 
 		case SYSCALL_MMAP:
-			result = (int) do_mmap((uint32_t) r0, (size_t) r1, (int) r2, (int) r3, (off_t) __get_syscall_stack_arg(0));
+			result = (long) do_mmap((addr_t) r0, (size_t) r1, (int) r2, (int) r3, (off_t) __get_syscall_stack_arg(0));
 			break;
 
 		case SYSCALL_NANOSLEEP:

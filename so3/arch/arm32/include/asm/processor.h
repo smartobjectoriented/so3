@@ -245,20 +245,20 @@ typedef struct cpu_regs {
 
 #define cpu_relax()	wfe()
 
-static inline int irqs_disabled_flags(unsigned long flags)
+static inline int irqs_disabled_flags(cpu_regs_t *regs)
 {
-	return (int)((flags) & PSR_I_BIT);
+	return (int)((regs->psr) & PSR_I_BIT);
 }
 
 static inline int cpu_mode(void)
 {
-	uint32_t mode;
+	uint32_t cpsr;
 
 	asm volatile(
 		"mrs     %0, cpsr"
-		: "=r" (mode) : : "memory", "cc");
+		: "=r" (cpsr) : : "memory", "cc");
 
-	return mode & PSR_MODE_MASK;
+	return cpsr & PSR_MODE_MASK;
 }
 
 /*
@@ -293,6 +293,7 @@ static inline void local_irq_disable(void)
 static inline uint32_t local_save_flags(void)
 {
 	uint32_t flags;
+
 	asm volatile(
 		"mrs	%0, " IRQMASK_REG_NAME_R "	@ local_save_flags"
 		: "=r" (flags) : : "memory", "cc");
