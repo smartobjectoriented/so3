@@ -35,11 +35,11 @@
 #include <signal.h>
 #include <ptrace.h>
 #include <softirq.h>
+#include <syscall.h>
 
 #include <device/serial.h>
 
 #include <asm/cacheflush.h>
-#include <asm/syscall.h>
 #include <asm/mmu.h>
 #include <asm/processor.h>
 

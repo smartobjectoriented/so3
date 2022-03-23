@@ -24,12 +24,10 @@
 @ and on U-Boot implementation
 
 #include <linkage.h>
-
 #include <thread.h>
-
+#include <syscall.h>
 #include <asm-offsets.h>
 
-#include <asm/syscall.h>
 #include <asm/processor.h>
 
 /* use the special section (.vectors.text), to enable fine-tuning

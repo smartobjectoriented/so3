@@ -19,8 +19,7 @@
 #include <ptrace.h>
 #include <process.h>
 #include <user.h>
-
-#include <asm/syscall.h>
+#include <syscall.h>
 
 /*
  * Stop the execution of the process, i.e. its main_thread and all other threads
