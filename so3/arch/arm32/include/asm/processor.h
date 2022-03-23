@@ -261,6 +261,8 @@ static inline int cpu_mode(void)
 	return cpsr & PSR_MODE_MASK;
 }
 
+#define user_mode()     (cpu_mode() == PSR_USR_MODE)
+
 /*
  * Enable IRQs
  */

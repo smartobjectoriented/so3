@@ -32,11 +32,11 @@
 
 #include <generated/autoconf.h>
 
-addr_t *__current_pgtable = NULL;
+void *__current_pgtable = NULL;
 
-addr_t *__sys_l1pgtable;
+void *__sys_l1pgtable;
 
-addr_t *current_pgtable(void) {
+void *current_pgtable(void) {
 	return __current_pgtable;
 }
 
@@ -65,9 +65,9 @@ void set_domain(uint32_t val)
 }
 
 /* Reference to the system 1st-level page table */
-static void alloc_init_pte(addr_t *l1pte, unsigned long addr, unsigned long end, unsigned long pfn, bool nocache)
+static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long end, unsigned long pfn, bool nocache)
 {
-	addr_t *l2pte, *l2pgtable;
+	uint32_t *l2pte, *l2pgtable;
 	uint32_t size;
 
 	size = TTB_L2_ENTRIES * sizeof(uint32_t);
@@ -88,7 +88,7 @@ static void alloc_init_pte(addr_t *l1pte, unsigned long addr, unsigned long end,
 
 	}
 
-	l2pgtable = (addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
+	l2pgtable = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
 
 	l2pte = l2pte_offset(l1pte, addr);
 
@@ -111,7 +111,7 @@ static void alloc_init_pte(addr_t *l1pte, unsigned long addr, unsigned long end,
  * Allocate a section (only L1 PTE) or page table (L1 & L2 page tables)
  * @nocache indicates if the page can be cache or not (true means no support for cached page)
  */
-static void alloc_init_section(addr_t *l1pte, addr_t addr, addr_t end, addr_t phys, bool nocache)
+static void alloc_init_section(uint32_t *l1pte, addr_t addr, addr_t end, addr_t phys, bool nocache)
 {
 	/*
 	 * Try a section mapping - end, addr and phys must all be aligned
@@ -148,10 +148,10 @@ static void alloc_init_section(addr_t *l1pte, addr_t addr, addr_t end, addr_t ph
  * @size is the number of bytes to be mapped
  * @nocache is true if no cache (TLB) must be used (typically for I/O)
  */
-void create_mapping(addr_t *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache) {
+void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache) {
 
 	addr_t addr, end, length, next;
-	addr_t *l1pte;
+	uint32_t *l1pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (l1pgtable == NULL)
@@ -182,8 +182,8 @@ void create_mapping(addr_t *l1pgtable, addr_t virt_base, addr_t phys_base, uint3
 }
 
 /* Empty the corresponding l2 entries */
-static void free_l2_mapping(addr_t *l1pte, unsigned long addr, unsigned long end) {
-	addr_t *l2pte, *pgtable;
+static void free_l2_mapping(uint32_t *l1pte, unsigned long addr, unsigned long end) {
+	uint32_t *l2pte, *pgtable;
 	int i;
 	bool found;
 
@@ -215,7 +215,7 @@ static void free_l2_mapping(addr_t *l1pte, unsigned long addr, unsigned long end
 }
 
 /* Empty the corresponding l1 entries */
-static void free_l1_mapping(addr_t *l1pte, addr_t addr, addr_t end) {
+static void free_l1_mapping(uint32_t *l1pte, addr_t addr, addr_t end) {
 	addr_t *__l1pte = l1pte;
 
 	/*
@@ -245,9 +245,9 @@ static void free_l1_mapping(addr_t *l1pte, addr_t addr, addr_t end) {
 /*
  * Release an existing mapping
  */
-void release_mapping(addr_t *pgtable, addr_t virt_base, uint32_t size) {
+void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
 	addr_t addr, end, length, next;
-	addr_t *l1pte;
+	uint32_t *l1pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (pgtable == NULL)
@@ -277,10 +277,13 @@ void release_mapping(addr_t *pgtable, addr_t virt_base, uint32_t size) {
 void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	unsigned int i;
 
-	addr_t *__pgtable = (addr_t *) l1pgtable;
+	uint32_t *__pgtable = (uint32_t *) l1pgtable;
 
 	icache_disable();
 	dcache_disable();
+
+	/* Set the virtual address of the real system page table */
+	__sys_l1pgtable = (addr_t *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
 
 	/* Empty the page table */
 
@@ -321,8 +324,8 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 /*
  * Clear the L1 PTE used for mapping of a specific virtual address.
  */
-void clear_l1pte(addr_t *l1pgtable, addr_t vaddr) {
-	addr_t *l1pte;
+void clear_l1pte(uint32_t *l1pgtable, addr_t vaddr) {
+	uint32_t *l1pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (l1pgtable == NULL)
@@ -339,8 +342,8 @@ void clear_l1pte(addr_t *l1pgtable, addr_t vaddr) {
  * Allocate a new L1 page table. Return NULL if it fails.
  * The page table must be 16-KB aligned.
  */
-addr_t *new_l1pgtable(void) {
-	addr_t *pgtable;
+void *new_root_pgtable(void) {
+	void *pgtable;
 
 	pgtable = memalign(4 * TTB_L1_ENTRIES, SZ_16K);
 	if (!pgtable) {
@@ -354,14 +357,18 @@ addr_t *new_l1pgtable(void) {
 	return pgtable;
 }
 
+void copy_root_pgtable(void *dst, void *src) {
+	memcpy(dst, src TTB_L1_SIZE);
+}
+
 /*
  * Free a L1 page table and associated L2 page tables used for the user space area.
  * We do not consider any shared pages/page tables.
  * @remove indicate if the page tables (L1 & L2) must be erased.
  */
-void reset_l1pgtable(addr_t *l1pgtable, bool remove) {
+void reset_l1pgtable(void *l1pgtable, bool remove) {
 	int i;
-	addr_t *l1pte, *l2pte;
+	uint32_t *l1pte, *l2pte;
 
 	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
 
@@ -371,7 +378,7 @@ void reset_l1pgtable(addr_t *l1pgtable, bool remove) {
 		if (*l1pte) {
 
 			if (!l1pte_is_sect(*l1pte)) {
-				l2pte = (addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
+				l2pte = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
 
 				free(l2pte);
 
@@ -392,12 +399,12 @@ void reset_l1pgtable(addr_t *l1pgtable, bool remove) {
 /*
  * Switch the MMU to a L1 page table
  */
-void mmu_switch(addr_t *l1pgtable) {
+void mmu_switch(void *l1pgtable) {
 
 	flush_dcache_all();
 
-	BUG_ON(__pa(((addr_t) l1pgtable)) & ~TTBR0_BASE_ADDR_MASK);
-	__mmu_switch(__pa((addr_t) l1pgtable));
+	BUG_ON(__pa(l1pgtable) & ~TTBR0_BASE_ADDR_MASK);
+	__mmu_switch(__pa(l1pgtable));
 
 	invalidate_icache_all();
 	v7_inval_tlb();
@@ -424,7 +431,7 @@ void pgtable_copy_kernel_area(addr_t *l1pgtable) {
  * @to is the process containing the (already allocated) L1 page table of the target memory context
  */
 
-void duplicate_user_space(pcb_t *from, pcb_t *to) {
+void duplicate_user_space(struct pcb *from, struct pcb *to) {
 	int i, j;
 	uint32_t l2pgtable_size;
 	addr_t *l1pte, *l2pte, *l2pgtable;

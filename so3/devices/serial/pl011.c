@@ -72,8 +72,8 @@ static char pl011_get_byte(bool polling) {
 
 			schedule();
 
-			__asm("dsb");
-			__asm("wfi");
+			smp_mb();
+			wfi();
 		}
 
 		tmp = serial_buffer[cons];

@@ -24,8 +24,6 @@
 #include <types.h>
 #include <list.h>
 
-#include <asm/memory.h>
-
 #include <generated/autoconf.h>
 
 #endif /* __ASSEMBLY__ */
@@ -118,7 +116,8 @@ void free_contig_vpages(addr_t page_phys, uint32_t nrpages);
 
 uint32_t get_kernel_size(void);
 
-addr_t *current_pgtable(void);
+struct pcb;
+void duplicate_user_space(struct pcb *from, struct pcb *to);
 
 void init_io_mapping(void);
 addr_t io_map(addr_t phys, size_t size);

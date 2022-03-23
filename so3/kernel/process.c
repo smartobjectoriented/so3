@@ -211,7 +211,7 @@ pcb_t *new_process(void)
 	/* Process-related memory management */
 
 	/* create the 1st level page table */
-	pcb->pgtable = new_l1pgtable();
+	pcb->pgtable = new_root_pgtable();
 	if (!pcb->pgtable) {
 		printk("%s: failed to create level 1 page table", __func__);
 		kernel_panic();
@@ -442,7 +442,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 		/* We check if the pointer do not exceed the page we
 		 * allocated before */
-		if (((uint32_t) args_str_p - (uint32_t) args) > PAGE_SIZE) {
+		if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 			DBG("Not enougth memory allocated\n");
 			set_errno(ENOMEM);
 
@@ -467,7 +467,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 			/* We check if pointer do not exceed the page we
 			 * allocated before. */
-			if (((uint32_t) args_str_p - (uint32_t) args) > PAGE_SIZE) {
+			if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 				DBG("Not enougth memory allocated\n");
 				set_errno(ENOMEM);
 
@@ -500,14 +500,14 @@ void post_setup_image(void *args_env) {
 	 * we adjust it to match our final destination.
 	 */
 	for (i = 0; i < argc; i++)
-		__args[i] = ((int)__args[i] - (int) args_env) + args_base;
+		__args[i] = ((addr_t)__args[i] - (addr_t) args_env) + args_base;
 
 
 	/* Focus on the env addresses now */
 	__args = (char **) (args_base + sizeof(int) + argc*sizeof(char *));
 
 	for (i = 0; __args[i] != NULL; i++)
-		__args[i] = ((int) __args[i] - (int) args_env) + args_base;
+		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
 
 }
 

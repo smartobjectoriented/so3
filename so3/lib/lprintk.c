@@ -47,7 +47,7 @@ void __lprintk(const char *format, const va_list va) {
 
 	vsnprintf(buf, CONSOLEIO_BUFFER_SIZE, format, va);
 
-	if (cpu_mode() == PSR_USR_MODE)
+	if (user_mode())
 		__write(STDOUT, buf, strlen(buf));
 	else
 		ll_serial_write(buf, strlen(buf));

@@ -25,6 +25,8 @@
 #define ELF_MAXSIZE (128 * SZ_1K)
 
 /* ELF Binary image related information */
+#ifdef CONFIG_ARCH_ARM32
+
 struct elf_img_info {
 	Elf32_Ehdr *header;
 	Elf32_Shdr *sections;
@@ -33,6 +35,22 @@ struct elf_img_info {
 	void *file_buffer;
 	uint32_t segment_page_count;
 };
+
+#else
+
+struct elf_img_info {
+	Elf64_Ehdr *header;
+	Elf64_Shdr *sections;
+	Elf64_Phdr *segments; /* program header */
+	char **section_names;
+	void *file_buffer;
+	uint64_t segment_page_count;
+};
+
+#endif
+
+
+
 typedef struct elf_img_info elf_img_info_t;
 
 uint8_t *elf_load_buffer(const char *filename);

@@ -1,1 +1,1 @@
-obj-y += strchr.o
+obj-y += strchr.o findbit.o

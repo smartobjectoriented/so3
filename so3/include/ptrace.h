@@ -211,4 +211,11 @@ struct ptrace_peeksiginfo_args {
 
 int do_ptrace(enum __ptrace_request request, uint32_t pid, void *addr, void *data);
 
+struct pcb;
+struct user;
+
+void update_cpu_regs(void);
+void retrieve_cpu_regs(struct user *uregs, struct pcb *pcb);
+
+
 #endif

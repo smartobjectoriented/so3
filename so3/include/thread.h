@@ -19,10 +19,8 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#include <asm/memory.h>
-
 /* The number of max threads must be aligned with the definition in so3.lds regarding the stack size. */
-#define	THREAD_MAX			32
+#define	THREAD_MAX		32
 #define THREAD_NAME_LEN 	80
 
 /* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */

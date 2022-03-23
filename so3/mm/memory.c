@@ -183,8 +183,6 @@ void free_vpage(addr_t vaddr) {
 	free_page(paddr);
 }
 
-
-
 /*
  * Search for a number of contiguous pages.
  * Returns 0 if not available.
@@ -409,7 +407,7 @@ void io_unmap(addr_t vaddr) {
 void memory_init(void) {
 #ifdef CONFIG_MMU
 
-	addr_t *new_sys_pgtable;
+	void *new_sys_root_pgtable;
 	addr_t vectors_paddr;
 
 #endif /* CONFIG_MMU */
@@ -422,8 +420,6 @@ void memory_init(void) {
 	heap_init();
 
 #ifdef CONFIG_MMU
-	/* Set the virtual address of the real system page table */
-	__sys_l1pgtable = (addr_t *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
 
 	init_io_mapping();
 
@@ -437,34 +433,36 @@ void memory_init(void) {
 	frame_table_init(((addr_t) &__end) + fdt_totalsize(__fdt_addr));
 
 	/* Re-setup a system page table with a better granularity */
-	new_sys_pgtable = new_l1pgtable();
+	new_sys_root_pgtable = new_root_pgtable();
 
-	create_mapping(new_sys_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
+	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
-	create_mapping(new_sys_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true);
+	create_mapping(new_sys_root_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true);
 
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
 	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.
 	 */
 
-	mmu_switch(new_sys_pgtable);
+	mmu_switch(new_sys_root_pgtable);
 
 	/* Re-configuring the original system page table */
-	memcpy((void *) __sys_l1pgtable, (unsigned char *) new_sys_pgtable, TTB_L1_SIZE);
+	copy_root_pgtable(__sys_root_pgtable, new_sys_root_pgtable);
 
 	/* Finally, switch back to the original location of the system page table */
-	mmu_switch(__sys_l1pgtable);
+	mmu_switch(__sys_root_pgtable);
 
+#ifdef CONFIG_ARCH_ARM32
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
 	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
 
 	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
+#endif
 
-	set_pgtable(__sys_l1pgtable);
+	set_pgtable(__sys_root_pgtable);
 
 
 #endif /* CONFIG_MMU */

@@ -56,8 +56,8 @@ __start:
 	// Mostly for future usage...
 	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
-    // Initialize stack pointers for current mode (normal case if no MMU is used)
-    adrp	x0, cpu0_stack
+    // Use a temporary stack
+    adrp	x0, temp_stack
     mov		sp, x0
 
 	/* Clear the BSS */
@@ -90,7 +90,7 @@ __kernel_main:
 mmu_setup:
 
   // Use a temporary stack
-  adrp	x0, cpu0_stack
+  adrp	x0, temp_stack
   mov	sp, x0
 
   mov	x0, x9 // fdt addr
@@ -98,7 +98,7 @@ mmu_setup:
   bl 	mmu_configure
 
   // Readjust the stack
-  ldr	x0, =cpu0_stack
+  ldr	x0, =.LCstack_top
   mov	sp, x0
 
   // Keep executing in the kernel space

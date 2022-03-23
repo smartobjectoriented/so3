@@ -403,33 +403,45 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
-extern u64 __sys_l0pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
+extern addr_t __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
+
+void *current_pgtable(void);
+
+extern void *__current_pgtable;
+
+static inline void set_pgtable(void *pgtable) {
+	__current_pgtable = pgtable;
+}
 
 void set_pte(addr_t *pte, enum dcache_option option);
 
-extern void __mmu_switch(uint32_t l1pgtable_phys);
+extern void __mmu_switch(void *root_pgtable_phys);
+
+void *current_pgtable(void);
+void *new_root_pgtable(void);
+void copy_root_pgtable(void *dst, void *src);
+
+addr_t virt_to_phys_pt(addr_t vaddr);
 
 void pgtable_copy_kernel_area(uint32_t *l1pgtable);
 
-void create_mapping(addr_t *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
-void release_mapping(addr_t *pgtable, addr_t virt_base, addr_t size);
+void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
+void release_mapping(void *pgtable, addr_t virt_base, addr_t size);
 
-u64 *new_sys_pgtable(void);
-void reset_l1pgtable(addr_t *l1pgtable, bool remove);
+void reset_l1pgtable(void *l1pgtable, bool remove);
 
-void clear_l1pte(addr_t *l1pgtable, addr_t vaddr);
+void clear_l1pte(void *l1pgtable, addr_t vaddr);
 
-void mmu_switch(uint32_t *l0pgtable);
-void dump_pgtable(u64 *l0pgtable);
+void mmu_switch(void *l0pgtable);
+void dump_pgtable(void *l0pgtable);
 
 void dump_current_pgtable(void);
 
-void mmu_setup(u64 *pgtable);
+void mmu_setup(void *pgtable);
 
 void vectors_init(void);
 
-void set_current_pgtable(uint64_t *pgtable);
-void replace_current_pgtable_with(uint64_t *pgtable);
+void set_current_pgtable(void *pgtable);
 
 #endif
 

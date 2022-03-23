@@ -20,16 +20,16 @@
 #define BITOPS_H
 
 #include <types.h>
+
 #include <asm/processor.h>
 
 #define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_INT))
 #define BIT_WORD(nr)		((nr) / BITS_PER_INT)
 
-
-extern int _find_first_zero_bit(const void *p, unsigned size);
-extern int _find_next_zero_bit(const void *p, int size, int offset);
-extern int _find_first_bit(const unsigned int *p, unsigned size);
-extern int _find_next_bit(const unsigned int *p, int size, int offset);
+extern unsigned long _find_first_zero_bit(const unsigned long *p, unsigned long size);
+extern unsigned long _find_next_zero_bit(const unsigned long *p, unsigned long size, unsigned long offset);
+extern unsigned long _find_first_bit(const unsigned long *p, unsigned long size);
+extern unsigned long _find_next_bit(const unsigned long *p, unsigned long size, unsigned long offset);
 
 #define find_first_zero_bit(p, sz)       _find_first_zero_bit(p, sz)
 #define find_next_zero_bit(p, sz, off)    _find_next_zero_bit(p, sz, off)

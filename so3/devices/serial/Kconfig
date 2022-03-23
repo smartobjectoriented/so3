@@ -4,11 +4,10 @@ config DW_APB_UART
 
 config NS16550
 	bool "NS16550 UART"
-	depends on PINE64 || A20 || MERIDAv2 || BPI
 
 config PL011_UART
 	bool "PL011 UART serial interface"
-	depends on VEXPRESS
+	depends on VEXPRESS || VIRT64
 
 config BCM283x_MU_UART
 	bool "BCM283x mini-UART"

@@ -32,6 +32,11 @@
 
 #include <generated/autoconf.h>
 
+void *__current_pgtable = NULL;
+
+void *current_pgtable(void) {
+	return __current_pgtable;
+}
 
 static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache)
 {
@@ -212,12 +217,12 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
  * Mapping of blocks at L0 level is not allowed with 4 KB granule (AArch64).
  *
  */
-void create_mapping(u64 *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
 	addr_t addr, end, length, next;
 
 	/* If l0pgtable is NULL, we consider the system page table */
 	if (l0pgtable == NULL)
-		l0pgtable = __sys_l0pgtable;
+	l0pgtable = (addr_t *) __sys_root_pgtable;
 
 	BUG_ON(!size);
 
@@ -240,7 +245,7 @@ void create_mapping(u64 *l0pgtable, addr_t virt_base, addr_t phys_base, size_t s
 	mmu_page_table_flush((addr_t) l0pgtable, (addr_t) (l0pgtable + TTB_L0_ENTRIES));
 }
 
-void release_mapping(u64 *pgtable, addr_t virt_base, addr_t size) {
+void release_mapping(void *pgtable, addr_t virt_base, addr_t size) {
 
 #if 0
 	uint32_t addr, end, length, next;
@@ -272,8 +277,8 @@ void release_mapping(u64 *pgtable, addr_t virt_base, addr_t size) {
  * Allocate a new L1 page table. Return NULL if it fails.
  * The page table must be 16-KB aligned.
  */
-u64 *new_sys_pgtable(void) {
-	u64 *pgtable;
+void *new_sys_pgtable(void) {
+	void *pgtable;
 
 	pgtable = memalign(TTB_L0_SIZE, PAGE_SIZE);
 	if (!pgtable) {
@@ -287,92 +292,41 @@ u64 *new_sys_pgtable(void) {
 	return pgtable;
 }
 
-void set_current_pgtable(uint64_t *pgtable) {
-	addrspace_t __addrspace;
-
-	__addrspace.ttbr1[smp_processor_id()] = __pa(pgtable);
-	mmu_switch(&__addrspace);
+void copy_root_pgtable(void *dst, void *src) {
+	memcpy(dst, src, TTB_L0_SIZE);
 }
-
-/**
- * Replace the current page table with a new one. This is used
- * typically during the initialization to have a better granulated
- * memory mapping.
- *
- * @param pgtable
- */
-void replace_current_pgtable_with(uint64_t *pgtable) {
-	addrspace_t __addrspace;
-
-	/*
-	 * Switch to the temporary page table in order to re-configure the original system page table
-	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.
-	 */
-
-	set_current_pgtable(pgtable);
-
-	__addrspace.ttbr1[smp_processor_id()] = __pa(pgtable);
-	mmu_switch(&__addrspace);
-
-	/* Re-configuring the original system page table */
-	memcpy((void *) __sys_l0pgtable, (unsigned char *) pgtable, TTB_L0_SIZE);
-
-	/* Finally, switch back to the original location of the system page table */
-	set_current_pgtable(__sys_l0pgtable);
-}
-
 
 /*
  * Initial configuration of system page table
  */
-void mmu_configure(addr_t fdt_addr) {
+void mmu_configure(addr_t l0pgtable, addr_t fdt_addr) {
 
 	icache_disable();
 	dcache_disable();
 
-	/* The initial page table is only set by CPU #0 (AGENCY_CPU).
-	 * The secondary CPUs use the same page table.
-	 */
+	/* Empty the page table */
+	memset((void *) __sys_root_pgtable, 0, TTB_L0_SIZE);
+	memset((void *) __sys_idmap_l1pgtable, 0, TTB_L1_SIZE);
+	memset((void *) __sys_linearmap_l1pgtable, 0, TTB_L1_SIZE);
 
-	if (smp_processor_id() == AGENCY_CPU) {
+	/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
 
-		/* Empty the page table */
-		memset((void *) __sys_l0pgtable, 0, TTB_L0_SIZE);
-		memset((void *) __sys_idmap_l1pgtable, 0, TTB_L1_SIZE);
-		memset((void *) __sys_linearmap_l1pgtable, 0, TTB_L1_SIZE);
+	__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
+	set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
 
-		/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
-		__sys_l0pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
-		set_pte_table(&__sys_l0pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+	__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
 
-		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+	/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
 
-		/* Create the mapping of the hypervisor code area. */
+	__sys_idmap_l1pgtable[l1pte_index(UART_BASE)] = UART_BASE & TTB_L1_BLOCK_ADDR_MASK;
+	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(UART_BASE)], DCACHE_OFF);
 
-		__sys_l0pgtable[l0pte_index(CONFIG_HYPERVISOR_VIRT_ADDR)] = (u64) __sys_linearmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
-		set_pte_table(&__sys_l0pgtable[l0pte_index(CONFIG_HYPERVISOR_VIRT_ADDR)], DCACHE_WRITEALLOC);
-
-		__sys_linearmap_l1pgtable[l1pte_index(CONFIG_HYPERVISOR_VIRT_ADDR)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_linearmap_l1pgtable[l1pte_index(CONFIG_HYPERVISOR_VIRT_ADDR)], DCACHE_WRITEALLOC);
-
-		/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
-
-		__sys_idmap_l1pgtable[l1pte_index(UART_BASE)] = UART_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(UART_BASE)], DCACHE_OFF);
-	}
-
-	mmu_setup(__sys_l0pgtable);
+	mmu_setup(__sys_root_pgtable);
 
 	icache_enable();
 	dcache_enable();
 
-	if (smp_processor_id() == AGENCY_CPU) {
-		__fdt_addr = (addr_t *) fdt_addr;
-
-		/* The device tree is visible in the L_PAGE_OFFSET area */
-		fdt_vaddr = (addr_t *) __lva(fdt_addr);
-	}
 }
 
 #if 0
@@ -401,28 +355,28 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
  * i.e. starting with 0xffff.... So ttbr0 is not used as soon as the id mapping in the RAM
  * is not necessary anymore.
  */
-void mmu_switch(addrspace_t *aspace) {
+void mmu_switch(void *l0pgtable) {
 	flush_dcache_all();
 
-	__mmu_switch(aspace->ttbr1[smp_processor_id()]);
+	__mmu_switch(l0pgtable);
 
 	invalidate_icache_all();
 	__asm_invalidate_tlb_all();
 
 }
 
-void dump_pgtable(u64 *l0pgtable) {
-
+void dump_pgtable(void *l0pgtable) {
 	u64 i, j, k, l;
 	u64 *l0pte, *l1pte, *l2pte, *l3pte;
+	uint64_t *__l0pgtable = (uint64_t *) l0pgtable;
 
 	lprintk("           ***** Page table dump *****\n");
 
 	for (i = 0; i < TTB_L0_ENTRIES; i++) {
-		l0pte = l0pgtable + i;
+		l0pte = __l0pgtable + i;
 		if ((i != 0xe0) && *l0pte) {
 
-			lprintk("  - L0 pte@%lx (idx %x) mapping %lx content: %lx\n", l0pgtable+i, i, i << TTB_I0_SHIFT, *l0pte);
+			lprintk("  - L0 pte@%lx (idx %x) mapping %lx content: %lx\n", __l0pgtable+i, i, i << TTB_I0_SHIFT, *l0pte);
 			BUG_ON(pte_type(l0pte) != PTE_TYPE_TABLE);
 
 			/* Walking through the blocks/table entries */
@@ -465,6 +419,13 @@ void dump_pgtable(u64 *l0pgtable) {
 
 		}
 	}
+}
+
+void duplicate_user_space(struct pcb *from, struct pcb *to) {
+
+
+
+
 }
 
 #if 0
@@ -514,15 +475,12 @@ void dump_current_pgtable(void) {
  * Get the physical address from a virtual address (valid for any virt. address).
  * The function reads the page table(s).
  */
-uint32_t virt_to_phys_pt(uint32_t vaddr) {
-	uint32_t *l1pte, *l2pte;
+addr_t virt_to_phys_pt(addr_t vaddr) {
+	addr_t *l1pte, *l2pte;
 	uint32_t offset;
-	addrspace_t current_addrspace;
-
-	get_current_addrspace(&current_addrspace);
 
 	/* Get the L1 PTE. */
-	l1pte = l1pte_offset((uint32_t *) current_addrspace.pgtable_vaddr, vaddr);
+	l1pte = l1pte_offset(current_pgtable(), vaddr);
 
 	offset = vaddr & ~PAGE_MASK;
 	BUG_ON(!*l1pte);
@@ -539,25 +497,5 @@ uint32_t virt_to_phys_pt(uint32_t vaddr) {
 
 }
 
-void vectors_init(void) {
-
-	extern char __stubs_start[], __stubs_end[];
-	extern char __vectors_start[], __vectors_end[];
-	void *vectors_page;
-
-	memset(&pseudo_usr_mode, 0, NR_CPUS * sizeof(unsigned int));
-
-	/* Allocate a page for the vectors page */
-	vectors_page = alloc_heap_page();
-	BUG_ON(!vectors_page);
-
-	create_mapping(NULL, VECTORS_BASE, virt_to_phys(vectors_page), PAGE_SIZE, false);
-
-	memcpy(vectors_page, __vectors_start, __vectors_end - __vectors_start);
-	memcpy(vectors_page + 0x200, __stubs_start, __stubs_end - __stubs_start);
-
-	flush_dcache_range((unsigned long) vectors_page, (unsigned long) vectors_page + PAGE_SIZE);
-
-}
 
 #endif

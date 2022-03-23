@@ -58,9 +58,9 @@
 
 #define pte_index_to_vaddr(i1, i2) ((i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT))
 
-#define l1pte_offset(pgtable, addr)     (pgtable + l1pte_index(addr))
-#define l2pte_offset(l1pte, addr) 	((addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
-#define l2pte_first(l1pte)		((addr_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
+#define l1pte_offset(pgtable, addr)     ((uint32_t *) pgtable + l1pte_index(addr))
+#define l2pte_offset(l1pte, addr) 	((addr_t *) __va(*((uint32_t *) l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
+#define l2pte_first(l1pte)		((addr_t *) __va(*((uint32_t *) l1pte & TTB_L1_PAGE_ADDR_MASK))
 
 #define l1sect_addr_end(addr, end)                                         \
  ({      unsigned long __boundary = ((addr) + TTB_SECT_SIZE) & TTB_SECT_MASK;  \
@@ -164,6 +164,8 @@ enum ttb_l2_dcache_option {
 
 #include <process.h>
 
+extern addr_t *__sys_root_pgtable;
+
 addr_t *current_pgtable(void);
 
 extern addr_t *__current_pgtable;
@@ -172,24 +174,25 @@ static inline void set_pgtable(addr_t *pgtable) {
 	__current_pgtable = pgtable;
 }
 
-extern void __mmu_switch(addr_t l1pgtable_phys);
+extern void __mmu_switch(void *root_pgtable_phys);
+
+void *current_pgtable(void);
+void *new_root_pgtable(void);
+void copy_root_pgtable(void *dst, void *src);
+
+addr_t virt_to_phys_pt(addr_t vaddr);
 
 void pgtable_copy_kernel_area(addr_t *l1pgtable);
 
 void create_mapping(addr_t *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache);
 void release_mapping(addr_t *pgtable, addr_t virt_base, uint32_t size);
 
-addr_t *new_l1pgtable(void);
 void reset_l1pgtable(addr_t *l1pgtable, bool remove);
 
 void clear_l1pte(addr_t *l1pgtable, addr_t vaddr);
 
 void mmu_switch(addr_t *l1pgtable);
 void dump_pgtable(addr_t *l1pgtable);
-
-addr_t virt_to_phys_pt(addr_t vaddr);
-
-void duplicate_user_space(pcb_t *from, pcb_t *to);
 
 void flush_tlb_all(void);
 

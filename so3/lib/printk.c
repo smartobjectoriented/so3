@@ -38,7 +38,7 @@ void printk(const char *fmt, ...)
 	(void)vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-	if (cpu_mode() == PSR_USR_MODE)
+	if (user_mode())
 		__write(STDOUT, buf, strlen(buf));
 	else {
 		p = buf;

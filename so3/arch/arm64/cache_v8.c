@@ -33,7 +33,7 @@
  */
 
 /* to activate the MMU we need to set up virtual memory */
-void mmu_setup(u64 *pgtable)
+void mmu_setup(void *pgtable)
 {
 	u64 attr, tcr;
 

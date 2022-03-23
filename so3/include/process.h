@@ -82,7 +82,7 @@ struct pcb {
 	struct list_head page_list;
 
 	/* Process 1st-level page table */
-	addr_t *pgtable;
+	void *pgtable;
 
 	uint32_t exit_status;
 
