@@ -24,7 +24,7 @@
 
 #include <asm/processor.h>
 #include <asm/mmu.h>
-#include <asm/memory.h>
+
 #include <thread.h>
 
 .global __start
@@ -171,3 +171,6 @@ temp_stack:
 
 .LCvectors:
   .word __vectors_start
+
+.LCsys_root_pgtable:
+  .word __sys_root_pgtable

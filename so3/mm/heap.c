@@ -679,7 +679,7 @@ void *calloc(size_t nmemb, size_t size) {
 void free(void *ptr)
 {
 	uint32_t flags;
-	mem_chunk_t *chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
+	mem_chunk_t *chunk = (mem_chunk_t *)(ptr - sizeof(mem_chunk_t));
 	mem_chunk_t tmp_memchunk;
 
 	flags = spin_lock_irqsave(&heap_lock);

@@ -19,7 +19,7 @@
 
 #ifdef CONFIG_MMU
 
-void set_l1_pte_sect_dcache(addr_t *l1pte, enum ttb_l1_sect_dcache_option option)
+void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option option)
 {
 	u32 value;
 
@@ -36,7 +36,7 @@ void set_l1_pte_sect_dcache(addr_t *l1pte, enum ttb_l1_sect_dcache_option option
 	*l1pte |= value;
 }
 
-void set_l1_pte_page_dcache(addr_t *l1pte, enum ttb_l1_page_dcache_option option)
+void set_l1_pte_page_dcache(uint32_t *l1pte, enum ttb_l1_page_dcache_option option)
 {
 	u32 value = 0;
 
@@ -50,7 +50,7 @@ void set_l1_pte_page_dcache(addr_t *l1pte, enum ttb_l1_page_dcache_option option
 	*l1pte |= value;
 }
 
-void set_l2_pte_dcache(addr_t *l2pte, enum ttb_l2_dcache_option option)
+void set_l2_pte_dcache(uint32_t *l2pte, enum ttb_l2_dcache_option option)
 {
 	u32 value;
 
@@ -71,7 +71,7 @@ void set_l2_pte_dcache(addr_t *l2pte, enum ttb_l2_dcache_option option)
 }
 
 /* to activate the MMU we need to set up virtual memory */
-void mmu_setup(addr_t *pgtable)
+void mmu_setup(void *pgtable)
 {
 	u32 reg;
 

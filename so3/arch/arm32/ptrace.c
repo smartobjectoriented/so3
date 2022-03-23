@@ -18,7 +18,7 @@
 
 #include <ptrace.h>
 #include <user.h>
-
+#include <process.h>
 
 /**
  * Update the CPU registers of the TCB belonging
