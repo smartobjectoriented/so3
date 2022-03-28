@@ -2,7 +2,7 @@
 config RAM_BASE
 	depends on VIRT64
 	hex "RAM Memory physical base address"
-	default 0x00000000
+	default 0x40000000
 
 config RAM_SIZE
         depends on VIRT64

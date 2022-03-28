@@ -21,7 +21,18 @@ SECTIONS
      /* to avoid issues on boards like Raspberry Pi 4 */
   
      . = ENTRY_ADDR + 0x80000;
+    
+    __vectors_start = .;
 
+    .vectors.text :
+    {
+        *(.vectors.text); 
+    }
+    
+  	__vectors_end = .;
+  
+    . = ALIGN(16384);
+    
     .head.text :
     {
         *(.head.text);
@@ -136,7 +147,15 @@ SECTIONS
       . += HEAP_SIZE;
     }
     
-    . = ALIGN(4096);
+    . = ALIGN(8192);
+
+    .stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __stack_top = . ;
+        
+    }
     
     __end = .;
 }

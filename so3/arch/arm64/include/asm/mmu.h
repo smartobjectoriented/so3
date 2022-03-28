@@ -420,6 +420,7 @@ extern void __mmu_switch(void *root_pgtable_phys);
 void *current_pgtable(void);
 void *new_root_pgtable(void);
 void copy_root_pgtable(void *dst, void *src);
+void reset_root_pgtable(void *pgtable, bool remove);
 
 addr_t virt_to_phys_pt(addr_t vaddr);
 

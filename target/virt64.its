@@ -30,12 +30,8 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-                        load = <0x40000000>;
-			entry = <0x40000000>;
-			
-			hash {
-				algo = "crc32";
-			};
+                        load = <0x40080000>;
+			entry = <0x40080000>;
 		};
  
                 fdt {
@@ -45,10 +41,6 @@
 			arch = "arm64";
 			compression = "none";
 			load = <0x44a00000>;
-			
-			hash {
-				algo = "crc32";
-			};
 		};	
 
                 ramdisk {
@@ -70,7 +62,7 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-                        ramdisk = "ramdisk"; 
+            /* ramdisk = "ramdisk"; */
 		};
                 
                 so3_mmc {

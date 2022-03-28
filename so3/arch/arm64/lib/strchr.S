@@ -6,6 +6,8 @@
  * Copyright (C) 2013 ARM Ltd.
  */
 
+.global strchr
+
 /*
  * Find the first occurrence of a character in a string.
  *

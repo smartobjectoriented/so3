@@ -222,7 +222,7 @@ void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t 
 
 	/* If l0pgtable is NULL, we consider the system page table */
 	if (l0pgtable == NULL)
-	l0pgtable = (addr_t *) __sys_root_pgtable;
+		l0pgtable = __sys_root_pgtable;
 
 	BUG_ON(!size);
 
@@ -277,7 +277,7 @@ void release_mapping(void *pgtable, addr_t virt_base, addr_t size) {
  * Allocate a new L1 page table. Return NULL if it fails.
  * The page table must be 16-KB aligned.
  */
-void *new_sys_pgtable(void) {
+void *new_root_pgtable(void) {
 	void *pgtable;
 
 	pgtable = memalign(TTB_L0_SIZE, PAGE_SIZE);
@@ -294,6 +294,46 @@ void *new_sys_pgtable(void) {
 
 void copy_root_pgtable(void *dst, void *src) {
 	memcpy(dst, src, TTB_L0_SIZE);
+}
+
+
+/**
+ * Free a root page table and its associated Lx page tables used for the user space area.
+ * We do not consider any shared pages/page tables.
+ *
+ * @param pgtable
+ * @param remove  true if the root page table must be freed.
+ */
+void reset_root_pgtable(void *pgtable, bool remove) {
+#if 0
+	int i;
+	uint32_t *l1pte, *l2pte;
+
+	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
+
+		l1pte = (uint32_t *) l1pgtable + i;
+
+		/* Check if a L2 page table is used */
+		if (*l1pte) {
+
+			if (!l1pte_is_sect(*l1pte)) {
+				l2pte = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
+
+				free(l2pte);
+
+				flush_pte_entry(l2pte);
+			}
+			*l1pte = 0;
+		}
+	}
+
+
+	/* And finally, restore the heap memory allocated for this page table */
+	if (remove)
+		free(l1pgtable);
+
+	mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+#endif
 }
 
 /*
@@ -316,6 +356,14 @@ void mmu_configure(addr_t l0pgtable, addr_t fdt_addr) {
 
 	__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
 	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+
+	/* Create the initial 1 GB linear mapping of the kernel in its target virtual address space */
+
+	__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VIRT_ADDR)] = (u64) __sys_linearmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
+	set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VIRT_ADDR)], DCACHE_WRITEALLOC);
+
+	__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+	set_pte_block(&__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR)], DCACHE_WRITEALLOC);
 
 	/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
 
@@ -358,7 +406,7 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
 void mmu_switch(void *l0pgtable) {
 	flush_dcache_all();
 
-	__mmu_switch(l0pgtable);
+	__mmu_switch((void *) __pa((addr_t) l0pgtable));
 
 	invalidate_icache_all();
 	__asm_invalidate_tlb_all();
@@ -428,54 +476,31 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 
 }
 
-#if 0
-
 /* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
 void pgtable_copy_kernel_area(uint32_t *l1pgtable) {
+#if 0
 	int i1;
 
 	for (i1 = l1pte_index(L_PAGE_OFFSET); i1 < TTB_L1_ENTRIES; i1++)
 		l1pgtable[i1] = __sys_l1pgtable[i1];
 
 	mmu_page_table_flush((uint32_t) l1pgtable, (uint32_t) (l1pgtable + TTB_L1_ENTRIES));
+#endif
 }
 
-void dump_pgtable(uint32_t *l1pgtable) {
-
-	int i, j;
-	uint32_t *l1pte, *l2pte;
-
-	lprintk("           ***** Page table dump *****\n");
-
-	for (i = 0; i < TTB_L1_ENTRIES; i++) {
-		l1pte = l1pgtable + i;
-		if (*l1pte) {
-			if (l1pte_is_sect(*l1pte))
-				lprintk(" - L1 pte@%p (idx %x) mapping %x is section type  content: %x\n", l1pgtable+i, i, i << (32 - TTB_L1_ORDER), *l1pte);
-			else
-				lprintk(" - L1 pte@%p (idx %x) is PT type   content: %x\n", l1pgtable+i, i, *l1pte);
-
-			if (!l1pte_is_sect(*l1pte)) {
-
-				for (j = 0; j < 256; j++) {
-					l2pte = ((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK)) + j;
-					if (*l2pte)
-						lprintk("      - L2 pte@%p (i2=%x) mapping %x  content: %x\n", l2pte, j, pte_index_to_vaddr(i, j), *l2pte);
-				}
-			}
-		}
-	}
-}
-
+#if 0
 void dump_current_pgtable(void) {
 	dump_pgtable((uint32_t *) cpu_get_l1pgtable());
 }
+
+#endif
 
 /*
  * Get the physical address from a virtual address (valid for any virt. address).
  * The function reads the page table(s).
  */
 addr_t virt_to_phys_pt(addr_t vaddr) {
+#if 0
 	addr_t *l1pte, *l2pte;
 	uint32_t offset;
 
@@ -494,8 +519,9 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 
 		return (*l2pte & TTB_L2_ADDR_MASK) | offset;
 	}
+#endif
 
+	return 0;
 }
 
 
-#endif

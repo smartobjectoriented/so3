@@ -361,18 +361,20 @@ void copy_root_pgtable(void *dst, void *src) {
 	memcpy(dst, src, TTB_L1_SIZE);
 }
 
-/*
- * Free a L1 page table and associated L2 page tables used for the user space area.
+/**
+ * Free a root page table and its associated L2 page tables used for the user space area.
  * We do not consider any shared pages/page tables.
- * @remove indicate if the page tables (L1 & L2) must be erased.
+ *
+ * @param pgtable
+ * @param remove  true if the root page table must be freed.
  */
-void reset_l1pgtable(void *l1pgtable, bool remove) {
+void reset_root_pgtable(void *pgtable, bool remove) {
 	int i;
 	uint32_t *l1pte, *l2pte;
 
 	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
 
-		l1pte = (uint32_t *) l1pgtable + i;
+		l1pte = (uint32_t *) pgtable + i;
 
 		/* Check if a L2 page table is used */
 		if (*l1pte) {
@@ -391,9 +393,9 @@ void reset_l1pgtable(void *l1pgtable, bool remove) {
 
 	/* And finally, restore the heap memory allocated for this page table */
 	if (remove)
-		free(l1pgtable);
+		free(pgtable);
 
-	mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L1_ENTRIES));
 }
 
 /*

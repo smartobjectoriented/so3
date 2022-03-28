@@ -408,7 +408,10 @@ void memory_init(void) {
 #ifdef CONFIG_MMU
 
 	void *new_sys_root_pgtable;
+
+#ifdef CONFIG_ARCH_ARM32
 	addr_t vectors_paddr;
+#endif
 
 #endif /* CONFIG_MMU */
 

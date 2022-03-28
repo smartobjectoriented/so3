@@ -30,10 +30,6 @@
 
 #include <asm/processor.h>
 
-/* use the special section (.vectors.text), to enable fine-tuning
- * of the placement of this section inside the linker script
- */
-.section ".vectors.text", "ax"
 
 .globl ret_from_fork
 .global __call_sig_handler
@@ -81,6 +77,11 @@
 .endm
 
 #endif /* 0 */
+
+/* use the special section (.vectors.text), to enable fine-tuning
+ * of the placement of this section inside the linker script
+ */
+.section ".vectors.text", "ax"
 
 ENTRY(__vectors)
 		    b   __start @ reset

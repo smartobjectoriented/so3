@@ -19,11 +19,6 @@
 
 #include <asm/processor.h>
 
-/* use the special section (.vectors.text), to enable fine-tuning
- * of the placement of this section inside the linker script
- */
-.section ".vectors.text", "ax"
-
 .globl ret_from_fork
 .global __call_sig_handler
 
@@ -45,10 +40,14 @@
 
 .extern __start
 
-#if 0
+/* use the special section (.vectors.text), to enable fine-tuning
+ * of the placement of this section inside the linker script
+ */
+.section ".vectors.text", "ax"
 
 ENTRY(__vectors)
 		    b   __start // reset
+		    #if 0
             ldr pc, _undefined_instruction
             ldr pc, _syscall_interrupt
             ldr pc, _prefetch_abort
@@ -56,7 +55,9 @@ ENTRY(__vectors)
             ldr pc, _not_used
             ldr pc, _irq
             ldr pc, _fiq
+#endif
 
+#if 0
 _undefined_instruction: .word undefined_instruction
 _syscall_interrupt:     .word syscall_interrupt
 _prefetch_abort:        .word prefetch_abort
@@ -393,9 +394,9 @@ fiq:
 
 
 .LCcurrent:
-	.word current_thread
+	.quad current_thread
 
 .LClog:
-	.word 0
+	.quad 0
 
 

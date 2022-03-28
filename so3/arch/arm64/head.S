@@ -53,6 +53,10 @@ __start:
 	// Preserve the fdt addr (device tree) which is stored in x0 by U-boot
 	mov		x9, x0
 
+	//Store the DT addr in a safe place which can be accessed on a relocatable address
+	adr     x8, .LCfdt_addr_temp
+	str 	x9, [x8]
+
 	// Mostly for future usage...
 	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
@@ -80,10 +84,20 @@ __start:
 
 __kernel_main:
 
+	// Store the device tree paddr
+	adr     x8, .LCfdt_addr_temp
+	ldr 	x9, [x8]
+
+	ldr	x0, =__fdt_addr
+	str	x9, [x0]
+
 	// C main entry point
 	b 	kernel_start
 
 	// never returns...
+
+.LCfdt_addr_temp:
+	.quad 0
 
 .align 2
 
@@ -275,7 +289,7 @@ install_el2_stub:
 .ltorg
 
 __fdt_addr:
-  .word 	0
+  .quad 	0
 
 .align 13
 
@@ -285,10 +299,10 @@ temp_stack_bottom:
 temp_stack:
 
 .LCvirt_entry:
-  .word __kernel_main
+  .quad __kernel_main
 
 .LCstack_top:
-  .word __stack_top
+  .quad __stack_top
 
 .LCvectors:
-  .word __vectors_start
+  .quad __vectors_start

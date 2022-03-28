@@ -85,14 +85,18 @@ __get_syscall_stack_arg:
 // r7 contains the syscall number
 // r10 contains the address of the errno variable
 __get_syscall_args_ext:
+
 #if 0
 	str		r7, [r0]
 	str		r10, [r1]
 
 	mov 	pc, lr
+#endif
+	ret
 
 // exec syscall used by the kernel to run the initial binary image (shell)
 __exec:
+#if 0
   	stmfd sp!, {r7, r10, r11, r12}
   	mov	r7, #SYSCALL_EXEC_NR
 
@@ -241,7 +245,7 @@ ENTRY(__mmu_switch)
 	dsb   sy                     /* Ensure the flushes happen before continuing */
     isb                          /* Ensure synchronization with previous changes to text */
 
-    // At the hypervisor level, we take care about TTBR1 page table only.
+	msr	   TTBR0_EL1, x0
     msr    TTBR1_EL1, x0
 
     isb
@@ -256,7 +260,7 @@ ENTRY(cpu_do_idle)
 	ret
 
 .LCret_from_fork:
-	.word ret_from_fork
+	.quad ret_from_fork
 
 .LCcurrent:
-	.word current_thread
+	.quad current_thread

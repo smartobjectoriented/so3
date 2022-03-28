@@ -274,7 +274,7 @@ void add_page_to_proc(pcb_t *pcb, page_t *page) {
 /*
  * Find available frames and do the mapping of a number of pages.
  */
-static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr) {
+static void allocate_page(pcb_t *pcb, addr_t virt_addr, int nr_pages, bool usr) {
 	int i;
 	uint32_t page;
 
@@ -539,7 +539,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	/* The current binary image (which is a copy of the fork'd) must disappeared.
 	 * Associated physical pages must be removed and freed. Stack area will be re-initialized.
 	 */
-	reset_l1pgtable(pcb->pgtable, false);
+	reset_root_pgtable(pcb->pgtable, false);
 
 	/* Release all allocated pages for user space */
 	release_proc_pages(pcb);
@@ -940,7 +940,7 @@ int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 	if ((child->state == PROC_STATE_ZOMBIE) && (child->ptrace_pending_req == PTRACE_NO_REQUEST)) {
 
 		/* Free the page tables used for this process */
-		reset_l1pgtable(child->pgtable, true);
+		reset_root_pgtable(child->pgtable, true);
 
 		/* Get the exit code left in the PCB by the child */
 		if (wstatus) {
@@ -970,7 +970,7 @@ int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 		} else {
 
 			/* Free the page tables used for this process */
-			reset_l1pgtable(child->pgtable, true);
+			reset_root_pgtable(child->pgtable, true);
 
 			/* Get the exit code left in the PCB by the child */
 			if (wstatus) {

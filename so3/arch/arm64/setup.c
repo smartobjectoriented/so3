@@ -20,7 +20,10 @@
  * Low-level ARM-specific setup
  */
 
+#include <memory.h>
 #include <types.h>
+
+#include <device/fdt.h>
 
 #if 0
 extern unsigned char __irq_stack_start[];
@@ -102,21 +105,12 @@ void cpu_init(void) {
  * Low-level initialization before the main boostrap process.
  */
 void setup_arch(void) {
-#if 0
-	cpu_init();
+	int offset;
 
-	vfp_enable();
+	/* Access to device tree */
+	offset = get_mem_info((void *) __fdt_addr, &mem_info);
+	if (offset >= 0)
+		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 
 	/* A low-level UART should be initialized here so that subsystems initialization (like MMC) can already print out logs ... */
-
-	vectors_init();
-
-	/*
-	 * Finally flush the caches and tlb to ensure that we're in a
-	 * consistent state wrt the writebuffer.  This also ensures that
-	 * any write-allocated cache lines in the vector page are written
-	 * back.  After this point, we can start to touch devices again.
-	 */
-	flush_dcache_all();
-#endif
 }
