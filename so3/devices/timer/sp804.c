@@ -26,7 +26,9 @@
 #include <common.h>
 #include <softirq.h>
 #include <schedule.h>
+#include <heap.h>
 #include <timer.h>
+#include <memory.h>
 
 #include <device/timer.h>
 #include <device/device.h>
@@ -37,12 +39,17 @@
 
 #include <asm/io.h>
 
+typedef struct {
+	struct sp804_timer *base;
+	irq_def_t irq_def;
+} sp804_t;
+
+static sp804_t *sp804 = NULL;
+
 static irq_return_t timer_isr(int irq, void *dummy) {
 
-	struct sp804_timer *sp804 = (struct sp804_timer *) periodic_timer.dev->base;
-
 	/* Clear the interrupt */
-	iowrite32(&sp804->timerintclr, 1);
+	iowrite32(&sp804->base->timerintclr, 1);
 
 	jiffies++;
 
@@ -64,54 +71,59 @@ static void next_event(u32 next) {
 
 
 static void periodic_timer_start(void) {
-
-	struct sp804_timer *sp804;
 	uint32_t ctrl = TIMER_CTRL_32BIT | TIMER_CTRL_IE;
 	uint32_t reload;
-
-	sp804 = (struct sp804_timer *) periodic_timer.dev->base;
 
 	/* Number of clock cycles to wait */
 	reload = (uint32_t) (periodic_timer.period / (NSECS / TIMER_RATE));
 
-	iowrite32(&sp804->timercontrol, ctrl);
+	iowrite32(&sp804->base->timercontrol, ctrl);
 
 	printk("%s: setting up system timer periodic freq at %x\n", __func__, reload);
 
-	iowrite32(&sp804->timerload, reload);
+	iowrite32(&sp804->base->timerload, reload);
 	ctrl |= TIMER_CTRL_PERIODIC | TIMER_CTRL_ENABLE;
 
-	iowrite32(&sp804->timercontrol, ctrl);
+	iowrite32(&sp804->base->timercontrol, ctrl);
 
 	/* Enable interrupt (IRQ controller) */
-	irq_ops.irq_enable(periodic_timer.dev->irq_nr);
+	irq_ops.enable(sp804->irq_def.irqnr);
 }
 
 static void periodic_timer_stop(void) {
 	uint32_t ctrl = ~TIMER_CTRL_ENABLE;
-	struct sp804_timer *sp804 = (struct sp804_timer *) periodic_timer.dev->base;
 
-	iowrite32(&sp804->timercontrol, ctrl);
+	iowrite32(&sp804->base->timercontrol, ctrl);
 }
 
 /* Clocksource */
 
 /* Read the clocksource timer value */
 u64 clocksource_read(void) {
-	struct sp804_timer *sp804 = (struct sp804_timer *) clocksource_timer.dev->base;
-
-	return (u64) ~ioread32(&sp804->timervalue);
+	return (u64) ~ioread32(&sp804->base->timervalue);
 }
 
 /*
  * Initialize the periodic timer used by the kernel.
  */
-static int periodic_timer_init(dev_t *dev) {
-
-	periodic_timer.dev = dev;
+static int periodic_timer_init(dev_t *dev, int fdt_offset) {
+	const struct fdt_property *prop;
+	int prop_len;
 
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */
+
+	sp804 = (sp804_t *) malloc(sizeof(sp804_t));
+	BUG_ON(!sp804);
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	sp804->base = (struct sp804_timer *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+
+	fdt_interrupt_node(fdt_offset, &sp804->irq_def);
 
 	/* Initialize Timer */
 
@@ -120,7 +132,7 @@ static int periodic_timer_init(dev_t *dev) {
 	periodic_timer.period = NSECS / HZ;
 
 	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq_nr, timer_isr, NULL, NULL);
+	irq_bind(sp804->irq_def.irqnr, timer_isr, NULL, NULL);
 
 	return 0;
 }
@@ -142,12 +154,27 @@ static int oneshot_timer_init(dev_t *dev) {
 }
 #endif
 
-/*
+/**
  * Initialize the clocksource timer for free-running timer (used for system time)
+ *
+ * @param dev
+ * @param fdt_offset Location of the timer node
+ * @return
  */
-static int clocksource_timer_init(dev_t *dev) {
+static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
+	const struct fdt_property *prop;
+	int prop_len;
 
-	clocksource_timer.dev = dev;
+	sp804 = (sp804_t *) malloc(sizeof(sp804_t));
+	BUG_ON(!sp804);
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	sp804->base = (struct sp804_timer *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+
 	clocksource_timer.cycle_last = 0;
 
 	clocksource_timer.mask = CLOCKSOURCE_MASK(32);
@@ -158,11 +185,11 @@ static int clocksource_timer_init(dev_t *dev) {
 	/* This free-running counter is used only for the associated HS (RT) timer to sync */
 	/* setup timer 2 as free-running clocksource */
 
-	iowrite32(clocksource_timer.dev->base + TIMER_CTRL, 0);
-	iowrite32(clocksource_timer.dev->base + TIMER_LOAD, 0xffffffff);
-	iowrite32(clocksource_timer.dev->base + TIMER_VALUE,0xffffffff);
+	iowrite32(&sp804->base->timercontrol, 0);
+	iowrite32(&sp804->base->timerload, 0xffffffff);
+	iowrite32(&sp804->base->timervalue, 0xffffffff);
 
-	iowrite32(clocksource_timer.dev->base + TIMER_CTRL, TIMER_CTRL_32BIT | TIMER_CTRL_ENABLE | TIMER_CTRL_PERIODIC);
+	iowrite32(&sp804->base->timercontrol, TIMER_CTRL_32BIT | TIMER_CTRL_ENABLE | TIMER_CTRL_PERIODIC);
 
 	/* Calculate the mult/shift to convert counter ticks to ns. */
 	clocks_calc_mult_shift(&clocksource_timer.mult, &clocksource_timer.shift, clocksource_timer.rate, NSECS, 3600);

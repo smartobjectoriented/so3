@@ -38,14 +38,9 @@
 
 typedef struct {
 	/* Distributor */
-	addr_t gicd_base;
-	uint32_t gicd_size;
+	struct gicd_regs *gicd;
 
 	/* CPU interface */
-	addr_t gicc_base;
-	uint32_t gicc_size;
-
-	struct gicd_regs *gicd;
 	struct gicc_regs *gicc;
 
 } gic_t;
@@ -72,9 +67,9 @@ void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def) {
 	if (prop_len == 3 * sizeof(uint32_t)) {
 
 		/* Retrieve the 3-cell values */
-		irq_def->irqnr = fdt32_to_cpu(p[0]);
-		irq_def->irq_class = fdt32_to_cpu(p[1]);
-		irq_def->irq_type = fdt32_to_cpu(p[3]);
+		irq_def->irq_class = fdt32_to_cpu(p[0]);
+		irq_def->irqnr = fdt32_to_cpu(p[1]);
+		irq_def->irq_type = fdt32_to_cpu(p[2]);
 
 		/* Not all combinations are currently handled. */
 
@@ -160,12 +155,6 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
 
-#ifdef CONFIG_ARCH_ARM32
-	const fdt32_t *p;
-#else
-	const fdt64_t *p;
-#endif
-
 	gic = (gic_t *) malloc(sizeof(gic_t));
 	BUG_ON(!gic);
 
@@ -175,25 +164,15 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 	BUG_ON(!prop);
 	BUG_ON(prop_len != 4 * sizeof(unsigned long));
 
-
-#ifdef CONFIG_ARCH_ARM32
-	p = (const fdt32_t *) prop->data;
-
-	gic->gicd_base = fdt32_to_cpu(p[0]);
-	gic->gicd_size = fdt32_to_cpu(p[1]);
-#else
-	p = (const fdt64_t *) prop->data;
-
-	gic->gicd_base = fdt64_to_cpu(p[0]);
-	gic->gicd_size = fdt64_to_cpu(p[1]);
-#endif
-
 	/* Mapping the two mem area of GIC (distributor & CPU interface) */
-	gic->gicd_base = io_map(gic->gicd_base, gic->gicd_size);
-	gic->gicc_base = io_map(gic->gicc_base, gic->gicc_size);
+#ifdef CONFIG_ARCH_ARM32
+	gic->gicd = (struct gicd_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	gic->gicc = (struct gicc_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[2]), fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
+#else
+	gic->gicd = (struct gicd_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	gic->gicc = (struct gicc_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[2]), fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
 
-	gic->gicd = (struct gicd_regs *) gic->gicd_base;
-	gic->gicc = (struct gicc_regs *) gic->gicc_base;
+#endif
 
 	/* Initialize distributor and CPU interface of GIC.
 	 * See Linux implementation as reference: http://lxr.free-electrons.com/source/arch/arm/common/gic.c?v=3.2
@@ -243,11 +222,11 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 	/* Enable CPU interface */
 	iowrite32(&gic->gicc->gicc_ctlr, GICC_ENABLE);
 
-	irq_ops.irq_enable = gic_enable;
-	irq_ops.irq_disable = gic_disable;
-	irq_ops.irq_mask = gic_mask;
-	irq_ops.irq_unmask = gic_unmask;
-	irq_ops.irq_handle = gic_handle;
+	irq_ops.enable = gic_enable;
+	irq_ops.disable = gic_disable;
+	irq_ops.mask = gic_mask;
+	irq_ops.unmask = gic_unmask;
+	irq_ops.handle = gic_handle;
 
 	return 0;
 }

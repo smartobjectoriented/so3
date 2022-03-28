@@ -18,7 +18,6 @@
 
 #include <types.h>
 #include <heap.h>
-
 #include <process.h>
 #include <signal.h>
 
@@ -45,6 +44,7 @@ extern mutex_t read_lock;
 
 typedef struct {
 	addr_t base;
+	irq_def_t irq_def;
 } pl011_t;
 
 pl011_t pl011 =
@@ -139,10 +139,18 @@ static irq_return_t pl011_int(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
+void pl011_enable_irq(void) {
+	irq_ops.enable(pl011.irq_def.irqnr);
+}
+
+void pl011_disable_irq(void) {
+	irq_ops.disable(pl011.irq_def.irqnr);
+}
+
+
 static int pl011_init(dev_t *dev, int fdt_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
-	irq_def_t irq_def;
 
 	/* Init pl011 UART */
 
@@ -151,21 +159,25 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 	serial_ops.put_byte = pl011_put_byte;
 	serial_ops.get_byte = pl011_get_byte;
 
-	serial_ops.dev = dev;
+	serial_ops.enable_irq = pl011_enable_irq;
+	serial_ops.disable_irq = pl011_disable_irq;
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
+
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
-	fdt_interrupt_node(fdt_offset, &irq_def);
+	pl011.base = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+
+	fdt_interrupt_node(fdt_offset, &pl011.irq_def);
 
 	/* Bind ISR into interrupt controller */
-	irq_bind(irq_def.irqnr, pl011_int, NULL, NULL);
+	irq_bind(pl011.irq_def.irqnr, pl011_int, NULL, NULL);
 
 	/* Enable interrupt (IRQ controller) */
 	iowrite16(pl011.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
 
-	irq_ops.irq_enable(irq_def.irqnr);
+	serial_ops.enable_irq();
 
 	return 0;
 }

@@ -111,7 +111,8 @@ int serial_gwinsize(struct winsize *wsz)
 	 */
 
 #ifdef CONFIG_VEXPRESS
-	irq_ops.irq_disable(serial_ops.dev->irq_nr);
+
+	serial_ops.disable_irq();
 
 	if (serial_write(SERIAL_GWINSZ, 1) == 0) 
 		return -1;
@@ -119,7 +120,8 @@ int serial_gwinsize(struct winsize *wsz)
 	wsz->ws_row = serial_ops.get_byte(true);
 	wsz->ws_col = serial_ops.get_byte(true);
 
-	irq_ops.irq_enable(serial_ops.dev->irq_nr);
+	serial_ops.enable_irq();
+
 #else
 
 	wsz->ws_row = WINSIZE_ROW_SIZE_DEFAULT;

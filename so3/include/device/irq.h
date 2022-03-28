@@ -73,12 +73,12 @@ extern void setup_arch(void);
 /* IRQ controller */
 typedef struct  {
 
-    void (*irq_enable)(unsigned int irq);
-    void (*irq_disable)(unsigned int irq);
-    void (*irq_mask)(unsigned int irq);
-    void (*irq_unmask)(unsigned int irq);
+    void (*enable)(unsigned int irq);
+    void (*disable)(unsigned int irq);
+    void (*mask)(unsigned int irq);
+    void (*unmask)(unsigned int irq);
 
-    void (*irq_handle)(cpu_regs_t *regs);
+    void (*handle)(cpu_regs_t *regs);
 
 } irq_ops_t;
 

@@ -23,9 +23,6 @@
 
 #define TIMER_RATE			1000000ull   /* 1 MHz */
 
-#define TIMER_LOAD      0x00
-#define TIMER_VALUE     0x04
-#define TIMER_CTRL      0x08
 #define TIMER_CTRL_ONESHOT      (1 << 0)
 #define TIMER_CTRL_32BIT        (1 << 1)
 #define TIMER_CTRL_DIV1         (0 << 2)

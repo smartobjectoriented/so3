@@ -129,7 +129,7 @@ void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, voi
 	irqdesc[irq].irq_deferred_fn = irq_deferred_fn;
 	irqdesc[irq].data = data;
 
-	irq_ops.irq_enable(irq);
+	irq_ops.enable(irq);
 }
 
 void irq_unbind(int irq) {
@@ -141,24 +141,24 @@ void irq_unbind(int irq) {
 
 void irq_mask(int irq) {
 
-	irq_ops.irq_mask(irq);
+	irq_ops.mask(irq);
 }
 
 void irq_unmask(int irq) {
 
-	irq_ops.irq_unmask(irq);
+	irq_ops.unmask(irq);
 }
 
 void irq_enable(int irq) {
 
-	irq_ops.irq_enable(irq);
-	irq_ops.irq_unmask(irq);
+	irq_ops.enable(irq);
+	irq_ops.unmask(irq);
 }
 
 void irq_disable(int irq) {
 
-	irq_ops.irq_mask(irq);
-	irq_ops.irq_disable(irq);
+	irq_ops.mask(irq);
+	irq_ops.disable(irq);
 }
 
 void irq_handle(cpu_regs_t *regs) {
@@ -168,7 +168,7 @@ void irq_handle(cpu_regs_t *regs) {
 	 */
 	__in_interrupt = true;
 
-	irq_ops.irq_handle(regs);
+	irq_ops.handle(regs);
 
 	BUG_ON(irqs_disabled_flags(regs));
 

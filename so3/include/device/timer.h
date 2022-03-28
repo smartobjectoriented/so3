@@ -47,7 +47,7 @@ struct timeval {
 
 /* Structure for a periodic timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	uint64_t period; /* Period in ns of the periodic timer */
 	void (*start)(void);
 	void (*stop)(void);
@@ -55,7 +55,7 @@ typedef struct {
 
 /* Structure for a oneshot timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	void (*set_delay)(uint64_t delay_ns);
 	void (*start)(void);
 
@@ -69,7 +69,7 @@ typedef struct {
 
 /* Structure of a clocksource timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	u64 (*read)(void);
 
 	uint32_t rate;

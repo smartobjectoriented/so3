@@ -142,6 +142,7 @@ static void alloc_init_section(uint32_t *l1pte, addr_t addr, addr_t end, addr_t 
 
 /*
  * Create a static mapping between a virtual range and a physical range
+ *
  * @l1pgtable refers to the level 1 page table - if NULL, the system page table is used
  * @virt_base is the virtual address considered for this mapping
  * @phys_base is the physical address to be mapped

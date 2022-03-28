@@ -143,7 +143,7 @@ void parse_dtb(void *fdt_addr) {
 
 						found = true;
 
-						DBG("Found compatible:    %s\n",driver_entries[level][i].compatible);
+						DBG("Found compatible:    %s\n", driver_entries[level][i].compatible);
 						DBG("    Compatible:      %s\n", dev->compatible);
 						DBG("    Status:          %s\n", dev_state_str(dev->status));
 						DBG("    Initcall level:  %d\n", level);

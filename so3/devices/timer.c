@@ -93,7 +93,7 @@ bool timer_dev_set_deadline(u64 deadline) {
 		if (!__in_interrupt)
 			return true;
 
-	} else if (oneshot_timer.dev != NULL) 
+	} else if (oneshot_timer.set_delay != NULL)
 		oneshot_timer.set_delay(delta);
 
 	return false;
