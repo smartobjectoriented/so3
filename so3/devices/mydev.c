@@ -50,7 +50,7 @@ struct devclass mydev_dev = {
 };
 
 
-int mydev_init(dev_t *dev) {
+int mydev_init(dev_t *dev, int fdt_offset) {
 	int node;
 	const char *propname;
 

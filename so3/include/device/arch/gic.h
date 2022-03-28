@@ -42,7 +42,7 @@
 #define ICC_SRE_EL2_SRE			(1 << 0)
 #define ICC_SRE_EL2_ENABLE		(1 << 3)
 
-#define GICD_ENABLE				0x1
+#define GICD_ENABLE			0x1
 #define GICD_DISABLE			0x0
 #define GICD_INT_ACTLOW_LVLTRIG	0x0
 #define GICD_INT_EN_CLR_X32		0xffffffff
@@ -50,26 +50,26 @@
 #define GICD_INT_EN_CLR_PPI		0xffff0000
 #define GICD_INT_DEF_PRI		0xa0
 #define GICD_INT_DEF_PRI_X4		((GICD_INT_DEF_PRI << 24) |\
-								 (GICD_INT_DEF_PRI << 16) |\
-								 (GICD_INT_DEF_PRI << 8) |\
-								 GICD_INT_DEF_PRI)
+					 (GICD_INT_DEF_PRI << 16) |\
+					 (GICD_INT_DEF_PRI << 8) |\
+					 GICD_INT_DEF_PRI)
 
 #define GIC_CPU_CTRL			0x00
 #define GIC_CPU_PRIMASK			0x04
 #define GIC_CPU_BINPOINT		0x08
 #define GIC_CPU_INTACK			0x0c
-#define GIC_CPU_EOI				0x10
+#define GIC_CPU_EOI			0x10
 #define GIC_CPU_RUNNINGPRI		0x14
 #define GIC_CPU_HIGHPRI			0x18
-#define GIC_CPU_ALIAS_BINPOINT	0x1c
+#define GIC_CPU_ALIAS_BINPOINT		0x1c
 #define GIC_CPU_ACTIVEPRIO		0xd0
 #define GIC_CPU_IDENT			0xfc
 
-#define GICC_ENABLE				0x1
-#define GICC_INT_PRI_THRESHOLD	0xf0
-#define GICC_IAR_INT_ID_MASK	0x3ff
+#define GICC_ENABLE			0x1
+#define GICC_INT_PRI_THRESHOLD		0xf0
+#define GICC_IAR_INT_ID_MASK		0x3ff
 #define GICC_INT_SPURIOUS		1023
-#define GICC_DIS_BYPASS_MASK	0x1e0
+#define GICC_DIS_BYPASS_MASK		0x1e0
 
 #define INTC_CPU_CTRL_REG0		0x28
 #define INTC_DISABLE			(1<<4)
@@ -85,7 +85,9 @@ typedef enum {
 } gic_irq_type_t;
 
 /* Bits and regs definitions */
-struct intc_regs {
+
+struct gicd_regs {
+
     /* Distributor Registers: [3] Table 3.2. Distributor register summary */
     volatile uint32_t gicd_ctlr;           /* 0x0000 */
     volatile uint32_t gicd_typer;          /* 0x0004 */
@@ -124,6 +126,9 @@ struct intc_regs {
     volatile uint32_t gicd_cidr1;           /* 0x0ff4 */
     volatile uint32_t gicd_cidr2;           /* 0x0ff8 */
     volatile uint32_t gicd_cidr3;           /* 0x0ffc */
+};
+
+struct gicc_regs {
 
     /* CPU Interface Registers: [3] Table 3.6. CPU interface register summary */
     volatile uint32_t gicc_ctlr;       /* 0x0000 */

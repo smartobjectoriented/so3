@@ -29,7 +29,7 @@
 struct driver_initcall {
 	char *compatible; /* compatible string */
 
-	int (*init)(dev_t *dev);
+	int (*init)(dev_t *dev, int fdt_offset);
 };
 typedef struct driver_initcall driver_initcall_t;
 

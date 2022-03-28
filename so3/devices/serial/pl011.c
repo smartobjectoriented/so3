@@ -43,16 +43,20 @@ static volatile uint32_t prod=0, cons=0;
 
 extern mutex_t read_lock;
 
-static dev_t pl011_dev =
+typedef struct {
+	addr_t base;
+} pl011_t;
+
+pl011_t pl011 =
 {
-  .base = UART_BASE,
+	.base = UART_BASE,
 };
 
 static int pl011_put_byte(char c) {
 
-	while ((ioread16(pl011_dev.base + UART01x_FR) & UART01x_FR_TXFF)) ;
+	while ((ioread16(pl011.base + UART01x_FR) & UART01x_FR_TXFF)) ;
 
-	iowrite16(pl011_dev.base + UART01x_DR, c);
+	iowrite16(pl011.base + UART01x_DR, c);
 
 	return 1;
 }
@@ -64,9 +68,9 @@ static char pl011_get_byte(bool polling) {
 	if (polling) {
 		
 		/* Poll while nothing available */
-		while (ioread8(pl011_dev.base + UART01x_FR) & UART01x_FR_RXFE) ;
+		while (ioread8(pl011.base + UART01x_FR) & UART01x_FR_RXFE) ;
 
-		return ioread16(pl011_dev.base + UART01x_DR);
+		return ioread16(pl011.base + UART01x_DR);
 	} else {
 		while (prod == cons) {
 
@@ -100,13 +104,13 @@ static irq_return_t pl011_int(int irq, void *dummy)
 {
 	unsigned int status, pass_counter = AMBA_ISR_PASS_LIMIT;
 
-	status = ioread16(pl011_dev.base + UART011_MIS);
+	status = ioread16(pl011.base + UART011_MIS);
 	if (status) {
 		do {
-			iowrite16(pl011_dev.base + UART011_ICR, status & ~(UART011_TXIS|UART011_RTIS | UART011_RXIS));
+			iowrite16(pl011.base + UART011_ICR, status & ~(UART011_TXIS|UART011_RTIS | UART011_RXIS));
 
 			if (status & (UART011_RTIS|UART011_RXIS)) {
-				serial_buffer[prod] = ioread16(pl011_dev.base + UART01x_DR);
+				serial_buffer[prod] = ioread16(pl011.base + UART01x_DR);
 
 				/* Check for SIGINT to be raised on Ctrl^C */
 				if (serial_buffer[prod] == 3) {
@@ -127,7 +131,7 @@ static irq_return_t pl011_int(int irq, void *dummy)
 			if (pass_counter-- == 0)
 				break;
 
-			status = ioread16(pl011_dev.base + UART011_MIS);
+			status = ioread16(pl011.base + UART011_MIS);
 
 		} while (status != 0);
 	}
@@ -135,44 +139,33 @@ static irq_return_t pl011_int(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
-
-static int fc_write(int fd, const void *buffer, int size) {
-
-	return 0;
-}
-
-struct file_operations fc_fops = {
-	.write = fc_write,
-};
-
-struct devclass dummydev = {
-	.class = "fc",
-	.type = VFS_TYPE_DEV_FB,
-	.fops = &fc_fops,
-};
-
-
-
-static int pl011_init(dev_t *dev) {
+static int pl011_init(dev_t *dev, int fdt_offset) {
+	const struct fdt_property *prop;
+	int prop_len;
+	irq_def_t irq_def;
 
 	/* Init pl011 UART */
 
-	memcpy(&pl011_dev, dev, sizeof(dev_t));
+	memcpy(&pl011, dev, sizeof(pl011_t));
 
 	serial_ops.put_byte = pl011_put_byte;
 	serial_ops.get_byte = pl011_get_byte;
 
 	serial_ops.dev = dev;
 
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	fdt_interrupt_node(fdt_offset, &irq_def);
+
 	/* Bind ISR into interrupt controller */
-	irq_bind(dev->irq_nr, pl011_int, NULL, NULL);
+	irq_bind(irq_def.irqnr, pl011_int, NULL, NULL);
 
 	/* Enable interrupt (IRQ controller) */
-	iowrite16(pl011_dev.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
+	iowrite16(pl011.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
 
-	irq_ops.irq_enable(dev->irq_nr);
-
-	devclass_register(dev, &dummydev);
+	irq_ops.irq_enable(irq_def.irqnr);
 
 	return 0;
 }

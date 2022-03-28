@@ -44,6 +44,12 @@ typedef enum {
 	IRQ_BOTTOM
 } irq_return_t;
 
+typedef struct {
+	int irqnr;
+	int irq_class;
+	int irq_type;
+} irq_def_t;
+
 typedef irq_return_t(*irq_handler_t)(int irq, void *data);
 
 typedef struct irqdesc {
@@ -89,5 +95,7 @@ void irq_unmask(int irq);
 
 void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, void *data);
 void irq_unbind(int irq);
+
+void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def);
 
 #endif /* IRQ_H */
