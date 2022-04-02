@@ -50,9 +50,9 @@ void spin_lock_irq(spinlock_t *lock)
 
 }
 
-uint32_t spin_lock_irqsave(spinlock_t *lock)
+unsigned long spin_lock_irqsave(spinlock_t *lock)
 {
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -76,7 +76,7 @@ void spin_unlock_irq(spinlock_t *lock)
 	local_irq_enable();
 }
 
-void spin_unlock_irqrestore(spinlock_t *lock, uint32_t flags)
+void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags)
 {
 	spin_unlock(lock);
 

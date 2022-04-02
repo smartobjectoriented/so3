@@ -49,8 +49,12 @@ struct timeval {
 typedef struct {
 
 	uint64_t period; /* Period in ns of the periodic timer */
+
+	dev_t *dev;	/* Reference to the periodic timer hardware */
+
 	void (*start)(void);
 	void (*stop)(void);
+
 } periodic_timer_t;
 
 /* Structure for a oneshot timer */

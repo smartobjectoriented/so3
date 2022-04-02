@@ -39,7 +39,7 @@ clocksource_timer_t clocksource_timer;
  */
 u64 get_s_time(void) {
 	u64 cycle_now, cycle_delta;
-	uint32_t flags;
+	unsigned long flags;
 
 	/* Protect against concurrent access from different CPUs */
 

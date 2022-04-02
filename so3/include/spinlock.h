@@ -33,11 +33,11 @@ typedef struct {
 
 void spin_lock(spinlock_t *lock);
 void spin_lock_irq(spinlock_t *lock);
-uint32_t spin_lock_irqsave(spinlock_t *lock);
+unsigned long spin_lock_irqsave(spinlock_t *lock);
 
 void spin_unlock(spinlock_t *lock);
 void spin_unlock_irq(spinlock_t *lock);
-void spin_unlock_irqrestore(spinlock_t *lock, uint32_t flags);
+void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags);
 
 #define spin_is_locked(x)	((x)->lock != 0)
 

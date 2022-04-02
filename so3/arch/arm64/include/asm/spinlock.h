@@ -36,10 +36,10 @@
 
 static inline int spin_trylock(spinlock_t *lock)
 {
-	unsigned int tmp;
+	unsigned long tmp;
 
 	__asm__ __volatile__(
-"	ldaxr	%w0, [x0]\n"
+"	ldaxr	%w0, [x1]\n"
 "	tbnz	%w0, #0, 1f\n"
 "	stxr	%w0, %2, [%1]\n"
 "	1:"
@@ -55,6 +55,15 @@ static inline int spin_trylock(spinlock_t *lock)
 	}
 }
 
+/*
+ * Release lock previously acquired by spin_lock.
+ *
+ * Use store-release to unconditionally clear the spinlock variable.
+ * Store operation generates an event to all cores waiting in WFE
+ * when address is monitored by the global monitor.
+ *
+ * void spin_unlock(spinlock_t *lock);
+ */
 static inline void spin_unlock(spinlock_t *lock)
 {
 	smp_mb();

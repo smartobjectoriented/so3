@@ -167,7 +167,11 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
+#ifdef CONFIG_ARCH_ARM32
 	pl011.base = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	pl011.base = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+#endif
 
 	fdt_interrupt_node(fdt_offset, &pl011.irq_def);
 
