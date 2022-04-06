@@ -1047,7 +1047,8 @@ static inline unsigned long local_irq_save(void)
 	unsigned long flags;
 
 	asm volatile(
-		"mrs	%0, daif"     \
+		"mrs	%0, daif \n"     \
+		"msr 	daifset, #2"
 		: "=r" (flags) : : "memory", "cc");
 
 	return flags;

@@ -28,7 +28,7 @@
 #include <process.h>
 
 void mutex_lock(struct mutex *lock) {
-	uint32_t flags;
+	unsigned long flags;
 	queue_thread_t q_tcb;
 
 	/*
@@ -101,7 +101,7 @@ void mutex_unlock(struct mutex *lock) {
 
 	queue_thread_t *curr;
 	bool need_resched = false;
-	uint32_t flags;
+	unsigned long flags;
 
 	BUG_ON(!mutex_is_locked(lock));
 

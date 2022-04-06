@@ -80,7 +80,7 @@ int ll_serial_write(char *str, int len) {
 /* Sends some bytes to the UART */
 int serial_write(char *str, int len) {
 	int i;
-	uint32_t flags;
+	unsigned long flags;
 
 	/* Here, we disable IRQ since printk() can also be used with IRQs off */
 	flags = local_irq_save();

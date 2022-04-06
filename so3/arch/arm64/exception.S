@@ -22,11 +22,15 @@
 .globl ret_from_fork
 .global __call_sig_handler
 
+.global __vectors
+
 .extern current_thread
 .extern irq_handle
 .extern syscall_handle
 
 .extern dumpstack
+
+.extern __sync_serror
 
 .extern __prefetch_abort
 .extern __data_abort
@@ -40,33 +44,131 @@
 
 .extern __start
 
+/*
+ * Four types of exceptions:
+ * - synchronous: aborts from MMU, SP/CP alignment checking, unallocated
+ *   instructions, SVCs/SMCs/HVCs, ...)
+ * - IRQ: group 1 (normal) interrupts
+ * - FIQ: group 0 or secure interrupts
+ * - SError: fatal system errors
+ *
+ * Four different contexts:
+ * - from same exception level, when using the SP_EL0 stack pointer
+ * - from same exception level, when using the SP_ELx stack pointer
+ * - from lower exception level, when this is AArch64
+ * - from lower exception level, when this is AArch32
+ *
+ * +------------------+------------------+-------------------------+
+ * |     Address      |  Exception type  |       Description       |
+ * +------------------+------------------+-------------------------+
+ * | VBAR_ELn + 0x000 | Synchronous      | Current EL with SP0     |
+ * |          + 0x080 | IRQ / vIRQ       |                         |
+ * |          + 0x100 | FIQ / vFIQ       |                         |
+ * |          + 0x180 | SError / vSError |                         |
+ * +------------------+------------------+-------------------------+
+ * |          + 0x200 | Synchronous      | Current EL with SPx     |
+ * |          + 0x280 | IRQ / vIRQ       |                         |
+ * |          + 0x300 | FIQ / vFIQ       |                         |
+ * |          + 0x380 | SError / vSError |                         |
+ * +------------------+------------------+-------------------------+
+ * |          + 0x400 | Synchronous      | Lower EL using AArch64  |
+ * |          + 0x480 | IRQ / vIRQ       |                         |
+ * |          + 0x500 | FIQ / vFIQ       |                         |
+ * |          + 0x580 | SError / vSError |                         |
+ * +------------------+------------------+-------------------------+
+ * |          + 0x600 | Synchronous      | Lower EL using AArch32  |
+ * |          + 0x680 | IRQ / vIRQ       |                         |
+ * |          + 0x700 | FIQ / vFIQ       |                         |
+ * |          + 0x780 | SError / vSError |                         |
+ * +------------------+------------------+-------------------------+
+ */
+
 /* use the special section (.vectors.text), to enable fine-tuning
  * of the placement of this section inside the linker script
  */
 .section ".vectors.text", "ax"
 
-ENTRY(__vectors)
-		    b   __start // reset
-		    #if 0
-            ldr pc, _undefined_instruction
-            ldr pc, _syscall_interrupt
-            ldr pc, _prefetch_abort
-            ldr pc, _data_abort
-            ldr pc, _not_used
-            ldr pc, _irq
-            ldr pc, _fiq
-#endif
+	b __start  // To be compliant with reset vector (unavailable in aarch64)
 
-#if 0
-_undefined_instruction: .word undefined_instruction
-_syscall_interrupt:     .word syscall_interrupt
-_prefetch_abort:        .word prefetch_abort
-_data_abort:            .word data_abort
-_not_used:              .word not_used
-_irq:                   .word irq
-_fiq:                   .word fiq
-_pad:                   .word 0x12345678 // now 16*4=64
-#endif
+.align 11
+ENTRY(__vectors)
+
+	// Current EL with SP0 / Synchronous
+	.align 7
+	b	not_used
+
+	// Current EL with SP0 / IRQ
+	.align 7
+	b 	not_used
+
+	// Current EL with SP0 / FIQ
+	.align 7
+	b 	not_used
+
+	// Current EL with SP0 / SError
+	.align 7
+	b 	not_used
+
+	// Current EL with SPx / Synchronous
+	.align 7
+	b	syscall_interrupt
+
+	// Current EL with SPx / IRQ
+	.align 7
+
+	b 	irq_handler
+
+	// Current EL with SPx / FIQ
+	.align 7
+	b	not_used
+
+	// Current EL with SPx / SError
+	.align 7
+
+	mov	x0, lr
+	b	__sync_serror
+
+	// Lower EL using AArch64 / Synchronous
+	.align 7
+
+	mov	x0, lr
+	mov x1, sp
+	b	__sync_el2_fault
+
+	// Lower EL using AArch64 / IRQ
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch64 / FIQ
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch64 / SError
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch32 / Synchronous
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch32 / IRQ
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch32 / FIQ
+	.align 7
+	b	not_used
+
+	// Lower EL using AArch32 / SError
+	.align 7
+	b	not_used
+
+
+
+.align  5
+not_used:
+    b not_used
+
 
 #if 0
 // exception handlers
@@ -139,6 +241,10 @@ __prepare_sig_handler:
 // ARM EABI: the syscall nr is stored in r7
 .align  5
 syscall_interrupt:
+
+loop:
+	 b loop
+
 #if 0
 
 	// At the exception entry, the stack must be 8-byte aligned.
@@ -280,111 +386,66 @@ not_used:
 #endif
 
 .align  5
-irq:
+irq_handler:
 
-#if 0
-    // IRQ mode (lr_irq, sp_irq, cpsr_irq)
+	sub		sp, sp, #S_FRAME_SIZE
 
-    // Store original r0, and lr_irq in the IRQ stack sp = sp_irq
-    // sp_irq is a simple array declared in arch/arm/setup.c (so address can be ascending)
+	stp		x0, x1, [sp, #OFFSET_X0]
+	stp		x2, x3, [sp, #OFFSET_X2]
+	stp		x4, x5, [sp, #OFFSET_X4]
+	stp		x6, x7, [sp, #OFFSET_X6]
+	stp		x8, x9, [sp, #OFFSET_X8]
+	stp		x10, x11, [sp, #OFFSET_X10]
+	stp		x12, x13, [sp, #OFFSET_X12]
+	stp		x14, x15, [sp, #OFFSET_X14]
+	stp		x16, x17, [sp, #OFFSET_X16]
+	stp		x18, x19, [sp, #OFFSET_X18]
+	stp		x20, x21, [sp, #OFFSET_X20]
+	stp		x22, x23, [sp, #OFFSET_X22]
+	stp		x24, x25, [sp, #OFFSET_X24]
+	stp		x26, x27, [sp, #OFFSET_X26]
+	stp		x28, x29, [sp, #OFFSET_X28]
 
-    str 	r0, [sp]		// original r0
-    str 	lr, [sp, #4]	// lr_irq
+	str		lr, [sp, #OFFSET_LR]
 
-    mrs 	r0, spsr 		// to preserve irq bit
-    str		r0, [sp, #8]	// spsr_irq
+	mrs		x0, spsr_el1
+	str		x0, [sp, #OFFSET_PSTATE]
 
-    mov		r0, sp			// to maintain a reference on sp_irq; r0 will not be affected after mode switch
-
-    // Now switch back to SVC. IRQs are disabled
-    mrs		lr, cpsr
-
-    bic		lr, lr, #PSR_MODE_MASK
-    orr		lr, lr, #PSR_SVC_MODE
-
-    // switch to SVC
-    msr		cpsr, lr
-
-    // --- SVC mode from now on ---
-
-	// At the exception entry, the stack must be 8-byte aligned.
-	// If it is not the case (gcc might not respect the AAPCS convention for optimization purposes),
-	// sp will be adjusted. The original sp is preserved and will be correctly restored at the exit.
-
-	tst		sp, #0x7	// 8-bytes aligned
-	strne	sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE - 4)]	// save sp
-	subne	sp, sp, #4
-	streq	sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]	// save sp
-
-	// Alignment guard
-	tst		sp, #0x7		// 8-bytes aligned
-	bne		__stack_alignment_fault
-
-	sub		sp, sp, #SVC_STACK_FRAME_SIZE
-
-	// Store the lr_svc (before the irq)
-	str		lr, [sp, #OFFSET_LR]	// current lr_svc
-
-    // preserve spsr for future IRQ enabling
-    ldr		lr, [r0, #8]   			// retrieve spsr_irq
-    str		lr, [sp, #OFFSET_PSR]	// location of spsr_svc (hence cpsr right before the interrupt)
-
-	// Check if it is necessary to preserve sp_usr and lr_usr
-	and		lr, lr, #PSR_MODE_MASK
-	cmp		lr, #PSR_USR_MODE
-
-	// Saving user mode registers (sp_usr, lr_usr)
-	addeq	lr, sp, #OFFSET_SP_USR
-	stmeqia	lr, {sp, lr}^
-
-	// Retrieve the lr_irq to set the pc out of this routine
-	ldr 	lr, [r0, #4]			// retrieve lr_irq to set lr_svc
-	sub 	lr, lr, #4				// Adjust the lr since it is automatically set from pc (in advance of 2 instructions due to the pipeline)
-	str 	lr, [sp, #OFFSET_PC]  	// future pc at exit
-
-	ldr 	r0, [r0]			    // original r0
-
-    stmia 	sp, {r0-r12}
-
-	// cpsr is still up-to-date regarding the comparison against CPU mode.
-	ldreq	r0, [sp, #OFFSET_SP_USR]
-	ldreq 	r1, .LCcurrent
-	ldreq 	r1, [r1]
-	streq 	r0, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+	mrs		x22, elr_el1
 
 	// Make sure r0 refers to the base of the stack frame
-	mov		r0, sp
+	mov		x0, sp
 
     bl 		irq_handle
 
-#ifdef CONFIG_IPC_SIGNAL
-	// Is there any pending signals for this process?
+	msr		elr_el1, x22
 
-	check_pending_signal
-#endif /* CONFIG_IPC_SIGNAL */
+	ldr		x0, [sp, #OFFSET_PSTATE]
 
-    ldr 	lr, [sp, #OFFSET_PSR]	// get the saved spsr and adjust the stack pointer
-    msr		spsr, lr
+	msr		spsr_el1, x0
 
-	// Check if it is necessary to restore sp_usr and lr_usr
-	and		lr, lr, #PSR_MODE_MASK
-	cmp		lr, #PSR_USR_MODE
+	ldp		x0, x1, [sp, #OFFSET_X0]
+	ldp		x2, x3, [sp, #OFFSET_X2]
+	ldp		x4, x5, [sp, #OFFSET_X4]
+	ldp		x6, x7, [sp, #OFFSET_X6]
+	ldp		x8, x9, [sp, #OFFSET_X8]
+	ldp		x10, x11, [sp, #OFFSET_X10]
+	ldp		x12, x13, [sp, #OFFSET_X12]
+	ldp		x14, x15, [sp, #OFFSET_X14]
+	ldp		x16, x17, [sp, #OFFSET_X16]
+	ldp		x18, x19, [sp, #OFFSET_X18]
+	ldp		x20, x21, [sp, #OFFSET_X20]
+	ldp		x22, x23, [sp, #OFFSET_X22]
+	ldp		x24, x25, [sp, #OFFSET_X24]
+	ldp		x26, x27, [sp, #OFFSET_X26]
+	ldp		x28, x29, [sp, #OFFSET_X28]
 
-	// Restoring user mode registers (sp_usr, lr_usr)
-	addeq	lr, sp, #OFFSET_SP_USR
-	ldmeqia	lr, {sp, lr}^
+	ldr 	lr, [sp, #OFFSET_LR]
 
-	// Restore registers
-   	ldmia 	sp, {r0-r12}
+	add		sp, sp, #S_FRAME_SIZE
 
-	add		sp, sp, #OFFSET_SP
+	eret
 
-	dsb
-	isb
-
-    // Now, we retrieve the final registers, sp will be adjusted automatically
-    ldmia 	sp, {sp, lr, pc}^
-#endif
 
 #if 0
 .align  5

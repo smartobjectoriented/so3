@@ -183,7 +183,7 @@ void __stop_timer(struct timer *timer) {
 }
 
 void set_timer(struct timer *timer, u64 expires) {
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -213,7 +213,7 @@ void set_timer(struct timer *timer, u64 expires) {
 
 void stop_timer(struct timer *timer) {
 
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -224,7 +224,7 @@ void stop_timer(struct timer *timer) {
 
 void kill_timer(struct timer *timer) {
 
-	uint32_t flags;
+	unsigned long flags;
 
 	BUG_ON(timers.running == timer);
 
@@ -242,7 +242,7 @@ void kill_timer(struct timer *timer) {
  * execute_timer() is called when a timer deadline is reached.
  */
 static void execute_timer(struct timer *t) {
-	uint32_t flags;
+	unsigned long flags;
 	void (*fn)(void *) = t->function;
 	void *data = t->data;
 
@@ -266,7 +266,7 @@ static void timer_softirq_action(void) {
 	struct timer *cur, *t, *start;
 	u64 now;
 	u64 end = STIME_MAX;
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -325,7 +325,7 @@ void dump_timers(void) {
 	struct timer *t;
 	u64 now = NOW();
 	int j;
-	uint32_t flags;
+	unsigned long flags;
 
 	lprintk("Dumping timer queues:\n");
 

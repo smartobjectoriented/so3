@@ -206,7 +206,7 @@ uint32_t heap_size(void) {
 	mem_chunk_t *list = quick_list;
 	mem_chunk_t *chunk = quick_list;
 	uint32_t total_size = 0;
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = spin_lock_irqsave(&heap_lock);
 
@@ -514,7 +514,7 @@ static void *__malloc_log(size_t requested, unsigned int alignment, const char *
 	mem_chunk_t *remaining = NULL; /* new free chunk if size < victim->size */
 	mem_chunk_t tmp_memchunk; /* Used for possible shifting of the structure */
 	void *addr = NULL, *tmp_addr;
-	uint32_t flags;
+	unsigned long flags;
 
 #ifdef DEBUG
 	dump_heap(__func__);
@@ -678,7 +678,7 @@ void *calloc(size_t nmemb, size_t size) {
  */
 void free(void *ptr)
 {
-	uint32_t flags;
+	unsigned long flags;
 	mem_chunk_t *chunk = (mem_chunk_t *)(ptr - sizeof(mem_chunk_t));
 	mem_chunk_t tmp_memchunk;
 

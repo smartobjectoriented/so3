@@ -43,7 +43,7 @@ extern unsigned long _find_next_bit(const unsigned long *p, unsigned long size, 
  */
 static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *p)
 {
-	uint32_t flags;
+	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
 
 	p += bit >> 5;
@@ -55,7 +55,7 @@ static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *
 
 static inline void ____atomic_clear_bit(unsigned int bit, volatile unsigned long *p)
 {
-	uint32_t flags;
+	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
 
 	p += bit >> 5;
@@ -90,7 +90,7 @@ static inline int __test_and_set_bit(int nr, volatile void *addr)
 
 static inline int test_and_set_bit(int nr, volatile void * addr)
 {
-	uint32_t flags;
+	unsigned long flags;
 	int out;
 
 	flags = local_irq_save();
@@ -112,7 +112,7 @@ static inline int __test_and_clear_bit(int nr, volatile void *addr)
 
 static inline int test_and_clear_bit(int nr, volatile void * addr)
 {
-	uint32_t flags;
+	unsigned long flags;
 	int out;
 
 	flags = local_irq_save();

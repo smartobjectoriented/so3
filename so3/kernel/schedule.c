@@ -406,7 +406,6 @@ static tcb_t *next_thread(void) {
  * Main scheduling function.
  */
 void schedule(void) {
-
 	tcb_t *prev, *next;
 	unsigned long flags;
 	static volatile bool __in_scheduling = false;

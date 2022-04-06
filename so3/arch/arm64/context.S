@@ -207,7 +207,11 @@ __save_context:
 	ret
 
 ENTRY(__switch_context)
+
 	mov		x10, #(OFFSET_TCB_CPU_REGS + OFFSET_X19)
+
+	cbz 	x0, load_ctx
+
 	add		x8, x0, x10
 	mov		x9, sp
 
@@ -225,6 +229,8 @@ save_ctx:
 	add		x8, x1, x10
 
 load_ctx:
+
+	add		x8, x1, x10
 
 	ldp		x19, x20, [x8], #16		// restore callee-saved registers
 	ldp		x21, x22, [x8], #16

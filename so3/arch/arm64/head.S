@@ -31,7 +31,7 @@
 .extern clear_bss
 .extern mmu_configure
 .extern __stack_top
-.extern __vectors_start
+.extern __vectors
 
 .section ".head.text","ax"
 
@@ -74,8 +74,13 @@ __start:
 	cmp		x0, x1
 	b.cc	1b
 
+	// Initialize the vector table
+	ldr	x0, =__vectors
+	msr vbar_el1, x0
+
+	// Enable FP/ASIMD
 	mov	x0, #3 << 20
-	msr	cpacr_el1, x0			// Enable FP/ASIMD
+	msr	cpacr_el1, x0
 
     // Up to here, a stack should be initialized
 

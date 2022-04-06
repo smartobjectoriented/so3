@@ -21,8 +21,11 @@
 
 #include <asm/processor.h>
 
+/*
+ * On Aarch64, the field has to be 64-bit aligned apparently.
+ */
 typedef struct {
-    uint32_t lock;
+	__attribute__ ((aligned (8))) volatile uint32_t lock;
 } spinlock_t;
 
 #include <asm/spinlock.h>
