@@ -134,15 +134,15 @@ __write:
 // Called once per thread
 __thread_prologue_kernel:
 
-#if 0
-	// Prepare to jump into C code
-	mov r0, r4 		// tcb->th_fn
-	mov r1, r5 		// tcb->th_arg
 
-	cpsie   i
+	// Prepare to jump into C code
+	mov x0, x19		// tcb->th_fn
+	mov x1, x20		// tcb->th_arg
+
+	enable_irq
 
 	bl	thread_prologue
-#endif
+
 
 // User thread initial entry point
 // Called once per thread
@@ -223,6 +223,7 @@ save_ctx:
 	stp		x25, x26, [x8], #16
 	stp		x27, x28, [x8], #16
 	stp		x29, lr, [x8], #16
+
 	str		x9, [x8]
 
 	// Prepare to retrieve the regs from the stack
@@ -238,6 +239,7 @@ load_ctx:
 	ldp		x25, x26, [x8], #16
 	ldp		x27, x28, [x8], #16
 	ldp		x29, lr, [x8], #16
+
 	ldr		x9, [x8]
 	mov		sp, x9
 
