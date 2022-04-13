@@ -115,6 +115,10 @@ __exec:
 
 // write syscall used by the kernel to print a message in user mode (if exec() fails for example)
 __write:
+	b __write
+	nop
+	nop
+	nop
 
 #if 0
   	stmfd sp!, {r7, r10, r11, r12}
@@ -142,17 +146,30 @@ __thread_prologue_kernel:
 	enable_irq
 
 	bl	thread_prologue
-
+	// Never reached
 
 // User thread initial entry point
 // Called once per thread
-// r4: th_fn, r5: th_arg, r6: user stack
+// x19: th_fn, x20: th_arg, x21: user stack
 __thread_prologue_user:
 
+  	msr elr_el1, x19
+
+	msr sp_el0, x21
+
+	mov	x0, #PSR_MODE_EL0t
+
+	msr spsr_el1, x0
+
+	// Prepare to jump into C code
+	mov x0, x20
+
+	eret
 #if 0
 	// Prepare to jump into C code
 	mov r0, r4 // tcb->th_fn
 	mov r1, r5 // tcb->th_arg
+
 
 #ifdef CONFIG_MMU
 	// Check if the thread must stopped because of ptrace/tracee

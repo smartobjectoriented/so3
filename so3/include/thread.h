@@ -94,7 +94,7 @@ typedef struct tcb tcb_t;
 
 addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
 
-typedef int(*th_fn_t)(void *);
+typedef int *(*th_fn_t)(void *);
 
 void threads_init(void);
 
@@ -102,8 +102,8 @@ int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
-tcb_t *kernel_thread(int *(*start_routine) (void *), const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(int *(*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb);
 
 int *thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);
@@ -123,7 +123,8 @@ char *print_state(struct tcb *tcb);
 
 int *app_thread_main(void *args);
 
-void prepare_cpu_regs(tcb_t *tcb);
+void arch_prepare_cpu_regs(tcb_t *tcb);
+char *arch_get_args_base(void);
 
 #endif /* __ASSEMBLY__ */
 

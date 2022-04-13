@@ -37,10 +37,10 @@ void mmu_setup(void *pgtable)
 {
 	u64 attr, tcr;
 
-	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 | TCR_TBI0 | TCR_A1;
+	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 | TCR_A1;
 
 	/* PTWs cacheable, inner/outer WBWA and inner shareable */
-	tcr |= TCR_EL1_RSVD | TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
+	tcr |= TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
 
 	attr = MAIR_EL1_SET;
 
@@ -55,8 +55,9 @@ void mmu_setup(void *pgtable)
 
 	asm volatile("isb");
 
-	/* enable the mmu */
-	set_sctlr(get_sctlr() | CR_M);
+	/* Enable the mmu and set the sctlr register correctly. */
+
+	set_sctlr(SCTLR_EL1_SET);
 
 	asm volatile("isb");
 

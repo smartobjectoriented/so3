@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
- * 
+ * Copyright (C) 2014-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -16,9 +16,18 @@
  *
  */
 
-#ifndef ASM_THREAD_H
-#define ASM_THREAD_H
+#include <ptrace.h>
+#include <user.h>
+#include <process.h>
 
-void prepare_cpu_regs(tcb_t *tcb);
+/**
+ * Update the CPU registers of the TCB belonging
+ * to the current thread.
+ */
+void update_cpu_regs(void) {
 
-#endif /* ASM_THREAD_H */
+}
+
+void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb) {
+
+}

@@ -241,7 +241,7 @@ void reset_process_stack(pcb_t *pcb) {
 	 * The stack virtual top is under the page of arguments, from the top user space.
 	 * The stack is full descending.
 	 */
-	pcb->stack_top = CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE;
+	pcb->stack_top = (addr_t) arch_get_args_base();
 }
 
 void dump_proc_pages(pcb_t *pcb){
@@ -276,7 +276,7 @@ void add_page_to_proc(pcb_t *pcb, page_t *page) {
  */
 static void allocate_page(pcb_t *pcb, addr_t virt_addr, int nr_pages, bool usr) {
 	int i;
-	uint32_t page;
+	addr_t page;
 
 	/* Perform the mapping of a new physical memory region at the region started at @virt_addr  */
 	for (i = 0; i < nr_pages; i++) {
@@ -289,14 +289,21 @@ static void allocate_page(pcb_t *pcb, addr_t virt_addr, int nr_pages, bool usr) 
 	}
 }
 
-/*
+/**
+ *
  * Create a process from scratch, without fork'd. Typically used by the kernel main
  * at the end of the bootstrap.
+ *
+ *
+ * @param start_routine	Address of the main thread which as to be located in
+ * 			the user space area
+ * @param name		Name of the process
  */
 void create_process(int *(*start_routine)(void *), const char *name)
 {
 	pcb_t *pcb;
 	int i;
+	addr_t start_routine_vaddr;
 
 	local_irq_disable();
 
@@ -310,10 +317,16 @@ void create_process(int *(*start_routine)(void *), const char *name)
 
 	DBG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
-#warning set up argc & argv correctly for the root process...
+	/* First map the code in the user space so that
+	 * the initial code can run normally in user mode.
+	 */
 
-	/* Start main thread */
-	pcb->main_thread = user_thread(start_routine, name, NULL, pcb);
+	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(start_routine), PAGE_SIZE, false);
+
+	start_routine_vaddr = ((addr_t) (start_routine) & (PAGE_SIZE-1)) | USER_SPACE_VADDR;
+
+	/* Start main thread <args> of the thread is not used in this context. */
+	pcb->main_thread = user_thread((th_fn_t) start_routine_vaddr, name, NULL, pcb);
 
 	/* init process? */
 	if (!root_process)
@@ -486,7 +499,8 @@ void post_setup_image(void *args_env) {
 	char *args_base;
 	int argc, i;
 
-	args_base = (char *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE);
+	args_base = arch_get_args_base();
+
 	memcpy(args_base, args_env, PAGE_SIZE);
 
 	free(args_env);
@@ -510,7 +524,6 @@ void post_setup_image(void *args_env) {
 		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
 
 }
-
 
 /*
  * Set up the PCB fields related to the binary image to be loaded.
@@ -795,7 +808,7 @@ int do_fork(void)
 	 */
 	sprintf(newp->name, "%s_child_%d", parent->name, newp->pid);
 
-	newp->main_thread = user_thread(NULL, newp->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), newp);
+	newp->main_thread = user_thread(NULL, newp->name, (void *) arch_get_args_base(), newp);
 
 	/* Copy the kernel stack of the main thread */
 	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - THREAD_STACK_SIZE,

@@ -211,37 +211,4 @@ ENTRY(__asm_invalidate_icache_all)
 	isb	sy
 	ret
 
-/*
- * void __asm_switch_ttbr(ulong new_ttbr)
- *
- * Safely switches to a new page table.
- */
-
-ENTRY(__asm_switch_ttbr)
-
-	mrs	x2, sctlr_el1
-
-
-	/* Unset CR_M | CR_C | CR_I from SCTLR to disable all caches */
-	movn	x1, #(CR_M | CR_C | CR_I)
-	and	x1, x2, x1
-
-	msr	sctlr_el1, x1
-	isb
-
-	/* This call only clobbers x30 (lr) and x9 (unused) */
-	mov	x3, x30
-	bl	__asm_invalidate_tlb_all
-
-	/* From here on we're running safely with caches disabled */
-
-	/* Set TTBR to our first argument */
-	msr	ttbr0_el1, x0
-	isb
-
-	/* Restore original SCTLR and thus enable caches again */
-	msr	sctlr_el1, x2
-	isb
-
-	ret	x3
 

@@ -27,6 +27,7 @@
 #include <memory.h>
 #include <string.h>
 #include <softirq.h>
+#include <thread.h>
 
 #include <asm/processor.h>
 
@@ -268,7 +269,7 @@ void thread_exit(int *exit_status)
 		remove_tcb_from_pcb(current());
 
 #ifdef CONFIG_PROC_ENV
-		do_exit((int) (current()->exit_status));
+		do_exit(0);
 #endif
 
 	} else {
@@ -389,7 +390,7 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  * @pcb: NULL means it is a pure kernel thread, otherwise is is a user thread.
  * @prio: 0 means the default priority, otherwise set to the thread to the corresponding priority
  */
-tcb_t *thread_create(int *(*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
 	unsigned long flags;
@@ -440,7 +441,7 @@ tcb_t *thread_create(int *(*start_routine)(void *), const char *name, void *arg,
 	}
 
 	/* Prepare registers for future restore in switch_context() */
-	prepare_cpu_regs(tcb);
+	arch_prepare_cpu_regs(tcb);
 
 	/* Quite common registers on various architectures */
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
@@ -468,8 +469,17 @@ tcb_t *kernel_thread(int *(*start_routine)(void *), const char *name, void *arg,
 }
 
 /* Should not be called directly. Call create_process() or create_child_thread() instead. */
-/* FIXME: start_routine() should returns void * instead of int? */
-tcb_t *user_thread(int *(*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
+/**
+ * Should not be called directly.
+ * Called by create_process() or create_child_thread() instead.
+ *
+ * @param start_routine	Address ot the thread routine
+ * @param name		Name of the thread
+ * @param arg		Argument of the thread
+ * @param pcb		PCB which the thread belongs to
+ * @return		Address of the corresponding TCB
+ */
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb)
 {
 	return thread_create(start_routine, name, arg, pcb, 0);
 }

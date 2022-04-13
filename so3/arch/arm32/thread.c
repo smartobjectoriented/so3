@@ -18,7 +18,12 @@
 
 #include <thread.h>
 
-void prepare_cpu_regs(tcb_t *tcb) {
+/**
+ * Set the CPU registers with thread related information
+ *
+ * @param tcb
+ */
+void arch prepare_cpu_regs(tcb_t *tcb) {
 
 	tcb->cpu_regs.r4 = (unsigned long) tcb->th_fn;
 	tcb->cpu_regs.r5 = (unsigned long) tcb->th_arg; /* First argument */
@@ -27,4 +32,10 @@ void prepare_cpu_regs(tcb_t *tcb) {
 		tcb->cpu_regs.r6 = get_user_stack_top(tcb->pcb, tcb->pcb_stack_slotID);
 }
 
-
+/**
+ * The page of arguments related to a process is located on top of the stack.
+ * @return	Base address of arguments
+ */
+char *arch_get_args_base(void) {
+	return (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE);
+}

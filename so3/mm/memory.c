@@ -467,6 +467,5 @@ void memory_init(void) {
 
 	set_pgtable(__sys_root_pgtable);
 
-
 #endif /* CONFIG_MMU */
 }

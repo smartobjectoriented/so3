@@ -38,8 +38,6 @@
 /* Transitional page used for temporary mapping */
 #define TRANSITIONAL_MAPPING	0xf0000000
 
-#define IO_MAPPING_BASE		0xe0000000
-
 extern struct list_head io_maplist;
 
 /* Manage the io_maplist. The list is sorted by ascending vaddr. */

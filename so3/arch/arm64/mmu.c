@@ -67,7 +67,7 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 			set_pte_table(l2pte, DCACHE_WRITEALLOC);
 
-			DBG("Allocating a L3 page table at %p in l1pte: %p with contents: %lx\n", l3pgtable, l2pte, *l2pte);
+			DBG("Allocating a L3 page table at %p in l2pte: %p with contents: %lx\n", l3pgtable, l2pte, *l2pte);
 		}
 
 		l3pte = l3pte_offset(l2pte, addr);
@@ -248,8 +248,8 @@ void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t 
 void release_mapping(void *pgtable, addr_t virt_base, addr_t size) {
 
 #if 0
-	uint32_t addr, end, length, next;
-	uint32_t *l1pte;
+	addr_t addr, end, length, next;
+	u64 *l0pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (pgtable == NULL)
@@ -274,8 +274,8 @@ void release_mapping(void *pgtable, addr_t virt_base, addr_t size) {
 }
 
 /*
- * Allocate a new L1 page table. Return NULL if it fails.
- * The page table must be 16-KB aligned.
+ * Allocate a new page table. Return NULL if it fails.
+ * The page table must be 4 KB aligned.
  */
 void *new_root_pgtable(void) {
 	void *pgtable;
@@ -339,6 +339,62 @@ void reset_root_pgtable(void *pgtable, bool remove) {
 /*
  * Initial configuration of system page table
  */
+void dump_pgtable(void *l0pgtable) {
+	u64 i, j, k, l;
+	u64 *l0pte, *l1pte, *l2pte, *l3pte;
+	uint64_t *__l0pgtable = (uint64_t *) l0pgtable;
+
+	lprintk("           ***** Page table dump *****\n");
+
+	for (i = 0; i < TTB_L0_ENTRIES; i++) {
+		l0pte = __l0pgtable + i;
+		if ((i != 0xe0) && *l0pte) {
+
+			lprintk("  - L0 pte@%lx (idx %x) mapping %lx content: %lx\n", __l0pgtable+i, i, i << TTB_I0_SHIFT, *l0pte);
+			BUG_ON(pte_type(l0pte) != PTE_TYPE_TABLE);
+
+			/* Walking through the blocks/table entries */
+			for (j = 0; j < TTB_L1_ENTRIES; j++) {
+				l1pte = ((u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK)) + j;
+				if (*l1pte) {
+					if (pte_type(l1pte) == PTE_TYPE_TABLE) {
+						lprintk("    (TABLE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j,
+								(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
+
+						for (k = 0; k < TTB_L2_ENTRIES; k++) {
+							l2pte = ((u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + k;
+							if (*l2pte) {
+								if (pte_type(l2pte) == PTE_TYPE_TABLE) {
+									lprintk("    (TABLE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n", l2pte, k,
+											(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT), *l2pte);
+
+									for (l = 0; l < TTB_L3_ENTRIES; l++) {
+										l3pte = ((u64 *) __va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l;
+										if (*l3pte)
+											lprintk("      (PAGE) L3 pte@%lx (idx %x) mapping %lx content: %lx\n", l3pte, l,
+													(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT) + (l << TTB_I3_SHIFT), *l3pte);
+									}
+								} else {
+									/* Necessary of BLOCK type */
+									BUG_ON(pte_type(l2pte) != PTE_TYPE_BLOCK);
+									lprintk("      (PAGE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n", l2pte, k,
+											(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT), *l2pte);
+								}
+							}
+						}
+					} else {
+						/* Necessary of BLOCK type */
+						BUG_ON(pte_type(l1pte) != PTE_TYPE_BLOCK);
+
+						lprintk("      (PAGE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j, (i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
+					}
+				}
+			}
+
+		}
+	}
+}
+
 void mmu_configure(addr_t l0pgtable, addr_t fdt_addr) {
 
 	icache_disable();
@@ -413,62 +469,6 @@ void mmu_switch(void *l0pgtable) {
 
 }
 
-void dump_pgtable(void *l0pgtable) {
-	u64 i, j, k, l;
-	u64 *l0pte, *l1pte, *l2pte, *l3pte;
-	uint64_t *__l0pgtable = (uint64_t *) l0pgtable;
-
-	lprintk("           ***** Page table dump *****\n");
-
-	for (i = 0; i < TTB_L0_ENTRIES; i++) {
-		l0pte = __l0pgtable + i;
-		if ((i != 0xe0) && *l0pte) {
-
-			lprintk("  - L0 pte@%lx (idx %x) mapping %lx content: %lx\n", __l0pgtable+i, i, i << TTB_I0_SHIFT, *l0pte);
-			BUG_ON(pte_type(l0pte) != PTE_TYPE_TABLE);
-
-			/* Walking through the blocks/table entries */
-			for (j = 0; j < TTB_L1_ENTRIES; j++) {
-				l1pte = ((u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK)) + j;
-				if (*l1pte) {
-					if (pte_type(l1pte) == PTE_TYPE_TABLE) {
-						lprintk("    (TABLE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j,
-								(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
-
-						for (k = 0; k < TTB_L2_ENTRIES; k++) {
-							l2pte = ((u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + k;
-							if (*l2pte) {
-								if (pte_type(l2pte) == PTE_TYPE_TABLE) {
-									lprintk("    (TABLE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n", l2pte, k,
-											(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT), *l2pte);
-
-									for (l = 0; l < TTB_L3_ENTRIES; l++) {
-										l3pte = ((u64 *) __va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l;
-										if (*l3pte)
-											lprintk("      (PAGE) L3 pte@%lx (idx %x) mapping %lx content: %lx\n", l3pte, l,
-													(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT) + (l << TTB_I3_SHIFT), *l3pte);
-									}
-								} else {
-									/* Necessary of BLOCK type */
-									BUG_ON(pte_type(l2pte) != PTE_TYPE_BLOCK);
-									lprintk("      (PAGE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n", l2pte, k,
-											(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) + (k << TTB_I2_SHIFT), *l2pte);
-								}
-							}
-						}
-					} else {
-						/* Necessary of BLOCK type */
-						BUG_ON(pte_type(l1pte) != PTE_TYPE_BLOCK);
-
-						lprintk("      (PAGE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j, (i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
-					}
-				}
-			}
-
-		}
-	}
-}
-
 void duplicate_user_space(struct pcb *from, struct pcb *to) {
 
 
@@ -477,15 +477,37 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 }
 
 /* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
-void pgtable_copy_kernel_area(uint32_t *l1pgtable) {
-#if 0
-	int i1;
+void pgtable_copy_kernel_area(void *l0pgtable) {
+	int i, j;
+	u64 *__l0pgtable = (u64 *) l0pgtable;
+	u64 *pte_origin;
+	u64 *l1pgtable_origin, *l1pgtable;
 
-	for (i1 = l1pte_index(L_PAGE_OFFSET); i1 < TTB_L1_ENTRIES; i1++)
-		l1pgtable[i1] = __sys_l1pgtable[i1];
+	for (i = l0pte_index(CONFIG_KERNEL_VIRT_ADDR); i < TTB_L0_ENTRIES; i++) {
+		pte_origin = __sys_root_pgtable + i;
 
-	mmu_page_table_flush((uint32_t) l1pgtable, (uint32_t) (l1pgtable + TTB_L1_ENTRIES));
-#endif
+		if (*pte_origin) {
+			l1pgtable_origin = (u64 *) __va(*pte_origin & TTB_L0_TABLE_ADDR_MASK);
+
+			l1pgtable = memalign(TTB_L1_SIZE, PAGE_SIZE);
+			if (!l1pgtable) {
+				printk("%s: heap overflow...\n", __func__);
+				kernel_panic();
+			}
+
+			/* Empty the page table */
+			memset(l1pgtable, 0, TTB_L1_SIZE);
+
+			/* Copy all entries of the L1 pgtable */
+			for (j = 0; j < TTB_L1_ENTRIES; j++)
+				l1pgtable[j] = l1pgtable_origin[j];
+
+			mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+		}
+		__l0pgtable[i] = (*pte_origin & ~TTB_L0_TABLE_ADDR_MASK) | (__pa(l1pgtable) & TTB_L0_TABLE_ADDR_MASK);
+	}
+
+	mmu_page_table_flush((addr_t) __l0pgtable, (addr_t) (__l0pgtable + TTB_L0_ENTRIES));
 }
 
 #if 0
@@ -500,6 +522,19 @@ void dump_current_pgtable(void) {
  * The function reads the page table(s).
  */
 addr_t virt_to_phys_pt(addr_t vaddr) {
+	addr_t *l0pte, *l1pte, *l2pte, *l3pte;
+	uint32_t offset;
+
+	offset = vaddr & ~PAGE_MASK;
+
+	l0pte = l0pte_offset(current_pgtable(), vaddr);
+	BUG_ON(!*l0pte);
+
+	l1pte = l1pte_offset(l0pte, vaddr);
+
+
+	// To be completed...
+
 #if 0
 	addr_t *l1pte, *l2pte;
 	uint32_t offset;

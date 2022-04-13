@@ -25,6 +25,16 @@
 
 #include <sizes.h>
 
+#define USER_SPACE_VADDR		UL(0x1000)
+
+#define IO_MAPPING_BASE			UL(0xffff900000000000)
+
+/* The user space can be up to bits[46:0]. Use of bit 47 in the virtual address
+ * in EL0 leads to a translation fault.
+ */
+#define USER_STACK_TOP_VADDR		UL(0x0000100000000000)
+//#define USER_STACK_TOP_VADDR		UL(0x0001000000000000)
+
 #define	SZ_256G		(256UL * SZ_1G)
 
 /* PAGE_SHIFT determines the page size */
@@ -94,16 +104,6 @@
 
 /*
  * Memory types available.
- *
- * IMPORTANT: MT_NORMAL must be index 0 since vm_get_page_prot() may 'or' in
- *	      the MT_NORMAL_TAGGED memory type for PROT_MTE mappings. Note
- *	      that protection_map[] only contains MT_NORMAL attributes.
- */
-
-/* WARNING !! The following definitions related to MAIR must absolutely be identical
- * to the ones in the Linux domain (asm/memory.h, mm/proc.S) because Linux will
- * configure the MAIR register which should be done with MMU off; if values are identical,
- * the MMU can remain enabled.
  */
 #define MT_NORMAL		0
 #define MT_NORMAL_TAGGED	1
@@ -164,13 +164,13 @@
 #define PTE_BLOCK_INNER_SHARE	(3UL << 8)
 #define PTE_BLOCK_AF		(1UL << 10)
 #define PTE_BLOCK_NG		(1UL << 11)
+#define PTE_BLOCK_DBM		(1UL << 51)
 #define PTE_BLOCK_PXN		(1UL << 53)
 #define PTE_BLOCK_UXN		(1UL << 54)
 
 /*
  * TCR flags.
  */
-#define TCR_EL1_RSVD		(1UL << 31)
 
 #define TCR_T0SZ_OFFSET		0
 #define TCR_T1SZ_OFFSET		16
@@ -343,14 +343,6 @@ enum dcache_option {
 	DCACHE_WRITEALLOC = MT_NORMAL,
 };
 
-static inline void set_pte_block(u64 *pte, enum dcache_option option)
-{
-	u64 attrs = PTE_BLOCK_MEMTYPE(option);
-
-	*pte |= PTE_TYPE_BLOCK | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS;
-	*pte |= attrs;
-}
-
 static inline void set_pte_table(u64 *pte, enum dcache_option option)
 {
 	u64 attrs = PTE_TABLE_NS;
@@ -359,11 +351,21 @@ static inline void set_pte_table(u64 *pte, enum dcache_option option)
 	*pte |= attrs;
 }
 
+static inline void set_pte_block(u64 *pte, enum dcache_option option)
+{
+	u64 attrs = PTE_BLOCK_MEMTYPE(option);
+
+	/* Set the PTE with R/W permissions for both kernel and user mode */
+	*pte |= PTE_TYPE_BLOCK | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS;
+	*pte |= attrs;
+}
+
 static inline void set_pte_page(u64 *pte, enum dcache_option option)
 {
 	u64 attrs = PTE_BLOCK_MEMTYPE(option);
 
-	*pte |= PTE_TYPE_PAGE | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS;
+	/* Set the PTE with R/W permissions for both kernel and user mode */
+	*pte |= PTE_TYPE_PAGE | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS | PTE_BLOCK_AP1;
 	*pte |= attrs;
 }
 
@@ -403,7 +405,7 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
-extern addr_t __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
+extern u64 __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
 
 void *current_pgtable(void);
 
@@ -424,7 +426,7 @@ void reset_root_pgtable(void *pgtable, bool remove);
 
 addr_t virt_to_phys_pt(addr_t vaddr);
 
-void pgtable_copy_kernel_area(uint32_t *l1pgtable);
+void pgtable_copy_kernel_area(void *l1pgtable);
 
 void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
 void release_mapping(void *pgtable, addr_t virt_base, addr_t size);

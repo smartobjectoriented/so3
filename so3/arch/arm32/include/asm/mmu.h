@@ -19,6 +19,9 @@
 #ifndef MMU_H
 #define MMU_H
 
+/* Memory space all I/O mapped registers and additional mappings */
+#define IO_MAPPING_BASE		0xe0000000
+
 #define TTB_L1_SYS_OFFSET	0x4000
 
 /* Define the number of entries in each page table */

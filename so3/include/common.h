@@ -30,7 +30,7 @@ extern uint32_t __end;
 #undef DBG
 #define DBG(fmt, ...) \
     do { \
-		lprintk("%s:%i > "fmt, __func__, __LINE__, ##__VA_ARGS__); \
+	lprintk("%s:%i > "fmt, __func__, __LINE__, ##__VA_ARGS__); \
     } while(0)
 #else
 #define DBG(fmt, ...)

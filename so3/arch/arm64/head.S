@@ -84,6 +84,9 @@ __start:
 
     // Up to here, a stack should be initialized
 
+	// Some CPU setup
+	msr pmuserenr_el0, xzr
+
 	// Set up the MMU
     b		mmu_setup
 

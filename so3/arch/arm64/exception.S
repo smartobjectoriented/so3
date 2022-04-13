@@ -107,16 +107,18 @@ ENTRY(__vectors)
 
 	// Current EL with SP0 / SError
 	.align 7
-	b 	not_used
+	b	not_used
 
 	// Current EL with SPx / Synchronous
 	.align 7
+	mrs	x0, esr_el1
+
 	b	syscall_interrupt
 
 	// Current EL with SPx / IRQ
 	.align 7
 
-	b 	irq_handler
+	b 	el1_irq_handler
 
 	// Current EL with SPx / FIQ
 	.align 7
@@ -126,6 +128,8 @@ ENTRY(__vectors)
 	.align 7
 
 	mov	x0, lr
+	mrs	x1, esr_el1
+
 	b	__sync_serror
 
 	// Lower EL using AArch64 / Synchronous
@@ -133,11 +137,14 @@ ENTRY(__vectors)
 
 	mov	x0, lr
 	mov x1, sp
+	mrs x2, esr_el1
+
 	b	__sync_el2_fault
 
 	// Lower EL using AArch64 / IRQ
 	.align 7
-	b	not_used
+
+	b 	el0_irq_handler
 
 	// Lower EL using AArch64 / FIQ
 	.align 7
@@ -168,6 +175,48 @@ ENTRY(__vectors)
 .align  5
 not_used:
     b not_used
+
+.macro irq_entry
+	sub		sp, sp, #S_FRAME_SIZE
+
+	stp		x0, x1, [sp, #OFFSET_X0]
+	stp		x2, x3, [sp, #OFFSET_X2]
+	stp		x4, x5, [sp, #OFFSET_X4]
+	stp		x6, x7, [sp, #OFFSET_X6]
+	stp		x8, x9, [sp, #OFFSET_X8]
+	stp		x10, x11, [sp, #OFFSET_X10]
+	stp		x12, x13, [sp, #OFFSET_X12]
+	stp		x14, x15, [sp, #OFFSET_X14]
+	stp		x16, x17, [sp, #OFFSET_X16]
+	stp		x18, x19, [sp, #OFFSET_X18]
+	stp		x20, x21, [sp, #OFFSET_X20]
+	stp		x22, x23, [sp, #OFFSET_X22]
+	stp		x24, x25, [sp, #OFFSET_X24]
+	stp		x26, x27, [sp, #OFFSET_X26]
+	stp		x28, x29, [sp, #OFFSET_X28]
+
+.endm
+
+.macro irq_exit
+	ldp		x0, x1, [sp, #OFFSET_X0]
+	ldp		x2, x3, [sp, #OFFSET_X2]
+	ldp		x4, x5, [sp, #OFFSET_X4]
+	ldp		x6, x7, [sp, #OFFSET_X6]
+	ldp		x8, x9, [sp, #OFFSET_X8]
+	ldp		x10, x11, [sp, #OFFSET_X10]
+	ldp		x12, x13, [sp, #OFFSET_X12]
+	ldp		x14, x15, [sp, #OFFSET_X14]
+	ldp		x16, x17, [sp, #OFFSET_X16]
+	ldp		x18, x19, [sp, #OFFSET_X18]
+	ldp		x20, x21, [sp, #OFFSET_X20]
+	ldp		x22, x23, [sp, #OFFSET_X22]
+	ldp		x24, x25, [sp, #OFFSET_X24]
+	ldp		x26, x27, [sp, #OFFSET_X26]
+	ldp		x28, x29, [sp, #OFFSET_X28]
+
+	add		sp, sp, #S_FRAME_SIZE
+
+.endm
 
 
 #if 0
@@ -242,6 +291,7 @@ __prepare_sig_handler:
 .align  5
 syscall_interrupt:
 
+	mrs	x0, esr_el1
 loop:
 	 b loop
 
@@ -386,63 +436,56 @@ not_used:
 #endif
 
 .align  5
-irq_handler:
+el0_irq_handler:
 
-	sub		sp, sp, #S_FRAME_SIZE
+	irq_entry
 
-	stp		x0, x1, [sp, #OFFSET_X0]
-	stp		x2, x3, [sp, #OFFSET_X2]
-	stp		x4, x5, [sp, #OFFSET_X4]
-	stp		x6, x7, [sp, #OFFSET_X6]
-	stp		x8, x9, [sp, #OFFSET_X8]
-	stp		x10, x11, [sp, #OFFSET_X10]
-	stp		x12, x13, [sp, #OFFSET_X12]
-	stp		x14, x15, [sp, #OFFSET_X14]
-	stp		x16, x17, [sp, #OFFSET_X16]
-	stp		x18, x19, [sp, #OFFSET_X18]
-	stp		x20, x21, [sp, #OFFSET_X20]
-	stp		x22, x23, [sp, #OFFSET_X22]
-	stp		x24, x25, [sp, #OFFSET_X24]
-	stp		x26, x27, [sp, #OFFSET_X26]
-	stp		x28, x29, [sp, #OFFSET_X28]
+	mrs		x0, elr_el1
+	str		x0, [sp, #OFFSET_LR]
 
-	str		lr, [sp, #OFFSET_LR]
-
-	mrs		x0, spsr_el1
-	str		x0, [sp, #OFFSET_PSTATE]
-
-	mrs		x22, elr_el1
+	mrs		x0, sp_el0
+	str		x0, [sp, #OFFSET_SP]
 
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
     bl 		irq_handle
 
-	msr		elr_el1, x22
+	ldr		x0, [sp, #OFFSET_LR]
+	msr		elr_el1, x0
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
-
 	msr		spsr_el1, x0
 
-	ldp		x0, x1, [sp, #OFFSET_X0]
-	ldp		x2, x3, [sp, #OFFSET_X2]
-	ldp		x4, x5, [sp, #OFFSET_X4]
-	ldp		x6, x7, [sp, #OFFSET_X6]
-	ldp		x8, x9, [sp, #OFFSET_X8]
-	ldp		x10, x11, [sp, #OFFSET_X10]
-	ldp		x12, x13, [sp, #OFFSET_X12]
-	ldp		x14, x15, [sp, #OFFSET_X14]
-	ldp		x16, x17, [sp, #OFFSET_X16]
-	ldp		x18, x19, [sp, #OFFSET_X18]
-	ldp		x20, x21, [sp, #OFFSET_X20]
-	ldp		x22, x23, [sp, #OFFSET_X22]
-	ldp		x24, x25, [sp, #OFFSET_X24]
-	ldp		x26, x27, [sp, #OFFSET_X26]
-	ldp		x28, x29, [sp, #OFFSET_X28]
+	ldr 	x0, [sp, #OFFSET_SP]
+	msr		sp_el0, x0
+
+	irq_exit
+
+	eret
+
+
+.align  5
+el1_irq_handler:
+
+	irq_entry
+
+	str		lr, [sp, #OFFSET_LR]
+
+	mrs		x0, spsr_el1
+	str		x0, [sp, #OFFSET_PSTATE]
+
+	// Make sure r0 refers to the base of the stack frame
+	mov		x0, sp
+
+    bl 		irq_handle
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
 
 	ldr 	lr, [sp, #OFFSET_LR]
 
-	add		sp, sp, #S_FRAME_SIZE
+  	irq_exit
 
 	eret
 

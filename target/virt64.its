@@ -62,7 +62,7 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-            /* ramdisk = "ramdisk"; */
+                        ramdisk = "ramdisk"; 
 		};
                 
                 so3_mmc {
