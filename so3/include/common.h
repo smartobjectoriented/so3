@@ -24,7 +24,7 @@
 
 #define unlikely(x)   __builtin_expect((x),0)
 
-extern uint32_t __end;
+extern addr_t __end[];
 
 #ifdef DEBUG
 #undef DBG

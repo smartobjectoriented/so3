@@ -43,6 +43,18 @@ SECTIONS
         *(.text*) 
     }
 
+	. = ALIGN(4096);
+	
+	.root_proc_prologue :
+	{
+		__root_proc_start = .;
+		
+		*(.root_proc.text)
+		
+		__root_proc_end = .;
+		
+	}
+	
     . = ALIGN(4096);
     .data  : 
     { 

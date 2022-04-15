@@ -32,7 +32,11 @@
  *    off:          FFF
  */
 
-/* to activate the MMU we need to set up virtual memory */
+/**
+ * Activate the MMU and setup the CPU with the right attributes.
+ *
+ * @param pgtable	Physical address of the main L0 page table
+ */
 void mmu_setup(void *pgtable)
 {
 	u64 attr, tcr;
@@ -46,7 +50,12 @@ void mmu_setup(void *pgtable)
 
 	asm volatile("dsb sy");
 
+	/* We need ttbr0 for mapping the devices which physical addresses
+	 * are in the user space range.
+	 */
 	asm volatile("msr ttbr0_el1, %0" : : "r" (pgtable) : "memory");
+
+	/* For kernel mapping */
 	asm volatile("msr ttbr1_el1, %0" : : "r" (pgtable) : "memory");
 
 	asm volatile("msr tcr_el1, %0" : : "r" (tcr) : "memory");

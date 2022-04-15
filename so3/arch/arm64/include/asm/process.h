@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2022 Daniel Rossier <daniel.rossier//heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,42 +16,12 @@
  *
  */
 
-#include <string.h>
-#include <common.h>
-#include <stdarg.h>
-#include <process.h>
-#include <vfs.h>
+#ifndef ASM_PROCESS_H
+#define ASM_PROCESS_H
 
-#include <device/serial.h>
+extern int *__root_proc(void *);
 
-/*
- * Standard version of printk to be used.
- */
-void printk(const char *fmt, ...)
-{
-	static char   buf[1024];
+extern addr_t __root_proc_start[], __root_proc_end[];
 
-	va_list       args;
-	char         *p, *q;
-
-	va_start(args, fmt);
-	(void)vsnprintf(buf, sizeof(buf), fmt, args);
-	va_end(args);
-
-	p = buf;
-
-	while ((q = strchr(p, '\n')) != NULL)
-	{
-		*q = '\0';
-
-		serial_write(p, strlen(p)+1);
-		serial_write("\n", 2);
-
-		p = q + 1;
-	}
-
-	if (*p != '\0')
-		serial_write(p, strlen(p)+1);
-
-}
+#endif /* ASM_PROCESS_H */
 

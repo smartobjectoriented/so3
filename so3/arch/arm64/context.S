@@ -20,11 +20,11 @@
 
 #include <generated/asm-offsets.h>
 
+#include <syscall.h>
+#include <vfs.h>
+
 #include <asm/processor.h>
 #include <asm/mmu.h>
-
-#define SYSCALL_EXEC_NR		2
-#define SYSCALL_WRITE_NR	5
 
 .global __switch_context
 .global __thread_prologue_kernel
@@ -40,6 +40,7 @@
 .global __exec
 .global __write
 .global __save_context
+.global __root_proc
 
 .global __enable_vfp
 
@@ -82,16 +83,14 @@ __get_syscall_stack_arg:
 
 // Get the additional arguments linked to the syscall.
 // The ABI convention is described in crt0.S of the libc.
-// r7 contains the syscall number
-// r10 contains the address of the errno variable
+// x8 contains the syscall number
+// x10 contains the address of the errno variable
+
 __get_syscall_args_ext:
 
-#if 0
-	str		r7, [r0]
-	str		r10, [r1]
+	str		x8, [x0]
+	str		x10, [x1]
 
-	mov 	pc, lr
-#endif
 	ret
 
 // exec syscall used by the kernel to run the initial binary image (shell)
@@ -113,31 +112,10 @@ __exec:
 #endif
 	ret
 
-// write syscall used by the kernel to print a message in user mode (if exec() fails for example)
-__write:
-	b __write
-	nop
-	nop
-	nop
-
-#if 0
-  	stmfd sp!, {r7, r10, r11, r12}
-  	mov	r7, #SYSCALL_WRITE_NR
-
-	mov r10, #0  	// We do not use errno
-
-  	swi 0
-
-  	ldmfd sp!, {r7, r10, r11, r12}
-
-  	mov	pc, lr
-#endif
-	ret
-
 // Kernel thread initial entry point
 // Called once per thread
-__thread_prologue_kernel:
 
+__thread_prologue_kernel:
 
 	// Prepare to jump into C code
 	mov x0, x19		// tcb->th_fn
@@ -151,6 +129,7 @@ __thread_prologue_kernel:
 // User thread initial entry point
 // Called once per thread
 // x19: th_fn, x20: th_arg, x21: user stack
+
 __thread_prologue_user:
 
   	msr elr_el1, x19
@@ -163,6 +142,12 @@ __thread_prologue_user:
 
 	// Prepare to jump into C code
 	mov x0, x20
+
+#if 0
+	at s1e0r, x19
+ 	isb
+ 	mrs x0, par_el1
+#endif
 
 	eret
 #if 0
@@ -270,8 +255,8 @@ ENTRY(__mmu_switch)
 	dsb   sy                     /* Ensure the flushes happen before continuing */
     isb                          /* Ensure synchronization with previous changes to text */
 
+	// Only the user space range is concerned with a MMU context switch
 	msr	   TTBR0_EL1, x0
-    msr    TTBR1_EL1, x0
 
     isb
 
@@ -289,3 +274,62 @@ ENTRY(cpu_do_idle)
 
 .LCcurrent:
 	.quad current_thread
+
+// This section contains all data and code which will be
+// mapped in the user space as initial process to be executed.
+
+.section ".root_proc.text","ax"
+
+	b	__root_proc
+
+.LC_welcome:
+	.string "SO3: starting the initial process (shell) ...\n\n\n"
+	.equ welcome_len, . - .LC_welcome
+
+.LC_exec:
+	.string "sh.elf"
+
+.LCnoshell:
+	.string "so3: No init proc(shell) found ...\n"
+	.equ noshell_len, . - .LCnoshell
+
+
+.align 2
+
+// This is the initial code which runs in user mode
+// to start the first process image
+
+ENTRY(__root_proc)
+
+	// write(stdout, buf, len)
+
+	mov	x0, #STDOUT
+	adr x1, .LC_welcome
+	mov x2, welcome_len
+	mov x8, #SYSCALL_WRITE
+
+	// Invoke the syscall - kernel side
+	svc	0
+
+	// exec("sh.elf")
+
+	adr	x0, .LC_exec
+	mov	x8, #SYSCALL_EXECVE
+
+	svc 0
+
+
+#if 0
+	/* Start the first process */
+	__exec("sh.elf");
+	__arch_user_exec(...)
+
+	/* We normally never runs here, if the exec() succeeds... */
+	__arch_user_write(..)
+	printk("so3: No init proc (shell) found ...\n");
+
+	__arch_user_kernel_panic();
+
+	kernel_panic();
+#endif
+

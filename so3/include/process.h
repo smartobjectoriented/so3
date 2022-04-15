@@ -132,7 +132,7 @@ void free_user_stack_slot(pcb_t *pcb, int slotID);
 
 void add_page_to_proc(pcb_t *pcb, page_t *page);
 
-void create_process(int *(*start_routine) (void *), const char *name);
+void create_root_process(void);
 
 uint32_t do_getpid(void);
 

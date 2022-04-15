@@ -20,12 +20,6 @@
 #ifndef VFS_H
 #define VFS_H
 
-#include <types.h>
-#include <stat.h>
-#include <dirent.h>
-
-#include <device/device.h>
-
 /* File access mode flags */
 #define O_SEARCH  O_PATH
 #define O_EXEC    O_PATH
@@ -98,6 +92,14 @@
 #define DT_REG		8	/* Regular file */
 #define DT_LNK		10	/* Symbolic link */
 #define DT_SOCK		12	/* Socket device */
+
+#ifndef __ASSEMBLY__
+
+#include <types.h>
+#include <stat.h>
+#include <dirent.h>
+
+#include <device/device.h>
 
 struct file_operations {
 	int (*open)(int fd, const char *path);
@@ -173,5 +175,7 @@ uint32_t vfs_get_operating_mode(int fd);
 void vfs_set_access_mode(int gfd, uint32_t flags_access_mode);
 int vfs_set_open_mode(int gfd, uint32_t flags_open_mode);
 int vfs_set_operating_mode(int gfd, uint32_t flags_operating_mode);
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* VFS_H */

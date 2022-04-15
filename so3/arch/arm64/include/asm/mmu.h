@@ -29,11 +29,11 @@
 
 #define IO_MAPPING_BASE			UL(0xffff900000000000)
 
-/* The user space can be up to bits[46:0]. Use of bit 47 in the virtual address
- * in EL0 leads to a translation fault.
+/* The user space can be up to bits [47:0] and uses ttbr0_el1
+ * as main L0 page table.
  */
-#define USER_STACK_TOP_VADDR		UL(0x0000100000000000)
-//#define USER_STACK_TOP_VADDR		UL(0x0001000000000000)
+
+#define USER_STACK_TOP_VADDR		UL(0x0001000000000000)
 
 #define	SZ_256G		(256UL * SZ_1G)
 
@@ -355,7 +355,12 @@ static inline void set_pte_block(u64 *pte, enum dcache_option option)
 {
 	u64 attrs = PTE_BLOCK_MEMTYPE(option);
 
-	/* Set the PTE with R/W permissions for both kernel and user mode */
+	/* Permissions of R/W/Executable will be set in create_mapping() function
+	 * according to the VA. The combination of UXN/PXN/AP[2:1]/SCTLR_ELx.WXN
+	 * determines the level of access permission. It is not possible
+	 * to have R/W/Exec at EL0/EL1 at the same time.
+	 */
+
 	*pte |= PTE_TYPE_BLOCK | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS;
 	*pte |= attrs;
 }
@@ -364,8 +369,13 @@ static inline void set_pte_page(u64 *pte, enum dcache_option option)
 {
 	u64 attrs = PTE_BLOCK_MEMTYPE(option);
 
-	/* Set the PTE with R/W permissions for both kernel and user mode */
-	*pte |= PTE_TYPE_PAGE | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS | PTE_BLOCK_AP1;
+	/* Permissions of R/W/Executable will be set in create_mapping() function
+	 * according to the VA. The combination of UXN/PXN/AP[2:1]/SCTLR_ELx.WXN
+	 * determines the level of access permission. It is not possible
+	 * to have R/W/Exec at EL0/EL1 at the same time.
+	 */
+
+	*pte |= PTE_TYPE_PAGE | PTE_BLOCK_AF | PTE_BLOCK_INNER_SHARE | PTE_BLOCK_NS;
 	*pte |= attrs;
 }
 
@@ -405,7 +415,7 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
-extern u64 __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
+extern addr_t __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[];
 
 void *current_pgtable(void);
 

@@ -76,6 +76,10 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 		set_pte_page(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
+		/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
+		if (addr < CONFIG_KERNEL_VIRT_ADDR)
+			*l3pte |= PTE_BLOCK_AP1;
+
 		DBG("Allocating a 4 KB page at l2pte: %p content: %lx\n", l3pte, *l3pte);
 
 		flush_pte_entry(addr, l3pte);
@@ -130,6 +134,10 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			*l2pte = phys & TTB_L2_BLOCK_ADDR_MASK;
 
 			set_pte_block(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+
+			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
+			if (addr < CONFIG_KERNEL_VIRT_ADDR)
+				*l2pte |= PTE_BLOCK_AP1;
 
 			DBG("Allocating a 2 MB block at l2pte: %p content: %lx\n", l2pte, *l2pte);
 
@@ -186,6 +194,10 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			*l1pte = phys & TTB_L1_BLOCK_ADDR_MASK;
 
 			set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+
+			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
+			if (addr < CONFIG_KERNEL_VIRT_ADDR)
+				*l1pte |= PTE_BLOCK_AP1;
 
 			DBG("Allocating a 1 GB block at l1pte: %p content: %lx\n", l1pte, *l1pte);
 
@@ -460,6 +472,7 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
  * is not necessary anymore.
  */
 void mmu_switch(void *l0pgtable) {
+
 	flush_dcache_all();
 
 	__mmu_switch((void *) __pa((addr_t) l0pgtable));
@@ -470,16 +483,9 @@ void mmu_switch(void *l0pgtable) {
 }
 
 void duplicate_user_space(struct pcb *from, struct pcb *to) {
-
-
-
-
-}
-
-/* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
-void pgtable_copy_kernel_area(void *l0pgtable) {
+#if 0
 	int i, j;
-	u64 *__l0pgtable = (u64 *) l0pgtable;
+	u64 *l0pgtable = (u64 *) from;
 	u64 *pte_origin;
 	u64 *l1pgtable_origin, *l1pgtable;
 
@@ -503,11 +509,19 @@ void pgtable_copy_kernel_area(void *l0pgtable) {
 				l1pgtable[j] = l1pgtable_origin[j];
 
 			mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+
+			__l0pgtable[i] = (*pte_origin & ~TTB_L0_TABLE_ADDR_MASK) | (__pa(l1pgtable) & TTB_L0_TABLE_ADDR_MASK);
 		}
-		__l0pgtable[i] = (*pte_origin & ~TTB_L0_TABLE_ADDR_MASK) | (__pa(l1pgtable) & TTB_L0_TABLE_ADDR_MASK);
 	}
 
 	mmu_page_table_flush((addr_t) __l0pgtable, (addr_t) (__l0pgtable + TTB_L0_ENTRIES));
+#endif
+
+}
+
+/* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
+void pgtable_copy_kernel_area(void *l0pgtable) {
+	/* Nothing to do since we are using ttbr0 for kernel and ttbr1 for user space */
 }
 
 #if 0

@@ -26,7 +26,7 @@
 
 .extern current_thread
 .extern irq_handle
-.extern syscall_handle
+.extern trap_handle
 
 .extern dumpstack
 
@@ -111,9 +111,10 @@ ENTRY(__vectors)
 
 	// Current EL with SPx / Synchronous
 	.align 7
+
 	mrs	x0, esr_el1
 
-	b	syscall_interrupt
+	b	not_used
 
 	// Current EL with SPx / IRQ
 	.align 7
@@ -135,11 +136,7 @@ ENTRY(__vectors)
 	// Lower EL using AArch64 / Synchronous
 	.align 7
 
-	mov	x0, lr
-	mov x1, sp
-	mrs x2, esr_el1
-
-	b	__sync_el2_fault
+	b	el0_sync_handler
 
 	// Lower EL using AArch64 / IRQ
 	.align 7
@@ -176,7 +173,7 @@ ENTRY(__vectors)
 not_used:
     b not_used
 
-.macro irq_entry
+.macro kernel_entry
 	sub		sp, sp, #S_FRAME_SIZE
 
 	stp		x0, x1, [sp, #OFFSET_X0]
@@ -197,7 +194,7 @@ not_used:
 
 .endm
 
-.macro irq_exit
+.macro kernel_exit
 	ldp		x0, x1, [sp, #OFFSET_X0]
 	ldp		x2, x3, [sp, #OFFSET_X2]
 	ldp		x4, x5, [sp, #OFFSET_X4]
@@ -291,9 +288,6 @@ __prepare_sig_handler:
 .align  5
 syscall_interrupt:
 
-	mrs	x0, esr_el1
-loop:
-	 b loop
 
 #if 0
 
@@ -395,6 +389,33 @@ __ret_from_fork:
 	ldmia 	sp, {sp, lr, pc}^
 #endif
 
+el0_sync_handler:
+
+	kernel_entry
+
+	mrs		x0, elr_el1
+	str		x0, [sp, #OFFSET_LR]
+
+	mrs		x0, sp_el0
+	str		x0, [sp, #OFFSET_SP]
+
+	// Make sure r0 refers to the base of the stack frame
+	mov		x0, sp
+
+    bl 		trap_handle
+
+	ldr		x0, [sp, #OFFSET_LR]
+	msr		elr_el1, x0
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
+
+	ldr 	x0, [sp, #OFFSET_SP]
+	msr		sp_el0, x0
+
+	kernel_exit
+
+	eret
 
 // Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
@@ -438,7 +459,7 @@ not_used:
 .align  5
 el0_irq_handler:
 
-	irq_entry
+	kernel_entry
 
 	mrs		x0, elr_el1
 	str		x0, [sp, #OFFSET_LR]
@@ -460,7 +481,7 @@ el0_irq_handler:
 	ldr 	x0, [sp, #OFFSET_SP]
 	msr		sp_el0, x0
 
-	irq_exit
+	kernel_exit
 
 	eret
 
@@ -468,7 +489,7 @@ el0_irq_handler:
 .align  5
 el1_irq_handler:
 
-	irq_entry
+	kernel_entry
 
 	str		lr, [sp, #OFFSET_LR]
 
@@ -485,7 +506,7 @@ el1_irq_handler:
 
 	ldr 	lr, [sp, #OFFSET_LR]
 
-  	irq_exit
+  	kernel_exit
 
 	eret
 

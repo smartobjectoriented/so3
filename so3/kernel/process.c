@@ -42,6 +42,7 @@
 #include <asm/cacheflush.h>
 #include <asm/mmu.h>
 #include <asm/processor.h>
+#include <asm/process.h>
 
 static char *proc_state_strings[5] = {
 	[PROC_STATE_NEW]	= "NEW",
@@ -299,11 +300,10 @@ static void allocate_page(pcb_t *pcb, addr_t virt_addr, int nr_pages, bool usr) 
  * 			the user space area
  * @param name		Name of the process
  */
-void create_process(int *(*start_routine)(void *), const char *name)
+void create_root_process(void)
 {
 	pcb_t *pcb;
 	int i;
-	addr_t start_routine_vaddr;
 
 	local_irq_disable();
 
@@ -321,12 +321,10 @@ void create_process(int *(*start_routine)(void *), const char *name)
 	 * the initial code can run normally in user mode.
 	 */
 
-	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(start_routine), PAGE_SIZE, false);
-
-	start_routine_vaddr = ((addr_t) (start_routine) & (PAGE_SIZE-1)) | USER_SPACE_VADDR;
+	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start), __root_proc_end - __root_proc_start, false);
 
 	/* Start main thread <args> of the thread is not used in this context. */
-	pcb->main_thread = user_thread((th_fn_t) start_routine_vaddr, name, NULL, pcb);
+	pcb->main_thread = user_thread((th_fn_t) USER_SPACE_VADDR, "root_proc", NULL, pcb);
 
 	/* init process? */
 	if (!root_process)
