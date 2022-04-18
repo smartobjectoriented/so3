@@ -40,6 +40,6 @@ void arch_prepare_cpu_regs(tcb_t *tcb) {
  * @return Base address of arguments
  *
  */
-char *arch_get_args_base(void) {
-	return (char *) (USER_STACK_TOP_VADDR - PAGE_SIZE);
+addr_t arch_get_args_base(void) {
+	return (addr_t) (USER_STACK_TOP_VADDR - PAGE_SIZE);
 }

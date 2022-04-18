@@ -218,7 +218,7 @@ pcb_t *new_process(void)
 		kernel_panic();
 	}
 
-	/* Preserve the mapping to the high-1G kernel area */
+	/* Preserve the mapping of kernel regions according to the arch configuration */
 	pgtable_copy_kernel_area(pcb->pgtable);
 
 	/* Integrate the list of process */
@@ -242,7 +242,7 @@ void reset_process_stack(pcb_t *pcb) {
 	 * The stack virtual top is under the page of arguments, from the top user space.
 	 * The stack is full descending.
 	 */
-	pcb->stack_top = (addr_t) arch_get_args_base();
+	pcb->stack_top = arch_get_args_base();
 }
 
 void dump_proc_pages(pcb_t *pcb){
@@ -540,7 +540,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	 */
 
 	__args_env = preserve_args_and_env(argc, argv, envp);
-	if (!__args_env)
+	if (__args_env < 0)
 		return -1;
 
 	/* Reset the process stack and page count */
@@ -587,14 +587,15 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	DBG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, HEAP_SIZE);
 
-	/* arguments will be stored in one more page */
+	/* arguments (& env) will be stored in one more page */
 	pcb->page_count++;
 
-	allocate_page(pcb, CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE, 1, true);
-	DBG("arguments mapped at 0x%08x (size: %d bytes)\n", CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE,  PAGE_SIZE);
+	allocate_page(pcb, arch_get_args_base(), 1, true);
+	DBG("arguments mapped at 0x%08x (size: %d bytes)\n", arch_get_args_base(),  PAGE_SIZE);
 
 	/* Prepare the arguments within the page reserved for this purpose. */
-	post_setup_image(__args_env);
+	if (__args_env)
+		post_setup_image(__args_env);
 
 	return 0;
 }
@@ -602,8 +603,8 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 /* load sections from each loadable segment into the process' virtual pages */
 void load_process(elf_img_info_t *elf_img_info)
 {
-	uint32_t section_start, section_end;
-	uint32_t segment_start, segment_end;
+	unsigned long section_start, section_end;
+	unsigned long segment_start, segment_end;
 	int i, j, k;
 	bool section_supported;
 
@@ -713,7 +714,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 	start_routine = (int *(*)(void *)) pcb->bin_image_entry;
 
 	/* We start the new thread */
-	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb);
+	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) arch_get_args_base(), pcb);
 
 	/* Transfer the waiting thread if any */
 

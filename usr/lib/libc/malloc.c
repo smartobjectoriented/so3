@@ -396,7 +396,7 @@ next_list:
 	/* Is a specific alignment requested ? (alignment must be a power of 2) */
 
 	if (alignment > 0) {
-		tmp_addr = (void *) (((unsigned int) addr + alignment - 1) & -((signed) alignment));
+		tmp_addr = (void *) (((unsigned long) addr + alignment - 1) & -((signed) alignment));
 
 		/* If there is a required shift, padding bytes are considered as payload bytes of the chunk */
 		if ((unsigned int) (tmp_addr - addr) + requested  > victim->size) {

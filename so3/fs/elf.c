@@ -104,19 +104,18 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 	memcpy(elf_img_info->header, elf_img_info->file_buffer, sizeof(struct elf64_hdr));
 #endif
 
-	if (elf_img_info->header->e_ident[EI_CLASS] != ELFCLASS32) {
-		/* FIXME: should not crash but exit gracefully */
-		printk("%s: Not a 32-bit binary!\n", __func__);
-		kernel_panic();
-	}
-
 	DBG("Magic: 0x%02x%c%c%c\n", elf_img_info->header->e_ident[EI_MAG0],
 	                             elf_img_info->header->e_ident[EI_MAG1],
 	                             elf_img_info->header->e_ident[EI_MAG2],
 	                             elf_img_info->header->e_ident[EI_MAG3]);
 	DBG("%d sections\n", elf_img_info->header->e_shnum);
 	DBG("section table is at offset 0x%08x (%d bytes/section)\n", elf_img_info->header->e_shoff, elf_img_info->header->e_shentsize);
+
+#ifdef CONFIG_ARCH_ARM32
 	DBG("sizeof(struct elf32_shdr): %d bytes\n", sizeof(struct elf32_shdr));
+#else
+	DBG("sizeof(struct elf64_shdr): %d bytes\n", sizeof(struct elf64_shdr));
+#endif
 
 	/* sections */
 #ifdef CONFIG_ARCH_ARM32
@@ -188,12 +187,16 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 #ifdef CONFIG_ARCH_ARM32
 	DBG("sizeof(struct elf32_phdr): %d bytes\n", sizeof(struct elf32_phdr));
 #else
-	DBG("sizeof(struct elf32_phdr): %d bytes\n", sizeof(struct elf64_phdr));
+	DBG("sizeof(struct elf64_phdr): %d bytes\n", sizeof(struct elf64_phdr));
 #endif
 
 	elf_img_info->segment_page_count = 0;
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
+#ifdef CONFIG_ARCH_ARM32
 		memcpy(elf_img_info->segments + i, elf_img_info->file_buffer + elf_img_info->header->e_phoff + i*elf_img_info->header->e_phentsize, sizeof(struct elf32_phdr));
+#else
+		memcpy(elf_img_info->segments + i, elf_img_info->file_buffer + elf_img_info->header->e_phoff + i*elf_img_info->header->e_phentsize, sizeof(struct elf64_phdr));
+#endif
 
 		if (elf_img_info->segments[i].p_type == PT_LOAD)
 			elf_img_info->segment_page_count += (elf_img_info->segments[i].p_memsz >> PAGE_SHIFT) + 1;

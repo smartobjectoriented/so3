@@ -25,6 +25,8 @@
 #include <sizes.h>
 #include <string.h>
 
+#include <device/ramdev.h>
+
 #include <mach/uart.h>
 
 #include <asm/mmu.h>
@@ -521,7 +523,9 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 
 /* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
 void pgtable_copy_kernel_area(void *l0pgtable) {
-	/* Nothing to do since we are using ttbr0 for kernel and ttbr1 for user space */
+
+	/* We consider to copy some key element as the ramfs for example */
+	ramdev_create_mapping(l0pgtable);
 }
 
 #if 0

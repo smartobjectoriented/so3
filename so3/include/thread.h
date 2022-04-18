@@ -124,7 +124,7 @@ char *print_state(struct tcb *tcb);
 int *app_thread_main(void *args);
 
 void arch_prepare_cpu_regs(tcb_t *tcb);
-char *arch_get_args_base(void);
+addr_t arch_get_args_base(void);
 
 #endif /* __ASSEMBLY__ */
 

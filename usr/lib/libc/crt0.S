@@ -40,7 +40,7 @@ errno:
 	.section ".head", "ax"
 __start:
 
-	@ r0 points to the argument page
+	/* r0 points to the argument page */
 
 	bl		__entryC
 
@@ -54,6 +54,8 @@ __start:
  * - r7 is used to store the syscall number
  * -------------------------------------------------------------
  */
+
+#ifdef __ARM__
 
 .macro SYSCALLSTUB name, number
 	.globl	\name
@@ -74,6 +76,33 @@ __start:
   mov pc, lr
 
 .endm
+
+#else /* __ARM64__ */
+
+.macro SYSCALLSTUB name, number
+	.globl	\name
+\name:
+
+  str	x8, [sp], #-8
+  str	x10, [sp], #-8
+
+  mov	x8, #\number
+
+  ldr	x10, =errno
+  str	xzr, [x10]
+
+  svc	0
+
+  ldr	x10, [sp], #8
+  ldr	x8, [sp], #8
+
+  ret
+
+.endm
+
+
+#endif /* __ARM64__ */
+
 
 /* Syscalls stubs */
 SYSCALLSTUB sys_halt, 			syscallHalt

@@ -308,12 +308,21 @@ ENTRY(__root_proc)
 	mov x2, welcome_len
 	mov x8, #SYSCALL_WRITE
 
+	// No errno
+	mov x10, xzr
+
 	// Invoke the syscall - kernel side
 	svc	0
 
 	// exec("sh.elf")
 
 	adr	x0, .LC_exec
+	// No args
+	mov x1, xzr
+	mov x2, xzr
+	// No errno
+	mov x10, xzr
+
 	mov	x8, #SYSCALL_EXECVE
 
 	svc 0

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "atomic_arch.h"
+#include <asm/atomic_arch.h>
 
 #ifdef a_ll
 

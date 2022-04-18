@@ -191,10 +191,10 @@ not_used:
 	stp		x24, x25, [sp, #OFFSET_X24]
 	stp		x26, x27, [sp, #OFFSET_X26]
 	stp		x28, x29, [sp, #OFFSET_X28]
-
 .endm
 
 .macro kernel_exit
+
 	ldp		x0, x1, [sp, #OFFSET_X0]
 	ldp		x2, x3, [sp, #OFFSET_X2]
 	ldp		x4, x5, [sp, #OFFSET_X4]
@@ -212,7 +212,6 @@ not_used:
 	ldp		x28, x29, [sp, #OFFSET_X28]
 
 	add		sp, sp, #S_FRAME_SIZE
-
 .endm
 
 
@@ -399,19 +398,27 @@ el0_sync_handler:
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
 
+	mrs		x0, spsr_el1
+	str		x0, [sp, #OFFSET_PSTATE]
+
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
+	str		lr, [sp, #-8]!
     bl 		trap_handle
+ 	ldr		lr, [sp], #8
+
+	// Return value
+	str		x0, [sp, #OFFSET_X0]
 
 	ldr		x0, [sp, #OFFSET_LR]
 	msr		elr_el1, x0
 
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
 	ldr 	x0, [sp, #OFFSET_SP]
 	msr		sp_el0, x0
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
 
 	kernel_exit
 
@@ -467,19 +474,24 @@ el0_irq_handler:
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
 
+	mrs		x0, spsr_el1
+	str		x0, [sp, #OFFSET_PSTATE]
+
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
+	str		lr, [sp, #-8]!
     bl 		irq_handle
+    ldr		lr, [sp], #8
 
 	ldr		x0, [sp, #OFFSET_LR]
 	msr		elr_el1, x0
 
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
 	ldr 	x0, [sp, #OFFSET_SP]
 	msr		sp_el0, x0
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
 
 	kernel_exit
 
@@ -491,20 +503,18 @@ el1_irq_handler:
 
 	kernel_entry
 
-	str		lr, [sp, #OFFSET_LR]
-
 	mrs		x0, spsr_el1
 	str		x0, [sp, #OFFSET_PSTATE]
 
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
+	str		lr, [sp, #-8]!
     bl 		irq_handle
+	ldr		lr, [sp], #8
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el1, x0
-
-	ldr 	lr, [sp, #OFFSET_LR]
 
   	kernel_exit
 

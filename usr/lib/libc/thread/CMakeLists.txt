@@ -2,6 +2,6 @@
 target_sources(c 
 	PRIVATE
 		__lock.c
-		atomics.S
+		#atomics.S
 		thrd_sleep.c
 )
