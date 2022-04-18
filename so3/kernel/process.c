@@ -497,7 +497,7 @@ void post_setup_image(void *args_env) {
 	char *args_base;
 	int argc, i;
 
-	args_base = arch_get_args_base();
+	args_base = (char *) arch_get_args_base();
 
 	memcpy(args_base, args_env, PAGE_SIZE);
 

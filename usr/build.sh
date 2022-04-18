@@ -61,7 +61,7 @@ echo "Starting $build_type build"
 mkdir -p $SCRIPTPATH/build
 
 cd $SCRIPTPATH/build
-cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../toolchainfile.cmake ..
+cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../aarch64_toolchain.cmake ..
 if [ $singlecore == y ]; then
     NRPROC=1
 else

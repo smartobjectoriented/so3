@@ -93,7 +93,7 @@ static char pl011_get_byte(bool polling) {
 
 /*
  * The interrupt routine consists in reading the char which has been typed by the user.
- * Characters are stored in the seial buffer.
+ * Characters are stored in the serial buffer.
  * To know if the current thread is doing a read on the UART, we test the read_lock mutex
  * to decide what to do in case of a ctrl+C key.
  * If the mutex is taken by the thread, it means the thread acquired a lock and we do not

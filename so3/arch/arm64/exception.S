@@ -405,7 +405,11 @@ el0_sync_handler:
 	mov		x0, sp
 
 	str		lr, [sp, #-8]!
+
+	enable_irq
     bl 		trap_handle
+    disable_irq
+
  	ldr		lr, [sp], #8
 
 	// Return value

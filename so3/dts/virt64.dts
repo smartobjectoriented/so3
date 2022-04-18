@@ -51,7 +51,7 @@
 		compatible = "serial,pl011";
 		reg = <0x0 0x09000000 0x0 0x1000>;
 		interrupt-parent = <&gic>;
-		interrupts = <0 5 4>;
+		interrupts = <0 1 4>;
 		status = "ok";
 	};
 
