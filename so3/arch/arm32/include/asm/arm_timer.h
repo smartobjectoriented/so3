@@ -21,21 +21,9 @@
 
 #include <types.h>
 
+#include <device/arch/arm_timer.h>
+
 #include <asm/processor.h>
-
-#define ARCH_TIMER_PHYS_ACCESS		0
-#define ARCH_TIMER_VIRT_ACCESS		1
-#define ARCH_TIMER_MEM_PHYS_ACCESS	2
-#define ARCH_TIMER_MEM_VIRT_ACCESS	3
-
-#define ARCH_TIMER_CTRL_ENABLE		(1 << 0)
-#define ARCH_TIMER_CTRL_IT_MASK		(1 << 1)
-#define ARCH_TIMER_CTRL_IT_STAT		(1 << 2)
-
-enum arch_timer_reg {
-	ARCH_TIMER_REG_CTRL,
-	ARCH_TIMER_REG_TVAL,
-};
 
 /*
  * These register accessors are marked inline so the compiler can

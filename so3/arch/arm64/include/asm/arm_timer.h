@@ -19,8 +19,9 @@
 #ifndef ASM_ARM_TIMER_H
 #define ASM_ARM_TIMER_H
 
-#include <asm/processor.h>
+#include <device/arch/arm_timer.h>
 
+#include <asm/processor.h>
 /*
  * Ensure that reads of the counter are treated the same as memory reads
  * for the purposes of ordering by subsequent memory barriers.

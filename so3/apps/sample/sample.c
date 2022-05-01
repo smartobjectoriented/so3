@@ -83,7 +83,7 @@ int serial_puts(char *buf, int len);
 
 sem_t sem;
 
-int sem_test_fn(void *arg) {
+void *sem_test_fn(void *arg) {
 	char name[20];
 	int id = *((int *) arg);
 
@@ -103,10 +103,10 @@ int sem_test_fn(void *arg) {
 		/* Consistency check */
 		printk("## %s: sem val: %d\n", name, sem.val);
 	}
-
+	return NULL;
 }
 
-int thread_fn1(void *arg)
+void *thread_fn1(void *arg)
 {
 	int i;
 
@@ -130,16 +130,15 @@ int thread_fn1(void *arg)
 	mutex_unlock(&lock);
 #endif
 
-
-	return 0;
+	return NULL;
 }
 
 spinlock_t spinlock;
 int threads = 0;
 
-int *thread_example(void *arg)
+void *thread_example(void *arg)
 {
-	unsigned long long ii = 0;
+	unsigned long ii = 0;
 
 	//printk("### entering thread_example.\n");
 
@@ -163,7 +162,7 @@ int *thread_example(void *arg)
 	return NULL;
 }
 
-int fn(void *args) {
+void *fn(void *args) {
 	int i = 0, ret;
 
 	printk("Thread #1\n");
@@ -184,10 +183,10 @@ int fn(void *args) {
 		printk("--> th 1: %d\n", i++);
 	}
 
-	return 0;
+	return NULL;
 }
 
-int fn1(void *args) {
+void *fn1(void *args) {
 	//int i = 0;
 
 	printk("Thread #1\n");
@@ -200,10 +199,10 @@ int fn1(void *args) {
 //		printk("--> th 1: %d\n", i++);
 	}
  
-	return 0;
+	return NULL;
 }
 
-int fn2(void *args) {
+void *fn2(void *args) {
 	//int i = 0
 	int ret;
 
@@ -217,7 +216,7 @@ int fn2(void *args) {
 //		printk("--> th 2: %d\n", i++);
 	}
 
-	return 0;
+	return NULL;
 }
 
 extern int schedcount;
@@ -392,7 +391,7 @@ typedef struct {
  * Main entry point of so3 app in kernel standalone configuration.
  * Mainly for debugging purposes.
  */
-int *app_thread_main(void *args)
+void *app_thread_main(void *args)
 {
 	tcb_t *t1, *t2, *t3, *t4;
 
