@@ -26,7 +26,7 @@
 #include <device/irq.h>
 #include <device/timer.h>
 
-#include <device/arch/arm_timer.h>
+#include <asm/arm_timer.h>
 
 typedef struct {
 	unsigned long reload;

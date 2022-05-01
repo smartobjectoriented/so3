@@ -54,7 +54,7 @@
 		status = "ok";
 	};
 
-#if 0 /* If we want to use ARM CP15 timer */
+#if 1 /* If we want to use ARM CP15 timer */
 	/* Periodic timer based on ARM CP15 timer */
 	periodic-timer@0 {
 		compatible = "arm,periodic-timer";
@@ -72,7 +72,7 @@
 	};
 #endif
 
-#if 1 /* Basic SP804 on-board timer */
+#if 0 /* Basic SP804 on-board timer */
 	/* Periodic timer (Dual-timer 01) */
 	periodic-timer@1c110000 {
 		compatible = "sp804,periodic-timer";
