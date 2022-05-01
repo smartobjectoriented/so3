@@ -69,7 +69,7 @@ void post_init(void) {
 		postinit[i]();
 }
 
-int *rest_init(void *dummy) {
+void *rest_init(void *dummy) {
 
 	post_init();
 

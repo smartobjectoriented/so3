@@ -345,7 +345,7 @@ void thread_prologue(void(*th_fn)(void *arg), void *arg)
 /*
  * Thread idle
  */
-int *thread_idle(void *dummy)
+void *thread_idle(void *dummy)
 {
 	/* Endless loop */
 	while (true) {
@@ -463,7 +463,7 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 	return tcb;
 }
 
-tcb_t *kernel_thread(int *(*start_routine)(void *), const char *name, void *arg, uint32_t prio)
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio)
 {
 	return thread_create(start_routine, name, arg, NULL, prio);
 }
@@ -636,7 +636,7 @@ int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr
 	}
 	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
-	tcb = user_thread((int *(*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
+	tcb = user_thread((th_fn_t) thread_fn, name, (void *) arg_p, current()->pcb);
 
 	/* The name has been copied in thread creation */
 	free(name);

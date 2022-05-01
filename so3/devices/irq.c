@@ -38,7 +38,7 @@ irqdesc_t *irq_to_desc(uint32_t irq) {
  * Main thread entry point for deferred processing.
  * At the entry, IRQs are on.
  */
-int *__irq_deferred_fn(void *args) {
+void *__irq_deferred_fn(void *args) {
 	int *ret;
 	uint32_t irq = *((uint32_t *) args);
 

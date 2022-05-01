@@ -43,6 +43,9 @@ extern void thread_epilogue(void);
 
 struct queue_thread;
 typedef struct pcb pcb_t;
+
+typedef void *(*th_fn_t)(void *);
+
 /*
  * Task Control Block
  *
@@ -71,7 +74,7 @@ struct tcb {
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
 	/* Threaded function */
-	int *(*th_fn)(void *);
+        th_fn_t th_fn;
 	void *th_arg;
 
 	thread_t state;
@@ -94,8 +97,6 @@ typedef struct tcb tcb_t;
 
 addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
 
-typedef int *(*th_fn_t)(void *);
-
 void threads_init(void);
 
 int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
@@ -110,7 +111,7 @@ void thread_exit(int *exit_status);
 void clean_thread(tcb_t *tcb);
 void do_thread_yield(void);
 
-int *thread_idle(void *dummy);
+void *thread_idle(void *dummy);
 
 addr_t get_kernel_stack_top(uint32_t slotID);
 
@@ -121,7 +122,7 @@ extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
 
-int *app_thread_main(void *args);
+void *app_thread_main(void *args);
 
 void arch_prepare_cpu_regs(tcb_t *tcb);
 addr_t arch_get_args_base(void);

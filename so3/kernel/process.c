@@ -658,7 +658,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 	elf_img_info_t elf_img_info;
 	pcb_t *pcb;
 	unsigned long flags;
-	int *(*start_routine)(void *);
+	th_fn_t start_routine;
 	queue_thread_t *cur;
 	int ret, argc;
 
@@ -711,7 +711,7 @@ int do_execve(const char *filename, char **argv, char **envp)
 
 	/* Now, we need to create the main user thread associated to this binary image. */
 	/* start main thread */
-	start_routine = (int *(*)(void *)) pcb->bin_image_entry;
+	start_routine = (th_fn_t) pcb->bin_image_entry;
 
 	/* We start the new thread */
 	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) arch_get_args_base(), pcb);
