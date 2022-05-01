@@ -642,7 +642,7 @@
 
 #define SCTLR_EL1_SET	(SCTLR_ELx_M    | SCTLR_ELx_C    | SCTLR_ELx_SA   |\
 			 SCTLR_EL1_SA0  | SCTLR_EL1_SED  | SCTLR_ELx_I    |\
-			 SCTLR_EL1_DZE  | SCTLR_EL1_UCT  | \
+			 SCTLR_EL1_DZE  | SCTLR_EL1_UCT                   |\
 			 SCTLR_EL1_NTWE | SCTLR_ELx_IESB | SCTLR_EL1_SPAN |\
 			 ENDIAN_SET_EL1 | SCTLR_EL1_UCI  | SCTLR_EL1_RES1)
 
@@ -1063,11 +1063,6 @@ typedef struct cpu_regs {
 	u64 pc;
 	u64 pstate;
 } cpu_regs_t;
-
-typedef struct cpu_sys_regs {
-	u64   vksp;
-	u64   vusp;
-} cpu_sys_regs_t;
 
 static inline int smp_processor_id(void) {
 	int cpu;

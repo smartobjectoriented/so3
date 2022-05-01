@@ -26,7 +26,7 @@ TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */
 SECTIONS
 {
    
-     . = ENTRY_ADDR + 0x8000;   
+     . = ENTRY_ADDR + 0x8000;
     
     __vectors_start = .;
 
@@ -71,8 +71,8 @@ SECTIONS
 
     __bss_end = .;
 
-    . = ALIGN(4096);
-    
+ 	. = ALIGN(4096);
+        
     /* Initcall section for core drivers */
     
     __initcall_driver_initcall_t_core = .;

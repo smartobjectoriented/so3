@@ -438,7 +438,7 @@ addr_t virt_to_phys_pt(addr_t vaddr);
 
 void pgtable_copy_kernel_area(void *l1pgtable);
 
-void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
+void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
 void release_mapping(void *pgtable, addr_t virt_base, addr_t size);
 
 void reset_l1pgtable(void *l1pgtable, bool remove);

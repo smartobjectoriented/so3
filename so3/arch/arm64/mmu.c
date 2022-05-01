@@ -409,7 +409,7 @@ void dump_pgtable(void *l0pgtable) {
 	}
 }
 
-void mmu_configure(addr_t l0pgtable, addr_t fdt_addr) {
+void mmu_configure(addr_t fdt_addr) {
 
 	icache_disable();
 	dcache_disable();

@@ -256,7 +256,7 @@ ENTRY(__mmu_switch)
     isb                          /* Ensure synchronization with previous changes to text */
 
 	// Only the user space range is concerned with a MMU context switch
-	msr	   TTBR0_EL1, x0
+	msr    ttbr1_el1, x0
 
     isb
 

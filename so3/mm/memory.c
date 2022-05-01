@@ -48,7 +48,6 @@ addr_t pfn_start;
 static uint32_t kernel_size;
 
 /* Current available I/O range address */
-addr_t io_mapping_current;
 struct list_head io_maplist;
 
 /* Initialize the frame table */
@@ -265,12 +264,6 @@ void dump_frame_table(void) {
 /*
  * I/O address space management
  */
-
-/* Init the I/O address space */
-void init_io_mapping(void) {
-	io_mapping_current = IO_MAPPING_BASE;
-}
-
 void dump_io_maplist(void) {
 	io_map_t *cur = NULL;
 	struct list_head *pos;
@@ -423,8 +416,6 @@ void memory_init(void) {
 	heap_init();
 
 #ifdef CONFIG_MMU
-
-	init_io_mapping();
 
 	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, __fdt_addr, __end, fdt_totalsize(__fdt_addr));
 
