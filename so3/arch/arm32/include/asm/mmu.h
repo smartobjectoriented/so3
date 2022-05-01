@@ -19,6 +19,14 @@
 #ifndef MMU_H
 #define MMU_H
 
+#ifndef __ASSEMBLY__
+#include <types.h>
+#endif
+
+#include <sizes.h>
+
+#define USER_SPACE_VADDR	0x1000ul
+
 /* Memory space all I/O mapped registers and additional mappings */
 #define IO_MAPPING_BASE		0xe0000000
 

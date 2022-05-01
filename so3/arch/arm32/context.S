@@ -23,10 +23,9 @@
 #include <asm/processor.h>
 #include <asm/mmu.h>
 
+#include <syscall.h>
+#include <vfs.h>
 #include <linkage.h>
-
-#define SYSCALL_EXEC_NR		2
-#define SYSCALL_WRITE_NR	5
 
 .global __switch_context
 .global __thread_prologue_kernel
@@ -96,35 +95,6 @@ __get_syscall_args_ext:
 	str		r10, [r1]
 
 	mov 	pc, lr
-
-@ exec syscall used by the kernel to run the initial binary image (shell)
-__exec:
-  	stmfd sp!, {r7, r10, r11, r12}
-  	mov	r7, #SYSCALL_EXEC_NR
-
-  	mov r1, #0 		@ args = NULL
-  	mov r2, #0 		@ envp = NULL
-
-	mov r10, #0  	@ We do not use errno
-
-  	swi 0
-
-  	ldmfd sp!, {r7, r10, r11, r12}
-
-  	mov	pc, lr
-
-@ write syscall used by the kernel to print a message in user mode (if exec() fails for example)
-__write:
-  	stmfd sp!, {r7, r10, r11, r12}
-  	mov	r7, #SYSCALL_WRITE_NR
-
-	mov r10, #0  	@ We do not use errno
-
-  	swi 0
-
-  	ldmfd sp!, {r7, r10, r11, r12}
-
-  	mov	pc, lr
 
 @ Kernel thread initial entry point
 @ Called once per thread
@@ -254,3 +224,54 @@ __save_context:
 .LCcurrent:
 	.word current_thread
 
+// This section contains all data and code which will be
+// mapped in the user space as initial process to be executed.
+
+.section ".root_proc.text","ax"
+
+	b	__root_proc
+
+.LC_welcome:
+	.string "SO3: starting the initial process (shell) ...\n\n\n"
+	.equ welcome_len, . - .LC_welcome
+
+.LC_exec:
+	.string "sh.elf"
+
+.LCnoshell:
+	.string "so3: No init proc(shell) found ...\n"
+	.equ noshell_len, . - .LCnoshell
+
+
+.align 2
+
+// This is the initial code which runs in user mode
+// to start the first process image
+
+ENTRY(__root_proc)
+
+	// write(stdout, buf, len)
+
+	mov	r0, #STDOUT
+	adr r1, .LC_welcome
+	mov r2, #welcome_len
+	mov r7, #SYSCALL_WRITE
+
+	// No errno
+	mov r10, #0
+
+	// Invoke the syscall - kernel side
+	svc	0
+
+	// exec("sh.elf")
+
+	adr	r0, .LC_exec
+	// No args
+	mov r1, #0
+	mov r2, #0
+	// No errno
+	mov r10, #0
+
+	mov	r7, #SYSCALL_EXECVE
+
+	svc 0

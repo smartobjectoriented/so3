@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
- * 
+ * Copyright (C) 2022 Daniel Rossier <daniel.rossier//heig-vd.ch>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -16,27 +16,12 @@
  *
  */
 
-#include <thread.h>
-#include <memory.h>
+#ifndef ASM_PROCESS_H
+#define ASM_PROCESS_H
 
-/**
- * Set the CPU registers with thread related information
- *
- * @param tcb
- */
-void arch_prepare_cpu_regs(tcb_t *tcb) {
+extern int *__root_proc(void *);
 
-	tcb->cpu_regs.r4 = (unsigned long) tcb->th_fn;
-	tcb->cpu_regs.r5 = (unsigned long) tcb->th_arg; /* First argument */
+extern addr_t __root_proc_start[], __root_proc_end[];
 
-	if (tcb->pcb)
-		tcb->cpu_regs.r6 = get_user_stack_top(tcb->pcb, tcb->pcb_stack_slotID);
-}
+#endif /* ASM_PROCESS_H */
 
-/**
- * The page of arguments related to a process is located on top of the stack.
- * @return	Base address of arguments
- */
-addr_t arch_get_args_base(void) {
-	return (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE);
-}
