@@ -28,10 +28,12 @@
 #include <device/ramdev.h>
 #include <device/fdt.h>
 
-#include <mach/uart.h>
-
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
+
+#ifdef CONFIG_SO3VIRT
+#include <soo/avz.h>
+#endif
 
 extern unsigned long __vectors_start, __vectors_end;
 mem_info_t mem_info;
@@ -42,7 +44,7 @@ page_t *frame_table;
 static spinlock_t ft_lock;
 
 /* First pfn of available pages */
-addr_t pfn_start;
+volatile addr_t pfn_start;
 
 /* Page-aligned kernel size (including frame table) */
 static uint32_t kernel_size;
@@ -390,7 +392,6 @@ void io_unmap(addr_t vaddr) {
 
 	free(cur);
 }
-
 #endif /* CONFIG_MMU */
 
 /*
@@ -400,11 +401,11 @@ void io_unmap(addr_t vaddr) {
 void memory_init(void) {
 #ifdef CONFIG_MMU
 
-	void *new_sys_root_pgtable;
-
 #ifdef CONFIG_ARCH_ARM32
 	addr_t vectors_paddr;
 #endif
+
+	void *new_sys_root_pgtable;
 
 #endif /* CONFIG_MMU */
 
@@ -429,23 +430,23 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
-	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VIRT_ADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
+	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
-	create_mapping(new_sys_root_pgtable, UART_BASE, UART_BASE, PAGE_SIZE, true);
+	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
 
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
 	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.
 	 */
 
-	mmu_switch(new_sys_root_pgtable);
+	mmu_switch_sys(new_sys_root_pgtable);
 
 	/* Re-configuring the original system page table */
 	copy_root_pgtable(__sys_root_pgtable, new_sys_root_pgtable);
 
 	/* Finally, switch back to the original location of the system page table */
-	mmu_switch(__sys_root_pgtable);
+	mmu_switch_sys(__sys_root_pgtable);
 
 #ifdef CONFIG_ARCH_ARM32
 	/* Finally, prepare the vector page at its correct location */

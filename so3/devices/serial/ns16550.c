@@ -32,7 +32,7 @@
 
 static dev_t ns16550_dev =
 {
-  .base = UART_BASE,
+  .base = CONFIG_UART_LL_PADDR,
 };
 
 static int baudrate_div_calc(int baudrate)

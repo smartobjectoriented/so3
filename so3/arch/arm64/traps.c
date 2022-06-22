@@ -21,6 +21,46 @@
 
 #include <asm/processor.h>
 
+const char entry_error_messages[19][32] =
+{
+    "SYNC_INVALID_EL1t",
+    "IRQ_INVALID_EL1t",
+    "FIQ_INVALID_EL1t",
+    "SERROR_INVALID_EL1t",
+    "SYNC_INVALID_EL1h",
+    "IRQ_INVALID_EL1h",
+    "FIQ_INVALID_EL1h",
+    "SERROR_INVALID_EL1h",
+    "SYNC_INVALID_EL0_64",
+    "IRQ_INVALID_EL0_64",
+    "FIQ_INVALID_EL0_64",
+    "SERROR_INVALID_EL0_64",
+    "SYNC_INVALID_EL0_32",
+    "IRQ_INVALID_EL0_32",
+    "FIQ_INVALID_EL0_32",
+    "SERROR_INVALID_EL0_32",
+    "SYNC_ERROR",
+    "SYSCALL_ERROR",
+    "DATA_ABORT_ERROR"
+};
+
+void show_invalid_entry_message(u32 type, u64 esr, u64 address)
+{
+    printk("ERROR CAUGHT: ");
+    printk(entry_error_messages[type]);
+    printk(", ESR: ");
+    printk("%lx", esr);
+    printk(", Address: ");
+    printk("%lx\n", address);
+
+}
+
+void trap_handle_error(addr_t lr) {
+	unsigned long esr = read_sysreg(esr_el1);
+
+	show_invalid_entry_message(ESR_ELx_EC(esr), esr, lr);
+}
+
 /**
  * This is the entry point for all exceptions currently managed by SO3.
  *
@@ -33,7 +73,9 @@ void trap_handle(cpu_regs_t *regs) {
 
 	/* SVC used for syscalls */
 	case ESR_ELx_EC_SVC64:
-		syscall_handle(regs->x0, regs->x1, regs->x2, regs->x3);
+		local_irq_enable();
+		regs->x0 = syscall_handle(regs->x0, regs->x1, regs->x2, regs->x3);
+		local_irq_disable();
 		break;
 
 #if 0
@@ -77,6 +119,8 @@ void trap_handle(cpu_regs_t *regs) {
 #endif
 
 	default:
+		lprintk("### ESR_Elx_EC(esr): %lx\n", ESR_ELx_EC(esr));
+		trap_handle_error(regs->lr);
 		kernel_panic();
 	}
 

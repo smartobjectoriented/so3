@@ -358,7 +358,7 @@ static inline void set_cr(unsigned int val)
 #define wmb() mb()
 #define smp_wmb()		wmb()
 
-#define smp_mb()		mb()
+#define smp_mb()		dmb()
 #define smp_rmb()		rmb()
 #define smp_wmb()		wmb()
 

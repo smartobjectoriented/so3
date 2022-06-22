@@ -833,44 +833,9 @@
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL	(BIT(31))
 
-#define S_FRAME_SIZE	0x110
+/* The stack must be 16-byte aligned */
 
-/* 34 registers */
-
-#define S_PSTATE	0x108
-#define S_PC    	0x100
-#define S_SP		0xf8
-#define S_LR		0xf0
-#define S_X29		0xe8
-#define S_X28		0xe0
-#define S_X27		0xd8
-#define S_X26		0xd0
-#define S_X25		0xc8
-#define S_X24		0xc0
-#define S_X23		0xb8
-#define S_X22		0xb0
-#define S_X21		0xa8
-#define S_X20		0xa0
-#define S_X19   	0x98
-#define S_X18   	0x90
-#define S_X17   	0x88
-#define S_X16   	0x80
-#define S_X15   	0x78
-#define S_X14   	0x70
-#define S_X13   	0x68
-#define S_X12   	0x60
-#define S_X11   	0x58
-#define S_X10   	0x50
-#define S_X9    	0x48
-#define S_X8    	0x40
-#define S_X7    	0x38
-#define S_X6    	0x30
-#define S_X5   		0x28
-#define S_X4    	0x20
-#define S_X3    	0x18
-#define S_X2    	0x10
-#define S_X1    	0x8
-#define S_X0    	0x0
+#define S_FRAME_SIZE	(8 * 36)
 
 #ifdef __ASSEMBLY__
 
@@ -906,13 +871,56 @@
 	.endr
 	.equ	.L__reg_num_xzr, 31
 
-	.macro	mrs_s, rt, sreg
+.macro	mrs_s, rt, sreg
 	 __emit_inst(0xd5200000|(\sreg)|(.L__reg_num_\rt))
-	.endm
+.endm
 
-	.macro	msr_s, sreg, rt
+.macro	msr_s, sreg, rt
 	__emit_inst(0xd5000000|(\sreg)|(.L__reg_num_\rt))
-	.endm
+.endm
+
+.macro kernel_entry
+	sub		sp, sp, #S_FRAME_SIZE
+
+	stp		x0, x1, [sp, #OFFSET_X0]
+	stp		x2, x3, [sp, #OFFSET_X2]
+	stp		x4, x5, [sp, #OFFSET_X4]
+	stp		x6, x7, [sp, #OFFSET_X6]
+	stp		x8, x9, [sp, #OFFSET_X8]
+	stp		x10, x11, [sp, #OFFSET_X10]
+	stp		x12, x13, [sp, #OFFSET_X12]
+	stp		x14, x15, [sp, #OFFSET_X14]
+	stp		x16, x17, [sp, #OFFSET_X16]
+	stp		x18, x19, [sp, #OFFSET_X18]
+	stp		x20, x21, [sp, #OFFSET_X20]
+	stp		x22, x23, [sp, #OFFSET_X22]
+	stp		x24, x25, [sp, #OFFSET_X24]
+	stp		x26, x27, [sp, #OFFSET_X26]
+	stp		x28, x29, [sp, #OFFSET_X28]
+	str		lr, [sp, #OFFSET_LR]
+.endm
+
+.macro kernel_exit
+
+	ldp		x0, x1, [sp, #OFFSET_X0]
+	ldp		x2, x3, [sp, #OFFSET_X2]
+	ldp		x4, x5, [sp, #OFFSET_X4]
+	ldp		x6, x7, [sp, #OFFSET_X6]
+	ldp		x8, x9, [sp, #OFFSET_X8]
+	ldp		x10, x11, [sp, #OFFSET_X10]
+	ldp		x12, x13, [sp, #OFFSET_X12]
+	ldp		x14, x15, [sp, #OFFSET_X14]
+	ldp		x16, x17, [sp, #OFFSET_X16]
+	ldp		x18, x19, [sp, #OFFSET_X18]
+	ldp		x20, x21, [sp, #OFFSET_X20]
+	ldp		x22, x23, [sp, #OFFSET_X22]
+	ldp		x24, x25, [sp, #OFFSET_X24]
+	ldp		x26, x27, [sp, #OFFSET_X26]
+	ldp		x28, x29, [sp, #OFFSET_X28]
+	ldr		lr, [sp, #OFFSET_LR]
+
+	add		sp, sp, #S_FRAME_SIZE
+.endm
 
 #else
 
@@ -1026,7 +1034,6 @@ static inline int cpu_mode(void)
 #define GIC_PRIO_IRQOFF			(GIC_PRIO_IRQON & ~0x80)
 #define GIC_PRIO_PSR_I_SET		(1 << 4)
 
-
 typedef struct cpu_regs {
 	u64 x0;
 	u64 x1;
@@ -1062,6 +1069,8 @@ typedef struct cpu_regs {
 	u64 sp;
 	u64 pc;
 	u64 pstate;
+	u64 elr_el1;
+	u64 padding;
 } cpu_regs_t;
 
 static inline int smp_processor_id(void) {
@@ -1160,6 +1169,8 @@ struct domain;
 void __switch_to(struct domain *prev, struct domain *next);
 void ret_to_user(void);
 void pre_ret_to_user(void);
+
+void trap_handle(cpu_regs_t *regs);
 
 void cpu_do_idle(void);
 

@@ -35,9 +35,6 @@
 
 #ifndef __ASSEMBLY__
 
-/* Transitional page used for temporary mapping */
-#define TRANSITIONAL_MAPPING	0xf0000000
-
 extern struct list_head io_maplist;
 
 /* Manage the io_maplist. The list is sorted by ascending vaddr. */
@@ -75,14 +72,14 @@ struct page {
 typedef struct page page_t;
 
 extern page_t *frame_table;
-extern addr_t pfn_start;
+extern volatile addr_t pfn_start;
 
 #define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
 #define phys_to_pfn(phys) (((addr_t) phys) >> PAGE_SHIFT)
 #define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t) virt)))
 
-#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VIRT_ADDR + ((addr_t) CONFIG_RAM_BASE))
-#define __va(paddr) (((addr_t) paddr) - ((addr_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VIRT_ADDR)
+#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + ((addr_t) CONFIG_RAM_BASE))
+#define __va(paddr) (((addr_t) paddr) - ((addr_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VADDR)
 
 #define page_to_pfn(page) ((addr_t) ((addr_t) (page-frame_table) + pfn_start))
 #define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
@@ -121,7 +118,6 @@ void init_io_mapping(void);
 addr_t io_map(addr_t phys, size_t size);
 void io_unmap(addr_t vaddr);
 io_map_t *find_io_map_by_paddr(addr_t paddr);
-void readjust_io_map(unsigned pfn_offset);
 
 void dump_io_maplist(void);
 

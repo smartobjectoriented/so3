@@ -29,7 +29,7 @@
 
 static block_dev_desc_t ramdev_block_dev;
 static int ramdev_size = 0;
-static uint32_t ramdev_start, ramdev_end;
+static addr_t ramdev_start, ramdev_end;
 
 /*
  * Check if there is a valid ramdev which could be used for rootfs.
@@ -45,7 +45,7 @@ uint32_t get_ramdev_size(void) {
 /*
  * Get the physical address of ramdev start
  */
-uint32_t get_ramdev_start(void) {
+addr_t get_ramdev_start(void) {
 	return ramdev_start;
 }
 
@@ -56,7 +56,7 @@ unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt, void *buffer
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy(buffer, (void *) RAMDEV_VIRT_BASE + start * ramdev_block_dev.blksz, bytes_count);
+	memcpy(buffer, (void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, bytes_count);
 
 	return blkcnt;
 }
@@ -68,7 +68,7 @@ unsigned long ramdev_write(int dev, lbaint_t start, lbaint_t blkcnt, const void 
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy((void *) RAMDEV_VIRT_BASE + start * ramdev_block_dev.blksz, buffer, bytes_count);
+	memcpy((void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, buffer, bytes_count);
 
 	return blkcnt;
 }
@@ -106,12 +106,6 @@ block_dev_desc_t *ramdev_get_dev(int dev)
 	ramdev_block_dev.revision[0] = 0;
 
 	return &ramdev_block_dev;
-}
-
-void ramdev_create_mapping(void *root_pgtable) {
-
-	if (valid_ramdev())
-		create_mapping(root_pgtable, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false);
 }
 
 /*
@@ -152,9 +146,9 @@ static void get_ramdev(const void *fdt) {
 	 * computes the size in the same way.
 	 */
 	ramdev_size = ramdev_end - ramdev_start;
-
+lprintk("### mapping %lx   start: %lx   end: %lx\n", ramdev_size, ramdev_start, ramdev_end);
 	/* Do the virtual mapping */
-	ramdev_create_mapping(NULL);
+	ramdev_create_mapping(NULL, ramdev_start, ramdev_end);
 }
 
 
@@ -164,7 +158,7 @@ static void get_ramdev(const void *fdt) {
  */
 void ramdev_init(void) {
 	int i;
-	uint32_t ramdev_pfn_start;
+	addr_t ramdev_pfn_start;
 
 	get_ramdev((void *) __fdt_addr);
 

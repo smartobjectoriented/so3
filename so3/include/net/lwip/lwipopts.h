@@ -44,6 +44,7 @@
 
 #define ETH_PAD_SIZE 			0
 
+#define LWIP_HAVE_LOOPIF		1
 #define LWIP_DEBUG 			0
 
 #define NOT_LWIP_DEBUG                  0

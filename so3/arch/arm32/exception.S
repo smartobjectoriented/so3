@@ -30,7 +30,6 @@
 
 #include <asm/processor.h>
 
-
 .globl ret_from_fork
 .global __call_sig_handler
 

@@ -15,6 +15,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
+#include <syscall.h>
+
 #include <generated/asm-offsets.h>
 
 #include <asm/processor.h>
@@ -24,7 +27,6 @@
 
 .global __vectors
 
-.extern current_thread
 .extern irq_handle
 .extern trap_handle
 
@@ -32,15 +34,9 @@
 
 .extern __sync_serror
 
-.extern __prefetch_abort
-.extern __data_abort
-.extern __undefined_instruction
-
 .extern do_exit
-.extern schedule_isr
 .extern __check_ptrace_syscall
 .extern sig_check
-.extern __stack_alignment_fault
 
 .extern __start
 
@@ -95,26 +91,32 @@ ENTRY(__vectors)
 
 	// Current EL with SP0 / Synchronous
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Current EL with SP0 / IRQ
 	.align 7
-	b 	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Current EL with SP0 / FIQ
 	.align 7
-	b 	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Current EL with SP0 / SError
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Current EL with SPx / Synchronous
 	.align 7
 
-	mrs	x0, esr_el1
-
-	b	not_used
+	b	el0_sync_handler
 
 	// Current EL with SPx / IRQ
 	.align 7
@@ -123,7 +125,9 @@ ENTRY(__vectors)
 
 	// Current EL with SPx / FIQ
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Current EL with SPx / SError
 	.align 7
@@ -145,97 +149,46 @@ ENTRY(__vectors)
 
 	// Lower EL using AArch64 / FIQ
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Lower EL using AArch64 / SError
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Lower EL using AArch32 / Synchronous
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Lower EL using AArch32 / IRQ
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Lower EL using AArch32 / FIQ
 	.align 7
-	b	not_used
+
+	mov	x0, lr
+	b trap_handle_error
 
 	// Lower EL using AArch32 / SError
 	.align 7
-	b	not_used
 
-
-
-.align  5
-not_used:
-    b not_used
-
-.macro kernel_entry
-	sub		sp, sp, #S_FRAME_SIZE
-
-	stp		x0, x1, [sp, #OFFSET_X0]
-	stp		x2, x3, [sp, #OFFSET_X2]
-	stp		x4, x5, [sp, #OFFSET_X4]
-	stp		x6, x7, [sp, #OFFSET_X6]
-	stp		x8, x9, [sp, #OFFSET_X8]
-	stp		x10, x11, [sp, #OFFSET_X10]
-	stp		x12, x13, [sp, #OFFSET_X12]
-	stp		x14, x15, [sp, #OFFSET_X14]
-	stp		x16, x17, [sp, #OFFSET_X16]
-	stp		x18, x19, [sp, #OFFSET_X18]
-	stp		x20, x21, [sp, #OFFSET_X20]
-	stp		x22, x23, [sp, #OFFSET_X22]
-	stp		x24, x25, [sp, #OFFSET_X24]
-	stp		x26, x27, [sp, #OFFSET_X26]
-	stp		x28, x29, [sp, #OFFSET_X28]
-.endm
-
-.macro kernel_exit
-
-	ldp		x0, x1, [sp, #OFFSET_X0]
-	ldp		x2, x3, [sp, #OFFSET_X2]
-	ldp		x4, x5, [sp, #OFFSET_X4]
-	ldp		x6, x7, [sp, #OFFSET_X6]
-	ldp		x8, x9, [sp, #OFFSET_X8]
-	ldp		x10, x11, [sp, #OFFSET_X10]
-	ldp		x12, x13, [sp, #OFFSET_X12]
-	ldp		x14, x15, [sp, #OFFSET_X14]
-	ldp		x16, x17, [sp, #OFFSET_X16]
-	ldp		x18, x19, [sp, #OFFSET_X18]
-	ldp		x20, x21, [sp, #OFFSET_X20]
-	ldp		x22, x23, [sp, #OFFSET_X22]
-	ldp		x24, x25, [sp, #OFFSET_X24]
-	ldp		x26, x27, [sp, #OFFSET_X26]
-	ldp		x28, x29, [sp, #OFFSET_X28]
-
-	add		sp, sp, #S_FRAME_SIZE
-.endm
-
-
-#if 0
-// exception handlers
-.align  5
-undefined_instruction:
-
-    b  __undefined_instruction
-
-// Prepare to call a handler associated to a pending signal
-// r0 contains the reference to the sigaction_t structure related to the signal to be processed.
-#endif
+	mov	x0, lr
+	b trap_handle_error
 
 __prepare_sig_handler:
-
 #if 0
-	// Alignment guard
-	tst		sp, #0x7	// 8-bytes aligned
-	bne		__stack_alignment_fault
+	str		sp, [sp, #(OFFSET_SP-S_FRAME_SIZE)]	// save sp
 
-	str		sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]	// save sp
 	// Build a new stack frame based on the current
-	sub		sp, sp, #SVC_STACK_FRAME_SIZE
+	sub		sp, sp, #S_STACK_FRAME_SIZE
 
 	// Make sure the spsr is with Thumb de-activated to perform normal execution of the handler
 
@@ -266,20 +219,19 @@ __prepare_sig_handler:
 #endif
 	ret
 
-#if 0
 .macro check_pending_signal
 	// Is there any pending signals for this process?
 	bl		sig_check
 
-	cmp		r0, #0
-	beq		1f
+	cmp		x0, #0
+	b.eq	1f
 
 	// Configure a stack frame to manage the user handler
 	bl		__prepare_sig_handler
 1:
 
 .endm
-#endif
+
 
 
 // IRQs are off
@@ -361,10 +313,11 @@ __no_sigreturn:
 
 __ret_from_fork:
 
-#if 0
 	// Store the return value on the stack frame
-	cmp		r7, #SYSCALL_SIGRETURN
-	strne	r0, [sp, #OFFSET_R0]
+	cmp		x8, #SYSCALL_SIGRETURN
+	b.ne 	0f
+	str		x0, [sp, #OFFSET_X0]
+0:
 
 #ifdef CONFIG_IPC_SIGNAL
 	// Is there any pending signals for this process?
@@ -372,28 +325,22 @@ __ret_from_fork:
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
 
-    ldr 	lr, [sp, #OFFSET_PSR]	// get the saved spsr and adjust the stack pointer
-    msr		spsr, lr
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
 
-	// Restoring user mode registers (sp_usr, lr_usr)
-	add		lr, sp, #OFFSET_SP_USR
-	ldmia	lr, {sp, lr}^
+	ldr		x0, [sp, #OFFSET_ELR_EL1]
+	msr		elr_el1, x0
 
- 	ldmia 	sp, {r0-r12}
-	add		sp, sp, #OFFSET_SP
+  	kernel_exit
 
-	dsb
-	isb
-
-	ldmia 	sp, {sp, lr, pc}^
-#endif
+	eret
 
 el0_sync_handler:
 
 	kernel_entry
 
 	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_LR]
+	str		x0, [sp, #OFFSET_ELR_EL1]
 
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
@@ -404,18 +351,9 @@ el0_sync_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-	str		lr, [sp, #-8]!
-
-	enable_irq
     bl 		trap_handle
-    disable_irq
 
- 	ldr		lr, [sp], #8
-
-	// Return value
-	str		x0, [sp, #OFFSET_X0]
-
-	ldr		x0, [sp, #OFFSET_LR]
+	ldr		x0, [sp, #OFFSET_ELR_EL1]
 	msr		elr_el1, x0
 
 	ldr 	x0, [sp, #OFFSET_SP]
@@ -431,41 +369,9 @@ el0_sync_handler:
 // Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
 
-#if 0
-	mov		r0, #0
+	str		xzr, [sp, #OFFSET_X0]
+
 	b		__ret_from_fork
-#endif
-
-#if 0
-.align  5
-prefetch_abort:
-
-	// Call the C data abort handler with the following args:
-	// r0 = IFAR, r1 = IFSR, r2 = LR
-
-	mrc	p15, 0, r0, c6, c0, 2		// get IFAR
-	mrc	p15, 0, r1, c5, c0, 1		// get IFSR
-	mov r2, lr
-
-    b __prefetch_abort
-
-.align  5
-data_abort:
-
-	// Call the C data abort handler with the following args:
-	// r0 = FAR, r1 = FSR, r2 = LR
-
-	mrc	p15, 0, r1, c5, c0, 0		// get FSR
-	mrc	p15, 0, r0, c6, c0, 0		// get FAR
-	mov r2, lr
-
-    b __data_abort
-
-.align  5
-not_used:
-    b not_used
-
-#endif
 
 .align  5
 el0_irq_handler:
@@ -473,7 +379,7 @@ el0_irq_handler:
 	kernel_entry
 
 	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_LR]
+	str		x0, [sp, #OFFSET_ELR_EL1]
 
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
@@ -484,11 +390,9 @@ el0_irq_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-	str		lr, [sp, #-8]!
     bl 		irq_handle
-    ldr		lr, [sp], #8
 
-	ldr		x0, [sp, #OFFSET_LR]
+	ldr		x0, [sp, #OFFSET_ELR_EL1]
 	msr		elr_el1, x0
 
 	ldr 	x0, [sp, #OFFSET_SP]
@@ -507,35 +411,27 @@ el1_irq_handler:
 
 	kernel_entry
 
+	mrs		x0, elr_el1
+	str		x0, [sp, #OFFSET_ELR_EL1]
+
 	mrs		x0, spsr_el1
 	str		x0, [sp, #OFFSET_PSTATE]
 
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-	str		lr, [sp, #-8]!
+	// The stack must stay 16-byte aligned
+
     bl 		irq_handle
-	ldr		lr, [sp], #8
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el1, x0
 
+	ldr		x0, [sp, #OFFSET_ELR_EL1]
+	msr		elr_el1, x0
+
   	kernel_exit
 
 	eret
-
-
-#if 0
-.align  5
-fiq:
-    b  fiq
-#endif
-
-
-.LCcurrent:
-	.quad current_thread
-
-.LClog:
-	.quad 0
 
 

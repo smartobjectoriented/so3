@@ -83,8 +83,12 @@ __start:
 	.globl	\name
 \name:
 
-  str	x8, [sp], #-8
-  str	x10, [sp], #-8
+  // 16-byte stack alignment
+  sub	sp, sp, #32
+
+  str	x8, [sp]
+  str	x10, [sp, #8]
+  str	lr,  [sp, #16]
 
   mov	x8, #\number
 
@@ -93,8 +97,11 @@ __start:
 
   svc	0
 
-  ldr	x10, [sp], #8
-  ldr	x8, [sp], #8
+  ldr 	x8, [sp]
+  ldr	x10, [sp, #8]
+  ldr	lr, [sp, #16]
+
+  add	sp, sp, #32
 
   ret
 

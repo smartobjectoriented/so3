@@ -93,25 +93,6 @@ __get_syscall_args_ext:
 
 	ret
 
-// exec syscall used by the kernel to run the initial binary image (shell)
-__exec:
-#if 0
-  	stmfd sp!, {r7, r10, r11, r12}
-  	mov	r7, #SYSCALL_EXEC_NR
-
-  	mov r1, #0 		// args = NULL
-  	mov r2, #0 		// envp = NULL
-
-	mov r10, #0  	// We do not use errno
-
-  	swi 0
-
-  	ldmfd sp!, {r7, r10, r11, r12}
-
-  	mov	pc, lr
-#endif
-	ret
-
 // Kernel thread initial entry point
 // Called once per thread
 
@@ -183,29 +164,26 @@ __thread_prologue_user:
 // Store the current registers into a cpu_regs structure passed in r0 (as first argument)
 __save_context:
 
-#if 0
-	// Adjust the kernel stack pointer so that we can proceed with ret_from_fork
-	// SVC_STACK_FRAME_SIZE/4 registers are preserved when at the syscall vector entry point
+	// Adjust the kernel stack pointer so that we can proceed with ret_from_fork.
+	// S_FRAME_SIZE/8 registers are preserved when at the syscall vector entry point
 
 	// Adjust the sp which is stored on the stack. Make sure
 	// it refers to this stack and not the one issue from the copy
 	// as during fork().
 
-	str		r1, [r1, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]
+	str		x1, [x1, #(OFFSET_SP - S_FRAME_SIZE)]
 
-	sub		r2, r1, #SVC_STACK_FRAME_SIZE
+	sub		x2, x1, #S_FRAME_SIZE
 
 	// Prepare to configure sp during the context switch.
-	str		r2, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
+	str		x2, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
 
 	// Prepare the lr to branch to ret_from_fork
-	ldr		r1, .LCret_from_fork
-	str		r1, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
+	ldr		x1, .LCret_from_fork
+	str		x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
 
 	// The other registers are not important.
 
-	mov 	pc, lr
-#endif
 	ret
 
 ENTRY(__switch_context)
@@ -215,7 +193,6 @@ ENTRY(__switch_context)
 	cbz 	x0, load_ctx
 
 	add		x8, x0, x10
-	mov		x9, sp
 
 save_ctx:
 
@@ -226,13 +203,12 @@ save_ctx:
 	stp		x27, x28, [x8], #16
 	stp		x29, lr, [x8], #16
 
+	mov		x9, sp
 	str		x9, [x8]
-
-	// Prepare to retrieve the regs from the stack
-	add		x8, x1, x10
 
 load_ctx:
 
+	// Prepare to retrieve the regs from the stack
 	add		x8, x1, x10
 
 	ldp		x19, x20, [x8], #16		// restore callee-saved registers
@@ -248,17 +224,38 @@ load_ctx:
 	ret
 
 // Switch the MMU to a L0 page table
-// x0 contains the TTBR related to this CPU for the L0 page table
+// x0 contains the TTBR1 related to this CPU for the L0 page table
 
 ENTRY(__mmu_switch)
 
-	dsb   sy                     /* Ensure the flushes happen before continuing */
-    isb                          /* Ensure synchronization with previous changes to text */
+	// Ensure the flushes happen before continuing
+	dsb   sy
+
+	// Ensure synchronization with previous code changes
+    isb
 
 	// Only the user space range is concerned with a MMU context switch
 	msr    ttbr0_el1, x0
 
     isb
+
+	ret
+
+// Switch the MMU to a L0 page table
+// x0 contains the TTBR1 related to this CPU for the L0 page table
+ENTRY(__mmu_switch_sys)
+
+ 	// Ensure the flushes happen before continuing
+	dsb   sy
+
+	// Ensure synchronization with previous code changes
+    isb
+
+	msr    ttbr1_el1, x0
+
+    isb
+
+
 
 	ret
 
@@ -317,9 +314,11 @@ ENTRY(__root_proc)
 	// exec("sh.elf")
 
 	adr	x0, .LC_exec
+
 	// No args
 	mov x1, xzr
 	mov x2, xzr
+
 	// No errno
 	mov x10, xzr
 
@@ -327,18 +326,15 @@ ENTRY(__root_proc)
 
 	svc 0
 
+	// If we are here, exec() has failed...
 
-#if 0
-	/* Start the first process */
-	__exec("sh.elf");
-	__arch_user_exec(...)
+	mov	x0, #STDOUT
+	adr x1, .LCnoshell
+	mov x2, noshell_len
+	mov x8, #SYSCALL_WRITE
 
-	/* We normally never runs here, if the exec() succeeds... */
-	__arch_user_write(..)
-	printk("so3: No init proc (shell) found ...\n");
+	// No errno
+	mov x10, xzr
 
-	__arch_user_kernel_panic();
-
-	kernel_panic();
-#endif
+	b kernel_panic
 

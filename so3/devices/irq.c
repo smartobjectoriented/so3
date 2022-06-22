@@ -170,6 +170,10 @@ void irq_handle(cpu_regs_t *regs) {
 
 	irq_ops.handle(regs);
 
+	/* Out of this interrupt routine, IRQs must be enabled otherwise the thread
+	 * will block all interrupts.
+	 */
+
 	BUG_ON(irqs_disabled_flags(regs));
 
 	do_softirq();

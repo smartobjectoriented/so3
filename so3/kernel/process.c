@@ -64,7 +64,7 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /* Used to update regs during fork */
-extern void __save_context(tcb_t *newproc, uint32_t stack_addr);
+extern void __save_context(tcb_t *newproc, addr_t stack_addr);
 
 /* only the following sections are supported */
 #define SUPPORTED_SECTION_COUNT 6
@@ -321,7 +321,7 @@ void create_root_process(void)
 	 * the initial code can run normally in user mode.
 	 */
 
-	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start), __root_proc_end - __root_proc_start, false);
+	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start), (void *) __root_proc_end - (void *) __root_proc_start, false);
 
 	/* Start main thread <args> of the thread is not used in this context. */
 	pcb->main_thread = user_thread((th_fn_t) USER_SPACE_VADDR, "root_proc", NULL, pcb);
@@ -418,7 +418,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 	/* Environment string addresses */
 	if (!envp) {
-		*((int *) args_p) = 0; /* Keep array-end with NULL */
+		*((addr_t *) args_p) = 0; /* Keep array-end with NULL */
 		args_p += sizeof(char *);
 
 	} else {

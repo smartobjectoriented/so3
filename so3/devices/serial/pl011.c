@@ -49,7 +49,7 @@ typedef struct {
 
 pl011_t pl011 =
 {
-	.base = UART_BASE,
+	.base = CONFIG_UART_LL_PADDR,
 };
 
 static int pl011_put_byte(char c) {

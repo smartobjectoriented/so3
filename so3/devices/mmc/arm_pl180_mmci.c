@@ -23,6 +23,7 @@
 #include <mmc.h>
 #include <bitops.h>
 #include <heap.h>
+#include <memory.h>
 
 #include "arm_pl180_mmci.h"
 
@@ -355,11 +356,22 @@ static const struct mmc_ops arm_pl180_mmci_ops = {
  * Set initial clock and power for mmc slot.
  * Initialize mmc struct and register with mmc framework.
  */
-static int arm_pl180_mmci_init(dev_t *dev) {
+static int arm_pl180_mmci_init(dev_t *dev, int fdt_offset) {
  	struct mmc *mmc;
 	u32 sdi_u32;
+	const struct fdt_property *prop;
+	int prop_len;
 
-	mmc_host.base = (struct sdi_registers *) dev->base;
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+#ifdef CONFIG_ARCH_ARM32
+	mmc_host.base = (struct sdi_registers *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	mmc_host.base = (struct sdi_registers *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+#endif
 
 	mmc_host.pwr_init = fdt_get_int(__fdt_addr, dev, "power");
 	mmc_host.clkdiv_init = fdt_get_int(__fdt_addr, dev, "clkdiv");

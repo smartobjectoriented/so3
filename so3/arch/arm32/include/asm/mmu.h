@@ -30,7 +30,13 @@
 /* Memory space all I/O mapped registers and additional mappings */
 #define IO_MAPPING_BASE		0xe0000000
 
+/* Ramdev rootfs if any at this location */
+#define RAMDEV_VADDR		0xd0000000
+
 #define TTB_L1_SYS_OFFSET	0x4000
+
+/* Fixmap page used for temporary mapping */
+#define FIXMAP_MAPPING		0xf0000000
 
 /* Define the number of entries in each page table */
 

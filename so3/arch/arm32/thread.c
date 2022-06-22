@@ -38,5 +38,5 @@ void arch_prepare_cpu_regs(tcb_t *tcb) {
  * @return	Base address of arguments
  */
 addr_t arch_get_args_base(void) {
-	return (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE);
+	return (CONFIG_KERNEL_VADDR - PAGE_SIZE);
 }

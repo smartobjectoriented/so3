@@ -60,10 +60,6 @@ __start:
 	// Mostly for future usage...
 	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
-    // Use a temporary stack
-    adrp	x0, temp_stack
-    mov		sp, x0
-
 	/* Clear the BSS */
 
 	adrp	x0, __bss_start
@@ -96,11 +92,11 @@ __kernel_main:
 	adr     x8, .LCfdt_addr_temp
 	ldr 	x9, [x8]
 
-	ldr	x0, =__fdt_addr
-	str	x9, [x0]
+	ldr		x0, =__fdt_addr
+	str		x9, [x0]
 
 	// C main entry point
-	b 	kernel_start
+	b 		kernel_start
 
 	// never returns...
 
@@ -115,12 +111,10 @@ mmu_setup:
   adrp	x0, temp_stack
   mov	sp, x0
 
-  mov	x0, x9 // fdt addr
-
   bl 	mmu_configure
 
   // Readjust the stack
-  ldr	x0, =.LCstack_top
+  ldr	x0, =__stack_top
   mov	sp, x0
 
   // Keep executing in the kernel space
@@ -308,9 +302,3 @@ temp_stack:
 
 .LCvirt_entry:
   .quad __kernel_main
-
-.LCstack_top:
-  .quad __stack_top
-
-.LCvectors:
-  .quad __vectors_start

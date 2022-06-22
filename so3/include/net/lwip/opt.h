@@ -2085,7 +2085,7 @@
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
 #if !defined SO_REUSE || defined __DOXYGEN__
-#define SO_REUSE                        0
+#define SO_REUSE                        1
 #endif
 
 /**

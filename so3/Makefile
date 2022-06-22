@@ -387,7 +387,7 @@ LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
 ifdef CONFIG_MMU
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VIRT_ADDR) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 else
      cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 endif

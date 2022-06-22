@@ -19,14 +19,12 @@
 #ifndef RAMDEV_H
 #define RAMDEV_H
 
-/* Ramdev rootfs if any at this location */
-#define RAMDEV_VIRT_BASE	0xd0000000
-
 void ramdev_init(void);
-bool valid_ramdev(void);
-uint32_t get_ramdev_size(void);
-uint32_t get_ramdev_start(void);
 
-void ramdev_create_mapping(void *root_pgtable);
+bool valid_ramdev(void);
+
+uint32_t get_ramdev_size(void);
+addr_t get_ramdev_start(void);
+
 
 #endif /* RAMDEV_H */

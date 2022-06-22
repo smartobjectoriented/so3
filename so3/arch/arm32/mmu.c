@@ -300,9 +300,9 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 
 	/* Now, create a virtual mapping in the kernel space */
 	for (i = 0; i < 64; i++) {
-		__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
+		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
 
-		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
+		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
 
 	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
@@ -310,8 +310,10 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(fdt_addr)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Early mapping I/O for UART */
-	__pgtable[l1pte_index(UART_BASE)] = UART_BASE;
-	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(UART_BASE)], L1_SECT_DCACHE_OFF);
+	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
+	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
+
+#ifndef CONFIG_SO3VIRT
 
 	mmu_setup(__pgtable);
 
@@ -319,7 +321,7 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	icache_enable();
 
 	/* Update the system page table using the virtual address */
-	__sys_root_pgtable = (void *) (CONFIG_KERNEL_VIRT_ADDR + TTB_L1_SYS_OFFSET);
+	__sys_root_pgtable = (void *) (CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET);
 }
 
 /*
@@ -373,7 +375,7 @@ void reset_root_pgtable(void *pgtable, bool remove) {
 	int i;
 	uint32_t *l1pte, *l2pte;
 
-	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
+	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VADDR); i++) {
 
 		l1pte = (uint32_t *) pgtable + i;
 
@@ -419,7 +421,7 @@ void pgtable_copy_kernel_area(void *l1pgtable) {
 	int i1;
 	uint32_t *__l1pgtable = (uint32_t *) l1pgtable;
 
-	for (i1 = l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i1 < TTB_L1_ENTRIES; i1++)
+	for (i1 = l1pte_index(CONFIG_KERNEL_VADDR); i1 < TTB_L1_ENTRIES; i1++)
 		__l1pgtable[i1] = ((uint32_t *) __sys_root_pgtable)[i1];
 
 	mmu_page_table_flush((addr_t) __l1pgtable, (addr_t) (__l1pgtable + TTB_L1_ENTRIES));
@@ -445,7 +447,7 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 
 	l2pgtable_size = TTB_L2_ENTRIES * sizeof(uint32_t);
 
-	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
+	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VADDR); i++) {
 		l1pte = (uint32_t *) from->pgtable + i;
 
 		if (*l1pte) {
@@ -479,7 +481,7 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 					/* Add the new page to the process list */
 					add_page_to_proc(to, (page_t *) phys_to_page(paddr));
 
-					create_mapping(current_pgtable(), TRANSITIONAL_MAPPING, paddr, PAGE_SIZE, false);
+					create_mapping(current_pgtable(), FIXMAP_MAPPING, paddr, PAGE_SIZE, false);
 
 					*l2pte_dst = paddr;
 
@@ -487,13 +489,13 @@ void duplicate_user_space(struct pcb *from, struct pcb *to) {
 
 					vaddr = (void *) pte_index_to_vaddr(i, j);
 
-					memcpy((void *) TRANSITIONAL_MAPPING, vaddr, PAGE_SIZE);
+					memcpy((void *) FIXMAP_MAPPING, vaddr, PAGE_SIZE);
 
 				}
 			}
 		}
 	}
-	release_mapping(current_pgtable(), TRANSITIONAL_MAPPING, PAGE_SIZE);
+	release_mapping(current_pgtable(), FIXMAP_MAPPING, PAGE_SIZE);
 }
 
 void dump_pgtable(void *l1pgtable) {
