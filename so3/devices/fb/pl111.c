@@ -93,7 +93,7 @@
 #define LCDEN     (1 <<  0) /* enable display */
 
 
-void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count);
+void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
 
 struct file_operations pl111_fops = {
@@ -154,7 +154,7 @@ static int pl111_init(dev_t *dev, int fdt_offset)
 	return 0;
 }
 
-void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count)
+void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
 {
 	uint32_t i, page;
 	pcb_t *pcb = current()->pcb;

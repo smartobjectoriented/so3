@@ -111,7 +111,7 @@ struct file_operations {
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
 	int (*stat)(const char *path, struct stat *st);
-	void* (*mmap)(int fd, uint32_t virt_addr, uint32_t page_count);
+	void* (*mmap)(int fd, addr_t virt_addr, uint32_t page_count);
 	int (*unlink)(int fd, void *);
 	int (*mount)(const char *);
 	int (*unmount)(const char *);
