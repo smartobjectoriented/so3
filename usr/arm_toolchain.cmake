@@ -24,6 +24,6 @@ set(CMAKE_ASM_COMPILER "arm-linux-gnueabihf-gcc")
 set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  -D__ARM__ -marm  \
         -mno-thumb-interwork -march=armv5 -g -ffreestanding -fno-common")
  
-set(CMAKE_ASM_FLAGS_DEBUG "-D__ASSEMBLY__")
+set(CMAKE_ASM_FLAGS_DEBUG "-D__ARM__ -D__ASSEMBLY__")
 
 set(CMAKE_LINKER "arm-linux-gnueabihf-ld")

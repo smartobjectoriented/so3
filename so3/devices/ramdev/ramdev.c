@@ -146,7 +146,7 @@ static void get_ramdev(const void *fdt) {
 	 * computes the size in the same way.
 	 */
 	ramdev_size = ramdev_end - ramdev_start;
-lprintk("### mapping %lx   start: %lx   end: %lx\n", ramdev_size, ramdev_start, ramdev_end);
+
 	/* Do the virtual mapping */
 	ramdev_create_mapping(NULL, ramdev_start, ramdev_end);
 }

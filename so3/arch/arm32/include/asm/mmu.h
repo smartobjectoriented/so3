@@ -209,7 +209,10 @@ void reset_root_pgtable(void *pgtable, bool remove);
 void clear_l1pte(void *l1pgtable, addr_t vaddr);
 
 void mmu_switch(void *l1pgtable);
+void mmu_switch_sys(void *l1pgtable);
 void dump_pgtable(void *l1pgtable);
+
+void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramdev_end);
 
 void flush_tlb_all(void);
 

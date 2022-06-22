@@ -28,8 +28,6 @@
 
 #include <device/arch/pl011.h>
 
-#include <mach/uart.h>
-
 #include <asm/io.h>                 /* ioread/iowrite macros */
 
 #include <printk.h>

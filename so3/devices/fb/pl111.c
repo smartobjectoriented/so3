@@ -112,25 +112,41 @@ struct devclass pl111_cdev = {
  * Initialisation of the PL111 CLCD Controller.
  * Linux driver: video/fbdev/amba-clcd.c
  */
-int pl111_init(dev_t *dev)
+static int pl111_init(dev_t *dev, int fdt_offset)
 {
+	const struct fdt_property *prop;
+	int prop_len;
+	void *base;
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	/* Mapping the two mem area of GIC (distributor & CPU interface) */
+#ifdef CONFIG_ARCH_ARM32
+	base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+
+#endif
+
 	/* Disable interrupts. */
-	iowrite32(dev->base + CLCD_IENB, 0);
+	iowrite32(base + CLCD_IENB, 0);
 
 	/* Set timing registers. */
-	iowrite32(dev->base + CLCD_TIM0, HBP | HFP | HSW | PPL);
-	iowrite32(dev->base + CLCD_TIM1, VBP | VFP | VSW | LPP);
-	iowrite32(dev->base + CLCD_TIM2, PCD_HI | BCD | CPL | IOE | IPC | IHS | IVS | ACB | CLKSEL | PCD_LO);
-	iowrite32(dev->base + CLCD_TIM3, LEE | LED);
+	iowrite32(base + CLCD_TIM0, HBP | HFP | HSW | PPL);
+	iowrite32(base + CLCD_TIM1, VBP | VFP | VSW | LPP);
+	iowrite32(base + CLCD_TIM2, PCD_HI | BCD | CPL | IOE | IPC | IHS | IVS | ACB | CLKSEL | PCD_LO);
+	iowrite32(base + CLCD_TIM3, LEE | LED);
 
 	/* Set framebuffer addresses. */
-	iowrite32(dev->base + CLCD_UBAS, LCDUPBASE);
+	iowrite32(base + CLCD_UBAS, LCDUPBASE);
 	if (LCDDUAL) {
-		iowrite32(dev->base + CLCD_LBAS, LCDLPBASE);
+		iowrite32(base + CLCD_LBAS, LCDLPBASE);
 	}
 
 	/* Configure, enable and power on the controller. */
-	iowrite32(dev->base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
+	iowrite32(base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
 
 	/* Register the framebuffer so it can be accessed from user space. */
 	devclass_register(dev, &pl111_cdev);

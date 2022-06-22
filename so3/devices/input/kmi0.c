@@ -26,11 +26,12 @@
 
 #include <vfs.h>
 #include <common.h>
+#include <memory.h>
+
 #include <asm/io.h>
 #include <device/driver.h>
 #include <device/input/ps2.h>
 #include <device/input/pl050.h>
-
 
 /* ioctl commands. */
 #define GET_KEY 0
@@ -43,7 +44,6 @@ struct file_operations pl050_keyboard_fops = {
 
 /* Device info. */
 
-dev_t pl050_keyboard;
 
 struct devclass pl050_keyboard_cdev = {
 	.class = DEV_CLASS_KEYBOARD,
@@ -55,6 +55,12 @@ struct ps2_key last_key = {
 	.value = 0,
 	.state = 0
 };
+
+struct {
+	void *base;
+	irq_def_t irq_def;
+} pl050_keyboard;
+
 
 /*
  * Keyboard interrupt service routine.
@@ -95,9 +101,29 @@ irq_return_t pl050_int_keyboard(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
-int pl050_init_keyboard(dev_t *dev)
+int pl050_init_keyboard(dev_t *dev, int fdt_offset)
 {
-	return pl050_init(dev, &pl050_keyboard, &pl050_keyboard_cdev, pl050_int_keyboard);
+	const struct fdt_property *prop;
+	int prop_len;
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	/* Mapping the two mem area of GIC (distributor & CPU interface) */
+#ifdef CONFIG_ARCH_ARM32
+	pl050_keyboard.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	pl050_keyboard.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+
+#endif
+	fdt_interrupt_node(fdt_offset, &pl050_keyboard.irq_def);
+
+	/* Register the input device so it can be accessed from user space. */
+	devclass_register(dev, &pl050_keyboard_cdev);
+	pl050_init(pl050_keyboard.base, &pl050_keyboard.irq_def, pl050_int_keyboard);
+
+	return 0;
 }
 
 int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)

@@ -25,7 +25,7 @@
 #include <sizes.h>
 #include <string.h>
 
-#include <mach/uart.h>
+#include <device/ramdev.h>
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
@@ -63,6 +63,14 @@ void set_domain(uint32_t val)
 	"mcr	p15, 0, %0, c3, c0	@ set domain" : : "r" (val) : "memory");
 	isb();
 }
+
+#ifdef CONFIG_RAMDEV
+void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramdev_end) {
+
+	if (valid_ramdev())
+		create_mapping(root_pgtable, RAMDEV_VADDR, ramdev_start, ramdev_end-ramdev_start, false);
+}
+#endif /* CONFIG_RAMDEV */
 
 /* Reference to the system 1st-level page table */
 static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long end, unsigned long pfn, bool nocache)
@@ -313,8 +321,6 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
 
-#ifndef CONFIG_SO3VIRT
-
 	mmu_setup(__pgtable);
 
 	dcache_enable();
@@ -414,6 +420,10 @@ void mmu_switch(void *l1pgtable) {
 	invalidate_icache_all();
 	v7_inval_tlb();
 
+}
+
+void mmu_switch_sys(void *l1pgtable) {
+	mmu_switch(l1pgtable);
 }
 
 /* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
