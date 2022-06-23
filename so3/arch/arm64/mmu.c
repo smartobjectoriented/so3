@@ -516,11 +516,11 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
 
 #endif
 
-/*
- * Switch the MMU to a L0 page table.
- * We *only* use ttbr1 when dealing with our hypervisor which is located in a kernel space area,
- * i.e. starting with 0xffff.... So ttbr0 is not used as soon as the id mapping in the RAM
- * is not necessary anymore.
+/**
+ * Switch the MMU to a L0 page table specific to a process.
+ * Typically used to change the user space mapping.
+ *
+ * @param l0pgtable 	Level 0 page table
  */
 void mmu_switch(void *l0pgtable) {
 

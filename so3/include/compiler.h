@@ -50,12 +50,6 @@ typedef unsigned long int uintptr_t;
 
 #define offsetof(a,b) __builtin_offsetof(a,b)
 
-/* Force a compilation error if condition is true */
-#define BUILD_BUG_ON(condition) ((void)sizeof(struct { int:-!!(condition); }))
-
-/* &a[0] degrades to a pointer: a different type from an array */
-#define __must_be_array(a) \
-  BUILD_BUG_ON_ZERO(__builtin_types_compatible_p(typeof(a), typeof(&a[0])))
 
 #ifdef GCC_HAS_VISIBILITY_ATTRIBUTE
 /* Results in more efficient PIC code (no indirections through GOT or PLT). */

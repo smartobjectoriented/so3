@@ -389,13 +389,6 @@ static inline int pte_type(u64 *pte)
 	return *pte & PTE_TYPE_MASK;
 }
 
-#define cpu_get_l0pgtable()	\
-({						\
-	unsigned long ttbr;			\
-	__asm__("mrs	%0, ttbr1_el1"	\
-		 : "=r" (ttbr) : : "cc");	\
-	ttbr &= TTBR0_BASE_ADDR_MASK;		\
-})
 
 #define cpu_get_ttbr0() \
 ({						\
@@ -462,22 +455,16 @@ void pgtable_copy_kernel_area(void *l1pgtable);
 void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache);
 void release_mapping(void *pgtable, addr_t virt_base, size_t size);
 
-void reset_l1pgtable(void *l1pgtable, bool remove);
+void mmu_switch(void *pgtable);
+void mmu_switch_sys(void *pgtable);
 
-void clear_l1pte(void *l1pgtable, addr_t vaddr);
-
-void mmu_switch(void *l0pgtable);
-void mmu_switch_sys(void *l0pgtable);
-
-void dump_pgtable(void *l0pgtable);
+void dump_pgtable(void *pgtable);
 
 void dump_current_pgtable(void);
 
 void mmu_setup(void *pgtable);
 
 void vectors_init(void);
-
-void set_current_pgtable(void *pgtable);
 
 #endif
 

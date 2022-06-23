@@ -30,7 +30,6 @@
 .global __thread_prologue_kernel
 .global __thread_prologue_user
 .global __exec_prologue_user
-.global __thread_prologue_user_pre_launch
 
 .globl __get_syscall_args_ext
 .globl __get_syscall_arg
@@ -51,7 +50,6 @@
 
 .extern __check_ptrace_traceme
 .extern ret_from_fork
-.extern pre_launch_proc
 
 #endif
 
@@ -224,8 +222,7 @@ load_ctx:
 	ret
 
 // Switch the MMU to a L0 page table
-// x0 contains the TTBR1 related to this CPU for the L0 page table
-
+// x0 contains the TTBR0 related to this CPU for the L0 page table
 ENTRY(__mmu_switch)
 
 	// Ensure the flushes happen before continuing

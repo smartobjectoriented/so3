@@ -85,7 +85,9 @@ static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 static inline u32 arch_timer_get_cntfrq(void)
 {
 	u32 val;
+
 	asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r" (val));
+
 	return val;
 }
 
@@ -95,13 +97,16 @@ static inline u64 arch_counter_get_cntvct(void)
 
 	isb();
 	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (cval));
+
 	return cval;
 }
 
 static inline u32 arch_timer_get_cntkctl(void)
 {
 	u32 cntkctl;
+
 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+
 	return cntkctl;
 }
 
@@ -113,4 +118,3 @@ static inline void arch_timer_set_cntkctl(u32 cntkctl)
 
 
 #endif /* ASM_ARM_TIMER_H */
-

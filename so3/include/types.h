@@ -27,7 +27,7 @@
 
 /* mandatory types */
 
-typedef unsigned int size_t;
+typedef unsigned long size_t;
 typedef int ssize_t;
 
 typedef signed int ptrdiff_t;
