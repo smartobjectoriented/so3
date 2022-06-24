@@ -211,16 +211,18 @@ pcb_t *new_process(void)
 
 	/* Process-related memory management */
 
-	/* create the 1st level page table */
+	/* Create the 1st level page table */
 	pcb->pgtable = new_root_pgtable();
 	if (!pcb->pgtable) {
 		printk("%s: failed to create level 1 page table", __func__);
 		kernel_panic();
 	}
 
+	/* With aarch32, we have one page table used by TTBR0/1 without distinction */
+#ifdef CONFIG_ARCH_ARM32
 	/* Preserve the mapping of kernel regions according to the arch configuration */
 	pgtable_copy_kernel_area(pcb->pgtable);
-
+#endif
 	/* Integrate the list of process */
 	list_add_tail(&pcb->list, &proc_list);
 

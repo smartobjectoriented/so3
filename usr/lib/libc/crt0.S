@@ -21,14 +21,14 @@
 .extern __entryC
 
 .data
-.align 	4
 .globl	errno
 
+.align 8
 errno:
 	.word	0x0
 
 .text
-.align  4
+
 
 /* -------------------------------------------------------------
  * __start
@@ -87,18 +87,18 @@ __start:
   sub	sp, sp, #32
 
   str	x8, [sp]
-  str	x10, [sp, #8]
+  str	x9, [sp, #8]
   str	lr,  [sp, #16]
 
   mov	x8, #\number
 
-  ldr	x10, =errno
-  str	xzr, [x10]
+  ldr	x9, =errno
+  str	wzr, [x9]
 
   svc	0
 
   ldr 	x8, [sp]
-  ldr	x10, [sp, #8]
+  ldr	x9, [sp, #8]
   ldr	lr, [sp, #16]
 
   add	sp, sp, #32

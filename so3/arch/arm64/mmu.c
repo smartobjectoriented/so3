@@ -336,6 +336,13 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 		free(pgtable);
 }
 
+
+/* Duplicate the essentials of the kernel area */
+void pgtable_copy_kernel_area(void *pgtable) {
+	/* Nothing to do here */
+
+}
+
 /*
  * Allocate a new page table. Return NULL if it fails.
  * The page table must be 4 KB aligned.
@@ -661,11 +668,6 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
 		create_mapping(root_pgtable, RAMDEV_VADDR, ramdev_start, ramdev_end-ramdev_start, false);
 }
 #endif /* CONFIG_RAMDEV */
-
-/* Duplicate the essentials of the kernel area */
-void pgtable_copy_kernel_area(void *l0pgtable) {
-	/* Nothing to do - We stay with ttbr0_el1 to the right sys page table. */
-}
 
 #if 0
 void dump_current_pgtable(void) {

@@ -311,36 +311,12 @@ __no_sigreturn:
 #endif
 #endif
 
-__ret_from_fork:
-
-	// Store the return value on the stack frame
-	cmp		x8, #SYSCALL_SIGRETURN
-	b.ne 	0f
-	str		x0, [sp, #OFFSET_X0]
-0:
-
-#ifdef CONFIG_IPC_SIGNAL
-	// Is there any pending signals for this process?
-
-	check_pending_signal
-#endif /* CONFIG_IPC_SIGNAL */
-
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
-	ldr		x0, [sp, #OFFSET_ELR_EL1]
-	msr		elr_el1, x0
-
-  	kernel_exit
-
-	eret
-
 el0_sync_handler:
 
 	kernel_entry
 
 	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_ELR_EL1]
+	str		x0, [sp, #OFFSET_PC]
 
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
@@ -353,7 +329,15 @@ el0_sync_handler:
 
     bl 		trap_handle
 
-	ldr		x0, [sp, #OFFSET_ELR_EL1]
+__ret_from_fork:
+
+#ifdef CONFIG_IPC_SIGNAL
+	// Is there any pending signals for this process?
+
+	check_pending_signal
+#endif /* CONFIG_IPC_SIGNAL */
+
+	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
 	ldr 	x0, [sp, #OFFSET_SP]
@@ -379,7 +363,7 @@ el0_irq_handler:
 	kernel_entry
 
 	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_ELR_EL1]
+	str		x0, [sp, #OFFSET_PC]
 
 	mrs		x0, sp_el0
 	str		x0, [sp, #OFFSET_SP]
@@ -392,7 +376,7 @@ el0_irq_handler:
 
     bl 		irq_handle
 
-	ldr		x0, [sp, #OFFSET_ELR_EL1]
+	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
 	ldr 	x0, [sp, #OFFSET_SP]
@@ -412,7 +396,7 @@ el1_irq_handler:
 	kernel_entry
 
 	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_ELR_EL1]
+	str		x0, [sp, #OFFSET_PC]
 
 	mrs		x0, spsr_el1
 	str		x0, [sp, #OFFSET_PSTATE]
@@ -427,7 +411,7 @@ el1_irq_handler:
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el1, x0
 
-	ldr		x0, [sp, #OFFSET_ELR_EL1]
+	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
   	kernel_exit

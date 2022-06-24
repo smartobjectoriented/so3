@@ -12,7 +12,7 @@ ENTRY(__start)
  * Indeed a user thread (running in the user space) will also involve kernel activities
  * with syscalls and other.
  */
-SVC_STACK_SIZE = 64 * 1024;  		/* Initial system stack */
+SVC_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack */
 HEAP_SIZE = 32 * 1024 * 1024;    /* 2 MB dedicated to kernel heap */
  
 SECTIONS

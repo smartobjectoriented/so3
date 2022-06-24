@@ -835,7 +835,7 @@
 
 /* The stack must be 16-byte aligned */
 
-#define S_FRAME_SIZE	(8 * 36)
+#define S_FRAME_SIZE	(8 * 34)
 
 #ifdef __ASSEMBLY__
 
@@ -1069,8 +1069,6 @@ typedef struct cpu_regs {
 	u64 sp;
 	u64 pc;
 	u64 pstate;
-	u64 elr_el1;
-	u64 padding;
 } cpu_regs_t;
 
 static inline int smp_processor_id(void) {

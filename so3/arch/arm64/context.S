@@ -82,12 +82,12 @@ __get_syscall_stack_arg:
 // Get the additional arguments linked to the syscall.
 // The ABI convention is described in crt0.S of the libc.
 // x8 contains the syscall number
-// x10 contains the address of the errno variable
+// x9 contains the address of the errno variable
 
 __get_syscall_args_ext:
 
 	str		x8, [x0]
-	str		x10, [x1]
+	str		x9, [x1]
 
 	ret
 
@@ -169,12 +169,10 @@ __save_context:
 	// it refers to this stack and not the one issue from the copy
 	// as during fork().
 
-	str		x1, [x1, #(OFFSET_SP - S_FRAME_SIZE)]
-
-	sub		x2, x1, #S_FRAME_SIZE
+	sub		x1, x1, #S_FRAME_SIZE
 
 	// Prepare to configure sp during the context switch.
-	str		x2, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
+	str		x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
 
 	// Prepare the lr to branch to ret_from_fork
 	ldr		x1, .LCret_from_fork
@@ -303,7 +301,7 @@ ENTRY(__root_proc)
 	mov x8, #SYSCALL_WRITE
 
 	// No errno
-	mov x10, xzr
+	mov x9, xzr
 
 	// Invoke the syscall - kernel side
 	svc	0
@@ -317,7 +315,7 @@ ENTRY(__root_proc)
 	mov x2, xzr
 
 	// No errno
-	mov x10, xzr
+	mov x9, xzr
 
 	mov	x8, #SYSCALL_EXECVE
 
@@ -331,7 +329,9 @@ ENTRY(__root_proc)
 	mov x8, #SYSCALL_WRITE
 
 	// No errno
-	mov x10, xzr
+	mov x9, xzr
+
+	svc 0
 
 	b kernel_panic
 

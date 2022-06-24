@@ -430,6 +430,8 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
+	pgtable_copy_kernel_area(new_sys_root_pgtable);
+
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
