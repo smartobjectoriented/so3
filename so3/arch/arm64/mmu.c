@@ -599,6 +599,8 @@ void duplicate_pgtable_entry(u64 *from, u64 *to, int level, u64 vaddr, pcb_t *pc
 				__to = memalign(size, PAGE_SIZE);
 				BUG_ON(!__to);
 
+				memset(__to, 0, PAGE_SIZE);
+
 				to[i] = (from[i] & ~mask) | (__pa(__to) & mask);
 
 				switch(level) {
@@ -692,7 +694,10 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 
 	offset = vaddr & ~PAGE_MASK;
 
-	l0pte = l0pte_offset(current_pgtable(), vaddr);
+	if (user_space_vaddr(vaddr))
+		l0pte = l0pte_offset(current_pgtable(), vaddr);
+	else
+		l0pte = l0pte_offset(__sys_root_pgtable, vaddr);
 	BUG_ON(!*l0pte);
 
 	l1pte = l1pte_offset(l0pte, vaddr);
