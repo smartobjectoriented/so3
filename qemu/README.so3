@@ -1,0 +1,19 @@
+Read the documentation in qemu-doc.html or on http://wiki.qemu.org
+
+- QEMU team
+
+- Need the SDL library
+sudo apt-get install libsdl1.2-dev
+
+Configure options:
+
+AArch32 version:
+
+./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
+
+AArch64 version:
+
+./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
+
+
+
