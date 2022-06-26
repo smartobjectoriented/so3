@@ -1,1 +1,0 @@
-tests/qapi-schema/features-duplicate-name.json:1: 'foo' (feature of FeatureStruct0) collides with 'foo' (feature of FeatureStruct0)
