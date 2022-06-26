@@ -38,8 +38,8 @@ irqdesc_t *irq_to_desc(uint32_t irq) {
  * Main thread entry point for deferred processing.
  * At the entry, IRQs are on.
  */
-int __irq_deferred_fn(void *args) {
-	int ret;
+void *__irq_deferred_fn(void *args) {
+	int *ret;
 	uint32_t irq = *((uint32_t *) args);
 
 	while (atomic_read(&irqdesc[irq].deferred_pending)) {
@@ -49,7 +49,7 @@ int __irq_deferred_fn(void *args) {
 		local_irq_enable();
 
 		/* Perform the deferred processing bound to this IRQ */
-		ret = irqdesc[irq].irq_deferred_fn(irq, irqdesc[irq].data);
+		ret = (int *) irqdesc[irq].irq_deferred_fn(irq, irqdesc[irq].data);
 
 		local_irq_disable();
 
@@ -129,7 +129,7 @@ void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, voi
 	irqdesc[irq].irq_deferred_fn = irq_deferred_fn;
 	irqdesc[irq].data = data;
 
-	irq_ops.irq_enable(irq);
+	irq_ops.enable(irq);
 }
 
 void irq_unbind(int irq) {
@@ -141,24 +141,24 @@ void irq_unbind(int irq) {
 
 void irq_mask(int irq) {
 
-	irq_ops.irq_mask(irq);
+	irq_ops.mask(irq);
 }
 
 void irq_unmask(int irq) {
 
-	irq_ops.irq_unmask(irq);
+	irq_ops.unmask(irq);
 }
 
 void irq_enable(int irq) {
 
-	irq_ops.irq_enable(irq);
-	irq_ops.irq_unmask(irq);
+	irq_ops.enable(irq);
+	irq_ops.unmask(irq);
 }
 
 void irq_disable(int irq) {
 
-	irq_ops.irq_mask(irq);
-	irq_ops.irq_disable(irq);
+	irq_ops.mask(irq);
+	irq_ops.disable(irq);
 }
 
 void irq_handle(cpu_regs_t *regs) {
@@ -168,9 +168,13 @@ void irq_handle(cpu_regs_t *regs) {
 	 */
 	__in_interrupt = true;
 
-	irq_ops.irq_handle(regs);
+	irq_ops.handle(regs);
 
-	BUG_ON(irqs_disabled_flags(regs->psr));
+	/* Out of this interrupt routine, IRQs must be enabled otherwise the thread
+	 * will block all interrupts.
+	 */
+
+	BUG_ON(irqs_disabled_flags(regs));
 
 	do_softirq();
 }

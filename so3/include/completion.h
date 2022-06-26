@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef SYNC_H
-#define SYNC_H
+#ifndef COMPLETION_H
+#define COMPLETION_H
 
 #include <spinlock.h>
 #include <list.h>
@@ -48,4 +48,4 @@ void wait_for_completion(completion_t *completion);
 void complete(completion_t *completion);
 void init_completion(completion_t *completion);
 
-#endif /* SYNC_H */
+#endif /* COMPLETION_H */

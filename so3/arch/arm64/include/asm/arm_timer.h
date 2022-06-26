@@ -21,75 +21,104 @@
 
 #include <device/arch/arm_timer.h>
 
+#include <asm/processor.h>
+/*
+ * Ensure that reads of the counter are treated the same as memory reads
+ * for the purposes of ordering by subsequent memory barriers.
+ *
+ * This insanity brought to you by speculative system register reads,
+ * out-of-order memory accesses, sequence locks and Thomas Gleixner.
+ *
+ * http://lists.infradead.org/pipermail/linux-arm-kernel/2019-February/631195.html
+ */
+#define arch_counter_enforce_ordering(val) do {				\
+	u64 tmp, _val = (val);						\
+									\
+	asm volatile(							\
+	"	eor	%0, %1, %1\n"					\
+	"	add	%0, sp, %0\n"					\
+	"	ldr	xzr, [%0]"					\
+	: "=r" (tmp) : "r" (_val));					\
+} while (0)
+
 /*
  * These register accessors are marked inline so the compiler can
  * nicely work out which register we want, and chuck away the rest of
  * the code. At least it does so with a recent GCC (4.6.3).
  */
-static inline void arch_timer_reg_write(enum arch_timer_reg reg, u32 val)
+static inline void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
 {
-	switch (reg) {
-	case ARCH_TIMER_REG_CTRL:
-		//asm volatile("mcr p15, 0, %0, c14, c3, 1" : : "r" (val));
-		break;
-
-	case ARCH_TIMER_REG_TVAL:
-		//asm volatile("mcr p15, 0, %0, c14, c3, 0" : : "r" (val));
-		break;
+	if (access == ARCH_TIMER_PHYS_ACCESS) {
+		switch (reg) {
+		case ARCH_TIMER_REG_CTRL:
+			write_sysreg(val, cntp_ctl_el0);
+			break;
+		case ARCH_TIMER_REG_TVAL:
+			write_sysreg(val, cntp_tval_el0);
+			break;
+		}
+	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+		switch (reg) {
+		case ARCH_TIMER_REG_CTRL:
+			write_sysreg(val, cntv_ctl_el0);
+			break;
+		case ARCH_TIMER_REG_TVAL:
+			write_sysreg(val, cntv_tval_el0);
+			break;
+		}
 	}
 
 	isb();
 }
 
-static inline u32 arch_timer_reg_read(enum arch_timer_reg reg)
+static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 {
-	u32 val = 0;
+	if (access == ARCH_TIMER_PHYS_ACCESS) {
+			switch (reg) {
+			case ARCH_TIMER_REG_CTRL:
+				return read_sysreg(cntp_ctl_el0);
+			case ARCH_TIMER_REG_TVAL:
+				return read_sysreg(cntp_tval_el0);
+			}
+		} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+			switch (reg) {
+			case ARCH_TIMER_REG_CTRL:
+				return read_sysreg(cntv_ctl_el0);
+			case ARCH_TIMER_REG_TVAL:
+				return read_sysreg(cntv_tval_el0);
+			}
+		}
 
-	switch (reg) {
-	case ARCH_TIMER_REG_CTRL:
-		//asm volatile("mrc p15, 0, %0, c14, c3, 1" : "=r" (val));
-		break;
+	BUG();
 
-	case ARCH_TIMER_REG_TVAL:
-		//asm volatile("mrc p15, 0, %0, c14, c3, 0" : "=r" (val));
-		break;
-	}
-
-
-	return val;
+	return 0;
 }
 
 static inline u32 arch_timer_get_cntfrq(void)
 {
-	u32 val = 0;
-
-	//asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r" (val));
-
-	return val;
+	return read_sysreg(cntfrq_el0);
 }
 
 static inline u64 arch_counter_get_cntvct(void)
 {
-	u64 cval = 0;
+	u64 cnt;
 
 	isb();
-	//asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (cval));
+	cnt = read_sysreg(cntvct_el0);
+	arch_counter_enforce_ordering(cnt);
 
-	return cval;
+	return cnt;
 }
 
 static inline u32 arch_timer_get_cntkctl(void)
 {
-	u32 cntkctl;
-
-	//asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
-
-	return cntkctl;
+	return read_sysreg(cntkctl_el1);
 }
 
 static inline void arch_timer_set_cntkctl(u32 cntkctl)
 {
-	//asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+	write_sysreg(cntkctl, cntkctl_el1);
+	isb();
 }
 
 #endif /* ASM_ARM_TIMER_H */

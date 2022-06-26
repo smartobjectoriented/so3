@@ -19,10 +19,8 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#include <asm/memory.h>
-
 /* The number of max threads must be aligned with the definition in so3.lds regarding the stack size. */
-#define	THREAD_MAX			32
+#define	THREAD_MAX		32
 #define THREAD_NAME_LEN 	80
 
 /* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */
@@ -39,12 +37,15 @@
 typedef enum { THREAD_STATE_NEW, THREAD_STATE_READY, THREAD_STATE_RUNNING, THREAD_STATE_WAITING, THREAD_STATE_ZOMBIE } thread_state_t;
 typedef unsigned int thread_t;
 
-extern unsigned int __stack_top;
+extern addr_t __stack_top;
 
 extern void thread_epilogue(void);
 
 struct queue_thread;
 typedef struct pcb pcb_t;
+
+typedef void *(*th_fn_t)(void *);
+
 /*
  * Task Control Block
  *
@@ -73,7 +74,7 @@ struct tcb {
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
 	/* Threaded function */
-	int (*th_fn)(void *);
+        th_fn_t th_fn;
 	void *th_arg;
 
 	thread_t state;
@@ -94,25 +95,25 @@ struct tcb {
 };
 typedef struct tcb tcb_t;
 
-typedef int(*th_fn_t)(void *);
+addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p);
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
-tcb_t *kernel_thread(int (*start_routine) (void *), const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb);
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb);
 
-int thread_join(tcb_t *tcb);
+int *thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);
 void clean_thread(tcb_t *tcb);
 void do_thread_yield(void);
 
-int thread_idle(void *dummy);
+void *thread_idle(void *dummy);
 
-uint32_t get_kernel_stack_top(uint32_t slotID);
+addr_t get_kernel_stack_top(uint32_t slotID);
 
 extern void __switch_context(tcb_t *prev, tcb_t *next);
 extern void __thread_prologue_kernel(void);
@@ -121,7 +122,10 @@ extern void __thread_prologue_user_pre_launch(void);
 
 char *print_state(struct tcb *tcb);
 
-int app_thread_main(void *args);
+void *app_thread_main(void *args);
+
+void arch_prepare_cpu_regs(tcb_t *tcb);
+addr_t arch_get_args_base(void);
 
 #endif /* __ASSEMBLY__ */
 

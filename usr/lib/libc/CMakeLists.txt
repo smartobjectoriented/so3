@@ -1,3 +1,15 @@
+
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
+
+file(CREATE_LINK "${CMAKE_CURRENT_SOURCE_DIR}/include/asm-aarch32" "${CMAKE_CURRENT_SOURCE_DIR}/include/asm" SYMBOLIC)
+
+else()
+
+file(CREATE_LINK "${CMAKE_CURRENT_SOURCE_DIR}/include/asm-aarch64" "${CMAKE_CURRENT_SOURCE_DIR}/include/asm" SYMBOLIC)
+
+endif()
+
+
 include_directories(
         include
 )

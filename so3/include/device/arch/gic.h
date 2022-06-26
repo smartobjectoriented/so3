@@ -30,8 +30,6 @@
 #ifndef GIC_H
 #define GIC_H
 
-#include <types.h>
-
 /* Total number of IRQ sources handled by the controller
  *   0- 15 are SGI interrupts: SGI = Software Generated Interrupts
  *  16- 31 are PPI interrupts: PPI = Private Peripheral Interrupts
@@ -41,17 +39,20 @@
 
 #define NR_IRQS	160
 
+#define ICC_SRE_EL2_SRE			(1 << 0)
+#define ICC_SRE_EL2_ENABLE		(1 << 3)
+
 #define GICD_ENABLE			0x1
 #define GICD_DISABLE			0x0
-#define GICD_INT_ACTLOW_LVLTRIG		0x0
+#define GICD_INT_ACTLOW_LVLTRIG	0x0
 #define GICD_INT_EN_CLR_X32		0xffffffff
 #define GICD_INT_EN_SET_SGI		0x0000ffff
 #define GICD_INT_EN_CLR_PPI		0xffff0000
 #define GICD_INT_DEF_PRI		0xa0
 #define GICD_INT_DEF_PRI_X4		((GICD_INT_DEF_PRI << 24) |\
-					(GICD_INT_DEF_PRI << 16) |\
-					(GICD_INT_DEF_PRI << 8) |\
-					GICD_INT_DEF_PRI)
+					 (GICD_INT_DEF_PRI << 16) |\
+					 (GICD_INT_DEF_PRI << 8) |\
+					 GICD_INT_DEF_PRI)
 
 #define GIC_CPU_CTRL			0x00
 #define GIC_CPU_PRIMASK			0x04
@@ -73,6 +74,10 @@
 #define INTC_CPU_CTRL_REG0		0x28
 #define INTC_DISABLE			(1<<4)
 
+#ifndef __ASSEMBLY__
+
+#include <types.h>
+
 typedef enum {
 	GIC_IRQ_TYPE_SPI	= 0,
 	GIC_IRQ_TYPE_PPI	= 1,
@@ -80,7 +85,9 @@ typedef enum {
 } gic_irq_type_t;
 
 /* Bits and regs definitions */
-struct intc_regs {
+
+struct gicd_regs {
+
     /* Distributor Registers: [3] Table 3.2. Distributor register summary */
     volatile uint32_t gicd_ctlr;           /* 0x0000 */
     volatile uint32_t gicd_typer;          /* 0x0004 */
@@ -119,6 +126,9 @@ struct intc_regs {
     volatile uint32_t gicd_cidr1;           /* 0x0ff4 */
     volatile uint32_t gicd_cidr2;           /* 0x0ff8 */
     volatile uint32_t gicd_cidr3;           /* 0x0ffc */
+};
+
+struct gicc_regs {
 
     /* CPU Interface Registers: [3] Table 3.6. CPU interface register summary */
     volatile uint32_t gicc_ctlr;       /* 0x0000 */
@@ -142,5 +152,7 @@ struct intc_regs {
     volatile uint32_t gicc_iidr;       /* 0x00fc */
 
 };
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* GIC_H */

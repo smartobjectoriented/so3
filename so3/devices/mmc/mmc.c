@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <asm/byteorder.h>
+#include <asm/div64.h>
 
 #include "mmc_private.h"
 

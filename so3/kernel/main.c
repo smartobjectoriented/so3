@@ -34,6 +34,7 @@
 #include <asm/atomic.h>
 #include <asm/setup.h>
 #include <asm/mmu.h>
+#include <asm/process.h>
 
 #include <device/driver.h>
 
@@ -68,26 +69,7 @@ void post_init(void) {
 		postinit[i]();
 }
 
-/*
- * Initial (root) process which will start the first process running in SO3.
- * The process is running in user mode.
- */
-int root_proc(void *args)
-{
-	printk("SO3: starting the initial process (shell) ...\n\n\n");
-
-	/* Start the first process */
-	__exec("sh.elf");
-
-	/* We normally never runs here, if the exec() succeeds... */
-	printk("so3: No init proc (shell) found ...\n");
-
-	kernel_panic();
-
-	return 0; /* Make gcc happy ;-) */
-}
-
-int rest_init(void *dummy) {
+void *rest_init(void *dummy) {
 
 	post_init();
 
@@ -101,7 +83,7 @@ int rest_init(void *dummy) {
 #elif defined(CONFIG_PROC_ENV)
 
 	/* Launch the root process (should be the shell...) */
-	create_process(root_proc, "root_proc");
+	create_root_process();
 
 	/* We should never reach this ... */
 	BUG();
@@ -109,7 +91,7 @@ int rest_init(void *dummy) {
 #error "Can not start initial SO3 environment"
 #endif
 
-	return 0;
+	return NULL;
 }
 
 void kernel_start(void) {

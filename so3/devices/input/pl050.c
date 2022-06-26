@@ -35,38 +35,32 @@
 
 
 /* Write a byte to the device. */
-void pl050_write(dev_t *dev, uint8_t data)
+void pl050_write(void *base, uint8_t data)
 {
 	/* Check if we can actually write in the transmit registry. */
-	uint8_t status = ioread8(dev->base + KMI_STAT);
+	uint8_t status = ioread8(base + KMI_STAT);
 	if (0 == (status & KMISTAT_TXEMPTY)) {
 		printk("%s: write timeout.\n", __func__);
 		return;
 	}
 
-	iowrite8(dev->base + KMI_DATA, data);
+	iowrite8(base + KMI_DATA, data);
 }
 
 /*
  * Initialisation of the PL050 Keyboard/Mouse Interface.
  * Linux driver: input/serio/ambakmi.c
  */
-int pl050_init(dev_t *dev, dev_t *dev_copy, struct devclass *cdev, irq_return_t (*isr)(int, void *))
+void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *))
 {
-	/* Keep a reference to the device structure. */
-	memcpy(dev_copy, dev, sizeof(dev_t));
 
 	/* Set the clock divisor (arbitrary value). */
-	iowrite8(dev->base + KMI_CLKDIV, 2);
+	iowrite8(base + KMI_CLKDIV, 2);
 
 	/* Enable interface and receiver interrupt. */
-	iowrite8(dev->base + KMI_CR, KMICR_EN | KMICR_RXINTREN | KMICR_TXINTREN);
+	iowrite8(base + KMI_CR, KMICR_EN | KMICR_RXINTREN | KMICR_TXINTREN);
 
 	/* Bind the ISR to the interrupt controller. */
-	irq_bind(dev->irq_nr, isr, NULL, NULL);
+	irq_bind(irq_def->irqnr, isr, NULL, NULL);
 
-	/* Register the input device so it can be accessed from user space. */
-	devclass_register(dev, cdev);
-
-	return 0;
 }

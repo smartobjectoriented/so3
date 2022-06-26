@@ -21,14 +21,14 @@
 .extern __entryC
 
 .data
-.align 	4
 .globl	errno
 
+.align 8
 errno:
 	.word	0x0
 
 .text
-.align  4
+
 
 /* -------------------------------------------------------------
  * __start
@@ -40,7 +40,7 @@ errno:
 	.section ".head", "ax"
 __start:
 
-	@ r0 points to the argument page
+	/* r0 points to the argument page */
 
 	bl		__entryC
 
@@ -54,6 +54,8 @@ __start:
  * - r7 is used to store the syscall number
  * -------------------------------------------------------------
  */
+
+#ifdef __ARM__
 
 .macro SYSCALLSTUB name, number
 	.globl	\name
@@ -74,6 +76,40 @@ __start:
   mov pc, lr
 
 .endm
+
+#else /* __ARM64__ */
+
+.macro SYSCALLSTUB name, number
+	.globl	\name
+\name:
+
+  // 16-byte stack alignment
+  sub	sp, sp, #32
+
+  str	x8, [sp]
+  str	x9, [sp, #8]
+  str	lr,  [sp, #16]
+
+  mov	x8, #\number
+
+  ldr	x9, =errno
+  str	wzr, [x9]
+
+  svc	0
+
+  ldr 	x8, [sp]
+  ldr	x9, [sp, #8]
+  ldr	lr, [sp, #16]
+
+  add	sp, sp, #32
+
+  ret
+
+.endm
+
+
+#endif /* __ARM64__ */
+
 
 /* Syscalls stubs */
 SYSCALLSTUB sys_halt, 			syscallHalt

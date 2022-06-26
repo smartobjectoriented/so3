@@ -25,6 +25,15 @@ function install_file_directory {
   [ -f $1 ] && echo "Installing $1 into $2" && mkdir -p build/deploy/$2 && cp $1 build/deploy/$2
 }
 
+
+while read var; do
+if [ "$var" != "" ]; then
+  export $(echo $var | sed -e 's/ //g' -e /^$/d -e 's/://g' -e /^#/d)
+fi
+done < ../build.conf
+
+echo Platform is ${PLATFORM}
+
 clean=n
 debug=y
 verbose=n
@@ -61,7 +70,13 @@ echo "Starting $build_type build"
 mkdir -p $SCRIPTPATH/build
 
 cd $SCRIPTPATH/build
-cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../toolchainfile.cmake ..
+
+if [ "$PLATFORM" == "vexpress" ]; then
+cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
+fi
+if [ "$PLATFORM" == "virt64" ]; then
+cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../aarch64_toolchain.cmake ..
+fi
 if [ $singlecore == y ]; then
     NRPROC=1
 else

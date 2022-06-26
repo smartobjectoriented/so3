@@ -37,9 +37,10 @@
 #define WINSIZE_COL_SIZE_DEFAULT	80
 
 typedef struct {
-	dev_t *dev; /* Required to hold the IRQ number */
 	int (*put_byte)(char c);
 	char (*get_byte)(bool polling);
+	void (*enable_irq)(void);
+	void (*disable_irq)(void);
 } serial_ops_t;
 
 extern serial_ops_t serial_ops;
@@ -62,6 +63,9 @@ int ll_serial_write(char *str, int len);
 
 void serial_init(void);
 void serial_cleanup(void);
+
+void enable_uart_irq(void);
+void disable_uart_irq(void);
 
 extern void __ll_put_byte(char c);
 

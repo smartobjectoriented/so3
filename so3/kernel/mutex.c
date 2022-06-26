@@ -28,7 +28,7 @@
 #include <process.h>
 
 void mutex_lock(struct mutex *lock) {
-	uint32_t flags;
+	unsigned long flags;
 	queue_thread_t q_tcb;
 
 	/*
@@ -36,7 +36,7 @@ void mutex_lock(struct mutex *lock) {
 	 * may happen if a user signal handler is executed and does some syscall processing
 	 * which could require the same kernel locks than the current thread.
 	 */
-	spin_lock_irqsave(&lock->wait_lock, flags);
+	flags = spin_lock_irqsave(&lock->wait_lock);
 
 	/*
 	 * Once more, try to acquire the lock. Only try-lock the mutex if
@@ -101,11 +101,11 @@ void mutex_unlock(struct mutex *lock) {
 
 	queue_thread_t *curr;
 	bool need_resched = false;
-	uint32_t flags;
+	unsigned long flags;
 
 	BUG_ON(!mutex_is_locked(lock));
 
-	spin_lock_irqsave(&lock->wait_lock, flags);
+	flags = spin_lock_irqsave(&lock->wait_lock);
 
 	if (lock->recursive_count) {
 		lock->recursive_count--;
@@ -128,7 +128,7 @@ void mutex_unlock(struct mutex *lock) {
 
 	atomic_set(&lock->count, 1);
 
-	spin_lock_irqsave(&lock->wait_lock, flags);
+	flags = spin_lock_irqsave(&lock->wait_lock);
 
 	if (!list_empty(&lock->tcb_list)) {
 

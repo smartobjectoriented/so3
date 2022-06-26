@@ -206,9 +206,9 @@ uint32_t heap_size(void) {
 	mem_chunk_t *list = quick_list;
 	mem_chunk_t *chunk = quick_list;
 	uint32_t total_size = 0;
-	uint32_t flags;
+	unsigned long flags;
 
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 	while (list) {
 		while (chunk) {
@@ -514,7 +514,7 @@ static void *__malloc_log(size_t requested, unsigned int alignment, const char *
 	mem_chunk_t *remaining = NULL; /* new free chunk if size < victim->size */
 	mem_chunk_t tmp_memchunk; /* Used for possible shifting of the structure */
 	void *addr = NULL, *tmp_addr;
-	uint32_t flags;
+	unsigned long flags;
 
 #ifdef DEBUG
 	dump_heap(__func__);
@@ -524,7 +524,7 @@ static void *__malloc_log(size_t requested, unsigned int alignment, const char *
 	* We disable the IRQs to be safe. Using a mutex is dangerous since, a context switch may lead
 	* to a (re-)malloc in a waitqueue.
 	*/
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 	DBG("[malloc] requested size = %d, mem_chunk_size = %d bytes\n", requested, sizeof(mem_chunk_t));
 
@@ -568,7 +568,7 @@ next_list:
 	/* Is a specific alignment requested ? (alignment must be a power of 2) */
 
 	if (alignment > 0) {
-		tmp_addr = (void *) (((unsigned int) addr + alignment - 1) & -((signed) alignment));
+		tmp_addr = (void *) (((addr_t) addr + alignment - 1) & -((signed) alignment));
 
 		ASSERT(tmp_addr >= addr);
 
@@ -678,11 +678,11 @@ void *calloc(size_t nmemb, size_t size) {
  */
 void free(void *ptr)
 {
-	uint32_t flags;
-	mem_chunk_t *chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
+	unsigned long flags;
+	mem_chunk_t *chunk = (mem_chunk_t *)(ptr - sizeof(mem_chunk_t));
 	mem_chunk_t tmp_memchunk;
 
-	spin_lock_irqsave(&heap_lock, flags);
+	flags = spin_lock_irqsave(&heap_lock);
 
 #ifdef TRACKING
 	demand_tracking_clear(ptr);

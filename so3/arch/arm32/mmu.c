@@ -25,16 +25,18 @@
 #include <sizes.h>
 #include <string.h>
 
-#include <mach/uart.h>
+#include <device/ramdev.h>
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
 #include <generated/autoconf.h>
 
-uint32_t *__current_pgtable = NULL;
+void *__current_pgtable = NULL;
 
-uint32_t *current_pgtable(void) {
+void *__sys_root_pgtable;
+
+void *current_pgtable(void) {
 	return __current_pgtable;
 }
 
@@ -61,6 +63,14 @@ void set_domain(uint32_t val)
 	"mcr	p15, 0, %0, c3, c0	@ set domain" : : "r" (val) : "memory");
 	isb();
 }
+
+#ifdef CONFIG_RAMDEV
+void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramdev_end) {
+
+	if (valid_ramdev())
+		create_mapping(root_pgtable, RAMDEV_VADDR, ramdev_start, ramdev_end-ramdev_start, false);
+}
+#endif /* CONFIG_RAMDEV */
 
 /* Reference to the system 1st-level page table */
 static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long end, unsigned long pfn, bool nocache)
@@ -109,7 +119,7 @@ static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long en
  * Allocate a section (only L1 PTE) or page table (L1 & L2 page tables)
  * @nocache indicates if the page can be cache or not (true means no support for cached page)
  */
-static void alloc_init_section(uint32_t *l1pte, uint32_t addr, uint32_t end, uint32_t phys, bool nocache)
+static void alloc_init_section(uint32_t *l1pte, addr_t addr, addr_t end, addr_t phys, bool nocache)
 {
 	/*
 	 * Try a section mapping - end, addr and phys must all be aligned
@@ -140,25 +150,26 @@ static void alloc_init_section(uint32_t *l1pte, uint32_t addr, uint32_t end, uin
 
 /*
  * Create a static mapping between a virtual range and a physical range
+ *
  * @l1pgtable refers to the level 1 page table - if NULL, the system page table is used
  * @virt_base is the virtual address considered for this mapping
  * @phys_base is the physical address to be mapped
  * @size is the number of bytes to be mapped
  * @nocache is true if no cache (TLB) must be used (typically for I/O)
  */
-void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base, uint32_t size, bool nocache) {
+void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache) {
 
-	uint32_t addr, end, length, next;
+	addr_t addr, end, length, next;
 	uint32_t *l1pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (l1pgtable == NULL)
-		l1pgtable = __sys_l1pgtable;
+		l1pgtable = __sys_root_pgtable;
 
 	addr = virt_base & PAGE_MASK;
 	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
 
-	l1pte = l1pte_offset(l1pgtable, addr);
+	l1pte = l1pte_offset((uint32_t *) l1pgtable, addr);
 
 	end = addr + length;
 
@@ -175,12 +186,12 @@ void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base,
 	/* Invalidate TLBs whenever the mapping is applied on the current page table.
 	 * In other cases, the memory context switch will invalidate anyway.
 	 */
-	if (l1pgtable == __sys_l1pgtable)
+	if (l1pgtable == __sys_root_pgtable)
 		v7_inval_tlb();
 }
 
 /* Empty the corresponding l2 entries */
-static void free_l2_mapping(uint32_t *l1pte, unsigned long addr, unsigned long end) {
+static void free_l2_mapping(uint32_t *l1pte, addr_t addr, addr_t end) {
 	uint32_t *l2pte, *pgtable;
 	int i;
 	bool found;
@@ -213,7 +224,7 @@ static void free_l2_mapping(uint32_t *l1pte, unsigned long addr, unsigned long e
 }
 
 /* Empty the corresponding l1 entries */
-static void free_l1_mapping(uint32_t *l1pte, uint32_t addr, uint32_t end) {
+static void free_l1_mapping(uint32_t *l1pte, addr_t addr, addr_t end) {
 	uint32_t *__l1pte = l1pte;
 
 	/*
@@ -243,18 +254,18 @@ static void free_l1_mapping(uint32_t *l1pte, uint32_t addr, uint32_t end) {
 /*
  * Release an existing mapping
  */
-void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size) {
-	uint32_t addr, end, length, next;
+void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
+	addr_t addr, end, length, next;
 	uint32_t *l1pte;
 
-	/* If l1pgtable is NULL, we consider the system page table */
+	/* If pgtable is NULL, we consider the system page table */
 	if (pgtable == NULL)
-		pgtable = __sys_l1pgtable;
+		pgtable = __sys_root_pgtable;
 
 	addr = virt_base & PAGE_MASK;
 	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
 
-	l1pte = l1pte_offset(pgtable, addr);
+	l1pte = l1pte_offset((uint32_t *) pgtable, addr);
 
 	end = addr + length;
 
@@ -272,7 +283,7 @@ void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size) {
  * Initial configuration of system page table
  * MMU is off
  */
-void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
+void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	unsigned int i;
 
 	uint32_t *__pgtable = (uint32_t *) l1pgtable;
@@ -297,9 +308,9 @@ void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
 
 	/* Now, create a virtual mapping in the kernel space */
 	for (i = 0; i < 64; i++) {
-		__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
+		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
 
-		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VIRT_ADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
+		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
 
 	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
@@ -307,26 +318,29 @@ void mmu_configure(uint32_t l1pgtable, uint32_t fdt_addr) {
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(fdt_addr)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Early mapping I/O for UART */
-	__pgtable[l1pte_index(UART_BASE)] = UART_BASE;
-	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(UART_BASE)], L1_SECT_DCACHE_OFF);
+	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
+	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
 
 	mmu_setup(__pgtable);
 
 	dcache_enable();
 	icache_enable();
+
+	/* Update the system page table using the virtual address */
+	__sys_root_pgtable = (void *) (CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET);
 }
 
 /*
  * Clear the L1 PTE used for mapping of a specific virtual address.
  */
-void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
+void clear_l1pte(void *l1pgtable, addr_t vaddr) {
 	uint32_t *l1pte;
 
 	/* If l1pgtable is NULL, we consider the system page table */
 	if (l1pgtable == NULL)
-		l1pgtable = __sys_l1pgtable;
+		l1pgtable = __sys_root_pgtable;
 
-	l1pte = l1pte_offset(l1pgtable, vaddr);
+	l1pte = l1pte_offset((uint32_t *) l1pgtable, vaddr);
 
 	*l1pte = 0;
 
@@ -337,8 +351,8 @@ void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
  * Allocate a new L1 page table. Return NULL if it fails.
  * The page table must be 16-KB aligned.
  */
-uint32_t *new_l1pgtable(void) {
-	uint32_t *pgtable;
+void *new_root_pgtable(void) {
+	void *pgtable;
 
 	pgtable = memalign(4 * TTB_L1_ENTRIES, SZ_16K);
 	if (!pgtable) {
@@ -352,18 +366,24 @@ uint32_t *new_l1pgtable(void) {
 	return pgtable;
 }
 
-/*
- * Free a L1 page table and associated L2 page tables used for the user space area.
+void copy_root_pgtable(void *dst, void *src) {
+	memcpy(dst, src, TTB_L1_SIZE);
+}
+
+/**
+ * Free a root page table and its associated L2 page tables used for the user space area.
  * We do not consider any shared pages/page tables.
- * @remove indicate if the page tables (L1 & L2) must be erased.
+ *
+ * @param pgtable
+ * @param remove  true if the root page table must be freed.
  */
-void reset_l1pgtable(uint32_t *l1pgtable, bool remove) {
+void reset_root_pgtable(void *pgtable, bool remove) {
 	int i;
 	uint32_t *l1pte, *l2pte;
 
-	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
+	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VADDR); i++) {
 
-		l1pte = l1pgtable + i;
+		l1pte = (uint32_t *) pgtable + i;
 
 		/* Check if a L2 page table is used */
 		if (*l1pte) {
@@ -382,34 +402,39 @@ void reset_l1pgtable(uint32_t *l1pgtable, bool remove) {
 
 	/* And finally, restore the heap memory allocated for this page table */
 	if (remove)
-		free(l1pgtable);
+		free(pgtable);
 
-	mmu_page_table_flush((uint32_t) l1pgtable, (uint32_t) (l1pgtable + TTB_L1_ENTRIES));
+	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L1_ENTRIES));
 }
 
 /*
  * Switch the MMU to a L1 page table
  */
-void mmu_switch(uint32_t *l1pgtable) {
+void mmu_switch(void *l1pgtable) {
 
 	flush_dcache_all();
 
-	BUG_ON(__pa(((uint32_t) l1pgtable)) & ~TTBR0_BASE_ADDR_MASK);
-	__mmu_switch(__pa((uint32_t) l1pgtable));
+	BUG_ON(__pa(l1pgtable) & ~TTBR0_BASE_ADDR_MASK);
+	__mmu_switch((void *) __pa((addr_t) l1pgtable));
 
 	invalidate_icache_all();
 	v7_inval_tlb();
 
 }
 
+void mmu_switch_sys(void *l1pgtable) {
+	mmu_switch(l1pgtable);
+}
+
 /* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
-void pgtable_copy_kernel_area(uint32_t *l1pgtable) {
+void pgtable_copy_kernel_area(void *l1pgtable) {
 	int i1;
+	uint32_t *__l1pgtable = (uint32_t *) l1pgtable;
 
-	for (i1 = l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i1 < TTB_L1_ENTRIES; i1++)
-		l1pgtable[i1] = __sys_l1pgtable[i1];
+	for (i1 = l1pte_index(CONFIG_KERNEL_VADDR); i1 < TTB_L1_ENTRIES; i1++)
+		__l1pgtable[i1] = ((uint32_t *) __sys_root_pgtable)[i1];
 
-	mmu_page_table_flush((uint32_t) l1pgtable, (uint32_t) (l1pgtable + TTB_L1_ENTRIES));
+	mmu_page_table_flush((addr_t) __l1pgtable, (addr_t) (__l1pgtable + TTB_L1_ENTRIES));
 }
 
 /*
@@ -422,24 +447,24 @@ void pgtable_copy_kernel_area(uint32_t *l1pgtable) {
  * @to is the process containing the (already allocated) L1 page table of the target memory context
  */
 
-void duplicate_user_space(pcb_t *from, pcb_t *to) {
+void duplicate_user_space(struct pcb *from, struct pcb *to) {
 	int i, j;
 	uint32_t l2pgtable_size;
 	uint32_t *l1pte, *l2pte, *l2pgtable;
 	uint32_t *l1pte_dst, *l2pte_dst,*l2pgtable_dst;
-	uint32_t paddr;
+	addr_t paddr;
 	void *vaddr;
 
 	l2pgtable_size = TTB_L2_ENTRIES * sizeof(uint32_t);
 
-	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VIRT_ADDR); i++) {
-		l1pte = from->pgtable + i;
+	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VADDR); i++) {
+		l1pte = (uint32_t *) from->pgtable + i;
 
 		if (*l1pte) {
 
 			BUG_ON(l1pte_is_sect(*l1pte));
 
-			l1pte_dst = to->pgtable + i;
+			l1pte_dst = (uint32_t *) to->pgtable + i;
 
 			/* Allocate a new L2 page table for the copy */
 			l2pgtable_dst = memalign(l2pgtable_size, SZ_1K);
@@ -447,7 +472,7 @@ void duplicate_user_space(pcb_t *from, pcb_t *to) {
 
 			memset(l2pgtable_dst, 0, l2pgtable_size);
 
-			*l1pte_dst = __pa((uint32_t) l2pgtable_dst);
+			*l1pte_dst = __pa((addr_t) l2pgtable_dst);
 
 			set_l1_pte_page_dcache(l1pte_dst, L1_PAGE_DCACHE_WRITEALLOC);
 
@@ -466,7 +491,7 @@ void duplicate_user_space(pcb_t *from, pcb_t *to) {
 					/* Add the new page to the process list */
 					add_page_to_proc(to, (page_t *) phys_to_page(paddr));
 
-					create_mapping(current_pgtable(), TRANSITIONAL_MAPPING, paddr, PAGE_SIZE, false);
+					create_mapping(current_pgtable(), FIXMAP_MAPPING, paddr, PAGE_SIZE, false);
 
 					*l2pte_dst = paddr;
 
@@ -474,19 +499,20 @@ void duplicate_user_space(pcb_t *from, pcb_t *to) {
 
 					vaddr = (void *) pte_index_to_vaddr(i, j);
 
-					memcpy((void *) TRANSITIONAL_MAPPING, vaddr, PAGE_SIZE);
+					memcpy((void *) FIXMAP_MAPPING, vaddr, PAGE_SIZE);
 
 				}
 			}
 		}
 	}
-	release_mapping(current_pgtable(), TRANSITIONAL_MAPPING, PAGE_SIZE);
+	release_mapping(current_pgtable(), FIXMAP_MAPPING, PAGE_SIZE);
 }
 
-void dump_pgtable(uint32_t *l1pgtable) {
+void dump_pgtable(void *l1pgtable) {
 
 	int i, j;
 	uint32_t *l1pte, *l2pte;
+	uint32_t *__l1pgtable = (uint32_t *) l1pgtable;
 
 	lprintk("           ***** Page table dump *****\n");
 
@@ -494,12 +520,12 @@ void dump_pgtable(uint32_t *l1pgtable) {
 		l1pgtable = current_pgtable();
 
 	for (i = 0; i < TTB_L1_ENTRIES; i++) {
-		l1pte = l1pgtable + i;
+		l1pte = __l1pgtable + i;
 		if (*l1pte) {
 			if (l1pte_is_sect(*l1pte))
-				lprintk(" - L1 pte@%p (idx %x) mapping %x is section type  content: %x\n", l1pgtable+i, i, i << (32 - TTB_L1_ORDER), *l1pte);
+				lprintk(" - L1 pte@%p (idx %x) mapping %x is section type  content: %x\n", __l1pgtable+i, i, i << (32 - TTB_L1_ORDER), *l1pte);
 			else
-				lprintk(" - L1 pte@%p (idx %x) is PT type   content: %x\n", l1pgtable+i, i, *l1pte);
+				lprintk(" - L1 pte@%p (idx %x) is PT type   content: %x\n", __l1pgtable+i, i, *l1pte);
 
 			if (!l1pte_is_sect(*l1pte)) {
 
@@ -521,7 +547,7 @@ void dump_current_pgtable(void) {
  * Get the physical address from a virtual address (valid for any virt. address).
  * The function reads the page table(s).
  */
-uint32_t virt_to_phys_pt(uint32_t vaddr) {
+addr_t virt_to_phys_pt(addr_t vaddr) {
 	uint32_t *l1pte, *l2pte;
 	uint32_t offset;
 

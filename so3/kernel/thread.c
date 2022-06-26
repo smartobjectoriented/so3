@@ -27,9 +27,10 @@
 #include <memory.h>
 #include <string.h>
 #include <softirq.h>
+#include <thread.h>
 
 #include <asm/processor.h>
- 
+
 static unsigned int tid_next = 0;
 
 char *state_str[] = {
@@ -148,8 +149,8 @@ bool kernel_stack_slot[THREAD_MAX];
  * The first stack area is the initial system stack and remains preserved so far.
  * The first thread stack slot ID #0 starts right under this area.
  */
-uint32_t get_kernel_stack_top(uint32_t slotID) {
-	return (uint32_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
+addr_t get_kernel_stack_top(uint32_t slotID) {
+	return (addr_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
 }
 
 /*
@@ -184,8 +185,8 @@ void free_kernel_stack_slot(int slotID)
 /* Process thread stack management */
 
 /* Get the kernel stack (top), full descending */
-uint32_t get_user_stack_top(pcb_t *pcb, uint32_t slotID) {
-	return (uint32_t) ((void *) pcb->stack_top - slotID*THREAD_STACK_SIZE);
+addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID) {
+	return (addr_t) ((void *) pcb->stack_top - slotID*THREAD_STACK_SIZE);
 }
 
 /*
@@ -268,7 +269,7 @@ void thread_exit(int *exit_status)
 		remove_tcb_from_pcb(current());
 
 #ifdef CONFIG_PROC_ENV
-		do_exit((int) (current()->exit_status));
+		do_exit(0);
 #endif
 
 	} else {
@@ -304,6 +305,8 @@ void thread_exit(int *exit_status)
 		 * In this case, we do not leave the thread in zombie since we assume that no other threads are joining on it.
 		 * (This is currently a limitation: kernel threads can not join other threads).
 		 */
+#warning Kernel threads cannot join other threads!
+
 		if (current()->pcb != NULL)
 			zombie();
 		else {
@@ -342,7 +345,7 @@ void thread_prologue(void(*th_fn)(void *arg), void *arg)
 /*
  * Thread idle
  */
-int thread_idle(void *dummy)
+void *thread_idle(void *dummy)
 {
 	/* Endless loop */
 	while (true) {
@@ -363,7 +366,7 @@ int thread_idle(void *dummy)
  
 	}
 
-	return 0;
+	return NULL;
 }
 
 /*
@@ -387,10 +390,10 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  * @pcb: NULL means it is a pure kernel thread, otherwise is is a user thread.
  * @prio: 0 means the default priority, otherwise set to the thread to the corresponding priority
  */
-tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
-	uint32_t flags;
+	unsigned long flags;
 
 	BUG_ON(boot_stage < BOOT_STAGE_SCHED);
 
@@ -427,28 +430,26 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 		kernel_panic();
 	}
 
-	/* Prepare registers for future restore in switch_context() */
-	tcb->cpu_regs.r4 = (unsigned int) tcb->th_fn;
-	tcb->cpu_regs.r5 = (unsigned int) tcb->th_arg; /* First argument */
-
 	/* Prepare the user stack if any related PCB */
-	if (pcb) {
+	if (tcb->pcb) {
 		/* Prepare the user stack */
-		tcb->pcb_stack_slotID = get_user_stack_slot(pcb);
+		tcb->pcb_stack_slotID = get_user_stack_slot(tcb->pcb);
 		if (tcb->pcb_stack_slotID < 0) {
 			printk("No available user stack for a new thread\n");
 			kernel_panic();
 		}
-
-		tcb->cpu_regs.r6 = get_user_stack_top(pcb, tcb->pcb_stack_slotID);
 	}
 
+	/* Prepare registers for future restore in switch_context() */
+	arch_prepare_cpu_regs(tcb);
+
+	/* Quite common registers on various architectures */
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
 
-	if (pcb)
-		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_user;
+	if (tcb->pcb)
+		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_user;
 	 else
-		tcb->cpu_regs.lr = (unsigned int) __thread_prologue_kernel;
+		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_kernel;
 
 	/* Initialize the join queue associated to this thread */
 	INIT_LIST_HEAD(&tcb->joinQueue);
@@ -462,26 +463,23 @@ tcb_t *thread_create(int (*start_routine)(void *), const char *name, void *arg, 
 	return tcb;
 }
 
-tcb_t *kernel_thread(int (*start_routine)(void *), const char *name, void *arg, uint32_t prio)
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio)
 {
 	return thread_create(start_routine, name, arg, NULL, prio);
 }
 
+/* Should not be called directly. Call create_process() or create_child_thread() instead. */
 /**
+ * Should not be called directly.
+ * Called by create_process() or create_child_thread() instead.
  *
- * Should not be called directly. Call create_process() or create_child_thread() instead.
- *
- * The priority is inherited from the calling (main) thread.
- *
- * FIXME: start_routine() should returns void * instead of int?
- *
- * @param start_routine
- * @param name
- * @param arg
- * @param pcb
- * @return
+ * @param start_routine	Address ot the thread routine
+ * @param name		Name of the thread
+ * @param arg		Argument of the thread
+ * @param pcb		PCB which the thread belongs to
+ * @return		Address of the corresponding TCB
  */
-tcb_t *user_thread(int (*start_routine) (void *), const char *name, void *arg, pcb_t *pcb)
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb)
 {
 	return thread_create(start_routine, name, arg, pcb, (pcb->main_thread ? pcb->main_thread->prio : 0));
 }
@@ -512,14 +510,13 @@ void clean_thread(tcb_t *tcb) {
  * The target thread which we are trying to join will be definitively removed
  * from the system when no other threads are joining it too.
  */
-#warning Should return an int * (void *)
-int thread_join(tcb_t *tcb) 
+int *thread_join(tcb_t *tcb)
 {
 	queue_thread_t *cur;
-	int exit_status;
+	int *exit_status;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
-	uint32_t flags;
+	unsigned long flags;
 	bool is_main_thread;
 	pcb_t *__child_pcb;
 
@@ -577,7 +574,7 @@ int thread_join(tcb_t *tcb)
 	/* Check if the child is a tracee (and therefore we have a tracer on it) */
 	if ((tcb != NULL) && (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
 		
-		exit_status = 0;
+		exit_status = NULL;
 
 	} else {
 		
@@ -585,9 +582,9 @@ int thread_join(tcb_t *tcb)
 		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
 		if (is_main_thread)
-			exit_status = tcb->pcb->exit_status;
+			exit_status = (void *) ((unsigned long) tcb->pcb->exit_status);
 		else
-                    exit_status = (int) tcb->exit_status;
+			exit_status = tcb->exit_status;
 
 		/*
 		 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
@@ -621,9 +618,9 @@ int thread_join(tcb_t *tcb)
  * The function returns 0 if successful.
  */
 
-int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, uint32_t arg_p) {
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p) {
 
-	uint32_t flags;
+	unsigned long flags;
 	tcb_t *tcb;
 	char *name;
 
@@ -639,7 +636,7 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
 	}
 	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
-	tcb = user_thread((int (*)(void *)) thread_fn, name, (void *) arg_p, current()->pcb);
+	tcb = user_thread((th_fn_t) thread_fn, name, (void *) arg_p, current()->pcb);
 
 	/* The name has been copied in thread creation */
 	free(name);
@@ -659,8 +656,8 @@ int do_thread_create(uint32_t *pthread_id, uint32_t attr_p, uint32_t thread_fn, 
  */
 int do_thread_join(uint32_t pthread_id, int **value_p) {
 	tcb_t *tcb;
-	int ret;
-	uint32_t flags;
+	int *ret;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -673,11 +670,8 @@ int do_thread_join(uint32_t pthread_id, int **value_p) {
 
 	ret = thread_join(tcb);
 
-	if (value_p != NULL) {
-	    /* A joined POSIX thread should return a void * (here int*) */
-            *value_p = (int*)ret; 
-#warning This value is simply passed into value_p (normally a void**)
-	}
+	if (value_p != NULL)
+		*value_p = ret;
 
 	local_irq_restore(flags);
 

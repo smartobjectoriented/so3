@@ -18,4 +18,7 @@ target_sources(c
 		floor
 		pow
 		sqrt
-)		
+		__fpclassifyl
+		__signbitl		
+)
+

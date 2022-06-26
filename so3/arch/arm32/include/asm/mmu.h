@@ -19,7 +19,24 @@
 #ifndef MMU_H
 #define MMU_H
 
+#ifndef __ASSEMBLY__
+#include <types.h>
+#endif
+
+#include <sizes.h>
+
+#define USER_SPACE_VADDR	0x1000ul
+
+/* Memory space all I/O mapped registers and additional mappings */
+#define IO_MAPPING_BASE		0xe0000000
+
+/* Ramdev rootfs if any at this location */
+#define RAMDEV_VADDR		0xd0000000
+
 #define TTB_L1_SYS_OFFSET	0x4000
+
+/* Fixmap page used for temporary mapping */
+#define FIXMAP_MAPPING		0xf0000000
 
 /* Define the number of entries in each page table */
 
@@ -164,32 +181,38 @@ enum ttb_l2_dcache_option {
 
 #include <process.h>
 
-uint32_t *current_pgtable(void);
+extern void *__sys_root_pgtable;
 
-extern uint32_t *__current_pgtable;
+void *current_pgtable(void);
 
-static inline void set_pgtable(uint32_t *pgtable) {
+extern void *__current_pgtable;
+
+static inline void set_pgtable(addr_t *pgtable) {
 	__current_pgtable = pgtable;
 }
 
-extern void __mmu_switch(uint32_t l1pgtable_phys);
+extern void __mmu_switch(void *root_pgtable_phys);
 
-void pgtable_copy_kernel_area(uint32_t *l1pgtable);
+void *current_pgtable(void);
+void *new_root_pgtable(void);
+void copy_root_pgtable(void *dst, void *src);
 
-void create_mapping(uint32_t *l1pgtable, uint32_t virt_base, uint32_t phys_base, uint32_t size, bool nocache);
-void release_mapping(uint32_t *pgtable, uint32_t virt_base, uint32_t size);
+addr_t virt_to_phys_pt(addr_t vaddr);
 
-uint32_t *new_l1pgtable(void);
-void reset_l1pgtable(uint32_t *l1pgtable, bool remove);
+void pgtable_copy_kernel_area(void *l1pgtable);
 
-void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr);
+void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache);
+void release_mapping(void *pgtable, addr_t virt_base, uint32_t size);
 
-void mmu_switch(uint32_t *l1pgtable);
-void dump_pgtable(uint32_t *l1pgtable);
 
-uint32_t virt_to_phys_pt(uint32_t vaddr);
+void reset_root_pgtable(void *pgtable, bool remove);
+void clear_l1pte(void *l1pgtable, addr_t vaddr);
 
-void duplicate_user_space(pcb_t *from, pcb_t *to);
+void mmu_switch(void *l1pgtable);
+void mmu_switch_sys(void *l1pgtable);
+void dump_pgtable(void *l1pgtable);
+
+void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramdev_end);
 
 void flush_tlb_all(void);
 
@@ -199,7 +222,7 @@ void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option opti
 void set_l1_pte_page_dcache(uint32_t *l1pte, enum ttb_l1_page_dcache_option option);
 void set_l2_pte_dcache(uint32_t *l2pte, enum ttb_l2_dcache_option option);
 
-void mmu_setup(uint32_t *pgtable);
+void mmu_setup(void *pgtable);
 
 #endif /* CONFIG_MMU */
 

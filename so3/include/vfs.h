@@ -20,12 +20,6 @@
 #ifndef VFS_H
 #define VFS_H
 
-#include <types.h>
-#include <stat.h>
-#include <dirent.h>
-
-#include <device/device.h>
-
 /* File access mode flags */
 #define O_SEARCH  O_PATH
 #define O_EXEC    O_PATH
@@ -99,6 +93,14 @@
 #define DT_LNK		10	/* Symbolic link */
 #define DT_SOCK		12	/* Socket device */
 
+#ifndef __ASSEMBLY__
+
+#include <types.h>
+#include <stat.h>
+#include <dirent.h>
+
+#include <device/device.h>
+
 struct file_operations {
 	int (*open)(int fd, const char *path);
 	int (*close)(int fd);
@@ -109,7 +111,7 @@ struct file_operations {
 	struct dirent *(*readdir)(int fd);
 	int (*mkdir)(int fd, void *);
 	int (*stat)(const char *path, struct stat *st);
-	void* (*mmap)(int fd, uint32_t virt_addr, uint32_t page_count);
+	void* (*mmap)(int fd, addr_t virt_addr, uint32_t page_count);
 	int (*unlink)(int fd, void *);
 	int (*mount)(const char *);
 	int (*unmount)(const char *);
@@ -148,7 +150,7 @@ void do_close(int fd);
 int do_dup(int oldfd);
 int do_dup2(int oldfd, int newfd);
 int do_stat(const char *path , struct stat *st);
-void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
+void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset);
 int do_ioctl(int fd, unsigned long cmd, unsigned long args);
 int do_fcntl(int fd, unsigned long cmd, unsigned long args);
 off_t do_lseek(int fd, off_t off, int whence);
@@ -173,5 +175,7 @@ uint32_t vfs_get_operating_mode(int fd);
 void vfs_set_access_mode(int gfd, uint32_t flags_access_mode);
 int vfs_set_open_mode(int gfd, uint32_t flags_open_mode);
 int vfs_set_operating_mode(int gfd, uint32_t flags_operating_mode);
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* VFS_H */

@@ -1,2 +1,2 @@
-obj-y += sample.o common.o
+obj-y += sample.o
 

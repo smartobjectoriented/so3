@@ -47,5 +47,5 @@
 #define KMIIR_TXINTR (1 << 1) /* transmitter interrupt asserted */
 #define KMIIR_RXINTR (1 << 0) /* receiver interrupt asserted */
 
-void pl050_write(dev_t *dev, uint8_t data);
-int pl050_init(dev_t *dev, dev_t *dev_copy, struct devclass *, irq_return_t (*isr)(int, void *));
+void pl050_write(void *base, uint8_t data);
+void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *));

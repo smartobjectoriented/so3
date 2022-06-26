@@ -29,7 +29,7 @@
 
 static block_dev_desc_t ramdev_block_dev;
 static int ramdev_size = 0;
-static uint32_t ramdev_start, ramdev_end;
+static addr_t ramdev_start, ramdev_end;
 
 /*
  * Check if there is a valid ramdev which could be used for rootfs.
@@ -45,7 +45,7 @@ uint32_t get_ramdev_size(void) {
 /*
  * Get the physical address of ramdev start
  */
-uint32_t get_ramdev_start(void) {
+addr_t get_ramdev_start(void) {
 	return ramdev_start;
 }
 
@@ -56,7 +56,7 @@ unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt, void *buffer
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy(buffer, (void *) RAMDEV_VIRT_BASE + start * ramdev_block_dev.blksz, bytes_count);
+	memcpy(buffer, (void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, bytes_count);
 
 	return blkcnt;
 }
@@ -68,7 +68,7 @@ unsigned long ramdev_write(int dev, lbaint_t start, lbaint_t blkcnt, const void 
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy((void *) RAMDEV_VIRT_BASE + start * ramdev_block_dev.blksz, buffer, bytes_count);
+	memcpy((void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, buffer, bytes_count);
 
 	return blkcnt;
 }
@@ -112,7 +112,7 @@ block_dev_desc_t *ramdev_get_dev(int dev)
  * Get the ramdev if any.
  * Returns the size of the ramdev if found.
  */
-size_t get_ramdev(const void *fdt) {
+static void get_ramdev(const void *fdt) {
 	int nodeoffset = 0;
 	const fdt32_t *initrd_start, *initrd_end;
 	int lenp;
@@ -123,7 +123,7 @@ size_t get_ramdev(const void *fdt) {
 		nodeoffset = fdt_next_node(fdt, nodeoffset, &depth);
 		if (nodeoffset < 0)
 			/* No node found */
-			return -1;
+			return ;
 
 		/*
 		 * Try to find such strings since U-boot patches the dtb following
@@ -136,21 +136,21 @@ size_t get_ramdev(const void *fdt) {
 	}
 
 	if (!found)
-		return 0;
+		return ;
 
 	ramdev_start = fdt32_to_cpu(initrd_start[0]);
 	ramdev_end = fdt32_to_cpu(initrd_end[0]);
-
-	/* Do the virtual mapping */
-
-	create_mapping(NULL, RAMDEV_VIRT_BASE, ramdev_start, ramdev_end-ramdev_start, false);
 
 	/*
 	 * About the size of ramdev: ramdev_end is the address *after* the initrd region according to U-boot which
 	 * computes the size in the same way.
 	 */
-	return ramdev_end - ramdev_start;
+	ramdev_size = ramdev_end - ramdev_start;
+
+	/* Do the virtual mapping */
+	ramdev_create_mapping(NULL, ramdev_start, ramdev_end);
 }
+
 
 /*
  * Main ramdev initialization function.
@@ -158,9 +158,9 @@ size_t get_ramdev(const void *fdt) {
  */
 void ramdev_init(void) {
 	int i;
-	uint32_t ramdev_pfn_start;
+	addr_t ramdev_pfn_start;
 
-	ramdev_size = get_ramdev((void *) __fdt_addr);
+	get_ramdev((void *) __fdt_addr);
 
 	if (ramdev_size > 0) {
 		printk("so3: rootfs in RAM detected (ramdev enabled) with size of %d bytes...\n", ramdev_size);

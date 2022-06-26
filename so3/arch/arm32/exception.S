@@ -24,18 +24,11 @@
 @ and on U-Boot implementation
 
 #include <linkage.h>
-
 #include <thread.h>
-
+#include <syscall.h>
 #include <asm-offsets.h>
 
-#include <asm/syscall.h>
 #include <asm/processor.h>
-
-/* use the special section (.vectors.text), to enable fine-tuning
- * of the placement of this section inside the linker script
- */
-.section ".vectors.text", "ax"
 
 .globl ret_from_fork
 .global __call_sig_handler
@@ -56,7 +49,7 @@
 .extern sig_check
 .extern __stack_alignment_fault
 
-.extern _start
+.extern __start
 
 #if 0 /* Debugging purposes */
 .extern __log
@@ -84,8 +77,13 @@
 
 #endif /* 0 */
 
+/* use the special section (.vectors.text), to enable fine-tuning
+ * of the placement of this section inside the linker script
+ */
+.section ".vectors.text", "ax"
+
 ENTRY(__vectors)
-		    b   _start @ reset
+		    b   __start @ reset
             ldr pc, _undefined_instruction
             ldr pc, _syscall_interrupt
             ldr pc, _prefetch_abort

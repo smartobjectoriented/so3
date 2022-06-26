@@ -6,8 +6,6 @@
  * Copyright (C) 2013 ARM Ltd.
  */
 
-#include <linkage.h>
-
 .global strchr
 
 /*

@@ -1,0 +1,109 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+#include "skeleton.dtsi"
+
+/ {
+	model = "SO3 virt64 machine";
+	compatible = "arm,virt64";
+
+	cpus@0 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a72";
+		reg = <0 0>;
+	};
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x40000000 0x20000000>; /* 512 MB */
+	};
+
+	/* GIC interrupt controller */
+	gic:interrupt-controller@0x08000000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		
+		reg = <0x0 0x08000000 0x0 0x10000 0x0 0x8010000 0x0 0x10000>;
+		
+		status = "ok";
+	};
+	
+	/* virt64 console UART */
+	serial@09000000 {
+		compatible = "serial,pl011";
+		reg = <0x0 0x09000000 0x0 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 1 4>;
+		status = "ok";
+	};
+
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer@0 {
+		compatible = "arm,periodic-timer";
+		reg = <0 0 0 0>;
+		interrupt-parent = <&gic>;
+		interrupts = <1 11 4>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer@0 {
+		compatible = "arm,clocksource-timer";
+		reg = <0 0 0 0>;
+		status = "ok";
+	};
+	
+	/* MMC */
+	mmc@1c050000 {
+		compatible = "vexpress,mmc-pl180";
+		reg = <0x0 0x1c050000 0x0 0x1000>;
+		power = <191>;
+		clkdiv = <454>;
+		caps = <0>;
+		voltages = <16744576>;
+		clock_min = <251256>;
+		clock_max = <6250000>;
+		b_max = <127>;
+
+		status = "ok";
+	};
+
+	mydev {
+		compatible = "arm,mydev";
+		status = "ok";
+	};
+
+	/*
+        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
+        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
+   	 */
+    ethernet@1a000000 {
+        compatible = "smsc,smc911x";
+        reg = <0x1a000000 0x1000>;
+        
+    	interrupt-parent = <&gic>;
+        interrupts = <0 15 4>;
+        switch = "br0";
+
+        status = "ok";
+    };
+    	
+};

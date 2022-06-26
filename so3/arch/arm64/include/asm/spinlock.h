@@ -21,16 +21,6 @@
 
 #include <asm/atomic.h>
 
-typedef struct {
-	volatile unsigned int lock;
-} raw_spinlock_t;
-
-#define _RAW_SPIN_LOCK_UNLOCKED	{ 0 }
-
-typedef struct {
-	volatile unsigned int lock  __attribute__((__packed__));
-} raw_rwlock_t;
-
 
 /*
  * ARMv6 Spin-locking.
@@ -44,25 +34,15 @@ typedef struct {
  * Locked value: 1
  */
 
-#define _raw_spin_is_locked(x)		((x)->lock != 0)
-#define __raw_spin_unlock_wait(lock) \
-	do { while (__raw_spin_is_locked(lock)) cpu_relax(); } while (0)
-
-#define __raw_spin_lock_flags(lock, flags) __raw_spin_lock(lock)
-
-extern void _raw_spin_lock(raw_spinlock_t *lock);
-extern void _raw_spin_unlock(raw_spinlock_t *lock);
-extern int _raw_spin_trylock(raw_spinlock_t *lock);
-
-#if 0
-static inline int _raw_spin_trylock(raw_spinlock_t *lock)
+static inline int spin_trylock(spinlock_t *lock)
 {
-	unsigned long tmp;
+	uint32_t tmp;
 
 	__asm__ __volatile__(
-"	ldrex	%0, [%1]\n"
-"	teq	%0, #0\n"
-"	strexeq	%0, %2, [%1]"
+"	ldaxr	%w0, [%1]\n"
+"	tbnz	%w0, #0, 1f\n"
+"	stxr	%w0, %2, [%1]\n"
+"1:"
 	: "=&r" (tmp)
 	: "r" (&lock->lock), "r" (1)
 	: "cc");
@@ -74,6 +54,26 @@ static inline int _raw_spin_trylock(raw_spinlock_t *lock)
 		return 0;
 	}
 }
-#endif
 
+/*
+ * Release lock previously acquired by spin_lock.
+ *
+ * Use store-release to unconditionally clear the spinlock variable.
+ * Store operation generates an event to all cores waiting in WFE
+ * when address is monitored by the global monitor.
+ *
+ * void spin_unlock(spinlock_t *lock);
+ */
+static inline void spin_unlock(spinlock_t *lock)
+{
+	smp_mb();
+
+	__asm__ __volatile__(
+"	stlr	wzr, [%0]\n"
+"	sev"
+	:
+	: "r" (&lock->lock)
+	: "cc");
+
+}
 #endif /* ASM_SPINLOCK_H */

@@ -24,10 +24,10 @@
 
 #include <asm/processor.h>
 #include <asm/mmu.h>
-#include <asm/memory.h>
+
 #include <thread.h>
 
-.global _start
+.global __start
 .global __fdt_addr
 
 .extern clear_bss
@@ -66,7 +66,7 @@
 
 .endm
 
-_start:
+__start:
 
   @ r1 = machine id
   @ r2 = dtb address
@@ -156,7 +156,6 @@ mmu_setup:
 __fdt_addr:
   .word 	0
 
-@ Keep the stack aligned on 8 KB according to EABI
 .align 13
 
 @ Before MMU is enabled, we cannot refer to the normal stack as declared in the linker script
@@ -172,3 +171,6 @@ temp_stack:
 
 .LCvectors:
   .word __vectors_start
+
+.LCsys_root_pgtable:
+  .word __sys_root_pgtable

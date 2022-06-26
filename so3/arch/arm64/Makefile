@@ -1,14 +1,10 @@
 
-obj-y += boot/
+obj-y += head.o hyp-stub.o
 
-obj-y += spinlock.o
-
-obj-y += fault.o backtrace.o
-obj-y += backtrace.o backtrace_asm.o
-obj-y += setup.o mmu.o cache_v8.o cache.o context.o domain.o
-obj-y += exception.o 
+obj-y += setup.o exception.o context.o fault.o
+obj-y += cache_v8.o cache.o
+obj-y += thread.o ptrace.o traps.o
 
 obj-y += lib/
 
-#obj-y += $(TARGET)/
-
+obj-$(CONFIG_MMU) += mmu.o

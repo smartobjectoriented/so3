@@ -27,13 +27,13 @@
 
 #include <asm/mmu.h>
 
-#define BIT(nr)                 (1UL << (nr))
+#define BIT(nr)         (1UL << (nr))
 
 #define sev()           asm volatile("sev" : : : "memory")
 #define wfe()           asm volatile("wfe" : : : "memory")
 #define wfi()           asm volatile("wfi" : : : "memory")
 
-#define isb()           asm volatile("isb" : : : "memory")
+#define isb()           asm volatile("isb sy" : : : "memory")
 #define dsb(scope)      asm volatile("dsb " #scope : : : "memory")
 #define dmb(scope)      asm volatile("dmb " #scope : : : "memory")
 
@@ -100,6 +100,66 @@
 #define __emit_inst(x)			".inst " __stringify((x)) "\n\t"
 #endif
 
+#define ESR_ELx_EC_UNKNOWN	(0x00)
+#define ESR_ELx_EC_WFx		(0x01)
+/* Unallocated EC: 0x02 */
+#define ESR_ELx_EC_CP15_32	(0x03)
+#define ESR_ELx_EC_CP15_64	(0x04)
+#define ESR_ELx_EC_CP14_MR	(0x05)
+#define ESR_ELx_EC_CP14_LS	(0x06)
+#define ESR_ELx_EC_FP_ASIMD	(0x07)
+#define ESR_ELx_EC_CP10_ID	(0x08)	/* EL2 only */
+#define ESR_ELx_EC_PAC		(0x09)	/* EL2 and above */
+/* Unallocated EC: 0x0A - 0x0B */
+#define ESR_ELx_EC_CP14_64	(0x0C)
+#define ESR_ELx_EC_BTI		(0x0D)
+#define ESR_ELx_EC_ILL		(0x0E)
+/* Unallocated EC: 0x0F - 0x10 */
+#define ESR_ELx_EC_SVC32	(0x11)
+#define ESR_ELx_EC_HVC32	(0x12)	/* EL2 only */
+#define ESR_ELx_EC_SMC32	(0x13)	/* EL2 and above */
+/* Unallocated EC: 0x14 */
+#define ESR_ELx_EC_SVC64	(0x15)
+#define ESR_ELx_EC_HVC64	(0x16)	/* EL2 and above */
+#define ESR_ELx_EC_SMC64	(0x17)	/* EL2 and above */
+#define ESR_ELx_EC_SYS64	(0x18)
+#define ESR_ELx_EC_SVE		(0x19)
+#define ESR_ELx_EC_ERET		(0x1a)	/* EL2 only */
+/* Unallocated EC: 0x1B */
+#define ESR_ELx_EC_FPAC		(0x1C)	/* EL1 and above */
+/* Unallocated EC: 0x1D - 0x1E */
+#define ESR_ELx_EC_IMP_DEF	(0x1f)	/* EL3 only */
+#define ESR_ELx_EC_IABT_LOW	(0x20)
+#define ESR_ELx_EC_IABT_CUR	(0x21)
+#define ESR_ELx_EC_PC_ALIGN	(0x22)
+/* Unallocated EC: 0x23 */
+#define ESR_ELx_EC_DABT_LOW	(0x24)
+#define ESR_ELx_EC_DABT_CUR	(0x25)
+#define ESR_ELx_EC_SP_ALIGN	(0x26)
+/* Unallocated EC: 0x27 */
+#define ESR_ELx_EC_FP_EXC32	(0x28)
+/* Unallocated EC: 0x29 - 0x2B */
+#define ESR_ELx_EC_FP_EXC64	(0x2C)
+/* Unallocated EC: 0x2D - 0x2E */
+#define ESR_ELx_EC_SERROR	(0x2F)
+#define ESR_ELx_EC_BREAKPT_LOW	(0x30)
+#define ESR_ELx_EC_BREAKPT_CUR	(0x31)
+#define ESR_ELx_EC_SOFTSTP_LOW	(0x32)
+#define ESR_ELx_EC_SOFTSTP_CUR	(0x33)
+#define ESR_ELx_EC_WATCHPT_LOW	(0x34)
+#define ESR_ELx_EC_WATCHPT_CUR	(0x35)
+/* Unallocated EC: 0x36 - 0x37 */
+#define ESR_ELx_EC_BKPT32	(0x38)
+/* Unallocated EC: 0x39 */
+#define ESR_ELx_EC_VECTOR32	(0x3A)	/* EL2 only */
+/* Unallocated EC: 0x3B */
+#define ESR_ELx_EC_BRK64	(0x3C)
+/* Unallocated EC: 0x3D - 0x3F */
+#define ESR_ELx_EC_MAX		(0x3F)
+
+#define ESR_ELx_EC_SHIFT	(26)
+#define ESR_ELx_EC_MASK		(UL(0x3F) << ESR_ELx_EC_SHIFT)
+#define ESR_ELx_EC(esr)		(((esr) & ESR_ELx_EC_MASK) >> ESR_ELx_EC_SHIFT)
 /*
  * PSR bits
  */
@@ -113,18 +173,18 @@
 #define PSR_MODE_MASK	0x0000000f
 
 /* AArch64 SPSR bits */
-#define PSR_F_BIT		0x00000040
-#define PSR_I_BIT		0x00000080
-#define PSR_A_BIT		0x00000100
-#define PSR_D_BIT		0x00000200
+#define PSR_F_BIT	0x00000040
+#define PSR_I_BIT	0x00000080
+#define PSR_A_BIT	0x00000100
+#define PSR_D_BIT	0x00000200
 #define PSR_SSBS_BIT	0x00001000
-#define PSR_PAN_BIT		0x00400000
-#define PSR_UAO_BIT		0x00800000
-#define PSR_DIT_BIT		0x01000000
-#define PSR_V_BIT		0x10000000
-#define PSR_C_BIT		0x20000000
-#define PSR_Z_BIT		0x40000000
-#define PSR_N_BIT		0x80000000
+#define PSR_PAN_BIT	0x00400000
+#define PSR_UAO_BIT	0x00800000
+#define PSR_DIT_BIT	0x01000000
+#define PSR_V_BIT	0x10000000
+#define PSR_C_BIT	0x20000000
+#define PSR_Z_BIT	0x40000000
+#define PSR_N_BIT	0x80000000
 
 /*
  * Instructions for modifying PSTATE fields.
@@ -753,7 +813,7 @@
 #define ID_AA64MMFR0_TGRAN16_NI		0x0
 #define ID_AA64MMFR0_TGRAN16_SUPPORTED	0x1
 
-#define ID_AA64MMFR0_TGRAN_SHIFT		ID_AA64MMFR0_TGRAN4_SHIFT
+#define ID_AA64MMFR0_TGRAN_SHIFT	ID_AA64MMFR0_TGRAN4_SHIFT
 #define ID_AA64MMFR0_TGRAN_SUPPORTED	ID_AA64MMFR0_TGRAN4_SUPPORTED
 
 /*
@@ -773,44 +833,9 @@
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL	(BIT(31))
 
-#define S_FRAME_SIZE	0x110
+/* The stack must be 16-byte aligned */
 
-/* 34 registers */
-
-#define S_PSTATE	0x108
-#define S_PC    	0x100
-#define S_SP		0xf8
-#define S_LR		0xf0
-#define S_X29		0xe8
-#define S_X28		0xe0
-#define S_X27		0xd8
-#define S_X26		0xd0
-#define S_X25		0xc8
-#define S_X24		0xc0
-#define S_X23		0xb8
-#define S_X22		0xb0
-#define S_X21		0xa8
-#define S_X20		0xa0
-#define S_X19   	0x98
-#define S_X18   	0x90
-#define S_X17   	0x88
-#define S_X16   	0x80
-#define S_X15   	0x78
-#define S_X14   	0x70
-#define S_X13   	0x68
-#define S_X12   	0x60
-#define S_X11   	0x58
-#define S_X10   	0x50
-#define S_X9    	0x48
-#define S_X8    	0x40
-#define S_X7    	0x38
-#define S_X6    	0x30
-#define S_X5   		0x28
-#define S_X4    	0x20
-#define S_X3    	0x18
-#define S_X2    	0x10
-#define S_X1    	0x8
-#define S_X0    	0x0
+#define S_FRAME_SIZE	(8 * 34)
 
 #ifdef __ASSEMBLY__
 
@@ -846,13 +871,56 @@
 	.endr
 	.equ	.L__reg_num_xzr, 31
 
-	.macro	mrs_s, rt, sreg
+.macro	mrs_s, rt, sreg
 	 __emit_inst(0xd5200000|(\sreg)|(.L__reg_num_\rt))
-	.endm
+.endm
 
-	.macro	msr_s, sreg, rt
+.macro	msr_s, sreg, rt
 	__emit_inst(0xd5000000|(\sreg)|(.L__reg_num_\rt))
-	.endm
+.endm
+
+.macro kernel_entry
+	sub		sp, sp, #S_FRAME_SIZE
+
+	stp		x0, x1, [sp, #OFFSET_X0]
+	stp		x2, x3, [sp, #OFFSET_X2]
+	stp		x4, x5, [sp, #OFFSET_X4]
+	stp		x6, x7, [sp, #OFFSET_X6]
+	stp		x8, x9, [sp, #OFFSET_X8]
+	stp		x10, x11, [sp, #OFFSET_X10]
+	stp		x12, x13, [sp, #OFFSET_X12]
+	stp		x14, x15, [sp, #OFFSET_X14]
+	stp		x16, x17, [sp, #OFFSET_X16]
+	stp		x18, x19, [sp, #OFFSET_X18]
+	stp		x20, x21, [sp, #OFFSET_X20]
+	stp		x22, x23, [sp, #OFFSET_X22]
+	stp		x24, x25, [sp, #OFFSET_X24]
+	stp		x26, x27, [sp, #OFFSET_X26]
+	stp		x28, x29, [sp, #OFFSET_X28]
+	str		lr, [sp, #OFFSET_LR]
+.endm
+
+.macro kernel_exit
+
+	ldp		x0, x1, [sp, #OFFSET_X0]
+	ldp		x2, x3, [sp, #OFFSET_X2]
+	ldp		x4, x5, [sp, #OFFSET_X4]
+	ldp		x6, x7, [sp, #OFFSET_X6]
+	ldp		x8, x9, [sp, #OFFSET_X8]
+	ldp		x10, x11, [sp, #OFFSET_X10]
+	ldp		x12, x13, [sp, #OFFSET_X12]
+	ldp		x14, x15, [sp, #OFFSET_X14]
+	ldp		x16, x17, [sp, #OFFSET_X16]
+	ldp		x18, x19, [sp, #OFFSET_X18]
+	ldp		x20, x21, [sp, #OFFSET_X20]
+	ldp		x22, x23, [sp, #OFFSET_X22]
+	ldp		x24, x25, [sp, #OFFSET_X24]
+	ldp		x26, x27, [sp, #OFFSET_X26]
+	ldp		x28, x29, [sp, #OFFSET_X28]
+	ldr		lr, [sp, #OFFSET_LR]
+
+	add		sp, sp, #S_FRAME_SIZE
+.endm
 
 #else
 
@@ -966,76 +1034,6 @@ static inline int cpu_mode(void)
 #define GIC_PRIO_IRQOFF			(GIC_PRIO_IRQON & ~0x80)
 #define GIC_PRIO_PSR_I_SET		(1 << 4)
 
-static inline int smp_processor_id(void) {
-	int cpu;
-
-	/* Read Multiprocessor ID register */
-	asm volatile ("mrs %0, mpidr_el1": "=r" (cpu));
-
-	/* Mask out all but CPU ID bits */
-	return (cpu & 0x3);
-}
-
-static inline void local_irq_enable(void)
-{
-	asm volatile(
-		"msr	daifclr, #2		// arch_local_irq_enable\n"
-		"nop"
-		::: "memory");
-
-}
-
-static inline void local_irq_disable(void)
-{
-	asm volatile(
-		"msr	daifset, #2		// arch_local_irq_disable\n"
-		"nop"
-		::: "memory");
-
-}
-
-#define local_irq_save(x)                                   \
-          ({                                                      \
-          __asm__ __volatile__(                                   \
-        		  "mrs	%0, daif"     \
-          : "=r" (x) : : "memory", "cc");                         \
-          })
-
-static inline void local_irq_restore(uint32_t flags)
-{
-	asm volatile(
-		"msr	daif, %0"
-		:: "r" (flags) : "memory", "cc");
-}
-
-/*
- * Save the current interrupt enable state.
- */
-static inline uint32_t local_save_flags(void)
-{
-	uint32_t flags;
-	asm volatile(
-		"mrs	%0, daif"
-		: "=r" (flags) : : "memory", "cc");
-
-	return flags;
-}
-
-
-#define local_irq_is_enabled() \
-	({ unsigned long flags; \
-	flags = local_save_flags(); \
-	!(flags & PSR_I_BIT); \
-})
-
-#define local_irq_is_disabled() \
-	(!local_irq_is_enabled())
-
-static inline void cpu_relax(void)
-{
-	asm volatile("yield" ::: "memory");
-}
-
 typedef struct cpu_regs {
 	u64 x0;
 	u64 x1;
@@ -1073,11 +1071,95 @@ typedef struct cpu_regs {
 	u64 pstate;
 } cpu_regs_t;
 
-typedef struct cpu_sys_regs {
-	u64   vksp;
-	u64   vusp;
-} cpu_sys_regs_t;
+static inline int smp_processor_id(void) {
+	int cpu;
 
+	/* Read Multiprocessor ID register */
+	asm volatile ("mrs %0, mpidr_el1": "=r" (cpu));
+
+	/* Mask out all but CPU ID bits */
+	return (cpu & 0x3);
+}
+
+static inline int irqs_disabled_flags(cpu_regs_t *regs)
+{
+	return (int)((regs->pstate) & PSR_I_BIT);
+}
+
+static inline void local_irq_enable(void)
+{
+	asm volatile(
+		"msr	daifclr, #2		// arch_local_irq_enable\n"
+		"nop"
+		::: "memory");
+
+}
+
+static inline void local_irq_disable(void)
+{
+	asm volatile(
+		"msr	daifset, #2		// arch_local_irq_disable\n"
+		"nop"
+		::: "memory");
+
+}
+
+static inline unsigned long local_irq_save(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs	%0, daif \n"     \
+		"msr 	daifset, #2"
+		: "=r" (flags) : : "memory", "cc");
+
+	return flags;
+}
+
+
+static inline void local_irq_restore(unsigned long flags)
+{
+	asm volatile(
+		"msr	daif, %0"
+		:: "r" (flags) : "memory", "cc");
+}
+
+/*
+ * Save the current interrupt enable state.
+ */
+static inline unsigned long local_save_flags(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs	%0, daif"
+		: "=r" (flags) : : "memory", "cc");
+
+	return flags;
+}
+
+
+#define local_irq_is_enabled() \
+	({ unsigned long flags; \
+	flags = local_save_flags(); \
+	!(flags & PSR_I_BIT); \
+})
+
+#define local_irq_is_disabled() \
+	(!local_irq_is_enabled())
+
+static inline void cpu_relax(void)
+{
+	asm volatile("yield" ::: "memory");
+}
+
+/*
+ * Put the CPU in idle/standby until an interrupt is raised up.
+ */
+static inline void cpu_standby(void) {
+	dsb(sy);
+	wfi();
+}
 
 struct vcpu_guest_context;
 struct domain;
@@ -1085,6 +1167,8 @@ struct domain;
 void __switch_to(struct domain *prev, struct domain *next);
 void ret_to_user(void);
 void pre_ret_to_user(void);
+
+void trap_handle(cpu_regs_t *regs);
 
 void cpu_do_idle(void);
 

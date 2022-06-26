@@ -4,7 +4,7 @@ echo Deploying secondary rootfs into the second partition...
 
 if [ "$PLATFORM" == "" ]; then
     if [ "$1" == "" ]; then
-        echo "PLATFORM must be defined (vexpress, rpi4)"
+        echo "PLATFORM must be defined (vexpress, rpi4, virt64)"
         echo "You can invoke deploy.sh <platform>"
         exit 0
     fi

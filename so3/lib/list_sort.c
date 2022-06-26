@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <list.h>
+#include <compiler.h>
 
 typedef int __attribute__((nonnull(2,3))) (*cmp_func)(void *,
 		struct list_head const *, struct list_head const *);

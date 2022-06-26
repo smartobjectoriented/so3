@@ -1,7 +1,7 @@
 #ifndef ALLTYPES_H
 #define ALLTYPES_H
 
-#define _Addr int
+#define _Addr long
 #define _Int64 long long
 #define _Reg int
 
@@ -37,10 +37,11 @@ typedef unsigned uid_t;
 typedef unsigned gid_t;
 
 typedef long clock_t;
-typedef long time_t;
-typedef long suseconds_t;
+typedef uint64_t time_t;
+
+typedef uint64_t suseconds_t;
 struct timeval { time_t tv_sec; suseconds_t tv_usec; };
-struct timespec { time_t tv_sec; long tv_nsec; };
+struct timespec { time_t tv_sec; time_t tv_nsec; };
 
 #ifndef __cplusplus
 typedef unsigned wchar_t;
@@ -60,9 +61,6 @@ typedef unsigned long wctype_t;
 typedef _Addr ptrdiff_t;
 
 typedef struct { long long __ll; long double __ld; } max_align_t;
-
-typedef long time_t;
-typedef long suseconds_t;
 
 struct iovec { void *iov_base; size_t iov_len; };
 

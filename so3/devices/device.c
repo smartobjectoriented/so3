@@ -136,31 +136,22 @@ void parse_dtb(void *fdt_addr) {
 		offset = 0;
 
 		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
+
 			if (fdt_device_is_available(fdt_addr, new_off)) {
 				for (i = 0; i < drivers_count[level]; i++) {
 
-					if (strcmp(dev->compatible, driver_entries[level][i].compatible) == 0) {
+					if (!strcmp(dev->compatible, driver_entries[level][i].compatible)) {
 
 						found = true;
 
-						DBG("Found compatible:    %s\n",driver_entries[level][i].compatible);
+						DBG("Found compatible:    %s\n", driver_entries[level][i].compatible);
 						DBG("    Compatible:      %s\n", dev->compatible);
-						DBG("    Base address:    0x%08X\n", dev->base);
-						DBG("    Size:            0x%08X\n", dev->size);
-						DBG("    IRQ:             %d\n", dev->irq_nr);
 						DBG("    Status:          %s\n", dev_state_str(dev->status));
 						DBG("    Initcall level:  %d\n", level);
 
 						if (dev->status == STATUS_INIT_PENDING) {
-#ifdef CONFIG_MMU
-							/* Perform the mapping in the I/O virtual address space, if necessary (size > 0) */
-							if (dev->size > 0) {
-								dev->base = io_map(dev->base, dev->size);
-								DBG("    Virtual addr: 0x%x\n", dev->base);
-							}
-#endif
 
-							driver_entries[level][i].init(dev);
+							driver_entries[level][i].init(dev, new_off);
 							dev->status = STATUS_INITIALIZED;
 
 							list_add_tail(&dev->list, &devices);

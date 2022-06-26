@@ -80,7 +80,11 @@ __attribute__((__section__(".head"))) int __entryC(void *args) {
 	/* Just give the beginning of the array of pointers */
 	argv = (char **) (args + 4);
 
+#ifdef __ARM__
 	__environ  = (char **) (args + 4 + 4*argc);
+#else
+	__environ  = (char **) (args + 4 + 8*argc);
+#endif
 
 	sa.sa_handler = term_default;
 	sigaction(SIGINT, &sa, NULL);

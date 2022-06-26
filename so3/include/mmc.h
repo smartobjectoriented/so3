@@ -251,7 +251,7 @@ struct mmc_data {
 	};
 	uint flags;
 	uint blocks;
-	uint blocksize;
+	unsigned long blocksize;
 };
 
 /* forward decl. */

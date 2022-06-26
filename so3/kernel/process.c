@@ -35,13 +35,14 @@
 #include <signal.h>
 #include <ptrace.h>
 #include <softirq.h>
+#include <syscall.h>
 
 #include <device/serial.h>
 
 #include <asm/cacheflush.h>
-#include <asm/syscall.h>
 #include <asm/mmu.h>
 #include <asm/processor.h>
+#include <asm/process.h>
 
 static char *proc_state_strings[5] = {
 	[PROC_STATE_NEW]	= "NEW",
@@ -63,7 +64,7 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /* Used to update regs during fork */
-extern void __save_context(tcb_t *newproc, uint32_t stack_addr);
+extern void __save_context(tcb_t *newproc, addr_t stack_addr);
 
 /* only the following sections are supported */
 #define SUPPORTED_SECTION_COUNT 6
@@ -210,16 +211,18 @@ pcb_t *new_process(void)
 
 	/* Process-related memory management */
 
-	/* create the 1st level page table */
-	pcb->pgtable = new_l1pgtable();
+	/* Create the 1st level page table */
+	pcb->pgtable = new_root_pgtable();
 	if (!pcb->pgtable) {
 		printk("%s: failed to create level 1 page table", __func__);
 		kernel_panic();
 	}
 
-	/* Preserve the mapping to the high-1G kernel area */
+	/* With aarch32, we have one page table used by TTBR0/1 without distinction */
+#ifdef CONFIG_ARCH_ARM32
+	/* Preserve the mapping of kernel regions according to the arch configuration */
 	pgtable_copy_kernel_area(pcb->pgtable);
-
+#endif
 	/* Integrate the list of process */
 	list_add_tail(&pcb->list, &proc_list);
 
@@ -241,7 +244,7 @@ void reset_process_stack(pcb_t *pcb) {
 	 * The stack virtual top is under the page of arguments, from the top user space.
 	 * The stack is full descending.
 	 */
-	pcb->stack_top = CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE;
+	pcb->stack_top = arch_get_args_base();
 }
 
 void dump_proc_pages(pcb_t *pcb){
@@ -274,9 +277,9 @@ void add_page_to_proc(pcb_t *pcb, page_t *page) {
 /*
  * Find available frames and do the mapping of a number of pages.
  */
-static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr) {
+static void allocate_page(pcb_t *pcb, addr_t virt_addr, int nr_pages, bool usr) {
 	int i;
-	uint32_t page;
+	addr_t page;
 
 	/* Perform the mapping of a new physical memory region at the region started at @virt_addr  */
 	for (i = 0; i < nr_pages; i++) {
@@ -289,11 +292,17 @@ static void allocate_page(pcb_t *pcb, uint32_t virt_addr, int nr_pages, bool usr
 	}
 }
 
-/*
+/**
+ *
  * Create a process from scratch, without fork'd. Typically used by the kernel main
  * at the end of the bootstrap.
+ *
+ *
+ * @param start_routine	Address of the main thread which as to be located in
+ * 			the user space area
+ * @param name		Name of the process
  */
-void create_process(int (*start_routine)(void *), const char *name)
+void create_root_process(void)
 {
 	pcb_t *pcb;
 	int i;
@@ -310,10 +319,14 @@ void create_process(int (*start_routine)(void *), const char *name)
 
 	DBG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
-#warning set up argc & argv correctly for the root process...
+	/* First map the code in the user space so that
+	 * the initial code can run normally in user mode.
+	 */
 
-	/* Start main thread */
-	pcb->main_thread = user_thread(start_routine, name, NULL, pcb);
+	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start), (void *) __root_proc_end - (void *) __root_proc_start, false);
+
+	/* Start main thread <args> of the thread is not used in this context. */
+	pcb->main_thread = user_thread((th_fn_t) USER_SPACE_VADDR, "root_proc", NULL, pcb);
 
 	/* init process? */
 	if (!root_process)
@@ -407,7 +420,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 	/* Environment string addresses */
 	if (!envp) {
-		*((int *) args_p) = 0; /* Keep array-end with NULL */
+		*((addr_t *) args_p) = 0; /* Keep array-end with NULL */
 		args_p += sizeof(char *);
 
 	} else {
@@ -442,7 +455,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 		/* We check if the pointer do not exceed the page we
 		 * allocated before */
-		if (((uint32_t) args_str_p - (uint32_t) args) > PAGE_SIZE) {
+		if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 			DBG("Not enougth memory allocated\n");
 			set_errno(ENOMEM);
 
@@ -467,7 +480,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 
 			/* We check if pointer do not exceed the page we
 			 * allocated before. */
-			if (((uint32_t) args_str_p - (uint32_t) args) > PAGE_SIZE) {
+			if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 				DBG("Not enougth memory allocated\n");
 				set_errno(ENOMEM);
 
@@ -486,7 +499,8 @@ void post_setup_image(void *args_env) {
 	char *args_base;
 	int argc, i;
 
-	args_base = (char *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE);
+	args_base = (char *) arch_get_args_base();
+
 	memcpy(args_base, args_env, PAGE_SIZE);
 
 	free(args_env);
@@ -500,17 +514,16 @@ void post_setup_image(void *args_env) {
 	 * we adjust it to match our final destination.
 	 */
 	for (i = 0; i < argc; i++)
-		__args[i] = ((int)__args[i] - (int) args_env) + args_base;
+		__args[i] = ((addr_t)__args[i] - (addr_t) args_env) + args_base;
 
 
 	/* Focus on the env addresses now */
 	__args = (char **) (args_base + sizeof(int) + argc*sizeof(char *));
 
 	for (i = 0; __args[i] != NULL; i++)
-		__args[i] = ((int) __args[i] - (int) args_env) + args_base;
+		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
 
 }
-
 
 /*
  * Set up the PCB fields related to the binary image to be loaded.
@@ -529,7 +542,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	 */
 
 	__args_env = preserve_args_and_env(argc, argv, envp);
-	if (!__args_env)
+	if (__args_env < 0)
 		return -1;
 
 	/* Reset the process stack and page count */
@@ -539,7 +552,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	/* The current binary image (which is a copy of the fork'd) must disappeared.
 	 * Associated physical pages must be removed and freed. Stack area will be re-initialized.
 	 */
-	reset_l1pgtable(pcb->pgtable, false);
+	reset_root_pgtable(pcb->pgtable, false);
 
 	/* Release all allocated pages for user space */
 	release_proc_pages(pcb);
@@ -576,14 +589,15 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	DBG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, HEAP_SIZE);
 
-	/* arguments will be stored in one more page */
+	/* arguments (& env) will be stored in one more page */
 	pcb->page_count++;
 
-	allocate_page(pcb, CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE, 1, true);
-	DBG("arguments mapped at 0x%08x (size: %d bytes)\n", CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE,  PAGE_SIZE);
+	allocate_page(pcb, arch_get_args_base(), 1, true);
+	DBG("arguments mapped at 0x%08x (size: %d bytes)\n", arch_get_args_base(),  PAGE_SIZE);
 
 	/* Prepare the arguments within the page reserved for this purpose. */
-	post_setup_image(__args_env);
+	if (__args_env)
+		post_setup_image(__args_env);
 
 	return 0;
 }
@@ -591,8 +605,8 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 /* load sections from each loadable segment into the process' virtual pages */
 void load_process(elf_img_info_t *elf_img_info)
 {
-	uint32_t section_start, section_end;
-	uint32_t segment_start, segment_end;
+	unsigned long section_start, section_end;
+	unsigned long segment_start, segment_end;
 	int i, j, k;
 	bool section_supported;
 
@@ -645,8 +659,8 @@ int do_execve(const char *filename, char **argv, char **envp)
 {
 	elf_img_info_t elf_img_info;
 	pcb_t *pcb;
-	uint32_t flags;
-	int (*start_routine)(void *);
+	unsigned long flags;
+	th_fn_t start_routine;
 	queue_thread_t *cur;
 	int ret, argc;
 
@@ -699,12 +713,10 @@ int do_execve(const char *filename, char **argv, char **envp)
 
 	/* Now, we need to create the main user thread associated to this binary image. */
 	/* start main thread */
-	start_routine = (int(*)(void *)) pcb->bin_image_entry;
+	start_routine = (th_fn_t) pcb->bin_image_entry;
 
-	/* We start the new thread taking care of the priority of the current (main) thread.
-	 * The priority will be inherited to the new one.
-	 */
-	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), pcb);
+	/* We start the new thread */
+	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) arch_get_args_base(), pcb);
 
 	/* Transfer the waiting thread if any */
 
@@ -774,7 +786,7 @@ pcb_t *duplicate_process(pcb_t *parent)
 int do_fork(void)
 {
 	pcb_t *newp, *parent;
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -797,7 +809,7 @@ int do_fork(void)
 	 */
 	sprintf(newp->name, "%s_child_%d", parent->name, newp->pid);
 
-	newp->main_thread = user_thread(NULL, newp->name, (void *) (CONFIG_KERNEL_VIRT_ADDR - PAGE_SIZE), newp);
+	newp->main_thread = user_thread(NULL, newp->name, (void *) arch_get_args_base(), newp);
 
 	/* Copy the kernel stack of the main thread */
 	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - THREAD_STACK_SIZE,
@@ -896,7 +908,7 @@ uint32_t do_getpid(void) {
  */
 int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 	pcb_t *child;
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -943,7 +955,7 @@ int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 	if ((child->state == PROC_STATE_ZOMBIE) && (child->ptrace_pending_req == PTRACE_NO_REQUEST)) {
 
 		/* Free the page tables used for this process */
-		reset_l1pgtable(child->pgtable, true);
+		reset_root_pgtable(child->pgtable, true);
 
 		/* Get the exit code left in the PCB by the child */
 		if (wstatus) {
@@ -973,7 +985,7 @@ int do_waitpid(int pid, uint32_t *wstatus, uint32_t options) {
 		} else {
 
 			/* Free the page tables used for this process */
-			reset_l1pgtable(child->pgtable, true);
+			reset_root_pgtable(child->pgtable, true);
 
 			/* Get the exit code left in the PCB by the child */
 			if (wstatus) {

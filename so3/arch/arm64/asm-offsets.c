@@ -68,7 +68,11 @@ int main(void)
 	DEFINE(OFFSET_LR,		offsetof(struct cpu_regs, lr));
 	DEFINE(OFFSET_SP,		offsetof(struct cpu_regs, sp));
 	DEFINE(OFFSET_PC,		offsetof(struct cpu_regs, pc));
-	DEFINE(OFFSET_PSTATE,	offsetof(struct cpu_regs, pstate));
+	DEFINE(OFFSET_PSTATE,		offsetof(struct cpu_regs, pstate));
+
+	BLANK();
+
+	DEFINE(OFFSET_TCB_CPU_REGS, 	offsetof(tcb_t, cpu_regs));
 
 	return 0;
 }

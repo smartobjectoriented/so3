@@ -20,8 +20,28 @@
 
 #include <asm/processor.h>
 
+void __check(void) {
+	register unsigned long __sp asm("sp");
+
+	lprintk("## check  sp: %lx\n", __sp);
+}
+
 void __stack_alignment_fault(void) {
 	lprintk("### wrong stack alignment (8-bytes not respected) !! ###");
+	kernel_panic();
+}
+
+void __sync_serror(addr_t lr) {
+
+	lprintk("### Got a SError lr: 0x%lx ###\n", lr);
+
+	kernel_panic();
+}
+
+void __sync_el2_fault(addr_t lr, addr_t sp) {
+
+	lprintk("### Got a sync interrupt in EL2 / lr: 0x%lx sp: 0x%lx ###\n", lr, sp);
+
 	kernel_panic();
 }
 

@@ -20,16 +20,16 @@
 #define BITOPS_H
 
 #include <types.h>
+
 #include <asm/processor.h>
 
 #define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_INT))
 #define BIT_WORD(nr)		((nr) / BITS_PER_INT)
 
-
-extern int _find_first_zero_bit(const void *p, unsigned size);
-extern int _find_next_zero_bit(const void *p, int size, int offset);
-extern int _find_first_bit(const unsigned int *p, unsigned size);
-extern int _find_next_bit(const unsigned int *p, int size, int offset);
+extern unsigned long _find_first_zero_bit(const unsigned long *p, unsigned long size);
+extern unsigned long _find_next_zero_bit(const unsigned long *p, unsigned long size, unsigned long offset);
+extern unsigned long _find_first_bit(const unsigned long *p, unsigned long size);
+extern unsigned long _find_next_bit(const unsigned long *p, unsigned long size, unsigned long offset);
 
 #define find_first_zero_bit(p, sz)       _find_first_zero_bit(p, sz)
 #define find_next_zero_bit(p, sz, off)    _find_next_zero_bit(p, sz, off)
@@ -43,7 +43,7 @@ extern int _find_next_bit(const unsigned int *p, int size, int offset);
  */
 static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *p)
 {
-	uint32_t flags;
+	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
 
 	p += bit >> 5;
@@ -55,7 +55,7 @@ static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *
 
 static inline void ____atomic_clear_bit(unsigned int bit, volatile unsigned long *p)
 {
-	uint32_t flags;
+	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
 
 	p += bit >> 5;
@@ -90,7 +90,7 @@ static inline int __test_and_set_bit(int nr, volatile void *addr)
 
 static inline int test_and_set_bit(int nr, volatile void * addr)
 {
-	uint32_t flags;
+	unsigned long flags;
 	int out;
 
 	flags = local_irq_save();
@@ -112,7 +112,7 @@ static inline int __test_and_clear_bit(int nr, volatile void *addr)
 
 static inline int test_and_clear_bit(int nr, volatile void * addr)
 {
-	uint32_t flags;
+	unsigned long flags;
 	int out;
 
 	flags = local_irq_save();

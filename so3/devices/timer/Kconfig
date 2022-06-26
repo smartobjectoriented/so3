@@ -3,10 +3,5 @@ config SP804
 	bool "SP804 Timer"
 	depends on VEXPRESS
 	
-config SUN4I_TIMER
-	bool "SUN4i timer"
-	depends on PINE64 || A20 || MERIDAv2 || BPI
-
-	
 config ARM_TIMER
 	bool "ARM architected CP15 timer for clocksource & clockevent"

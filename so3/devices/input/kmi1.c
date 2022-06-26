@@ -21,11 +21,13 @@
  */
 
 #include <vfs.h>
+#include <memory.h>
+
 #include <asm/io.h>
+
 #include <device/driver.h>
 #include <device/input/ps2.h>
 #include <device/input/pl050.h>
-
 
 /*
  * Maximal horizontal and vertical resolution of the display.
@@ -55,12 +57,17 @@ struct file_operations pl050_mouse_fops = {
 };
 
 /* Device info. */
-dev_t pl050_mouse;
+
 struct devclass pl050_mouse_cdev = {
 	.class = DEV_CLASS_MOUSE,
 	.type = VFS_TYPE_DEV_INPUT,
 	.fops = &pl050_mouse_fops,
 };
+
+struct {
+	void *base;
+	irq_def_t irq_def;
+} pl050_mouse;
 
 /*
  * Mouse interrupt service routine.
@@ -100,15 +107,31 @@ irq_return_t pl050_int_mouse(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
-int pl050_init_mouse(dev_t *dev)
+int pl050_init_mouse(dev_t *dev, int fdt_offset)
 {
-	int res = pl050_init(dev, &pl050_mouse, &pl050_mouse_cdev, pl050_int_mouse);
-	if (0 != res) {
-		return res;
-	}
+	const struct fdt_property *prop;
+	int prop_len;
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	/* Mapping the two mem area of GIC (distributor & CPU interface) */
+#ifdef CONFIG_ARCH_ARM32
+	pl050_mouse.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	pl050_mouse.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+#endif
+
+	fdt_interrupt_node(fdt_offset, &pl050_mouse.irq_def);
+
+	/* Register the input device so it can be accessed from user space. */
+	devclass_register(dev, &pl050_mouse_cdev);
+
+	pl050_init(pl050_mouse.base, &pl050_mouse.irq_def, pl050_int_mouse);
 
 	/* Tell the mouse to send PS/2 packets when moving. */
-	pl050_write(&pl050_mouse, EN_PKT_STREAM);
+	pl050_write(pl050_mouse.base, EN_PKT_STREAM);
 
 	return 0;
 }

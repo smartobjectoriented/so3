@@ -820,7 +820,7 @@ int do_stat(const char *path, struct stat *st)
 /**
  * An mmap() implementation in VFS.
  */
-void *do_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset)
+void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset)
 {
 	int gfd;
 	uint32_t page_count;

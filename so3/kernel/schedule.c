@@ -75,17 +75,17 @@ inline bool check_consistency_ready(void) {
 #endif /* 0 */
 
 void preempt_disable(void) {
-	uint32_t flags;
+	unsigned long flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 	__sched_preempt = false;
 	spin_unlock_irqrestore(&schedule_lock, flags);
 }
 
 void preempt_enable(void) {
-	uint32_t flags;
+	unsigned long flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 	__sched_preempt = true;
 	spin_unlock_irqrestore(&schedule_lock, flags);
 }
@@ -94,7 +94,7 @@ void preempt_enable(void) {
  * Insert a new thread in the ready list.
  */
 void ready(tcb_t *tcb) {
-	uint32_t flags;
+	unsigned long flags;
 	queue_thread_t *cur;
 	bool already_locked;
 
@@ -105,7 +105,7 @@ void ready(tcb_t *tcb) {
 	already_locked = (spin_is_locked(&schedule_lock) ? true : false);
 
 	if (!already_locked)
-		spin_lock_irqsave(&schedule_lock, flags);
+		flags = spin_lock_irqsave(&schedule_lock);
 
 	tcb->state = THREAD_STATE_READY;
 
@@ -136,7 +136,7 @@ void ready(tcb_t *tcb) {
  * It is assumed that the caller manages the waiting queue.
  */
 void waiting(void) {
-	uint32_t flags;
+	unsigned long flags;
 
 	flags = local_irq_save();
 
@@ -154,7 +154,7 @@ void waiting(void) {
  */
 void zombie(void) {
 	queue_thread_t *cur;
-	uint32_t flags;
+	unsigned long flags;
 
 	ASSERT(current()->state == THREAD_STATE_RUNNING);
 
@@ -213,9 +213,9 @@ void remove_zombie(struct tcb *tcb) {
  * If the thread passed as argument is not sleeping, we just skip it.
  */
 void wake_up(struct tcb *tcb) {
-	uint32_t flags;
+	unsigned long flags;
 
-	spin_lock_irqsave(&schedule_lock, flags);
+	flags = spin_lock_irqsave(&schedule_lock);
 
 	if (tcb->state == THREAD_STATE_WAITING)
 		ready(tcb);
@@ -227,7 +227,6 @@ void wake_up(struct tcb *tcb) {
  * Remove a tcb from the ready list
  */
 void remove_ready(struct tcb *tcb) {
-
 	queue_thread_t *cur;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
@@ -406,9 +405,8 @@ static tcb_t *next_thread(void) {
  * Main scheduling function.
  */
 void schedule(void) {
-
 	tcb_t *prev, *next;
-	uint32_t flags;
+	unsigned long flags;
 	static volatile bool __in_scheduling = false;
 
 	if (unlikely(boot_stage < BOOT_STAGE_COMPLETED))
@@ -484,8 +482,8 @@ void schedule(void) {
  * Can be used for debugging purposes.
  *
  */
-void __dump_regs(uint32_t regs) {
-	uint32_t *cpuregs = (uint32_t *) regs;
+void __dump_regs(unsigned long regs) {
+	unsigned long *cpuregs = (unsigned long *) regs;
 
 	lprintk("r4: %x ", *cpuregs);
 	lprintk("r5: %x ", *(cpuregs+1));
@@ -513,7 +511,7 @@ static inline void raise_schedule(void *__dummy) {
 void dump_ready(void) {
 	struct list_head *pos;
 	queue_thread_t *cur;
-	uint32_t flags;
+	unsigned long flags;
 
 	lprintk("Dumping the ready-threads queue: \n");
 
@@ -541,7 +539,7 @@ void dump_ready(void) {
 void dump_zombie(void) {
 	struct list_head *pos;
 	queue_thread_t *cur;
-	uint32_t flags;
+	unsigned long flags;
 
 	printk("Dumping the zombie-threads queue: \n");
 

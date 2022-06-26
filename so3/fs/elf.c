@@ -62,6 +62,7 @@ uint8_t *elf_load_buffer(const char *filename)
 
 	return buffer;
 }
+
 /*
  * Clean all allocated data related to the ELF image.
  */
@@ -87,19 +88,21 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 	size_t section_name_offset;
 
 	/* header */
+#ifdef CONFIG_ARCH_ARM32
 	elf_img_info->header = (struct elf32_hdr *) malloc(sizeof(struct elf32_hdr));
+#else
+	elf_img_info->header = (struct elf64_hdr *) malloc(sizeof(struct elf64_hdr));
+#endif
 	if (!elf_img_info->header) {
 		printk("%s: failed to allocate memory\n", __func__);
 		kernel_panic();
 	}
 
+#ifdef CONFIG_ARCH_ARM32
 	memcpy(elf_img_info->header, elf_img_info->file_buffer, sizeof(struct elf32_hdr));
-
-	if (elf_img_info->header->e_ident[EI_CLASS] != ELFCLASS32) {
-		/* FIXME: should not crash but exit gracefully */
-		printk("%s: Not a 32-bit binary!\n", __func__);
-		kernel_panic();
-	}
+#else
+	memcpy(elf_img_info->header, elf_img_info->file_buffer, sizeof(struct elf64_hdr));
+#endif
 
 	DBG("Magic: 0x%02x%c%c%c\n", elf_img_info->header->e_ident[EI_MAG0],
 	                             elf_img_info->header->e_ident[EI_MAG1],
@@ -107,10 +110,20 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 	                             elf_img_info->header->e_ident[EI_MAG3]);
 	DBG("%d sections\n", elf_img_info->header->e_shnum);
 	DBG("section table is at offset 0x%08x (%d bytes/section)\n", elf_img_info->header->e_shoff, elf_img_info->header->e_shentsize);
+
+#ifdef CONFIG_ARCH_ARM32
 	DBG("sizeof(struct elf32_shdr): %d bytes\n", sizeof(struct elf32_shdr));
+#else
+	DBG("sizeof(struct elf64_shdr): %d bytes\n", sizeof(struct elf64_shdr));
+#endif
 
 	/* sections */
+#ifdef CONFIG_ARCH_ARM32
 	elf_img_info->sections = (struct elf32_shdr *) malloc(elf_img_info->header->e_shnum * sizeof(struct elf32_shdr));
+#else
+	elf_img_info->sections = (struct elf64_shdr *) malloc(elf_img_info->header->e_shnum * sizeof(struct elf64_shdr));
+#endif
+
 	if (!elf_img_info->sections) {
 		printk("%s: failed to allocate memory\n", __func__);
 		kernel_panic();
@@ -158,7 +171,12 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 	size_t i;
 
 	/* Segments */
+#ifdef CONFIG_ARCH_ARM32
 	elf_img_info->segments = (struct elf32_phdr *) malloc(sizeof(struct elf32_phdr) * elf_img_info->header->e_phnum);
+#else
+	elf_img_info->segments = (struct elf64_phdr *) malloc(sizeof(struct elf64_phdr) * elf_img_info->header->e_phnum);
+#endif
+
 	if (!elf_img_info->segments) {
 		printk("%s: failed to allocate memory\n", __func__);
 		kernel_panic();
@@ -166,11 +184,19 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 
 	DBG("%d segments\n", elf_img_info->header->e_phnum);
 	DBG("segment table is at offset 0x%08x (%d bytes/section)\n", elf_img_info->header->e_phoff, elf_img_info->header->e_phentsize);
+#ifdef CONFIG_ARCH_ARM32
 	DBG("sizeof(struct elf32_phdr): %d bytes\n", sizeof(struct elf32_phdr));
+#else
+	DBG("sizeof(struct elf64_phdr): %d bytes\n", sizeof(struct elf64_phdr));
+#endif
 
 	elf_img_info->segment_page_count = 0;
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
+#ifdef CONFIG_ARCH_ARM32
 		memcpy(elf_img_info->segments + i, elf_img_info->file_buffer + elf_img_info->header->e_phoff + i*elf_img_info->header->e_phentsize, sizeof(struct elf32_phdr));
+#else
+		memcpy(elf_img_info->segments + i, elf_img_info->file_buffer + elf_img_info->header->e_phoff + i*elf_img_info->header->e_phentsize, sizeof(struct elf64_phdr));
+#endif
 
 		if (elf_img_info->segments[i].p_type == PT_LOAD)
 			elf_img_info->segment_page_count += (elf_img_info->segments[i].p_memsz >> PAGE_SHIFT) + 1;

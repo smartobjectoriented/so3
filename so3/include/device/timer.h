@@ -30,16 +30,14 @@
 
 /* Time conversion units */
 
-typedef unsigned int time_t;
-
 struct timespec {
-	long		tv_sec;			/* seconds */
-	long		tv_nsec;		/* nanoseconds */
+	time_t		tv_sec;			/* seconds */
+	time_t		tv_nsec;		/* nanoseconds */
 };
 
 struct timeval {
-        long		tv_sec;			/* seconds */
-        long		tv_usec;		/* microseconds */
+	time_t		tv_sec;			/* seconds */
+	time_t		tv_usec;		/* microseconds */
 };
 
 /* All timing information below must be express in nanoseconds. The underlying hardware is responsible
@@ -47,15 +45,19 @@ struct timeval {
 
 /* Structure for a periodic timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	uint64_t period; /* Period in ns of the periodic timer */
+
+	dev_t *dev;	/* Reference to the periodic timer hardware */
+
 	void (*start)(void);
 	void (*stop)(void);
+
 } periodic_timer_t;
 
 /* Structure for a oneshot timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	void (*set_delay)(uint64_t delay_ns);
 	void (*start)(void);
 
@@ -69,7 +71,7 @@ typedef struct {
 
 /* Structure of a clocksource timer */
 typedef struct {
-	dev_t *dev; /* Associated hardware */
+
 	u64 (*read)(void);
 
 	uint32_t rate;

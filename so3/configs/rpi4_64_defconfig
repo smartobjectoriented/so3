@@ -1,0 +1,31 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# AVZ Hypervisor configuration
+#
+# CONFIG_ARCH_ARM32 is not set
+CONFIG_ARCH_ARM64=y
+CONFIG_ARCH="arm64"
+CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
+CONFIG_RAM_BASE=0x00000000
+CONFIG_RAM_SIZE=0x3f000000
+
+#
+# Platform
+#
+# CONFIG_VIRT64 is not set
+CONFIG_RPI4_64=y
+# CONFIG_ZCU106 is not set
+# CONFIG_VA_BITS_39 is not set
+CONFIG_VA_BITS_48=y
+# end of Platform
+
+#
+# Kernel & CPU features
+#
+# CONFIG_PSCI is not set
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
+# end of Kernel & CPU features
+
+CONFIG_HYPERVISOR_VIRT_ADDR=0xffff700000000000
+CONFIG_BCM283x_MU_UART=y

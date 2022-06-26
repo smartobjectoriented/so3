@@ -22,7 +22,7 @@
 
 #include <device/irq.h>
 
-uint32_t softirq_bitmap;
+unsigned long softirq_bitmap;
 
 static softirq_handler softirq_handlers[NR_SOFTIRQS];
 
@@ -32,7 +32,7 @@ static softirq_handler softirq_handlers[NR_SOFTIRQS];
 void do_softirq(void)
 {
 	unsigned int i;
-	unsigned int pending;
+	unsigned long pending;
 	unsigned int loopmax;
 
 	loopmax = 0;

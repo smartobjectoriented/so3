@@ -24,13 +24,13 @@
 
 #define unlikely(x)   __builtin_expect((x),0)
 
-extern uint32_t __end;
+extern addr_t __end[];
 
 #ifdef DEBUG
 #undef DBG
 #define DBG(fmt, ...) \
     do { \
-		lprintk("%s:%i > "fmt, __func__, __LINE__, ##__VA_ARGS__); \
+	lprintk("%s:%i > "fmt, __func__, __LINE__, ##__VA_ARGS__); \
     } while(0)
 #else
 #define DBG(fmt, ...)

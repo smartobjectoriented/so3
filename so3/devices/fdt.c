@@ -49,12 +49,6 @@ static void init_dev_info(dev_t *dev) {
 
 	memset(dev, 0, sizeof(dev));
 
-	/* Initialize specific fields to default/invalid values */
-	dev->base = 0xFFFFFFFF;
-
-	dev->irq_nr = -1;
-	dev->irq_type = IRQ_TYPE_NONE;
-
 	dev->status = STATUS_UNKNOWN;
 	dev->offset_dts = -1;
 	dev->parent = NULL;
@@ -238,10 +232,8 @@ int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *inf
 	int new_offset;
 	const struct fdt_property *prop;
 	int prop_len;
-	const fdt32_t *p;
 	const char *compat_str, *node_str;
 	static int depth = 0;
-	uint32_t irq_gic_type;
 	dev_t *__info = (dev_t *) info;
 
 	/* Need to reset the depth? */
@@ -314,51 +306,6 @@ int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *inf
 			__info->status = STATUS_DISABLED;
 		else if (!strcmp(prop->data, "ok"))
 			__info->status = STATUS_INIT_PENDING;
-	}
-
-	prop = fdt_get_property(fdt_addr, new_offset, "reg", &prop_len);
-	
-	if (prop) {
-		
-		p = (const fdt32_t *) prop->data;
-				
-		__info->base = fdt32_to_cpu(p[0]);
-
-		if (prop_len > sizeof(uint32_t)) {
-			/* We have a size information */
-			__info->size = fdt32_to_cpu(p[1]);
-		} else {
-			__info->size = 0;
-		}
-		__info->irq_type = fdt32_to_cpu(p[2]);
-	} 
-	
-	/* Interrupts - as described in the bindings - have 3 specific cells */
-	prop = fdt_get_property(fdt_addr, new_offset, "interrupts", &prop_len);
-
-	if (prop) {		
-		p = (const fdt32_t *) prop->data;
-
-		if (prop_len == 3 * sizeof(uint32_t)) {
-
-			/* Retrieve the 3-cell values */
-			irq_gic_type = fdt32_to_cpu(p[0]);
-			__info->irq_nr = fdt32_to_cpu(p[1]);
-			__info->irq_type = fdt32_to_cpu(p[3]);
-
-			/* Not all combinations are currently handled. */
-
-			if (irq_gic_type != GIC_IRQ_TYPE_SGI)
-				__info->irq_nr += 16; /* Possibly for a Private Peripheral Interrupt (PPI) */
-
-			if (irq_gic_type == GIC_IRQ_TYPE_SPI) /* It is a Shared Peripheral Interrupt (SPI) */
-				__info->irq_nr += 16;
-
-		} else {
-			/* Unsupported size of interrupts property */
-			lprintk("%s: unsupported size of interrupts property\n");
-			BUG();
-		}
 	}
 
 	/* We got all required information, the device is ready to be initialized */

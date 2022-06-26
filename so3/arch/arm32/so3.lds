@@ -4,7 +4,7 @@
 
 OUTPUT_FORMAT(elf32-littlearm)
 OUTPUT_ARCH(arm)
-ENTRY(_start)
+ENTRY(__start)
 
 /* The sizes of the stacks used by the application. */
  
@@ -26,7 +26,7 @@ TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */
 SECTIONS
 {
    
-     . = ENTRY_ADDR + 0x8000;   
+     . = ENTRY_ADDR + 0x8000;
     
     __vectors_start = .;
 
@@ -48,7 +48,19 @@ SECTIONS
     {
         *(.text*) 
     }
-
+    
+	. = ALIGN(4096);
+	
+	.root_proc_prologue :
+	{
+		__root_proc_start = .;
+		
+		*(.root_proc.text)
+		
+		__root_proc_end = .;
+		
+	}
+	
     . = ALIGN(4096);
     .data  : 
     { 
@@ -71,8 +83,8 @@ SECTIONS
 
     __bss_end = .;
 
-    . = ALIGN(4096);
-    
+ 	. = ALIGN(4096);
+        
     /* Initcall section for core drivers */
     
     __initcall_driver_initcall_t_core = .;

@@ -32,7 +32,7 @@
 
 static dev_t bcm283x_mu_dev =
 {
-  .base = UART_BASE,
+  .base = CONFIG_UART_LL_PADDR,
 };
 
 static int bcm283x_mu_put_byte(char c)

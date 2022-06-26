@@ -25,10 +25,14 @@
 #include <roxml.h>
 #include <heap.h>
 #include <list.h>
+#include <spinlock.h>
 
 #include <device/timer.h>
 
+#if 0
+
 #include "common.h"
+
 
 LIST_HEAD(visits);
 LIST_HEAD(known_soo_list);
@@ -67,9 +71,10 @@ typedef struct {
 	char shortdesc[ME_SHORTDESC_SIZE];
 } ME_id_t;
 
+#endif
 struct mutex lock;
 
-static volatile int count = 0;
+static volatile long long count = 0;
 int counter;
 
 char serial_getc(void);
@@ -78,7 +83,7 @@ int serial_puts(char *buf, int len);
 
 sem_t sem;
 
-int sem_test_fn(void *arg) {
+void *sem_test_fn(void *arg) {
 	char name[20];
 	int id = *((int *) arg);
 
@@ -98,10 +103,10 @@ int sem_test_fn(void *arg) {
 		/* Consistency check */
 		printk("## %s: sem val: %d\n", name, sem.val);
 	}
-
+	return NULL;
 }
 
-int thread_fn1(void *arg)
+void *thread_fn1(void *arg)
 {
 	int i;
 
@@ -125,23 +130,39 @@ int thread_fn1(void *arg)
 	mutex_unlock(&lock);
 #endif
 
-
-	return 0;
+	return NULL;
 }
 
-int thread_example(void *arg)
+spinlock_t spinlock;
+int threads = 0;
+
+void *thread_example(void *arg)
 {
-	long long ii = 0;
+	unsigned long ii = 0;
 
-	printk("### entering thread_example.\n");
+	//printk("### entering thread_example.\n");
 
-	for (ii = 0; ii < 100000; ii++)
+	for (ii = 0; ii < 10000000; ii++) {
+		spin_lock(&spinlock);
 		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		count++;
+		spin_unlock(&spinlock);
 
-	return 0;
+	}
+	threads++;
+
+	return NULL;
 }
 
-int fn(void *args) {
+void *fn(void *args) {
 	int i = 0, ret;
 
 	printk("Thread #1\n");
@@ -162,10 +183,10 @@ int fn(void *args) {
 		printk("--> th 1: %d\n", i++);
 	}
 
-	return 0;
+	return NULL;
 }
 
-int fn1(void *args) {
+void *fn1(void *args) {
 	//int i = 0;
 
 	printk("Thread #1\n");
@@ -178,10 +199,10 @@ int fn1(void *args) {
 //		printk("--> th 1: %d\n", i++);
 	}
  
-	return 0;
+	return NULL;
 }
 
-int fn2(void *args) {
+void *fn2(void *args) {
 	//int i = 0
 	int ret;
 
@@ -195,7 +216,7 @@ int fn2(void *args) {
 //		printk("--> th 2: %d\n", i++);
 	}
 
-	return 0;
+	return NULL;
 }
 
 extern int schedcount;
@@ -301,6 +322,8 @@ void xml_parse_event(char *buffer, char *id, char *action) {
 
 }
 
+#if 0
+
 /**
  * Prepare a well-formated XML string which is compliant with the
  * table UI application.
@@ -354,6 +377,7 @@ void *xml_prepare_id_array(char *buffer, ME_id_t *ME_id_array) {
 
 }
 
+
 typedef struct {
 
 	me_common_t me_common;
@@ -361,12 +385,36 @@ typedef struct {
 
 } ctrl_t;
 
+#endif
+
 /*
  * Main entry point of so3 app in kernel standalone configuration.
  * Mainly for debugging purposes.
  */
-int app_thread_main(void *args)
+void *app_thread_main(void *args)
 {
+	tcb_t *t1, *t2, *t3, *t4;
+
+	/* Kernel never returns ! */
+	printk("***********************************************\n");
+	printk("Going to infinite loop...\n");
+	printk("Kill Qemu with CTRL-a + x or reset the board\n");
+	printk("***********************************************\n");
+
+	spin_lock_init(&spinlock);
+
+	t1 = kernel_thread(thread_example, "fn1", (void *) 1, 0);
+	t2 = kernel_thread(thread_example, "fn2", (void *) 2, 0);
+	t3 = kernel_thread(thread_example, "fn2", (void *) 3, 0);
+	t4 = kernel_thread(thread_example, "fn2", (void *) 4, 0);
+
+	while (threads != 4) ;
+
+
+	printk("### Total = %lld\n", count);
+	while(1);
+
+#if 0
 	char *buffer;
 	int i;
 	char src[800];
@@ -475,6 +523,7 @@ dump_heap("A");
 
 dump_heap("C");
 	while(1);
+#endif
 
 #if 0
 	void *ptr;
@@ -507,17 +556,6 @@ dump_heap("C");
 #if 0
 	mutex_init(&lock);
 #endif
-
-	/* Kernel never returns ! */
-	printk("***********************************************\n");
-	printk("Going to infinite loop...\n");
-	printk("Kill Qemu with CTRL-a + x or reset the board\n");
-	printk("***********************************************\n");
-
-
-
-
-
 
 
 #if 0
@@ -617,5 +655,5 @@ dump_heap("C");
 	}
 #endif
 
-	return 0;
+	return NULL;
 }
