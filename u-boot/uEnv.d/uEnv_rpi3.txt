@@ -1,0 +1,6 @@
+fdt_high=ffffffff
+initrd_high=ffffffff
+soo=fatload mmc 0 0x30000000 rpi3.itb; bootm 0x30000000
+start=run soo
+
+
