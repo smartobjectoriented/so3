@@ -80,6 +80,7 @@ int recvmmsg (int, struct mmsghdr *, unsigned int, unsigned int, struct timespec
 #define SO_DOMAIN       39
 #endif
 
+#if 0 /* Already present in the toolchain */
 #define SO_SECURITY_AUTHENTICATION              22
 #define SO_SECURITY_ENCRYPTION_TRANSPORT        23
 #define SO_SECURITY_ENCRYPTION_NETWORK          24
@@ -117,6 +118,8 @@ int recvmmsg (int, struct mmsghdr *, unsigned int, unsigned int, struct timespec
 #define SO_ATTACH_REUSEPORT_CBPF 51
 #define SO_ATTACH_REUSEPORT_EBPF 52
 #define SO_CNX_ADVICE           53
+
+#endif /* 0 */
 
 #ifndef SOL_SOCKET
 #define SOL_SOCKET      1

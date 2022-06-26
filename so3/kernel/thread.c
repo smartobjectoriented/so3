@@ -481,7 +481,7 @@ tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_
  */
 tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb)
 {
-	return thread_create(start_routine, name, arg, pcb, 0);
+	return thread_create(start_routine, name, arg, pcb, (pcb->main_thread ? pcb->main_thread->prio : 0));
 }
 
 /*

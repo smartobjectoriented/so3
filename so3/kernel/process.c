@@ -824,7 +824,8 @@ int do_fork(void)
 
 	/* The main process thread is ready to be scheduled for its execution.*/
 	newp->state = PROC_STATE_READY;
-
+	
+	/* Prepare to perform scheduling to check if a context switch is required. */
 	BUG_ON(!local_irq_is_disabled());
 
 	/* Prepare to perform scheduling to check if a context switch is required. */

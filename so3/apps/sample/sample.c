@@ -657,4 +657,3 @@ dump_heap("C");
 
 	return NULL;
 }
-

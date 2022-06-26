@@ -67,8 +67,6 @@
 
 void net_init(void);
 
-int get_lwip_fd(int gfd);
-
 int do_socket(int domain, int type, int protocol);
 int do_connect(int sockfd, const struct sockaddr *name, socklen_t namelen);
 int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);

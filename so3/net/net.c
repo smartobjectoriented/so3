@@ -35,6 +35,29 @@
 
 #include <device/net.h>
 
+/*
+ * Mapping between internal fd and vfs fd
+ */
+int lwip_fds[MAX_FDS];
+
+/**
+ *
+ * @param Local file descriptor (fd)
+ * @return Associated socket ID from lwip
+ */
+static int get_lwip_fd(int fd)
+{
+	int gfd;
+
+	/* Get the gfd from this fd */
+	gfd = current()->pcb->fd_array[fd];
+
+    if (gfd < MAX_FDS)
+    	return lwip_fds[gfd];
+    else
+        return -1;
+}
+
 /**************************** Network subsystem ***************************************/
 
 int read_sock(int fd, void *buffer, int count)
@@ -363,24 +386,7 @@ struct file_operations *register_sock(void)
 
 /**************************** Syscall implementation ****************************/
 
-/*
- * Mapping between internal fd and vfs fd
- */
-int lwip_fds[MAX_FDS];
 
-
-int get_lwip_fd(int gfd)
-{
-        if (gfd < MAX_FDS) {
-                return lwip_fds[gfd];
-        } else {
-                return -1;
-        }
-}
-
-/*
- *
- */
 int do_socket(int domain, int type, int protocol)
 {
         int fd, gfd, lwip_fd;
@@ -486,7 +492,8 @@ int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
         lwip_fds[gfd] = lwip_bind_fd;
 
         /* Copy back our sockaddr info in the usr data */
-        memcpy(addr, addr_ptr, sizeof(struct sockaddr_in));
+        if (addr)
+        	memcpy(addr, addr_ptr, sizeof(struct sockaddr_in));
 
         return fd;
 

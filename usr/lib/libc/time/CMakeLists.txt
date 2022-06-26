@@ -9,8 +9,10 @@ target_sources(c
 		localtime.c
 		asctime.c
 		localtime_r.c
+		strftime.c
 		__asctime.c
 		__year_to_secs.c
 		__secs_to_tm.c
 		__month_to_secs.c
+		__tm_to_secs.c
 )
