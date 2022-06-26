@@ -22,7 +22,7 @@ sudo qemu/build/qemu-system-aarch64 $@ \
 	-serial mon:stdio  \
 	-M virt,gic-version=2 -cpu cortex-a72  \
 	-device virtio-blk-device,drive=hd0 \
-	-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0 \
+	-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
 	-m 1024 \
 	-kernel u-boot/u-boot \
 	-nographic \
@@ -31,7 +31,7 @@ sudo qemu/build/qemu-system-aarch64 $@ \
 
 else
 
-sudo qemu/arm-softmmu/qemu-system-arm $@ \
+sudo qemu/build/arm-softmmu/qemu-system-arm $@ \
         -gdb tcp::$QEMU_GDB_PORT \
   	-smp 4 \
 	-serial mon:stdio  \

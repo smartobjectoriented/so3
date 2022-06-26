@@ -250,7 +250,7 @@ long syscall_handle(unsigned long r0, unsigned long r1, unsigned long r2, unsign
 			break;
 
 		case SYSCALL_CONNECT:
-			result = do_connect((int)r0, (const struct sockaddr *) r1, (socklen_t) r2);
+			result = do_connect((int) r0, (const struct sockaddr *) r1, (socklen_t) r2);
 			break;
 
 		case SYSCALL_RECV:
