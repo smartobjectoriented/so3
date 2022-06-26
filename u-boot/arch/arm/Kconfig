@@ -650,11 +650,12 @@ config ARCH_VEXPRESS
 	bool "Support Arm Ltd. Versatile Express (VExpress) family"
 	select CPU_V7A
 	select PL01X_SERIAL
-	select DM
-	select DM_SERIAL
-	select DM_ETH
-	select OF_CONTROL
-	select OF_SEPARATE
+# SOO.tech 
+	#select DM
+	#select DM_SERIAL
+	#select DM_ETH
+	#select OF_CONTROL
+	#select OF_SEPARATE
 	imply DISTRO_DEFAULTS
 	select MTD
 	#select MTD_NOR_FLASH

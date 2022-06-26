@@ -61,7 +61,6 @@ void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *)
 	iowrite8(base + KMI_CR, KMICR_EN | KMICR_RXINTREN | KMICR_TXINTREN);
 
 	/* Bind the ISR to the interrupt controller. */
-	lprintk("## binding %d\n", irq_def->irqnr);
 	irq_bind(irq_def->irqnr, isr, NULL, NULL);
 
 }

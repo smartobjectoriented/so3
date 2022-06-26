@@ -4,7 +4,7 @@
 #
 
 #
-# Compiler: arm-linux-gnueabihf-gcc (Linaro GCC 6.4-2018.05) 6.4.1 20180425 [linaro-6.4-2018.05 revision 7b15d0869c096fe39603ad63dc19ab7cf035eb70]
+# Compiler: arm-none-linux-gnueabihf-gcc (GNU Toolchain for the A-profile Architecture 9.2-2019.12 (arm-9.10)) 9.2.1 20191025
 #
 CONFIG_CREATE_ARCH_SYMLINK=y
 CONFIG_LINKER_LIST_ALIGN=4
@@ -165,18 +165,19 @@ CONFIG_ARCH_VEXPRESS=y
 # CONFIG_TARGET_XENGUEST_ARM64 is not set
 CONFIG_SYS_TEXT_BASE=0x80800000
 CONFIG_SYS_MALLOC_F_LEN=0x400
-CONFIG_NR_DRAM_BANKS=1
+CONFIG_NR_DRAM_BANKS=2
 CONFIG_ENV_SIZE=0x40000
 CONFIG_ENV_SECT_SIZE=0x40000
-# CONFIG_DM_GPIO is not set
-CONFIG_DEFAULT_DEVICE_TREE="vexpress-v2p-ca15_a7"
 CONFIG_ERR_PTR_OFFSET=0x0
 CONFIG_BOOTSTAGE_STASH_ADDR=0
 CONFIG_IDENT_STRING=""
 # CONFIG_CHIP_DIP_SCAN is not set
 CONFIG_CPU_V7_HAS_NONSEC=y
 CONFIG_CPU_V7_HAS_VIRT=y
-# CONFIG_ARMV7_NONSEC is not set
+CONFIG_ARMV7_NONSEC=y
+# CONFIG_ARMV7_BOOT_SEC_DEFAULT is not set
+# CONFIG_ARMV7_VIRT is not set
+CONFIG_ARMV7_PSCI_NR_CPUS=4
 CONFIG_ARMV7_LPAE=y
 # CONFIG_CMD_DEKBLOB is not set
 # CONFIG_IMX_CAAM_DEK_ENCAP is not set
@@ -195,7 +196,6 @@ CONFIG_TARGET_VEXPRESS_CA15_TC2=y
 # CONFIG_DEBUG_LL is not set
 CONFIG_BUILD_TARGET=""
 # CONFIG_DEBUG_UART is not set
-# CONFIG_AHCI is not set
 # CONFIG_OF_BOARD_FIXUP is not set
 
 #
@@ -207,6 +207,7 @@ CONFIG_CC_OPTIMIZE_FOR_SIZE=y
 # CONFIG_OPTIMIZE_INLINING is not set
 CONFIG_ARCH_SUPPORTS_LTO=y
 # CONFIG_LTO is not set
+CONFIG_CC_HAS_ASM_INLINE=y
 # CONFIG_XEN is not set
 CONFIG_DISTRO_DEFAULTS=y
 CONFIG_ENV_VARS_UBOOT_CONFIG=y
@@ -244,8 +245,6 @@ CONFIG_FIT_ENABLE_SHA256_SUPPORT=y
 # CONFIG_FIT_ENABLE_SHA384_SUPPORT is not set
 # CONFIG_FIT_ENABLE_SHA512_SUPPORT is not set
 CONFIG_FIT_FULL_CHECK=y
-# CONFIG_FIT_SIGNATURE is not set
-# CONFIG_FIT_CIPHER is not set
 CONFIG_FIT_VERBOSE=y
 # CONFIG_FIT_BEST_MATCH is not set
 CONFIG_FIT_PRINT=y
@@ -313,7 +312,6 @@ CONFIG_TPL_LOGLEVEL=4
 #
 # Logging
 #
-# CONFIG_LOG is not set
 
 #
 # Init options
@@ -460,11 +458,8 @@ CONFIG_CMD_MEMORY=y
 #
 # CONFIG_CMD_ARMFLASH is not set
 # CONFIG_CMD_BCB is not set
-# CONFIG_CMD_BIND is not set
 # CONFIG_CMD_CLK is not set
-# CONFIG_CMD_DEMO is not set
 # CONFIG_CMD_DFU is not set
-# CONFIG_CMD_DM is not set
 # CONFIG_CMD_FLASH is not set
 # CONFIG_CMD_FPGAD is not set
 # CONFIG_CMD_FUSE is not set
@@ -620,19 +615,12 @@ CONFIG_EFI_PARTITION_ENTRIES_OFF=0
 CONFIG_PARTITION_UUIDS=y
 # CONFIG_PARTITION_TYPE_GUID is not set
 CONFIG_SUPPORT_OF_CONTROL=y
-CONFIG_DTC=y
 
 #
 # Device Tree Control
 #
-CONFIG_OF_CONTROL=y
-# CONFIG_OF_LIVE is not set
-CONFIG_OF_SEPARATE=y
-# CONFIG_OF_EMBED is not set
-# CONFIG_OF_BOARD is not set
-# CONFIG_OF_PRIOR_STAGE is not set
+# CONFIG_OF_CONTROL is not set
 # CONFIG_MULTI_DTB_FIT is not set
-# CONFIG_OF_DTB_PROPS_REMOVE is not set
 
 #
 # Environment
@@ -656,7 +644,7 @@ CONFIG_ENV_ADDR=0xFF80000
 # CONFIG_SYS_RELOC_GD_ENV_ADDR is not set
 # CONFIG_USE_DEFAULT_ENV_FILE is not set
 # CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG is not set
-# CONFIG_ENV_IMPORT_FDT is not set
+# CONFIG_DELAY_ENVIRONMENT is not set
 # CONFIG_ENV_APPEND is not set
 # CONFIG_ENV_WRITEABLE_LIST is not set
 # CONFIG_ENV_ACCESS_IGNORE_FORCE is not set
@@ -679,19 +667,7 @@ CONFIG_SERVERIP_FROM_PROXYDHCP_DELAY_MS=100
 #
 # Generic Driver Options
 #
-CONFIG_DM=y
-CONFIG_DM_WARN=y
-# CONFIG_DM_DEBUG is not set
-CONFIG_DM_DEVICE_REMOVE=y
-CONFIG_DM_STDIO=y
-CONFIG_DM_SEQ_ALIAS=y
-# CONFIG_DM_DMA is not set
-# CONFIG_REGMAP is not set
-# CONFIG_DEVRES is not set
-CONFIG_SIMPLE_BUS=y
-# CONFIG_SIMPLE_BUS_CORRECT_RANGE is not set
-CONFIG_OF_TRANSLATE=y
-# CONFIG_TRANSLATION_OFFSET is not set
+# CONFIG_DM is not set
 CONFIG_DM_DEV_READ_INLINE=y
 # CONFIG_ACPIGEN is not set
 # CONFIG_BOUNCE_BUFFER is not set
@@ -712,7 +688,6 @@ CONFIG_DM_DEV_READ_INLINE=y
 #
 # Bus devices
 #
-# CONFIG_BLK is not set
 CONFIG_HAVE_BLOCK_DEVICE=y
 # CONFIG_IDE is not set
 # CONFIG_BOOTCOUNT_LIMIT is not set
@@ -720,19 +695,16 @@ CONFIG_HAVE_BLOCK_DEVICE=y
 #
 # Button Support
 #
-# CONFIG_BUTTON is not set
 
 #
 # Cache Controller drivers
 #
-# CONFIG_CACHE is not set
 # CONFIG_L2X0_CACHE is not set
 # CONFIG_NCORE_CACHE is not set
 
 #
 # Clock
 #
-# CONFIG_CLK is not set
 # CONFIG_CLK_CCF is not set
 # CONFIG_CPU is not set
 
@@ -746,7 +718,6 @@ CONFIG_HAVE_BLOCK_DEVICE=y
 #
 # Demo for driver model
 #
-# CONFIG_DM_DEMO is not set
 
 #
 # DFU support
@@ -755,7 +726,6 @@ CONFIG_HAVE_BLOCK_DEVICE=y
 #
 # DMA Support
 #
-# CONFIG_DMA is not set
 # CONFIG_TI_EDMA3 is not set
 
 #
@@ -777,15 +747,11 @@ CONFIG_HAVE_BLOCK_DEVICE=y
 #
 # CONFIG_AT91_GPIO is not set
 # CONFIG_DA8XX_GPIO is not set
-# CONFIG_INTEL_BROADWELL_GPIO is not set
-# CONFIG_IMX_RGPIO2P is not set
 # CONFIG_IPROC_GPIO is not set
-# CONFIG_LPC32XX_GPIO is not set
 # CONFIG_MXC_GPIO is not set
 # CONFIG_MXS_GPIO is not set
 # CONFIG_CMD_PCA953X is not set
 # CONFIG_CMD_TCA642X is not set
-# CONFIG_VYBRID_GPIO is not set
 
 #
 # Hardware Spinlock Support
@@ -795,26 +761,20 @@ CONFIG_HAVE_BLOCK_DEVICE=y
 #
 # I2C support
 #
-# CONFIG_DM_I2C is not set
 # CONFIG_SYS_I2C_DW is not set
 # CONFIG_SYS_I2C_IMX_LPI2C is not set
 # CONFIG_SYS_I2C_MXC is not set
-CONFIG_INPUT=y
-# CONFIG_DM_KEYBOARD is not set
-# CONFIG_CROS_EC_KEYB is not set
 # CONFIG_TEGRA_KEYBOARD is not set
 # CONFIG_TWL4030_INPUT is not set
 
 #
 # LED Support
 #
-# CONFIG_LED is not set
 # CONFIG_LED_STATUS is not set
 
 #
 # Mailbox Controller Support
 #
-# CONFIG_DM_MAILBOX is not set
 
 #
 # Memory Controller drivers
@@ -823,13 +783,11 @@ CONFIG_INPUT=y
 #
 # Multifunction device drivers
 #
-# CONFIG_MISC is not set
 # CONFIG_CROS_EC is not set
 # CONFIG_DS4510 is not set
 # CONFIG_FSL_SEC_MON is not set
 # CONFIG_IRQ is not set
 # CONFIG_NUVOTON_NCT6102D is not set
-# CONFIG_PWRSEQ is not set
 # CONFIG_PCA9551_LED is not set
 # CONFIG_TEST_DRV is not set
 # CONFIG_TWL4030_LED is not set
@@ -842,7 +800,6 @@ CONFIG_INPUT=y
 CONFIG_MMC=y
 CONFIG_MMC_WRITE=y
 # CONFIG_MMC_BROKEN_CD is not set
-# CONFIG_DM_MMC is not set
 CONFIG_ARM_PL180_MMCI=y
 CONFIG_MMC_QUIRKS=y
 CONFIG_MMC_HW_PARTITIONING=y
@@ -872,7 +829,6 @@ CONFIG_MMC_VERBOSE=y
 #
 CONFIG_MTD_PARTITIONS=y
 CONFIG_MTD=y
-# CONFIG_DM_MTD is not set
 # CONFIG_MTD_NOR_FLASH is not set
 # CONFIG_SYS_MTDPARTS_RUNTIME is not set
 # CONFIG_FLASH_CFI_DRIVER is not set
@@ -895,66 +851,47 @@ CONFIG_MTD_UBI_BEB_LIMIT=20
 #
 # Multiplexer drivers
 #
-# CONFIG_MULTIPLEXER is not set
 # CONFIG_BITBANGMII is not set
 # CONFIG_MV88E6352_SWITCH is not set
 # CONFIG_PHYLIB is not set
 # CONFIG_FSL_PFE is not set
-CONFIG_DM_ETH=y
-# CONFIG_DM_ETH_PHY is not set
 CONFIG_NETDEVICES=y
 # CONFIG_PHY_GIGE is not set
-# CONFIG_ALTERA_TSE is not set
 # CONFIG_BCM_SF2_ETH is not set
-# CONFIG_BCMGENET is not set
-# CONFIG_CALXEDA_XGMAC is not set
-# CONFIG_DWC_ETH_QOS is not set
+# CONFIG_E1000 is not set
 # CONFIG_EEPRO100 is not set
 # CONFIG_ETH_DESIGNWARE is not set
-# CONFIG_ETH_DESIGNWARE_MESON8B is not set
 # CONFIG_ETHOC is not set
 # CONFIG_FMAN_ENET is not set
 # CONFIG_FTMAC100 is not set
-# CONFIG_FTGMAC100 is not set
-# CONFIG_MCFFEC is not set
-# CONFIG_FSLDMAFEC is not set
 # CONFIG_KS8851_MLL is not set
-# CONFIG_MACB is not set
 # CONFIG_RGMII is not set
 # CONFIG_MII is not set
 # CONFIG_PCNET is not set
-# CONFIG_QE_UEC is not set
 # CONFIG_RTL8139 is not set
 # CONFIG_RTL8169 is not set
 CONFIG_SMC911X=y
+CONFIG_SMC911X_BASE=0x1a000000
 # CONFIG_SMC911X_32_BIT is not set
 # CONFIG_SUN7I_GMAC is not set
-# CONFIG_SUN4I_EMAC is not set
-# CONFIG_SUN8I_EMAC is not set
 # CONFIG_SH_ETHER is not set
 # CONFIG_DRIVER_TI_CPSW is not set
 # CONFIG_DRIVER_TI_EMAC is not set
 # CONFIG_DRIVER_TI_KEYSTONE_NET is not set
-# CONFIG_XILINX_AXIEMAC is not set
-# CONFIG_XILINX_EMACLITE is not set
-# CONFIG_ZYNQ_GEM is not set
+# CONFIG_TULIP is not set
 # CONFIG_SYS_DPAA_QBMAN is not set
 # CONFIG_TSEC_ENET is not set
-# CONFIG_MEDIATEK_ETH is not set
-# CONFIG_HIGMACV300_ETH is not set
 # CONFIG_PCI is not set
 
 #
 # PCI Endpoint
 #
-# CONFIG_PCI_ENDPOINT is not set
 # CONFIG_X86_PCH7 is not set
 # CONFIG_X86_PCH9 is not set
 
 #
 # PHY Subsystem
 #
-# CONFIG_PHY is not set
 # CONFIG_MIPI_DPHY_HELPERS is not set
 
 #
@@ -965,7 +902,6 @@ CONFIG_SMC911X=y
 #
 # Pin controllers
 #
-# CONFIG_PINCTRL is not set
 
 #
 # Power
@@ -977,17 +913,12 @@ CONFIG_SMC911X=y
 #
 # Power Domain Support
 #
-# CONFIG_POWER_DOMAIN is not set
-# CONFIG_DM_PMIC is not set
 # CONFIG_PMIC_AS3722 is not set
 # CONFIG_POWER_MC34VR500 is not set
-# CONFIG_DM_REGULATOR is not set
 # CONFIG_POWER_MT6323 is not set
-# CONFIG_DM_PWM is not set
 # CONFIG_PWM_IMX is not set
 # CONFIG_PWM_SANDBOX is not set
 # CONFIG_U_QE is not set
-# CONFIG_RAM is not set
 
 #
 # Remote Processor drivers
@@ -996,14 +927,11 @@ CONFIG_SMC911X=y
 #
 # Reset Controller Support
 #
-# CONFIG_DM_RESET is not set
 # CONFIG_RESET_SCMI is not set
-# CONFIG_DM_RNG is not set
 
 #
 # Real Time Clock
 #
-# CONFIG_DM_RTC is not set
 # CONFIG_RTC_ENABLE_32KHZ_OUTPUT is not set
 # CONFIG_RTC_PCF8563 is not set
 # CONFIG_RTC_RX8025 is not set
@@ -1017,38 +945,20 @@ CONFIG_SMC911X=y
 # Serial drivers
 #
 CONFIG_BAUDRATE=38400
-CONFIG_REQUIRE_SERIAL_CONSOLE=y
 # CONFIG_SPECIFY_CONSOLE_INDEX is not set
-CONFIG_SERIAL_PRESENT=y
 CONFIG_CONS_INDEX_0=y
-CONFIG_DM_SERIAL=y
-# CONFIG_SERIAL_RX_BUFFER is not set
-# CONFIG_SERIAL_SEARCH_ALL is not set
-# CONFIG_SERIAL_PROBE_ALL is not set
-# CONFIG_ALTERA_JTAG_UART is not set
-# CONFIG_ALTERA_UART is not set
-# CONFIG_ARC_SERIAL is not set
 # CONFIG_ARM_DCC is not set
 # CONFIG_ATMEL_USART is not set
-# CONFIG_BCM6345_SERIAL is not set
-# CONFIG_COREBOOT_SERIAL is not set
-# CONFIG_CORTINA_UART is not set
-# CONFIG_FSL_LINFLEXUART is not set
 # CONFIG_FSL_LPUART is not set
 # CONFIG_MVEBU_A3700_UART is not set
 # CONFIG_MCFUART is not set
 # CONFIG_NULLDEV_SERIAL is not set
 # CONFIG_SYS_NS16550 is not set
 # CONFIG_NS16550_DYNAMIC is not set
+# CONFIG_PL010_SERIAL is not set
+CONFIG_PL011_SERIAL=y
 CONFIG_PL01X_SERIAL=y
-# CONFIG_XILINX_UARTLITE is not set
-# CONFIG_MSM_SERIAL is not set
-# CONFIG_OMAP_SERIAL is not set
 # CONFIG_PXA_SERIAL is not set
-# CONFIG_SIFIVE_SERIAL is not set
-# CONFIG_ZYNQ_SERIAL is not set
-# CONFIG_MTK_SERIAL is not set
-# CONFIG_MT7620_SERIAL is not set
 # CONFIG_SMEM is not set
 
 #
@@ -1066,13 +976,11 @@ CONFIG_PL01X_SERIAL=y
 #
 # SPMI support
 #
-# CONFIG_SPMI is not set
 # CONFIG_SYSINFO is not set
 
 #
 # System reset device drivers
 #
-# CONFIG_SYSRESET is not set
 # CONFIG_SYSRESET_SYSCON is not set
 # CONFIG_SYSRESET_WATCHDOG is not set
 # CONFIG_SYSRESET_RESETCTL is not set
@@ -1084,7 +992,6 @@ CONFIG_PL01X_SERIAL=y
 #
 # Timer Support
 #
-# CONFIG_TIMER is not set
 
 #
 # TPM support
@@ -1099,7 +1006,6 @@ CONFIG_PL01X_SERIAL=y
 #
 # Graphics support
 #
-# CONFIG_DM_VIDEO is not set
 # CONFIG_SYS_WHITE_ON_BLACK is not set
 # CONFIG_NO_FB_CLEAR is not set
 
@@ -1111,16 +1017,12 @@ CONFIG_PL01X_SERIAL=y
 # CONFIG_VIDEO_LCD_SSD2828 is not set
 # CONFIG_VIDEO_MVEBU is not set
 # CONFIG_I2C_EDID is not set
-# CONFIG_DISPLAY is not set
 # CONFIG_ATMEL_HLCD is not set
 # CONFIG_AM335X_LCD is not set
-# CONFIG_VIDEO_TEGRA20 is not set
-# CONFIG_VIDEO_BRIDGE is not set
 # CONFIG_VIDEO is not set
 # CONFIG_LCD is not set
 # CONFIG_VIDEO_SIMPLE is not set
 # CONFIG_VIDEO_DT_SIMPLEFB is not set
-# CONFIG_OSD is not set
 # CONFIG_SPLASH_SCREEN is not set
 # CONFIG_VIDEO_VCXK is not set
 
@@ -1132,12 +1034,10 @@ CONFIG_PL01X_SERIAL=y
 #
 # 1-Wire support
 #
-# CONFIG_W1 is not set
 
 #
 # 1-wire EEPROM support
 #
-# CONFIG_W1_EEPROM is not set
 
 #
 # Watchdog Timer Support
@@ -1147,8 +1047,6 @@ CONFIG_WATCHDOG_TIMEOUT_MSECS=60000
 # CONFIG_IMX_WATCHDOG is not set
 # CONFIG_ULP_WATCHDOG is not set
 # CONFIG_DESIGNWARE_WATCHDOG is not set
-# CONFIG_WDT is not set
-# CONFIG_PVBLOCK is not set
 # CONFIG_PHYS_TO_BUS is not set
 
 #
@@ -1197,7 +1095,6 @@ CONFIG_RBTREE=y
 # CONFIG_AES is not set
 # CONFIG_RSA is not set
 # CONFIG_ASYMMETRIC_KEY_TYPE is not set
-# CONFIG_TPM is not set
 
 #
 # Android Verified Boot

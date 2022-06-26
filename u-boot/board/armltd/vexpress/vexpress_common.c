@@ -110,12 +110,30 @@ static void flash__init(void)
 
 int dram_init(void)
 {
-	return fdtdec_setup_mem_size_base();
+/* SOO.tech */
+/* We still avoid using DM for vExpress */
+	gd->ram_size =
+		get_ram_size((long *)CONFIG_SYS_SDRAM_BASE, PHYS_SDRAM_1_SIZE);
+	return 0;
+#if 0 /* SOO.tech */
+ 	return fdtdec_setup_mem_size_base();
+#endif /* SOO.tech */
 }
 
 int dram_init_banksize(void)
 {
+/* SOO.tech */
+        gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
+	gd->bd->bi_dram[0].size =
+			get_ram_size((long *)PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE);
+	gd->bd->bi_dram[1].start = PHYS_SDRAM_2;
+	gd->bd->bi_dram[1].size =
+			get_ram_size((long *)PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE);
+
+	return 0;
+#if 0 /* SOO.tech */
 	return fdtdec_setup_memory_banksize();
+#endif /* SOO.tech */
 }
 
 /*

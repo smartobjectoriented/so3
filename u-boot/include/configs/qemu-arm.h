@@ -22,6 +22,8 @@
 /* For timer, QEMU emulates an ARMv7/ARMv8 architected timer */
 #define CONFIG_SYS_HZ                       1000
 
+/* Environment options */
+
 #define BOOT_TARGET_DEVICES(func) \
 	func(USB, usb, 0) \
 	func(SCSI, scsi, 0) \

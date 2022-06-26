@@ -30,16 +30,14 @@
 
 /* Time conversion units */
 
-typedef unsigned int time_t;
-
 struct timespec {
-	long		tv_sec;			/* seconds */
-	long		tv_nsec;		/* nanoseconds */
+	time_t		tv_sec;			/* seconds */
+	time_t		tv_nsec;		/* nanoseconds */
 };
 
 struct timeval {
-        long		tv_sec;			/* seconds */
-        long		tv_usec;		/* microseconds */
+	time_t		tv_sec;			/* seconds */
+	time_t		tv_usec;		/* microseconds */
 };
 
 /* All timing information below must be express in nanoseconds. The underlying hardware is responsible

@@ -370,8 +370,8 @@ int do_get_time_of_day(struct timespec *ts)
 
         time = NOW();
 
-        ts->tv_sec = time / 1000000000ull;
-        ts->tv_nsec = (long) time;
+        ts->tv_sec = time / (time_t) 1000000000;
+        ts->tv_nsec = time;
 
         return 0;
 }
@@ -393,8 +393,9 @@ int do_get_clock_time(int clk_id, struct timespec *ts)
         }
 
         time = NOW();
-        ts->tv_sec = time / 1000000000ull;
-        ts->tv_nsec = (long) time;
+
+        ts->tv_sec = time / (time_t) 1000000000;
+        ts->tv_nsec = time;
 
         return 0;
 }

@@ -11,6 +11,6 @@ int gettimeofday(struct timeval *restrict tv, void *restrict tz)
 	clock_gettime(CLOCK_REALTIME, &ts);
 
 	tv->tv_sec = ts.tv_sec;
-	tv->tv_usec = (int)ts.tv_nsec / 1000;
+	tv->tv_usec = ts.tv_nsec / (time_t) 1000;
 	return 0;
 }

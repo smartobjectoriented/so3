@@ -99,7 +99,7 @@ typedef __u32 __bitwise __wsum;
 
 typedef unsigned __bitwise__	gfp_t;
 
-
+typedef u64 time_t;
 
 #define ROUND(a, b)     (((a) + (b) - 1) & ~((b) - 1))
 

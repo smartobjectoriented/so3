@@ -39,6 +39,12 @@
 #define V2M_PA_CS3		0x18000000
 #define V2M_PA_CS7		0x1c000000
 
+/* SOO.tech */
+#define V2M_UART0		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(9))
+#define V2M_UART1		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(10))
+#define V2M_UART2		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(11))
+#define V2M_UART3		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(12))
+
 #define V2M_PERIPH_OFFSET(x)	(x << 16)
 #define V2M_SYSREGS		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(1))
 #define V2M_SYSCTL		(V2M_PA_CS7 + V2M_PERIPH_OFFSET(2))
@@ -46,6 +52,13 @@
 
 #define V2M_BASE		0x80000000
 #endif
+
+/* Physical Memory Map */
+#define PHYS_SDRAM_1			(V2M_BASE)	/* SDRAM Bank #1 */
+#define PHYS_SDRAM_2			(((unsigned int)V2M_BASE) + \
+					((unsigned int)0x20000000))
+#define PHYS_SDRAM_1_SIZE		0x20000000	/* 512 MB */
+#define PHYS_SDRAM_2_SIZE		0x20000000	/* 512 MB */
 
 /*
  * Physical addresses, offset from V2M_PA_CS0-3
@@ -87,7 +100,12 @@
 #define CONFIG_SYS_TIMER_COUNTS_DOWN
 
 /* PL011 Serial Configuration */
+#define CONFIG_PL01x_PORTS		{(void *)CONFIG_SYS_SERIAL0, \
+					 (void *)CONFIG_SYS_SERIAL1}
 #define CONFIG_PL011_CLOCK		24000000
+
+#define CONFIG_SYS_SERIAL0		V2M_UART0
+#define CONFIG_SYS_SERIAL1		V2M_UART1
 
 #define CONFIG_ARM_PL180_MMCI_BASE	V2M_MMCI
 #define CONFIG_SYS_MMC_MAX_BLK_COUNT	127
