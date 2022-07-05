@@ -235,7 +235,7 @@ __prepare_sig_handler:
 
 
 // IRQs are off
-// ARM EABI: the syscall nr is stored in r7
+// ARM EABI: the syscall nr is stored in x8
 .align  5
 syscall_interrupt:
 

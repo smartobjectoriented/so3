@@ -447,12 +447,13 @@ struct _thread_function_adapter_data  {
 typedef struct _thread_function_adapter_data _thread_function_adapter_data_t;
 
 
-int _thread_function_adapter(void *arg){
+void *_thread_function_adapter(void *arg){
     _thread_function_adapter_data_t *adapter_data = (_thread_function_adapter_data_t*)arg;
 
     adapter_data->function(adapter_data->arg);
     free(adapter_data);
-    return 1;
+
+    return NULL;
 }
 
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn function, void *arg, int stacksize, int prio)

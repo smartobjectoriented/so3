@@ -34,7 +34,10 @@ struct eth_dev {
 
     char name[ETH_NAME_LEN];
     unsigned char enetaddr[ARP_HLEN];
+
     addr_t iobase;
+    irq_def_t irq_def;
+
     int state;
 
     int (*init)(struct eth_dev *);
@@ -43,8 +46,6 @@ struct eth_dev {
     void (*halt)(struct eth_dev *);
     int (*write_hwaddr)(struct eth_dev *);
     void *priv;
-
-    dev_t *dev;
 
     sem_t sem_read;
     sem_t sem_write;

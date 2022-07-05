@@ -214,6 +214,9 @@ __save_context:
 	ldr		r1, .LCret_from_fork
 	str		r1, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
 
+	@ Preserve r7 which contains the syscall number (used to compare against SIG_RETURN)
+	str		r7, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_R7)]
+
 	@ The other registers are not important.
 
 	mov 	pc, lr

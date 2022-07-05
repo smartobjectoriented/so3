@@ -37,8 +37,6 @@
 
 #include <device/arch/pl011.h>
 
-#include <mach/uart.h>
-
 #include <asm/io.h>                 /* ioread/iowrite macros */
 
 #include <net/lwip/def.h>
@@ -466,7 +464,7 @@ err_t smc911x_lwip_init(struct netif *netif)
         /* Turn on relevant interrupts */
         smc911x_reg_write(eth_dev, INT_EN, INT_EN_RSFL_EN | INT_EN_RSFF_EN);
 
-        irq_bind(eth_dev->dev->irq_nr, smc911x_so3_interrupt, smc911x_so3_interrupt_top, netif);
+        irq_bind(eth_dev->irq_def.irqnr, smc911x_so3_interrupt, smc911x_so3_interrupt_top, netif);
 
 #warning automatic dhcp - remove ?
         dhcp_start(netif);
@@ -508,14 +506,26 @@ int smc911x_init(eth_dev_t *eth_dev)
 }
 
 
-static int smc911x_register(dev_t *dev)
+static int smc911x_register(dev_t *dev, int fdt_offset)
 {
+	const struct fdt_property *prop;
+	int prop_len;
 
         eth_dev_t *eth_dev = malloc(sizeof(eth_dev_t));
         memset(eth_dev, 0, sizeof(*eth_dev));
 
-        eth_dev->dev = dev;
-        eth_dev->iobase = eth_dev->dev->base;
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+#ifdef CONFIG_ARCH_ARM32
+	eth_dev->iobase = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	eth_dev->iobase = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+#endif
+
+	fdt_interrupt_node(fdt_offset, &eth_dev->irq_def);
 
         eth_dev->init = smc911x_init;
         network_devices_register(eth_dev);
