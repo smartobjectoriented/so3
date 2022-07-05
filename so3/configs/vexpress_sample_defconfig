@@ -48,7 +48,6 @@ CONFIG_GIC=y
 # SO3 Applications
 #
 CONFIG_APP_SAMPLE=y
-CONFIG_KERNEL_VIRT_ADDR=0xc0000000
 
 #
 # Filesystems
