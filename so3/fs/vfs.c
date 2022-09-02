@@ -551,7 +551,7 @@ int do_write(int fd, const void *buffer, int count)
  */
 int do_open(const char *filename, int flags)
 {
-	int fd, gfd;
+	int fd, gfd, ret = -1;
 	uint32_t type;
 	struct file_operations *fops;
 
@@ -581,8 +581,10 @@ int do_open(const char *filename, int flags)
 	vfs_set_open_mode(gfd, flags);
 
 	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (fops->open && fops->open(gfd, filename))
+	if (fops->open && fops->open(gfd, filename)) {
+		ret = -1;
 		goto open_failed;
+	}
 
 	/*
 	 * Check if the entry is a /dev entry and associates the right fops.
@@ -609,7 +611,7 @@ open_failed:
 	open_fds[gfd] = NULL;
 	mutex_unlock(&vfs_lock);
 
-	return -1;
+	return ret;
 }
 
 /*
