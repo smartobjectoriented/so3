@@ -11,12 +11,12 @@ endchoice
 
 
 config ARCH
-	string
+	string "ARM Architecture"
 	default "arm32" if ARCH_ARM32
 	default "arm64" if ARCH_ARM64
 
 config CROSS_COMPILE
-	string
+	string "Cross-compiler"
 	default "arm-none-linux-gnueabihf-" if ARCH_ARM32
 	default "aarch64-none-linux-gnu-" if ARCH_ARM64
 
