@@ -20,6 +20,7 @@
 #define DEBUG
 #endif
 
+#include <common.h>
 #include <memory.h>
 #include <heap.h>
 #include <sizes.h>
@@ -29,8 +30,6 @@
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
-
-#include <generated/autoconf.h>
 
 void *__current_pgtable = NULL;
 

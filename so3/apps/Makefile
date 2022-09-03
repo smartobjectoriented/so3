@@ -1,3 +1,3 @@
 
-obj-$(CONFIG_APP_SAMPLE) += sample/
+obj-$(CONFIG_APP_SAMPLE) += sample.o
 
