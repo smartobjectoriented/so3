@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (C) 2008 Nir Tzachar <nir.tzachar@gmail.com>
+ * Copyright (C) 2008 Nir Tzachar <nir.tzachar@gmail.com?
+ * Released under the terms of the GNU GPL v2.0.
  *
  * Derived from menuconfig.
+ *
  */
 
 #include <ctype.h>
@@ -13,7 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <ncurses.h>
+#include <locale.h>
+#include <curses.h>
 #include <menu.h>
 #include <panel.h>
 #include <form.h>
@@ -21,6 +23,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+
+#include "ncurses.h"
 
 #define max(a, b) ({\
 		typeof(a) _a = a;\
@@ -85,7 +89,7 @@ void fill_window(WINDOW *win, const char *text);
 int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...);
 int dialog_inputbox(WINDOW *main_window,
 		const char *title, const char *prompt,
-		const char *init, char **resultp, int *result_len);
+		const char *init, char *result, int result_len);
 void refresh_all_windows(WINDOW *main_window);
 void show_scroll_win(WINDOW *main_window,
 		const char *title,

@@ -19,6 +19,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <generated/autoconf.h>
+
 #include <types.h>
 #include <printk.h>
 

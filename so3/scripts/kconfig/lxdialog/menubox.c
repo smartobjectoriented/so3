@@ -1,9 +1,22 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *  menubox.c -- implements the menu box
  *
  *  ORIGINAL AUTHOR: Savio Lam (lam836@cs.cuhk.hk)
  *  MODIFIED FOR LINUX KERNEL CONFIG BY: William Roadcap (roadcapw@cfw.com)
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 /*
@@ -13,7 +26,7 @@
  *
  *    *)  A bugfix for the Page-Down problem
  *
- *    *)  Formerly when I used Page Down and Page Up, the cursor would be set
+ *    *)  Formerly when I used Page Down and Page Up, the cursor would be set 
  *        to the first position in the menu box.  Now lxdialog is a bit
  *        smarter and works more like other menu systems (just have a look at
  *        it).
@@ -51,7 +64,7 @@ static int menu_width, item_x;
  * Print menu item
  */
 static void do_print_item(WINDOW * win, const char *item, int line_y,
-			  int selected, int hotkey)
+                          int selected, int hotkey)
 {
 	int j;
 	char *menu_item = malloc(menu_width + 1);
@@ -141,14 +154,12 @@ static void print_arrows(WINDOW * win, int item_no, int scroll, int y, int x,
  */
 static void print_buttons(WINDOW * win, int height, int width, int selected)
 {
-	int x = width / 2 - 28;
+	int x = width / 2 - 16;
 	int y = height - 2;
 
-	print_button(win, "Select", y, x, selected == 0);
-	print_button(win, " Exit ", y, x + 12, selected == 1);
-	print_button(win, " Help ", y, x + 24, selected == 2);
-	print_button(win, " Save ", y, x + 36, selected == 3);
-	print_button(win, " Load ", y, x + 48, selected == 4);
+	print_button(win, gettext("Select"), y, x, selected == 0);
+	print_button(win, gettext(" Exit "), y, x + 12, selected == 1);
+	print_button(win, gettext(" Help "), y, x + 24, selected == 2);
 
 	wmove(win, y, x + 1 + 12 * selected);
 	wrefresh(win);
@@ -169,7 +180,7 @@ static void do_scroll(WINDOW *win, int *scroll, int n)
  * Display a menu for choosing among a number of options
  */
 int dialog_menu(const char *title, const char *prompt,
-		const void *selected, int *s_scroll)
+                const void *selected, int *s_scroll)
 {
 	int i, j, x, y, box_x, box_y;
 	int height, width, menu_height;
@@ -180,7 +191,7 @@ int dialog_menu(const char *title, const char *prompt,
 do_resize:
 	height = getmaxy(stdscr);
 	width = getmaxx(stdscr);
-	if (height < MENUBOX_HEIGTH_MIN || width < MENUBOX_WIDTH_MIN)
+	if (height < 15 || width < 65)
 		return -ERRDISPLAYTOOSMALL;
 
 	height -= 4;
@@ -190,8 +201,8 @@ do_resize:
 	max_choice = MIN(menu_height, item_count());
 
 	/* center dialog box on screen */
-	x = (getmaxx(stdscr) - width) / 2;
-	y = (getmaxy(stdscr) - height) / 2;
+	x = (COLS - width) / 2;
+	y = (LINES - height) / 2;
 
 	draw_shadow(stdscr, y, x, height, width);
 
@@ -290,11 +301,10 @@ do_resize:
 				}
 		}
 
-		if (item_count() != 0 &&
-		    (i < max_choice ||
-		     key == KEY_UP || key == KEY_DOWN ||
-		     key == '-' || key == '+' ||
-		     key == KEY_PPAGE || key == KEY_NPAGE)) {
+		if (i < max_choice ||
+		    key == KEY_UP || key == KEY_DOWN ||
+		    key == '-' || key == '+' ||
+		    key == KEY_PPAGE || key == KEY_NPAGE) {
 			/* Remove highligt of current item */
 			print_item(scroll + choice, choice, FALSE);
 
@@ -362,7 +372,7 @@ do_resize:
 		case TAB:
 		case KEY_RIGHT:
 			button = ((key == KEY_LEFT ? --button : ++button) < 0)
-			    ? 4 : (button > 4 ? 0 : button);
+			    ? 2 : (button > 2 ? 0 : button);
 
 			print_buttons(dialog, height, width, button);
 			wrefresh(menu);
@@ -389,17 +399,17 @@ do_resize:
 				return 2;
 			case 's':
 			case 'y':
-				return 5;
+				return 3;
 			case 'n':
-				return 6;
+				return 4;
 			case 'm':
-				return 7;
+				return 5;
 			case ' ':
-				return 8;
+				return 6;
 			case '/':
-				return 9;
+				return 7;
 			case 'z':
-				return 10;
+				return 8;
 			case '\n':
 				return button;
 			}
