@@ -46,8 +46,8 @@ struct timespec { time_t tv_sec; time_t tv_nsec; };
 #ifndef __cplusplus
 typedef unsigned wchar_t;
 #endif
-typedef unsigned int size_t;
-typedef int ssize_t;
+typedef unsigned long size_t;
+typedef long ssize_t;
 typedef unsigned int locale_t;
 
 typedef unsigned int off_t;

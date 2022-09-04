@@ -346,6 +346,17 @@ void clear_l1pte(void *l1pgtable, addr_t vaddr) {
 	flush_pte_entry(l1pte);
 }
 
+/* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
+void pgtable_copy_kernel_area(void *l1pgtable) {
+	int i1;
+	uint32_t *__l1pgtable = (uint32_t *) l1pgtable;
+
+	for (i1 = l1pte_index(CONFIG_KERNEL_VADDR); i1 < TTB_L1_ENTRIES; i1++)
+		__l1pgtable[i1] = ((uint32_t *) __sys_root_pgtable)[i1];
+
+	mmu_page_table_flush((addr_t) __l1pgtable, (addr_t) (__l1pgtable + TTB_L1_ENTRIES));
+}
+
 /*
  * Allocate a new L1 page table. Return NULL if it fails.
  * The page table must be 16-KB aligned.
@@ -423,17 +434,6 @@ void mmu_switch(void *l1pgtable) {
 
 void mmu_switch_sys(void *l1pgtable) {
 	mmu_switch(l1pgtable);
-}
-
-/* Duplicate the kernel area by doing a copy of L1 PTEs from the system page table */
-void pgtable_copy_kernel_area(void *l1pgtable) {
-	int i1;
-	uint32_t *__l1pgtable = (uint32_t *) l1pgtable;
-
-	for (i1 = l1pte_index(CONFIG_KERNEL_VADDR); i1 < TTB_L1_ENTRIES; i1++)
-		__l1pgtable[i1] = ((uint32_t *) __sys_root_pgtable)[i1];
-
-	mmu_page_table_flush((addr_t) __l1pgtable, (addr_t) (__l1pgtable + TTB_L1_ENTRIES));
 }
 
 /*

@@ -37,7 +37,7 @@ FILE *__fdopen(int fd, const char *mode)
 #if 0
 		int flags = __syscall(SYS_fcntl, fd, F_GETFL);
 #endif
-		int flags = sys_fcntl(fd, F_GETFL, NULL);
+		long flags = sys_fcntl(fd, F_GETFL, NULL);
 
 		if (!(flags & O_APPEND))
 #if 0

@@ -97,8 +97,8 @@ __start:
   mov 	r9, r2
 
   @ Initialize stack pointers for current mode (normal case if no MMU is used)
-  ldr  	sp, =.LCstack_top
-  ldr 	sp, [sp]
+  ldr  	sp, =__stack_top
+
 
   @ Up to here, a stack should be initialized
 
@@ -138,8 +138,7 @@ mmu_setup:
   bl mmu_configure
 
   @ Readjust the stack
-  ldr	sp, =.LCstack_top
-  ldr	sp, [sp]
+  ldr	sp, =__stack_top
 
   @ Keep executing in the kernel space
 
@@ -165,9 +164,6 @@ temp_stack:
 
 .LCvirt_entry:
   .word __kernel_main
-
-.LCstack_top:
-  .word __stack_top
 
 .LCvectors:
   .word __vectors_start

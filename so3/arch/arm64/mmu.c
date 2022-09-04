@@ -698,6 +698,7 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 		l0pte = l0pte_offset(current_pgtable(), vaddr);
 	else
 		l0pte = l0pte_offset(__sys_root_pgtable, vaddr);
+
 	BUG_ON(!*l0pte);
 
 	l1pte = l1pte_offset(l0pte, vaddr);

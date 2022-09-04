@@ -464,7 +464,7 @@ void *malloc(size_t size) {
 /*
  * @memalign to retrieve a malloc area of a @requested size with a specific @alignment which is a power of 2.
  */
-void *memalign(size_t size, unsigned int alignment) {
+void *memalign(size_t size, size_t alignment) {
 	return __malloc(size, alignment);
 }
 
