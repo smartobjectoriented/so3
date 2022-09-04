@@ -265,8 +265,6 @@ int eaccess(const char *, int);
 
 #include <bits/posix.h>
 
-
-
 #define _PC_LINK_MAX	0
 #define _PC_MAX_CANON	1
 #define _PC_MAX_INPUT	2

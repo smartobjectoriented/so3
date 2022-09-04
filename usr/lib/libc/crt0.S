@@ -137,7 +137,6 @@ SYSCALLSTUB sys_fcntl,	 	    syscallFcntl
 SYSCALLSTUB sys_stat,	 		syscallStat
 SYSCALLSTUB sys_dup,	 		syscallDup
 SYSCALLSTUB sys_dup2,	 		syscallDup2
-SYSCALLSTUB sys_renice,         syscallRenice
 SYSCALLSTUB sys_sched_setparam, syscallSchedSetParam
 SYSCALLSTUB sys_socket, 		syscallSocket
 SYSCALLSTUB sys_bind, 			syscallBind

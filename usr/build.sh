@@ -72,10 +72,10 @@ mkdir -p $SCRIPTPATH/build
 cd $SCRIPTPATH/build
 
 if [ "$PLATFORM" == "vexpress" ]; then
-cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
+cmake -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
 fi
 if [ "$PLATFORM" == "virt64" ]; then
-cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../aarch64_toolchain.cmake ..
+cmake -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../aarch64_toolchain.cmake ..
 fi
 if [ $singlecore == y ]; then
     NRPROC=1

@@ -50,7 +50,6 @@
 #define syscallFcntl			21
 #define syscallDup			22
 #define syscallDup2			23
-#define syscallRenice			24
 #define syscallSchedSetParam 		25
 #define syscallSocket 			26
 #define syscallBind			27
@@ -112,7 +111,7 @@
 
 extern int errno;
 
-/* The system call interface. These are the operations the Nachos kernel needs to
+/* The system call interface. These are the operations the SO3 kernel needs to
  * support, to be able to run user programs.
  *
  * Each of these is invoked by a user program by simply calling the
@@ -120,10 +119,6 @@ extern int errno;
  * and executes a syscall instruction. The kernel exception handler is then invoked.
  */
 
-/* Halt the Nachos machine by calling Machine.halt(). Only the root process (the first
- * process, executed by UserKernel.run()) should be allowed to execute this syscall. Any
- * other process should ignore the syscall and return immediately and set errno to EPERM.
- */
 void sys_halt();
 
 /* PROCESS MANAGEMENT SYSCALLS: exit(), exec(), fork(), waitpid() */
@@ -385,13 +380,6 @@ int sys_dup2(int newfd, int oldfd);
  * Returns 0 on success, or -1 on error and set errno.
  */
 int sys_sched_setparam(int threadId, int priority);
-
-/**
- * Change priority of given process
- *
- * Returns 0 on success, or -1 on error and set errno.
- */
-int sys_renice(int pid, int priority);
 
 /**
  * Creates an endpoint for network communication (socket).
