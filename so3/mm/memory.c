@@ -31,10 +31,6 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#ifdef CONFIG_SO3VIRT
-#include <soo/avz.h>
-#endif
-
 extern unsigned long __vectors_start, __vectors_end;
 mem_info_t mem_info;
 
