@@ -1,3 +1,5 @@
+# Launch script for SO3 
+
 N_QEMU_INSTANCES=`ps -A | grep qemu | wc -l`
 GDB_PORT_BASE=1234
 
