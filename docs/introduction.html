@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. Introduction to SO3 &mdash; SO3 Operating System 2022.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. SO3 Architecture" href="architecture.html" />
+    <link rel="prev" title="Smart Object Oriented (SO3) Operating System" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> SO3 Operating System
+          </a>
+              <div class="version">
+                2022.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Introduction to SO3</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#approach-and-philosophy">1.1. Approach and philosophy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#emulation-is-a-key-concept">1.2. Emulation is a <strong>key</strong> concept</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#so3-as-an-experimental-environment">1.3. SO3 as an experimental environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ongoing-work-with-so3">1.4. Ongoing work with SO3</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">3. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">4. Debugging SO3 with JTAG on RPi4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">5. LVGL - Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">1. </span>Introduction to SO3</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction-to-so3">
+<span id="introduction"></span><h1><span class="section-number">1. </span>Introduction to SO3<a class="headerlink" href="#introduction-to-so3" title="Permalink to this headline">¶</a></h1>
+<p>SO3 (<em>Smart Object Oriented</em>) is a compact, extensible and full featured operating system which is particularly suited to embedded systems
+such as IoT devices, real-time environment, academic development, etc.</p>
+<p>SO3 Operating System results from several Years of research and development at
+<a class="reference external" href="http://www.reds.ch">REDS</a> (Reconfigurable Embedded Digital Systems) Institute from <a class="reference external" href="http://www.heig-vd.ch">HEIG-VD</a>,
+in the field of embedded operating systems and execution environment with ARM 32-bit multicore systems. SO3 has
+been publicly released in early 2020 (see also <a class="reference external" href="https://heig-vd.ch/actualites?utm_medium=email&amp;utm_campaign=Newsletter%20externe%2039&amp;utm_content=Newsletter%20externe%2039+CID_db69309487920998ee2eaa75dc3cab5a&amp;utm_source=heig%20vd&amp;utm_term=PLUS%20DINFORMATIONS#/2020/02/11/so3systemeexploitation">HEIG-VD newsletter</a>).</p>
+<p><a class="reference external" href="https://reds.heig-vd.ch/en/team/details/daniel.rossier">Prof. Daniel Rossier</a> initiated the development of an operating system in 2013 in the context of a Bachelor
+lecture focusing on the port of operating systems on different embedded platforms. The OS has been constantly evolved
+and used in other lectures (like operating systems of course) and since 2018 became SO3 to be used as
+a full <em>migrating</em> execution environment between connected devices; this novel approach leads to the
+<a class="reference external" href="https://gitlab.com/smartobject/soo">SOO framework</a> which is still in development.</p>
+<section id="approach-and-philosophy">
+<h2><span class="section-number">1.1. </span>Approach and philosophy<a class="headerlink" href="#approach-and-philosophy" title="Permalink to this headline">¶</a></h2>
+<p>Today, there are plenty of operating systems especially in the area of IoT devices and embedded systems in general.
+All these OS oviously have their own characteristics, pros and cons, but it still remains pretty hard to find an
+OS which supports most of <em>traditional</em> features such as support for a user and kernel space, MMU, rootfs,
+realtime feature, etc. while keeping a simple OS with low memory footprint and minimal configuration.</p>
+<p>The philosophy of SO3 is to keep an OS as compact as possible, which can be used not only in an academic environment
+to provide students an OS envronment with a reasonible complexity, but in industry oriented projects where some
+customization and rapid prototyping is required.</p>
+<p>Of course, it does not consist in reiventing the wheel, but in opposite, to benefit from various experiences with existing
+operating systems, emulation and virtualization frameworks. SO3 is mainly based on Linux principles; for example, its build system
+fully relies on the KBuild and some portions of code (but not so many) come from Linux (examples are the very nice mechanisms
+of linked list (<code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">list_head</span></code>) and related macros, or <em>bitops</em> and other <em>types</em> declarations).
+It is also one of the main reason why SO3 is released under the GPLv2 licence.</p>
+</section>
+<section id="emulation-is-a-key-concept">
+<h2><span class="section-number">1.2. </span>Emulation is a <strong>key</strong> concept<a class="headerlink" href="#emulation-is-a-key-concept" title="Permalink to this headline">¶</a></h2>
+<p>From the beginning, the <code class="docutils literal notranslate"><span class="pre">QEMU</span></code> emulator constituted a crucial tool to understand and to grasp concepts in an operating system
+like Linux, and it also essential to elaborate and to debug an OS in a deep and affordable way. At the REDS Institute,
+we used QEMU since 2006 and have a strong experience in emulated environment.
+Now, the emulated <em>vExpress</em> machine in QEMU is used as a reference platform for the 32-bit configuration (virt64 will
+be used as soon as the AArch64 support will be integrated).</p>
+<p>Besides emulation, the Raspberry Pi 4 is currently our platform of choice as real hardware. Its quadcore Cortex-A72
+can be used in a wide range of applications and brings along many interesting features.</p>
+</section>
+<section id="so3-as-an-experimental-environment">
+<h2><span class="section-number">1.3. </span>SO3 as an experimental environment<a class="headerlink" href="#so3-as-an-experimental-environment" title="Permalink to this headline">¶</a></h2>
+<p>One of the major advantage with SO3 is its time of compilation. The kernel is compiled (from scratch) in less than 10 secs
+and the user space less than 20 secs depending on what is compiled.
+Therefore, SO3 can be used a very nice environment to experiment different things; testing a kernel function,
+processor features, or compilation tricks are easily achieved.</p>
+</section>
+<section id="ongoing-work-with-so3">
+<h2><span class="section-number">1.4. </span>Ongoing work with SO3<a class="headerlink" href="#ongoing-work-with-so3" title="Permalink to this headline">¶</a></h2>
+<p>SO3 is evolving constantly. Here is a non-exhaustive list of future work:</p>
+<ul class="simple">
+<li><p>Improvement of the networking based on lwIP</p></li>
+<li><p>Support of 64-bit (AArch64)</p></li>
+<li><p>Support of multi-cores</p></li>
+<li><p>Porting SO3 on a RISC-V architecture (Diploma work)</p></li>
+</ul>
+<p>And finally, we are looking for passoniated contributors :-) Please do not hesitate to <a class="reference external" href="mailto:info&#37;&#52;&#48;soo&#46;tech">contact us</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Smart Object Oriented (SO3) Operating System" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="2. SO3 Architecture" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Sep 2022, 18:23.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

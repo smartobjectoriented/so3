@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. User Guide &mdash; SO3 Operating System 2022.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Debugging SO3 with JTAG on RPi4" href="so3_jtag_rpi4.html" />
+    <link rel="prev" title="2. SO3 Architecture" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> SO3 Operating System
+          </a>
+              <div class="version">
+                2022.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pre-requisite">3.1. Pre-requisite</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#toolchain">3.1.1. Toolchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#files-and-directory-organization">3.1.2. Files and directory organization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-setup-early-test">3.2. Quick setup &amp; early test</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#building-qemu">3.2.1. Building Qemu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compiling-u-boot">3.2.2. Compiling U-boot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-the-virtual-disk-image">3.2.3. Creating the virtual disk image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compiling-the-user-space">3.2.4. Compiling the user space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compiling-the-kernel-space">3.2.5. Compiling the kernel space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deployment-into-the-sd-card">3.2.6. Deployment into the SD-card</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-so3">3.2.7. Starting SO3</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#default-configurations">3.3. Default configurations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#vexpress-platform">3.3.1. vExpress platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#raspberry-pi-4-platform">3.3.2. Raspberry Pi 4 platform</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#deployment-of-a-hello-world-application">3.4. Deployment of a <em>Hello World</em> application</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-a-ramfs-configuration">3.4.1. Using a <em>ramfs</em> configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-a-mmc-configuration">3.4.2. Using a <em>mmc</em> configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">4. Debugging SO3 with JTAG on RPi4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">5. LVGL - Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">3. </span>User Guide</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-guide">
+<span id="id1"></span><h1><span class="section-number">3. </span>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
+<section id="pre-requisite">
+<h2><span class="section-number">3.1. </span>Pre-requisite<a class="headerlink" href="#pre-requisite" title="Permalink to this headline">¶</a></h2>
+<p>We need to run some i386 executables, and we need to install some i386
+libraries too.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo dpkg --add-architecture i386
+sudo apt-get update
+sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386
+sudo apt-get install lib32z1-dev
+sudo apt-get install zlib1g:i386
+</pre></div>
+</div>
+<p>Various other packages are required:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install pkg-config libgtk2.0-dev bridge-utils
+sudo apt-get install unzip bc
+sudo apt-get install elfutils u-boot-tools
+sudo apt-get install device-tree-compiler
+sudo apt-get install fdisk
+sudo apt-get install libncurses-dev
+</pre></div>
+</div>
+<p>The following packets are not mandatory, but they can be installed to
+prevent annoying warnings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install bison flex
+</pre></div>
+</div>
+<section id="toolchain">
+<h3><span class="section-number">3.1.1. </span>Toolchain<a class="headerlink" href="#toolchain" title="Permalink to this headline">¶</a></h3>
+<p>The following toolchain from ARM can be used to build SO3:</p>
+<p><a class="reference external" href="https://developer.arm.com/-/media/Files/downloads/gnu-a/9.2-2019.12/binrel/gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf.tar.xz?revision=fed31ee5-2ed7-40c8-9e0e-474299a3c4ac&amp;hash=C54244E4E3875AACABA1DFB301ACA805)">gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf.tar.xz</a></p>
+<p>Uncompress the archive and add the <em>bin</em> subdirectory to your path.</p>
+</section>
+<section id="files-and-directory-organization">
+<h3><span class="section-number">3.1.2. </span>Files and directory organization<a class="headerlink" href="#files-and-directory-organization" title="Permalink to this headline">¶</a></h3>
+<p>SO3 root directory (main subdirs):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>so3
+├── usr
+├── src
+├── filesystem
+├── target
+├── u-boot
+└── qemu
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The SO3 tree is organized in two main parts: <strong>kernel</strong> and <strong>user</strong>
+space files. All kernel space related files are located in <code class="docutils literal notranslate"><span class="pre">so3/</span></code>
+while the user space files resides in <code class="docutils literal notranslate"><span class="pre">usr/</span></code>.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">filesystem</span></code> directory contains the virtual SD-card image which will
+be attached to the QEMU environment.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">target</span></code> directory contains the set of <code class="docutils literal notranslate"><span class="pre">.its</span></code> files which are used
+by the <em>U-boot</em> bootloader.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">u-boot</span></code> and <code class="docutils literal notranslate"><span class="pre">qemu</span></code> directories contain the <em>bootloader</em> and
+the <em>emulator</em> respectively.</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-setup-early-test">
+<h2><span class="section-number">3.2. </span>Quick setup &amp; early test<a class="headerlink" href="#quick-setup-early-test" title="Permalink to this headline">¶</a></h2>
+<p>The following commands is helpful to have quick up-and-running
+environment with SO3, i.e. a shell running on top of the kernel in the
+emulated <em>vExpress</em> environment.</p>
+<section id="building-qemu">
+<h3><span class="section-number">3.2.1. </span>Building Qemu<a class="headerlink" href="#building-qemu" title="Permalink to this headline">¶</a></h3>
+<p>The QEMU emulator must be built in <em>qemu/</em> using the command line described
+in README.so3 followed by invoking make (-j8 means parallel building on
+8 cores):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> qemu
+./configure --target-list<span class="o">=</span>arm-softmmu --disable-attr --disable-werror --disable-docs
+make -j8
+</pre></div>
+</div>
+<p>Again this build produces the binary for a 32-bit ARM (AArch32) architecture.</p>
+</section>
+<section id="compiling-u-boot">
+<h3><span class="section-number">3.2.2. </span>Compiling U-boot<a class="headerlink" href="#compiling-u-boot" title="Permalink to this headline">¶</a></h3>
+<p>U-boot is used as initial bootloader. The kernel image, the device tree and
+its root filesystem will be embedded in a single ITB image file.</p>
+<p>In u-boot/ directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> u-boot
+make vexpress_defconfig
+make -j8
+</pre></div>
+</div>
+</section>
+<section id="creating-the-virtual-disk-image">
+<h3><span class="section-number">3.2.3. </span>Creating the virtual disk image<a class="headerlink" href="#creating-the-virtual-disk-image" title="Permalink to this headline">¶</a></h3>
+<p>In <em>filesystem/</em> directory, create a virtual disk image with the
+following script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> filesystem
+./create_img.sh vexpress
+</pre></div>
+</div>
+<p>This script will create two FAT32 partitions, but only the first one will
+be used currently (there is no support to mount the filesystem on the
+second partition).</p>
+</section>
+<section id="compiling-the-user-space">
+<h3><span class="section-number">3.2.4. </span>Compiling the user space<a class="headerlink" href="#compiling-the-user-space" title="Permalink to this headline">¶</a></h3>
+<p>The user space build system is based on cmake (CMakeList.txt files).</p>
+<p>To build the user space applications, go to <code class="docutils literal notranslate"><span class="pre">usr/</span></code> directory and simply
+do make:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> usr
+./build.sh
+</pre></div>
+</div>
+<p>In order to support the configuration with an embedded <code class="docutils literal notranslate"><span class="pre">ramfs</span></code>, you also need to create
+a FAT-32 image which will contain the user apps. This is achieved with
+the following script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> rootfs
+./create_ramfs.sh vexpress
+</pre></div>
+</div>
+<p>The deployment of user applications into this <em>ramfs</em> will be done below during
+the deployment into the SD-card (option <code class="docutils literal notranslate"><span class="pre">-u</span></code> of the <code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> script at
+the root directory).</p>
+</section>
+<section id="compiling-the-kernel-space">
+<h3><span class="section-number">3.2.5. </span>Compiling the kernel space<a class="headerlink" href="#compiling-the-kernel-space" title="Permalink to this headline">¶</a></h3>
+<p>The kernel has to be compiled in <code class="docutils literal notranslate"><span class="pre">*so3*/</span></code> after choosing a configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> so3
+make vexpress_ramfs_defconfig
+make
+</pre></div>
+</div>
+<p>In this example, we are working with an embedded <em>ramfs</em> which will be packed
+in the ITB image file.</p>
+</section>
+<section id="deployment-into-the-sd-card">
+<h3><span class="section-number">3.2.6. </span>Deployment into the SD-card<a class="headerlink" href="#deployment-into-the-sd-card" title="Permalink to this headline">¶</a></h3>
+<p>At this point, all necessary components have been built. Now comes the
+phase of deployment in the virtual disk. This is done by means of the
+<code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> script located at the root tree.
+Currently, you should only use option <code class="docutils literal notranslate"><span class="pre">-b</span></code> and <code class="docutils literal notranslate"><span class="pre">-u</span></code> to deploy the <strong>kernel</strong>,
+the <strong>device tree</strong> and the <strong>ramfs</strong> into the ITB file. This image file is
+then copied in the first partition of the SD-card.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./deploy.sh -bu
+</pre></div>
+</div>
+</section>
+<section id="starting-so3">
+<h3><span class="section-number">3.2.7. </span>Starting SO3<a class="headerlink" href="#starting-so3" title="Permalink to this headline">¶</a></h3>
+<p>Simply invoking the script st as following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./st
+</pre></div>
+</div>
+<p>and you should run into the shell…</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To quit QEMU, type <code class="docutils literal notranslate"><span class="pre">Ctrl+x</span></code> followed by <code class="docutils literal notranslate"><span class="pre">a</span></code> (not Ctrl+a).</p>
+</div>
+</section>
+</section>
+<section id="default-configurations">
+<h2><span class="section-number">3.3. </span>Default configurations<a class="headerlink" href="#default-configurations" title="Permalink to this headline">¶</a></h2>
+<p>This section describes the default configurations of the SO3 kernel
+which are present in “<em>so3/configs/</em>”.</p>
+<section id="vexpress-platform">
+<h3><span class="section-number">3.3.1. </span>vExpress platform<a class="headerlink" href="#vexpress-platform" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Environment</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><em>vexpress_mmc_defconfig</em></p></td>
+<td><p>Basic environment with a separate <em>rootfs</em> needed
+to be stored in an MMC partition</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>vexpress_thread_defconfig</em></p></td>
+<td><p>Basic environment with no process support, hence
+no <em>user space</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><em>vexpress_nommu_defconfig</em></p></td>
+<td><p>The MMU is disabled and only threads are available
+(no process/<em>user space</em>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>vexpress_net_defconfig</em></p></td>
+<td><p>Environment with networking support (<em>lwip</em>)</p></td>
+</tr>
+<tr class="row-even"><td><p><em>vexpress_fb_defconfig</em></p></td>
+<td><p>Environment with LVGL and framebuffer support</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>vexpress_full_defconfig</em></p></td>
+<td><p>Complete environment with networking and
+framebuffer support</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="raspberry-pi-4-platform">
+<h3><span class="section-number">3.3.2. </span>Raspberry Pi 4 platform<a class="headerlink" href="#raspberry-pi-4-platform" title="Permalink to this headline">¶</a></h3>
+<p>Currently, there is only one default configuration file called
+<em>rpi4_defconfig</em> which has a basic environment, without networking and
+framebuffer support. The drivers required for networking and graphics
+are not available yet.</p>
+</section>
+</section>
+<section id="deployment-of-a-hello-world-application">
+<h2><span class="section-number">3.4. </span>Deployment of a <em>Hello World</em> application<a class="headerlink" href="#deployment-of-a-hello-world-application" title="Permalink to this headline">¶</a></h2>
+<section id="using-a-ramfs-configuration">
+<h3><span class="section-number">3.4.1. </span>Using a <em>ramfs</em> configuration<a class="headerlink" href="#using-a-ramfs-configuration" title="Permalink to this headline">¶</a></h3>
+<p>All user applications reside in <code class="docutils literal notranslate"><span class="pre">usr/src</span></code> directory. Adding a C file requires to update
+the <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file.</p>
+<p>All binaries are produced in the <code class="docutils literal notranslate"><span class="pre">usr/build</span></code> directory by <em>cmake</em>. And all files which
+will be deployed by the deployment script are stored in <code class="docutils literal notranslate"><span class="pre">usr/build/deploy</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command is not implemented in the shell of SO3.
+For this reason, all executables (and other files) are stored in the root directory,
+except the entries of <code class="docutils literal notranslate"><span class="pre">dev/</span></code> used to access the drivers.</p>
+</div>
+<p>The deployment into the virtual SD-card is simply done with the <code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> script
+at the root dir as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./deploy.sh -u
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This manner of deploying user applications requires to have a ramfs
+configuration. All user apps are actually transfered into the <em>itb</em> file
+which is deployed in the unique partition of the SD-card.</p>
+<p>The next section shows how you should deploy with the MMC configuration.</p>
+</div>
+</section>
+<section id="using-a-mmc-configuration">
+<h3><span class="section-number">3.4.2. </span>Using a <em>mmc</em> configuration<a class="headerlink" href="#using-a-mmc-configuration" title="Permalink to this headline">¶</a></h3>
+<p>If you intend to use the <em>vexpress_mmc_defconfig</em> configuration for example, you
+will need to deploy the user apps manually (the <code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> script will be
+extended very soon). The deployment can be achieved as follows (from the root dir):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> filesystem
+./mount.sh <span class="m">1</span> vexpress
+sudo cp -r ../usr/build/deploy/* .
+./umount.sh
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">1</span></code> refers to the partition #1.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not forget that <code class="docutils literal notranslate"><span class="pre">deploy.sh</span> <span class="pre">-b</span></code> will erase the whole partition
+of the SD-card. You then need to re-deploy the user apps.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="2. SO3 Architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="so3_jtag_rpi4.html" class="btn btn-neutral float-right" title="4. Debugging SO3 with JTAG on RPi4" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Sep 2022, 18:23.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
