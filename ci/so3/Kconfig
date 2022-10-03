@@ -1,0 +1,25 @@
+
+
+mainmenu "SO3 Configuration"
+
+source "arch/Kconfig"
+
+source "kernel/Kconfig"
+ 
+source "devices/Kconfig" 
+
+source "apps/Kconfig"
+
+source "fs/Kconfig"
+source "ipc/Kconfig"
+
+config RTOS
+	bool "RTOS-featured enabled"
+ 
+config MMU
+	bool "MMU enable"
+	
+config DEBUG_PRINTK
+	bool "Debug printk"
+	
+

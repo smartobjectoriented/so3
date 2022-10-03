@@ -1,0 +1,5 @@
+config RPI_SENSE
+	bool "Driver for the Sense Hat extension board"
+	depends on RPI4
+	
+	

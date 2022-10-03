@@ -1,0 +1,5 @@
+config I2C_BSC
+    default y
+    depends on I2C
+	bool "I2C Broadcom Serial Controller (BSC) interface"
+	depends on RPI4

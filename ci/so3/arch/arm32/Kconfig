@@ -1,0 +1,26 @@
+
+if ARCH_ARM32
+
+menu "Platform"
+
+config KERNEL_VADDR
+	 
+	hex "Virtual base address of kernel space"
+	
+choice
+  prompt "Target"
+	
+	config VEXPRESS
+    		bool "Vexpress"
+	
+	config RPI4    	
+    		bool "Raspberry Pi 4 Model B support"
+ 		
+endchoice
+
+source "arch/arm32/vexpress/Kconfig"
+source "arch/arm32/rpi4/Kconfig"
+
+endmenu
+
+endif

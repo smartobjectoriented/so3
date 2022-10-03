@@ -1,0 +1,6 @@
+
+
+config RAMDEV
+	bool "RAM device to host a filesystem"
+	depends on MMU
+	

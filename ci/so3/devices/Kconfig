@@ -1,0 +1,30 @@
+
+menu "Drivers"
+
+config UART
+	bool "Driver UART"
+    
+config I2C
+	bool "Driver I2C"
+
+config NET
+    bool "Network driver"	
+
+config FB
+	bool "Framebuffer support (LVGL)"
+
+config INPUT
+	bool "Input device support"
+	
+source "devices/serial/Kconfig"
+source "devices/mmc/Kconfig"
+source "devices/ramdev/Kconfig"
+source "devices/timer/Kconfig"
+source "devices/irq/Kconfig"
+source "devices/i2c/Kconfig"
+source "devices/rpisense/Kconfig"
+source "devices/fb/Kconfig"
+source "devices/input/Kconfig"
+source "devices/net/Kconfig"
+
+endmenu

@@ -1,0 +1,25 @@
+
+v2021.4.1 (29 jan 2021)
+
+This release includes support for graphics (LVGL) and networking based on “lwip”.
+
+•	Added support for LVGL (https://lvgl.io) (early stage)
+•	Added support for gettimeofday() and clock_gettime()
+•	New scheduling policy based on dynamic priorities
+•	Added support for networking based on lwip (early stage)
+
+
+v2021.4.0 (28 jan 2021)
+
+Major changes have been made at the system and device level:
+
+•	Improvements of fdt parsing and file organization
+•	Revisited device model based on devclass with private structure
+•	Improvements of initcall processing, adding post_initcall 
+•	Fixed numerous bugs in cache handling especially on Cortex-A72
+•	Simplified model of the MMU configuration at bootstrap
+•	Added support of rpi 4 Sense-hat extension
+•	Added post-init initcall for late initialization
+•	64 KB Stack size of all threads
+•	Fixed bugs related to process loading and page list management
+•	Fixed bugs in frame table management

@@ -1,0 +1,10 @@
+
+menu "IPC"
+
+config IPC_SIGNAL
+        bool "Signal IPC"
+
+config IPC_PIPE
+        bool "Pipe IPC"
+
+endmenu

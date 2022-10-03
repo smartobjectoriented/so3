@@ -1,0 +1,3 @@
+/home/rossierd/src/lvgl/CMakeFiles/rebuild_cache.dir
+/home/rossierd/src/lvgl/CMakeFiles/edit_cache.dir
+/home/rossierd/src/lvgl/CMakeFiles/lvgl.dir
