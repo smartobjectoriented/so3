@@ -44,9 +44,8 @@ typedef struct {
 	irq_def_t irq_def;
 } sp804_t;
 
-static sp804_t *sp804 = NULL;
-
-static irq_return_t timer_isr(int irq, void *dummy) {
+static irq_return_t timer_isr(int irq, void *dev) {
+	sp804_t *sp804 = (sp804_t *) dev_get_drvdata((dev_t *) dev);
 
 	/* Clear the interrupt */
 	iowrite32(&sp804->base->timerintclr, 1);
@@ -73,6 +72,7 @@ static void next_event(u32 next) {
 static void periodic_timer_start(void) {
 	uint32_t ctrl = TIMER_CTRL_32BIT | TIMER_CTRL_IE;
 	uint32_t reload;
+	sp804_t *sp804 = (sp804_t *) dev_get_drvdata((dev_t *) periodic_timer.dev);
 
 	/* Number of clock cycles to wait */
 	reload = (uint32_t) (periodic_timer.period / (NSECS / TIMER_RATE));
@@ -92,6 +92,7 @@ static void periodic_timer_start(void) {
 
 static void periodic_timer_stop(void) {
 	uint32_t ctrl = ~TIMER_CTRL_ENABLE;
+	sp804_t *sp804 = (sp804_t *) dev_get_drvdata((dev_t *) periodic_timer.dev);
 
 	iowrite32(&sp804->base->timercontrol, ctrl);
 }
@@ -100,6 +101,8 @@ static void periodic_timer_stop(void) {
 
 /* Read the clocksource timer value */
 u64 clocksource_read(void) {
+	sp804_t *sp804 = (sp804_t *) dev_get_drvdata((dev_t *) clocksource_timer.dev);
+
 	return (u64) ~ioread32(&sp804->base->timervalue);
 }
 
@@ -109,11 +112,14 @@ u64 clocksource_read(void) {
 static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
+	sp804_t *sp804;
+
+	periodic_timer.dev = dev;
 
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */
 
-	sp804 = (sp804_t *) malloc(sizeof(sp804_t));
+	sp804 = malloc(sizeof(sp804_t));
 	BUG_ON(!sp804);
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
@@ -131,8 +137,10 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	periodic_timer.stop = periodic_timer_stop;
 	periodic_timer.period = NSECS / HZ;
 
+	dev_set_drvdata(dev, sp804);
+
 	/* Bind ISR into interrupt controller */
-	irq_bind(sp804->irq_def.irqnr, timer_isr, NULL, NULL);
+	irq_bind(sp804->irq_def.irqnr, timer_isr, NULL, dev);
 
 	return 0;
 }
@@ -164,8 +172,11 @@ static int oneshot_timer_init(dev_t *dev) {
 static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
+	sp804_t *sp804;
 
-	sp804 = (sp804_t *) malloc(sizeof(sp804_t));
+	clocksource_timer.dev = dev;
+
+	sp804 = malloc(sizeof(sp804_t));
 	BUG_ON(!sp804);
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
@@ -193,6 +204,8 @@ static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
 
 	/* Calculate the mult/shift to convert counter ticks to ns. */
 	clocks_calc_mult_shift(&clocksource_timer.mult, &clocksource_timer.shift, clocksource_timer.rate, NSECS, 3600);
+
+	dev_set_drvdata(dev, sp804);
 
 	return 0;
 }
