@@ -61,6 +61,8 @@ void frame_table_init(addr_t frame_table_start) {
 
 	printk("SO3 Memory information:\n");
 
+	printk("  - Memory size : %d bytes\n", mem_info.size);
+
 	/* Size of the available memory (without the kernel region) */
 
 	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
@@ -431,8 +433,9 @@ void memory_init(void) {
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
+#ifdef CONFIG_ARCH_ARM64
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
-
+#endif
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
 	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.

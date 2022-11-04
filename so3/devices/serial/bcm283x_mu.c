@@ -19,6 +19,7 @@
 #include <common.h>
 #include <heap.h>
 #include <limits.h>
+#include <memory.h>
 
 #include <device/device.h>
 #include <device/driver.h>
@@ -26,11 +27,16 @@
 #include <device/serial.h>
 
 #include <device/arch/bcm283x_mu.h>
-#include <mach/uart.h>
 
 #include <asm/io.h>                 /* ioread/iowrite macros */
 
-static dev_t bcm283x_mu_dev =
+
+typedef struct {
+	addr_t base;
+	bcm283x_mu_t *dev;
+} bcm283x_mu_dev_t;
+
+static bcm283x_mu_dev_t bcm283x_mu_dev =
 {
   .base = CONFIG_UART_LL_PADDR,
 };
@@ -66,8 +72,10 @@ static char bcm283x_mu_get_byte(bool polling)
 	return (char) ioread32(&bcm283x_mu->io);
 }
 
-static int bcm283x_mu_init(dev_t *dev)
+static int bcm283x_mu_init(dev_t *dev, int fdt_offset)
 {
+	const struct fdt_property *prop;
+	int prop_len;
 
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */
@@ -78,7 +86,16 @@ static int bcm283x_mu_init(dev_t *dev)
 	serial_ops.put_byte = bcm283x_mu_put_byte;
 	serial_ops.get_byte = bcm283x_mu_get_byte;
 
-	serial_ops.dev = dev;
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+#ifdef CONFIG_ARCH_ARM32
+	bcm283x_mu_dev.base = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	bcm283x_mu_dev.base = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+#endif
 
 	return 0;
 

@@ -45,12 +45,12 @@
 
         ramdisk {
         	description = "SO3 environment minimal rootfs";
-            data = /incbin/("../rootfs/board/virt64/rootfs.fat");
-            type = "ramdisk";
-            arch = "arm64";
-            os = "linux";
-            compression = "none";
-            load = <0x44c00000>;
+		data = /incbin/("../rootfs/board/virt64/rootfs.fat");
+		type = "ramdisk";
+		arch = "arm64";
+		os = "linux";
+		compression = "none";
+		load = <0x44c00000>;
         };
                 
 	};

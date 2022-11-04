@@ -17,17 +17,17 @@
  */
  
 /dts-v1/;
-
-#include "skeleton.dtsi"
-
+ 
 / {
 	model = "SO3 Vexpress";
 	compatible = "arm,vexpress";
 
-	cpus@0 {
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
 		device_type = "cpu";
-		compatible = "arm,cortex-a15";
-		reg = <0 0>;
+		compatible = "arm,vexpress";
 	};
 
 	memory@80000000 {
