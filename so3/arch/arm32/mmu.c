@@ -552,9 +552,10 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 
 	/* Get the L1 PTE. */
 	l1pte = l1pte_offset(current_pgtable(), vaddr);
+	BUG_ON(!*l1pte);
 
 	offset = vaddr & ~PAGE_MASK;
-	BUG_ON(!*l1pte);
+
 	if (l1pte_is_sect(*l1pte)) {
 
 		return (*l1pte & TTB_L1_SECT_ADDR_MASK) | offset;

@@ -75,7 +75,7 @@
 
 #define pte_index_to_vaddr(i1, i2) ((i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT))
 
-#define l1pte_offset(pgtable, addr)     (pgtable + l1pte_index(addr))
+#define l1pte_offset(pgtable, addr)     ((uint32_t *) pgtable + l1pte_index(addr))
 #define l2pte_offset(l1pte, addr) 	((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
 #define l2pte_first(l1pte)		((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
 
