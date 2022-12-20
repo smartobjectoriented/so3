@@ -67,7 +67,7 @@ void frame_table_init(addr_t frame_table_start) {
 
 	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
 
-	printk("  - kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
+	printk("  - Kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
 			(ft_phys - mem_info.phys_base),
 			(ft_phys - mem_info.phys_base),
 			(ft_phys - mem_info.phys_base) / SZ_1M,
@@ -99,7 +99,7 @@ void frame_table_init(addr_t frame_table_start) {
 	/* First available pfn (right after the frame table) */
 	pfn_start = ft_pfn_end + 1;
 
-	printk("  - kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
+	printk("  - Kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
 	printk("  - Number of available page frames: 0x%x\n", mem_info.avail_pages);
 	printk("  - Frame table size is: %d bytes meaning 0x%0x page frames\n", ft_length, ft_pages);
 	printk("  - Page frame number of the first available page: 0x%x\n", pfn_start);
@@ -428,14 +428,11 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
-	pgtable_copy_kernel_area(new_sys_root_pgtable);
-
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping uart I/O for debugging purposes */
-#ifdef CONFIG_ARCH_ARM64
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
-#endif
+
 	/*
 	 * Switch to the temporary page table in order to re-configure the original system page table
 	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.

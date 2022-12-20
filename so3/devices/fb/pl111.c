@@ -122,7 +122,7 @@ static int pl111_init(dev_t *dev, int fdt_offset)
 	BUG_ON(!prop);
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
-	/* Mapping the two mem area of GIC (distributor & CPU interface) */
+	/* Mapping the device properly */
 #ifdef CONFIG_ARCH_ARM32
 	base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
 #else

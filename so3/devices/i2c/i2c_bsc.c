@@ -38,9 +38,14 @@
 
 #include <device/arch/i2c_bsc.h>
 
-static struct i2c_regs *regs;
-
 static struct mutex bus_lock;
+
+typedef struct {
+	struct i2c_regs *base;
+	irq_def_t irq_def;
+} i2c_t;
+
+i2c_t i2c;
 
 typedef struct i2c_msg {
 	/* Slave address */
@@ -68,12 +73,12 @@ void i2c_bsc_fill_fifo(void) {
 	uint32_t val;
 	while (cur_msg.remaining != 0) {
 
-		val = ioread32(&regs->i2c_stat);
+		val = ioread32(&i2c.base->i2c_stat);
 		if (!(val & S_TXD))
 			break;
 
-		iowrite32(&regs->i2c_fifo,
-				(uint32_t )((*cur_msg.buf) & 0x000000FF));
+		iowrite32(&(i2c.base->i2c_fifo), (uint32_t) (*cur_msg.buf & 0x000000FF));
+
 		cur_msg.buf++;
 		cur_msg.remaining--;
 	}
@@ -84,11 +89,11 @@ void i2c_bsc_drain_fifo(void) {
 
 	while (cur_msg.remaining != 0) {
 
-		val = ioread32(&regs->i2c_stat);
+		val = ioread32(&(i2c.base->i2c_stat));
 		if (!(val & S_RXD))
 			break;
 
-		*cur_msg.buf = (uint8_t) ioread32(&regs->i2c_fifo);
+		*cur_msg.buf = (uint8_t) ioread32(&i2c.base->i2c_fifo);
 		cur_msg.buf++;
 		cur_msg.remaining--;
 	}
@@ -99,8 +104,8 @@ static void i2c_bsc_start_transfer(bool is_read) {
 	uint32_t c;
 
 	/* Slave address and data length setup */
-	iowrite32(&regs->i2c_dlen, cur_msg.len);
-	iowrite32(&regs->i2c_a, cur_msg.addr);
+	iowrite32(&i2c.base->i2c_dlen, cur_msg.len);
+	iowrite32(&i2c.base->i2c_a, cur_msg.addr);
 
 	/* Enable interrupts and I2C controller */
 	c = CTRL_ST | CTRL_I2CEN | CTRL_INTD;
@@ -112,7 +117,7 @@ static void i2c_bsc_start_transfer(bool is_read) {
 		c &= ~CTRL_READ;
 		c |= CTRL_INTT;
 	}
-	iowrite32(&regs->i2c_ctrl, c);
+	iowrite32(&i2c.base->i2c_ctrl, c);
 
 }
 
@@ -135,7 +140,7 @@ static void i2c_bsc_finish_transfer(void) {
 static irq_return_t i2c_bsc_isr(int irq, void *dummy) {
 	uint32_t s;
 
-	s = ioread32(&regs->i2c_stat);
+	s = ioread32(&i2c.base->i2c_stat);
 
 	if (s & S_DONE) {
 		if (cur_msg.is_read == I2C_READ) {
@@ -162,8 +167,8 @@ static irq_return_t i2c_bsc_isr(int irq, void *dummy) {
 
 complete:
 
-	iowrite32(&regs->i2c_ctrl, CTRL_CLEAR_FIFO);
-	iowrite32(&regs->i2c_stat, S_ERR | S_CLKT | S_DONE);
+	iowrite32(&i2c.base->i2c_ctrl, CTRL_CLEAR_FIFO);
+	iowrite32(&i2c.base->i2c_stat, S_ERR | S_CLKT | S_DONE);
 
 	complete(&transfer_done_completion);
 
@@ -198,11 +203,29 @@ void i2c_bsc_write_data(uint32_t slave_addr, uint8_t *buf, size_t size) {
 	i2c_xfer(slave_addr, buf, size, I2C_WRITE);
 }
 
-static int i2c_bsc_init(dev_t *dev) {
+static int i2c_bsc_init(dev_t *dev, int fdt_offset)
+{
+	const struct fdt_property *prop;
+	int prop_len;
 	uint32_t mask;
 	uint32_t gpio_regs_addr;
 
 	DBG("I2C broadcom - Initialization\n");
+
+	memset(&i2c, 0, sizeof(i2c_t));
+
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
+
+	/* Mapping the device properly */
+#ifdef CONFIG_ARCH_ARM32
+	i2c.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+#else
+	i2c.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+
+#endif
+	fdt_interrupt_node(fdt_offset, &i2c.irq_def);
 
 	/* Configuration of GPIOs 2 & 3 dedicated to I2C */
 	gpio_regs_addr = io_map(GPIO_REGS_ADDR, 0xF0);
@@ -213,17 +236,14 @@ static int i2c_bsc_init(dev_t *dev) {
 	/* Configuration GPIO 2 et 3 alt0 */
 	iowrite32(gpio_regs_addr+GPIO_FSEL0_OFF, mask);
 
-	/* Bind our mapped address with our driver */
-	regs = (struct i2c_regs*) dev->base;
-
 	/* Reset du registre ctrl l'i2c */
-	iowrite32(&regs->i2c_ctrl, 0x0);
+	iowrite32(&(i2c.base->i2c_ctrl), 0x0);
 
 	/* Setup clock divider : 150 MHz / 1500 (0x5dc) = 100 kHz */
-	iowrite32(&regs->i2c_div, 0x5dc);
+	iowrite32(&i2c.base->i2c_div, 0x5dc);
 
 	/* Setup clock stretch timeout: NO_STRETCH */
-	iowrite32(&regs->i2c_clkt, NO_STRETCH);
+	iowrite32(&i2c.base->i2c_clkt, NO_STRETCH);
 
 	/* Binding with the I2C framework */
 	i2c_ops.i2c_write_op = i2c_bsc_write_data;
@@ -233,7 +253,7 @@ static int i2c_bsc_init(dev_t *dev) {
 
 	init_completion(&transfer_done_completion);
 
-	irq_bind(dev->irq_nr, i2c_bsc_isr, NULL, NULL);
+	irq_bind(i2c.irq_def.irqnr, i2c_bsc_isr, NULL, NULL);
 
 	io_unmap(gpio_regs_addr);
 

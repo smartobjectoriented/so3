@@ -81,10 +81,7 @@ static int bcm283x_mu_init(dev_t *dev, int fdt_offset)
 	/* Clocks init skipped here for simplicity (done by bootloader) */
 
 	/* Initialize UART controller */
-	memcpy(&bcm283x_mu_dev, dev, sizeof(dev_t));
-
-	serial_ops.put_byte = bcm283x_mu_put_byte;
-	serial_ops.get_byte = bcm283x_mu_get_byte;
+	memset(&bcm283x_mu_dev, 0, sizeof(bcm283x_mu_dev_t));
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
@@ -96,6 +93,9 @@ static int bcm283x_mu_init(dev_t *dev, int fdt_offset)
 #else
 	bcm283x_mu_dev.base = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
 #endif
+
+	serial_ops.put_byte = bcm283x_mu_put_byte;
+	serial_ops.get_byte = bcm283x_mu_get_byte;
 
 	return 0;
 

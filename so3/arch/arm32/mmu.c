@@ -72,7 +72,7 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
 #endif /* CONFIG_RAMDEV */
 
 /* Reference to the system 1st-level page table */
-static void alloc_init_pte(uint32_t *l1pte, unsigned long addr, unsigned long end, unsigned long pfn, bool nocache)
+static void alloc_init_pte(uint32_t *l1pte, addr_t addr, addr_t end, addr_t pfn, bool nocache)
 {
 	uint32_t *l2pte, *l2pgtable;
 	uint32_t size;

@@ -152,7 +152,7 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 
 	/* Init pl011 UART */
 
-	memcpy(&pl011, dev, sizeof(pl011_t));
+	memset(&pl011, 0, sizeof(pl011_t));
 
 	serial_ops.put_byte = pl011_put_byte;
 	serial_ops.get_byte = pl011_get_byte;

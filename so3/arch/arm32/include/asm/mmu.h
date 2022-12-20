@@ -204,7 +204,6 @@ void pgtable_copy_kernel_area(void *l1pgtable);
 void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache);
 void release_mapping(void *pgtable, addr_t virt_base, uint32_t size);
 
-
 void reset_root_pgtable(void *pgtable, bool remove);
 void clear_l1pte(void *l1pgtable, addr_t vaddr);
 

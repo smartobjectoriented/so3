@@ -108,23 +108,24 @@ __kernel_main:
 
 mmu_setup:
 
-  // Use a temporary stack
-  adrp	x0, temp_stack
-  mov	sp, x0
+	// Use a temporary stack
+  	adrp	x0, temp_stack
+  	mov	sp, x0
 
-  bl 	mmu_configure
+  	bl 	mmu_configure
 
-  // Readjust the stack
-  ldr	x0, =__stack_top
-  mov	sp, x0
+  	// Readjust the stack
+  	ldr	x0, =__stack_top
 
-  // Keep executing in the kernel space
+  	mov	sp, x0
 
-  // Store the virtual address which will be used to continue
-  // the execution after the MMU enabled.
-  ldr	x0, .LCvirt_entry
+  	// Keep executing in the kernel space
 
-  blr	x0
+  	// Store the virtual address which will be used to continue
+  	// the execution after the MMU enabled.
+  	ldr	x0, .LCvirt_entry
+
+  	blr	x0
 
 /*
  * If we're fortunate enough to boot at EL2, ensure that the world is

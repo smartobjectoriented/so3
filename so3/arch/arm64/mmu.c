@@ -241,6 +241,7 @@ void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t 
 	BUG_ON(!size);
 
 	DBG("Create mapping for virt %llx - phys: %llx - size: %x\n", virt_base, phys_base, size);
+
 	addr = virt_base & PAGE_MASK;
 	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
 
@@ -460,7 +461,6 @@ void dump_pgtable(void *l0pgtable) {
 					}
 				}
 			}
-
 		}
 	}
 }
