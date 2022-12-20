@@ -14,6 +14,7 @@ extern "C" {
  *      INCLUDES
  *********************/
 #include "../lv_conf_internal.h"
+#include "lv_assert.h"
 #include "lv_math.h"
 #include "lv_types.h"
 
@@ -22,19 +23,12 @@ extern "C" {
 #error "LV_COLOR_DEPTH 24 is deprecated. Use LV_COLOR_DEPTH 32 instead (lv_conf.h)"
 #endif
 
-#if LV_COLOR_DEPTH != 32 && LV_COLOR_SCREEN_TRANSP != 0
-#error "LV_COLOR_SCREEN_TRANSP requires LV_COLOR_DEPTH == 32. Set it in lv_conf.h"
-#endif
-
-#if LV_COLOR_DEPTH != 16 && LV_COLOR_16_SWAP != 0
-#error "LV_COLOR_16_SWAP requires LV_COLOR_DEPTH == 16. Set it in lv_conf.h"
-#endif
-
 #include <stdint.h>
 
 /*********************
  *      DEFINES
  *********************/
+LV_EXPORT_CONST_INT(LV_COLOR_DEPTH);
 
 /**
  * Opacity percentages.
@@ -68,23 +62,6 @@ enum {
 #define LV_COLOR_SIZE 32
 #else
 #error "Invalid LV_COLOR_DEPTH in lv_conf.h! Set it to 1, 8, 16 or 32!"
-#endif
-
-/**
- * Adjust color mix functions rounding.
- * GPUs might calculate color mix (blending) differently.
- * Should be in range of 0..254
- * 0: no adjustment, get the integer part of the result (round down)
- * 64: round up from x.75
- * 128: round up from half
- * 192: round up from x.25
- * 254: round up*/
-#ifndef LV_COLOR_MIX_ROUND_OFS
-#if LV_COLOR_DEPTH == 32
-#define LV_COLOR_MIX_ROUND_OFS 0
-#else
-#define LV_COLOR_MIX_ROUND_OFS 128
-#endif
 #endif
 
 #if defined(__cplusplus) && !defined(_LV_COLOR_HAS_MODERN_CPP)
@@ -142,34 +119,21 @@ enum {
 # define LV_COLOR_GET_B8(c) (c).ch.blue
 # define LV_COLOR_GET_A8(c) 0xFF
 
-# define _LV_COLOR_ZERO_INITIALIZER8 _LV_COLOR_MAKE_TYPE_HELPER {{0x00, 0x00, 0x00}}
-# define LV_COLOR_MAKE8(r8, g8, b8) _LV_COLOR_MAKE_TYPE_HELPER  {{(uint8_t)((b8 >> 6) & 0x3U), (uint8_t)((g8 >> 5) & 0x7U), (uint8_t)((r8 >> 5) & 0x7U)}}
+# define _LV_COLOR_ZERO_INITIALIZER8 {{0x00, 0x00, 0x00}}
+# define LV_COLOR_MAKE8(r8, g8, b8) {{(uint8_t)((b8 >> 6) & 0x3U), (uint8_t)((g8 >> 5) & 0x7U), (uint8_t)((r8 >> 5) & 0x7U)}}
 
 # define LV_COLOR_SET_R16(c, v) (c).ch.red = (uint8_t)((v) & 0x1FU)
-#if LV_COLOR_16_SWAP == 0
 # define LV_COLOR_SET_G16(c, v) (c).ch.green = (uint8_t)((v) & 0x3FU)
-#else
-# define LV_COLOR_SET_G16(c, v) {(c).ch.green_h = (uint8_t)(((v) >> 3) & 0x7); (c).ch.green_l = (uint8_t)((v) & 0x7);}
-#endif
 # define LV_COLOR_SET_B16(c, v) (c).ch.blue = (uint8_t)((v) & 0x1FU)
 # define LV_COLOR_SET_A16(c, v) do {} while(0)
 
 # define LV_COLOR_GET_R16(c) (c).ch.red
-#if LV_COLOR_16_SWAP == 0
 # define LV_COLOR_GET_G16(c) (c).ch.green
-#else
-# define LV_COLOR_GET_G16(c) (((c).ch.green_h << 3) + (c).ch.green_l)
-#endif
 # define LV_COLOR_GET_B16(c) (c).ch.blue
 # define LV_COLOR_GET_A16(c) 0xFF
 
-#if LV_COLOR_16_SWAP == 0
 # define _LV_COLOR_ZERO_INITIALIZER16  {{0x00, 0x00, 0x00}}
 # define LV_COLOR_MAKE16(r8, g8, b8) {{(uint8_t)((b8 >> 3) & 0x1FU), (uint8_t)((g8 >> 2) & 0x3FU), (uint8_t)((r8 >> 3) & 0x1FU)}}
-#else
-# define _LV_COLOR_ZERO_INITIALIZER16 {{0x00, 0x00, 0x00, 0x00}}
-# define LV_COLOR_MAKE16(r8, g8, b8) {{(uint8_t)((g8 >> 5) & 0x7U), (uint8_t)((r8 >> 3) & 0x1FU), (uint8_t)((b8 >> 3) & 0x1FU), (uint8_t)((g8 >> 2) & 0x7U)}}
-#endif
 
 # define LV_COLOR_SET_R32(c, v) (c).ch.red = (uint8_t)((v) & 0xFF)
 # define LV_COLOR_SET_G32(c, v) (c).ch.green = (uint8_t)((v) & 0xFF)
@@ -201,8 +165,6 @@ enum {
 #define _LV_COLOR_ZERO_INITIALIZER LV_CONCAT(_LV_COLOR_ZERO_INITIALIZER, LV_COLOR_DEPTH)
 #define LV_COLOR_MAKE(r8, g8, b8) LV_CONCAT(LV_COLOR_MAKE, LV_COLOR_DEPTH)(r8, g8, b8)
 
-#define LV_UDIV255(x) ((uint32_t)((uint32_t) (x) * 0x8081) >> 0x17)
-
 /**********************
  *      TYPEDEFS
  **********************/
@@ -227,16 +189,9 @@ typedef union {
 
 typedef union {
     struct {
-#if LV_COLOR_16_SWAP == 0
         uint16_t blue : 5;
         uint16_t green : 6;
         uint16_t red : 5;
-#else
-        uint16_t green_h : 3;
-        uint16_t red : 5;
-        uint16_t blue : 5;
-        uint16_t green_l : 3;
-#endif
     } ch;
     uint16_t full;
 } lv_color16_t;
@@ -272,7 +227,47 @@ typedef lv_color_t (*lv_color_filter_cb_t)(const struct _lv_color_filter_dsc_t *
 typedef struct _lv_color_filter_dsc_t {
     lv_color_filter_cb_t filter_cb;
     void * user_data;
-}lv_color_filter_dsc_t;
+} lv_color_filter_dsc_t;
+
+
+typedef enum {
+    LV_COLOR_FORMAT_NATIVE = 0,       /*Keep original format. Used in color conversation*/
+    LV_COLOR_FORMAT_NATIVE_REVERSE,   /*Change endianess*/
+
+    _LV_COLOR_FORMAT_NATIVE_END = 16,
+    LV_COLOR_FORMAT_RGB232,
+    LV_COLOR_FORMAT_RGBA2328,
+    LV_COLOR_FORMAT_RGBA2222,
+
+    LV_COLOR_FORMAT_RGB565,
+    LV_COLOR_FORMAT_RGBA5658,
+    LV_COLOR_FORMAT_RGBA5551,
+    LV_COLOR_FORMAT_RGBA4444,
+    LV_COLOR_FORMAT_RGB565A8,
+
+    LV_COLOR_FORMAT_RGB888,
+    LV_COLOR_FORMAT_RGBA8888,
+    LV_COLOR_FORMAT_RGBX8888,
+
+    LV_COLOR_FORMAT_L1,
+    LV_COLOR_FORMAT_L2,
+    LV_COLOR_FORMAT_L4,
+    LV_COLOR_FORMAT_L8,
+
+    LV_COLOR_FORMAT_A1,
+    LV_COLOR_FORMAT_A2,
+    LV_COLOR_FORMAT_A4,
+    LV_COLOR_FORMAT_A8,
+
+    LV_COLOR_FORMAT_I1,
+    LV_COLOR_FORMAT_I2,
+    LV_COLOR_FORMAT_I4,
+    LV_COLOR_FORMAT_I8,
+
+
+    LV_COLOR_FORMAT_CUSTOM_START = 0xff, /*Custom formats can be added from here*/
+
+} lv_color_format_t;
 
 
 typedef enum {
@@ -297,7 +292,7 @@ typedef enum {
     LV_PALETTE_GREY,
     _LV_PALETTE_LAST,
     LV_PALETTE_NONE = 0xff,
-}lv_palette_t;
+} lv_palette_t;
 
 /**********************
  * GLOBAL PROTOTYPES
@@ -459,14 +454,23 @@ static inline uint32_t lv_color_to32(lv_color_t color)
 LV_ATTRIBUTE_FAST_MEM static inline lv_color_t lv_color_mix(lv_color_t c1, lv_color_t c2, uint8_t mix)
 {
     lv_color_t ret;
-#if LV_COLOR_DEPTH != 1
+
+#if LV_COLOR_DEPTH == 16 && LV_COLOR_MIX_ROUND_OFS == 0
+    /*Source: https://stackoverflow.com/a/50012418/1999969*/
+    mix = (uint32_t)((uint32_t)mix + 4) >> 3;
+    uint32_t bg = (uint32_t)((uint32_t)c2.full | ((uint32_t)c2.full << 16)) &
+                  0x7E0F81F; /*0b00000111111000001111100000011111*/
+    uint32_t fg = (uint32_t)((uint32_t)c1.full | ((uint32_t)c1.full << 16)) & 0x7E0F81F;
+    uint32_t result = ((((fg - bg) * mix) >> 5) + bg) & 0x7E0F81F;
+    ret.full = (uint16_t)((result >> 16) | result);
+#elif LV_COLOR_DEPTH != 1
     /*LV_COLOR_DEPTH == 8, 16 or 32*/
-    LV_COLOR_SET_R(ret, LV_UDIV255((uint16_t) LV_COLOR_GET_R(c1) * mix + LV_COLOR_GET_R(c2) *
-                                        (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
-    LV_COLOR_SET_G(ret, LV_UDIV255((uint16_t) LV_COLOR_GET_G(c1) * mix + LV_COLOR_GET_G(c2) *
-                                        (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
-    LV_COLOR_SET_B(ret, LV_UDIV255((uint16_t) LV_COLOR_GET_B(c1) * mix + LV_COLOR_GET_B(c2) *
-                                        (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
+    LV_COLOR_SET_R(ret, LV_UDIV255((uint16_t)LV_COLOR_GET_R(c1) * mix + LV_COLOR_GET_R(c2) *
+                                   (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
+    LV_COLOR_SET_G(ret, LV_UDIV255((uint16_t)LV_COLOR_GET_G(c1) * mix + LV_COLOR_GET_G(c2) *
+                                   (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
+    LV_COLOR_SET_B(ret, LV_UDIV255((uint16_t)LV_COLOR_GET_B(c1) * mix + LV_COLOR_GET_B(c2) *
+                                   (255 - mix) + LV_COLOR_MIX_ROUND_OFS));
     LV_COLOR_SET_A(ret, 0xFF);
 #else
     /*LV_COLOR_DEPTH == 1*/
@@ -479,9 +483,9 @@ LV_ATTRIBUTE_FAST_MEM static inline lv_color_t lv_color_mix(lv_color_t c1, lv_co
 LV_ATTRIBUTE_FAST_MEM static inline void lv_color_premult(lv_color_t c, uint8_t mix, uint16_t * out)
 {
 #if LV_COLOR_DEPTH != 1
-    out[0] = (uint16_t) LV_COLOR_GET_R(c) * mix;
-    out[1] = (uint16_t) LV_COLOR_GET_G(c) * mix;
-    out[2] = (uint16_t) LV_COLOR_GET_B(c) * mix;
+    out[0] = (uint16_t)LV_COLOR_GET_R(c) * mix;
+    out[1] = (uint16_t)LV_COLOR_GET_G(c) * mix;
+    out[2] = (uint16_t)LV_COLOR_GET_B(c) * mix;
 #else
     (void) mix;
     /*Pre-multiplication can't be used with 1 bpp*/
@@ -493,7 +497,7 @@ LV_ATTRIBUTE_FAST_MEM static inline void lv_color_premult(lv_color_t c, uint8_t 
 }
 
 /**
- * Mix two colors with a given ratio. It runs faster then `lv_color_mix` but requires some pre computation.
+ * Mix two colors with a given ratio. It runs faster than `lv_color_mix` but requires some pre computation.
  * @param premult_c1 The first color. Should be preprocessed with `lv_color_premult(c1)`
  * @param c2 The second color. As it is no pre computation required on it
  * @param mix The ratio of the colors. 0: full `c1`, 255: full `c2`, 127: half `c1` and half `c2`.
@@ -505,7 +509,7 @@ LV_ATTRIBUTE_FAST_MEM static inline lv_color_t lv_color_mix_premult(uint16_t * p
 {
     lv_color_t ret;
 #if LV_COLOR_DEPTH != 1
-    /*LV_COLOR_DEPTH == 8, 16 or 32*/
+    /*LV_COLOR_DEPTH == 8 or 32*/
     LV_COLOR_SET_R(ret, LV_UDIV255(premult_c1[0] + LV_COLOR_GET_R(c2) * mix + LV_COLOR_MIX_ROUND_OFS));
     LV_COLOR_SET_G(ret, LV_UDIV255(premult_c1[1] + LV_COLOR_GET_G(c2) * mix + LV_COLOR_MIX_ROUND_OFS));
     LV_COLOR_SET_B(ret, LV_UDIV255(premult_c1[2] + LV_COLOR_GET_B(c2) * mix + LV_COLOR_MIX_ROUND_OFS));
@@ -570,10 +574,7 @@ LV_ATTRIBUTE_FAST_MEM static inline void lv_color_mix_with_alpha(lv_color_t bg_c
             /*Info:
              * https://en.wikipedia.org/wiki/Alpha_compositing#Analytical_derivation_of_the_over_operator*/
             res_opa_saved = 255 - ((uint16_t)((uint16_t)(255 - fg_opa) * (255 - bg_opa)) >> 8);
-            if(res_opa_saved == 0) {
-                while(1)
-                    ;
-            }
+            LV_ASSERT(res_opa_saved != 0);
             lv_opa_t ratio = (uint16_t)((uint16_t)fg_opa * 255) / res_opa_saved;
             res_color_saved = lv_color_mix(fg_color, bg_color, ratio);
 
@@ -606,7 +607,31 @@ static inline lv_color_t lv_color_make(uint8_t r, uint8_t g, uint8_t b)
 
 static inline lv_color_t lv_color_hex(uint32_t c)
 {
+#if LV_COLOR_DEPTH == 16
+    lv_color_t r;
+    /* Convert a 4 bytes per pixel in format ARGB32 to R5G6B5 format
+        naive way (by calling lv_color_make with components):
+                    r = ((c & 0xFF0000) >> 19)
+                    g = ((c & 0xFF00) >> 10)
+                    b = ((c & 0xFF) >> 3)
+                    rgb565 = (r << 11) | (g << 5) | b
+        That's 3 mask, 5 bitshift and 2 or operations
+
+        A bit better:
+                    r = ((c & 0xF80000) >> 8)
+                    g = ((c & 0xFC00) >> 5)
+                    b = ((c & 0xFF) >> 3)
+                    rgb565 = r | g | b
+        That's 3 mask, 3 bitshifts and 2 or operations */
+    r.full = (uint16_t)(((c & 0xF80000) >> 8) | ((c & 0xFC00) >> 5) | ((c & 0xFF) >> 3));
+    return r;
+#elif LV_COLOR_DEPTH == 32
+    lv_color_t r;
+    r.full = c | 0xFF000000;
+    return r;
+#else /*LV_COLOR_DEPTH == 8*/
     return lv_color_make((uint8_t)((c >> 16) & 0xFF), (uint8_t)((c >> 8) & 0xFF), (uint8_t)(c & 0xFF));
+#endif
 }
 
 static inline lv_color_t lv_color_hex3(uint32_t c)
@@ -657,7 +682,7 @@ lv_color_hsv_t lv_color_rgb_to_hsv(uint8_t r8, uint8_t g8, uint8_t b8);
 lv_color_hsv_t lv_color_to_hsv(lv_color_t color);
 
 /**
- * Just a wrapper around LV_COLOR_CHROMA_KEY because it might be more convenient to use a function is some cases
+ * Just a wrapper around LV_COLOR_CHROMA_KEY because it might be more convenient to use a function in some cases
  * @return LV_COLOR_CHROMA_KEY
  */
 static inline lv_color_t lv_color_chroma_key(void)
@@ -671,8 +696,14 @@ static inline lv_color_t lv_color_chroma_key(void)
 /*Source: https://vuetifyjs.com/en/styles/colors/#material-colors*/
 
 lv_color_t lv_palette_main(lv_palette_t p);
-static inline lv_color_t lv_color_white(void) { return lv_color_make(0xff, 0xff, 0xff);}
-static inline lv_color_t lv_color_black(void) { return lv_color_make(0x00, 0x0, 0x00);}
+static inline lv_color_t lv_color_white(void)
+{
+    return lv_color_make(0xff, 0xff, 0xff);
+}
+static inline lv_color_t lv_color_black(void)
+{
+    return lv_color_make(0x00, 0x0, 0x00);
+}
 lv_color_t lv_palette_lighten(lv_palette_t p, uint8_t lvl);
 lv_color_t lv_palette_darken(lv_palette_t p, uint8_t lvl);
 

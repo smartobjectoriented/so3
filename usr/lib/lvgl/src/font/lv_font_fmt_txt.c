@@ -71,9 +71,9 @@ static int32_t kern_pair_16_compare(const void * ref, const void * element);
  **********************/
 
 /**
- * Used as `get_glyph_bitmap` callback in LittelvGL's native font format if the font is uncompressed.
+ * Used as `get_glyph_bitmap` callback in lvgl's native font format if the font is uncompressed.
  * @param font pointer to font
- * @param unicode_letter an unicode letter which bitmap should be get
+ * @param unicode_letter a unicode letter which bitmap should be get
  * @return pointer to the bitmap or NULL if not found
  */
 const uint8_t * lv_font_get_bitmap_fmt_txt(const lv_font_t * font, uint32_t unicode_letter)
@@ -116,7 +116,7 @@ const uint8_t * lv_font_get_bitmap_fmt_txt(const lv_font_t * font, uint32_t unic
         }
 
         if(last_buf_size < buf_size) {
-            uint8_t * tmp = lv_mem_realloc(LV_GC_ROOT(_lv_font_decompr_buf), buf_size);
+            uint8_t * tmp = lv_realloc(LV_GC_ROOT(_lv_font_decompr_buf), buf_size);
             LV_ASSERT_MALLOC(tmp);
             if(tmp == NULL) return NULL;
             LV_GC_ROOT(_lv_font_decompr_buf) = tmp;
@@ -128,7 +128,7 @@ const uint8_t * lv_font_get_bitmap_fmt_txt(const lv_font_t * font, uint32_t unic
                    (uint8_t)fdsc->bpp, prefilter);
         return LV_GC_ROOT(_lv_font_decompr_buf);
 #else /*!LV_USE_FONT_COMPRESSED*/
-//        LV_LOG_WARN("Compressed fonts is used but LV_USE_FONT_COMPRESSED is not enabled in lv_conf.h")
+        LV_LOG_WARN("Compressed fonts is used but LV_USE_FONT_COMPRESSED is not enabled in lv_conf.h");
         return NULL;
 #endif
     }
@@ -138,10 +138,11 @@ const uint8_t * lv_font_get_bitmap_fmt_txt(const lv_font_t * font, uint32_t unic
 }
 
 /**
- * Used as `get_glyph_dsc` callback in LittelvGL's native font format if the font is uncompressed.
- * @param font_p pointer to font
+ * Used as `get_glyph_dsc` callback in lvgl's native font format if the font is uncompressed.
+ * @param font pointer to font
  * @param dsc_out store the result descriptor here
- * @param letter an UNICODE letter code
+ * @param unicode_letter a UNICODE letter code
+ * @param unicode_letter_next the unicode letter succeeding the letter under test
  * @return true: descriptor is successfully loaded into `dsc_out`.
  *         false: the letter was not found, no data is loaded to `dsc_out`
  */
@@ -182,6 +183,7 @@ bool lv_font_get_glyph_dsc_fmt_txt(const lv_font_t * font, lv_font_glyph_dsc_t *
     dsc_out->ofs_x = gdsc->ofs_x;
     dsc_out->ofs_y = gdsc->ofs_y;
     dsc_out->bpp   = (uint8_t)fdsc->bpp;
+    dsc_out->is_placeholder = false;
 
     if(is_tab) dsc_out->box_w = dsc_out->box_w * 2;
 
@@ -195,7 +197,7 @@ void _lv_font_clean_up_fmt_txt(void)
 {
 #if LV_USE_FONT_COMPRESSED
     if(LV_GC_ROOT(_lv_font_decompr_buf)) {
-        lv_mem_free(LV_GC_ROOT(_lv_font_decompr_buf));
+        lv_free(LV_GC_ROOT(_lv_font_decompr_buf));
         LV_GC_ROOT(_lv_font_decompr_buf) = NULL;
     }
 #endif
@@ -360,12 +362,12 @@ static void decompress(const uint8_t * in, uint8_t * out, lv_coord_t w, lv_coord
 
     rle_init(in, bpp);
 
-    uint8_t * line_buf1 = lv_mem_buf_get(w);
+    uint8_t * line_buf1 = lv_malloc(w);
 
     uint8_t * line_buf2 = NULL;
 
     if(prefilter) {
-        line_buf2 = lv_mem_buf_get(w);
+        line_buf2 = lv_malloc(w);
     }
 
     decompress_line(line_buf1, w);
@@ -398,8 +400,8 @@ static void decompress(const uint8_t * in, uint8_t * out, lv_coord_t w, lv_coord
         }
     }
 
-    lv_mem_buf_release(line_buf1);
-    lv_mem_buf_release(line_buf2);
+    lv_free(line_buf1);
+    lv_free(line_buf2);
 }
 
 /**

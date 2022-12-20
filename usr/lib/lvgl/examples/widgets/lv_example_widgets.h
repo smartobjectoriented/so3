@@ -25,10 +25,10 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+void lv_example_animimg_1(void);
+
 void lv_example_arc_1(void);
 void lv_example_arc_2(void);
-
-void lv_example_animimg_1(void);
 
 void lv_example_bar_1(void);
 void lv_example_bar_2(void);
@@ -49,6 +49,11 @@ void lv_example_calendar_1(void);
 
 void lv_example_canvas_1(void);
 void lv_example_canvas_2(void);
+void lv_example_canvas_3(void);
+void lv_example_canvas_4(void);
+void lv_example_canvas_5(void);
+void lv_example_canvas_6(void);
+void lv_example_canvas_7(void);
 
 void lv_example_chart_1(void);
 void lv_example_chart_2(void);
@@ -57,8 +62,11 @@ void lv_example_chart_4(void);
 void lv_example_chart_5(void);
 void lv_example_chart_6(void);
 void lv_example_chart_7(void);
+void lv_example_chart_8(void);
+void lv_example_chart_9(void);
 
 void lv_example_checkbox_1(void);
+void lv_example_checkbox_2(void);
 
 void lv_example_colorwheel_1(void);
 
@@ -74,16 +82,26 @@ void lv_example_img_4(void);
 void lv_example_imgbtn_1(void);
 
 void lv_example_keyboard_1(void);
+void lv_example_keyboard_2(void);
 
 void lv_example_label_1(void);
 void lv_example_label_2(void);
 void lv_example_label_3(void);
+void lv_example_label_4(void);
+void lv_example_label_5(void);
 
 void lv_example_led_1(void);
 
 void lv_example_line_1(void);
 
 void lv_example_list_1(void);
+void lv_example_list_2(void);
+
+void lv_example_menu_1(void);
+void lv_example_menu_2(void);
+void lv_example_menu_3(void);
+void lv_example_menu_4(void);
+void lv_example_menu_5(void);
 
 void lv_example_meter_1(void);
 void lv_example_meter_2(void);
@@ -103,6 +121,8 @@ void lv_example_slider_1(void);
 void lv_example_slider_2(void);
 void lv_example_slider_3(void);
 
+void lv_example_span_1(void);
+
 void lv_example_spinbox_1(void);
 
 void lv_example_spinner_1(void);
@@ -113,6 +133,7 @@ void lv_example_table_1(void);
 void lv_example_table_2(void);
 
 void lv_example_tabview_1(void);
+void lv_example_tabview_2(void);
 
 void lv_example_textarea_1(void);
 void lv_example_textarea_2(void);
@@ -121,8 +142,6 @@ void lv_example_textarea_3(void);
 void lv_example_tileview_1(void);
 
 void lv_example_win_1(void);
-
-void lv_example_span_1(void);
 
 /**********************
  *      MACROS
