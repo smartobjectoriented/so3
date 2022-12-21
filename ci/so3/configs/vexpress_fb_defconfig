@@ -5,7 +5,7 @@
 CONFIG_ARCH_ARM32=y
 # CONFIG_ARCH_ARM64 is not set
 CONFIG_ARCH="arm32"
-CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+CONFIG_CROSS_COMPILE="arm-none-eabi-"
 
 #
 # Platform
