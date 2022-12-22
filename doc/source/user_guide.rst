@@ -67,13 +67,12 @@ SO3 root directory (main subdirs)::
 - The ``u-boot`` and ``qemu`` directories contain the *bootloader* and 
   the *emulator* respectively. 
 
-########################
+************************
 Build of the environment
-########################
+************************
 
-*******************
 About the toolchain
-*******************
+===================
 
 We use the ``arm-none-eabi`` toolchain which has no dependencies on a libc.
 
@@ -297,9 +296,9 @@ The ``1`` refers to the partition #1.
    
 
 
-#####################################
-Installation and run with SO3 docker"
-#####################################
+************************************
+Installation and run with SO3 docker
+************************************
 
 It is also possible to start SO3 within a docker container.
 The ``Dockerfile`` is located at the root directory and two scripts
