@@ -32,7 +32,7 @@
  
  else
  
--sudo arm-softmmu/qemu-system-arm $@ \
+-sudo qemu-system-arm $@ \
 +
 +qemu-system-arm $@ \
          -gdb tcp::$QEMU_GDB_PORT \

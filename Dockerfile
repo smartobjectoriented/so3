@@ -1,6 +1,6 @@
 # Stage 1
 
-FROM alpine as stage1
+FROM alpine:latest as stage1
 
 RUN apk update; \
     apk add make cmake gcc-arm-none-eabi libc-dev \

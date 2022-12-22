@@ -315,6 +315,8 @@ KBUILD_AFLAGS_KERNEL := -I.
 KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt
 KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
+LDFLAGS :=
+
 # Specific CFLAGS/AFLAGS according to ARCH
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
