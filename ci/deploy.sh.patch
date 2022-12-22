@@ -1,0 +1,37 @@
+--- deploy.sh	2022-12-21 17:53:24.282188078 +0100
++++ ../ci/deploy.sh	2022-12-21 11:07:08.575905337 +0100
+@@ -76,11 +76,11 @@
+     
+ # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
+     if [ "$deploy_rootfs" != "y" ]; then
+-    sudo rm -rf fs/*
++    rm -rf fs/*
+     fi
+     
+-    [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
+-    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
++    [ -f ../target/${PLATFORM}.itb ] && cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
++    cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
+        
+     if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+ 	# Nothing else ...
+@@ -89,15 +89,15 @@
+     fi
+  
+     if [ "$PLATFORM" == "rpi4" ]; then
+-        sudo cp -r ../bsp/rpi4/* fs/
+-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
++        cp -r ../bsp/rpi4/* fs/
++        cp ../u-boot/u-boot.bin fs/kernel7.img
+         ./umount.sh
+         cd ..
+     fi
+     
+     if [ "$PLATFORM" == "rpi4_64" ]; then
+-        sudo cp -r ../bsp/rpi4/* fs/
+-        sudo cp ../u-boot/u-boot.bin fs/kernel8.img
++        cp -r ../bsp/rpi4/* fs/
++        cp ../u-boot/u-boot.bin fs/kernel8.img
+         ./umount.sh
+         cd ..
+     fi

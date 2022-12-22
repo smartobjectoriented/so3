@@ -315,14 +315,15 @@ KBUILD_AFLAGS_KERNEL := -I.
 KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt
 KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
+LDFLAGS :=
+
 # Specific CFLAGS/AFLAGS according to ARCH
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
 
 ifeq ($(CONFIG_ARCH_ARM32),y)
-KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 
-KBUILD_AFLAGS   += -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
-endif
+
+KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32
 
 ifeq ($(CONFIG_ARCH_ARM64),y)
 KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -fno-allow-store-data-races

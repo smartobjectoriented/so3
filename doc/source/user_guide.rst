@@ -1,10 +1,15 @@
 .. _user_guide:
 
+##########
 User Guide
-==========
+##########
 
+The following instructions have been validated with Ubuntu 22.04, but for sure
+it will work with lower release.
+
+*************
 Pre-requisite
--------------
+*************
 
 We need to run some i386 executables, and we need to install some i386
 libraries too.
@@ -35,18 +40,9 @@ prevent annoying warnings:
 
    sudo apt-get install bison flex
 
-Toolchain
-~~~~~~~~~
-
-The following toolchain from ARM can be used to build SO3:
-
-`gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf.tar.xz <https://developer.arm.com/-/media/Files/downloads/gnu-a/9.2-2019.12/binrel/gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf.tar.xz?revision=fed31ee5-2ed7-40c8-9e0e-474299a3c4ac&hash=C54244E4E3875AACABA1DFB301ACA805)>`__
-
-Uncompress the archive and add the *bin* subdirectory to your path.
- 
-
-Files and directory organization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+********************************
+Files and directroy organisation
+********************************
 
 SO3 root directory (main subdirs)::
 
@@ -71,30 +67,42 @@ SO3 root directory (main subdirs)::
 - The ``u-boot`` and ``qemu`` directories contain the *bootloader* and 
   the *emulator* respectively. 
 
+########################
+Build of the environment
+########################
+
+*******************
+About the toolchain
+*******************
+
+We use the ``arm-none-eabi`` toolchain which has no dependencies on a libc.
+
+The following package can be installed:
+
+.. code-block:: bash
+   
+   apt install gcc-arm-none-eabi
+
 Quick setup & early test
-------------------------
+========================
 
 The following commands is helpful to have quick up-and-running
 environment with SO3, i.e. a shell running on top of the kernel in the
 emulated *vExpress* environment.
 
-Building Qemu
-~~~~~~~~~~~~~
+Building QEMU
+=============
 
-The QEMU emulator must be built in *qemu/* using the command line described
-in README.so3 followed by invoking make (-j8 means parallel building on
-8 cores):
+The QEMU emulator can be installed via apt for 32-bit and 64-bit versions,
+as follows:
 
 .. code-block:: bash 
 
-   cd qemu
-   ./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
-   make -j8
-
-Again this build produces the binary for a 32-bit ARM (AArch32) architecture.
+   apt-get install qemu-system-arm
+   apt-get install qemu-system-aarch64
 
 Compiling U-boot
-~~~~~~~~~~~~~~~~
+================
 
 U-boot is used as initial bootloader. The kernel image, the device tree and
 its root filesystem will be embedded in a single ITB image file. 
@@ -108,7 +116,7 @@ In u-boot/ directory:
    make -j8
 
 Creating the virtual disk image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===============================
 
 In *filesystem/* directory, create a virtual disk image with the
 following script:
@@ -123,7 +131,7 @@ be used currently (there is no support to mount the filesystem on the
 second partition). 
 
 Compiling the user space
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 
 The user space build system is based on cmake (CMakeList.txt files).
 
@@ -149,7 +157,7 @@ the deployment into the SD-card (option ``-u`` of the ``deploy.sh`` script at
 the root directory).
 
 Compiling the kernel space
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+==========================
 
 The kernel has to be compiled in ``*so3*/`` after choosing a configuration:
 
@@ -163,7 +171,7 @@ In this example, we are working with an embedded *ramfs* which will be packed
 in the ITB image file.
 
 Deployment into the SD-card
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===========================
 
 At this point, all necessary components have been built. Now comes the
 phase of deployment in the virtual disk. This is done by means of the
@@ -177,7 +185,7 @@ then copied in the first partition of the SD-card.
    ./deploy.sh -bu
 
 Starting SO3
-~~~~~~~~~~~~
+============
 
 Simply invoking the script st as following:
 
@@ -191,14 +199,16 @@ and you should run into the shell…
 
    To quit QEMU, type ``Ctrl+x`` followed by ``a`` (not Ctrl+a).
 
+
+**********************
 Default configurations
-----------------------
+**********************
 
 This section describes the default configurations of the SO3 kernel
 which are present in “*so3/configs/*”.
 
 vExpress platform
-~~~~~~~~~~~~~~~~~
+=================
 
 +-----------------------------+----------------------------------------------------+
 | Name                        | Environment                                        |
@@ -223,7 +233,7 @@ vExpress platform
 +-----------------------------+----------------------------------------------------+
 
 Raspberry Pi 4 platform
-~~~~~~~~~~~~~~~~~~~~~~~
+=======================
 
 Currently, there is only one default configuration file called
 *rpi4_defconfig* which has a basic environment, without networking and
@@ -231,10 +241,11 @@ framebuffer support. The drivers required for networking and graphics
 are not available yet.
 
 Deployment of a *Hello World* application
------------------------------------------
+=========================================
 
 Using a *ramfs* configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
+
 
 All user applications reside in ``usr/src`` directory. Adding a C file requires to update
 the ``CMakeLists.txt`` file.
@@ -264,7 +275,7 @@ at the root dir as follows:
    The next section shows how you should deploy with the MMC configuration.
 
 Using a *mmc* configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 If you intend to use the *vexpress_mmc_defconfig* configuration for example, you
 will need to deploy the user apps manually (the ``deploy.sh`` script will be
@@ -285,6 +296,31 @@ The ``1`` refers to the partition #1.
    of the SD-card. You then need to re-deploy the user apps.
    
 
+
+#####################################
+Installation and run with SO3 docker"
+#####################################
+
+It is also possible to start SO3 within a docker container.
+The ``Dockerfile`` is located at the root directory and two scripts
+``drun`` and ``drunit`` (for interactive mode) are available to start
+the execution.
+
+For example, building of a container named ``so3/vexpress`` can achieved like this:
+
+.. code-block::bash
+
+	docker build -t so3/vexpress .
+
+The, starting the execution of the container:
+
+.. code-block::bash
+
+	./drun
+	
+
+
+	
 
 
 

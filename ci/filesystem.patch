@@ -1,0 +1,132 @@
+diff -Naru ../filesystem/create_img.sh ./create_img.sh
+--- ../filesystem/create_img.sh	2022-12-21 17:49:17.490757991 +0100
++++ ./create_img.sh	2022-12-21 17:54:05.936832227 +0100
+@@ -1,10 +1,5 @@
+ #!/bin/bash
+ 
+-if [ $# -ne 1 ]; then
+-	echo "Please provide the board name (vexpress, virt64, rpi4)"
+-	exit 0
+-fi 
+-
+ # Partition layout on the sdcard:
+ # - Partition #1: 64 MB (u-boot, kernel, etc.)
+ # - Partition #2: 180 MB (agency main rootfs)
+@@ -12,12 +7,12 @@
+ if [ "$1" == "vexpress" -o "$1" == "virt64" ]; then
+     #create image first
+     echo Creating sdcard.img.$1 ... 
+-    dd_size=256M
++    dd_size=64M
+     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
+ 
+     # Keep device name only without /dev/
+-    devname=${devname#"/dev/"}
++
++    LOOPDEV=$(losetup --find --show --partscan sdcard.img.$1)
+ fi
+ 
+ if [ "$1" == "rpi4" -o "$1" == "rpi4_64" ]; then
+@@ -25,23 +20,28 @@
+     read devname
+ fi
+ 
++echo ${LOOPDEV}
++
+ if [ "$1" == "vexpress" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
+ #create the partition layout this way
+-    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | sudo fdisk /dev/"$devname";
++    (echo o; echo n; echo p; echo; echo; echo +60M; echo t; echo c; echo w)   | fdisk ${LOOPDEV};
+ fi
+ 
+ echo Waiting...
+ # Give a chance to the real SD-card to be sync'd
+ sleep 2s
+ 
+-if [[ "$devname" = *[0-9] ]]; then
+-    export devname="${devname}p"
+-fi
++PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
++COUNTER=1
++for i in $PARTITIONS; do
++        MAJ=$(echo $i | cut -d: -f1)
++        MIN=$(echo $i | cut -d: -f2)
++        if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
++        COUNTER=$((COUNTER + 1))
++done
+ 
+-sudo mkfs.fat -F32 -v /dev/"$devname"1
+-sudo mkfs.ext4 /dev/"$devname"2
++mkfs.fat -F32 -v ${LOOPDEV}p1
+ 
+ if [ "$1" == "vexpress" -o "$1" == "virt64" ]; then
+-	sudo losetup -D
++        losetup -D
+ fi
+-
+diff -Naru ../filesystem/mount.sh ./mount.sh
+--- ../filesystem/mount.sh	2022-12-21 17:49:17.490757991 +0100
++++ ./mount.sh	2022-12-21 17:54:05.936832227 +0100
+@@ -10,30 +10,33 @@
+     PLATFORM=$2
+ fi
+ 
+-sudo rm -rf fs/*
++rm -rf fs/*
+ mkdir -p fs
+  
+ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
++     LOOPDEV=$(losetup --find --show --partscan sdcard.img.${PLATFORM})
+     FS_IMG=sdcard.img.${PLATFORM}
+-
+-    #sudo losetup -P --find --show flash
++PARTITIONS=$(lsblk --raw --output "MAJ:MIN" --noheadings ${LOOPDEV} | tail -n +2)
++COUNTER=1
++for i in $PARTITIONS; do
++        MAJ=$(echo $i | cut -d: -f1)
++        MIN=$(echo $i | cut -d: -f2)
++        if [ ! -e "${LOOPDEV}p${COUNTER}" ]; then mknod ${LOOPDEV}p${COUNTER} b $MAJ $MIN; fi
++        COUNTER=$((COUNTER + 1))
++done
++    # losetup -P --find --show flash
+    
+ 
+     # device is loopback (loop<n>)
+-    sudo mount ${devname}p$1 fs 
++    mount ${LOOPDEV}p$1 fs 
+     exit 0
+ fi
+ 
+-if [ "$devname" == "" ]; then
++if [ ${LOOPDEV} == "" ]; then
+     echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
+     read devname
+ fi
+ 
+-if [[ "$devname" = *[0-9] ]]; then
+-    export devname="${devname}p"
+-fi
+-
+ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
+-    sudo mount /dev/"${devname}"$1 fs
++    mount ${LOOPDEV}p$1 fs
+ fi
+diff -Naru ../filesystem/umount.sh ./umount.sh
+--- ../filesystem/umount.sh	2022-12-21 17:49:17.490757991 +0100
++++ ./umount.sh	2022-12-21 17:54:05.936832227 +0100
+@@ -12,11 +12,11 @@
+ 
+ sleep 1
+ 
+-sudo umount fs
++umount fs
+ 
+ # Let the filesystem be synchronized
+ sleep 1
+ 
+ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+-    sudo losetup -D
++    losetup -D
+ fi
