@@ -1,26 +1,24 @@
-C
-^
 
-Image from variable and symbol 
+Image from variable and symbol
 """""""""""""""""""""""""""""""
 
 .. lv_example:: widgets/img/lv_example_img_1
   :language: c
 
 
-Image recoloring 
+Image recoloring
 """"""""""""""""
 
 .. lv_example:: widgets/img/lv_example_img_2
   :language: c
 
 
-Rotate and zoom 
+Rotate and zoom
 """"""""""""""""
 
 .. lv_example:: widgets/img/lv_example_img_3
   :language: c
-  
+
 Image offset and styling
 """"""""""""""""""""""""
 
@@ -28,7 +26,3 @@ Image offset and styling
   :language: c
 
 
-MicroPython
-^^^^^^^^^^^
-
-No examples yet.

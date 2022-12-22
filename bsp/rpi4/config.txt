@@ -56,8 +56,6 @@
 # Enable audio (loads snd_bcm2835)
 dtparam=audio=on
 
-enable_jtag_gpio=1
-
 [pi4]
 # Enable DRM VC4 V3D driver on top of the dispmanx display stack
 dtoverlay=vc4-fkms-v3d
@@ -67,4 +65,4 @@ enable_uart=1
 [all]
 #dtoverlay=vc4-fkms-v3d
 
-
+enable_uart=1

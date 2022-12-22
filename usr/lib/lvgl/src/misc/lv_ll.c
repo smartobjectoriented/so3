@@ -7,9 +7,6 @@
 /*********************
  *      INCLUDES
  *********************/
-#include <stdint.h>
-#include <string.h>
-
 #include "lv_ll.h"
 #include "lv_mem.h"
 
@@ -44,7 +41,7 @@ static void node_set_next(lv_ll_t * ll_p, lv_ll_node_t * act, lv_ll_node_t * nex
 
 /**
  * Initialize linked list
- * @param ll_dsc pointer to ll_dsc variable
+ * @param ll_p pointer to lv_ll_t variable
  * @param node_size the size of 1 node in bytes
  */
 void _lv_ll_init(lv_ll_t * ll_p, uint32_t node_size)
@@ -71,7 +68,7 @@ void * _lv_ll_ins_head(lv_ll_t * ll_p)
 {
     lv_ll_node_t * n_new;
 
-    n_new = lv_mem_alloc(ll_p->n_size + LL_NODE_META_SIZE);
+    n_new = lv_malloc(ll_p->n_size + LL_NODE_META_SIZE);
 
     if(n_new != NULL) {
         node_set_prev(ll_p, n_new, NULL);       /*No prev. before the new head*/
@@ -94,7 +91,7 @@ void * _lv_ll_ins_head(lv_ll_t * ll_p)
  * Insert a new node in front of the n_act node
  * @param ll_p pointer to linked list
  * @param n_act pointer a node
- * @return pointer to the new head
+ * @return pointer to the new node
  */
 void * _lv_ll_ins_prev(lv_ll_t * ll_p, void * n_act)
 {
@@ -107,7 +104,7 @@ void * _lv_ll_ins_prev(lv_ll_t * ll_p, void * n_act)
         if(n_new == NULL) return NULL;
     }
     else {
-        n_new = lv_mem_alloc(ll_p->n_size + LL_NODE_META_SIZE);
+        n_new = lv_malloc(ll_p->n_size + LL_NODE_META_SIZE);
         if(n_new == NULL) return NULL;
 
         lv_ll_node_t * n_prev;
@@ -130,7 +127,7 @@ void * _lv_ll_ins_tail(lv_ll_t * ll_p)
 {
     lv_ll_node_t * n_new;
 
-    n_new = lv_mem_alloc(ll_p->n_size + LL_NODE_META_SIZE);
+    n_new = lv_malloc(ll_p->n_size + LL_NODE_META_SIZE);
 
     if(n_new != NULL) {
         node_set_next(ll_p, n_new, NULL);       /*No next after the new tail*/
@@ -203,7 +200,7 @@ void _lv_ll_clear(lv_ll_t * ll_p)
         i_next = _lv_ll_get_next(ll_p, i);
 
         _lv_ll_remove(ll_p, i);
-        lv_mem_free(i);
+        lv_free(i);
 
         i = i_next;
     }
@@ -215,7 +212,7 @@ void _lv_ll_clear(lv_ll_t * ll_p)
  * @param ll_new_p pointer to the new linked list
  * @param node pointer to a node
  * @param head true: be the head in the new list
- *             false be the head in the new list
+ *             false be the tail in the new list
  */
 void _lv_ll_chg_list(lv_ll_t * ll_ori_p, lv_ll_t * ll_new_p, void * node, bool head)
 {
@@ -265,7 +262,7 @@ void * _lv_ll_get_head(const lv_ll_t * ll_p)
 /**
  * Return with tail node of the linked list
  * @param ll_p pointer to linked list
- * @return pointer to the head of 'll_p'
+ * @return pointer to the tail of 'll_p'
  */
 void * _lv_ll_get_tail(const lv_ll_t * ll_p)
 {
@@ -289,7 +286,7 @@ void * _lv_ll_get_next(const lv_ll_t * ll_p, const void * n_act)
 }
 
 /**
- * Return with the pointer of the previous node after 'n_act'
+ * Return with the pointer of the previous node before 'n_act'
  * @param ll_p pointer to linked list
  * @param n_act pointer a node
  * @return pointer to the previous node

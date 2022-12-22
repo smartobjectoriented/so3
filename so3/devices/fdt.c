@@ -59,7 +59,7 @@ static void init_dev_info(dev_t *dev) {
 int get_mem_info(const void *fdt, mem_info_t *info) {
 	int offset;
 	const struct fdt_property *prop;
-	const fdt32_t *p;
+	int prop_len;
 
 	offset = fdt_path_offset(fdt, "/memory");
 
@@ -68,14 +68,19 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 		return offset;
 	}
 
-	prop = fdt_get_property(fdt, offset, "reg", NULL);
+	prop = fdt_get_property(fdt, offset, "reg", &prop_len);
+	BUG_ON(!prop);
+	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
 	if (prop) {
 
-		p = (const fdt32_t *)prop->data;
-
-		info->phys_base = fdt32_to_cpu(p[0]);
-		info->size = fdt32_to_cpu(p[1]);
+#ifdef CONFIG_ARCH_ARM32
+		info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
+		info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);
+#else
+		info->phys_base = fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
+		info->size = fdt64_to_cpu(((const fdt64_t *) prop->data)[1]);
+#endif
 	}
 
 	return offset;

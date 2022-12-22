@@ -48,11 +48,11 @@ static void next_event(u32 next) {
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
 }
 
-static irq_return_t timer_isr(int irq, void *dummy) {
+static irq_return_t timer_isr(int irq, void *dev) {
 	unsigned long ctrl;
 	arm_timer_t *arm_timer;
 
-	arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dummy);
+	arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dev);
 
 	/* Clear the interrupt */
 
@@ -114,9 +114,6 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	periodic_timer.period = NSECS / HZ;
 
 	arm_timer->reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
-        
-	/* Bind ISR into interrupt controller */
-	irq_bind(arm_timer->irq_def.irqnr, timer_isr, NULL, dev);
 
 	/* Shutdown the timer */
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
@@ -124,6 +121,9 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
 
 	dev_set_drvdata(dev, arm_timer);
+
+	/* Bind ISR into interrupt controller */
+	irq_bind(arm_timer->irq_def.irqnr, timer_isr, NULL, dev);
 
 	return 0;
 }

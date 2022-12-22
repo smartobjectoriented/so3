@@ -75,7 +75,7 @@
 
 #define pte_index_to_vaddr(i1, i2) ((i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT))
 
-#define l1pte_offset(pgtable, addr)     (pgtable + l1pte_index(addr))
+#define l1pte_offset(pgtable, addr)     ((uint32_t *) pgtable + l1pte_index(addr))
 #define l2pte_offset(l1pte, addr) 	((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK) + l2pte_index(addr))
 #define l2pte_first(l1pte)		((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK))
 
@@ -203,7 +203,6 @@ void pgtable_copy_kernel_area(void *l1pgtable);
 
 void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_t size, bool nocache);
 void release_mapping(void *pgtable, addr_t virt_base, uint32_t size);
-
 
 void reset_root_pgtable(void *pgtable, bool remove);
 void clear_l1pte(void *l1pgtable, addr_t vaddr);

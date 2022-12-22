@@ -28,7 +28,7 @@
 #include <asm/cacheflush.h>
 
 static block_dev_desc_t ramdev_block_dev;
-static int ramdev_size = 0;
+static unsigned long ramdev_size = 0;
 static addr_t ramdev_start, ramdev_end;
 
 /*
@@ -38,7 +38,7 @@ bool valid_ramdev(void) {
 	return (ramdev_size > 0);
 }
 
-uint32_t get_ramdev_size(void) {
+unsigned long get_ramdev_size(void) {
 	return ramdev_size;
 }
 
@@ -114,7 +114,7 @@ block_dev_desc_t *ramdev_get_dev(int dev)
  */
 static void get_ramdev(const void *fdt) {
 	int nodeoffset = 0;
-	const fdt32_t *initrd_start, *initrd_end;
+	const struct fdt_property *initrd_start, *initrd_end;
 	int lenp;
 	int depth = 0;
 	bool found = false;
@@ -129,8 +129,8 @@ static void get_ramdev(const void *fdt) {
 		 * Try to find such strings since U-boot patches the dtb following
 		 * this convention (two pre-defined properties).
 		 */
-		initrd_start = fdt_getprop(fdt, nodeoffset, "linux,initrd-start", &lenp);
-		initrd_end = fdt_getprop(fdt, nodeoffset, "linux,initrd-end", &lenp);
+		initrd_start = fdt_get_property(fdt, nodeoffset, "linux,initrd-start", &lenp);
+		initrd_end = fdt_get_property(fdt, nodeoffset, "linux,initrd-end", &lenp);
 
 		found = (initrd_start && initrd_end);
 	}
@@ -138,8 +138,13 @@ static void get_ramdev(const void *fdt) {
 	if (!found)
 		return ;
 
-	ramdev_start = fdt32_to_cpu(initrd_start[0]);
-	ramdev_end = fdt32_to_cpu(initrd_end[0]);
+#ifdef CONFIG_ARCH_ARM32
+		ramdev_start = fdt32_to_cpu(((const fdt32_t *) initrd_start->data)[0]);
+		ramdev_end = fdt32_to_cpu(((const fdt32_t *) initrd_end->data)[0]);
+#else
+		ramdev_start = fdt64_to_cpu(((const fdt64_t *) initrd_start->data)[0]);
+		ramdev_end = fdt64_to_cpu(((const fdt64_t *) initrd_end->data)[0]);
+#endif
 
 	/*
 	 * About the size of ramdev: ramdev_end is the address *after* the initrd region according to U-boot which

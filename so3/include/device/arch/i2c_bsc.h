@@ -64,6 +64,8 @@ struct i2c_regs {
 #define I2C_WRITE   false
 #define I2C_READ    true
 
+#warning to be moved in DT...
+
 #define GPIO_REGS_ADDR 			0xFE200000
 #define GPIO_FSEL0_OFF			0x0
 #define GPIO23_ALT0			0x00000900

@@ -23,6 +23,8 @@
 @ http://www.state-machine.com/arm/Building_bare-metal_ARM_with_GNU.pdf
 @ and on U-Boot implementation
 
+#include <generated/autoconf.h>
+
 #include <linkage.h>
 #include <thread.h>
 #include <syscall.h>

@@ -271,6 +271,7 @@ static void timer_softirq_action(void) {
 	flags = local_irq_save();
 
 	preempt_disable();
+
 again:
 	now = NOW();
 

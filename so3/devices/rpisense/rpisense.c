@@ -187,8 +187,11 @@ void rpisense_joystick_handler_register(void *arg, joystick_handler_t joystick_h
 	__arg = arg;
 }
 
-static int rpisense_init(dev_t *dev) {
+static int rpisense_init(dev_t *dev, int fdt_offset) {
 	uint32_t mask, fsel2;
+	irq_def_t irq_def;
+
+	fdt_interrupt_node(fdt_offset, &irq_def);
 
 	gpio_regs_addr = io_map(GPIO_REGS_ADDR, 0xF0);
 
@@ -204,7 +207,7 @@ static int rpisense_init(dev_t *dev) {
 	iowrite32(gpio_regs_addr + GPIO_GPFSEL2, fsel2);
 
 	/* Bind the GPIO0 bank IRQ */
-	irq_bind(dev->irq_nr, joystick_interrupt_isr, joystick_interrupt_deferred, NULL);
+	irq_bind(irq_def.irqnr, joystick_interrupt_isr, joystick_interrupt_deferred, NULL);
 
 	return 0;
 }

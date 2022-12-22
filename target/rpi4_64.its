@@ -19,61 +19,54 @@
 /dts-v1/;
 
 / {
-	description = "SOO Agency components for Raspberry Pi 4 64-bit environment";
+	description = "Kernel and rootfs components for Raspberry Pi 4 64-bit environment";
 
 	images {
-        
-   		avz {
-        	description = "AVZ Hypervisor (64-bit)";
-        	data = /incbin/("../avz/avz.bin");
-        	type = "kernel";
-        	os = "linux";
-        	arch = "arm64";
-        	compression = "none";
-        	load = <0x00080000>;
-        	entry = <0x00080000>;
-        };
-        
-		linux {
-			description = "Agency Linux kernel";
-			data = /incbin/("../linux/arch/arm64/boot/Image");
-			type = "agency";
+
+		so3 {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
+			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x01000000>;
-			entry = <0x01000000>;
+			load = <0x00080000>;
+			entry = <0x00080000>;
+		};
+		
+		fdt {
+			description = "SO3 device tree blob";
+			data = /incbin/("../so3/dts/rpi4_64.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x04a00000>;
 		};
 
-        fdt {
-        	description = "SOO Agency device tree blob";
-            data = /incbin/("../linux/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb");
-            type = "flat_dt";
-            arch = "arm64";
-            compression = "none";
-            load = <0x10000000>;
-        };
-	
-        initrd {
-        	description = "Agency initial rootfs (initrd)";
-            data = /incbin/("../rootfs/board/rpi4_64/initrd.cpio");
-            type = "ramdisk";
-            arch = "arm64";
-            os = "linux";
-            compression = "none";
-            load = <0x10c00000>;
-        };
-    };
-	
-    configurations {
-		default = "agency_rpi4";
-		
-        agency_rpi4 {
-			description = "SOO Agency on Raspberry Pi 4 64-bit";
-        	loadables = "linux"; 
-        	kernel = "avz";
-        	fdt = "fdt";
-        	ramdisk = "initrd";
+	ramdisk {
+		description = "SO3 environment minimal rootfs";
+		data = /incbin/("../rootfs/board/rpi4_64/rootfs.fat");
+		type = "ramdisk";
+		arch = "arm64";
+		os = "linux";
+		compression = "none";
+		load = <0x04c00000>; 
+	};
+};
+	configurations {
+		default = "so3_ramfs";
+                
+		so3_ramfs {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+            ramdisk = "ramdisk"; 
+		};
+                
+        so3_mmc {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
 		};
 	};
 };

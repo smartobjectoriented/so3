@@ -18,6 +18,8 @@
 
 @ Manage various context-related code (context switch)
 
+#include <generated/autoconf.h>
+
 #include <asm/assembler.h>
 #include <asm-offsets.h>
 #include <asm/processor.h>
@@ -227,8 +229,8 @@ __save_context:
 .LCcurrent:
 	.word current_thread
 
-// This section contains all data and code which will be
-// mapped in the user space as initial process to be executed.
+@ This section contains all data and code which will be
+@ mapped in the user space as initial process to be executed.
 
 .section ".root_proc.text","ax"
 
@@ -248,31 +250,31 @@ __save_context:
 
 .align 2
 
-// This is the initial code which runs in user mode
-// to start the first process image
+@ This is the initial code which runs in user mode
+@ to start the first process image
 
 ENTRY(__root_proc)
 
-	// write(stdout, buf, len)
+	@ write(stdout, buf, len)
 
 	mov	r0, #STDOUT
 	adr r1, .LC_welcome
 	mov r2, #welcome_len
 	mov r7, #SYSCALL_WRITE
 
-	// No errno
+	@ No errno
 	mov r10, #0
 
-	// Invoke the syscall - kernel side
+	@ Invoke the syscall - kernel side
 	svc	0
 
-	// exec("sh.elf")
+	@ exec("sh.elf")
 
 	adr	r0, .LC_exec
-	// No args
+	@ No args
 	mov r1, #0
 	mov r2, #0
-	// No errno
+	@ No errno
 	mov r10, #0
 
 	mov	r7, #SYSCALL_EXECVE

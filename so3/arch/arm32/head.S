@@ -135,7 +135,7 @@ mmu_setup:
   mov	r0, r4
   mov	r1, r9 @ fdt addr
 
-  bl mmu_configure
+  bl 	mmu_configure
 
   @ Readjust the stack
   ldr	sp, =__stack_top

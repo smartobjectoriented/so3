@@ -49,8 +49,8 @@ typedef struct {
 
 struct mem_info {
 	addr_t phys_base;
-    uint32_t size;
-    uint32_t avail_pages; /* Available pages including frame table, without the low kernel region */
+	unsigned long size;
+	uint32_t avail_pages; /* Available pages including frame table, without the low kernel region */
 };
 typedef struct mem_info mem_info_t;
 

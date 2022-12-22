@@ -5,7 +5,7 @@ add_executable(more.elf more.c)
 add_executable(time.elf time.c)
 add_executable(ping.elf ping.c)
 
-add_subdirectory(lv_demo)
+add_subdirectory(widgets)
 
 target_link_libraries(sh.elf c)
 target_link_libraries(ls.elf c)

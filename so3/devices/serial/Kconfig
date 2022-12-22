@@ -11,7 +11,7 @@ config PL011_UART
 
 config BCM283x_MU_UART
 	bool "BCM283x mini-UART"
-	depends on RPI4
+	depends on RPI4 || RPI4_64
 	
 config UART_LL_PADDR
 	hex "Low-level UART base physical address"

@@ -44,6 +44,7 @@ extern void test_malloc(int test_no);
 void set_errno_addr(uint32_t *addr) {
 	errno_addr = addr;
 }
+
 uint32_t *get_errno_addr(void) {
 	return errno_addr;
 }
