@@ -33,7 +33,7 @@ sudo qemu-system-aarch64 $@ \
 
 else
 
-sudo arm-softmmu/qemu-system-arm $@ \
+sudo qemu-system-arm $@ \
         -gdb tcp::$QEMU_GDB_PORT \
   	-smp 4 \
 	-serial mon:stdio  \
