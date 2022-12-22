@@ -1,0 +1,14 @@
+.metadata
+*/.project
+*/.cproject
+.git
+.github
+*.o
+bsp/
+*/sdcard.*
+rootfs/board
+*/*.itb
+usr/lib/libxml2
+usr/build
+
+
