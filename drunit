@@ -1,0 +1,2 @@
+docker run --privileged -it -v /dev:/dev so3/vexpress /bin/sh
+

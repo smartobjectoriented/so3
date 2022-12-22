@@ -320,7 +320,7 @@ KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -W
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
 
 ifeq ($(CONFIG_ARCH_ARM32),y)
-KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 --param allow-store-data-races=0
+KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32
 KBUILD_AFLAGS   += -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
 endif
 

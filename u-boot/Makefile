@@ -273,7 +273,7 @@ endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),vexpress rpi4))
 ARCH = arm
-CROSS_COMPILE = arm-none-linux-gnueabihf-
+CROSS_COMPILE = arm-none-eabi-
 endif
 
 KCONFIG_CONFIG	?= .config

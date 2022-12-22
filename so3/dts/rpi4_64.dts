@@ -1,0 +1,88 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+/ {
+	model = "SO3 RPi4 64-bit";
+	compatible = "arm,rpi4";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+	
+	cpus { 
+		device_type = "cpu";
+		compatible = "arm,cortex-a72";
+	};
+	
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x00000000 0x0 0x20000000>; /* 512 MB */
+	};
+
+	/* GIC interrupt controller */
+	gic:interrupt-controller@ff841000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		
+		reg = <0x0 0xff841000 0x0 0x1000 0x0 0xff842000 0x0 0x1000>;
+		status = "ok";
+	};
+	
+	/* RPi4 miniuart NS16550 console */
+	serial@fe215040 {
+		compatible = "serial,bcm283x-mu";
+		reg = <0x0 0xfe215040 0x0 0x1000>;
+		status = "ok";
+	};
+
+	/* I2C1 controller (Broadcom Serial Controller BSC1) */
+	i2c1:i2c1@fe804000 {
+		compatible = "bcm,i2c_bsc";
+		reg = <0x0 0xfe804000 0x0 0x400>;
+		status = "disabled";
+		interrupt-parent = <&gic>;
+        	
+		/* IRQ 53 of VC which start at SPI96 -> 96 + 53 = 149 */
+		interrupts = <0 117 4>;
+	};
+
+
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 11 4>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+
+    rpisense {
+        compatible = "bcm,rpisense";
+		interrupt-parent = <&gic>;
+		interrupts = <0 113 4>;
+		status = "disabled";
+    };
+	
+};

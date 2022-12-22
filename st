@@ -19,7 +19,7 @@ done < build.conf
 
 if [ "$PLATFORM" == "virt64" ]; then
 
-sudo qemu/build/qemu-system-aarch64 $@ \
+sudo qemu-system-aarch64 $@ \
   	-smp 4 -s \
 	-serial mon:stdio  \
 	-M virt,gic-version=2 -cpu cortex-a72  \
@@ -33,7 +33,7 @@ sudo qemu/build/qemu-system-aarch64 $@ \
 
 else
 
-sudo qemu/build/arm-softmmu/qemu-system-arm $@ \
+sudo arm-softmmu/qemu-system-arm $@ \
         -gdb tcp::$QEMU_GDB_PORT \
   	-smp 4 \
 	-serial mon:stdio  \
