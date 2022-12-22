@@ -1,3 +1,0 @@
-config PL050_KMI
-	bool "PL050 Keyboard/Mouse Interface"
-	depends on VEXPRESS || VIRT64

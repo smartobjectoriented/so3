@@ -1,8 +1,0 @@
-
-config SMC911X
-	bool "smc911x network interface"
-	depends on VEXPRESS
-	depends on NET
-
-	
-	

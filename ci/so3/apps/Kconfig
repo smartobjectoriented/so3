@@ -1,7 +1,0 @@
-
-menu "SO3 Applications"
-
-	config APP_SAMPLE
-		bool "Sample application with thread environment"
-	
-endmenu
