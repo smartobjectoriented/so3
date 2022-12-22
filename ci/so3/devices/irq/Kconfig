@@ -1,7 +1,0 @@
-
-
-config GIC
-	bool "Generic IRQ Controller"
-	
-	
-
