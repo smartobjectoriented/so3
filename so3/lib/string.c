@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <string.h>
+#include <heap.h>
 
 #define __ALIGN (sizeof(size_t))
 #define ONES ((size_t)-1/UCHAR_MAX)
@@ -220,3 +221,12 @@ char *strsep(char **str, const char *sep)
 	*str = end;
 	return s;
 }
+
+char *strdup(const char *s)
+{
+	size_t l = strlen(s);
+	char *d = malloc(l+1);
+	if (!d) return NULL;
+	return memcpy(d, s, l+1);
+}
+

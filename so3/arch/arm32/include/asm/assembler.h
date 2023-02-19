@@ -54,14 +54,6 @@
 #define PLD(code...)
 #endif
 
-.macro	enable_irq
-	cpsie	i
-.endm
-
-.macro	disable_irq
-  cpsid	i
-.endm
-
 /*
  * Cache alligned
  */

@@ -3,6 +3,10 @@ menu "Drivers"
 
 config UART
 	bool "Driver UART"
+	
+config IO_MAPPING_BASE
+        hex "Virtual I/O Mapping base address"
+
     
 config I2C
 	bool "Driver I2C"

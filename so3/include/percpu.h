@@ -1,24 +1,7 @@
-/*
- * Copyright (C) 2016,2017 Daniel Rossier <daniel.rossier@soo.tech>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- */
+#ifndef PERCPU_H
+#define PERCPU_H
 
-#ifndef __ARM_PERCPU
-#define __ARM_PERCPU
-
+#include <common.h>
 
 #define PERCPU_SHIFT 13
 #define PERCPU_SIZE  (1UL << PERCPU_SHIFT)
@@ -37,7 +20,7 @@ int init_percpu_area(unsigned int cpu);
  * some arches have their own ways of determining the offset (x86_64, s390).
  */
 #ifndef __per_cpu_offset
-extern unsigned long __per_cpu_offset[NR_CPUS];
+extern unsigned long __per_cpu_offset[CONFIG_NR_CPUS];
 
 #define per_cpu_offset(x) (__per_cpu_offset[x])
 #endif
@@ -57,4 +40,21 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
 
 #define EXPORT_PER_CPU_SYMBOL(var) EXPORT_SYMBOL(per_cpu__##var)
 #define EXPORT_PER_CPU_SYMBOL_GPL(var) EXPORT_SYMBOL_GPL(per_cpu__##var)
-#endif
+
+/*
+ * Separate out the type, so (int[3], foo) works.
+ *
+ * The _##name concatenation is being used here to prevent 'name' from getting
+ * macro expanded, while still allowing a per-architecture symbol name prefix.
+ */
+#define DEFINE_PER_CPU(type, name) __DEFINE_PER_CPU(type, _##name, )
+#define DEFINE_PER_CPU_READ_MOSTLY(type, name) \
+	__DEFINE_PER_CPU(type, _##name, .read_mostly)
+
+#define this_cpu(var)    __get_cpu_var(var)
+
+/* Linux compatibility. */
+#define get_cpu_var(var) this_cpu(var)
+#define put_cpu_var(var)
+
+#endif /* PERCPU_H */

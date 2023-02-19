@@ -22,6 +22,12 @@
 #include <device/arch/arm_timer.h>
 
 #include <asm/processor.h>
+
+/**
+ * In AVZ and ARM64VT we are using the ARM physical timer. The guest domains will
+ * rely on virtual timer where an offset can be added.
+ */
+
 /*
  * Ensure that reads of the counter are treated the same as memory reads
  * for the purposes of ordering by subsequent memory barriers.
@@ -46,6 +52,66 @@
  * nicely work out which register we want, and chuck away the rest of
  * the code. At least it does so with a recent GCC (4.6.3).
  */
+#ifdef CONFIG_ARM64VT
+
+static inline void arch_timer_reg_write_el2(enum arch_timer_reg reg, u32 val)
+{
+	switch (reg) {
+	case ARCH_TIMER_REG_CTRL:
+		write_sysreg(val, cnthp_ctl_el2);
+		break;
+	case ARCH_TIMER_REG_TVAL:
+		write_sysreg(val, cnthp_tval_el2);
+		break;
+	}
+
+	isb();
+}
+
+static inline u32 arch_timer_reg_read_el2(enum arch_timer_reg reg)
+{
+	switch (reg) {
+	case ARCH_TIMER_REG_CTRL:
+		return read_sysreg(cnthp_ctl_el2);
+	case ARCH_TIMER_REG_TVAL:
+		return read_sysreg(cnthp_tval_el2);
+	}
+
+	BUG();
+
+	return 0;
+}
+
+static inline void arch_timer_reg_write_el0(enum arch_timer_reg reg, u32 val)
+{
+	switch (reg) {
+	case ARCH_TIMER_REG_CTRL:
+		write_sysreg(val, cntp_ctl_el0);
+		break;
+	case ARCH_TIMER_REG_TVAL:
+		write_sysreg(val, cntp_tval_el0);
+		break;
+	}
+
+	isb();
+}
+
+static inline u32 arch_timer_reg_read_el0(enum arch_timer_reg reg)
+{
+	switch (reg) {
+	case ARCH_TIMER_REG_CTRL:
+		return read_sysreg(cntp_ctl_el0);
+	case ARCH_TIMER_REG_TVAL:
+		return read_sysreg(cntp_tval_el0);
+	}
+
+	BUG();
+
+	return 0;
+}
+
+#else
+
 static inline void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
 {
 	if (access == ARCH_TIMER_PHYS_ACCESS) {
@@ -94,17 +160,33 @@ static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 	return 0;
 }
 
+#endif /* CONFIG_ARM64VT */
+
+/**
+ * Get the timer frequency
+ *
+ * @return counter frequency at all ELs
+ */
 static inline u32 arch_timer_get_cntfrq(void)
 {
 	return read_sysreg(cntfrq_el0);
 }
 
+/**
+ * Get the current value of the counter (typically used by the clocksource)
+ *
+ * @return Current 64-bit timer value
+ */
 static inline u64 arch_counter_get_cntvct(void)
 {
 	u64 cnt;
 
 	isb();
+#ifdef CONFIG_ARM64VT
+	cnt = read_sysreg(cntpct_el0);
+#else
 	cnt = read_sysreg(cntvct_el0);
+#endif
 	arch_counter_enforce_ordering(cnt);
 
 	return cnt;

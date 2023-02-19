@@ -42,11 +42,6 @@
 #define ZERO_OR_NULL_PTR(x) ((unsigned long)(x) <= \
 				(unsigned long)ZERO_SIZE_PTR)
 
-#define min_t(type, x, y) ({				\
-		type __min1 = (x);                      \
-		type __min2 = (y);                      \
-		__min1 < __min2 ? __min1 : __min2; })
-
 enum format_type {
 	FORMAT_TYPE_NONE, /* Just a string part */
 	FORMAT_TYPE_WIDTH,

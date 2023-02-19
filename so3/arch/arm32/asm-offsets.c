@@ -23,23 +23,13 @@
 #include <asm/processor.h>
 #include <asm/types.h>
 
-/*
- * Make sure that the compiler and target are compatible.
- */
-#if defined(__APCS_26__)
-#error Sorry, your compiler targets APCS-26 but this kernel requires APCS-32
-#endif
-/*
- * GCC 3.0, 3.1: general bad code generation.
- * GCC 3.2.0: incorrect function argument offset calculation.
- * GCC 3.2.x: miscompiles NEW_AUX_ENT in fs/binfmt_elf.c
- *            (http://gcc.gnu.org/PR8896) and incorrect structure
- *	      initialisation in fs/jffs2/erase.c
- */
-#if (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
-#error Your compiler is too buggy; it is known to miscompile kernels.
-#error    Known good compilers: 3.3
-#endif
+#ifdef CONFIG_AVZ
+
+#include <avz/sched.h>
+
+#include <avz/uapi/avz.h>
+
+#endif /* CONFIG_AVZ */
 
 /* Use marker if you need to separate the values later */
 
@@ -50,6 +40,21 @@
 
 int main(void)
 {
+#ifdef CONFIG_AVZ
+
+	DEFINE(OFFSET_AVZ_SHARED, offsetof(struct domain, avz_shared));
+
+	DEFINE(OFFSET_EVTCHN_UPCALL_PENDING, offsetof(struct avz_shared, evtchn_upcall_pending));
+
+	DEFINE(OFFSET_HYPERVISOR_CALLBACK,  offsetof(struct avz_shared, vectors_vaddr));
+	DEFINE(OFFSET_DOMCALL_CALLBACK, offsetof(struct avz_shared, domcall_vaddr));
+	DEFINE(OFFSET_TRAPS_CALLBACK, offsetof(struct avz_shared, traps_vaddr));
+
+	DEFINE(OFFSET_G_SP,		 offsetof(struct domain, g_sp));
+
+	DEFINE(OFFSET_CPU_REGS,		offsetof(struct domain, cpu_regs));
+#endif
+
 	BLANK();
 
 	DEFINE(OFFSET_TCB_CPU_REGS, 	offsetof(tcb_t, cpu_regs));

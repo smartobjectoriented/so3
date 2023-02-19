@@ -593,6 +593,31 @@
 #define SYS_CNTV_CTL_EL02		sys_reg(3, 5, 14, 3, 1)
 #define SYS_CNTV_CVAL_EL02		sys_reg(3, 5, 14, 3, 2)
 
+#define SCTLR_M_BIT	(1 << 0)
+#define SCTLR_A_BIT	(1 << 1)
+#define SCTLR_C_BIT	(1 << 2)
+#define SCTLR_SA_BIT	(1 << 3)
+#define SCTLR_SA0_BIT	(1 << 4)
+#define SCTLR_CP15B_BIT (1 << 5)
+#define SCTLR_ITD_BIT	(1 << 7)
+#define SCTLR_SED_BIT	(1 << 8)
+#define SCTLR_UMA_BIT	(1 << 9)
+
+#define SCTLR_EOS_BIT   (1 << 11)
+#define SCTLR_I_BIT	(1 << 12)
+#define SCTLR_DZE_BIT	(1 << 14)
+#define SCTLR_UCT_BIT	(1 << 15)
+#define SCTLR_nTWI	(1 << 16)
+#define SCTLR_nTWE	(1 << 18)
+#define SCTLR_WXN_BIT	(1 << 19)
+#define SCTLR_TSCXT_BIT	(1 << 20)
+#define SCTLR_EIS_BIT	(1 << 22)
+#define SCTLR_E0E_BIT	(1 << 24)
+#define SCTLR_EE_BIT	(1 << 25)
+#define SCTLR_UCI_BIT	(1 << 26)
+#define SCTLR_nTLSMD_BIT (1 << 28)
+#define SCLTR_LSMAOE_BIT (1 << 29)
+
 /* Common SCTLR_ELx flags. */
 #define SCTLR_ELx_DSSBS	(BIT(44))
 #define SCTLR_ELx_ENIA	(BIT(31))
@@ -611,16 +636,18 @@
 #define SCTLR_ELx_FLAGS	(SCTLR_ELx_M  | SCTLR_ELx_A | SCTLR_ELx_C | \
 			 SCTLR_ELx_SA | SCTLR_ELx_I | SCTLR_ELx_IESB)
 
+#ifdef CONFIG_ARM64VT
+#define SCTLR_EL2_RES1  (SCTLR_UCI_BIT | SCTLR_nTWE | SCTLR_nTWI \
+		        | SCTLR_UCT_BIT | SCTLR_DZE_BIT)
+#else
 /* SCTLR_EL2 specific flags. */
+
 #define SCTLR_EL2_RES1	((BIT(4))  | (BIT(5))  | (BIT(11)) | (BIT(16)) | \
 			 (BIT(18)) | (BIT(22)) | (BIT(23)) | (BIT(28)) | \
 			 (BIT(29)))
-
-#ifdef CONFIG_CPU_BIG_ENDIAN
-#define ENDIAN_SET_EL2		SCTLR_ELx_EE
-#else
-#define ENDIAN_SET_EL2		0
 #endif
+
+#define SCTLR_EL1_RES1	((BIT(11)) | (BIT(20)) | (BIT(22)) | (BIT(28)) | (BIT(29)))
 
 /* SCTLR_EL1 specific flags. */
 #define SCTLR_EL1_UCI		(BIT(26))
@@ -636,8 +663,7 @@
 #define SCTLR_EL1_CP15BEN	(BIT(5))
 #define SCTLR_EL1_SA0		(BIT(4))
 
-#define SCTLR_EL1_RES1	((BIT(11)) | (BIT(20)) | (BIT(22)) | (BIT(28)) | (BIT(29)))
-
+#define ENDIAN_SET_EL2		0
 #define ENDIAN_SET_EL1		0
 
 #define SCTLR_EL1_SET	(SCTLR_ELx_M    | SCTLR_ELx_C    | SCTLR_ELx_SA   |\
@@ -842,17 +868,6 @@
 .macro current_cpu reg
 	mrs \reg, mpidr_el1 	// read Multiprocessor ID register reg
 	and \reg, \reg, #0x3 	// mask on CPU ID bits
-.endm
-
-.macro	curdom	rd, tmp
-
-	// Compute the address of the stack bottom where cpu_info is located.
-	ldr	\rd, =(~(STACK_SIZE - 1))
-	mov	\tmp, sp
-	and	\rd, \tmp, \rd
-
-	// Get the address of the domain descriptor
-	ldr	\rd, [\rd]
 .endm
 
 .macro disable_irq
@@ -1161,14 +1176,33 @@ static inline void cpu_standby(void) {
 	wfi();
 }
 
+#ifdef CONFIG_AVZ
+
+extern char hypercall_entry[];
+
+typedef struct cpu_sys_regs {
+	u64   vksp;
+	u64   vusp;
+} cpu_sys_regs_t;
+
+void cpu_on(unsigned long cpuid, addr_t entry_point);
+
 struct vcpu_guest_context;
 struct domain;
 
-void __switch_to(struct domain *prev, struct domain *next);
+void __switch_domain_to(struct domain *prev, struct domain *next);
+
 void ret_to_user(void);
 void pre_ret_to_user(void);
+void pre_ret_to_el1(void);
+void pre_ret_to_el1_with_spin(addr_t release_addr);
 
-void trap_handle(cpu_regs_t *regs);
+#endif /* CONFIG_AVZ */
+
+struct tcb;
+void __switch_to(struct tcb *prev, struct tcb *next);
+
+int trap_handle(cpu_regs_t *regs);
 
 void cpu_do_idle(void);
 

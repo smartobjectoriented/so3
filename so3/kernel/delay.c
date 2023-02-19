@@ -75,7 +75,7 @@ static void __sleep(u64 ns) {
 	flags = local_irq_save();
 
 	/* Create a specific timer attached to this thread */
-	init_timer(&__timer, delay_handler, current());
+	init_timer(&__timer, delay_handler, current(), smp_processor_id());
 
 	current()->timeout = NOW() + ns;
 	set_timer(&__timer, current()->timeout);

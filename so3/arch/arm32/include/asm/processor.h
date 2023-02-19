@@ -19,10 +19,13 @@
  *
  */
 
+#include <stringify.h>
+#include <linkage.h>
+
+#include <asm/cpregs.h>
+
 #ifndef __ASM_ARM_PROCESSOR_H
 #define __ASM_ARM_PROCESSOR_H
-
-#define NR_CPUS 		1
 
 #define VECTOR_VADDR		0xffff0000
 
@@ -166,6 +169,8 @@
 	0xF7F08000 | (((imm4) & 0xF) << 16)				\
 )
 
+#define S_FRAME_SIZE	(4 * 35)
+
 /*
  * Domain numbers
  *
@@ -188,30 +193,132 @@
 
 #define domain_val(dom,type)	((type) << 2*(dom))
 
+/* Layout as used in assembly, with src/dest registers mixed in */
+#define __CP32(r, coproc, opc1, crn, crm, opc2) coproc, opc1, r, crn, crm, opc2
+#define __CP64(r1, r2, coproc, opc, crm) coproc, opc, r1, r2, crm
+#define CP32(r, name...) __CP32(r, name)
+#define CP64(r, name...) __CP64(r, name)
+
+/* Stringified for inline assembly */
+#define LOAD_CP32(r, name...)  "mrc " __stringify(CP32(%r, name)) ";"
+#define STORE_CP32(r, name...) "mcr " __stringify(CP32(%r, name)) ";"
+#define LOAD_CP64(r, name...)  "mrrc " __stringify(CP64(%r, %H##r, name)) ";"
+#define STORE_CP64(r, name...) "mcrr " __stringify(CP64(%r, %H##r, name)) ";"
+
+/*
+ * This is used to ensure the compiler did actually allocate the register we
+ * asked it for some inline assembly sequences.  Apparently we can't trust
+ * the compiler from one version to another so a bit of paranoia won't hurt.
+ * This string is meant to be concatenated with the inline asm string and
+ * will cause compilation to stop on mismatch.
+ * (for details, see gcc PR 15089)
+ */
+#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
+
+/* C wrappers */
+#define READ_CP32(name...) ({                                   \
+    register uint32_t _r;                                       \
+    asm volatile(LOAD_CP32(0, name) : "=r" (_r));               \
+    _r; })
+
+#define WRITE_CP32(v, name...) do {                             \
+    register uint32_t _r = (v);                                 \
+    asm volatile(STORE_CP32(0, name) : : "r" (_r));             \
+} while (0)
+
+#define READ_CP64(name...) ({                                   \
+    register uint64_t _r;                                       \
+    asm volatile(LOAD_CP64(0, name) : "=r" (_r));               \
+    _r; })
+
+#define WRITE_CP64(v, name...) do {                             \
+    register uint64_t _r = (v);                                 \
+    asm volatile(STORE_CP64(0, name) : : "r" (_r));             \
+} while (0)
+
+#ifdef __ASSEMBLY__
+
+.irp	c,,eq,ne,cs,cc,mi,pl,vs,vc,hi,ls,ge,lt,gt,le,hs,lo
+.macro	ret\c, reg
+
+.ifeqs	"\reg", "lr"
+	bx\c	\reg
+.else
+	mov\c	pc, \reg
+.endif
+
+.endm
+.endr
+
+.macro current_cpu reg
+	mrc p15, 0, \reg, c0, c0, 5 @ read Multiprocessor ID register reg
+	and \reg, \reg, #0x3 @ mask on CPU ID bits
+.endm
+
+.macro disable_irq
+	cpsid	i
+.endm
+
+.macro enable_irq
+	cpsie	i
+.endm
+
+/*
+ * Build a return instruction for this processor type.
+ */
+#define RETINSTR(instr, regs...)\
+        instr   regs
+
+#define LOADREGS(cond, base, reglist...)\
+        ldm##cond       base,reglist
+
+scno    .req    r7              @ syscall number
+tbl     .req    r8              @ syscall table pointer
+
+#endif /* __ASSEMBLY__ */
+
 #ifndef __ASSEMBLY__
 
 #include <types.h>
 #include <compiler.h>
 #include <common.h>
 
+#ifdef CONFIG_AVZ
+
+extern char hypercall_entry[];
+
+void cpu_on(unsigned long cpuid, addr_t entry_point);
+
+struct vcpu_guest_context;
+struct domain;
+
+void __switch_domain_to(struct domain *prev, struct domain *next);
+
+void ret_to_user(void);
+void pre_ret_to_user(void);
+
+#endif /* CONFIG_AVZ */
+
 void arm_init_domains(void);
 void __enable_vfp(void);
 
-#define FP_SIZE 35
+struct tcb;
+void __switch_to(struct tcb *prev, struct tcb *next);
+
+void cpu_do_idle(void);
 
 struct fp_hard_struct {
-	unsigned int save[FP_SIZE];		/* as yet undefined */
+	unsigned int save[S_FRAME_SIZE/4];		/* as yet undefined */
 };
 
 struct fp_soft_struct {
-	unsigned int save[FP_SIZE];		/* undefined information */
+	unsigned int save[S_FRAME_SIZE/4];		/* undefined information */
 };
 
 union fp_state {
 	struct fp_hard_struct	hard;
 	struct fp_soft_struct	soft;
 };
-
 
 #define isb(option) __asm__ __volatile__ ("isb " #option : : : "memory")
 #define dsb(option) __asm__ __volatile__ ("dsb " #option : : : "memory")
@@ -245,6 +352,15 @@ typedef struct cpu_regs {
 } cpu_regs_t;
 
 #define cpu_relax()	wfe()
+
+#define interrupts_enabled(regs) \
+        (!((regs)->psr & PSR_I_BIT))
+
+#define fast_interrupts_enabled(regs) \
+	(!((regs)->psr & PSR_F_BIT))
+
+#define processor_mode(regs) \
+	((regs)->psr & PSR_MODE_MASK)
 
 static inline int irqs_disabled_flags(cpu_regs_t *regs)
 {

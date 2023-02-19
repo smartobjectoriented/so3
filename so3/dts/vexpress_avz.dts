@@ -1,0 +1,204 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+ 
+/ {
+	model = "SO3 Vexpress";
+	compatible = "arm,vexpress";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,vexpress";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x00c00000>; /* 12 MB for the hypervisor */
+	};
+	
+
+	/* GIC interrupt controller */
+	gic:interrupt-controller@2c001000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		
+		reg = <0x2c001000 0x1000 0x2c002000 0x1000>;
+		status = "ok";
+	};
+	
+	/*Vexpress console UART */
+	serial@1c090000 {
+		compatible = "serial,pl011";
+		reg = <0x1c090000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 5 4>;
+		status = "ok";
+	};
+
+#if 1 /* If we want to use ARM CP15 timer */
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 11 4>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+#endif
+
+#if 0 /* Basic SP804 on-board timer */
+	/* Periodic timer (Dual-timer 01) */
+	periodic-timer@1c110000 {
+		compatible = "sp804,periodic-timer";
+		reg = <0x1c110000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 2 4>;
+		status = "ok";
+	};
+
+	/* Oneshot timer (Dual-timer 23) */
+	oneshot-timer@1c120000 {
+		compatible = "sp804,oneshot-timer";
+		reg = <0x1c120000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 3 4>;
+		status = "ok";
+	};
+
+	/* Free-running clocksource */
+	clocksource-timer@1c110020 {
+		compatible = "sp804,clocksource-timer";
+		reg = <0x1c110020 0x1000>;
+		status = "ok";
+	};
+#endif
+	/* MMC */
+	mmc@1c050000 {
+		compatible = "vexpress,mmc-pl180";
+		reg = <0x1c050000 0x1000>;
+		power = <191>;
+		clkdiv = <454>;
+		caps = <0>;
+		voltages = <16744576>;
+		clock_min = <251256>;
+		clock_max = <6250000>;
+		b_max = <127>;
+
+		status = "ok";
+	};
+
+	mydev {
+		compatible = "arm,mydev";
+		status = "ok";
+	};
+
+	strdev {
+		comptabile = "arm, strdev";
+		status = "ok";
+		
+		interrupt-parent = <&gic>;
+		interrupts = <0 20 4>;
+	};
+
+	vext@20000000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		compatible = "vexpress,vext";
+		
+		platform_type = "vexpress";
+		
+		status = "ok";
+		reg = <0x20000000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 50 4>;
+
+		led@3a {
+			reg = <0x3a>;
+		};
+
+		switch@12 {
+			reg = <0x12>;
+		};
+		
+		irqctl@18 {
+			reg = <0x18>;
+		};
+	};
+
+	/* PL111 Color LCD Controller
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0293c/index.html
+	 */
+	clcd@1c1f0000 {
+		compatible = "arm,pl111";
+		reg = <0x1c1f0000 0x1000>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
+	kmi@1c060000 { /* keyboard */
+		compatible = "arm,pl050,keyboard";
+		reg = <0x1c060000 0x100>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 12 4>;
+
+		status = "ok";
+	};
+
+	/* PL050 PS2 Keyboard/Mouse Interface
+	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
+	 */
+	kmi@1c070000 { /* mouse */
+		compatible = "arm,pl050,mouse";
+		reg = <0x1c070000 0x100>;
+		
+		interrupt-parent = <&gic>;
+		interrupts = <0 13 4>;
+
+		status = "ok";
+	};
+	
+	/*
+        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
+        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
+   	 */
+    ethernet@1a000000 {
+        compatible = "smsc,smc911x";
+        reg = <0x1a000000 0x1000>;
+        
+    	interrupt-parent = <&gic>;
+        interrupts = <0 15 4>;
+        switch = "br0";
+
+        status = "ok";
+    };
+    	
+};

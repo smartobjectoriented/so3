@@ -1,0 +1,72 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Configuration
+#
+
+#
+# General
+#
+CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+
+#
+# Platform
+#
+CONFIG_STANDALONE=y
+CONFIG_VEXPRESS=y
+# CONFIG_MERIDAv2 is not set
+# CONFIG_BPI is not set
+# CONFIG_RPI4 is not set
+CONFIG_RAM_BASE=0x80000000
+# CONFIG_THREAD_ENV is not set
+CONFIG_PROC_ENV=y
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+
+#
+# Drivers
+#
+CONFIG_UART=y
+# CONFIG_I2C is not set
+CONFIG_VEXT=y
+# CONFIG_DW_APB_UART is not set
+CONFIG_PL011_UART=y
+# CONFIG_MMC is not set
+CONFIG_RAMDEV=y
+CONFIG_SP804=y
+# CONFIG_ARM_TIMER is not set
+CONFIG_GIC=y
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_TEST_MALLOC is not set
+# CONFIG_APP_DEFAULT is not set
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
+
+#
+# Filesystems
+#
+CONFIG_FS_FAT=y
+# CONFIG_ROOTFS_NONE is not set
+# CONFIG_ROOTFS_MMC is not set
+CONFIG_ROOTFS_RAMDEV=y
+
+#
+# IPC
+#
+CONFIG_IPC_SIGNAL=y
+CONFIG_IPC_PIPE=y
+# CONFIG_RTOS is not set
+CONFIG_MMU=y
+CONFIG_DEBUG_PRINTK=y
+
+#
+# Generated files
+#
+CONFIG_ELF=y
+CONFIG_BIN=y

@@ -8,4 +8,4 @@ obj-y += ip6_frag.o
 obj-y += mld6.o
 obj-y += nd6.o
 
-EXTRA_CFLAGS += -I include/net
+EXTRA_CFLAGS += -I$(srctree)/include/net

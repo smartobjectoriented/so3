@@ -29,8 +29,9 @@ nconfig: $(obj)/nconf
 oldconfig: $(obj)/conf
 	$< --$@ $(Kconfig)
 
-silentoldconfig: $(obj)/conf
-	$(Q)mkdir -p include/generated
+silentoldconfig: $(KBUILD_OUTPUT)$(obj)/conf
+	echo $(PWD)
+	$(Q)mkdir -p $(KBUILD_OUTPUT)include/generated
 	$< --$@ $(Kconfig)
 
 # if no path is given, then use src directory to find file
@@ -42,7 +43,7 @@ endif
 endif
 
 localmodconfig: $(obj)/streamline_config.pl $(obj)/conf
-	$(Q)mkdir -p include/generated
+	$(Q)mkdir -p $(srctree)/include/generated
 	$(Q)perl $< $(srctree) $(Kconfig) $(LSMOD_F) > .tmp.config
 	$(Q)if [ -f .config ]; then 					\
 			cmp -s .tmp.config .config ||			\

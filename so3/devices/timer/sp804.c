@@ -135,7 +135,7 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 
 	periodic_timer.start = periodic_timer_start;
 	periodic_timer.stop = periodic_timer_stop;
-	periodic_timer.period = NSECS / HZ;
+	periodic_timer.period = NSECS / 1000;
 
 	dev_set_drvdata(dev, sp804);
 

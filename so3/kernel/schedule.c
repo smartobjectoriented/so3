@@ -45,8 +45,8 @@ static sched_policy_t sched_policy;
 
 static spinlock_t schedule_lock;
 
-u64 jiffies = 0ull;
-u64 jiffies_ref = 0ull;
+volatile u64 jiffies = 0ull;
+volatile u64 jiffies_ref = 0ull;
 
 static volatile bool __sched_preempt = false;
 
@@ -460,7 +460,7 @@ void schedule(void) {
 			if ((prev != NULL) && (prev->pcb != NULL) && (prev->pcb->state != PROC_STATE_ZOMBIE) && (prev->pcb->state != PROC_STATE_WAITING))
 				prev->pcb->state = PROC_STATE_READY;
 
-			mmu_switch(next->pcb->pgtable);
+			mmu_switch((void *) __pa(next->pcb->pgtable));
 			set_pgtable(next->pcb->pgtable);
 
 		}
@@ -470,7 +470,7 @@ void schedule(void) {
 		__in_interrupt = false;
 		__in_scheduling = false;
 
-		__switch_context(prev, next);
+		__switch_to(prev, next);
 
 	}
 	__in_scheduling = false;
@@ -616,7 +616,7 @@ void scheduler_init(void) {
 	preempt_enable();
 
 	/* Initiate a timer to trigger the schedule function */
-	init_timer(&schedule_timer, raise_schedule, NULL);
+	init_timer(&schedule_timer, raise_schedule, NULL, smp_processor_id());
 
 	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 }

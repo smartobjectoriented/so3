@@ -1,0 +1,4 @@
+
+obj-y += memory.o
+
+

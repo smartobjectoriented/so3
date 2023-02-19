@@ -1,0 +1,77 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# SO3 Configuration
+#
+CONFIG_STANDALONE=y
+# CONFIG_SO3VIRT is not set
+CONFIG_ARCH_ARM32=y
+# CONFIG_ARCH_ARM64 is not set
+CONFIG_ARCH="arm32"
+CONFIG_CROSS_COMPILE="arm-linux-gnueabihf-"
+
+#
+# Platform
+#
+# CONFIG_VEXPRESS is not set
+CONFIG_RPI4=y
+CONFIG_RAM_BASE=0x00000000
+# end of Platform
+
+# CONFIG_THREAD_ENV is not set
+CONFIG_PROC_ENV=y
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+# end of SO3 Scheduling configuration
+
+#
+# Drivers
+#
+CONFIG_UART=y
+CONFIG_I2C=y
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+CONFIG_VEXT=y
+# CONFIG_DW_APB_UART is not set
+CONFIG_BCM283x_MU_UART=y
+# CONFIG_MMC is not set
+CONFIG_RAMDEV=y
+CONFIG_ARM_TIMER=y
+CONFIG_GIC=y
+CONFIG_I2C_BSC=y
+CONFIG_RPI_SENSE=y
+# end of Drivers
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_TEST_MALLOC is not set
+CONFIG_APP_DEFAULT=y
+# end of SO3 Applications
+
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
+
+#
+# Filesystems
+#
+CONFIG_FS_FAT=y
+# CONFIG_ROOTFS_NONE is not set
+# CONFIG_ROOTFS_MMC is not set
+CONFIG_ROOTFS_RAMDEV=y
+# end of Filesystems
+
+#
+# IPC
+#
+CONFIG_IPC_SIGNAL=y
+CONFIG_IPC_PIPE=y
+# end of IPC
+
+# CONFIG_RTOS is not set
+CONFIG_MMU=y
+CONFIG_DEBUG_PRINTK=y

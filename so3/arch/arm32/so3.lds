@@ -13,21 +13,21 @@ ENTRY(__start)
  * Indeed a user thread (running in the user space) will also involve kernel activities
  * with syscalls and other.
  */
-SVC_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack + 640 KB stack available for max. 10 kernel threads */
+SVC_STACK_SIZE = 32*1024 + 10*32*1024;  /* Initial system stack */
 
-HEAP_SIZE = 32 * 1024 * 1024;     /* 32 MB dedicated to kernel heap */
+HEAP_SIZE = CONFIG_HEAP_SIZE * 1024 * 1024;    /* Heap dedicated to kernel heap */
+
 TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */ 
 
 /*
  * The system (1st-level) page table is located at 0xc000'4000 and occupies 16 KB (4096 32-bit entries)
- */ 
- 
+ */  
  
 SECTIONS
 {
    
-     . = ENTRY_ADDR + 0x8000;
-    
+     . = ENTRY_ADDR + 0x8000;    
+       
     __vectors_start = .;
 
     .vectors.text :
@@ -78,7 +78,24 @@ SECTIONS
     .bss (NOLOAD) : 
     { 
         *(.bss*) 
+        
         . = ALIGN(4096); 
+
+    	__per_cpu_start = .;
+    	
+    	*(.bss.percpu)
+    
+     	. = ALIGN(128);
+    	*(.bss.percpu.read_mostly)
+    
+     	. = ALIGN(128);
+    	
+    	__per_cpu_data_end = .;
+       
+     	. = ALIGN(128);
+     	
+     	__per_cpu_end = .;
+     	
     }
 
     __bss_end = .;
@@ -146,5 +163,29 @@ SECTIONS
         
     }
 
+    .cpu1_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu1_stack = . ;
+        
+    }
+    
+    .cpu2_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu2_stack = . ;
+        
+    }
+    
+    .cpu3_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu3_stack = . ;
+        
+    }
+    
     __end = .;
 }

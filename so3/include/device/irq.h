@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,13 +19,17 @@
 #ifndef IRQ_H
 #define IRQ_H
 
+#include <spinlock.h>
 #include <common.h>
 #include <thread.h>
+#include <percpu.h>
 
 #include <asm/atomic.h>
 
 /* Maximum physical interrupts than can be managed by SO3 */
 #define NR_IRQS 		160
+
+DECLARE_PER_CPU(spinlock_t, intc_lock);
 
 typedef enum {
 	IRQ_TYPE_NONE		= 0x00000000,
@@ -62,6 +66,9 @@ typedef struct irqdesc {
 
 	/* Private data */
 	void *data;
+
+	/* Multi-processing scenarios */
+	spinlock_t lock;
 
 } irqdesc_t;
 

@@ -25,6 +25,19 @@
 
 #include <sizes.h>
 
+#ifdef CONFIG_AVZ
+#define AGENCY_VOFFSET	UL(0xc0000000)
+#define ME_VOFFSET	UL(0xc0000000)
+
+#define L_TEXT_OFFSET	0x8000
+
+#endif
+
+/* PAGE_SHIFT determines the page size */
+#define PAGE_SHIFT	12
+#define PAGE_SIZE       (1 << PAGE_SHIFT)
+#define PAGE_MASK       (~(PAGE_SIZE-1))
+
 #define USER_SPACE_VADDR	0x1000ul
 
 /* Memory space all I/O mapped registers and additional mappings */
@@ -81,7 +94,7 @@
 
 #define l1sect_addr_end(addr, end)                                         \
  ({      unsigned long __boundary = ((addr) + TTB_SECT_SIZE) & TTB_SECT_MASK;  \
-         (__boundary - 1 < (end) - 1) ? __boundary: (end);                \
+         (__boundary - 1 < (end) - 1) ? __boundary : (end);                \
  })
 
 /* Short-Descriptor Translation Table Level 1 Bits */
@@ -191,7 +204,9 @@ static inline void set_pgtable(addr_t *pgtable) {
 	__current_pgtable = pgtable;
 }
 
-extern void __mmu_switch(void *root_pgtable_phys);
+extern void __mmu_switch_ttbr0(void *root_pgtable_phys);
+
+void mmu_switch_kernel(void *pgtable_paddr);
 
 void *current_pgtable(void);
 void *new_root_pgtable(void);
@@ -205,11 +220,13 @@ void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_
 void release_mapping(void *pgtable, addr_t virt_base, uint32_t size);
 
 void reset_root_pgtable(void *pgtable, bool remove);
+void dump_pgtable(void *l1pgtable);
+
+void mmu_get_current_pgtable(addr_t *pgtable_paddr);
+
 void clear_l1pte(void *l1pgtable, addr_t vaddr);
 
 void mmu_switch(void *l1pgtable);
-void mmu_switch_sys(void *l1pgtable);
-void dump_pgtable(void *l1pgtable);
 
 void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramdev_end);
 

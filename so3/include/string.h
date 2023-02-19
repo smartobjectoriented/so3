@@ -47,6 +47,7 @@ size_t strnlen(const char * s, size_t count);
 char *strdup(const char *s);
 
 int sprintf(char *buf, const char *fmt, ...);
+int scnprintf(char * buf, size_t size, const char *fmt, ...);
 
 char *strcpy(char *, const char *);
 size_t strlen(const char *);

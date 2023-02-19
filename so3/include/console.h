@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -24,5 +23,15 @@
 
 extern struct file_operations console_fops;
 
+#ifdef CONFIG_AVZ
+
+#include <avz/uapi/avz.h>
+
+void console_init(void);
+void console_init_post(void);
+
+void printch(char c);
+
+#endif
 
 #endif /* CONSOLE_H */

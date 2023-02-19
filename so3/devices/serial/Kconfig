@@ -1,7 +1,4 @@
 
-config DW_APB_UART
-	bool "DesignWare APB UART"
-
 config NS16550
 	bool "NS16550 UART"
 

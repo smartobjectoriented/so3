@@ -5,4 +5,7 @@ Feel free to post any comments/suggestions/remarks about SO3. If you wish to par
 Go to the [full documentation of SO3](https://smartobjectoriented.github.io/so3)
 
 
+Be careful with the requirements of various configs.
 
+- avz_vt -> ./st must have virtualization on => use ./stv
+- avz_pv -> ./st must have virtualization off => use ./st

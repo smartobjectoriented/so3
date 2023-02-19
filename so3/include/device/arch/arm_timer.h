@@ -19,7 +19,7 @@
 #ifndef ARM_TIMER_H
 #define ARM_TIMER_H
 
-#include <asm/arm_timer.h>
+#include <device/irq.h>
 
 #define ARCH_TIMER_PHYS_ACCESS		0
 #define ARCH_TIMER_VIRT_ACCESS		1
@@ -34,5 +34,10 @@ enum arch_timer_reg {
 	ARCH_TIMER_REG_CTRL,
 	ARCH_TIMER_REG_TVAL,
 };
+
+typedef struct {
+	unsigned long reload;
+	irq_def_t irq_def;
+} arm_timer_t;
 
 #endif /* ARM_TIMER_H */

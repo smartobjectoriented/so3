@@ -12,4 +12,4 @@ hostprogs-y	:= fixdep
 always		:= $(hostprogs-y)
 
 # fixdep is needed to compile other host programs
-$(addprefix $(obj)/,$(filter-out fixdep,$(always))): $(obj)/fixdep
+$(addprefix $(KBUILD_OUTPUT)/,$(filter-out fixdep,$(always))): $(KBUILD_OUTPUT)/fixdep

@@ -5,7 +5,7 @@
 CONFIG_ARCH_ARM32=y
 # CONFIG_ARCH_ARM64 is not set
 CONFIG_ARCH="arm32"
-CONFIG_CROSS_COMPILE="arm-none-eabi-"
+CONFIG_CROSS_COMPILE="arm-none-linux-gnueabihf-"
 
 #
 # Platform
@@ -54,6 +54,7 @@ CONFIG_SMC911X=y
 # CONFIG_APP_SAMPLE is not set
 # end of SO3 Applications
 
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
 
 #
 # Filesystems

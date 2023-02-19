@@ -28,24 +28,30 @@
 
 #include <asm/arm_timer.h>
 
-typedef struct {
-	unsigned long reload;
-	irq_def_t irq_def;
-} arm_timer_t;
-
-/* ARM CP15 Timer */
+#ifdef CONFIG_AVZ
+#include <avz/physdev.h>
+#endif
 
 static void next_event(u32 next) {
 
 	unsigned long ctrl;
 
+#ifdef CONFIG_ARM64VT
+	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
+#else
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+#endif
 
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
 
+#ifdef CONFIG_ARM64VT
+	arch_timer_reg_write_el2(ARCH_TIMER_REG_TVAL, next);
+	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
+#else
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_TVAL, next);
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+#endif
 }
 
 static irq_return_t timer_isr(int irq, void *dev) {
@@ -56,19 +62,33 @@ static irq_return_t timer_isr(int irq, void *dev) {
 
 	/* Clear the interrupt */
 
+#ifdef CONFIG_ARM64VT
+	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
+#else
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+#endif
 
 	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
 		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
+
+#ifdef CONFIG_ARM64VT
+		arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
+#else
 		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+#endif
 
 		/* Periodic timer */
 		next_event(arm_timer->reload);
 
+#ifdef CONFIG_AVZ
+		timer_interrupt((smp_processor_id() == ME_CPU) ? true : false);
+#else
 		jiffies++;
 
 		raise_softirq(TIMER_SOFTIRQ);
+#endif
 	}
+
 
 	return IRQ_COMPLETED;
 }
@@ -88,11 +108,35 @@ u64 clocksource_read(void) {
 	return arch_counter_get_cntvct();
 }
 
+void secondary_timer_init(void) {
+	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
+
+#ifndef CONFIG_ARM64VT
+	unsigned long ctrl;
+#endif
+
+	/* Shutdown the timer */
+
+#ifdef CONFIG_ARM64VT
+	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
+#else
+
+	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+#endif
+
+	/* Bind ISR into interrupt controller */
+	irq_bind(arm_timer->irq_def.irqnr, timer_isr, NULL, periodic_timer.dev);
+}
+
 /*
  * Initialize the periodic timer used by the kernel.
  */
 static int periodic_timer_init(dev_t *dev, int fdt_offset) {
+#ifndef CONFIG_ARM64VT
 	unsigned long ctrl;
+#endif
 	arm_timer_t *arm_timer;
 
 	periodic_timer.dev = dev;
@@ -111,14 +155,20 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	/* Initialize Timer */
 
 	periodic_timer.start = periodic_timer_start;
-	periodic_timer.period = NSECS / HZ;
+	periodic_timer.period = NSECS / 1000;
 
 	arm_timer->reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 
 	/* Shutdown the timer */
+
+#ifdef CONFIG_ARM64VT
+	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
+#else
+
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
 	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+#endif
 
 	dev_set_drvdata(dev, arm_timer);
 

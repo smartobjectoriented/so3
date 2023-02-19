@@ -317,12 +317,11 @@ void create_root_process(void)
 
 	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
-	DBG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
+	DBG("Stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
 	/* First map the code in the user space so that
 	 * the initial code can run normally in user mode.
 	 */
-
 	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start), (void *) __root_proc_end - (void *) __root_proc_start, false);
 
 	/* Start main thread <args> of the thread is not used in this context. */
@@ -551,10 +550,12 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	/* Release allocated pages in case of exec() within a fork'd process */
 	/* The current binary image (which is a copy of the fork'd) must disappeared.
 	 * Associated physical pages must be removed and freed. Stack area will be re-initialized.
+	 *
+	 * We reset the contents but we keep the root page table for subsequent allocations.
 	 */
 	reset_root_pgtable(pcb->pgtable, false);
 
-	/* Release all allocated pages for user space */
+	/* Release all allocated pages for user space. */
 	release_proc_pages(pcb);
 
 	/* We re-init the user space process stack here, and fork() will inherit from this mapping */

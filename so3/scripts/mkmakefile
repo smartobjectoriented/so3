@@ -39,13 +39,7 @@ MAKEFLAGS += --no-print-directory
 
 all	:= \$(filter-out all Makefile,\$(MAKECMDGOALS))
 
-all:
-	\$(MAKE) \$(MAKEARGS) \$(all)
-
 Makefile:;
-
-\$(all): all
-	@:
 
 %/: all
 	@:
