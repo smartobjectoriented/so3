@@ -26,6 +26,8 @@
 #include <device/irq.h>
 #include <device/timer.h>
 
+#include <device/arch/arm_timer.h>
+
 #include <asm/arm_timer.h>
 
 #ifdef CONFIG_AVZ
@@ -93,7 +95,7 @@ static irq_return_t timer_isr(int irq, void *dev) {
 	return IRQ_COMPLETED;
 }
 
-static void periodic_timer_start(void) {
+void periodic_timer_start(void) {
 	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
 
 	/* Start the periodic timer */
@@ -127,7 +129,7 @@ void secondary_timer_init(void) {
 #endif
 
 	/* Bind ISR into interrupt controller */
-	irq_bind(arm_timer->irq_def.irqnr, timer_isr, NULL, periodic_timer.dev);
+	irq_unmask(arm_timer->irq_def.irqnr);
 }
 
 /*
@@ -155,7 +157,7 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	/* Initialize Timer */
 
 	periodic_timer.start = periodic_timer_start;
-	periodic_timer.period = NSECS / 1000;
+	periodic_timer.period = NSECS / CONFIG_HZ;
 
 	arm_timer->reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
 

@@ -8,7 +8,11 @@
  */
 
 #define IPI_WAKEUP		0
-#define IPI_EVENT_CHECK		1
+
+/* The following IPI is known in the guest domain.
+ * For Linux domain, this IPI is reserved for event check.
+ */
+#define IPI_EVENT_CHECK		4
 
 void psci_smp_boot_secondary(unsigned int cpu);
 

@@ -125,7 +125,11 @@ __kernel_main:
   ldr	r0, =__fdt_addr
   str	r9, [r0]
 
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+  bl avz_setup
+#else
   bl setup_arch
+#endif
 
   @ C main entry point
 #ifdef CONFIG_AVZ

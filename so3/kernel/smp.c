@@ -38,6 +38,7 @@
 #include <asm/cacheflush.h>
 #include <asm/vfp.h>
 #include <asm/processor.h>
+#include <asm/mmu.h>
 
 static volatile int booted[CONFIG_NR_CPUS] = {0};
 
@@ -92,7 +93,7 @@ void smp_trigger_event(int target_cpu)
 /***************************/
 
 struct secondary_data secondary_data;
-
+extern  void periodic_timer_start(void);
 /*
  * This is the secondary CPU boot entry.  We're using this CPUs
  * idle thread stack, but a set of temporary page tables.
@@ -125,7 +126,7 @@ void secondary_start_kernel(void)
 		pre_ret_to_el1();
 #endif
 	}
-#endif
+#endif /* CONFIG_ARM64VT */
 
 #endif /* CONFIG_AVZ */
 
@@ -135,7 +136,7 @@ void secondary_start_kernel(void)
 
 	booted[cpu] = 1;
 
-	printk("CPU%d booted. Waiting unpause\n", cpu);
+	printk("CPU%d booted...\n", cpu);
 
 #ifdef CONFIG_AVZ
 	init_idle_domain();
@@ -147,6 +148,8 @@ void secondary_start_kernel(void)
 #endif
 
 	printk("%s: entering idle loop...\n", __func__);
+
+	periodic_timer_start();
 
 #ifdef CONFIG_AVZ
 	/* Prepare an idle domain and starts the idle loop */
@@ -171,6 +174,7 @@ void cpu_up(unsigned int cpu)
 	 * We need to tell the secondary core where to find
 	 * its stack and the page tables.
 	 */
+#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 
 	switch (cpu) {
 	case AGENCY_RT_CPU:
@@ -185,6 +189,7 @@ void cpu_up(unsigned int cpu)
 		printk("%s - CPU %d not supported.\n", __func__, cpu);
 		BUG();
 	}
+#endif
 
 	secondary_data.pgdir = __pa(__sys_root_pgtable);
 
@@ -195,14 +200,15 @@ void cpu_up(unsigned int cpu)
 	 */
 	smp_boot_secondary(cpu);
 
+#ifdef CONFIG_ARCH_ARM32
+	/* Some platforms may require to be kicked off this way. */
+	smp_trigger_event(cpu);
+#endif
+
 	/*
 	 * CPU was successfully started, wait for it
 	 * to come online or time out.
 	 */
-#warning not sure if still necessary...
-#ifdef CONFIG_ARCH_ARM32
-	smp_trigger_event(cpu);
-#endif
 
 	printk("Now waiting CPU %d to be up and running ...\n", cpu);
 
@@ -221,7 +227,7 @@ void cpu_up(unsigned int cpu)
 /* Called by boot processor to activate the rest. */
 void smp_init(void)
 {
-#ifdef CONFIG_SOO
+#if defined(CONFIG_AVZ) && defined (CONFIG_SOO)
 
 	printk("CPU #%d is the second CPU reserved for Agency realtime activity.\n", AGENCY_RT_CPU);
 
@@ -232,13 +238,15 @@ void smp_init(void)
 	per_cpu(current_domain, AGENCY_RT_CPU) = domains[DOMID_AGENCY_RT];
 
 
+#ifdef CONFIG_ARM64VT
 	cpu_up(AGENCY_RT_CPU);
+#endif
 
 	cpu_up(ME_CPU);
-	printk("Brought secondary CPUs for AVZ (CPU #2 and CPU #3)\n");
+
+	printk("Brought secondary CPUs for AVZ (at the moment CPU #3, CPU #2 will be for later...)\n");
 
 #endif /* CONFIG_SOO */
-
 
 }
 

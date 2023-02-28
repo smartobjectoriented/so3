@@ -192,6 +192,10 @@ static inline int get_order_from_bytes(addr_t size)
 
 void clear_bss(void);
 
+#ifdef CONFIG_SOO
+void readjust_io_map(long pfn_offset);
+#endif /* CONFIG_SOO */
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* MEMORY_H */

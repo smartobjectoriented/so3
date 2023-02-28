@@ -32,10 +32,6 @@
 			compression = "none";
 			load = <0x80008000>;
 			entry = <0x80008000>;
-			
-			hash {
-				algo = "crc32";
-			};
 		};
                 
 		fdt {
@@ -45,10 +41,7 @@
 			arch = "arm";
 			compression = "none";
 			load = <0x84a00000>;
-			
-			hash {
-				algo = "crc32";
-			};
+
 		};	
 
                 ramdisk {

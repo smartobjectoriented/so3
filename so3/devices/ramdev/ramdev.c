@@ -156,7 +156,6 @@ static void get_ramdev(const void *fdt) {
 	ramdev_create_mapping(NULL, ramdev_start, ramdev_end);
 }
 
-
 /*
  * Main ramdev initialization function.
  * Called by devices_init() in devce.c
@@ -178,7 +177,6 @@ void ramdev_init(void) {
 			pfn_to_page(i)->free = false;
 			pfn_to_page(i)->refcount++;
 		}
-
 	}
 }
 

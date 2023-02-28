@@ -76,13 +76,19 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 	if (!is_idle_domain(d)) {
 		d->is_paused_by_controller = 1;
 		atomic_inc(&d->pause_count);
+
+		evtchn_init(d);
 	}
 
-	/* Will be used during the context_switch (cf kernel/entry-armv.S */
+	/* Create a logbool hashtable associated to this domain */
+	d->avz_shared->logbool_ht = ht_create(LOGBOOL_HT_SIZE);
+	BUG_ON(!d->avz_shared->logbool_ht);
 
 	arch_domain_create(d, cpu_id);
 
 	d->processor = cpu_id;
+
+	spin_lock_init(&d->virq_lock);
 
 	if (is_idle_domain(d))
 	{
@@ -100,8 +106,19 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 		d->sched = &sched_agency;
 	else {
 
-		d->sched = &sched_agency;
-		d->need_periodic_timer = true;
+		if (cpu_id == ME_CPU) {
+
+			d->sched = &sched_flip;
+			d->need_periodic_timer = true;
+
+		} else if (cpu_id == AGENCY_CPU) {
+
+			d->sched = &sched_agency;
+			d->need_periodic_timer = true;
+
+		} else if (cpu_id == AGENCY_RT_CPU)
+
+			d->sched = &sched_agency;
 
 	}
 
@@ -119,7 +136,7 @@ static void complete_domain_destroy(struct domain *d)
 	/* Free the logbool hashtable associated to this domain */
 	ht_destroy((logbool_hashtable_t *) d->avz_shared->logbool_ht);
 
-	/* Free start_info structure */
+	/* Restore allocated memory for this domain */
 
 	free((void *) d->avz_shared);
 	free((void *) d->domain_stack);

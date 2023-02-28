@@ -16,6 +16,10 @@
  *
  */
 
+#if 1
+#define DEBUG
+#endif
+
 #include <common.h>
 #include <types.h>
 #include <memory.h>
@@ -64,21 +68,21 @@ unsigned int get_power_from_size(unsigned int bits_NR) {
  * Returns the physical start address or 0 if no slot available.
  */
 unsigned int allocate_memslot(unsigned int order) {
-  int pos;
+	int pos;
 
-  pos = bitmap_find_free_region((unsigned long *) &memchunk_bitmap, ME_MEMCHUNK_NR, order);
-  if (pos < 0)
-  	return 0;
+	pos = bitmap_find_free_region((unsigned long *) &memchunk_bitmap, ME_MEMCHUNK_NR, order);
+	if (pos < 0)
+		return 0;
 
 #ifdef DEBUG
-  printk("allocate_memslot param %d\n", order);
-  printk("allocate_memslot pos %d\n", pos);
-  printk("allocate_memslot memslot1start %08x\n", (unsigned int) memslot[1].start);
-  printk("allocate_memslot memslot1size %d\n", memslot[1].size);
-  printk("allocate_memslot pos*MEMCHUNK_SIZE %d\n", pos*ME_MEMCHUNK_SIZE);
+	printk("allocate_memslot param %d\n", order);
+	printk("allocate_memslot pos %d\n", pos);
+	printk("allocate_memslot memslot1start %08x\n", (unsigned int) memslot[1].base_paddr);
+	printk("allocate_memslot memslot1size %d\n", memslot[1].size);
+	printk("allocate_memslot pos*MEMCHUNK_SIZE %d\n", pos*ME_MEMCHUNK_SIZE);
 #endif
 
-  return memslot[1].base_paddr + memslot[1].size + pos*ME_MEMCHUNK_SIZE;
+	return memslot[1].base_paddr + memslot[1].size + pos*ME_MEMCHUNK_SIZE;
 }
 
 void release_memslot(unsigned int addr, unsigned int order) {
@@ -88,9 +92,9 @@ void release_memslot(unsigned int addr, unsigned int order) {
 	pos /= ME_MEMCHUNK_SIZE;
 
 #ifdef DEBUG
-  printk("release_memslot addr %08x\n", addr);
-  printk("release_memslot order %d\n", order);
-  printk("release_memslot pos %d\n", pos);
+	printk("release_memslot addr %08x\n", addr);
+	printk("release_memslot order %d\n", order);
+	printk("release_memslot pos %d\n", pos);
 #endif
 
 	bitmap_release_region((unsigned long *) &memchunk_bitmap, pos, order);
@@ -159,7 +163,7 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 	printk("get_ME_slot param %d\n", size);
 	printk("get_ME_slot bits_NR %d\n", bits_NR);
 	printk("get_ME_slot slotID %d\n", slotID);
-	printk("get_ME_slot start %08x\n", (unsigned int) memslot[slotID].start);
+	printk("get_ME_slot start %08x\n", (unsigned int) memslot[slotID].base_paddr);
 	printk("get_ME_slot size %d\n", memslot[slotID].size);
 #endif
 

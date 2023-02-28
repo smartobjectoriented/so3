@@ -35,6 +35,11 @@
 
 int construct_agency(struct domain *d) {
 
+	unsigned long domain_stack;
+	extern addr_t *hypervisor_stack;
+	static addr_t *__hyp_stack = (unsigned long *) &hypervisor_stack;
+	static addr_t *__pseudo_usr_mode = (unsigned long *) &pseudo_usr_mode;
+
 	printk("***************************** Loading Agency Domain *****************************\n");
 
 	/* The agency is always in slot 1 */
@@ -74,13 +79,39 @@ int construct_agency(struct domain *d) {
 	printk("AVZ Hypervisor vaddr: 0x%lx\n", CONFIG_KERNEL_VADDR);
 	printk("Agency FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
+	printk("Shared AVZ page is located at: %lx\n", d->avz_shared);
+
 	/* HW details on the CPU: processor ID, cache ID and ARM architecture version */
 
 	d->avz_shared->printch = printch;
 
 #ifdef CONFIG_SOO
+	/* Set up a new domain stack for the RT domain */
+	domain_stack = (unsigned long) setup_dom_stack(domains[DOMID_AGENCY_RT]);
+
+	/* Store the stack address for further needs in hypercalls/interrupt context */
+	__hyp_stack[AGENCY_RT_CPU] = domain_stack;
+
+	/* We set the realtime domain in pseudo-usr mode since the primary domain will start it, not us. */
+	__pseudo_usr_mode[AGENCY_RT_CPU] = 1;
+
+	/*
+	 * Keep a reference in the primary agency domain to its subdomain. Indeed, there is only one shared info page mapped
+	 * in the guest.
+	 */
+	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
+
+	/* Domain related information */
+	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
+	domains[DOMID_AGENCY_RT]->avz_shared->hypercall_vaddr = d->avz_shared->hypercall_vaddr;
+	domains[DOMID_AGENCY_RT]->avz_shared->fdt_paddr = d->avz_shared->fdt_paddr;
+	domains[DOMID_AGENCY_RT]->avz_shared->dom_phys_offset = d->avz_shared->dom_phys_offset;
 	domains[DOMID_AGENCY_RT]->avz_shared->pagetable_paddr = d->avz_shared->pagetable_paddr;
-#endif
+	domains[DOMID_AGENCY_RT]->avz_shared->logbool_ht_set_addr = d->avz_shared->logbool_ht_set_addr;
+	domains[DOMID_AGENCY_RT]->avz_shared->hypervisor_vaddr = d->avz_shared->hypervisor_vaddr;
+	domains[DOMID_AGENCY_RT]->avz_shared->printch = d->avz_shared->printch;
+
+#endif /* CONFIG_SOO */
 
 	/*
 	 * Create the first thread associated to this domain.

@@ -53,7 +53,7 @@ void do_softirq(void)
 
 		if (i == NR_SOFTIRQS) {
 			spin_unlock(&softirq_pending_lock);
-			return;
+			break;
 		}
 
 		if (loopmax > 100)   /* Probably something wrong ;-) */

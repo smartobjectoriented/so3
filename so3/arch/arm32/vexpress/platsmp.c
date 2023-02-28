@@ -71,21 +71,9 @@ void smp_boot_secondary(unsigned int cpu) {
 
 	smp_cross_call((long) (1 << cpu), IPI_WAKEUP);
 
-	do {
-		dmb();
-		if (pen_release == -1)
-			break;
-
-		udelay(1000);
-	} while (1);
-
 	/*
 	 * now the secondary core is starting up let it run its
 	 * calibrations, then wait for it to finish
 	 */
 	spin_unlock(&boot_lock);
-
-	if (pen_release != -1)
-		BUG();
-
 }

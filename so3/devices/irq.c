@@ -166,6 +166,7 @@ void irq_handle(cpu_regs_t *regs) {
 	/* The following boolean indicates we are currently in the interrupt call path.
 	 * It will be reset at the end of the softirq processing.
 	 */
+
 	__in_interrupt = true;
 
 	irq_ops.handle(regs);
@@ -173,8 +174,14 @@ void irq_handle(cpu_regs_t *regs) {
 	/* Out of this interrupt routine, IRQs must be enabled otherwise the thread
 	 * will block all interrupts.
 	 */
+#ifndef CONFIG_AVZ
+	/* Except of execution from an hypercall; when calling an hypercall, IRQs may
+	 * be off and this routine is called along an upcall path when an event
+	 * is raised.
+	 */
 
 	BUG_ON(irqs_disabled_flags(regs));
+#endif
 
 	do_softirq();
 }

@@ -17,13 +17,8 @@
  *
  */
 
-#ifndef SOO_H
-#define SOO_H
-
-/*
- * 128 event channels per domain
- */
-#define NR_EVTCHN 128
+#ifndef UAPI_SOO_H
+#define UAPI_SOO_H
 
 #ifndef __ASSEMBLY__
 
@@ -39,27 +34,10 @@
 #define AGENCY_RT_CPU	 1
 
 #ifndef __ASSEMBLY__
-#ifdef __KERNEL__
 
-/* For struct list_head */
-#if !defined(__SO3__)
-#include <linux/types.h>
-#include <linux/string.h>
-#else
 #include <list.h>
-#endif
 
 #include <asm/atomic.h>
-
-#else /* __KERNEL__ */
-
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-typedef unsigned short uint16_t;
-
-#endif /* !__KERNEL__ */
 
 #ifdef CONFIG_AVZ
 
@@ -110,8 +88,8 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
 
 #ifdef __KERNEL__
 
-void set_pfn_offset(int pfn_offset);
-int get_pfn_offset(void);
+void set_pfn_offset(long pfn_offset);
+long get_pfn_offset(void);
 
 #endif /* __KERNEL__ */
 
@@ -265,8 +243,6 @@ typedef struct {
 #define ME_LOCALINFO_UPDATE		3
 #define ME_POST_ACTIVATE		4
 #define ME_IMEC_SETUP_PEER		5
-
-#ifdef __KERNEL__
 
 #define NSECS           	1000000000ull
 #define SECONDS(_s)     	((u64)((_s)  * 1000000000ull))
@@ -560,8 +536,6 @@ void cache_flush_all(void);
 
 void check_terminated_ME(void);
 
-#endif /* __KERNEL__ */
 #endif /* __ASSEMBLY__ */
 
-
-#endif /* SOO_H */
+#endif /* UAPI_SOO_H */

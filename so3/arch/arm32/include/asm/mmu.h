@@ -153,6 +153,7 @@
 
 #ifndef __ASSEMBLY__
 
+#include <common.h>
 #include <types.h>
 
 #ifdef CONFIG_MMU

@@ -545,6 +545,24 @@ void free(void *ptr)
 	spin_unlock_irqrestore(&heap_lock, flags);
 }
 
+/**
+ * Invoke malloc by specifying the type of a structure.
+ *
+ * @param nmemb
+ * @param size
+ */
+void *calloc(size_t nmemb, size_t size) {
+        void *ptr;
+
+        ptr = malloc(nmemb*size);
+        if (!ptr)
+                return ptr;
+
+        memset(ptr, 0, nmemb*size);
+
+        return ptr;
+}
+
 /*
  * Re-allocate an existing memory area (previously allocated with malloc).
  * The size can be greater, equal, or less than the original.

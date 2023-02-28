@@ -374,6 +374,13 @@ include $(srctree)/scripts/Makefile.build
 all:  $(BIN) dtbs 
 
 objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
+
+ifeq ($(CONFIG_AVZ),)
+
+objs-$(CONFIG_SOO) += soo
+
+endif
+
 libs-y		:= lib
 libs-y 		+= lib/libfdt lib/libroxml
 
@@ -398,6 +405,11 @@ endif
 	 
 KBUILD_CFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/	
 KBUILD_AFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/
+
+ifdef CONFIG_SOO
+KBUILD_CFLAGS_KERNEL += -Isoo/include
+KBUILD_AFLAGS_KERNEL += -Isoo/include
+endif
 
 export KBUILD_CFLAGS CFLAGS_KERNEL
 export KBUILD_AFLAGS AFLAGS_KERNEL

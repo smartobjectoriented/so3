@@ -64,13 +64,13 @@ struct stack {
 	u32 fiq[3];
 } ____cacheline_aligned;
 
-struct stack stacks;
+struct stack stacks[CONFIG_NR_CPUS];
 
 /*
  * Setup exceptions stacks for all modes except SVC and USR
  */
 void setup_exception_stacks(void) {
-	struct stack *stk = &stacks;
+	struct stack *stk = &stacks[smp_processor_id()];
 
 	/* Need to set the CPU in the different modes and back to SVC at the end */
 	__asm__ (

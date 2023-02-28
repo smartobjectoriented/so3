@@ -409,7 +409,7 @@ void frame_table_init(addr_t frame_table_start) {
 void memory_init(void) {
 #ifdef CONFIG_MMU
 
-#ifdef CONFIG_ARCH_ARM32
+#if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
 	addr_t vectors_paddr;
 #endif
 	void *new_sys_root_pgtable;
@@ -437,16 +437,22 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
+#if defined(CONFIG_SOO) && defined(CONFIG_ARCH_ARM32) && !defined(CONFIG_AVZ)
+	/* Keep the installed vector table */
+	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) = *((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
+#endif
+
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
 	/* Mapping UART I/O for debugging purposes */
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
 
 #ifdef CONFIG_AVZ
-
+#warning For ARM64VT we still need fo address the ME in the hypervisor...
+#ifndef CONFIG_ARM64VT
 	/* Finally, create the agency domain area and for being able to read the device tree. */
-	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size, false);
-
+	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr, CONFIG_RAM_SIZE, false);
+#endif
 #endif /* CONFIG_AVZ */
 
 	/*
@@ -466,8 +472,8 @@ void memory_init(void) {
 
 #endif /* CONFIG_SO3VIRT */
 
+#if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
 
-#ifdef CONFIG_ARCH_ARM32
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
@@ -481,3 +487,31 @@ void memory_init(void) {
 #endif /* CONFIG_MMU */
 }
 
+#ifdef CONFIG_SOO
+
+/**
+ * Re-adjust PFNs used for various purposes.
+ */
+void readjust_io_map(long pfn_offset) {
+	io_map_t *io_map;
+	struct list_head *pos;
+	addr_t offset;
+
+	/*
+	 * Re-adjust I/O area since it does not intend to be HW I/O in SO3VIRT, but
+	 * can be used for gnttab entries or other mappings for example.
+	 */
+	list_for_each(pos, &io_maplist) {
+		io_map = list_entry(pos, io_map_t, list);
+
+		offset = io_map->paddr & (PAGE_SIZE - 1);
+		io_map->paddr = pfn_to_phys(phys_to_pfn(io_map->paddr) + pfn_offset);
+		io_map->paddr += offset;
+
+	}
+
+	/* Re-adjust other PFNs used for frametable management. */
+	pfn_start += pfn_offset;
+}
+
+#endif /* CONFIG_SOO */

@@ -22,7 +22,7 @@
 
 /* Number of possible MEs in the local SOO */
 #define MEMSLOT_BASE	  2
-#define MEMSLOT_NR	  MEMSLOT_BASE
+#define MEMSLOT_NR	  (MEMSLOT_BASE + MAX_ME_DOMAINS)
 
 /* Basic memslots. */
 #define MEMSLOT_AVZ	  0

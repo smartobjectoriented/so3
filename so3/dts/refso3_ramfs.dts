@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+#include "soo.dtsi"
+
+&ME {
+	/* Since we have a rootfs (ramfs), we put give 64 MB */
+	domain-size = <0x4000000>;
+	
+	/* SPID on 128-bit encoding */
+	spid = /bits/ 64 <0x0010000000000001>;
+	
+	/* Name of this ME */
+	me_name = "SOO.refso3";
+	
+	/* Short description */
+	me_shortdesc =
+			
+"This is the standard reference ME that can be used as template or simply to \
+perform various tests. This variant includes a rootfs with some user space \
+applications.";
+
+	frontends {
+		
+		/* Enabling vdummy for testing purposes */
+		vdummy {
+			status = "ok";
+		};
+
+		/* Enabling the console */
+		vuart {
+			status = "ok";
+		};
+
+		vvext {
+			status = "ok";
+		};
+	};
+};
+			

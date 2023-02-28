@@ -312,8 +312,11 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	icache_disable();
 	dcache_disable();
 
-	/* Empty the page table */
+#ifdef CONFIG_AVZ
+	if (smp_processor_id() == AGENCY_CPU) {
+#endif /* CONFIG_AVZ */
 
+	/* Empty the page table */
 	for (i = 0; i < 4096; i++)
 		__pgtable[i] = 0;
 
@@ -350,6 +353,10 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
 
 #ifndef CONFIG_SO3VIRT
+
+#ifdef CONFIG_AVZ
+	}
+#endif /* CONFIG_AVZ */
 
 	mmu_setup(__pgtable);
 
@@ -465,8 +472,15 @@ void reset_root_pgtable(void *pgtable, bool remove) {
 void mmu_switch_kernel(void *pgtable_paddr) {
 	flush_dcache_all();
 
-	BUG_ON(((addr_t) pgtable_paddr) & ~TTBR0_BASE_ADDR_MASK);
-	__mmu_switch_ttbr0(pgtable_paddr);
+	/* Take care about the lower bits because
+	 * it might be initialized by the Linux domain and should
+	 * be preserved if any.
+	 */
+
+	if (((uint32_t) pgtable_paddr & TTBR0_BASE_ADDR_MASK) != (uint32_t) pgtable_paddr)
+		WRITE_CP32((uint32_t) pgtable_paddr, TTBR0_32);
+	else
+		__mmu_switch_ttbr0(pgtable_paddr);
 
 	invalidate_icache_all();
 	__asm_invalidate_tlb_all();

@@ -375,7 +375,7 @@ void gic_set_pending(u16 irq_id)
 	gic_enable_maint_irq(true);
 }
 
-#endif
+#endif /* CONFIG_ARM64VT */
 
 static void gic_eoi_irq(u32 irq_id, bool deactivate)
 {
@@ -478,7 +478,7 @@ static void gic_clear_pending_irqs(void)
 	iowrite32(&gic->gich->apr, 0);
 }
 
-#endif
+#endif /* CONFIG_ARM64VT */
 
 void smp_cross_call(long cpu_mask, unsigned int irq)
 {

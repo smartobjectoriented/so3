@@ -9,7 +9,7 @@ obj-y += physdev.o
 obj-y += setup.o
 obj-y += event_channel.o
 obj-y += keyhandler.o
- 
+obj-y += timer.o
 obj-y += sched_flip.o 
 obj-y += schedule.o
 obj-y += migration.o

@@ -30,7 +30,7 @@
 
 #ifdef __KERNEL__
 
-#include <soo/uapi/console.h>
+#include <avz/console.h>
 
 #endif /* __KERNEL__ */
 

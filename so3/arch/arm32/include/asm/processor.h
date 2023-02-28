@@ -351,6 +351,8 @@ typedef struct cpu_regs {
 	__u32   padding;  /* padding to keep 8-bytes alignment */
 } cpu_regs_t;
 
+void trap_handle(cpu_regs_t *regs);
+
 #define cpu_relax()	wfe()
 
 #define interrupts_enabled(regs) \

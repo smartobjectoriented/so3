@@ -1,0 +1,125 @@
+/*
+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+#include "skeleton.dtsi"
+
+/ {
+	model = "SO3 Vexpress";
+	compatible = "arm,vexpress";
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,cortex-a15";
+	};
+	
+	memory {
+		reg = <0 0>;
+	};
+	
+	soo-serial {
+		compatible = "soo-serial";
+		status = "ok";
+	};
+
+	/* SO3 virtual timer managed by AVZ */
+
+	soo-timer {
+		compatible = "soo-timer,periodic-timer";
+		status = "ok";
+	};
+
+	/* Free-running clocksource */
+	clocksource-timer {
+		compatible = "soo-timer,clocksource-timer";
+		status = "ok";
+	};
+
+	oneshot-timer {
+		compatible ="soo-timer,oneshot-timer";
+		status = "ok";
+	};
+
+	soo-irq {
+		compatible = "soo-irq";
+		status = "ok";
+	};
+
+
+	ME: ME {
+#if 0 /* If used without ramfs */
+		domain-size = <0x400000>; /* 4 MB */
+#endif
+		domain-size = <0x1000000>; /* 16 MB */
+
+		frontends {
+
+			vdummy {
+				compatible = "vdummy,frontend";
+				status = "disabled";
+			};
+
+			vuihandler {
+				compatible = "vuihandler,frontend";
+				status = "disabled";
+			};
+
+			vuart {
+				compatible = "vuart,frontend";
+				status = "disabled";
+			};
+
+			vsenseled {
+				compatible = "vsenseled,frontend";
+				status = "disabled";
+			};
+
+			vsensej {
+				compatible = "vsensej,frontend";
+				status = "disabled";
+			};
+
+			vdoga12v6nm {
+				compatible = "vdoga12v6nm,frontend";
+				status = "disabled";
+			};
+
+			vweather {
+				compatible = "vweather,frontend";
+				status = "disabled";
+			};
+
+			vwagoled {
+				compatible = "vwagoled,frontend";
+				status = "disabled";
+			};
+
+			venocean {
+				compatible = "venocean,frontend";
+				status = "disabled";
+			};
+
+			vknx {
+				compatible = "vknx,frontend";
+				status = "disabled";
+			};
+		};
+
+	};
+};

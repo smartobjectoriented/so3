@@ -34,8 +34,8 @@
 #include <avz/memslot.h>
 #include <avz/migration.h>
 #include <avz/domain.h>
-#include <avz/event_channel.h>
 
+#include <avz/uapi/event_channel.h>
 #include <avz/uapi/soo.h>
 
 #include <libfdt/image.h>

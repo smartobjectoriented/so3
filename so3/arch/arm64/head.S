@@ -86,7 +86,7 @@ __start:
 	ldr	x0, =__vectors
 
 #ifdef CONFIG_ARM64VT
-	msr 	vbar_el2, x0
+	msr vbar_el2, x0
 #else
 	msr vbar_el1, x0
 

@@ -22,11 +22,11 @@
 #include <avz/event.h>
 #include <avz/sched.h>
 #include <avz/sched-if.h>
-#include <avz/event_channel.h>
 #include <avz/debug.h>
 #include <avz/keyhandler.h>
 
 #include <avz/uapi/avz.h>
+#include <avz/uapi/event_channel.h>
 
 #include <device/irq.h>
 
@@ -324,7 +324,7 @@ void evtchn_send(struct domain *d, unsigned int levtchn) {
 	}
 	
 	revtchn = lchn->interdomain.remote_evtchn;
-	
+
 	evtchn_set_pending(rd, revtchn);
 	spin_unlock(&ld->event_lock);
 	

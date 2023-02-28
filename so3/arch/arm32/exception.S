@@ -369,6 +369,49 @@ irq:
 
     stmia 	sp, {r0-r12}
 
+#ifdef CONFIG_AVZ
+
+	@ Now process the IRQ differentiating execution according to the source (dom/hyp)
+	@ for managing the stack correctly
+
+	current_cpu	r10
+
+	ldr		r0, .LCpseudo_usr_mode
+	ldr		r1, [r0, r10, lsl #2]
+	cmp		r1, #0  				@ svc ?
+
+	beq		hyp_path
+
+	mov		r1, #0 					@ setting svc
+	str		r1, [r0, r10, lsl #2]
+
+	mov		r1, sp
+	ldr 	r0, .LChypervisor_stack @ Get the running hypervisor SVC stack
+	ldr		r0, [r0, r10, lsl #2]
+
+	mov		sp, r0
+
+	curdom	r0, r2
+	str		r1, [r0, #OFFSET_G_SP]
+
+	@ Make sure r0 refers to the base of the stack frame
+	mov		r0, sp
+
+    bl 		irq_handle
+
+	b		ret_to_user
+
+/* Hypervisor path or *idle* domain path */
+hyp_path:
+
+	mov		r0, sp
+
+    bl 		irq_handle
+
+    b 		out_irq
+
+#else /* CONFIG_AVZ */
+
 	@ cpsr is still up-to-date regarding the comparison against CPU mode.
 	ldreq	r0, [sp, #OFFSET_SP_USR]
 	ldreq 	r1, .LCcurrent
@@ -407,6 +450,7 @@ irq:
 
     @ Now, we retrieve the final registers, sp will be adjusted automatically
     ldmia 	sp, {sp, lr, pc}^
+#endif /* !CONFIG_AVZ */
 
 #ifdef CONFIG_SO3VIRT
 
@@ -458,6 +502,41 @@ __trampoline:
 
 #endif /* CONFIG_SO3VIRT */
 
+#if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+
+
+@ The cpu_regs_t from avz remains compatible in the range of
+@ ARM registers with the SPSR stored after r15.
+.align 5
+ENTRY(avz_vector_callback)
+
+	@ r0 is set to cpu_regs_t by avz
+	bl 		irq_handle
+
+ 	ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+    msr		spsr, lr
+
+	@ Check if it is necessary to restore sp_usr and lr_usr
+	and		lr, lr, #PSR_MODE_MASK
+	cmp		lr, #PSR_USR_MODE
+
+	@ Restoring user mode registers (sp_usr, lr_usr)
+	addeq	lr, sp, #OFFSET_SP_USR
+	ldmeqia	lr, {sp, lr}^
+
+	@ Restore registers
+   	ldmia 	sp, {r0-r12}
+
+	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
+
+    @ Now, we retrieve the final registers, sp will be adjusted automatically
+    ldmia 	sp, {sp, lr, pc}^
+
+#endif
+
 #ifdef CONFIG_AVZ
 
 /*
@@ -483,7 +562,8 @@ ENTRY(pre_ret_to_user)
 
 	curdom	r10, r6
 	mov 	r6, #0
-	str		r6, [r10, #OFFSET_HYPERVISOR_CALLBACK]
+	ldr		r6, [r10, #OFFSET_AVZ_SHARED]
+	str		r6, [r6, #OFFSET_HYPERVISOR_CALLBACK]
 
 	current_cpu r3
 
@@ -540,17 +620,19 @@ ENTRY(ret_to_user)
 	beq		restore
 
 	/* Fallback to do_upcall */
+
 /*
  * Process pending events along the upcall path to the domain.
  */
-ENTRY(do_upcall)
+do_upcall:
 	disable_irq
 
 	current_cpu r11
 
 	curdom  r10, r0
 
-	ldr		lr, [r10, #OFFSET_HYPERVISOR_CALLBACK]
+	ldr		r0, [r10, #OFFSET_AVZ_SHARED]
+	ldr		lr, [r0, #OFFSET_HYPERVISOR_CALLBACK]
 	cmp		lr, #0
 	beq		restore
 
@@ -633,6 +715,25 @@ hypervisor_stack:
 	.word	hypervisor_stack
 
 #endif /* CONFIG_AVZ */
+
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+
+@ Inject the real syscall vector used by SO3
+@ Modified registers: r0, r1
+ENTRY(inject_syscall_vector)
+
+	ldr r0, =__vectors
+	ldr r1, [r0, #8] 	@ Vector location of swi in standard ARM vector table
+	ldr r2, [r0, #36] 	@ And the re-direction stored in the same page, at this position (+36), following the vector table.
+
+	ldr r0, =VECTOR_VADDR
+
+	str r1, [r0, #8]
+	str r2, [r0, #36]
+
+	mov pc, lr
+
+#endif
 
 .align  5
 fiq:

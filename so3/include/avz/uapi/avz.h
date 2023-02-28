@@ -40,7 +40,7 @@
  * Virtual interrupts that a guest OS may receive from the hypervisor.
  *
  */
-#define	NR_VIRQS	2
+#define	NR_VIRQS	8
 
 #define VIRQ_TIMER      0  /* System timer tick virtualized interrupt */
 #define VIRQ_TIMER_RT   1  /* Timer tick issued from the oneshot timer (for RT agency and MEs */
@@ -66,6 +66,11 @@
 #define DOMID_AGENCY_RT	1
 
 extern int hypercall_trampoline(int hcall, long a0, long a2, long a3, long a4);
+
+/*
+ * 128 event channels per domain
+ */
+#define NR_EVTCHN 128
 
 /*
  * Shared info page, shared between AVZ and the domain.
@@ -94,11 +99,26 @@ struct avz_shared {
 	/* Low-level print function mainly for debugging purpose */
 	void (*printch)(char c);
 
-	unsigned long dom_phys_offset;
-
 	/* VBstore pfn */
 	unsigned long vbstore_pfn;
 
+	unsigned long dom_phys_offset;
+
+	/* Physical and virtual address of the page table used when the domain is bootstraping */
+	addr_t pagetable_paddr;
+	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
+
+	/* Address of the logbool ht_set function which can be used in the domain. */
+	unsigned long logbool_ht_set_addr;
+
+	/* We inform the domain about the hypervisor memory region so that the
+	 * domain can re-map correctly.
+	 */
+	addr_t hypervisor_vaddr;
+
+	/* Other fields related to domain life */
+
+	unsigned long domain_stack;
 	uint8_t evtchn_upcall_pending;
 
 	/*
@@ -115,27 +135,12 @@ struct avz_shared {
 	/* Agency or ME descriptor */
 	dom_desc_t dom_desc;
 
-	/* Physical and virtual address of the page table used when the domain is bootstraping */
-	addr_t pagetable_paddr;
-	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
-
-	/* We inform the domain about the hypervisor memory region so that the
-	 * domain can re-map correctly.
-	 */
-	addr_t hypervisor_vaddr;
-
-	/* Other fields related to domain life */
-
-	unsigned long domain_stack;
-
-	/* Keep the physical address so that the guest can map within in its address space. */
-	addr_t subdomain_shared_paddr;
-
 	struct avz_shared *subdomain_shared;
 
 	/* Reference to the logbool hashtable (one per each domain) */
 	void *logbool_ht;
 };
+
 typedef struct avz_shared avz_shared_t;
 
 extern avz_shared_t *avz_shared;
@@ -182,6 +187,10 @@ struct DOMCALL_sync_domain_interactions_args {
 };
 
 void postmig_adjust_timer(void);
+
+#ifndef CONFIG_AVZ
+#define ME_domID() (avz_shared->domID)
+#endif
 
 #endif /* AVZ_H */
 

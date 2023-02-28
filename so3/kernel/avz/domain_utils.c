@@ -218,15 +218,17 @@ void loadAgency(void)
  * @param itb	ITB image
  */
 void loadME(unsigned int slotID, void *itb) {
-#if 0
 	void *ME_vaddr;
-	size_t size, fdt_size, initrd_size;
+	size_t ME_size, size, fdt_size, initrd_size;
 	void *fdt_vaddr, *initrd_vaddr;
 	void *dest_ME_vaddr;
 	uint32_t initrd_start, initrd_end;
 	int nodeoffset, next_node, depth = 0;
 	int ret;
 	const char *propstring;
+	uint8_t tmp[16];
+	addr_t base;
+	int len;
 
 	/* Look for a node of ME type in the fit image */
 	nodeoffset = 0;
@@ -238,7 +240,7 @@ void loadME(unsigned int slotID, void *itb) {
 		if ((ret != -1) && !strcmp(propstring, "ME")) {
 
 			/* Get the pointer to the OS binary image from the ITB we got from the user space. */
-			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &ME_vaddr, &size);
+			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &ME_vaddr, &ME_size);
 			if (ret) {
 				lprintk("!! The properties in the ME node does not look good !!\n");
 				BUG();
@@ -277,6 +279,25 @@ void loadME(unsigned int slotID, void *itb) {
 		BUG();
 	}
 
+	/* Fixup the ME device tree */
+
+	/* find or create "/memory" node. */
+	nodeoffset = fdt_find_or_add_subnode(fdt_vaddr, 0, "memory");
+	BUG_ON(nodeoffset < 0);
+
+	fdt_setprop(fdt_vaddr, nodeoffset, "device_type", "memory", sizeof("memory"));
+
+	size = memslot[slotID].size;
+
+#ifdef CONFIG_ARM64VT
+	base = memslot[slotID].ipa_addr;
+#else
+	base = memslot[slotID].base_paddr;
+#endif
+	len = fdt_pack_reg(fdt_vaddr, tmp, &base, &size);
+
+	fdt_setprop(fdt_vaddr, nodeoffset, "reg", tmp, len);
+
 	/* Look for a possible node of ramdisk type in the fit image */
 	nodeoffset = 0;
 	depth = 0;
@@ -301,7 +322,7 @@ void loadME(unsigned int slotID, void *itb) {
 	dest_ME_vaddr += L_TEXT_OFFSET;
 
 	/* Move the kernel binary within the domain slotID. */
-	memcpy(dest_ME_vaddr, ME_vaddr, size);
+	memcpy(dest_ME_vaddr, ME_vaddr, ME_size);
 
 	/* Put the FDT device tree close to the top of memory allocated to the domain.
 	 * Since there is the initial domain stack at the top, we put the FDT one page (PAGE_SIZE) lower.
@@ -332,7 +353,6 @@ void loadME(unsigned int slotID, void *itb) {
 
 		memcpy((void *) __lva(initrd_start), initrd_vaddr, initrd_size);
 	}
-#endif
 }
 
 
