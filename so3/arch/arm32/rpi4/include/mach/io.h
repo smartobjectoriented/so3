@@ -19,6 +19,9 @@
 #ifndef MACH_IO_H
 #define MACH_IO_H
 
+#define LOCAL_INTC_PHYS		0xff800000
+#define LOCAL_INTC_SIZE		0x100
+
 /*
  * From BCM2835 ARM peripherals documentation.
  *
@@ -56,7 +59,7 @@
  * Mailbox write-to-set bits.  There are 16 mailboxes, 4 per CPU, and
  * these bits are organized by mailbox number and then CPU number.  We
  * use mailbox 0 for IPIs.  The mailbox's interrupt is raised while
- * any bit is set.
+ * any bit is seft.
  */
 #define LOCAL_MAILBOX0_SET0		0x080
 #define LOCAL_MAILBOX3_SET0		0x08c

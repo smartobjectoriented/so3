@@ -17,7 +17,6 @@
  */
 
 #include <smp.h>
-#include <io.h>
 #include <spinlock.h>
 #include <memory.h>
 
@@ -60,6 +59,6 @@ void smp_boot_secondary(unsigned int cpu)
 	printk("%s: booting CPU: %d\n", __func__, cpu);
 
 	spin_lock(&cpu_lock);
-	cpu_on(cpu, (u32) virt_to_phys(secondary_startup));
+	cpu_on(cpu, (u32) __pa(secondary_startup));
 	spin_unlock(&cpu_lock);
 }

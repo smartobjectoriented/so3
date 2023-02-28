@@ -140,6 +140,7 @@
 
 #define wfe()           asm volatile("wfe" : : : "memory")
 #define wfi()           asm volatile("wfi" : : : "memory")
+#define sev()           asm volatile("sev" : : : "memory")
 
 #define ___asm_opcode_identity32(x) ((x) & 0xFFFFFFFF)
 
