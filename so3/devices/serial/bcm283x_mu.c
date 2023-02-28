@@ -31,7 +31,7 @@
 
 #include <asm/io.h>                 /* ioread/iowrite macros */
 
-void *__uart_vaddr = (void *) UART_BASE;
+void *__uart_vaddr = (void *) CONFIG_UART_LL_PADDR;
 
 typedef struct {
 	addr_t base;

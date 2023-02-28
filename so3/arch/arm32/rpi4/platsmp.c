@@ -17,12 +17,12 @@
  */
 
 #include <smp.h>
-#include <io.h>
 #include <spinlock.h>
 #include <memory.h>
 
 #include <asm/cacheflush.h>
 #include <asm/processor.h>
+#include <asm/mmu.h>
 
 #include <device/arch/gic.h>
 
@@ -32,7 +32,7 @@ extern void secondary_startup(void);
 
 void smp_boot_secondary(unsigned int cpu)
 {
-	unsigned long secondary_startup_phys = (unsigned long) virt_to_phys((void *) secondary_startup);
+	unsigned long secondary_startup_phys = (unsigned long) __pa((void *) secondary_startup);
 	void *intc_vaddr; /* We will add bytes to this pointer */
 
 	printk("%s: booting CPU: %d...\n", __func__, cpu);

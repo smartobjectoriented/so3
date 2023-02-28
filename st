@@ -36,7 +36,7 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
 
     else    
    echo Starting on ARM32
-   sudo qemu/arm-softmmu/qemu-system-arm $@ ${USR_OPTION} \
+   sudo qemu-system-arm $@ ${USR_OPTION} \
   	-smp 4 \
 	-serial mon:stdio  \
 	-M vexpress-a15,secure=on  -cpu cortex-a15 \

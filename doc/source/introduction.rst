@@ -8,7 +8,7 @@ such as IoT devices, real-time environment, academic development, etc.
 
 SO3 Operating System results from several Years of research and development at 
 `REDS <REDS_>`__ (Reconfigurable Embedded Digital Systems) Institute from `HEIG-VD <HEIG-VD_>`__,
-in the field of embedded operating systems and execution environment with ARM 32-bit multicore systems. SO3 has
+in the field of embedded operating systems and execution environment with ARM 32/64-bit multicore systems. SO3 has
 been publicly released in early 2020 (see also `HEIG-VD newsletter <heig-vd_news_>`__).
 
 `Prof. Daniel Rossier <DRE_>`__ initiated the development of an operating system in 2013 in the context of a Bachelor 
@@ -17,6 +17,9 @@ and used in other lectures (like operating systems of course) and since 2018 bec
 a full *migrating* execution environment between connected devices; this novel approach leads to the 
 `SOO framework <https://gitlab.com/smartobject/soo>`__ which is still in development.
 
+More recently, SO3 is become a *polymorphic* operating system, meaning that it can be configured to
+run as an hypervisor, a standalone OS or a guest on top of the hypervisor. The hypervisor is called **AVZ**
+(Agency VirtualiZer) and is aimed at running with or without ARM VT support.
 
 Approach and philosophy
 -----------------------

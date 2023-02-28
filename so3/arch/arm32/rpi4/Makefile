@@ -2,5 +2,5 @@
 # Makefile  
 #
 
-obj-y	+= platsmp.o
+obj-$(CONFIG_SMP)	+= platsmp.o
 
