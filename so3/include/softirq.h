@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,7 +28,10 @@ enum {
 	NR_COMMON_SOFTIRQS
 };
 
-#define NR_SOFTIRQS	NR_COMMON_SOFTIRQS
+#include <common.h>
+#include <smp.h>
+
+#define NR_SOFTIRQS NR_COMMON_SOFTIRQS
 
 typedef void (*softirq_handler)(void);
 
@@ -37,5 +40,7 @@ void raise_softirq(unsigned int nr);
 void softirq_init(void);
 void do_softirq(void);
 
-#endif /* SOFTIRQ_H */
+void cpu_raise_softirq(unsigned int cpu, unsigned int nr);
+void raise_softirq(unsigned int nr);
 
+#endif /* SOFTIRQ_H */

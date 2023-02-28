@@ -1,0 +1,10 @@
+
+config KERNEL_VADDR
+	hex "Virtual base address of the hypervisor"
+	default 0xff000000 if ARM32
+	default 0xffff700000000000 if ARM64 
+	default 0x100000000000 if ARM64VT
+	
+config HEAP_SIZE
+	int "Size of the heap in the hypervisor (MB)"
+	default 2

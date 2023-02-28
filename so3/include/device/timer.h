@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -17,14 +17,12 @@
  */
 
 
-#ifndef TIME_H
-#define TIME_H
+#ifndef DEVICE_TIMER_H
+#define DEVICE_TIMER_H
 
 #include <types.h>
 
 #include <device/device.h>
-
-#define HZ      1000
 
 #define CLOCKSOURCE_MASK(bits) (u64)(bits<64 ? ((1ull<<bits)-1) : -1)
 
@@ -113,5 +111,10 @@ u64 get_s_time(void);
 void timer_dev_init(void);
 bool timer_dev_set_deadline(u64 deadline);
 
+void secondary_timer_init(void);
 
-#endif /* TIME_H */
+#ifdef CONFIG_AVZ
+void timer_interrupt(bool periodic);
+#endif /* CONFIG_AVZ */
+
+#endif /* DEVICE_TIMER_H */

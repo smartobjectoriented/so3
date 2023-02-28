@@ -1,0 +1,19 @@
+#
+# SOO device configuration
+#
+
+menu "vnet frontend"
+
+config VNET_FRONT_DHCP
+    bool "Use DHCP"
+    depends on VNET_FRONTEND
+    help
+      The me use DHCP to acquire IP
+
+
+endmenu
+
+
+
+
+

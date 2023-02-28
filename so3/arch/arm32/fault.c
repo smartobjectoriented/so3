@@ -98,3 +98,8 @@ void dumpregisters(void) {
 
 }
 
+void trap_handle(cpu_regs_t *regs) {
+
+	/* To be implemented */
+
+}

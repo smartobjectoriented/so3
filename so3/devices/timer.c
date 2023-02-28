@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -98,7 +98,6 @@ bool timer_dev_set_deadline(u64 deadline) {
 
 	return false;
 }
-
 
 void timer_dev_init(void) {
 

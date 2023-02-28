@@ -27,3 +27,8 @@ set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  
 set(CMAKE_ASM_FLAGS_DEBUG "-D__ARM__ -D__ASSEMBLY__")
 
 set(CMAKE_LINKER "arm-none-eabi-ld")
+
+set(CMAKE_EXE_LINKER_FLAGS "-nostdlib")
+
+
+ 

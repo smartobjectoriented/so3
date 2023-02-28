@@ -23,7 +23,7 @@
 
 #include <asm/processor.h>
 
-#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_INT))
+#define __BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_INT))
 #define BIT_WORD(nr)		((nr) / BITS_PER_INT)
 
 extern unsigned long _find_first_zero_bit(const unsigned long *p, unsigned long size);
@@ -72,7 +72,7 @@ extern void change_bit(int nr, volatile void * addr);
 
 static inline void __change_bit(int nr, volatile void *addr)
 {
-	unsigned long mask = BIT_MASK(nr);
+	unsigned long mask = __BIT_MASK(nr);
 	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
 
 	*p ^= mask;
@@ -80,7 +80,7 @@ static inline void __change_bit(int nr, volatile void *addr)
 
 static inline int __test_and_set_bit(int nr, volatile void *addr)
 {
-	unsigned long mask = BIT_MASK(nr);
+	unsigned long mask = __BIT_MASK(nr);
 	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
 	unsigned long old = *p;
 
@@ -102,7 +102,7 @@ static inline int test_and_set_bit(int nr, volatile void * addr)
 
 static inline int __test_and_clear_bit(int nr, volatile void *addr)
 {
-	unsigned long mask = BIT_MASK(nr);
+	unsigned long mask = __BIT_MASK(nr);
 	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
 	unsigned long old = *p;
 
@@ -126,7 +126,7 @@ extern int test_and_change_bit(int nr, volatile void *addr);
 
 static inline int __test_and_change_bit(int nr, volatile void *addr)
 {
-	unsigned long mask = BIT_MASK(nr);
+	unsigned long mask = __BIT_MASK(nr);
 	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
 	unsigned long old = *p;
 

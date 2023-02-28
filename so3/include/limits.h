@@ -34,6 +34,7 @@
 #define INT_MAX  0x7fffffff
 #define UINT_MAX 0xffffffffU
 #define UINT16_MAX      (65535U)
+#define LONG_MAX        ((long)(~0UL>>1))
 #define LONG_MIN (-LONG_MAX-1)
 #define ULONG_MAX (2UL*LONG_MAX+1)
 #define LLONG_MIN (-LLONG_MAX-1)

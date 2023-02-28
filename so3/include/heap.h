@@ -22,15 +22,11 @@
 #include <types.h>
 #include <sizes.h>
 
-#if 0
-#define TRACKING
-#endif
-
 /*
- * The heap size is defined in arch/arm/so3.lds
+ * The heap size is defined in the linker script (avz.lds)
  * The value must be strictly the same.
-*/
-#define HEAP_SIZE 	(SZ_32M)
+ */
+#define HEAP_SIZE 	(CONFIG_HEAP_SIZE * SZ_1M)
 
 #define CHUNK_SIG	0xbeefdead
 

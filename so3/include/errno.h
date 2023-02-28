@@ -1,25 +1,18 @@
-/*
- * U-boot - errno.h Error number defines
- *
- * Copyright (c) 2005-2007 Analog Devices Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
- */
-
-#ifndef _GENERIC_ERRNO_H
-#define _GENERIC_ERRNO_H
+#ifndef ERRNO_H
+#define ERRNO_H
 
 #include <types.h>
 
-#define	EPERM		1	/* Operation not permitted */
-#define	ENOENT		2	/* No such file or directory */
-#define	ESRCH		3	/* No such process */
-#define	EINTR		4	/* Interrupted system call */
-#define	EIO		5	/* I/O error */
-#define	ENXIO		6	/* No such device or address */
-#define	E2BIG		7	/* Argument list too long */
-#define	ENOEXEC		8	/* Exec format error */
-#define	EBADF		9	/* Bad file number */
+#define ESUCCESS	 0
+#define	EPERM		 1	/* Operation not permitted */
+#define	ENOENT		 2	/* No such file or directory */
+#define	ESRCH		 3	/* No such process */
+#define	EINTR		 4	/* Interrupted system call */
+#define	EIO		 5	/* I/O error */
+#define	ENXIO		 6	/* No such device or address */
+#define	E2BIG		 7	/* Arg list too long */
+#define	ENOEXEC		 8	/* Exec format error */
+#define	EBADF		 9	/* Bad file number */
 #define	ECHILD		10	/* No child processes */
 #define	EAGAIN		11	/* Try again */
 #define	ENOMEM		12	/* Out of memory */
@@ -140,4 +133,4 @@
 
 void set_errno(uint32_t val);
 
-#endif
+#endif /* ERRNO_H */

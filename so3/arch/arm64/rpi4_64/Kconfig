@@ -2,3 +2,8 @@ config RAM_BASE
 	depends on RPI4_64
 	hex "RAM Memory physical base address"
 	default 0x00000000
+
+config RAM_SIZE
+        depends on RPI4_64 && !ARM64VT
+        hex "RAM memory size (Up to the hypervisor)"
+        default 0x3f000000

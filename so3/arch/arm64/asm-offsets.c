@@ -23,6 +23,16 @@
 #include <asm/processor.h>
 #include <asm/types.h>
 
+#include <asm/smccc.h>
+
+#ifdef CONFIG_AVZ
+
+#include <avz/sched.h>
+
+#include <avz/uapi/avz.h>
+
+#endif /* CONFIG_AVZ */
+
 /* Use marker if you need to separate the values later */
 
 #define DEFINE(sym, val) \
@@ -32,6 +42,20 @@
 
 int main(void)
 {
+#ifdef CONFIG_AVZ
+
+	DEFINE(OFFSET_AVZ_SHARED, offsetof(struct domain, avz_shared));
+
+	DEFINE(OFFSET_EVTCHN_UPCALL_PENDING, offsetof(struct avz_shared, evtchn_upcall_pending));
+
+	DEFINE(OFFSET_HYPERVISOR_CALLBACK,  offsetof(struct avz_shared, vectors_vaddr));
+	DEFINE(OFFSET_DOMCALL_CALLBACK, offsetof(struct avz_shared, domcall_vaddr));
+	DEFINE(OFFSET_TRAPS_CALLBACK, offsetof(struct avz_shared, traps_vaddr));
+
+	DEFINE(OFFSET_G_SP,		 offsetof(struct domain, g_sp));
+
+	DEFINE(OFFSET_CPU_REGS,		offsetof(struct domain, cpu_regs));
+#endif
 
 	BLANK();
 
@@ -69,6 +93,13 @@ int main(void)
 	DEFINE(OFFSET_SP,		offsetof(struct cpu_regs, sp));
 	DEFINE(OFFSET_PC,		offsetof(struct cpu_regs, pc));
 	DEFINE(OFFSET_PSTATE,		offsetof(struct cpu_regs, pstate));
+
+	BLANK();
+
+	DEFINE(ARM_SMCCC_RES_X0_OFFS,		offsetof(struct arm_smccc_res, a0));
+	DEFINE(ARM_SMCCC_RES_X2_OFFS,		offsetof(struct arm_smccc_res, a2));
+	DEFINE(ARM_SMCCC_QUIRK_ID_OFFS,	offsetof(struct arm_smccc_quirk, id));
+	DEFINE(ARM_SMCCC_QUIRK_STATE_OFFS,	offsetof(struct arm_smccc_quirk, state));
 
 	BLANK();
 

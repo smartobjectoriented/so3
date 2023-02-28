@@ -20,6 +20,7 @@
 #define DEBUG
 #endif
 
+#include <common.h>
 #include <memory.h>
 #include <heap.h>
 #include <sizes.h>
@@ -32,7 +33,9 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#include <generated/autoconf.h>
+#ifdef CONFIG_SO3VIRT
+#include <avz/uapi/avz.h>
+#endif
 
 void *__current_pgtable = NULL;
 
@@ -40,10 +43,26 @@ void *current_pgtable(void) {
 	return __current_pgtable;
 }
 
-static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache)
+/**
+ * Retrieve the current physical address of the page table
+ *
+ * @param pgtable_paddr
+ */
+void mmu_get_current_pgtable(addr_t *pgtable_paddr) {
+	int cpu;
+
+	cpu = smp_processor_id();
+
+	*pgtable_paddr = cpu_get_ttbr0();
+}
+
+static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache, mmu_stage_t stage)
 {
-	u64 *l0pte, *l1pte, *l2pte, *l3pte;
+	u64 *l1pte, *l2pte, *l3pte;
 	u64 *l3pgtable;
+
+#ifdef CONFIG_VA_BITS_48
+	u64 *l0pte;
 
 	/* These PTEs must exist. */
 	l0pte = l0pte_offset(l0pgtable, addr);
@@ -51,6 +70,12 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 	l1pte = l1pte_offset(l0pte, addr);
 	BUG_ON(!*l1pte);
+#elif CONFIG_VA_BITS_39
+	l1pte = l0pgtable + l1pte_index(addr);
+	BUG_ON(!*l1pte);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 	do {
 		l2pte = l2pte_offset(l1pte, addr);
@@ -67,7 +92,14 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			/* Attach the L2 PTE to this L3 page table */
 			*l2pte = __pa((addr_t) l3pgtable)  & TTB_L2_TABLE_ADDR_MASK;
 
+#ifdef CONFIG_ARM64VT
+			if (stage == S1)
+				set_pte_table(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+			else
+				set_pte_table_S2(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 			set_pte_table(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#endif
 
 			DBG("Allocating a L3 page table at %p in l2pte: %p with contents: %lx\n", l3pgtable, l2pte, *l2pte);
 		}
@@ -76,11 +108,18 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 		*l3pte = phys & TTB_L3_PAGE_ADDR_MASK;
 
+#ifdef CONFIG_ARM64VT
+		if (stage == S1)
+			set_pte_page(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+		else
+			set_pte_page_S2(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 		set_pte_page(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
 		/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
 		if (user_space_vaddr(addr))
 			*l3pte |= PTE_BLOCK_AP1;
+#endif
 
 		DBG("Allocating a 4 KB page at l2pte: %p content: %lx\n", l3pte, *l3pte);
 
@@ -94,19 +133,28 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 }
 
-static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache)
+static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache, mmu_stage_t stage)
 {
-	u64 *l0pte, *l1pte, *l2pte;
+	u64 *l1pte, *l2pte;
 	u64 *l2pgtable;
 	addr_t next;
+
+#ifdef CONFIG_VA_BITS_48
+	u64 *l0pte;
 
 	/* We are sure this pte exists */
 	l0pte = l0pte_offset(l0pgtable, addr);
 	BUG_ON(!*l0pte);
+#endif
 
 	do {
+#ifdef CONFIG_VA_BITS_48
 		l1pte = l1pte_offset(l0pte, addr);
-
+#elif CONFIG_VA_BITS_39
+		l1pte = l0pgtable + l1pte_index(addr);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 		/* L1 page table already exist? */
 		if (!*l1pte) {
 
@@ -119,8 +167,14 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			/* Attach the L1 PTE to this L2 page table */
 			*l1pte = __pa((addr_t) l2pgtable)  & TTB_L1_TABLE_ADDR_MASK;
 
+#ifdef CONFIG_ARM64VT
+			if (stage == S1)
+				set_pte_table(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+			else
+				set_pte_table_S2(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 			set_pte_table(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
-
+#endif
 			DBG("Allocating a L2 page table at %p in l1pte: %p with contents: %lx\n", l2pgtable, l1pte, *l1pte);
 		}
 
@@ -135,12 +189,18 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 			*l2pte = phys & TTB_L2_BLOCK_ADDR_MASK;
 
+#ifdef CONFIG_ARM64VT
+			if (stage == S1)
+				set_pte_block(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+			else
+				set_pte_block_S2(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 			set_pte_block(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
 			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
 			if (user_space_vaddr(addr))
 				*l2pte |= PTE_BLOCK_AP1;
-
+#endif
 			DBG("Allocating a 2 MB block at l2pte: %p content: %lx\n", l2pte, *l2pte);
 
 			flush_pte_entry(addr, l2pte);
@@ -149,7 +209,7 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			addr += SZ_2M;
 
 		} else {
-			alloc_init_l3(l0pgtable, addr, next, phys, nocache);
+			alloc_init_l3(l0pgtable, addr, next, phys, nocache, stage);
 			phys += next - addr;
 			addr = next;
 		}
@@ -158,7 +218,9 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 }
 
-static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache)
+#ifdef CONFIG_VA_BITS_48
+
+static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache, mmu_stage_t stage)
 {
 	u64 *l0pte, *l1pte;
 	u64 *l1pgtable;
@@ -178,9 +240,14 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 			/* Attach the L0 PTE to this L1 page table */
 			*l0pte = __pa((addr_t) l1pgtable)  & TTB_L0_TABLE_ADDR_MASK;
-
+#ifdef CONFIG_ARM64VT
+			if (stage == S1)
+				set_pte_table(l0pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+			else
+				set_pte_table_S2(l0pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 			set_pte_table(l0pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
-
+#endif
 			DBG("Allocating a L1 page table at %p in l0pte: %p with contents: %lx\n", l1pgtable, l0pte, *l0pte);
 		}
 
@@ -194,12 +261,18 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 		if (((addr | next | phys) & ~BLOCK_1G_MASK) == 0) {
 
 			*l1pte = phys & TTB_L1_BLOCK_ADDR_MASK;
-
+#ifdef CONFIG_ARM64VT
+			if (stage == S1)
+				set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+			else
+				set_pte_block_S2(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+#else
 			set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
-
+			
 			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
 			if (user_space_vaddr(addr))
 				*l1pte |= PTE_BLOCK_AP1;
+#endif
 
 			DBG("Allocating a 1 GB block at l1pte: %p content: %lx\n", l1pte, *l1pte);
 
@@ -209,7 +282,7 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			addr += SZ_1G;
 
 		} else {
-			alloc_init_l2(l0pgtable, addr, next, phys, nocache);
+			alloc_init_l2(l0pgtable, addr, next, phys, nocache, stage);
 			phys += next - addr;
 			addr = next;
 		}
@@ -231,17 +304,16 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
  * Mapping of blocks at L0 level is not allowed with 4 KB granule (AArch64).
  *
  */
-void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+void __create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache, mmu_stage_t stage) {
 	addr_t addr, end, length, next;
 
 	/* If l0pgtable is NULL, we consider the system page table */
-	if (l0pgtable == NULL)
-		l0pgtable = __sys_root_pgtable;
+	if (pgtable == NULL)
+		pgtable = __sys_root_pgtable;
 
 	BUG_ON(!size);
 
 	DBG("Create mapping for virt %llx - phys: %llx - size: %x\n", virt_base, phys_base, size);
-
 	addr = virt_base & PAGE_MASK;
 	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
 
@@ -250,15 +322,78 @@ void create_mapping(void *l0pgtable, addr_t virt_base, addr_t phys_base, size_t 
 	do {
 		next = l0_addr_end(addr, end);
 
-		alloc_init_l1(l0pgtable, addr, next, phys_base, nocache);
+		alloc_init_l1(pgtable, addr, next, phys_base, nocache, stage);
 
 		phys_base += next - addr;
 		addr = next;
 
 	} while (addr != end);
 
-	mmu_page_table_flush((addr_t) l0pgtable, (addr_t) (l0pgtable + TTB_L0_SIZE));
+	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L0_SIZE));
 }
+
+void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+	__create_mapping(pgtable, virt_base, phys_base, size, nocache, S1);
+}
+
+#elif CONFIG_VA_BITS_39
+
+/**
+ * In the 39-bit VA version, the first page table is actually the l1pgtable from the
+ * point of view of these functions.
+ *
+ * @param l1pgtable	The first level page table (l0pgtable actually)
+ * @param virt_base
+ * @param phys_base
+ * @param size
+ * @param nocache	true for I/O access typically
+ */
+void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+	addr_t addr, end, length, next, phys;
+	u64 *l1pte;
+
+	/* If l1pgtable is NULL, we consider the system page table */
+	if (l1pgtable == NULL)
+		l1pgtable = __sys_root_pgtable;
+
+	BUG_ON(!size);
+
+	addr = virt_base & PAGE_MASK;
+	length = ALIGN_UP(size + (virt_base & ~PAGE_MASK), PAGE_SIZE);
+
+	end = addr + length;
+	phys = phys_base;
+
+	do {
+		next = l1_addr_end(addr, end);
+
+		if (((addr | next | phys) & ~BLOCK_1G_MASK) == 0) {
+			l1pte = l1pte_offset(l1pgtable, addr);
+			*l1pte = phys & TTB_L1_BLOCK_ADDR_MASK;
+
+			set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
+
+			DBG("Allocating a 1 GB block at l1pte: %p content: %lx\n", l1pte, *l1pte);
+
+			flush_pte_entry(addr, l1pte);
+
+			phys += SZ_1G;
+			addr += SZ_1G;
+
+		} else {
+			alloc_init_l2(l1pgtable, addr, next, phys, nocache);
+			phys += next - addr;
+			addr = next;
+		}
+
+	} while (addr != end);
+
+	mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+}
+
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 static bool empty_table(void *pgtable) {
 	int i;
@@ -337,74 +472,249 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 		free(pgtable);
 }
 
-
-/* Duplicate the essentials of the kernel area */
-void pgtable_copy_kernel_area(void *pgtable) {
-	/* Nothing to do here */
-
-}
-
 /*
  * Allocate a new page table. Return NULL if it fails.
  * The page table must be 4 KB aligned.
  */
 void *new_root_pgtable(void) {
 	void *pgtable;
+	uint32_t ttb_size;
 
-	pgtable = memalign(TTB_L0_SIZE, PAGE_SIZE);
+#ifdef CONFIG_VA_BITS_48
+	ttb_size = TTB_L0_SIZE;
+#elif CONFIG_VA_BITS_39
+	ttb_size = TTB_L1_SIZE;
+#else
+#error "Wrong VA_BITS configuration."
+#endif
+
+	pgtable = memalign(ttb_size, PAGE_SIZE);
 	if (!pgtable) {
 		printk("%s: heap overflow...\n", __func__);
 		kernel_panic();
 	}
 
 	/* Empty the page table */
-	memset(pgtable, 0, TTB_L0_SIZE);
+	memset(pgtable, 0, ttb_size);
 
 	return pgtable;
 }
 
 void copy_root_pgtable(void *dst, void *src) {
 	memcpy(dst, src, TTB_L0_SIZE);
-}
 
+#ifdef CONFIG_SO3VIRT
+	*l0pte_offset(dst, avz_shared->hypervisor_vaddr) =
+		*l0pte_offset(avz_shared->pagetable_vaddr, avz_shared->hypervisor_vaddr);
+#endif /* CONFIG_SO3VIRT */
+
+}
 
 /**
  * Free a root page table and its associated Lx page tables used for the user space area.
  * We do not consider any shared pages/page tables.
  *
  * @param pgtable
- * @param remove  true if the root page table must be freed.
+ * @param remove  true if we keep the root page table for subsequent allocations
  */
 void reset_root_pgtable(void *pgtable, bool remove) {
-#if 0
 	int i;
-	uint32_t *l1pte, *l2pte;
+	u64 *pgtable_l1, *pgtable_l2, *pgtable_l3;
+	u64 *l0pte, *l1pte, *l2pte;
 
-	for (i = 0; i < l1pte_index(CONFIG_KERNEL_VADDR); i++) {
+	for (i = 0; i < TTB_L0_ENTRIES; i++) {
 
-		l1pte = (uint32_t *) l1pgtable + i;
+		l0pte = (u64 *) pgtable + i;
 
 		/* Check if a L2 page table is used */
-		if (*l1pte) {
+		if (*l0pte) {
+			pgtable_l1 = (u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK);
 
-			if (!l1pte_is_sect(*l1pte)) {
-				l2pte = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
+			for (i = 0; i < TTB_L1_ENTRIES; i++) {
 
-				free(l2pte);
+				l1pte = pgtable_l1 + i;
 
-				flush_pte_entry(l2pte);
+				if (*l1pte && (pte_type(l1pte) == PTE_TYPE_TABLE)) {
+					pgtable_l2 = (u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK);
+
+					for (i = 0; i < TTB_L2_ENTRIES; i++) {
+						l2pte = pgtable_l2 + i;
+
+						if (*l2pte && (pte_type(l2pte) == PTE_TYPE_TABLE)) {
+							pgtable_l3 = (u64 *) __va(*l2pte & TTB_L2_TABLE_ADDR_MASK);
+
+							free(pgtable_l3);
+							*l2pte = 0;
+						}
+					}
+
+					free(pgtable_l2);
+					*l1pte = 0;
+				}
 			}
-			*l1pte = 0;
+
+			free(pgtable_l1);
+			*l0pte = 0;
 		}
 	}
 
-
-	/* And finally, restore the heap memory allocated for this page table */
 	if (remove)
-		free(l1pgtable);
+		free(pgtable);
 
-	mmu_page_table_flush((addr_t) l1pgtable, (addr_t) (l1pgtable + TTB_L1_ENTRIES));
+	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L1_ENTRIES));
+
+}
+
+/*
+ * Initial configuration of system page table
+ */
+void mmu_configure(addr_t fdt_addr) {
+#ifndef CONFIG_SO3VIRT
+	int i;
+
+	icache_disable();
+	dcache_disable();
 #endif
+
+#ifdef CONFIG_AVZ
+	/* The initial page table is only set by CPU #0 (AGENCY_CPU).
+	 * The secondary CPUs use the same page table.
+	 */
+
+	if (smp_processor_id() == AGENCY_CPU) {
+#endif
+		/* Empty the page table */
+		memset((void *) __sys_root_pgtable, 0, TTB_L0_SIZE);
+		memset((void *) __sys_idmap_l1pgtable, 0, TTB_L1_SIZE);
+		memset((void *) __sys_linearmap_l1pgtable, 0, TTB_L1_SIZE);
+		memset((void *) __sys_linearmap_l2pgtable, 0, TTB_L2_SIZE);
+
+#ifdef CONFIG_SO3VIRT
+
+		__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) (__pa(__sys_idmap_l1pgtable) & TTB_L0_TABLE_ADDR_MASK);
+		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+
+		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+
+		flush_dcache_all();
+
+		asm volatile("dsb sy");
+		asm volatile("isb");
+		asm volatile("msr ttbr0_el1, %0" : : "r" (__pa(__sys_root_pgtable)) : "memory");
+		asm volatile("isb");
+
+#else
+		/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
+#ifdef CONFIG_VA_BITS_48
+		__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
+		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+
+		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+#elif CONFIG_VA_BITS_39
+		__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
+
+#ifdef CONFIG_VA_BITS_48
+		/* Create the initial 2 MB linear mapping of the kernel in its target virtual address space */
+
+		__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
+		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+
+		__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l2pgtable & TTB_L1_TABLE_ADDR_MASK;
+		set_pte_table(&__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+
+		/* Set up a 64 MB linear mapping to progress with the bootstrap code
+		 * until the memory manager re-configure the memory mapping with
+		 * a better granularity.
+		 */
+		for (i = 0; i < 32; i++) {
+			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)] = (CONFIG_RAM_BASE + i*SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
+			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)], DCACHE_WRITEALLOC);
+		}
+#elif CONFIG_VA_BITS_39
+		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
+
+		/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
+#ifdef CONFIG_VA_BITS_48
+		__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
+#elif CONFIG_VA_BITS_39
+		__sys_root_pgtable[l1pte_index(UART_BASE)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
+
+#ifdef CONFIG_AVZ
+	}
+#endif
+	mmu_setup(__sys_root_pgtable);
+
+	icache_enable();
+	dcache_enable();
+
+#endif /* !CONFIG_SO3VIRT */
+
+#if 0
+	if (smp_processor_id() == AGENCY_CPU) {
+		__fdt_addr = (addr_t *) fdt_addr;
+
+		/* The device tree is visible in the L_PAGE_OFFSET area */
+		fdt_vaddr = (addr_t *) __lva(fdt_addr);
+	}
+#endif
+}
+
+/*
+ * Switch the MMU to a L0 page table.
+ * We *only* use ttbr1 when dealing with our hypervisor which is located in a kernel space area,
+ * i.e. starting with 0xffff.... So ttbr0 is not used as soon as the id mapping in the RAM
+ * is not necessary anymore.
+ */
+void __mmu_switch_kernel(void *pgtable_paddr, bool vttbr) {
+	flush_dcache_all();
+
+#ifdef CONFIG_AVZ
+	if (vttbr)
+		__mmu_switch_vttbr(pgtable_paddr);
+	else
+#endif
+
+#ifdef CONFIG_ARM64VT
+		__mmu_switch_ttbr0(pgtable_paddr);
+#else
+		__mmu_switch_ttbr1(pgtable_paddr);
+#endif
+
+	invalidate_icache_all();
+	__asm_invalidate_tlb_all();
+}
+
+void mmu_switch_kernel(void *pgtable) {
+	__mmu_switch_kernel(pgtable, false);
+}
+
+/**
+ * Switch memory context in the user space range of EL1.
+ *
+ * @param pgtable
+ */
+void mmu_switch(void *pgtable_paddr) {
+	flush_dcache_all();
+
+	__mmu_switch_ttbr0(pgtable_paddr);
+
+	invalidate_icache_all();
+	__asm_invalidate_tlb_all();
 }
 
 /*
@@ -461,100 +771,10 @@ void dump_pgtable(void *l0pgtable) {
 					}
 				}
 			}
+
 		}
 	}
-}
-
-void mmu_configure(void) {
-
-	icache_disable();
-	dcache_disable();
-
-	/* Empty the page table */
-	memset((void *) __sys_root_pgtable, 0, TTB_L0_SIZE);
-	memset((void *) __sys_idmap_l1pgtable, 0, TTB_L1_SIZE);
-	memset((void *) __sys_linearmap_l1pgtable, 0, TTB_L1_SIZE);
-
-	/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
-
-	__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
-	set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
-
-	__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
-
-	/* Create the initial 1 GB linear mapping of the kernel in its target virtual address space */
-
-	__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
-	set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
-
-	__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-	set_pte_block(&__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
-
-	/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
-
-	__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
-	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
-
-	mmu_setup(__sys_root_pgtable);
-
-	icache_enable();
-	dcache_enable();
-
-}
-
-#if 0
-/*
- * Clear the L1 PTE used for mapping of a specific virtual address.
- */
-void clear_l1pte(uint32_t *l1pgtable, uint32_t vaddr) {
-	uint32_t *l1pte;
-
-	/* If l1pgtable is NULL, we consider the system page table */
-	if (l1pgtable == NULL)
-		l1pgtable = __sys_l1pgtable;
-
-	l1pte = l1pte_offset(l1pgtable, vaddr);
-
-	*l1pte = 0;
-
-	flush_pte_entry(l1pte);
-}
-
-#endif
-
-/**
- * Switch the MMU to a L0 page table specific to a process.
- * Typically used to change the user space mapping.
- *
- * @param l0pgtable 	Level 0 page table
- */
-void mmu_switch(void *l0pgtable) {
-
-	flush_dcache_all();
-
-	__mmu_switch((void *) __pa((addr_t) l0pgtable));
-
-	invalidate_icache_all();
-	__asm_invalidate_tlb_all();
-
-}
-
-/**
- * Switch the MMU to a system L0 page table.
- * Only the kernel space should be concerned with the mapping.
- *
- * @param l0pgtable
- */
-void mmu_switch_sys(void *l0pgtable) {
-
-	flush_dcache_all();
-
-	__mmu_switch_sys((void *) __pa((addr_t) l0pgtable));
-
-	invalidate_icache_all();
-	__asm_invalidate_tlb_all();
-
+	lprintk("**************************\n");
 }
 
 /**
@@ -671,13 +891,6 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
 }
 #endif /* CONFIG_RAMDEV */
 
-#if 0
-void dump_current_pgtable(void) {
-	dump_pgtable((uint32_t *) cpu_get_l1pgtable());
-}
-
-#endif
-
 /**
  *
  * Get the physical address from any virtual address including
@@ -725,3 +938,23 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 }
 
 
+#ifdef CONFIG_AVZ
+
+#ifdef CONFIG_ARM64VT
+/**
+ * Perform a mapping of IPA regions to physical regions
+ *
+ * @param pgtable  	Updated page table
+ * @param ipamap	List of mappings (ipa->phys)
+ */
+void do_ipamap(void *pgtable, ipamap_t ipamap[], int nbelement) {
+	int i;
+
+	for (i = 0; i < nbelement; i++)
+		__create_mapping(pgtable, ipamap[i].ipa_addr, ipamap[i].phys_addr, ipamap[i].size, true, S2);
+
+}
+
+#endif /* CONFIG_AVZ */
+
+#endif

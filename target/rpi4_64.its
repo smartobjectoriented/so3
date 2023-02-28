@@ -24,35 +24,35 @@
 	images {
 
 		so3 {
-			description = "SO3 OS kernel";
+			description = "Agency SO3 kernel";
 			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x00080000>;
-			entry = <0x00080000>;
+			load = <0x00000000>;
+			entry = <0x00000000>;
 		};
 		
-		fdt {
-			description = "SO3 device tree blob";
-			data = /incbin/("../so3/dts/rpi4_64.dtb");
-			type = "flat_dt";
-			arch = "arm64";
-			compression = "none";
-			load = <0x04a00000>;
+	   fdt {
+        	description = "Agency device tree blob";
+            data = /incbin/("../so3/dts/rpi4_64.dtb");
+            type = "flat_dt";
+            arch = "arm64";
+            compression = "none";
+            load = <0x0a000000>;
 		};
 
-	ramdisk {
-		description = "SO3 environment minimal rootfs";
-		data = /incbin/("../rootfs/board/rpi4_64/rootfs.fat");
-		type = "ramdisk";
-		arch = "arm64";
-		os = "linux";
-		compression = "none";
-		load = <0x04c00000>; 
+		ramfs {
+        	description = "SO3 environment minimal rootfs";
+			data = /incbin/("../rootfs/board/rpi4_64/rootfs.fat");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x0ac00000>;
+        };
 	};
-};
 	configurations {
 		default = "so3_ramfs";
                 
@@ -60,7 +60,7 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-            ramdisk = "ramdisk"; 
+            ramdisk = "ramfs"; 
 		};
                 
         so3_mmc {

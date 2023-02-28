@@ -22,14 +22,32 @@
 
 #include <memory.h>
 
+#ifdef CONFIG_SO3VIRT
+#include <avz/uapi/avz.h>
+#endif
+
 #include <device/driver.h>
 #include <device/irq.h>
 
 #include <asm/processor.h>
 #include <asm/mmu.h>
 #include <asm/setup.h>
+#include <asm/vfp.h>
 
 extern unsigned char __irq_stack_start[];
+
+#ifdef CONFIG_SO3VIRT
+
+/* Force the variable to be stored in .data section so that the BSS can be freely cleared.
+ * The value is set during the head.S execution before clear_bss().
+ */
+avz_shared_t *avz_shared = (avz_shared_t *) 0xbeef;
+addr_t avz_guest_phys_offset;
+void (*__printch)(char c);
+
+volatile uint32_t *HYPERVISOR_hypercall_addr;
+
+#endif
 
 /* To keep the original CPU ID so that we can avoid
  * undesired activities running on another CPU.
@@ -46,13 +64,13 @@ struct stack {
 	u32 fiq[3];
 } ____cacheline_aligned;
 
-struct stack stacks;
+struct stack stacks[CONFIG_NR_CPUS];
 
 /*
  * Setup exceptions stacks for all modes except SVC and USR
  */
 void setup_exception_stacks(void) {
-	struct stack *stk = &stacks;
+	struct stack *stk = &stacks[smp_processor_id()];
 
 	/* Need to set the CPU in the different modes and back to SVC at the end */
 	__asm__ (
@@ -95,37 +113,38 @@ void arm_init_domains(void)
 	set_dacr(reg);
 }
 
-/**
- * Enabling VFP coprocessor.
- * Currenty, we do not manage vfp context switch
- */
-#warning vfp context switch to be implemented...
-void vfp_enable(void)
-{
-	u32 access;
+void cpu_init(void) {
+	/* Original boot CPU identification to prevent undesired activities on another CPU . */
+	origin_cpu = smp_processor_id();
 
-	access = get_copro_access();
-
-	/*
-	 * Enable full access to VFP (cp10 and cp11)
-	 */
-	set_copro_access(access | CPACC_FULL(10) | CPACC_FULL(11));
-
-	__enable_vfp();
+	/* Set up the different stacks according to CPU mode */
+	setup_exception_stacks();
 }
 
 /**
  * Low-level initialization before the main boostrap process.
  */
 void setup_arch(void) {
+#ifndef CONFIG_SO3VIRT
 	int offset;
+#endif
 
 	/* Retrieve information about the main memory (RAM) */
 
+#ifndef CONFIG_SO3VIRT
 	/* Access to device tree */
 	offset = get_mem_info((void *) __fdt_addr, &mem_info);
 	if (offset >= 0)
 		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+
+#else /* CONFIG_SO3VIRT */
+
+	avz_guest_phys_offset = avz_shared->dom_phys_offset;
+	__printch = avz_shared->printch;
+
+	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
+
+#endif /* CONFIG_SO3VIRT */
 
 	/* Original boot CPU identification to prevent undesired activities on another CPU . */
 	origin_cpu = smp_processor_id();

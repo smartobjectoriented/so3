@@ -23,15 +23,15 @@
 
 	images {
 
-		so3 {
+so3 {
 			description = "SO3 OS kernel";
 			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-                        load = <0x40080000>;
-			entry = <0x40080000>;
+            		load = <0x41000000>;
+			entry = <0x41000000>;
 		};
  
         fdt {
@@ -40,20 +40,20 @@
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x44a00000>;
+			load = <0x42000000>;
 		};	
 
-        ramdisk {
+        ramfs {
         	description = "SO3 environment minimal rootfs";
-		data = /incbin/("../rootfs/board/virt64/rootfs.fat");
-		type = "ramdisk";
-		arch = "arm64";
-		os = "linux";
-		compression = "none";
-		load = <0x44c00000>;
-        };
+			data = /incbin/("../rootfs/board/virt64/rootfs.fat");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x42c00000>;
+    	};
                 
-	};
+};
 
 	configurations {
 		default = "so3_ramfs";
@@ -62,7 +62,7 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-            ramdisk = "ramdisk"; 
+            ramdisk = "ramfs"; 
 		};
                 
         so3_mmc {

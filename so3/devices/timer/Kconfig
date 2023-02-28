@@ -5,3 +5,7 @@ config SP804
 	
 config ARM_TIMER
 	bool "ARM architected CP15 timer for clocksource & clockevent"
+
+config SOO_TIMER
+	bool "SOO Virtualized timer device"
+	depends on SOO

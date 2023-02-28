@@ -27,9 +27,11 @@
 #include <device/serial.h>
 
 #include <device/arch/bcm283x_mu.h>
+#include <mach/io.h>
 
 #include <asm/io.h>                 /* ioread/iowrite macros */
 
+void *__uart_vaddr = (void *) CONFIG_UART_LL_PADDR;
 
 typedef struct {
 	addr_t base;
@@ -57,6 +59,11 @@ static int bcm283x_mu_put_byte(char c)
 	}
 
 	return 0;
+}
+
+int printch(char c) {
+	bcm283x_mu_put_byte(c);
+	
 }
 
 void __ll_put_byte(char c) {

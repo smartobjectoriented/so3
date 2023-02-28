@@ -35,6 +35,8 @@
 #define AMBA_ISR_PASS_LIMIT	256
 #define SERIAL_BUFFER_SIZE	80
 
+volatile void *__uart_vaddr = (void *) CONFIG_UART_LL_PADDR;
+
 static volatile char serial_buffer[SERIAL_BUFFER_SIZE];
 static volatile uint32_t prod=0, cons=0;
 
@@ -58,7 +60,6 @@ static int pl011_put_byte(char c) {
 
 	return 1;
 }
-
 
 static char pl011_get_byte(bool polling) {
 	char tmp;
@@ -185,9 +186,13 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 }
 
 void __ll_put_byte(char c) {
-
 	pl011_put_byte(c);
+}
 
+void printch(char c) {
+	__ll_put_byte(c);
 }
 
 REGISTER_DRIVER_POSTCORE("serial,pl011", pl011_init);
+
+

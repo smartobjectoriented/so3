@@ -13,7 +13,48 @@ choice
         select FS_FAT
 
 endchoice
- 
+
+menu "Kernel & CPU features"
+
+config SMP
+    bool "Enabling multi-CPU support"
+    help
+    	Enabling support for multi-core. Currently used
+    	in AVZ configuration mainly, but it could change
+    	
+config NR_CPUS
+	int "Number of supported CPUs"	
+	default 1
+
+config CPU_PSCI
+	bool "PSCI CPU power management (used in TrustZone)"
+	depends on SMP
+	default true
+	
+	help
+	  	Enabling PSCI-based CPU power handling. 
+	  	It enables/disables secondary CPUs within the Secure mode.
+          
+config CPU_SPIN_TABLE
+	bool "CPU power management following spin table convention."
+	depends on SMP
+	help
+		Enabling CPU power handling based on values stored
+		at specific address for each CPU.
+		Used by Raspberry Pi 4 for example.
+
+config HZ
+	int "System timer event frequency"
+	default 100
+
+config SCHED_FLIP_SCHEDFREQ
+	int "Scheduler flip frequency"
+	default "30"
+	help
+	  The rate in ms at which the scheduler is invoked.
+	  
+endmenu
+
 menu "SO3 Scheduling configuration"
 
 choice
@@ -32,3 +73,4 @@ endchoice
 		bool "Enabling possible preemption based on a timer frequency"
 		
 endmenu
+

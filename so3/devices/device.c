@@ -82,7 +82,7 @@ void *find_device(const char *compat) {
  * Check if a certain node has the property "status" and check for the availability.
  * Only "ok" means a valid device.
  */
-bool fdt_device_is_available(void * fdt_addr, int node_offset) {
+bool fdt_device_is_available(void *fdt_addr, int node_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
 

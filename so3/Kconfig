@@ -1,7 +1,7 @@
 
 
-mainmenu "SO3 Configuration"
-
+mainmenu "SO3 Polymorphic OS Configuration"
+ 
 source "arch/Kconfig"
 
 source "kernel/Kconfig"
@@ -12,14 +12,24 @@ source "apps/Kconfig"
 
 source "fs/Kconfig"
 source "ipc/Kconfig"
-
+source "mm/Kconfig"
+ 
 config RTOS
 	bool "RTOS-featured enabled"
  
+config AVZ
+	bool "AVZ SO3 Hypervisor mode (Agency Virtualizer)"
+	depends on MMU
+
+config SOO
+	bool "Configure SO3 as a Mobile Entity (ME)"
+
 config MMU
 	bool "MMU enable"
 	
 config DEBUG_PRINTK
 	bool "Debug printk"
-	
+ 
+# SOO subsystem and drivers
+source "soo/Kconfig"
 

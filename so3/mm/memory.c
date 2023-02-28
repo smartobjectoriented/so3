@@ -24,6 +24,7 @@
 #include <sizes.h>
 #include <process.h>
 #include <heap.h>
+#include <bitmap.h>
 
 #include <device/ramdev.h>
 #include <device/fdt.h>
@@ -48,63 +49,13 @@ static uint32_t kernel_size;
 /* Current available I/O range address */
 struct list_head io_maplist;
 
-/* Initialize the frame table */
-void frame_table_init(addr_t frame_table_start) {
-	addr_t ft_phys;
-	uint32_t i, ft_length, ft_pages;
-	addr_t ft_pfn_end;
+void early_memory_init(void) {
+	int offset;
 
-	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
-	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
-
-	frame_table = (page_t *) __va(ft_phys);
-
-	printk("SO3 Memory information:\n");
-
-	printk("  - Memory size : %d bytes\n", mem_info.size);
-
-	/* Size of the available memory (without the kernel region) */
-
-	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
-
-	printk("  - Kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
-			(ft_phys - mem_info.phys_base),
-			(ft_phys - mem_info.phys_base),
-			(ft_phys - mem_info.phys_base) / SZ_1M,
-			(ft_phys - mem_info.phys_base) >> PAGE_SHIFT);
-
-	/* Determine the length of the frame table in bytes */
-	ft_length = mem_info.avail_pages * sizeof(page_t);
-
-	/* Number of pages taken by the frame table; keep the frame table with a page size granularity */
-	ft_pages = ALIGN_UP(ft_length, PAGE_SIZE) >> PAGE_SHIFT;
-
-	/* Set the pages allocated by the frame table to busy. */
-	for (i = 0; i < ft_pages; i++) {
-		frame_table[i].free = false;
-		frame_table[i].refcount = 1;
-	}
-
-	for (i = ft_pages; i < mem_info.avail_pages; i++) {
-		frame_table[i].free = true;
-		frame_table[i].refcount = 0;
-	}
-
-	/* Refers to the last page frame occupied by the frame table */
-	ft_pfn_end = (ft_phys >> PAGE_SHIFT) + ft_pages - 1;
-
-	/* Set the definitive kernel size */
-	kernel_size = ((ft_pfn_end + 1) << PAGE_SHIFT) - CONFIG_RAM_BASE;
-
-	/* First available pfn (right after the frame table) */
-	pfn_start = ft_pfn_end + 1;
-
-	printk("  - Kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
-	printk("  - Number of available page frames: 0x%x\n", mem_info.avail_pages);
-	printk("  - Frame table size is: %d bytes meaning 0x%0x page frames\n", ft_length, ft_pages);
-	printk("  - Page frame number of the first available page: 0x%x\n", pfn_start);
-
-	spin_lock_init(&ft_lock);
+	/* Access to device tree */
+	offset = get_mem_info((void *) __fdt_addr, &mem_info);
+	if (offset >= 0)
+		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 }
 
 uint32_t get_kernel_size(void) {
@@ -124,7 +75,6 @@ addr_t get_free_page(void) {
 	loop_mark = __next_free_page;
 
 	do {
-
 		if (frame_table[__next_free_page].free) {
 			frame_table[__next_free_page].free = false;
 
@@ -301,7 +251,7 @@ addr_t io_map(addr_t phys, size_t size) {
 	}
 
 	/* We are looking for a free region in the virtual address space */
-	target = IO_MAPPING_BASE;
+	target = CONFIG_IO_MAPPING_BASE;
 
 	/* Re-adjust the address according to the alignment */
 
@@ -392,6 +342,66 @@ void io_unmap(addr_t vaddr) {
 }
 #endif /* CONFIG_MMU */
 
+/* Initialize the frame table */
+void frame_table_init(addr_t frame_table_start) {
+	addr_t ft_phys;
+	uint32_t i, ft_length, ft_pages;
+	addr_t ft_pfn_end;
+
+	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
+	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
+
+	frame_table = (page_t *) __va(ft_phys);
+
+	printk("SO3 Memory information:\n");
+
+	printk("  - Memory size : %d bytes\n", mem_info.size);
+
+	/* Size of the available memory (without the kernel region) */
+	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
+
+	printk("  - Available pages: %d (%lx)\n", mem_info.avail_pages, mem_info.avail_pages);
+
+	printk("  - Kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
+			(ft_phys - mem_info.phys_base),
+			(ft_phys - mem_info.phys_base),
+			(ft_phys - mem_info.phys_base) / SZ_1M,
+			(ft_phys - mem_info.phys_base) >> PAGE_SHIFT);
+
+	/* Determine the length of the frame table in bytes */
+	ft_length = mem_info.avail_pages * sizeof(page_t);
+
+	/* Number of pages taken by the frame table; keep the frame table with a page size granularity */
+	ft_pages = ALIGN_UP(ft_length, PAGE_SIZE) >> PAGE_SHIFT;
+
+	/* Set the pages allocated by the frame table to busy. */
+	for (i = 0; i < ft_pages; i++) {
+		frame_table[i].free = false;
+		frame_table[i].refcount = 1;
+	}
+
+	for (i = ft_pages; i < mem_info.avail_pages; i++) {
+		frame_table[i].free = true;
+		frame_table[i].refcount = 0;
+	}
+
+	/* Refers to the last page frame occupied by the frame table */
+	ft_pfn_end = (ft_phys >> PAGE_SHIFT) + ft_pages - 1;
+
+	/* Set the definitive kernel size */
+	kernel_size = ((ft_pfn_end + 1) << PAGE_SHIFT) - CONFIG_RAM_BASE;
+
+	/* First available pfn (right after the frame table) */
+	pfn_start = __pa(frame_table) >> PAGE_SHIFT;
+
+	printk("  - Kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
+	printk("  - Number of available page frames: 0x%x\n", mem_info.avail_pages);
+	printk("  - Frame table size is: %d bytes meaning %d (0x%0x) page frames\n", ft_length, ft_pages, ft_pages);
+	printk("  - Page frame number of the first available page: 0x%x\n", pfn_start);
+
+	spin_lock_init(&ft_lock);
+}
+
 /*
  * Main memory init function
  */
@@ -399,10 +409,9 @@ void io_unmap(addr_t vaddr) {
 void memory_init(void) {
 #ifdef CONFIG_MMU
 
-#ifdef CONFIG_ARCH_ARM32
+#if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
 	addr_t vectors_paddr;
 #endif
-
 	void *new_sys_root_pgtable;
 
 #endif /* CONFIG_MMU */
@@ -415,7 +424,7 @@ void memory_init(void) {
 	heap_init();
 
 #ifdef CONFIG_MMU
-
+	lprintk("%s: Device tree virt addr: %lx\n", __func__, __fdt_addr);
 	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, __fdt_addr, __end, fdt_totalsize(__fdt_addr));
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
@@ -428,25 +437,43 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
+#if defined(CONFIG_SOO) && defined(CONFIG_ARCH_ARM32) && !defined(CONFIG_AVZ)
+	/* Keep the installed vector table */
+	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) = *((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
+#endif
+
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
 
-	/* Mapping uart I/O for debugging purposes */
+	/* Mapping UART I/O for debugging purposes */
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
 
-	/*
-	 * Switch to the temporary page table in order to re-configure the original system page table
-	 * Warning !! After the switch, we do not have any mapped I/O until the driver core gets initialized.
-	 */
+#ifdef CONFIG_AVZ
+#warning For ARM64VT we still need fo address the ME in the hypervisor...
+#ifndef CONFIG_ARM64VT
+	/* Finally, create the agency domain area and for being able to read the device tree. */
+	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr, CONFIG_RAM_SIZE, false);
+#endif
+#endif /* CONFIG_AVZ */
 
-	mmu_switch_sys(new_sys_root_pgtable);
+	/*
+	 * Updating the page table might have as effect to loss the mapped I/O of UART
+	 * until the driver core gets initialized.
+	 */
 
 	/* Re-configuring the original system page table */
 	copy_root_pgtable(__sys_root_pgtable, new_sys_root_pgtable);
 
-	/* Finally, switch back to the original location of the system page table */
-	mmu_switch_sys(__sys_root_pgtable);
+	flush_dcache_all();
 
-#ifdef CONFIG_ARCH_ARM32
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_ARCH_ARM64)
+
+	/* Leave the root pgtable allocated by AVZ */
+	mmu_switch_kernel((void *) __pa(__sys_root_pgtable));
+
+#endif /* CONFIG_SO3VIRT */
+
+#if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
+
 	/* Finally, prepare the vector page at its correct location */
 	vectors_paddr = get_free_page();
 
@@ -459,3 +486,32 @@ void memory_init(void) {
 
 #endif /* CONFIG_MMU */
 }
+
+#ifdef CONFIG_SOO
+
+/**
+ * Re-adjust PFNs used for various purposes.
+ */
+void readjust_io_map(long pfn_offset) {
+	io_map_t *io_map;
+	struct list_head *pos;
+	addr_t offset;
+
+	/*
+	 * Re-adjust I/O area since it does not intend to be HW I/O in SO3VIRT, but
+	 * can be used for gnttab entries or other mappings for example.
+	 */
+	list_for_each(pos, &io_maplist) {
+		io_map = list_entry(pos, io_map_t, list);
+
+		offset = io_map->paddr & (PAGE_SIZE - 1);
+		io_map->paddr = pfn_to_phys(phys_to_pfn(io_map->paddr) + pfn_offset);
+		io_map->paddr += offset;
+
+	}
+
+	/* Re-adjust other PFNs used for frametable management. */
+	pfn_start += pfn_offset;
+}
+
+#endif /* CONFIG_SOO */

@@ -1,0 +1,83 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Polymorphic OS Configuration
+#
+# CONFIG_ARCH_ARM32 is not set
+CONFIG_ARCH_ARM64=y
+CONFIG_SO3VIRT=y
+CONFIG_ARCH="arm64"
+CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
+# CONFIG_ARM_TRUSTZONE is not set
+CONFIG_KERNEL_VADDR=0xffff800010000000
+CONFIG_RAM_BASE=0x41000000
+
+#
+# Platform
+#
+CONFIG_VIRT64=y
+# CONFIG_RPI4_64 is not set
+# CONFIG_VA_BITS_39 is not set
+CONFIG_VA_BITS_48=y
+# CONFIG_THREAD_ENV is not set
+CONFIG_PROC_ENV=y
+
+#
+# Kernel & CPU features
+#
+# CONFIG_SMP is not set
+CONFIG_NR_CPUS=1
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+
+#
+# Drivers
+#
+CONFIG_UART=y
+CONFIG_IO_MAPPING_BASE=0xffff900000000000
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+# CONFIG_VEXT is not set
+# CONFIG_NS16550 is not set
+CONFIG_PL011_UART=y
+CONFIG_UART_LL_PADDR=0x09000000
+# CONFIG_MMC is not set
+CONFIG_RAMDEV=y
+CONFIG_ARM_TIMER=y
+CONFIG_GIC=y
+# CONFIG_PL111_CLCD is not set
+# CONFIG_PL050_KMI is not set
+
+#
+# SO3 Applications
+#
+CONFIG_APP_SAMPLE=y
+# CONFIG_APP_TEST_MALLOC is not set
+CONFIG_APP_DEFAULT=y
+
+#
+# Filesystems
+#
+CONFIG_FS_FAT=y
+# CONFIG_ROOTFS_NONE is not set
+# CONFIG_ROOTFS_MMC is not set
+CONFIG_ROOTFS_RAMDEV=y
+
+#
+# IPC
+#
+CONFIG_IPC_SIGNAL=y
+CONFIG_IPC_PIPE=y
+CONFIG_HEAP_SIZE=8
+# CONFIG_RTOS is not set
+# CONFIG_AVZ is not set
+CONFIG_MMU=y
+# CONFIG_DEBUG_PRINTK is not set

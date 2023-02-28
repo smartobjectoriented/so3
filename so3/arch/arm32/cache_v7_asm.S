@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
-#include <linkage.h>
 
+#include <linkage.h>
 #include <memory.h>
 
 #include <asm/mmu.h>

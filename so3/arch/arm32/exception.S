@@ -30,9 +30,17 @@
 #include <syscall.h>
 #include <asm-offsets.h>
 
+#ifdef CONFIG_AVZ
+#include <avz/domain.h>
+
+.globl  pseudo_usr_mode
+.globl	hypervisor_stack
+
+#endif
+
 #include <asm/processor.h>
 
-.globl ret_from_fork
+.global ret_from_fork
 .global __call_sig_handler
 
 .extern current_thread
@@ -361,6 +369,49 @@ irq:
 
     stmia 	sp, {r0-r12}
 
+#ifdef CONFIG_AVZ
+
+	@ Now process the IRQ differentiating execution according to the source (dom/hyp)
+	@ for managing the stack correctly
+
+	current_cpu	r10
+
+	ldr		r0, .LCpseudo_usr_mode
+	ldr		r1, [r0, r10, lsl #2]
+	cmp		r1, #0  				@ svc ?
+
+	beq		hyp_path
+
+	mov		r1, #0 					@ setting svc
+	str		r1, [r0, r10, lsl #2]
+
+	mov		r1, sp
+	ldr 	r0, .LChypervisor_stack @ Get the running hypervisor SVC stack
+	ldr		r0, [r0, r10, lsl #2]
+
+	mov		sp, r0
+
+	curdom	r0, r2
+	str		r1, [r0, #OFFSET_G_SP]
+
+	@ Make sure r0 refers to the base of the stack frame
+	mov		r0, sp
+
+    bl 		irq_handle
+
+	b		ret_to_user
+
+/* Hypervisor path or *idle* domain path */
+hyp_path:
+
+	mov		r0, sp
+
+    bl 		irq_handle
+
+    b 		out_irq
+
+#else /* CONFIG_AVZ */
+
 	@ cpsr is still up-to-date regarding the comparison against CPU mode.
 	ldreq	r0, [sp, #OFFSET_SP_USR]
 	ldreq 	r1, .LCcurrent
@@ -399,6 +450,290 @@ irq:
 
     @ Now, we retrieve the final registers, sp will be adjusted automatically
     ldmia 	sp, {sp, lr, pc}^
+#endif /* !CONFIG_AVZ */
+
+#ifdef CONFIG_SO3VIRT
+
+.align 5
+
+    /*
+     * Hypercall trampoline has the following arguments:
+     * - r0: hypercall number
+     * - r1: first arg (-> r0)
+     * - r2: second arg
+     * - r3: third arg
+     * - r4: fourth arg
+     * - r5: work register
+     * - r7: hypecall number (ABI)
+     * - r11: cpsr
+     */
+ENTRY(hypercall_trampoline)
+    @ Stack alignment must stay on 8 bytes.
+    sub     sp, sp, #16*4
+    stmia   sp, {r1-r12, lr}
+
+    mov r7, r0
+    mov r0, r1
+    mov r1, r2
+    mov r2, r3
+    mov r3, r4
+    mov r4, r5
+
+    mrs r11, cpsr
+
+    ldr r5, .LChypercall_addr
+    ldr r5, [r5]
+
+    bl  __trampoline
+
+    ldmia   sp, {r1-r12, lr}
+    add     sp, sp, #16*4
+
+    mov pc, lr
+
+__trampoline:
+    mov pc, r5
+    nop
+    nop
+    nop
+
+.LChypercall_addr:
+   .long HYPERVISOR_hypercall_addr
+
+#endif /* CONFIG_SO3VIRT */
+
+#if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+
+
+@ The cpu_regs_t from avz remains compatible in the range of
+@ ARM registers with the SPSR stored after r15.
+.align 5
+ENTRY(avz_vector_callback)
+
+	@ r0 is set to cpu_regs_t by avz
+	bl 		irq_handle
+
+ 	ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+    msr		spsr, lr
+
+	@ Check if it is necessary to restore sp_usr and lr_usr
+	and		lr, lr, #PSR_MODE_MASK
+	cmp		lr, #PSR_USR_MODE
+
+	@ Restoring user mode registers (sp_usr, lr_usr)
+	addeq	lr, sp, #OFFSET_SP_USR
+	ldmeqia	lr, {sp, lr}^
+
+	@ Restore registers
+   	ldmia 	sp, {r0-r12}
+
+	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
+
+    @ Now, we retrieve the final registers, sp will be adjusted automatically
+    ldmia 	sp, {sp, lr, pc}^
+
+#endif
+
+#ifdef CONFIG_AVZ
+
+/*
+ * The following function is used to restore the migrated domain.
+ * Indeed, the receiver environment has not saved anything on its stack regarding
+ * a context switch. We can not pursue on right-after-context-switch in the schedule function!
+ * But we do not start from boot either. So, we have an appropriate restore glue code to perform
+ * an upcall in the newly migrated ME. A first timer IRQ has been set in domain_migration_restore() to
+ * avoid a problem in the guest when testing for upcall pending.
+ *
+ *
+ */
+ENTRY(after_migrate_to_user)
+
+	b 		do_upcall
+
+.align	5
+
+@ This function is called at bootstrap and
+@ reboot time. It initializes some registers
+ENTRY(pre_ret_to_user)
+	disable_irq
+
+	curdom	r10, r6
+	mov 	r6, #0
+	ldr		r6, [r10, #OFFSET_AVZ_SHARED]
+	str		r6, [r6, #OFFSET_HYPERVISOR_CALLBACK]
+
+	current_cpu r3
+
+	@ Prepare to switch to the guest stack in order to prepare
+	@ its stack frame required along the upcall (restore) path.
+
+	ldr 	r0, .LChypervisor_stack
+	str		sp, [r0, r3, lsl #2]
+
+	ldr		r6,	[sp, #OFFSET_PC]	@ entry point of the guess  /  r6 is used because not altered by save_svc_context
+	ldr 	r7, [sp, #OFFSET_PSR]	@ CPSR flags
+	ldr 	r8, [sp, #OFFSET_IP]  	@ start_info (r12)
+	ldr 	r9, [sp, #OFFSET_R2]	@ arg (devtree/atags)
+
+	ldr 	sp, [sp, #OFFSET_SP]   	@ get the guest stack
+	sub		sp, sp, #S_FRAME_SIZE
+
+	str		sp, [r10, #OFFSET_G_SP]
+
+	@ Configure the G-stack frame
+
+	str 	r6, [sp, #OFFSET_PC]	@ put the entry point on the guess stack
+	str 	r7, [sp, #OFFSET_PSR]
+	str 	r8, [sp, #OFFSET_IP]
+	str 	r9, [sp, #OFFSET_R2]
+
+	@ Finally switch back to H-stack
+	ldr 	r0, .LChypervisor_stack
+	ldr 	sp, [r0, r3, lsl #2]
+
+	@ Restore r3 used by current_cpu above
+	ldr		r3, [sp, #OFFSET_R3]
+
+	b restore
+
+.align	5
+
+ENTRY(ret_to_user)
+
+	disable_irq 					@ ensure IRQs are disabled
+
+	curdom	r10, r11
+	ldr		r11, [r10, #OFFSET_AVZ_SHARED]
+
+	@ If the softirq handling leads to trigger an interrupt in the guest,
+	@ it will be processed by do_evtchn_do_upcall. The way how to
+	@ process an interrupt with potentially IRQs off is under the
+	@ responsibility of the guest
+
+	@ are some IRQs pending?
+	ldrb	r12, [r11, #OFFSET_EVTCHN_UPCALL_PENDING]
+	tst		r12, #0xff
+
+	beq		restore
+
+	/* Fallback to do_upcall */
+
+/*
+ * Process pending events along the upcall path to the domain.
+ */
+do_upcall:
+	disable_irq
+
+	current_cpu r11
+
+	curdom  r10, r0
+
+	ldr		r0, [r10, #OFFSET_AVZ_SHARED]
+	ldr		lr, [r0, #OFFSET_HYPERVISOR_CALLBACK]
+	cmp		lr, #0
+	beq		restore
+
+	ldr		r0, .LChypervisor_stack   	@ running SVC hypervisor stack
+	str		sp, [r0, r11, lsl #2]
+
+	@ get guest stack (already stacked from save_svc_context)
+	ldr		sp, [r10, #OFFSET_G_SP]
+
+	@ setting pseudo_usr_mode / r0, r1 re-assigned right after
+	ldr 	r0, .LCpseudo_usr_mode
+	mov		r1, #1
+	str		r1, [r0, r11, lsl #2]
+
+	@ r0 contains a reference to the stack pointer
+	mov		r0, sp
+
+	mov		pc, lr
+
+restore:
+
+	current_cpu r11
+
+	@ setting pseudo_usr_mode / r0, r1 re-assigned right after
+	ldr 	r0, .LCpseudo_usr_mode
+	mov		r1, #1
+	str		r1, [r0, r11, lsl #2]
+
+	@ restore saved registers
+
+	ldr		r0, .LChypervisor_stack   	@ running SVC hypervisor stack
+	str		sp, [r0, r11, lsl #2]
+
+	curdom	r10, r0
+
+	@ get guest stack (already stacked from save_svc_context)
+	ldr		sp, [r10, #OFFSET_G_SP]
+
+out_irq:
+
+    ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+    msr		spsr, lr
+
+	@ Check if it is necessary to restore sp_usr and lr_usr
+	and		lr, lr, #PSR_MODE_MASK
+	cmp		lr, #PSR_USR_MODE
+
+	@ Restoring user mode registers (sp_usr, lr_usr)
+	addeq	lr, sp, #OFFSET_SP_USR
+	ldmeqia	lr, {sp, lr}^
+
+	@ Restore registers
+   	ldmia 	sp, {r0-r12}
+
+	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
+
+    @ Now, we retrieve the final registers, sp will be adjusted automatically
+    ldmia 	sp, {sp, lr, pc}^
+
+	.ltorg
+
+
+/** Area of memory reserved to manage domain stack and hypervisor stack (G-stack/H-stack) **/
+
+.align 5
+pseudo_usr_mode:
+	.space CONFIG_NR_CPUS * 4
+
+@ Hypervisor stack is used for the *current* (running) domain svc stack address
+hypervisor_stack:
+	.space CONFIG_NR_CPUS * 4
+
+.LCpseudo_usr_mode:
+	.word	pseudo_usr_mode
+
+.LChypervisor_stack:
+	.word	hypervisor_stack
+
+#endif /* CONFIG_AVZ */
+
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+
+@ Inject the real syscall vector used by SO3
+@ Modified registers: r0, r1
+ENTRY(inject_syscall_vector)
+
+	ldr r0, =__vectors
+	ldr r1, [r0, #8] 	@ Vector location of swi in standard ARM vector table
+	ldr r2, [r0, #36] 	@ And the re-direction stored in the same page, at this position (+36), following the vector table.
+
+	ldr r0, =VECTOR_VADDR
+
+	str r1, [r0, #8]
+	str r2, [r0, #36]
+
+	mov pc, lr
+
+#endif
 
 .align  5
 fiq:

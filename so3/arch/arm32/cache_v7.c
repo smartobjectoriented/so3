@@ -24,6 +24,7 @@ static u32 get_ccsidr(void)
 
 	/* Read current CP15 Cache Size ID Register */
 	asm volatile ("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
+
 	return ccsidr;
 }
 
@@ -97,7 +98,7 @@ static void v7_dcache_maint_range(u32 start, u32 stop, u32 range_op)
 }
 
 /* Invalidate TLB */
-void v7_inval_tlb(void)
+void __asm_invalidate_tlb_all(void)
 {
 #if 0 /* Not really necessary in our case. */
 	/* Invalidate entire unified TLB */
@@ -162,13 +163,13 @@ void flush_dcache_range(unsigned long start, unsigned long stop)
 void arm_init_before_mmu(void)
 {
 	invalidate_dcache_all();
-	v7_inval_tlb();
+	__asm_invalidate_tlb_all();
 }
 
 void mmu_page_table_flush(unsigned long start, unsigned long stop)
 {
 	flush_dcache_range(start, stop);
-	v7_inval_tlb();
+	__asm_invalidate_tlb_all();
 }
 
 /* Invalidate entire I-cache and branch predictor array */

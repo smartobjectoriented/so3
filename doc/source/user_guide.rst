@@ -73,7 +73,7 @@ Build of the environment
 
 About the toolchain
 ===================
-
+ 
 We use the ``arm-none-eabi`` toolchain which has no dependencies on a libc.
 
 The following package can be installed:
@@ -89,8 +89,8 @@ The following commands is helpful to have quick up-and-running
 environment with SO3, i.e. a shell running on top of the kernel in the
 emulated *vExpress* environment.
 
-Building QEMU
-=============
+Setting up QEMU
+===============
 
 The QEMU emulator can be installed via apt for 32-bit and 64-bit versions,
 as follows:
@@ -244,7 +244,6 @@ Deployment of a *Hello World* application
 
 Using a *ramfs* configuration
 -----------------------------
-
 
 All user applications reside in ``usr/src`` directory. Adding a C file requires to update
 the ``CMakeLists.txt`` file.

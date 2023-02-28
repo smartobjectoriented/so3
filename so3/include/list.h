@@ -1,8 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/*
- *
- * Useful linked-list definitions fully taken from the Linux kernel (2.6.18).
- */
 
 #ifndef LIST_H
 #define LIST_H
@@ -85,7 +81,6 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
 {
     __list_add(new, head->prev, head);
 }
-
 
 /*
  * Delete a list entry by making the prev/next entries
@@ -498,30 +493,7 @@ static inline void hlist_del(struct hlist_node *n)
     n->pprev = LIST_POISON2;
 }
 
-/**
- * hlist_del_rcu - deletes entry from hash list without re-initialization
- * @n: the element to delete from the hash list.
- *
- * Note: list_unhashed() on entry does not return true after this,
- * the entry is in an undefined state. It is useful for RCU based
- * lockfree traversal.
- *
- * In particular, it means that we can not poison the forward
- * pointers that may still be used for walking the hash list.
- *
- * The caller must take whatever precautions are necessary
- * (such as holding appropriate locks) to avoid racing
- * with another list-mutation primitive, such as hlist_add_head_rcu()
- * or hlist_del_rcu(), running on this same list.
- * However, it is perfectly legal to run concurrently with
- * the _rcu list-traversal primitives, such as
- * hlist_for_each_entry().
- */
-static inline void hlist_del_rcu(struct hlist_node *n)
-{
-    __hlist_del(n);
-    n->pprev = LIST_POISON2;
-}
+
 
 static inline void hlist_del_init(struct hlist_node *n)
 {
@@ -531,26 +503,7 @@ static inline void hlist_del_init(struct hlist_node *n)
     }
 }
 
-/*
- * hlist_replace_rcu - replace old entry by new one
- * @old : the element to be replaced
- * @new : the new element to insert
- *
- * The old entry will be replaced with the new entry atomically.
- */
-static inline void hlist_replace_rcu(struct hlist_node *old,
-                                     struct hlist_node *new)
-{
-    struct hlist_node *next = old->next;
 
-    new->next = next;
-    new->pprev = old->pprev;
-    smp_wmb();
-    if (next)
-        new->next->pprev = &new->next;
-    *new->pprev = new;
-    old->pprev = LIST_POISON2;
-}
 
 static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
 {
@@ -562,36 +515,7 @@ static inline void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
     n->pprev = &h->first;
 }
 
-/**
- * hlist_add_head_rcu
- * @n: the element to add to the hash list.
- * @h: the list to add to.
- *
- * Description:
- * Adds the specified element to the specified hlist,
- * while permitting racing traversals.
- *
- * The caller must take whatever precautions are necessary
- * (such as holding appropriate locks) to avoid racing
- * with another list-mutation primitive, such as hlist_add_head_rcu()
- * or hlist_del_rcu(), running on this same list.
- * However, it is perfectly legal to run concurrently with
- * the _rcu list-traversal primitives, such as
- * hlist_for_each_entry_rcu(), used to prevent memory-consistency
- * problems on Alpha CPUs.  Regardless of the type of CPU, the
- * list-traversal primitive must be guarded by rcu_read_lock().
- */
-static inline void hlist_add_head_rcu(struct hlist_node *n,
-                                      struct hlist_head *h)
-{
-    struct hlist_node *first = h->first;
-    n->next = first;
-    n->pprev = &h->first;
-    smp_wmb();
-    if (first)
-        first->pprev = &n->next;
-    h->first = n;
-}
+
 
 /* next must be != NULL */
 static inline void hlist_add_before(struct hlist_node *n,

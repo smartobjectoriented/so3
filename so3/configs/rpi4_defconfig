@@ -1,11 +1,13 @@
 #
 # Automatically generated make config: don't edit
-# SO3 Configuration
+# SO3 Polymorphic OS Configuration
 #
 CONFIG_ARCH_ARM32=y
 # CONFIG_ARCH_ARM64 is not set
+# CONFIG_SO3VIRT is not set
 CONFIG_ARCH="arm32"
 CONFIG_CROSS_COMPILE="arm-none-linux-gnueabihf-"
+# CONFIG_ARM_TRUSTZONE is not set
 
 #
 # Platform
@@ -18,6 +20,14 @@ CONFIG_RAM_BASE=0x00000000
 CONFIG_PROC_ENV=y
 
 #
+# Kernel & CPU features
+#
+# CONFIG_SMP is not set
+CONFIG_NR_CPUS=1
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
+
+#
 # SO3 Scheduling configuration
 #
 CONFIG_SCHED_RR=y
@@ -28,11 +38,11 @@ CONFIG_SCHED_FREQ_PREEMPTION=y
 # Drivers
 #
 CONFIG_UART=y
-# CONFIG_I2C is not set
+CONFIG_IO_MAPPING_BASE=0xe0000000
+CONFIG_I2C=y
 # CONFIG_NET is not set
 # CONFIG_FB is not set
 # CONFIG_INPUT is not set
-# CONFIG_DW_APB_UART is not set
 # CONFIG_NS16550 is not set
 CONFIG_BCM283x_MU_UART=y
 CONFIG_UART_LL_PADDR=0xfe215040
@@ -40,7 +50,8 @@ CONFIG_UART_LL_PADDR=0xfe215040
 CONFIG_RAMDEV=y
 CONFIG_ARM_TIMER=y
 CONFIG_GIC=y
-# CONFIG_RPI_SENSE is not set
+CONFIG_I2C_BSC=y
+CONFIG_RPI_SENSE=y
 
 #
 # SO3 Applications
@@ -60,6 +71,9 @@ CONFIG_ROOTFS_RAMDEV=y
 #
 CONFIG_IPC_SIGNAL=y
 CONFIG_IPC_PIPE=y
+CONFIG_HEAP_SIZE=2
 # CONFIG_RTOS is not set
+# CONFIG_AVZ is not set
+# CONFIG_SOO is not set
 CONFIG_MMU=y
 CONFIG_DEBUG_PRINTK=y

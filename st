@@ -1,26 +1,28 @@
+#!/bin/bash
+
 # Launch script for SO3 
 
 N_QEMU_INSTANCES=`ps -A | grep qemu | wc -l`
 GDB_PORT_BASE=1234
-
+USR_OPTION=$1
 
 QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
-QEMU_GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
+GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
 
 
-echo -e 'MAC:\t\t' $QEMU_MAC_ADDR
-echo -e 'GDB Port:\t' $QEMU_GDB_PORT '\n\n'
+    echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
+    echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
 
-while read var; do
-if [ "$var" != "" ]; then
-  export $(echo $var | sed -e 's/ //g' -e /^$/d -e 's/://g' -e /^#/d)
-fi
-done < build.conf
+    while read var; do
+        if [ "$var" != "" ]; then
+                export $(echo $var | sed -e 's/ //g' -e /^$/d -e 's/://g' -e /^#/d)
+        fi      
+    done < build.conf
 
-if [ "$PLATFORM" == "virt64" ]; then
+    if [ "$PLATFORM" == "virt64" ]; then
 
-sudo qemu-system-aarch64 $@ \
-  	-smp 4 -s \
+    sudo qemu-system-aarch64 $@ ${USR_OPTION} \
+ 	-smp 4  \
 	-serial mon:stdio  \
 	-M virt,gic-version=2 -cpu cortex-a72  \
 	-device virtio-blk-device,drive=hd0 \
@@ -29,20 +31,22 @@ sudo qemu-system-aarch64 $@ \
 	-kernel u-boot/u-boot \
 	-nographic \
 	-netdev tap,id=n1,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh \
-	-device virtio-net-device,netdev=n1,mac=00:01:29:53:97:BA
+	-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+        -gdb tcp::${GDB_PORT}
 
-else
-
-sudo qemu-system-arm $@ \
-        -gdb tcp::$QEMU_GDB_PORT \
+    else    
+   echo Starting on ARM32
+   sudo qemu-system-arm $@ ${USR_OPTION} \
   	-smp 4 \
 	-serial mon:stdio  \
-	-M vexpress-a15,secure=on  -cpu cortex-a15\
+	-M vexpress-a15,secure=on  -cpu cortex-a15 \
 	-m 1024 \
 	-kernel u-boot/u-boot \
 	-semihosting-config enable,target=native \
-	-net user,tftp=. \
-	-nic tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh,mac=${QEMU_MAC_ADDR} \
+	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
 	-sd filesystem/sdcard.img.vexpress \
-	-nographic 
-fi
+	-nographic \
+	-gdb tcp::${GDB_PORT}
+        
+    fi
+ 

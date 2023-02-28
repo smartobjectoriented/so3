@@ -21,6 +21,31 @@
 
 #include <asm/types.h>
 
+#include <compiler.h>
+
+#define BITS_TO_LONGS(bits) \
+    (((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
+#define DECLARE_BITMAP(name,bits) \
+    unsigned long name[BITS_TO_LONGS(bits)]
+
+/* sizeof() for a structure/union field */
+#define FIELD_SIZEOF(type, fld)	(sizeof(((type *)0)->fld))
+
+/* create 64-bit mask with bytes 0 to size-1 set to 0xff */
+#define BYTE_MASK(size)		(0xffffffffffffffffULL >> ((8 - (size)) * 8))
+
+/* create 64-bit mask with all bits in [last:first] set */
+#define BIT_MASK(last, first) \
+	((0xffffffffffffffffULL >> (64 - ((last) + 1 - (first)))) << (first))
+
+/* extract the field value at [last:first] from an input of up to 64 bits */
+#define GET_FIELD(value, last, first) \
+	(((value) & BIT_MASK((last), (first))) >> (first))
+
+/* set the field value at [last:first] from an input of up to 64 bits*/
+#define SET_FIELD(value, last, first) \
+	((value) << (first) & BIT_MASK((last), (first)))
+
 /* mandatory macros */
 #undef NULL
 #define NULL ((void *) 0)
@@ -202,5 +227,8 @@ static inline char _tolower(const char c)
 {
 	return c | 0x20;
 }
+
+#define test_and_set_bool(b)   xchg(&(b), 1)
+#define test_and_clear_bool(b) xchg(&(b), 0)
 
 #endif /* TYPES_H */

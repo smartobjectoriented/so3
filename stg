@@ -37,7 +37,6 @@ sudo qemu-system-arm $@ \
 	-M vexpress-a15,secure=on  -cpu cortex-a15\
 	-m 1024 \
 	-kernel u-boot/u-boot \
-	-semihosting-config enable,target=native \
 	-net user,tftp=. \
 	-nic tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh,mac=${QEMU_MAC_ADDR} \
 	-sd filesystem/sdcard.img.vexpress 

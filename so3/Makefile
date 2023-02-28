@@ -1,4 +1,5 @@
 # *DOCUMENTATION*
+
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
 # Comments in this file are targeted only to the developer, do not
@@ -46,7 +47,7 @@ ifeq ($(KBUILD_SRC),)
 # OK, Make called in directory where kernel src resides
 # Do we want to locate output files in a separate directory?
 ifeq ("$(origin O)", "command line")
-  KBUILD_OUTPUT := $(O)
+  KBUILD_OUTPUT := $(O)/
 endif
 
 ifeq ("$(origin W)", "command line")
@@ -60,7 +61,9 @@ ifneq ($(KBUILD_OUTPUT),)
 # Invoke a second make in the output directory, passing relevant variables
 # check that the output directory actually exists
 saved-output := $(KBUILD_OUTPUT)
-KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)
+export saved-output
+KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)/
+
 $(if $(KBUILD_OUTPUT),, \
      $(error output directory "$(saved-output)" does not exist))
 
@@ -77,6 +80,7 @@ sub-make: FORCE
 
 # Leave processing to above invocation of make
 skip-makefile := 1
+
 endif # ifneq ($(KBUILD_OUTPUT),)
 endif # ifeq ($(KBUILD_SRC),)
 
@@ -271,6 +275,7 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
 # if auto.conf.cmd is missing then we are probably in a cleaned tree so
 # we execute the config step to be sure to catch updated Kconfig files
 include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
+	$(Q)set -e
 	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
  
 
@@ -297,13 +302,13 @@ OBJDUMP		= $(CROSS_COMPILE)objdump
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
-SO3INCLUDE    := -Iinclude  -I.  \
-                  $(if $(KBUILD_SRC), -I$(srctree)/include) \
+SO3INCLUDE    := -I.include  -I.  \
+                  $(if $(KBUILD_SRC), -I./include) \
                   -include include/generated/autoconf.h
 
-KBUILD_CPPFLAGS := -D__KERNEL__
+KBUILD_CPPFLAGS := -D__KERNEL__ -D__SO3__
 
-KBUILD_CPPFLAGS += -I$(TOPDIR)include -I include/net
+KBUILD_CPPFLAGS += -I$(saved-output)include -I$(srctree)/include -I$(srctree)/include/net
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
@@ -311,19 +316,18 @@ KBUILD_CFLAGS	:= -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraph
 				   -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack \
 				   -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections
 
-KBUILD_AFLAGS_KERNEL := -I.
-KBUILD_CFLAGS_KERNEL := -I. -I./lib/libfdt
+KBUILD_AFLAGS_KERNEL := -I. -I$(srctree)/.
+KBUILD_CFLAGS_KERNEL := -I. -I$(srctree)/. -I$(srctree)/lib/libfdt
 KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
-
-LDFLAGS :=
 
 # Specific CFLAGS/AFLAGS according to ARCH
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
 
 ifeq ($(CONFIG_ARCH_ARM32),y)
-
-KBUILD_CFLAGS	+= -mabi=aapcs-linux -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32
+KBUILD_CFLAGS	+= -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 
+KBUILD_AFLAGS   += -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
+endif
 
 ifeq ($(CONFIG_ARCH_ARM64),y)
 KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -fno-allow-store-data-races
@@ -337,6 +341,7 @@ KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(S
 export ARCH SRCARCH CONFIG_SHELL CROSS_COMPILE AS LD CC
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
 export CPP AR NM STRIP OBJCOPY OBJDUMP
+export TARGET
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
@@ -348,20 +353,34 @@ endif
 ifeq ($(CONFIG_RPI4),y)
 TARGET = rpi4
 endif
+ifeq ($(CONFIG_RPI4_64),y)
+TARGET = rpi4_64
+endif
+ifeq ($(CONFIG_VIRT64),y)
+TARGET = virt64
+endif
+
 
 # The all: target is the default when no target is given on the
 # command line.
 # This allow a user to issue only 'make' to build a kernel including modules
-# Defaults to vmlinux, but the arch makefile usually adds further targets
+# Defaults to so3, but the arch makefile usually adds further targets
 
 ELF	= so3
 BIN	= so3.bin
 
-include scripts/Makefile.build
+include $(srctree)/scripts/Makefile.build
  
 all:  $(BIN) dtbs 
 
 objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
+
+ifeq ($(CONFIG_AVZ),)
+
+objs-$(CONFIG_SOO) += soo
+
+endif
+
 libs-y		:= lib
 libs-y 		+= lib/libfdt lib/libroxml
 
@@ -370,7 +389,7 @@ so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))
 so3-libs	:= $(patsubst %,%/lib.a, $(libs-y))
 so3-all		:= $(so3-objs) $(so3-libs)
 
-# Do modpost on a prelinked vmlinux. The finally linked vmlinux has
+# Do modpost on a prelinked so3. The finally linked so3 has
 # relevant sections renamed as per the linker script.
 #quiet_cmd_so3 = LD      $@
 #     cmd_so3 = $(CC) $(LDFLAGS) -o $@                          \
@@ -379,14 +398,18 @@ LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
 ifdef CONFIG_MMU
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=CONFIG_HEAP_SIZE=$(CONFIG_HEAP_SIZE)  -no-enum-size-warning --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR) -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 else
-     cmd_so3 = $(LD) --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+     cmd_so3 = $(LD) --defsym=CONFIG_HEAP_SIZE=$(CONFIG_HEAP_SIZE) -no-enum-size-warning --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 endif
-
 	 
-KBUILD_CFLAGS_KERNEL += -Iarch/$(SRCARCH)/include/ -Iarch/$(SRCARCH)/$(TARGET)/include/	
-KBUILD_AFLAGS_KERNEL += -Iarch/$(SRCARCH)/include/ -Iarch/$(SRCARCH)/$(TARGET)/include/
+KBUILD_CFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/	
+KBUILD_AFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/
+
+ifdef CONFIG_SOO
+KBUILD_CFLAGS_KERNEL += -Isoo/include
+KBUILD_AFLAGS_KERNEL += -Isoo/include
+endif
 
 export KBUILD_CFLAGS CFLAGS_KERNEL
 export KBUILD_AFLAGS AFLAGS_KERNEL
@@ -430,7 +453,7 @@ $(ELF): $(so3-all) arch/$(SRCARCH)/so3.lds
 # make sure no implicit rule kicks in
 $(sort $(so3-all)): $(so3-dirs) ;
 
-# Handle descending into subdirectories listed in $(vmlinux-dirs)
+# Handle descending into subdirectories listed in $(so3-dirs)
 # Preset locale variables to speed up the build process. Limit locale
 # tweaks to this spot to avoid wrong language settings when running
 # make menuconfig etc.

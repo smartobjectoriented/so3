@@ -16,13 +16,13 @@
  *
  */
 
+#ifndef TIMER_H
+#define TIMER_H
+
 #include <types.h>
 #include <string.h>
 
 #include <device/timer.h>
-
-#ifndef TIMER_H
-#define TIMER_H
 
 #define NSECS		1000000000ull
 
@@ -30,7 +30,7 @@
 #define SECONDS(_s)     ((u64)((_s)  * 1000000000ull))
 #define MILLISECS(_ms)  ((u64)((_ms) * 1000000ull))
 #define MICROSECS(_us)  ((u64)((_us) * 1000ull))
-#define STIME_MAX 	((u64)(~0ull))
+#define STIME_MAX       ((u64)(~0ull))
 
 struct timer {
     /* System time expiry value (nanoseconds since boot). */
@@ -42,7 +42,14 @@ struct timer {
     /* On expiry, '(*function)(data)' will be executed in softirq context. */
     void (*function)(void *);
 
+    /* Some timer might be initialized on CPU #1 or #2, and in this case, they rely on the CPU #0 timer */
+    struct timer *sibling;
+    int timer_cpu;
+
     void *data;
+
+    /* CPU on which this timer will be installed and executed. */
+    uint16_t cpu;
 
     /* Timer status. */
 #define TIMER_STATUS_inactive  0  /* Not in use; can be activated.    */
@@ -73,12 +80,13 @@ static inline int active_timer(struct timer *timer)
  * time (and multiple times) on an inactive timer. It must *never* execute
  * concurrently with any other operation on the same timer.
  */
-static inline void init_timer(struct timer *timer, void (*function)(void *), void *data)
+static inline void init_timer(struct timer *timer, void (*function)(void *), void *data, unsigned int cpu)
 {
     memset(timer, 0, sizeof(*timer));
 
     timer->function = function;
     timer->data     = data;
+    timer->cpu      = cpu;
 }
 
 /*
@@ -119,5 +127,15 @@ int do_nanosleep(const struct timespec *req, struct timespec *rem);
 
 int do_get_time_of_day(struct timespec *tv);
 int do_get_clock_time(int clk_id, struct timespec *ts);
+
+#ifdef CONFIG_AVZ
+
+struct domain;
+
+extern void send_timer_event(struct domain *d);
+
+void domain_set_time_offset(struct domain *d, int32_t time_offset_seconds);
+
+#endif /* CONFIG_AVZ */
 
 #endif /* TIMER_H */

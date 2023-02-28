@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,25 +17,29 @@
  *
  */
 
-/*
- * Low-level ARM-specific setup
+/* Force the variable to be stored in .data section so that the BSS can be freely cleared.
+ * The value is set during the head.S execution before clear_bss().
  */
 
 #include <memory.h>
-#include <types.h>
 
-#include <device/fdt.h>
+#include <asm/mmu.h>
 
-/*
- * Low-level initialization before the main boostrap process.
+#include <avz/uapi/avz.h>
+
+avz_shared_t *avz_shared = (avz_shared_t *) 0xbeef;
+addr_t avz_guest_phys_offset;
+void (*__printch)(char c);
+
+volatile uint32_t *HYPERVISOR_hypercall_addr;
+
+/**
+ * This function is called at early bootstrap stage along head.S.
  */
-void setup_arch(void) {
-	int offset;
+void avz_setup(void) {
 
-	/* Access to device tree */
-	offset = get_mem_info((void *) __fdt_addr, &mem_info);
-	if (offset >= 0)
-		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+	avz_guest_phys_offset = avz_shared->dom_phys_offset;
+	__printch = avz_shared->printch;
 
-	/* A low-level UART should be initialized here so that subsystems initialization (like MMC) can already print out logs ... */
+	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
 }

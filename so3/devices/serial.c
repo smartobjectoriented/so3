@@ -23,6 +23,10 @@
 #include <mutex.h>
 #include <process.h>
 
+#ifdef CONFIG_SO3VIRT
+#include <avz/uapi/avz.h>
+#endif
+
 #include <device/irq.h>
 #include <device/serial.h>
 
@@ -32,6 +36,10 @@
 serial_ops_t serial_ops;
 mutex_t read_lock;
 tcb_t *tcb_owner;
+
+#ifdef CONFIG_SO3VIRT
+extern void (*__printch)(char c);
+#endif /* CONFIG_SO3VIRT */
 
 /* Outputs an ASCII string to console */
 int serial_putc(char c) {
@@ -49,6 +57,11 @@ int serial_putc(char c) {
 char serial_getc(void) {
 	char c;
 
+#ifdef CONFIG_SO3VIRT
+	static char *input_str[2] = { "Agency domain", "Agency AVZ Hypervisor" };
+	static bool focus_on_avz = false;
+#endif
+
 	/* This function will get a byte but first take try to
 	 * take the lock to access the uart */
 
@@ -60,6 +73,26 @@ char serial_getc(void) {
 	c = serial_ops.get_byte(false);
 
 	mutex_unlock(&read_lock);
+
+#ifdef CONFIG_SO3VIRT
+
+	if (c == 1) /* Ctrl+a has been pressed twice */
+	{
+		focus_on_avz = !focus_on_avz;
+
+		lprintk("*** Serial input -> %s (type 'CTRL-%c' twice to switch input to %s).\n", input_str[(focus_on_avz ? 1 : 0)], 'a', input_str[(focus_on_avz ? 0 : 1)]);
+
+		return 0;
+ 	}
+
+	if (focus_on_avz)
+	{
+		hypercall_trampoline(__HYPERVISOR_console_io, CONSOLEIO_process_char, 1, (long) &c, 0);
+
+		return 0;
+	}
+
+#endif
 
 	return c;
 }
@@ -73,7 +106,11 @@ int ll_serial_write(char *str, int len) {
 
 	for (i = 0; i < len; i++)
 		if (str[i] != 0)
-			__ll_put_byte(str[i]);
+#ifdef CONFIG_SO3VIRT
+		__printch(str[i]);
+#else
+		__ll_put_byte(str[i]);
+#endif
 	return len;
 }
 
@@ -87,7 +124,11 @@ int serial_write(char *str, int len) {
 
 	for (i = 0; i < len; i++)
 		if (str[i] != 0)
-			serial_putc(str[i]);
+#ifdef CONFIG_SO3VIRT
+		__printch(str[i]);
+#else
+		serial_putc(str[i]);
+#endif
 
 	local_irq_restore(flags);
 

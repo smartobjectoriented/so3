@@ -26,6 +26,10 @@
 #include <sizes.h>
 #include <string.h>
 
+#ifdef CONFIG_SO3VIRT
+#include <avz/uapi/avz.h>
+#endif
+
 #include <device/ramdev.h>
 
 #include <asm/mmu.h>
@@ -70,6 +74,19 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
 		create_mapping(root_pgtable, RAMDEV_VADDR, ramdev_start, ramdev_end-ramdev_start, false);
 }
 #endif /* CONFIG_RAMDEV */
+
+/**
+ * Retrieve the current physical address of the page table
+ *
+ * @param pgtable_paddr
+ */
+void mmu_get_current_pgtable(addr_t *pgtable_paddr) {
+	int cpu;
+
+	cpu = smp_processor_id();
+
+	*pgtable_paddr = READ_CP32(TTBR0_32);
+}
 
 /* Reference to the system 1st-level page table */
 static void alloc_init_pte(uint32_t *l1pte, addr_t addr, addr_t end, addr_t pfn, bool nocache)
@@ -186,7 +203,7 @@ void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, uint32_
 	 * In other cases, the memory context switch will invalidate anyway.
 	 */
 	if (l1pgtable == __sys_root_pgtable)
-		v7_inval_tlb();
+		__asm_invalidate_tlb_all();
 }
 
 /* Empty the corresponding l2 entries */
@@ -283,15 +300,23 @@ void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
  * MMU is off
  */
 void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
+
+#ifndef CONFIG_SO3VIRT
 	unsigned int i;
+#endif /* CONFIG_SO3VIRT */
 
 	uint32_t *__pgtable = (uint32_t *) l1pgtable;
+
+#ifndef CONFIG_SO3VIRT
 
 	icache_disable();
 	dcache_disable();
 
-	/* Empty the page table */
+#ifdef CONFIG_AVZ
+	if (smp_processor_id() == AGENCY_CPU) {
+#endif /* CONFIG_AVZ */
 
+	/* Empty the page table */
 	for (i = 0; i < 4096; i++)
 		__pgtable[i] = 0;
 
@@ -305,12 +330,19 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	__pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_RAM_BASE)], L1_SECT_DCACHE_WRITEALLOC);
 
-	/* Now, create a virtual mapping in the kernel space */
+	/* Now, create a linear mapping in the kernel space */
+#ifdef CONFIG_AVZ
+	/* Map the hypervisor */
+	for (i = 0; i < 12; i++) {
+#else
 	for (i = 0; i < 64; i++) {
+#endif /* CONFIG_AVZ */
 		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
 
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
+
+#endif /* !CONFIG_SO3VIRT */
 
 	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
 	__pgtable[l1pte_index(fdt_addr)] = fdt_addr;
@@ -320,10 +352,21 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
 
+#ifndef CONFIG_SO3VIRT
+
+#ifdef CONFIG_AVZ
+	}
+#endif /* CONFIG_AVZ */
+
 	mmu_setup(__pgtable);
 
 	dcache_enable();
 	icache_enable();
+#else
+
+	mmu_page_table_flush((uint32_t) __pgtable, (uint32_t) (__pgtable + TTB_L1_ENTRIES));
+
+#endif /* !CONFIG_SO3VIRT */
 
 	/* Update the system page table using the virtual address */
 	__sys_root_pgtable = (void *) (CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET);
@@ -363,6 +406,9 @@ void pgtable_copy_kernel_area(void *l1pgtable) {
  */
 void *new_root_pgtable(void) {
 	void *pgtable;
+#ifdef CONFIG_SO3VIRT
+	int i;
+#endif
 
 	pgtable = memalign(4 * TTB_L1_ENTRIES, SZ_16K);
 	if (!pgtable) {
@@ -372,6 +418,12 @@ void *new_root_pgtable(void) {
 
 	/* Empty the page table */
 	memset(pgtable, 0, 4 * TTB_L1_ENTRIES);
+
+#ifdef CONFIG_SO3VIRT
+	/* Let's copy 12 MB of hypervisor */
+	for (i = 0; i < 12; i++)
+		*l1pte_offset((u32 *) pgtable+i, avz_shared->hypervisor_vaddr) = *l1pte_offset((u32 *) __sys_root_pgtable+i, avz_shared->hypervisor_vaddr);
+#endif
 
 	return pgtable;
 }
@@ -417,23 +469,30 @@ void reset_root_pgtable(void *pgtable, bool remove) {
 	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L1_ENTRIES));
 }
 
-/*
- * Switch the MMU to a L1 page table
- */
-void mmu_switch(void *l1pgtable) {
-
+void mmu_switch_kernel(void *pgtable_paddr) {
 	flush_dcache_all();
 
-	BUG_ON(__pa(l1pgtable) & ~TTBR0_BASE_ADDR_MASK);
-	__mmu_switch((void *) __pa((addr_t) l1pgtable));
+	/* Take care about the lower bits because
+	 * it might be initialized by the Linux domain and should
+	 * be preserved if any.
+	 */
+
+	if (((uint32_t) pgtable_paddr & TTBR0_BASE_ADDR_MASK) != (uint32_t) pgtable_paddr)
+		WRITE_CP32((uint32_t) pgtable_paddr, TTBR0_32);
+	else
+		__mmu_switch_ttbr0(pgtable_paddr);
 
 	invalidate_icache_all();
-	v7_inval_tlb();
-
+	__asm_invalidate_tlb_all();
 }
 
-void mmu_switch_sys(void *l1pgtable) {
-	mmu_switch(l1pgtable);
+/**
+ * Switch memory context in the user space
+ *
+ * @param pgtable
+ */
+void mmu_switch(void *pgtable_paddr) {
+	mmu_switch_kernel(pgtable_paddr);
 }
 
 /*

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,36 +19,49 @@
 #include <bitops.h>
 #include <types.h>
 #include <softirq.h>
+#include <string.h>
+
+#include <asm/processor.h>
 
 #include <device/irq.h>
 
-unsigned long softirq_bitmap;
+static volatile bool softirq_stat[CONFIG_NR_CPUS][NR_SOFTIRQS];
 
 static softirq_handler softirq_handlers[NR_SOFTIRQS];
+
+DEFINE_SPINLOCK(softirq_pending_lock);
 
 /*
  * Perform actions of related pending softirqs if any.
  */
 void do_softirq(void)
 {
-	unsigned int i;
-	unsigned long pending;
+	unsigned int i, cpu;
 	unsigned int loopmax;
 
 	loopmax = 0;
 
-	for ( ; ; )
-	{
-		/* Any pending softirq ? */
-		if ((pending = softirq_bitmap) == 0)
-			break;
+	cpu = smp_processor_id();
 
-		i = find_first_bit(&pending, BITS_PER_INT);
+	while (true) {
+
+		spin_lock(&softirq_pending_lock);
+
+		for (i = 0; i < NR_SOFTIRQS; i++)
+			if (softirq_stat[cpu][i])
+				break;
+
+		if (i == NR_SOFTIRQS) {
+			spin_unlock(&softirq_pending_lock);
+			break;
+		}
 
 		if (loopmax > 100)   /* Probably something wrong ;-) */
-			printk("%s: Warning trying to process softirq for quite a long time (i = %d)...\n", __func__, i);
+			printk("%s: Warning trying to process softirq on cpu %d for quite a long time (i = %d)...\n", __func__, cpu, i);
 
-		clear_bit(i, (unsigned long *) &softirq_bitmap);
+		softirq_stat[cpu][i] = false;
+
+		spin_unlock(&softirq_pending_lock);
 
 		(*softirq_handlers[i])();
 
@@ -69,14 +82,28 @@ void register_softirq(int nr, softirq_handler handler)
     softirq_handlers[nr] = handler;
 }
 
+#ifdef CONFIG_SMP /* CONFIG_SMP */
+
+/*
+ * The softirq_pending mask (irqstat) must be coherent between the agency CPUs and MEs CPU
+ * since they do not run in the same OS environment, the hardware cache coherency is not guaranteed.
+ */
+void cpu_raise_softirq(unsigned int cpu, unsigned int nr)
+{
+	softirq_stat[cpu][nr] = true;
+
+	smp_trigger_event(cpu);
+}
+
+#endif /* CONFIG_SMP */
 
 void raise_softirq(unsigned int nr)
 {
-	set_bit(nr, (unsigned long *) &softirq_bitmap);
+	softirq_stat[smp_processor_id()][nr] = true;
 }
 
 
 void softirq_init(void)
 {
-	softirq_bitmap = 0;
+	memset((void *) softirq_stat, 0, sizeof(softirq_stat));
 }

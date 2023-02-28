@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2014-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
- * 
+ * Copyright (C) 2016-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.

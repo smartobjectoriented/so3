@@ -12,15 +12,17 @@ ENTRY(__start)
  * Indeed a user thread (running in the user space) will also involve kernel activities
  * with syscalls and other.
  */
-SVC_STACK_SIZE = 64*1024 + 32*64*1024;  /* Initial system stack */
-HEAP_SIZE = 32 * 1024 * 1024;    /* 2 MB dedicated to kernel heap */
- 
+SVC_STACK_SIZE = 32*1024 + 10*32*1024;  /* Initial system stack */
+
+HEAP_SIZE = CONFIG_HEAP_SIZE * 1024 * 1024;    /* Heap dedicated to kernel heap */
+
 SECTIONS
 {
      /* We start at the same entry point than Linux */
      /* to avoid issues on boards like Raspberry Pi 4 */
-  
-     . = ENTRY_ADDR + 0x80000;
+     /* where some firmware code is placed at 0x00000000 with a size of 0x1000 */
+     
+     . = ENTRY_ADDR;
     
     __vectors_start = .;
 
@@ -107,6 +109,11 @@ SECTIONS
     __sys_linearmap_l1pgtable = .;
     
     . += 4096;
+    
+    /* As well as a L2 page table to have a better granularity. */
+    __sys_linearmap_l2pgtable = .;
+    
+    . += 4096;
      
     /* Initcall section for core drivers */
     
@@ -168,6 +175,29 @@ SECTIONS
         __stack_top = . ;
         
     }
+
+    .cpu1_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu1_stack = . ;
+        
+    }
     
+    .cpu2_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu2_stack = . ;
+        
+    }
+    
+    .cpu3_stack : 
+    { 
+        . += SVC_STACK_SIZE;
+      
+        __cpu3_stack = . ;
+        
+    }
     __end = .;
 }

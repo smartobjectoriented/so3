@@ -29,92 +29,23 @@
 
 #include <asm/processor.h>
 
-#ifdef TRACKING
-#include  <process.h>
-#endif
-
 #define NR_DEMANDS		4096
 
-extern unsigned long __heap_base_addr;
+extern addr_t __heap_base_addr;
 
 static DEFINE_SPINLOCK(heap_lock);
 
 /* Head of the quick list */
 static mem_chunk_t *quick_list;
 
-#ifdef TRACKING
-static void *heapdemands[NR_DEMANDS];
-static mem_chunk_t *heapdemands_chunk[NR_DEMANDS];
-static int heapdemands_line[NR_DEMANDS];
-static char heapdemands_pname[NR_DEMANDS][50];
-static char heapdemands_filename[NR_DEMANDS][50];
-static char heapdemands_fname[NR_DEMANDS][50];
-#endif /* TRACKING */
-
 extern void consistency(void);
 extern void __consistency(int addr, int victim, int size, int requested);
-
-#if 0 /* Helfup function for debugging purpose */
-void demand_check_consistency(void) {
-	mem_chunk_t *chunk_list, *chunk, *head;
-	int i;
-
-	/* Check that the heap is consistent with regards to the head ref. */
-	chunk_list = quick_list;
-	while (chunk_list != NULL) {
-		head = chunk_list;
-		chunk = head;
-		do {
-			ASSERT(chunk->head == head);
-			if (chunk != head)
-				ASSERT(chunk->next_list == NULL);
-			chunk = chunk->next_chunk;
-
-		} while (chunk != NULL);
-		chunk_list = chunk_list->next_list;
-	}
-
-
-	chunk_list = quick_list;
-	while (chunk_list != NULL) {
-		chunk = chunk_list;
-		do {
-
-			/* chunk not overriding a demand */
-			for (i = 0; i < NR_DEMANDS; i++)
-				if (heapdemands[i] != 0) {
-
-					if (!(((void *)heapdemands_chunk[i] + sizeof(mem_chunk_t) + heapdemands_chunk[i]->size <= (void *) chunk) ||
-					    ((void *) chunk + sizeof(mem_chunk_t) + chunk->size <= (void *) heapdemands_chunk[i]))) {
-						printk("## chunk: %p (addr): %p chunk.size: %d  demand_chunk: %p  heapsize: %d maxaddr: %p\n",
-								chunk, ((char *) chunk)+sizeof(mem_chunk_t), chunk->size, heapdemands_chunk[i],
-								heapdemands_chunk[i]->size, (void *) heapdemands_chunk[i] + heapdemands_chunk[i]->size - 1);
-
-						dump_heap("consistency");
-						BUG();
-					}
-
-				}
-
-			chunk = chunk->next_chunk;
-		} while (chunk != NULL);
-
-		chunk_list = chunk_list->next_list;
-	}
-}
-#endif /* 0 */
 
 /*
  * Initialization of the quick-fit list.
  */
 void heap_init(void)
 {
-#ifdef TRACKING
-	int i;
-
-	for (i = 0; i < NR_DEMANDS; i++)
-		heapdemands[i] = 0;
-#endif
 	quick_list = (mem_chunk_t *) &__heap_base_addr;
 
 	/* Initialize all the heap to 0 to have a better compression ratio. */
@@ -133,80 +64,11 @@ void heap_init(void)
 	DBG("[list_init] List initialized. sizeof(mem_chunk_t) = %d bytes, sizeof(int) = %d bytes\n", sizeof(mem_chunk_t), sizeof(int));
 }
 
-#ifdef TRACKING
-/*
- * The following functions may be used for debugging purposes.
- * They track the heap demands and can be displayed.
- */
-void demand_tracking_add(mem_chunk_t *chunk, void *ptr, const char *filename, const char *fname, const int line) {
-	int i;
-
-	for (i = 0; i < NR_DEMANDS; i++)
-		if (!heapdemands[i]) {
-			heapdemands_chunk[i] = chunk;
-			heapdemands[i] = ptr;
-			heapdemands_line[i] = line;
-			strcpy(heapdemands_fname[i], fname);
-			strcpy(heapdemands_filename[i], filename);
-			if (current())
-				if (current()->pcb) {
-					strcpy(heapdemands_pname[i], current()->pcb->name);
-					break;
-				}
-			strcpy(heapdemands_pname[i], "so3");
-
-			break;
-		}
-
-}
-
-int demands_nr(void) {
-	int count = 0, i;
-
-	for (i = 0; i < NR_DEMANDS; i++)
-		if (heapdemands[i] != 0)
-				count++;
-
-	return count;
-}
-
-
-void demand_tracking_clear(void *ptr) {
-	int i;
-	bool found = false;
-
-	for (i = 0; i < NR_DEMANDS; i++)
-		if (heapdemands[i] == ptr) {
-			found = true;
-#if 0
-			printk("## clearing: %p size: %d padding: %d\n", heapdemands_chunk[i], heapdemands_chunk[i]->size, heapdemands_chunk[i]->padding_bytes);
-#endif
-			heapdemands[i] = 0; /* Clear */
-			break;
-		}
-	if (!found) {
-		printk("  Heap free failure: freeing a demand (%p) not present! # current demands: %d\n", ptr, demands_nr());
-		kernel_panic();
-	}
-
-}
-
-void display_tracking_demand(void) {
-	int i;
-
-	printk("   Heap ongoing demands: \n");
-	for (i = 0; i < NR_DEMANDS; i++)
-		if (heapdemands[i] != 0)
-			printk("-from: %s:%s:%d  pname: %s  ptr: %p size: %d\n", heapdemands_filename[i], heapdemands_fname[i],
-					heapdemands_line[i], heapdemands_pname[i], heapdemands[i], heapdemands_chunk[i]->size);
-}
-#endif /* TRACKING */
-
 uint32_t heap_size(void) {
 	mem_chunk_t *list = quick_list;
 	mem_chunk_t *chunk = quick_list;
 	uint32_t total_size = 0;
-	unsigned long flags;
+	uint32_t flags;
 
 	flags = spin_lock_irqsave(&heap_lock);
 
@@ -221,6 +83,7 @@ uint32_t heap_size(void) {
 	}
 
 	spin_unlock_irqrestore(&heap_lock, flags);
+
 	return total_size;
 }
 
@@ -253,11 +116,6 @@ void dump_heap(const char *info)
 		chunk = list;
 	}
 	printk("  [%s] Heap total remaining size: %d\n", info, total_size);
-
-#ifdef TRACKING
-	display_tracking_demand();
-#endif
-
 }
 
 void print_chunk(mem_chunk_t *chunk, const char *caller, const char *name)
@@ -504,17 +362,13 @@ recheck:
  * Allocate a memory area of a certain size (<size> bytes).
  * The address can be requested to be aligned according to @alignment which has to be a power of 2.
  */
-#ifndef TRACKING
 static void *__malloc(size_t requested, unsigned int alignment)
-#else
-static void *__malloc_log(size_t requested, unsigned int alignment, const char *filename, const char *fname, const int line)
-#endif
 {
 	mem_chunk_t *victim;
 	mem_chunk_t *remaining = NULL; /* new free chunk if size < victim->size */
 	mem_chunk_t tmp_memchunk; /* Used for possible shifting of the structure */
 	void *addr = NULL, *tmp_addr;
-	unsigned long flags;
+	uint32_t flags;
 
 #ifdef DEBUG
 	dump_heap(__func__);
@@ -539,7 +393,7 @@ next_list:
 	if (!victim) {
 		/* not enough free space left */
 		/* FIXME: do sbrk() here to request more space. Request less space in init() */
-		printk("[malloc] Not enough free space");
+		printk("[malloc] Not enough free space, requested = %x\n", requested);
 
 		spin_unlock_irqrestore(&heap_lock, flags);
 
@@ -626,10 +480,6 @@ next_list:
 	dump_heap(__func__);
 #endif
 
-#ifdef TRACKING
-	demand_tracking_add(victim, addr, filename, fname, line);
-#endif
-
 	spin_unlock_irqrestore(&heap_lock, flags);
 
 	return addr;
@@ -638,39 +488,15 @@ next_list:
 /*
  * Request a chunk of heap memory of @size bytes.
  */
-#ifndef TRACKING
 void *malloc(size_t size) {
 	return __malloc(size, 0);
 }
-#else
-void *malloc_log(size_t size, const char *filename, const char *fname, const int line) {
-	return __malloc_log(size, 0, filename, fname, line);
-}
-#endif
 
 /*
  * @memalign to retrieve a malloc area of a @requested size with a specific @alignment which is a power of 2.
  */
-#ifndef TRACKING
 void *memalign(size_t size, unsigned int alignment) {
 	return __malloc(size, alignment);
-}
-#else
-void *memalign_log(size_t size, unsigned int alignment, const char *filename, const char *fname, const int line) {
-	return __malloc_log(size, alignment, filename, fname, line);
-}
-#endif
-
-void *calloc(size_t nmemb, size_t size) {
-	void *ptr;
-
-	ptr = malloc(nmemb*size);
-	if (!ptr)
-		return ptr;
-
-	memset(ptr, 0, nmemb*size);
-
-	return ptr;
 }
 
 /*
@@ -678,15 +504,12 @@ void *calloc(size_t nmemb, size_t size) {
  */
 void free(void *ptr)
 {
-	unsigned long flags;
-	mem_chunk_t *chunk = (mem_chunk_t *)(ptr - sizeof(mem_chunk_t));
+	uint32_t flags;
+	mem_chunk_t *chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
 	mem_chunk_t tmp_memchunk;
 
 	flags = spin_lock_irqsave(&heap_lock);
 
-#ifdef TRACKING
-	demand_tracking_clear(ptr);
-#endif
 	if (chunk->sig != CHUNK_SIG) {
 		lprintk("Heap failure: already free'd chunk for address %x...\n", ptr);
 		kernel_panic();
@@ -720,6 +543,24 @@ void free(void *ptr)
 	dump_heap("free {after}");
 #endif
 	spin_unlock_irqrestore(&heap_lock, flags);
+}
+
+/**
+ * Invoke malloc by specifying the type of a structure.
+ *
+ * @param nmemb
+ * @param size
+ */
+void *calloc(size_t nmemb, size_t size) {
+        void *ptr;
+
+        ptr = malloc(nmemb*size);
+        if (!ptr)
+                return ptr;
+
+        memset(ptr, 0, nmemb*size);
+
+        return ptr;
 }
 
 /*

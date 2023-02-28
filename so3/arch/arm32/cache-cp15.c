@@ -70,7 +70,7 @@ void set_l2_pte_dcache(uint32_t *l2pte, enum ttb_l2_dcache_option option)
 	*l2pte |= value;
 }
 
-/* to activate the MMU we need to set up virtual memory */
+/* To activate the MMU we need to set up virtual memory */
 void mmu_setup(void *pgtable)
 {
 	u32 reg;
