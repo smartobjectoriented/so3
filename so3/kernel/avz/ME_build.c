@@ -38,7 +38,6 @@
  */
 int construct_ME(struct domain *d) {
 	unsigned int slotID;
-	unsigned long v_start;
 	unsigned long alloc_spfn;
 
 	slotID = d->avz_shared->domID;
@@ -63,12 +62,10 @@ int construct_ME(struct domain *d) {
 
 	clear_bit(_VPF_down, &d->pause_flags);
 
-	v_start = ME_VOFFSET;
-
 #ifdef CONFIG_ARM64VT
 	__setup_dom_pgtable(d, memslot[slotID].base_paddr, memslot[slotID].size);
 #else
-	__setup_dom_pgtable(d, v_start, memslot[slotID].size, memslot[slotID].base_paddr);
+	__setup_dom_pgtable(d, ME_VOFFSET, memslot[slotID].size, memslot[slotID].base_paddr);
 #endif
 
 	d->avz_shared->dom_phys_offset = alloc_spfn << PAGE_SHIFT;
@@ -84,7 +81,7 @@ int construct_ME(struct domain *d) {
 
 	/* Create the first thread associated to this domain. */
 
-	new_thread(d, v_start + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, v_start + memslot[slotID].size);
+	new_thread(d, ME_VOFFSET + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, ME_VOFFSET + memslot[slotID].size);
 
 	return 0;
 }

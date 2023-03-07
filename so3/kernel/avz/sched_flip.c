@@ -138,6 +138,10 @@ void sched_flip_init(void) {
 
 	spin_lock_init(&sched_flip.sched_data.schedule_lock);
 
+	/* Initiate a timer to trigger the schedule function */
+	init_timer(&sched_flip.sched_data.s_timer, s_timer_fn, NULL, ME_CPU);
+
+	set_timer(&sched_flip.sched_data.s_timer, NOW() + MILLISECS(CONFIG_SCHED_FLIP_SCHEDFREQ));
 }
 
 struct scheduler sched_flip = {

@@ -84,4 +84,9 @@ void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags)
 }
 
 
+void spin_barrier(spinlock_t *lock)
+{
+	do { smp_mb(); } while (spin_is_locked(lock));
 
+	smp_mb();
+}

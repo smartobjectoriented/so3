@@ -91,7 +91,6 @@ static irq_return_t timer_isr(int irq, void *dev) {
 #endif
 	}
 
-
 	return IRQ_COMPLETED;
 }
 

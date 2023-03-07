@@ -185,7 +185,6 @@ static void domain_schedule(void)
 	if (next_slice.time > 0ull)
 		set_timer(&next->sched->sched_data.s_timer, NOW() + MILLISECS(next_slice.time));
 
-
 	if (unlikely(prev == next))
 	{
 		spin_unlock(&prev->sched->sched_data.schedule_lock);
@@ -203,7 +202,7 @@ static void domain_schedule(void)
 	ASSERT(!next->is_running);
 	next->is_running = 1;
 
-#if 1
+#if 0
 	printk("### running on cpu: %d prev: %d next: %d\n", smp_processor_id(), prev->avz_shared->domID, next->avz_shared->domID);
 #endif
 

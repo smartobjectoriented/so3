@@ -37,8 +37,6 @@
 
 void *__current_pgtable = NULL;
 
-void *__sys_root_pgtable;
-
 void *current_pgtable(void) {
 	return __current_pgtable;
 }

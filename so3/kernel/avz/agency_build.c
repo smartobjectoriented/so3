@@ -35,10 +35,12 @@
 
 int construct_agency(struct domain *d) {
 
+#ifdef CONFIG_SOO
 	unsigned long domain_stack;
 	extern addr_t *hypervisor_stack;
 	static addr_t *__hyp_stack = (unsigned long *) &hypervisor_stack;
 	static addr_t *__pseudo_usr_mode = (unsigned long *) &pseudo_usr_mode;
+#endif
 
 	printk("***************************** Loading Agency Domain *****************************\n");
 

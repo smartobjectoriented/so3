@@ -81,10 +81,16 @@ u64 get_spid_spad(char *what) {
 
 	/* Get the short description */
 	node = fdt_find_node_by_name(__fdt_addr, 0, "ME");
-	ASSERT(node >= 0);
+	if (node < 0) {
+		printk("%s: node \"ME\" not found\n", __func__);
+		BUG();
+	}
 
 	node = fdt_property_read_u64(__fdt_addr, node, what, &val);
-	ASSERT(node >= 0);
+	if (node < 0) {
+		printk("%s: node \"%s\" not found\n", __func__, what);
+		BUG();
+	}
 
 	return val;
 }

@@ -87,10 +87,14 @@ void do_sync_dom(int domID, dc_event_t dc_event)
 
 	set_dc_event(domID, dc_event);
 
+	DBG("%s: notifying via evtchn %d...\n", __func__, dc_evtchn);
 	notify_remote_via_evtchn(dc_evtchn);
 
 	/* Wait for the response from the outgoing domain */
+	DBG("%s: waiting for completion on dc_event %d...\n", __func__, dc_event);
 	wait_for_completion(&dc_stable_lock[dc_event]);
+
+	DBG("%s: all right, got the completion, resetting the barrier.\n", __func__);
 
 	/* Now, reset the barrier. */
 	atomic_set(&dc_outgoing_domID[dc_event], -1);

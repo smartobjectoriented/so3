@@ -32,6 +32,10 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
+#ifdef CONFIG_SOO
+#include <avz/uapi/avz.h>
+#endif
+
 extern unsigned long __vectors_start, __vectors_end;
 mem_info_t mem_info;
 
@@ -437,7 +441,7 @@ void memory_init(void) {
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
-#if defined(CONFIG_SOO) && defined(CONFIG_ARCH_ARM32) && !defined(CONFIG_AVZ)
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ) && defined(CONFIG_ARCH_ARM32)
 	/* Keep the installed vector table */
 	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) = *((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
 #endif
@@ -469,6 +473,9 @@ void memory_init(void) {
 
 	/* Leave the root pgtable allocated by AVZ */
 	mmu_switch_kernel((void *) __pa(__sys_root_pgtable));
+
+	avz_shared->pagetable_vaddr = (addr_t) __sys_root_pgtable;
+	avz_shared->pagetable_paddr = __pa(__sys_root_pgtable);
 
 #endif /* CONFIG_SO3VIRT */
 

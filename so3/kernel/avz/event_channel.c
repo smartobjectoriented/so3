@@ -18,6 +18,7 @@
 
 #include <common.h>
 #include <errno.h>
+#include <spinlock.h>
 
 #include <avz/event.h>
 #include <avz/sched.h>
@@ -520,7 +521,7 @@ void evtchn_destroy(struct domain *d) {
 
 	/* After this barrier no new event-channel allocations can occur. */
 	BUG_ON(!d->is_dying);
-	spin_lock(&d->event_lock);
+	spin_barrier(&d->event_lock);
 
 	/* Close all existing event channels. */
 	for (i = 0; i < NR_EVTCHN; i++)

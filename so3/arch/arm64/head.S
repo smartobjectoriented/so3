@@ -80,7 +80,7 @@ __start:
 	cmp		x0, x1
 	b.cc	1b
 
-#warning CONFIG_SOO will disable this
+#if !defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
 
 	// Initialize the vector table
 	ldr	x0, =__vectors
@@ -100,6 +100,8 @@ __start:
 	msr pmuserenr_el0, xzr
 
 #endif /* !CONFIG_ARM64VT */
+
+#endif /* !defined(CONFIG_SOO) && !defined(CONFIG_AVZ) */
 
 #ifdef CONFIG_SO3VIRT
 

@@ -210,7 +210,7 @@ void cpu_up(unsigned int cpu)
 	 * to come online or time out.
 	 */
 
-	printk("Now waiting CPU %d to be up and running ...\n", cpu);
+	smp_mb();
 
 	while (!booted[cpu]) ;
 
