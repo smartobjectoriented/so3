@@ -43,8 +43,6 @@
 #warning set_errno
 #define set_errno(x)
 
-u64 edf_current = STIME_MAX;
-
 struct timers {
 
 	spinlock_t lock;

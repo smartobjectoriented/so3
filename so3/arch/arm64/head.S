@@ -80,7 +80,7 @@ __start:
 	cmp		x0, x1
 	b.cc	1b
 
-#if !defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+#if !defined(CONFIG_SOO)
 
 	// Initialize the vector table
 	ldr	x0, =__vectors
@@ -101,7 +101,7 @@ __start:
 
 #endif /* !CONFIG_ARM64VT */
 
-#endif /* !defined(CONFIG_SOO) && !defined(CONFIG_AVZ) */
+#endif /* !defined(CONFIG_SOO) */
 
 #ifdef CONFIG_SO3VIRT
 
@@ -210,8 +210,10 @@ el2_setup:
 		/* Hyp configuration. */
 	    and x1, x1, #3
 
+#ifdef CONFIG_SOO
 		cmp x1, #AGENCY_RT_CPU
 		bgt ME
+#endif /* CONFIG_SOO */
 
 agency:
 	ldr x0, =HCR_AGENCY_FLAGS
@@ -437,15 +439,28 @@ ENTRY(secondary_startup)
 	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 	// Initialize the vector table
-	ldr		x0, =__vectors
-	msr 	vbar_el1, x0
+	#if !defined(CONFIG_SOO)
+
+	// Initialize the vector table
+	ldr	x0, =__vectors
+
+#ifdef CONFIG_ARM64VT
+	msr vbar_el2, x0
+#else
+	msr vbar_el1, x0
 
 	// Enable FP/ASIMD
-	mov		x0, #3 << 20
-	msr		cpacr_el1, x0
+	mov	x0, #3 << 20
+	msr	cpacr_el1, x0
+
+    // Up to here, a stack should be initialized
 
 	// Some CPU setup
-	msr 	pmuserenr_el0, xzr
+	msr pmuserenr_el0, xzr
+
+#endif /* !CONFIG_ARM64VT */
+
+#endif /* !defined(CONFIG_SOO) */
 
     adr 	x4, __secondary_data
 

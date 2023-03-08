@@ -110,25 +110,41 @@ void secondary_start_kernel(void)
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
-#ifdef CONFIG_AVZ
+#if defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
 
-#ifdef CONFIG_ARM64VT
-
+#ifdef CONFIG_SOO
 	if (cpu == AGENCY_RT_CPU) {
-
 		__mmu_switch_kernel((void *) current_domain->avz_shared->pagetable_paddr, true);
+#else
+		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->avz_shared->pagetable_paddr, true);
+#endif /* CONFIG_SOO */
 
 		booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
-		pre_ret_to_el1_with_spin(CPU1_RELEASE_ADDR);
+		switch (cpu) {
+		case 1:
+			pre_ret_to_el1_with_spin(CPU1_RELEASE_ADDR);
+			break;
+		case 2:
+			pre_ret_to_el1_with_spin(CPU2_RELEASE_ADDR);
+			break;
+		case 3:
+			pre_ret_to_el1_with_spin(CPU3_RELEASE_ADDR);
+			break;
+		default:
+			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
+		}
+
 #else
 		pre_ret_to_el1();
 #endif
-	}
-#endif /* CONFIG_ARM64VT */
 
-#endif /* CONFIG_AVZ */
+#ifdef CONFIG_SOO
+	}
+#endif /* CONFIG_SOO */
+
+#endif /* CONFIG_AVZ+ARM64VT */
 
 	secondary_timer_init();
 
@@ -174,22 +190,15 @@ void cpu_up(unsigned int cpu)
 	 * We need to tell the secondary core where to find
 	 * its stack and the page tables.
 	 */
-#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 
 	switch (cpu) {
 	case AGENCY_RT_CPU:
 		secondary_data.stack = (void *) __cpu1_stack;
 		break;
 
-	case ME_CPU:
-		secondary_data.stack = (void *) __cpu3_stack;
-		break;
-
 	default:
-		printk("%s - CPU %d not supported.\n", __func__, cpu);
-		BUG();
+		secondary_data.stack = (void *) __cpu3_stack;
 	}
-#endif
 
 	secondary_data.pgdir = __pa(__sys_root_pgtable);
 
@@ -227,13 +236,19 @@ void cpu_up(unsigned int cpu)
 /* Called by boot processor to activate the rest. */
 void smp_init(void)
 {
-#if defined(CONFIG_AVZ) && defined (CONFIG_SOO)
+#if defined(CONFIG_AVZ) && !defined(CONFIG_SOO)
+	int i;
+#endif
+
+#if defined(CONFIG_AVZ)
+
+#ifdef CONFIG_SOO
 
 	printk("CPU #%d is the second CPU reserved for Agency realtime activity.\n", AGENCY_RT_CPU);
 
-	/* Since the RT domain is never scheduled, we set the current domain bound to
-	 * CPU #1 to this unique domain.
-	 */
+		/* Since the RT domain is never scheduled, we set the current domain bound to
+		 * CPU #1 to this unique domain.
+		 */
 
 	per_cpu(current_domain, AGENCY_RT_CPU) = domains[DOMID_AGENCY_RT];
 
@@ -246,7 +261,14 @@ void smp_init(void)
 
 	printk("Brought secondary CPUs for AVZ (at the moment CPU #3, CPU #2 will be for later...)\n");
 
-#endif /* CONFIG_SOO */
+#else /* CONFIG_SOO */
+
+	for (i = 1; i < CONFIG_NR_CPUS; i++)
+		cpu_up(i);
+
+#endif /* !CONFIG_SOO */
+
+#endif /* CONFIG_AVZ */
 
 }
 

@@ -88,6 +88,7 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 
 		__create_mapping(new_pt, memslot[MEMSLOT_AGENCY].ipa_addr + map_size + PAGE_SIZE,
 			       __pa(d->avz_shared->subdomain_shared_paddr), PAGE_SIZE, true, S2);
+
 		/* <subdomain_shared_paddr> will be used by the guest only. The AGENCY_RT domain has
 		 * its own shared page, so we will be able to use it via the domain descriptor in avz.
 		 */
