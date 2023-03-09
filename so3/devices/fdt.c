@@ -77,7 +77,6 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	 */
 
 	if (prop) {
-		printk("## prop_len: %d\n", prop_len);
 		if (prop_len == 8) {
 			info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 			info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);
