@@ -1,6 +1,6 @@
 
 dtb-$(CONFIG_VEXPRESS) += vexpress.dtb vexpress_avz.dtb
-dtb-$(CONFIG_RPI4) += rpi4.dtb
+dtb-$(CONFIG_RPI4) += rpi4.dtb rpi4_avz.dtb
 dtb-$(CONFIG_RPI4_64) += rpi4_64.dtb
 dtb-$(CONFIG_VIRT64) += virt64.dtb virt64_avz_pv.dtb virt64_avz_vt.dtb
 

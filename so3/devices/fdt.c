@@ -73,10 +73,11 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	BUG_ON(!prop);
 
 	/* For some platform, address-cells and size-cells are set to 2 (64-bit)
-	 * event for a 32-bit platform, probably to support LPAE.
+	 * even for a 32-bit platform, probably to support LPAE.
 	 */
 
 	if (prop) {
+		printk("## prop_len: %d\n", prop_len);
 		if (prop_len == 8) {
 			info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 			info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);

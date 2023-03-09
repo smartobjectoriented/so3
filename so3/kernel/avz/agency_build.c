@@ -98,8 +98,8 @@ int construct_agency(struct domain *d) {
 	__pseudo_usr_mode[AGENCY_RT_CPU] = 1;
 
 	/*
-	 * Keep a reference in the primary agency domain to its subdomain. Indeed, there is only one shared info page mapped
-	 * in the guest.
+	 * Keep a reference in the primary agency domain to its sub-domain.
+	 * Indeed, there is only one shared page mapped in the guest.
 	 */
 	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
 
