@@ -1,8 +1,8 @@
---- st	2022-12-21 17:53:27.090095987 +0100
-+++ ../ci/st	2022-12-21 11:07:08.951896063 +0100
-@@ -1,4 +1,17 @@
--# Launch script for SO3 
-+#!/bin/bash
+--- st	2023-02-28 20:18:22.264568940 +0100
++++ st.n	2023-03-09 12:29:19.613117491 +0100
+@@ -1,5 +1,17 @@
+ #!/bin/bash
+ 
 +
 +# Post-installation
 +if [ ! -f post_installation_done ]; then
@@ -15,34 +15,24 @@
 +	
 +fi
 +
-+
+ # Launch script for SO3 
  
  N_QEMU_INSTANCES=`ps -A | grep qemu | wc -l`
- GDB_PORT_BASE=1234
-@@ -19,7 +32,7 @@
+@@ -21,7 +33,7 @@
  
- if [ "$PLATFORM" == "virt64" ]; then
+     if [ "$PLATFORM" == "virt64" ]; then
  
--sudo qemu-system-aarch64 $@ \
-+qemu-system-aarch64 $@ \
-   	-smp 4 -s \
+-    sudo qemu-system-aarch64 $@ ${USR_OPTION} \
++    qemu-system-aarch64 $@ ${USR_OPTION} \
+  	-smp 4  \
  	-serial mon:stdio  \
  	-M virt,gic-version=2 -cpu cortex-a72  \
-@@ -33,7 +46,8 @@
+@@ -36,7 +48,7 @@
  
- else
- 
--sudo qemu-system-arm $@ \
-+
-+qemu-system-arm $@ \
-         -gdb tcp::$QEMU_GDB_PORT \
+     else    
+    echo Starting on ARM32
+-   sudo qemu-system-arm $@ ${USR_OPTION} \
++   qemu-system-arm $@ ${USR_OPTION} \
    	-smp 4 \
  	-serial mon:stdio  \
-@@ -42,7 +56,6 @@
- 	-kernel u-boot/u-boot \
- 	-semihosting-config enable,target=native \
- 	-net user,tftp=. \
--	-nic tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh,mac=${QEMU_MAC_ADDR} \
- 	-sd filesystem/sdcard.img.vexpress \
- 	-nographic 
- fi
+ 	-M vexpress-a15,secure=on  -cpu cortex-a15 \
