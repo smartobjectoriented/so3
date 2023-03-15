@@ -32,7 +32,7 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#ifdef CONFIG_SOO
+#if defined(CONFIG_SOO) || defined(CONFIG_SO3VIRT)
 #include <avz/uapi/avz.h>
 #endif
 
