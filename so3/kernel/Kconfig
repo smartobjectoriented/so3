@@ -37,7 +37,7 @@ config CPU_PSCI
           
 config CPU_SPIN_TABLE
 	bool "CPU power management following spin table convention."
-	depends on SMP
+	depends on SMP && (RPI4 || RPI4_64)
 	help
 		Enabling CPU power handling based on values stored
 		at specific address for each CPU.

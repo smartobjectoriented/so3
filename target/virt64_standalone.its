@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Kernel and rootfs components for virt64 (armv8) environment";
+
+	images {
+
+so3 {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+            		load = <0x41000000>;
+			entry = <0x41000000>;
+		};
+ 
+        fdt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../so3/dts/virt64.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x42000000>;
+		};	
+
+        ramfs {
+        	description = "SO3 environment minimal rootfs";
+			data = /incbin/("../rootfs/board/virt64/rootfs.fat");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x42c00000>;
+    	};
+                
+};
+
+	configurations {
+		default = "so3_ramfs";
+                
+		so3_ramfs {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+            ramdisk = "ramfs"; 
+		};
+                
+        so3_mmc {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+		};
+	};
+
+};

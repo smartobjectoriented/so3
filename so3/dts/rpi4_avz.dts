@@ -17,7 +17,7 @@
  */
  
 /dts-v1/;
- 
+
 / {
 	model = "SO3 Vexpress";
 	compatible = "arm,vexpress";
@@ -25,37 +25,28 @@
 	#address-cells = <1>;
 	#size-cells = <1>;
 
-	cpus {
-		device_type = "cpu";
-		compatible = "arm,vexpress";
-	};
-
 	memory {
 		device_type = "memory";
-		reg = <0x80000000 0x00c00000>; /* 12 MB for the hypervisor */
+		reg = <0x00000000 0x00c00000>; /* 12 MB for the hypervisor */
 	};
-	
 
 	/* GIC interrupt controller */
-	gic:interrupt-controller@2c001000 {
+	gic:interrupt-controller@ff841000 {
 		compatible = "intc,gic";
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		
-		reg = <0x2c001000 0x1000 0x2c002000 0x1000>;
+		reg = <0xff841000 0x1000 0xff842000 0x1000>;
 		status = "ok";
 	};
 	
-	/*Vexpress console UART */
-	serial@1c090000 {
-		compatible = "serial,pl011";
-		reg = <0x1c090000 0x1000>;
-		interrupt-parent = <&gic>;
-		interrupts = <0 5 4>;
+	/* RPi4 miniuart NS16550 console */
+	serial@fe215040 {
+		compatible = "serial,bcm283x-mu";
+		reg = <0xfe215040 0x1000>;
 		status = "ok";
 	};
 
-#if 1 /* If we want to use ARM CP15 timer */
 	/* Periodic timer based on ARM CP15 timer */
 	periodic-timer {
 		compatible = "arm,periodic-timer";
@@ -69,33 +60,5 @@
 		compatible = "arm,clocksource-timer";
 		status = "ok";
 	};
-#endif
-
-#if 0 /* Basic SP804 on-board timer */
-	/* Periodic timer (Dual-timer 01) */
-	periodic-timer@1c110000 {
-		compatible = "sp804,periodic-timer";
-		reg = <0x1c110000 0x1000>;
-		interrupt-parent = <&gic>;
-		interrupts = <0 2 4>;
-		status = "ok";
-	};
-
-	/* Oneshot timer (Dual-timer 23) */
-	oneshot-timer@1c120000 {
-		compatible = "sp804,oneshot-timer";
-		reg = <0x1c120000 0x1000>;
-		interrupt-parent = <&gic>;
-		interrupts = <0 3 4>;
-		status = "ok";
-	};
-
-	/* Free-running clocksource */
-	clocksource-timer@1c110020 {
-		compatible = "sp804,clocksource-timer";
-		reg = <0x1c110020 0x1000>;
-		status = "ok";
-	};
-#endif
-
+	
 };

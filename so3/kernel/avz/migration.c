@@ -391,7 +391,7 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 	mmu_get_current_pgtable(&current_pgtable_paddr);
 
 	/* Switch to idle domain address space which has a full mapping of the RAM */
-	mmu_switch_kernel(idle_domain[smp_processor_id()]);
+	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
 
 	/* Fix the ME kernel page table for domcalls to work */
 	fix_kernel_boot_page_table_ME(ME_slotID);
@@ -468,7 +468,7 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 
 	ASSERT(smp_processor_id() == 0);
 
-	DBG("%s: Now, resuming ME...\n", __func__);
+	DBG("%s: Now, resuming ME slotID %d...\n", __func__, ME_slotID);
 
 	domain_unpause_by_systemcontroller(me);
 

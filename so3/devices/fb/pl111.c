@@ -25,8 +25,11 @@
 
 #include <vfs.h>
 #include <process.h>
+#include <heap.h>
+
 #include <asm/io.h>
 #include <asm/mmu.h>
+
 #include <device/driver.h>
 
 #define IOCTL_HRES 1
@@ -159,11 +162,15 @@ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
 	uint32_t i, page;
 	pcb_t *pcb = current()->pcb;
 
+	virt_addr = malloc(page_count*PAGE_SIZE);
+	BUG_ON(!virt_addr);
+#if 0
 	for (i = 0; i < page_count; i++) {
 		/* Map a process' virtual page to the physical one (here the VRAM). */
 		page = LCDUPBASE + i * PAGE_SIZE;
 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
 	}
+#endif
 
 	return (void *) virt_addr;
 }

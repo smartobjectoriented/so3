@@ -68,5 +68,11 @@
 #define LOCAL_MAILBOX0_CLR0		0x0c0
 #define LOCAL_MAILBOX3_CLR0		0x0cc
 
+/* CPU Release address to be woken up following spin table method. */
+#define CPU0_RELEASE_ADDR	0xd8
+#define CPU1_RELEASE_ADDR	0xe0
+#define CPU2_RELEASE_ADDR	0xe8
+#define CPU3_RELEASE_ADDR	0xf0
+
 #endif /* MACH_IO_H */
 

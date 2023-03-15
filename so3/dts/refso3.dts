@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -18,14 +18,17 @@
 
 /dts-v1/;
 
-#include "so3virt.dtsi"
+#include "soo.dtsi"
 
 &ME {
 	/* 16 MB should be enough for major cases. */
 	domain-size = <0x1000000>;
 	
-	/* SPID on 128-bit encoding */
+	/* SPID on 64-bit encoding */
 	spid = /bits/ 64 <0x0010000000000001>;
+	
+	/* SPAD capabilities on 64-bit encoding */
+	spadcaps = /bits/ 64 <0x0000000000000000>;
 	
 	/* Name of this ME */
 	me_name = "SOO.refso3";
@@ -37,10 +40,6 @@
 perform various tests. This variant has no rootfs (only kernel threads).";
 
 	frontends {
-		/* Enabling vdummy for testing purposes */
-		vdummy {
-			status = "ok";
-		};
 
 		/* Enabling the console */
 		vuart {

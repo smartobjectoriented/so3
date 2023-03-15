@@ -53,7 +53,7 @@ void mmu_get_current_pgtable(addr_t *pgtable_paddr) {
 
 	cpu = smp_processor_id();
 
-	*pgtable_paddr = cpu_get_ttbr0();
+	*pgtable_paddr = cpu_get_ttbr1();
 }
 
 static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache, mmu_stage_t stage)
@@ -117,7 +117,7 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 		set_pte_page(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
 		/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
-		if (user_space_vaddr(addr))
+		if ((addr != phys) && user_space_vaddr(addr))
 			*l3pte |= PTE_BLOCK_AP1;
 #endif
 
@@ -198,7 +198,14 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			set_pte_block(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
 			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
-			if (user_space_vaddr(addr))
+
+			/* Warning! For an identity mapping, the RAM addresses are low compared
+			 * to the kernel space. It has to be managed differently.
+			 * For this reason, we compare the virt and phys address. If they are identical,
+			 * we presume that the kernel is concerned by this mapping and not the user space.
+			 */
+
+			if ((addr != phys) && user_space_vaddr(addr))
 				*l2pte |= PTE_BLOCK_AP1;
 #endif
 			DBG("Allocating a 2 MB block at l2pte: %p content: %lx\n", l2pte, *l2pte);
@@ -270,7 +277,7 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			
 			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
-			if (user_space_vaddr(addr))
+			if ((addr != phys) && user_space_vaddr(addr))
 				*l1pte |= PTE_BLOCK_AP1;
 #endif
 
@@ -604,7 +611,8 @@ void mmu_configure(addr_t fdt_addr) {
 		asm volatile("msr ttbr0_el1, %0" : : "r" (__pa(__sys_root_pgtable)) : "memory");
 		asm volatile("isb");
 
-#else
+#else /* CONFIG_SO3VIRT */
+
 		/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
 #ifdef CONFIG_VA_BITS_48
 		__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
@@ -664,14 +672,6 @@ void mmu_configure(addr_t fdt_addr) {
 
 #endif /* !CONFIG_SO3VIRT */
 
-#if 0
-	if (smp_processor_id() == AGENCY_CPU) {
-		__fdt_addr = (addr_t *) fdt_addr;
-
-		/* The device tree is visible in the L_PAGE_OFFSET area */
-		fdt_vaddr = (addr_t *) __lva(fdt_addr);
-	}
-#endif
 }
 
 /*
@@ -895,7 +895,11 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
  *
  * Get the physical address from any virtual address including
  * addresses out of the linear address space.
- * .
+ *
+ * We assume that <vaddr> is a real user space address if
+ * the address is below the kernel space address. In other
+ * words, it should never be used for kernel related virtual address.
+ *
  * The function reads the page table(s).
  *
  * @param vaddr	virtual address

@@ -44,5 +44,7 @@ void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags);
 
 #define spin_is_locked(x)	((x)->lock != 0)
 
+void spin_barrier(spinlock_t *lock);
+
 #endif /* SPINLOCK_H */
 

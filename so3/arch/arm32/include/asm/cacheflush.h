@@ -41,14 +41,15 @@ static inline void flush_pte_entry(void *pte)
 
 void invalidate_dcache_all(void);
 void flush_dcache_all(void);
-void invalidate_dcache_range(unsigned long start, unsigned long stop);
-void flush_dcache_range(unsigned long start, unsigned long stop);
+void invalidate_dcache_range(unsigned long start, unsigned long end);
+
+void __asm_flush_dcache_range(unsigned long start, unsigned long end);
 
 void __asm_invalidate_tlb_all(void);
 
 void arm_init_before_mmu(void);
 
-void mmu_page_table_flush(unsigned long start, unsigned long stop);
+void mmu_page_table_flush(unsigned long start, unsigned long end);
 
 void invalidate_icache_all(void);
 

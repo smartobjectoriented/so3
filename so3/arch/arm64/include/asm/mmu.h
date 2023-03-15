@@ -63,10 +63,10 @@
 
 #ifdef CONFIG_VA_BITS_48
 #define AGENCY_VOFFSET	UL(0xffff800010000000)
-#define ME_VOFFSET	UL(0xffff810000000000)
+#define ME_VOFFSET	UL(0xffff800000000000)
 #elif CONFIG_VA_BITS_39
 #define AGENCY_VOFFSET	UL(0xffffffc010000000)
-#define ME_VOFFSET  	UL(0xffffffc100000000)
+#define ME_VOFFSET  	UL(0xffffffc000000000)
 #else
 #error "Wrong VA_BITS configuration."
 #endif
@@ -599,7 +599,7 @@ static inline int pte_type(u64 *pte)
 }
 
 
-#define cpu_get_ttbr0() \
+#define cpu_get_ttbr1() \
 ({						\
 	unsigned long ttbr;			\
 	__asm__("mrs	%0, ttbr1_el1"	\

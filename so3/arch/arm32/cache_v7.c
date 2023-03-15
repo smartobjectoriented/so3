@@ -141,11 +141,11 @@ void flush_dcache_all(void)
  * Invalidates range in all levels of D-cache/unified cache used:
  * Affects the range [start, stop - 1]
  */
-void invalidate_dcache_range(unsigned long start, unsigned long stop)
+void invalidate_dcache_range(unsigned long start, unsigned long end)
 {
-	check_cache_range(start, stop);
+	check_cache_range(start, end);
 
-	v7_dcache_maint_range(start, stop, ARMV7_DCACHE_INVAL_RANGE);
+	v7_dcache_maint_range(start, end, ARMV7_DCACHE_INVAL_RANGE);
 }
 
 /*
@@ -153,11 +153,11 @@ void invalidate_dcache_range(unsigned long start, unsigned long stop)
  * cache used:
  * Affects the range [start, stop - 1]
  */
-void flush_dcache_range(unsigned long start, unsigned long stop)
+void __asm_flush_dcache_range(addr_t start, addr_t end)
 {
-	check_cache_range(start, stop);
+	check_cache_range(start, end);
 
-	v7_dcache_maint_range(start, stop, ARMV7_DCACHE_CLEAN_INVAL_RANGE);
+	v7_dcache_maint_range(start, end, ARMV7_DCACHE_CLEAN_INVAL_RANGE);
 }
 
 void arm_init_before_mmu(void)
@@ -166,9 +166,9 @@ void arm_init_before_mmu(void)
 	__asm_invalidate_tlb_all();
 }
 
-void mmu_page_table_flush(unsigned long start, unsigned long stop)
+void mmu_page_table_flush(unsigned long start, unsigned long end)
 {
-	flush_dcache_range(start, stop);
+	__asm_flush_dcache_range(start, end);
 	__asm_invalidate_tlb_all();
 }
 

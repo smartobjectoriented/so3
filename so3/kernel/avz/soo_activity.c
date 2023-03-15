@@ -17,7 +17,7 @@
  *
  */
 
-#if 1
+#if 0
 #define DEBUG
 #endif
 
@@ -78,7 +78,7 @@ void shutdown_ME(unsigned int ME_slotID)
 	__current_domain = current_domain;
 	mmu_get_current_pgtable(&current_pgtable_paddr);
 
-	mmu_switch_kernel(idle_domain[smp_processor_id()]);
+	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
 
 	memset((void *) __lva(memslot[ME_slotID].base_paddr), 0, memslot[ME_slotID].size);
 

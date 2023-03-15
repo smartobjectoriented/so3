@@ -436,6 +436,7 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
 			 * an event has been raised. So, the domain will check for
 			 * this event along the return path.
 			 */
+
 			gic_eoi_irq(irq_nr, false);
 		else {
 

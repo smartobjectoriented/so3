@@ -1010,4 +1010,29 @@ out_upcall:
 
 #endif /* CONFIG_SO3VIRT */
 
+#if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 
+
+// We may reach this point only during along the upcall
+// path of a hypercall return.
+
+.align 5
+ENTRY(avz_vector_callback)
+
+	// x0 is set to cpu_regs_t by avz
+	bl 		irq_handle
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
+
+	ldr		x0, [sp, #OFFSET_SP]
+	msr		sp_el0, x0
+
+	ldr		x0, [sp, #OFFSET_PC]
+	msr		elr_el1, x0
+
+	kernel_exit
+
+	eret
+
+#endif

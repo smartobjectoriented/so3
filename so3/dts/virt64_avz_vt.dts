@@ -62,6 +62,8 @@
 		compatible = "arm,periodic-timer";
 		reg = <0 0 0 0>;
 		interrupt-parent = <&gic>;
+		
+		/* Choose IRQ 10 with VT support or 11 without */
 		interrupts = <1 10 4>;
 		status = "ok";
 	};

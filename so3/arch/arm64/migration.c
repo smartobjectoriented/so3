@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-
+#include <common.h>
 #include <spinlock.h>
 #include <memory.h>
 
@@ -32,7 +32,6 @@
  * @param pte
  * @param addr_mask
  */
-#if 0
 static void adjust_pte(uint64_t *pte, uint64_t addr_mask) {
 
 	uint64_t old_pfn;
@@ -40,7 +39,7 @@ static void adjust_pte(uint64_t *pte, uint64_t addr_mask) {
 	old_pfn = phys_to_pfn(*pte & addr_mask);
 	*pte = (*pte & ~addr_mask) | (pfn_to_phys(old_pfn + pfn_offset) & addr_mask);
 }
-#endif
+
 /**
  * fix_page_table_ME
  * Fix the ME system page table to fit new physical address space.
@@ -50,8 +49,6 @@ static void adjust_pte(uint64_t *pte, uint64_t addr_mask) {
  */
 void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 {
-#if 0 /* At the moment */
-
 	struct domain *me = domains[ME_slotID];
 	uint64_t *pgtable_ME;
 	uint64_t *l0pte, *l1pte, *l2pte, *l3pte;
@@ -63,7 +60,7 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 	pgtable_ME = (uint64_t *) __lva(me->avz_shared->pagetable_paddr);
 
 	/* Walk through L0 page table */
-	for (l0 = l0pte_index(ME_PAGE_OFFSET); l0 < TTB_L0_ENTRIES; l0++) {
+	for (l0 = l0pte_index(ME_VOFFSET); l0 < TTB_L0_ENTRIES; l0++) {
 
 		l0pte = pgtable_ME + l0;
 		if (!*l0pte)
@@ -111,6 +108,5 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 	}
 
 	/* Fixup the hypervisor */
-	*l0pte_offset(pgtable_ME, CONFIG_HYPERVISOR_VADDR) = *l0pte_offset(__sys_root_pgtable, CONFIG_HYPERVISOR_VADDR);
-#endif
+	*l0pte_offset(pgtable_ME, CONFIG_KERNEL_VADDR) = *l0pte_offset(__sys_root_pgtable, CONFIG_KERNEL_VADDR);
 }

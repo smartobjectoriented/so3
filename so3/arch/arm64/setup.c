@@ -33,6 +33,8 @@ void (*__printch)(char c);
 
 volatile uint32_t *HYPERVISOR_hypercall_addr;
 
+#ifndef CONFIG_SOO
+
 /**
  * This function is called at early bootstrap stage along head.S.
  */
@@ -43,3 +45,5 @@ void avz_setup(void) {
 
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
 }
+
+#endif /* CONFIG_SOO */

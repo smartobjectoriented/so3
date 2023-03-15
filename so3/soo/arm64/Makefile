@@ -1,3 +1,0 @@
-
-obj-y += exception.o
-

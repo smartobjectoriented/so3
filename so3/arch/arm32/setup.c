@@ -125,17 +125,19 @@ void cpu_init(void) {
  * Low-level initialization before the main boostrap process.
  */
 void setup_arch(void) {
+
 #ifndef CONFIG_SO3VIRT
+
+#ifndef CONFIG_AVZ
+
+	/* Retrieve information about the main memory (RAM) from the DT */
 	int offset;
-#endif
 
-	/* Retrieve information about the main memory (RAM) */
-
-#ifndef CONFIG_SO3VIRT
 	/* Access to device tree */
 	offset = get_mem_info((void *) __fdt_addr, &mem_info);
 	if (offset >= 0)
 		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+#endif /* CONFIG_AVZ */
 
 #else /* CONFIG_SO3VIRT */
 

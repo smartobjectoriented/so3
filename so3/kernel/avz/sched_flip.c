@@ -121,12 +121,15 @@ static void flip_wake(struct domain *d)
 
 }
 
+#ifdef CONFIG_SOO
+
 /* The scheduler timer: force a run through the scheduler */
 static void s_timer_fn(void *unused)
 {
 	raise_softirq(SCHEDULE_SOFTIRQ);
 }
 
+#endif
 
 void sched_flip_init(void) {
 	int i;
@@ -137,6 +140,13 @@ void sched_flip_init(void) {
 	sched_flip.sched_data.current_dom = 0;
 
 	spin_lock_init(&sched_flip.sched_data.schedule_lock);
+
+#ifdef CONFIG_SOO
+	/* Initiate a timer to trigger the schedule function */
+	init_timer(&sched_flip.sched_data.s_timer, s_timer_fn, NULL, ME_CPU);
+
+	set_timer(&sched_flip.sched_data.s_timer, NOW() + MILLISECS(CONFIG_SCHED_FLIP_SCHEDFREQ));
+#endif /* CONFIG_SOO */
 
 }
 

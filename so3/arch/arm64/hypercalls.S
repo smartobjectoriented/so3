@@ -256,10 +256,12 @@ __end_hypercall_from_avz:
 ENTRY(hypercall_table)
 
 __hypercall_entry:
+	.quad do_event_channel_op
 	.quad do_console_io
-#ifdef CONFIG_ARM64VT
+	.quad do_physdev_op
+	.quad do_sched_op
 	.quad do_domctl
-#endif
+	.quad do_soo_hypercall
 
 __hypercall_end:
 

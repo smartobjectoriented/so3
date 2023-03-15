@@ -154,6 +154,7 @@ void avz_start(void)
 #endif
 
 	printk("Now, unpausing the agency domain and doing its bootstrap...\n");
+
 	domain_unpause_by_systemcontroller(agency);
 
 	set_current_domain(idle_domain[smp_processor_id()]);

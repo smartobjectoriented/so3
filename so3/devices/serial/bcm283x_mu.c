@@ -61,7 +61,7 @@ static int bcm283x_mu_put_byte(char c)
 	return 0;
 }
 
-int printch(char c) {
+void printch(char c) {
 	bcm283x_mu_put_byte(c);
 	
 }

@@ -73,7 +73,7 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	BUG_ON(!prop);
 
 	/* For some platform, address-cells and size-cells are set to 2 (64-bit)
-	 * event for a 32-bit platform, probably to support LPAE.
+	 * even for a 32-bit platform, probably to support LPAE.
 	 */
 
 	if (prop) {

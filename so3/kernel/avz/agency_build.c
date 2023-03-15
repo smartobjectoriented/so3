@@ -35,10 +35,12 @@
 
 int construct_agency(struct domain *d) {
 
+#ifdef CONFIG_SOO
 	unsigned long domain_stack;
 	extern addr_t *hypervisor_stack;
 	static addr_t *__hyp_stack = (unsigned long *) &hypervisor_stack;
 	static addr_t *__pseudo_usr_mode = (unsigned long *) &pseudo_usr_mode;
+#endif
 
 	printk("***************************** Loading Agency Domain *****************************\n");
 
@@ -96,8 +98,8 @@ int construct_agency(struct domain *d) {
 	__pseudo_usr_mode[AGENCY_RT_CPU] = 1;
 
 	/*
-	 * Keep a reference in the primary agency domain to its subdomain. Indeed, there is only one shared info page mapped
-	 * in the guest.
+	 * Keep a reference in the primary agency domain to its sub-domain.
+	 * Indeed, there is only one shared page mapped in the guest.
 	 */
 	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
 

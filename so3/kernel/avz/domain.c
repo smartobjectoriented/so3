@@ -341,6 +341,9 @@ void domain_call(struct domain *target_dom, int cmd, void *arg)
 
 	__current = current_domain;
 
+	/* Preserve the current pgtable address on the AGENCY CPU
+	 * since we are about to move to the ME memory context.
+	 */
 	mmu_get_current_pgtable(&prev);
 
 	switch_mm_domain(target_dom);
@@ -352,10 +355,7 @@ void domain_call(struct domain *target_dom, int cmd, void *arg)
 
 	set_current_domain(__current);
 
-	/* Switch back to our domain address space. */
-#ifdef CONFIG_ARM64VT
-	__mmu_switch_kernel((void *) prev, true);
-#else
+	/* Switch back to the same page table (and potential attributes) as at the entry */
 	mmu_switch_kernel((void *) prev);
-#endif
+
 }
