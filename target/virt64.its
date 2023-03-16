@@ -23,18 +23,47 @@
 
 	images {
 
-so3 {
+		avz {
+			description = "AVZ Hypervisor (64-bit) Polymorphic SO3";
+            data = /incbin/("../avz/so3.bin");
+			type = "kernel";
+            os = "linux";
+			arch = "arm64";
+			compression = "none";
+			load = <0x40000000>;
+			entry = <0x40000000>;
+		};
+		
+		avz_pv_dt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../avz/dts/virt64_avz_pv.dtb");
+			type = "avz_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x40f00000>;
+		};
+		
+		avz_vt_dt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
+			type = "avz_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x40f00000>;
+		};
+		
+		so3_agency {
 			description = "SO3 OS kernel";
 			data = /incbin/("../so3/so3.bin");
-			type = "kernel";
+			type = "avz";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            		load = <0x41000000>;
+            load = <0x41000000>;
 			entry = <0x41000000>;
 		};
  
-        fdt {
+        fdt_so3 {
 			description = "Flattened Device Tree blob";
 			data = /incbin/("../so3/dts/virt64.dtb");
 			type = "flat_dt";
@@ -42,7 +71,7 @@ so3 {
 			compression = "none";
 			load = <0x42000000>;
 		};	
-
+        
         ramfs {
         	description = "SO3 environment minimal rootfs";
 			data = /incbin/("../rootfs/board/virt64/rootfs.fat");
@@ -56,20 +85,16 @@ so3 {
 };
 
 	configurations {
-		default = "so3_ramfs";
+		default = "so3_avz";
                 
-		so3_ramfs {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
+		so3_avz {
+			description = "SO3/AVZ on virt64";
+		    kernel = "avz";
+            loadables = "avz_vt_dt", "so3_agency"; 
+            fdt = "fdt_so3";
             ramdisk = "ramfs"; 
 		};
                 
-        so3_mmc {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
-		};
 	};
 
 };

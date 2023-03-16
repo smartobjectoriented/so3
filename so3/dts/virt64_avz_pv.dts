@@ -40,10 +40,9 @@
 		compatible = "intc,gic";
 		interrupt-controller;
 		#interrupt-cells = <3>;
-		/* GIC dist, cpu, hyp */
+		/* GIC dist, cpu */
 		reg = <0x0 0x08000000 0x0 0x10000 
-		       0x0 0x08010000 0x0 0x10000
-		       0x0 0x08030000 0x0 0x10000>;
+		       0x0 0x08010000 0x0 0x10000>;
 		
 		status = "ok";
 	};
@@ -74,40 +73,5 @@
 		reg = <0 0 0 0>;
 		status = "ok";
 	};
-	
-	/* MMC */
-	mmc@1c050000 {
-		compatible = "vexpress,mmc-pl180";
-		reg = <0x0 0x1c050000 0x0 0x1000>;
-		power = <191>;
-		clkdiv = <454>;
-		caps = <0>;
-		voltages = <16744576>;
-		clock_min = <251256>;
-		clock_max = <6250000>;
-		b_max = <127>;
-
-		status = "ok";
-	};
-
-	mydev {
-		compatible = "arm,mydev";
-		status = "ok";
-	};
-
-	/*
-        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
-        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
-   	 */
-    ethernet@1a000000 {
-        compatible = "smsc,smc911x";
-        reg = <0x0 0x1a000000 0x0 0x1000>;
-        
-    	interrupt-parent = <&gic>;
-        interrupts = <0 15 4>;
-        switch = "br0";
-
-        status = "ok";
-    };
-    	
+ 	
 };

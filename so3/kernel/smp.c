@@ -40,6 +40,10 @@
 #include <asm/processor.h>
 #include <asm/mmu.h>
 
+#ifdef CONFIG_CPU_SPIN_TABLE
+#include <mach/io.h>
+#endif
+
 static volatile int booted[CONFIG_NR_CPUS] = {0};
 
 DEFINE_PER_CPU(spinlock_t, softint_lock);

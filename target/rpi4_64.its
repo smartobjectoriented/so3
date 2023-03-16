@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,54 +19,82 @@
 /dts-v1/;
 
 / {
-	description = "Kernel and rootfs components for Raspberry Pi 4 64-bit environment";
+	description = "Kernel and rootfs components for Raspberry Pi 4 (armv8) environment";
 
 	images {
 
-		so3 {
-			description = "Agency SO3 kernel";
-			data = /incbin/("../so3/so3.bin");
+		avz {
+			description = "AVZ Hypervisor (64-bit) Polymorphic SO3";
+            data = /incbin/("../avz/so3.bin");
 			type = "kernel";
+            os = "linux";
 			arch = "arm64";
-			os = "linux";
 			compression = "none";
 			load = <0x00000000>;
 			entry = <0x00000000>;
 		};
 		
-	   fdt {
-        	description = "Agency device tree blob";
-            data = /incbin/("../so3/dts/rpi4_64.dtb");
-            type = "flat_dt";
-            arch = "arm64";
-            compression = "none";
-            load = <0x0a000000>;
+		avz_pv_dt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../avz/dts/rpi4_64_avz_pv.dtb");
+			type = "avz_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x00f00000>;
 		};
-
-		ramfs {
+		
+		avz_vt_dt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../avz/dts/rpi4_64_avz_vt.dtb");
+			type = "avz_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x00f00000>;
+		};
+		
+		so3_agency {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
+			type = "avz";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+            load = <0x01000000>;
+			entry = <0x01000000>;
+		};
+ 
+        fdt_so3 {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../so3/dts/virt64.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x02000000>;
+		};	
+        
+        ramfs {
         	description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/board/rpi4_64/rootfs.fat");
+			data = /incbin/("../rootfs/board/virt64/rootfs.fat");
 			type = "ramdisk";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x0ac00000>;
-        };
-	};
-	configurations {
-		default = "so3_ramfs";
+			load = <0x02c00000>;
+    	};
                 
-		so3_ramfs {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
+};
+
+	configurations {
+		default = "so3_avz";
+                
+		so3_avz {
+			description = "SO3/AVZ on RPi4";
+		    kernel = "avz";
+            loadables = "avz_vt_dt", "so3_agency"; 
+            fdt = "fdt_so3";
             ramdisk = "ramfs"; 
 		};
                 
-        so3_mmc {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
-		};
 	};
+
 };
