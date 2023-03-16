@@ -544,7 +544,7 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
 
-#if defined(CONFIG_AVZ) && defined(CONFIG_ARCH_ARM64)
+#if defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
 	BUG_ON(prop_len != 6 * sizeof(unsigned long));
 #else
 	BUG_ON(prop_len != 4 * sizeof(unsigned long));

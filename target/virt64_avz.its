@@ -36,7 +36,16 @@
 		
 		avz_pv_dt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../avz/dts/virt64_avz_pv.dtb");
+			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
+			type = "avz_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x40f00000>;
+		};
+		
+		avz_vt_dt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";
@@ -81,7 +90,7 @@
 		so3_avz {
 			description = "SO3/AVZ on virt64";
 		    kernel = "avz";
-            loadables = "avz_pv_dt", "so3_agency"; 
+            loadables = "avz_vt_dt", "so3_agency"; 
             fdt = "fdt_so3";
             ramdisk = "ramfs"; 
 		};
