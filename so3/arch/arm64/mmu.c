@@ -620,6 +620,7 @@ void mmu_configure(addr_t fdt_addr) {
 
 		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+
 #elif CONFIG_VA_BITS_39
 		__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
@@ -628,7 +629,7 @@ void mmu_configure(addr_t fdt_addr) {
 #endif
 
 #ifdef CONFIG_VA_BITS_48
-		/* Create the initial 2 MB linear mapping of the kernel in its target virtual address space */
+		/* Create the initial linear mapping of the kernel in its target virtual address space */
 
 		__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
 		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);

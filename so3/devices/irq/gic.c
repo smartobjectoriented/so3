@@ -286,7 +286,7 @@ static int gic_inject_irq(u16 irq_id)
 		/* Check that there is no overlapping */
 		lr = gic_read_lr(n);
 		if ((lr & GICH_LR_VIRT_ID_MASK) == irq_id)
-			BUG();
+			return -EEXIST;
 	}
 
 	if (first_free == -1)

@@ -240,7 +240,7 @@ void cpu_up(unsigned int cpu)
 /* Called by boot processor to activate the rest. */
 void smp_init(void)
 {
-#if defined(CONFIG_AVZ) && !defined(CONFIG_SOO)
+#if defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
 	int i;
 #endif
 
@@ -267,8 +267,13 @@ void smp_init(void)
 
 #else /* CONFIG_SOO */
 
+#ifdef CONFIG_ARM64VT
+	/* With VT support, we prepare the CPU to be started through a HVC call
+	 * from the domain.
+	 */
 	for (i = 1; i < CONFIG_NR_CPUS; i++)
 		cpu_up(i);
+#endif
 
 #endif /* !CONFIG_SOO */
 

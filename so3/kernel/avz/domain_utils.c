@@ -125,6 +125,8 @@ void loadAgency(void)
 	memslot[MEMSLOT_AGENCY].fdt_paddr = (addr_t) __fdt_addr;
 	memslot[MEMSLOT_AGENCY].size = fdt_getprop_u32_default(fdt_vaddr, "/agency", "domain-size", 0);
 
+	memslot[MEMSLOT_AGENCY].entry_addr = AGENCY_VOFFSET + (dom_addr & (SZ_1M - 1));
+
 	if (!memslot[MEMSLOT_AGENCY].size) {
 		lprintk("!! Property domain-size is found at 0, maybe the agency node is missing...\n");
 		BUG();
