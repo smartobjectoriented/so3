@@ -442,10 +442,10 @@ ENTRY(secondary_startup)
      */
 
 	// Mostly for future usage...
-	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
+	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 	// Initialize the vector table
-	#if !defined(CONFIG_SOO)
+#if !defined(CONFIG_SOO)
 
 	// Initialize the vector table
 	ldr	x0, =__vectors
@@ -460,9 +460,6 @@ ENTRY(secondary_startup)
 	msr	cpacr_el1, x0
 
     // Up to here, a stack should be initialized
-
-	// Some CPU setup
-	msr pmuserenr_el0, xzr
 
 #endif /* !CONFIG_ARM64VT */
 
@@ -499,10 +496,6 @@ ENTRY(secondary_startup)
   	// Store the virtual address which will be used to continue
     // execution after the MMU enabled.
   	ldr		x19, .LC_virt_secondary_entry
-
- 	nop
- 	nop
- 	nop
 
   	blr		x19
 

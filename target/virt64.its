@@ -30,8 +30,8 @@
             os = "linux";
 			arch = "arm64";
 			compression = "none";
-			load = <0x40000000>;
-			entry = <0x40000000>;
+			load = <0x40080000>;
+			entry = <0x40080000>;
 		};
 		
 		avz_pv_dt {
@@ -59,8 +59,8 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            load = <0x41000000>;
-			entry = <0x41000000>;
+            load = <0x41080000>;
+			entry = <0x41080000>;
 		};
  
         fdt_so3 {
