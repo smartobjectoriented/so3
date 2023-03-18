@@ -96,8 +96,6 @@ __start:
 
     // Up to here, a stack should be initialized
 
-	// Some CPU setup
-	msr pmuserenr_el0, xzr
 
 #endif /* !CONFIG_ARM64VT */
 
@@ -112,14 +110,15 @@ __start:
 
 #endif /* CONFIG_SO3VIRT */
 
-	// Set up the MMU
-    b		mmu_setup
+	
+    // Set up the MMU
+    b setup_mmu
 
 __kernel_main:
 
 	// Store the device tree paddr
-	adr     x8, .LCfdt_addr_temp
-	ldr 	x9, [x8]
+	adr x8, .LCfdt_addr_temp
+	ldr x9, [x8]
 
 	ldr	x0, =__fdt_addr
 	str	x9, [x0]
@@ -130,6 +129,10 @@ __kernel_main:
 #else
 	b 	kernel_start
 #endif
+
+	nop
+	nop
+	nop
 
 	// never returns...
 
@@ -175,8 +178,7 @@ __mmu_setup:
 
 		ret
 
-mmu_setup:
-
+setup_mmu:
 		// Use a temporary stack
 		adrp	x0, temp_stack
 		mov		sp, x0
@@ -238,7 +240,7 @@ ME:
 
 #else /* CONFIG_ARM64VT */
 
-mmu_setup:
+setup_mmu:
 
 	// Use a temporary stack
   	adrp x0, temp_stack
@@ -422,6 +424,10 @@ install_el2_stub:
 
 	eret
 
+	nop
+	nop
+	nop
+
 #endif /* !CONFIG_ARM64VT */
 
 #ifdef CONFIG_SMP
@@ -499,6 +505,10 @@ ENTRY(secondary_startup)
  	nop
 
   	blr		x19
+
+	nop
+	nop
+	nop
 
     .type   __secondary_data, %object
 

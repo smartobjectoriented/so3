@@ -31,29 +31,6 @@ extern void secondary_startup(void);
 
 static DEFINE_SPINLOCK(cpu_lock);
 
-#if 0
-void smp_boot_secondary(unsigned int cpu)
-{
-	unsigned long secondary_startup_phys = (unsigned long) virt_to_phys((void *) secondary_startup);
-	void *intc_vaddr;
-
-	printk("%s: booting CPU: %d...\n", __func__, cpu);
-
-	/* According to linux/arch/arm64/kernel/smp_spin_table.c and DT value,
-	 * 0xf0 is used to start CPU #3 after sev instruction.
-	 */
-	writel(secondary_startup_phys, 0xf0);
-
-	intc_vaddr = (void *) io_map(0xf0, 0x1000);
-
-	writel(secondary_startup_phys, intc_vaddr);
-
-	dsb(sy);
-
-	sev();
-}
-#endif
-
 void smp_boot_secondary(unsigned int cpu)
 {
 	printk("%s: booting CPU: %d\n", __func__, cpu);

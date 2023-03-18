@@ -36,19 +36,25 @@ void cpu_on(unsigned long cpuid, addr_t entry_point) {
 	case 0:
 		release_vaddr = io_map(CPU0_RELEASE_ADDR, 0x1000);
 		break;
+
 	case 1:
 		release_vaddr = io_map(CPU1_RELEASE_ADDR, 0x1000);
 		break;
+
 	case 2:
 		release_vaddr = io_map(CPU2_RELEASE_ADDR, 0x1000);
 		break;
+
 	case 3:
 		release_vaddr = io_map(CPU3_RELEASE_ADDR, 0x1000);
 		break;
 	}
 
 	*((volatile addr_t *) release_vaddr) = entry_point;
+
 	__asm_flush_dcache_range(release_vaddr, release_vaddr + sizeof(addr_t));
+
+	dsb(sy);
 
 	/*
 	 * Send an event to wake up the secondary CPU.

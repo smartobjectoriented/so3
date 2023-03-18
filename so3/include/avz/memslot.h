@@ -40,12 +40,11 @@ typedef struct {
 	unsigned int busy; /* Indicate if a memslot is available or not */
 
 	addr_t fdt_paddr; /* Device Tree */
+	addr_t entry_addr;
 
 #ifdef CONFIG_ARM64VT
 	/* Intermediate physical address (address of the virtual RAM as exposed to the guest) */
 	unsigned long ipa_addr;
-
-	addr_t entry_addr;
 #endif
 
 } memslot_entry_t;
