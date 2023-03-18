@@ -101,7 +101,7 @@
 		so3_avz {
 			description = "SO3/AVZ on RPi4";
 		    kernel = "avz";
-            loadables = "avz_pv_dt", "so3_agency"; 
+            loadables = "avz_vt_dt", "so3_agency"; 
             fdt = "fdt_so3";
             ramdisk = "ramfs"; 
 		};

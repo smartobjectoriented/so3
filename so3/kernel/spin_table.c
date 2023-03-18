@@ -28,7 +28,7 @@
 
 extern void secondary_startup(void);
 
-/* Switch on a CPU */
+/* Wake up a CPU */
 void cpu_on(unsigned long cpuid, addr_t entry_point) {
 	addr_t release_vaddr;
 

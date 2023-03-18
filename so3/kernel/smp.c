@@ -182,14 +182,6 @@ void secondary_start_kernel(void)
 
 void cpu_up(unsigned int cpu)
 {
-
-	/* We re-create a small identity mapping to allow the hypervisor
-	 * to bootstrap correctly on other CPUs.
-	 * The size must be enough to reach the stack.
-	 */
-
-	create_mapping(NULL, CONFIG_RAM_BASE, CONFIG_RAM_BASE, SZ_32M, false);
-
 	/*
 	 * We need to tell the secondary core where to find
 	 * its stack and the page tables.
@@ -245,6 +237,13 @@ void smp_init(void)
 #endif
 
 #if defined(CONFIG_AVZ)
+
+	/* We re-create a small identity mapping to allow the hypervisor
+	 * to bootstrap correctly on other CPUs.
+	 * The size must be enough to reach the stack.
+	 */
+
+	create_mapping(NULL, CONFIG_RAM_BASE, CONFIG_RAM_BASE, SZ_32M, false);
 
 #ifdef CONFIG_SOO
 

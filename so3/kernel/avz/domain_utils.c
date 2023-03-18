@@ -134,7 +134,7 @@ void loadAgency(void)
 
 #ifdef CONFIG_ARM64VT
 	memslot[MEMSLOT_AGENCY].entry_addr = entry_addr;
-	memslot[MEMSLOT_AGENCY].ipa_addr = entry_addr; 
+	memslot[MEMSLOT_AGENCY].ipa_addr = entry_addr & ~(SZ_1M - 1);
 	lprintk("IPA Layout: device tree located at 0x%lx\n", memslot[MEMSLOT_AGENCY].fdt_paddr);
 #endif
 

@@ -20,7 +20,7 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
     if [ "$PLATFORM" == "virt64" ]; then
 
     sudo qemu-system-aarch64 $@ ${USR_OPTION} \
- 	-smp 4 -s \
+ 	-smp 4  \
 	-serial mon:stdio  \
 	-M virt,gic-version=2,virtualization=on -cpu cortex-a72  \
 	-device virtio-blk-device,drive=hd0 \
