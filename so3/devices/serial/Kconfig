@@ -15,6 +15,6 @@ config UART_LL_PADDR
 
 config SOO_SERIAL
 	bool "SOO Virtualized serial device (rely on vuart frontend)"
-	depends on SOO
+	depends on SOO && !AVZ
 	select VUART_FRONTEND
 

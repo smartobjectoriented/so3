@@ -114,8 +114,6 @@ void avz_setup(void) {
 
 	__ht_set = (ht_set_t) avz_shared->logbool_ht_set_addr;
 
-	lprintk("SO3 ME Domain phys base: %x for a size of 0x%x bytes.\n", mem_info.phys_base, mem_info.size);
-
 	avz_shared->domcall_vaddr = (unsigned long) domcall;
 	avz_shared->vectors_vaddr = (unsigned long) avz_vector_callback;
 	avz_shared->traps_vaddr = (unsigned long) trap_handle;

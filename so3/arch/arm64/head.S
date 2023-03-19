@@ -80,7 +80,7 @@ __start:
 	cmp		x0, x1
 	b.cc	1b
 
-#if !defined(CONFIG_SOO)
+#ifndef CONFIG_SO3VIRT
 
 	// Initialize the vector table
 	ldr	x0, =__vectors
@@ -89,17 +89,15 @@ __start:
 	msr vbar_el2, x0
 #else
 	msr vbar_el1, x0
+#endif /* !CONFIG_ARM64VT */
 
 	// Enable FP/ASIMD
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0
 
+#endif /* !CONFIG_SO3VIRT */
+
     // Up to here, a stack should be initialized
-
-
-#endif /* !CONFIG_ARM64VT */
-
-#endif /* !defined(CONFIG_SOO) */
 
 #ifdef CONFIG_SO3VIRT
 
@@ -246,7 +244,9 @@ setup_mmu:
   	adrp x0, temp_stack
   	mov	sp, x0
 
+#ifndef CONFIG_SO3VIRT
   	bl 	mmu_configure
+#endif
 
   	// Readjust the stack
   	ldr	x0, =__stack_top
@@ -435,17 +435,12 @@ install_el2_stub:
 ENTRY(secondary_startup)
 	/*
      * Common entry point for secondary CPUs.
-     *
-     * Ensure that we're in SVC mode, and IRQs are disabled.  Lookup
-     * the processor type - there is no need to check the machine type
-     * as it has already been validated by the primary processor.
      */
 
-	// Mostly for future usage...
 	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 	// Initialize the vector table
-#if !defined(CONFIG_SOO)
+#ifndef CONFIG_SO3VIRT
 
 	// Initialize the vector table
 	ldr	x0, =__vectors
@@ -454,17 +449,15 @@ ENTRY(secondary_startup)
 	msr vbar_el2, x0
 #else
 	msr vbar_el1, x0
+#endif /* !CONFIG_ARM64VT */
+
+#endif /* !CONFIG_SO3VIRT */
 
 	// Enable FP/ASIMD
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0
 
     // Up to here, a stack should be initialized
-
-#endif /* !CONFIG_ARM64VT */
-
-#endif /* !defined(CONFIG_SOO) */
-
     adr 	x4, __secondary_data
 
 	ldr		x5, [x4]

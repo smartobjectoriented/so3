@@ -112,8 +112,7 @@ void avz_start(void)
 	/* create idle domain */
 	init_idle_domain();
 
-	/* Deal with secondary processors.  */
-	printk("spinning up at most %d total processors ...\n", CONFIG_NR_CPUS);
+	printk("This configuration will spin up at most %d total processors ...\n", CONFIG_NR_CPUS);
 
 #ifdef CONFIG_SOO
 	/*

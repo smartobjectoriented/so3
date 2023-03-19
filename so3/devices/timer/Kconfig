@@ -8,4 +8,4 @@ config ARM_TIMER
 
 config SOO_TIMER
 	bool "SOO Virtualized timer device"
-	depends on SOO
+	depends on SOO && !AVZ
