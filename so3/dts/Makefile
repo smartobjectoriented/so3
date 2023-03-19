@@ -9,7 +9,7 @@ ifeq ($(CONFIG_AVZ),)
 
 ifeq ($(CONFIG_SOO_REFSO3),y)
 ifeq ($(CONFIG_RAMDEV),y)
-dtb-y += refso3_ramfs.dtb meso3.dtb
+dtb-y += refso3_ramfs.dtb  
 else
 dtb-y += refso3.dtb
 endif

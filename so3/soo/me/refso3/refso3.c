@@ -61,7 +61,7 @@ void *app_thread_main(void *args) {
 	sh_refso3->cur_letter = 'A';
 
 	while (1) {
-BUG_ON(local_irq_is_disabled());
+
 		msleep(500);
 
 		lprintk("(%d)",  ME_domID());

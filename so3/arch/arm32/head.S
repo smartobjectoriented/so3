@@ -160,7 +160,9 @@ mmu_setup:
   mov	r0, r4
   mov	r1, r9 @ fdt addr
 
+#ifndef CONFIG_SO3VIRT
   bl 	mmu_configure
+#endif
 
   @ Readjust the stack
   ldr	sp, =__stack_top
