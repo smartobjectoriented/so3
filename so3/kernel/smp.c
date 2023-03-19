@@ -255,10 +255,13 @@ void smp_init(void)
 
 	per_cpu(current_domain, AGENCY_RT_CPU) = domains[DOMID_AGENCY_RT];
 
-
 #ifdef CONFIG_ARM64VT
+	printk("Preparing Agency RT CPU to be ready to start...\n");
+
 	cpu_up(AGENCY_RT_CPU);
 #endif
+
+	printk("Starting ME CPU...\n");
 
 	cpu_up(ME_CPU);
 

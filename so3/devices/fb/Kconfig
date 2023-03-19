@@ -4,4 +4,4 @@ config PL111_CLCD
 
 config SOO_FB
 	bool "SOO Virtualized FB device"
-	depends on SOO
+	depends on SOO && !AVZ

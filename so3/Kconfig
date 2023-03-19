@@ -21,8 +21,15 @@ config AVZ
 	bool "AVZ SO3 Hypervisor mode (Agency Virtualizer)"
 	depends on MMU
 
+if !AVZ
 config SOO
 	bool "Configure SO3 as a Mobile Entity (ME)"
+endif
+
+if AVZ
+config SOO
+	bool "Configure AVZ to support SOO technology"
+endif
 
 config MMU
 	bool "MMU enable"

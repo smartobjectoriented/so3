@@ -5,6 +5,6 @@ config GIC
 	
 config SOO_IRQ
 	bool "SOO Virtualized IRQ controller device"
-	depends on SOO
+	depends on SOO && !AVZ
 
 

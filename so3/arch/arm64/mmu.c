@@ -576,12 +576,10 @@ void reset_root_pgtable(void *pgtable, bool remove) {
  * Initial configuration of system page table
  */
 void mmu_configure(addr_t fdt_addr) {
-#ifndef CONFIG_SO3VIRT
 	int i;
 
 	icache_disable();
 	dcache_disable();
-#endif
 
 #ifdef CONFIG_AVZ
 	/* The initial page table is only set by CPU #0 (AGENCY_CPU).
@@ -596,22 +594,6 @@ void mmu_configure(addr_t fdt_addr) {
 		memset((void *) __sys_linearmap_l1pgtable, 0, TTB_L1_SIZE);
 		memset((void *) __sys_linearmap_l2pgtable, 0, TTB_L2_SIZE);
 
-#ifdef CONFIG_SO3VIRT
-
-		__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) (__pa(__sys_idmap_l1pgtable) & TTB_L0_TABLE_ADDR_MASK);
-		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
-
-		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
-
-		flush_dcache_all();
-
-		asm volatile("dsb sy");
-		asm volatile("isb");
-		asm volatile("msr ttbr0_el1, %0" : : "r" (__pa(__sys_root_pgtable)) : "memory");
-		asm volatile("isb");
-
-#else /* CONFIG_SO3VIRT */
 
 		/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
 #ifdef CONFIG_VA_BITS_48
@@ -670,8 +652,6 @@ void mmu_configure(addr_t fdt_addr) {
 
 	icache_enable();
 	dcache_enable();
-
-#endif /* !CONFIG_SO3VIRT */
 
 }
 

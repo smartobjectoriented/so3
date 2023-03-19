@@ -1,7 +1,7 @@
 #
 # SOO Mobile Entity configuration
 #
-if SOO
+if SOO && !AVZ
 
 menu "SOO Mobile Entity - Smart Object Oriented subsystem"
 
