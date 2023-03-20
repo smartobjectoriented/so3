@@ -470,6 +470,11 @@ void reset_root_pgtable(void *pgtable, bool remove) {
 }
 
 void mmu_switch_kernel(void *pgtable_paddr) {
+
+#ifdef CONFIG_SO3VIRT
+	avz_shared->pagetable_paddr = (addr_t) pgtable_paddr;
+#endif
+
 	flush_dcache_all();
 
 	/* Take care about the lower bits because
@@ -579,21 +584,27 @@ void dump_pgtable(void *l1pgtable) {
 
 	for (i = 0; i < TTB_L1_ENTRIES; i++) {
 		l1pte = __l1pgtable + i;
-		if (*l1pte) {
-			if (l1pte_is_sect(*l1pte))
-				lprintk(" - L1 pte@%p (idx %x) mapping %x is section type  content: %x\n", __l1pgtable+i, i, i << (32 - TTB_L1_ORDER), *l1pte);
-			else
-				lprintk(" - L1 pte@%p (idx %x) is PT type   content: %x\n", __l1pgtable+i, i, *l1pte);
+#ifndef CONFIG_AVZ
+		if (i < 0xff0) {
+#endif
+			if (*l1pte) {
+				if (l1pte_is_sect(*l1pte))
+					lprintk(" - L1 pte@%p (idx %x) mapping %x is section type  content: %x\n", __l1pgtable+i, i, i << (32 - TTB_L1_ORDER), *l1pte);
+				else
+					lprintk(" - L1 pte@%p (idx %x) is PT type   content: %x\n", __l1pgtable+i, i, *l1pte);
 
-			if (!l1pte_is_sect(*l1pte)) {
+				if (!l1pte_is_sect(*l1pte)) {
 
-				for (j = 0; j < 256; j++) {
-					l2pte = ((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK)) + j;
-					if (*l2pte)
-						lprintk("      - L2 pte@%p (i2=%x) mapping %x  content: %x\n", l2pte, j, pte_index_to_vaddr(i, j), *l2pte);
+					for (j = 0; j < 256; j++) {
+						l2pte = ((uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK)) + j;
+						if (*l2pte)
+							lprintk("      - L2 pte@%p (i2=%x) mapping %x  content: %x\n", l2pte, j, pte_index_to_vaddr(i, j), *l2pte);
+					}
 				}
 			}
+#ifndef CONFIG_AVZ
 		}
+#endif
 	}
 }
 

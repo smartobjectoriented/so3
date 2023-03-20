@@ -138,7 +138,7 @@ inline void flush_tlb_all(void) {
 /*
  * Invalidates range in all levels of D-cache/unified cache
  */
-void invalidate_dcache_range(unsigned long start, unsigned long stop)
+void invalidate_dcache_range(unsigned long start, unsigned long end)
 {
 	__asm_invalidate_dcache_range(start, stop);
 }
@@ -146,7 +146,7 @@ void invalidate_dcache_range(unsigned long start, unsigned long stop)
 /*
  * Flush range(clean & invalidate) from all levels of D-cache/unified cache
  */
-void flush_dcache_range(unsigned long start, unsigned long stop)
+void flush_dcache_range(unsigned long start, unsigned long end)
 {
 	__asm_flush_dcache_range(start, stop);
 }

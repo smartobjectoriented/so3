@@ -28,50 +28,50 @@ static u32 get_ccsidr(void)
 	return ccsidr;
 }
 
-static void v7_dcache_clean_inval_range(u32 start, u32 stop, u32 line_len)
+static void v7_dcache_clean_inval_range(u32 start, u32 end, u32 line_len)
 {
 	u32 mva;
 
 	/* Align start to cache line boundary */
 	start &= ~(line_len - 1);
-	for (mva = start; mva < stop; mva = mva + line_len) {
+	for (mva = start; mva < end; mva = mva + line_len) {
 		/* DCCIMVAC - Clean & Invalidate data cache by MVA to PoC */
 		asm volatile ("mcr p15, 0, %0, c7, c14, 1" : : "r" (mva));
 	}
 }
 
-int check_cache_range(unsigned long start, unsigned long stop)
+int check_cache_range(unsigned long start, unsigned long end)
 {
 	int ok = 1;
 
 	if (start & (CONFIG_SYS_CACHELINE_SIZE - 1))
 		ok = 0;
 
-	if (stop & (CONFIG_SYS_CACHELINE_SIZE - 1))
+	if (end & (CONFIG_SYS_CACHELINE_SIZE - 1))
 		ok = 0;
 
 	if (!ok) {
-		lprintk("CACHE: Misaligned operation at range [%08lx, %08lx]\n", start, stop);
+		lprintk("CACHE: Misaligned operation at range [%08lx, %08lx]\n", start, end);
 		kernel_panic();
 	}
 
 	return ok;
 }
 
-static void v7_dcache_inval_range(u32 start, u32 stop, u32 line_len)
+static void v7_dcache_inval_range(u32 start, u32 end, u32 line_len)
 {
 	u32 mva;
 
-	if (!check_cache_range(start, stop))
+	if (!check_cache_range(start, end))
 		return;
 
-	for (mva = start; mva < stop; mva = mva + line_len) {
+	for (mva = start; mva < end; mva = mva + line_len) {
 		/* DCIMVAC - Invalidate data cache by MVA to PoC */
 		asm volatile ("mcr p15, 0, %0, c7, c6, 1" : : "r" (mva));
 	}
 }
 
-static void v7_dcache_maint_range(u32 start, u32 stop, u32 range_op)
+static void v7_dcache_maint_range(u32 start, u32 end, u32 range_op)
 {
 	u32 line_len, ccsidr;
 
@@ -86,10 +86,10 @@ static void v7_dcache_maint_range(u32 start, u32 stop, u32 range_op)
 
 	switch (range_op) {
 	case ARMV7_DCACHE_CLEAN_INVAL_RANGE:
-		v7_dcache_clean_inval_range(start, stop, line_len);
+		v7_dcache_clean_inval_range(start, end, line_len);
 		break;
 	case ARMV7_DCACHE_INVAL_RANGE:
-		v7_dcache_inval_range(start, stop, line_len);
+		v7_dcache_inval_range(start, end, line_len);
 		break;
 	}
 
@@ -139,7 +139,7 @@ void flush_dcache_all(void)
 
 /*
  * Invalidates range in all levels of D-cache/unified cache used:
- * Affects the range [start, stop - 1]
+ * Affects the range [start, end - 1]
  */
 void invalidate_dcache_range(unsigned long start, unsigned long end)
 {
@@ -151,7 +151,7 @@ void invalidate_dcache_range(unsigned long start, unsigned long end)
 /*
  * Flush range(clean & invalidate) from all levels of D-cache/unified
  * cache used:
- * Affects the range [start, stop - 1]
+ * Affects the range [start, end - 1]
  */
 void __asm_flush_dcache_range(addr_t start, addr_t end)
 {

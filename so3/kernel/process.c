@@ -218,9 +218,9 @@ pcb_t *new_process(void)
 		kernel_panic();
 	}
 
-	/* With aarch32, we have one page table used by TTBR0/1 without distinction */
+	/* With AArch32, we have one page table used by TTBR0/1 without distinction. */
 #ifdef CONFIG_ARCH_ARM32
-	/* Preserve the mapping of kernel regions according to the arch configuration */
+	/* Preserve the mapping of kernel regions according to the arch configuration. */
 	pgtable_copy_kernel_area(pcb->pgtable);
 #endif
 	/* Integrate the list of process */

@@ -662,6 +662,11 @@ void mmu_configure(addr_t fdt_addr) {
  * is not necessary anymore.
  */
 void __mmu_switch_kernel(void *pgtable_paddr, bool vttbr) {
+
+#ifdef CONFIG_SO3VIRT
+	avz_shared->pagetable_paddr = (addr_t) pgtable_paddr;
+#endif
+
 	flush_dcache_all();
 
 #ifdef CONFIG_AVZ

@@ -23,7 +23,7 @@
 
 void flush_pte_entry(addr_t va, u64 *pte);
 
-void mmu_page_table_flush(unsigned long start, unsigned long stop);
+void mmu_page_table_flush(unsigned long start, unsigned long end);
 
 void __asm_invalidate_tlb_all(void);
 void __asm_invalidate_tlb(addr_t va);

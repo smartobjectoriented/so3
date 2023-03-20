@@ -198,7 +198,7 @@ void vectors_setup(void) {
 	 */
 	inject_syscall_vector();
 
-	flush_dcache_range(VECTOR_VADDR, VECTOR_VADDR + PAGE_SIZE);
+	__asm_flush_dcache_range(VECTOR_VADDR, VECTOR_VADDR + PAGE_SIZE);
 	invalidate_icache_all();
 }
 

@@ -122,6 +122,7 @@ void switch_mm_domain(struct domain *d) {
 #else
 	mmu_switch_kernel((void *) d->avz_shared->pagetable_paddr);
 #endif
+
 }
 
 /**
