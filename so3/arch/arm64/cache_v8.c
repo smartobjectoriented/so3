@@ -140,7 +140,7 @@ inline void flush_tlb_all(void) {
  */
 void invalidate_dcache_range(unsigned long start, unsigned long end)
 {
-	__asm_invalidate_dcache_range(start, stop);
+	__asm_invalidate_dcache_range(start, end);
 }
 
 /*
@@ -148,7 +148,7 @@ void invalidate_dcache_range(unsigned long start, unsigned long end)
  */
 void flush_dcache_range(unsigned long start, unsigned long end)
 {
-	__asm_flush_dcache_range(start, stop);
+	__asm_flush_dcache_range(start, end);
 }
 
 /*
@@ -206,8 +206,8 @@ void invalidate_icache_all(void)
 	__asm_invalidate_icache_all();
 }
 
-void mmu_page_table_flush(unsigned long start, unsigned long stop) {
-	flush_dcache_range(start, stop);
+void mmu_page_table_flush(unsigned long start, unsigned long end) {
+	flush_dcache_range(start, end);
 	flush_tlb_all();
 	__asm_invalidate_tlb_all();
 }
