@@ -79,6 +79,39 @@ diff -Naru ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
 +	losetup -D
  fi
  
+diff -Naru ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
+--- ../so3.base/filesystem/mount.sh	2023-03-31 13:07:30.750172824 +0200
++++ ./filesystem/mount.sh	2023-03-31 15:25:41.596410052 +0200
+@@ -10,18 +10,18 @@
+     PLATFORM=$2
+ fi
+ 
+-sudo rm -rf fs/*
++rm -rf fs/*
+ mkdir -p fs
+  
+ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
++    devname=$(losetup --partscan --find --show sdcard.img.${PLATFORM})
+     FS_IMG=sdcard.img.${PLATFORM}
+ 
+-    #sudo losetup -P --find --show flash
++    #losetup -P --find --show flash
+    
+ 
+     # device is loopback (loop<n>)
+-    sudo mount ${devname}p$1 fs 
++    mount ${devname}p$1 fs 
+     exit 0
+ fi
+ 
+@@ -35,5 +35,5 @@
+ fi
+ 
+ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
+-    sudo mount /dev/"${devname}"$1 fs
++    mount /dev/"${devname}"$1 fs
+ fi
 diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 --- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
 +++ ./rootfs/deploy.sh	2023-03-31 12:47:59.566136623 +0200
@@ -610,8 +643,8 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-03-31 15:12:49.874945936 +0200
-@@ -0,0 +1,610 @@
++++ ./so3_ci.patch	2023-03-31 15:25:46.292312511 +0200
+@@ -0,0 +1,643 @@
 +diff -Naru ../so3.base/build.conf ./build.conf
 +--- ../so3.base/build.conf	2023-03-31 13:07:30.622176387 +0200
 ++++ ./build.conf	2023-03-30 16:14:59.122270261 +0200
@@ -693,6 +726,39 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 ++	losetup -D
 + fi
 + 
++diff -Naru ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
++--- ../so3.base/filesystem/mount.sh	2023-03-31 13:07:30.750172824 +0200
+++++ ./filesystem/mount.sh	2023-03-31 15:25:41.596410052 +0200
++@@ -10,18 +10,18 @@
++     PLATFORM=$2
++ fi
++ 
++-sudo rm -rf fs/*
+++rm -rf fs/*
++ mkdir -p fs
++  
++ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
++-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
+++    devname=$(losetup --partscan --find --show sdcard.img.${PLATFORM})
++     FS_IMG=sdcard.img.${PLATFORM}
++ 
++-    #sudo losetup -P --find --show flash
+++    #losetup -P --find --show flash
++    
++ 
++     # device is loopback (loop<n>)
++-    sudo mount ${devname}p$1 fs 
+++    mount ${devname}p$1 fs 
++     exit 0
++ fi
++ 
++@@ -35,5 +35,5 @@
++ fi
++ 
++ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
++-    sudo mount /dev/"${devname}"$1 fs
+++    mount /dev/"${devname}"$1 fs
++ fi
 +diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 +--- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
 ++++ ./rootfs/deploy.sh	2023-03-31 12:47:59.566136623 +0200
