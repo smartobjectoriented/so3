@@ -44,6 +44,41 @@ diff -Naru ../so3.base/deploy.sh ./deploy.sh
          ./umount.sh
          cd ..
      fi
+diff -Naru ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
+--- ../so3.base/filesystem/create_img.sh	2023-03-31 13:07:30.750172824 +0200
++++ ./filesystem/create_img.sh	2023-03-31 14:06:54.088374743 +0200
+@@ -14,7 +14,7 @@
+     echo Creating sdcard.img.$1 ... 
+     dd_size=256M
+     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
++    devname=$(losetup --partscan --find --show sdcard.img.$1)
+ 
+     # Keep device name only without /dev/
+     devname=${devname#"/dev/"}
+@@ -27,7 +27,7 @@
+ 
+ if [ "$1" == "vexpress" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
+ #create the partition layout this way
+-    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | sudo fdisk /dev/"$devname";
++    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | fdisk /dev/"$devname";
+ fi
+ 
+ echo Waiting...
+@@ -38,10 +38,10 @@
+     export devname="${devname}p"
+ fi
+ 
+-sudo mkfs.fat -F32 -v /dev/"$devname"1
+-sudo mkfs.ext4 /dev/"$devname"2
++mkfs.fat -F32 -v /dev/"$devname"1
++mkfs.ext4 /dev/"$devname"2
+ 
+ if [ "$1" == "vexpress" -o "$1" == "virt64" ]; then
+-	sudo losetup -D
++	losetup -D
+ fi
+ 
 diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 --- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
 +++ ./rootfs/deploy.sh	2023-03-31 12:47:59.566136623 +0200
@@ -575,8 +610,8 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-03-31 13:19:14.944565404 +0200
-@@ -0,0 +1,575 @@
++++ ./so3_ci.patch	2023-03-31 15:12:49.874945936 +0200
+@@ -0,0 +1,610 @@
 +diff -Naru ../so3.base/build.conf ./build.conf
 +--- ../so3.base/build.conf	2023-03-31 13:07:30.622176387 +0200
 ++++ ./build.conf	2023-03-30 16:14:59.122270261 +0200
@@ -623,6 +658,41 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 +         ./umount.sh
 +         cd ..
 +     fi
++diff -Naru ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
++--- ../so3.base/filesystem/create_img.sh	2023-03-31 13:07:30.750172824 +0200
+++++ ./filesystem/create_img.sh	2023-03-31 14:06:54.088374743 +0200
++@@ -14,7 +14,7 @@
++     echo Creating sdcard.img.$1 ... 
++     dd_size=256M
++     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
++-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
+++    devname=$(losetup --partscan --find --show sdcard.img.$1)
++ 
++     # Keep device name only without /dev/
++     devname=${devname#"/dev/"}
++@@ -27,7 +27,7 @@
++ 
++ if [ "$1" == "vexpress" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
++ #create the partition layout this way
++-    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | sudo fdisk /dev/"$devname";
+++    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | fdisk /dev/"$devname";
++ fi
++ 
++ echo Waiting...
++@@ -38,10 +38,10 @@
++     export devname="${devname}p"
++ fi
++ 
++-sudo mkfs.fat -F32 -v /dev/"$devname"1
++-sudo mkfs.ext4 /dev/"$devname"2
+++mkfs.fat -F32 -v /dev/"$devname"1
+++mkfs.ext4 /dev/"$devname"2
++ 
++ if [ "$1" == "vexpress" -o "$1" == "virt64" ]; then
++-	sudo losetup -D
+++	losetup -D
++ fi
++ 
 +diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 +--- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
 ++++ ./rootfs/deploy.sh	2023-03-31 12:47:59.566136623 +0200
