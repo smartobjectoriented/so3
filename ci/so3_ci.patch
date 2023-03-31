@@ -112,6 +112,23 @@ diff -Naru ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
 -    sudo mount /dev/"${devname}"$1 fs
 +    mount /dev/"${devname}"$1 fs
  fi
+diff -Naru ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
+--- ../so3.base/filesystem/umount.sh	2023-03-31 13:07:30.750172824 +0200
++++ ./filesystem/umount.sh	2023-03-31 15:31:01.565892698 +0200
+@@ -12,11 +12,11 @@
+ 
+ sleep 1
+ 
+-sudo umount fs
++umount fs
+ 
+ # Let the filesystem be synchronized
+ sleep 1
+ 
+ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+-    sudo losetup -D
++    losetup -D
+ fi
 diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 --- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
 +++ ./rootfs/deploy.sh	2023-03-31 12:47:59.566136623 +0200
@@ -643,8 +660,8 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-03-31 15:25:46.292312511 +0200
-@@ -0,0 +1,643 @@
++++ ./so3_ci.patch	2023-03-31 15:31:20.633104258 +0200
+@@ -0,0 +1,660 @@
 +diff -Naru ../so3.base/build.conf ./build.conf
 +--- ../so3.base/build.conf	2023-03-31 13:07:30.622176387 +0200
 ++++ ./build.conf	2023-03-30 16:14:59.122270261 +0200
@@ -758,6 +775,23 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
 +-    sudo mount /dev/"${devname}"$1 fs
 ++    mount /dev/"${devname}"$1 fs
++ fi
++diff -Naru ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
++--- ../so3.base/filesystem/umount.sh	2023-03-31 13:07:30.750172824 +0200
+++++ ./filesystem/umount.sh	2023-03-31 15:31:01.565892698 +0200
++@@ -12,11 +12,11 @@
++ 
++ sleep 1
++ 
++-sudo umount fs
+++umount fs
++ 
++ # Let the filesystem be synchronized
++ sleep 1
++ 
++ if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
++-    sudo losetup -D
+++    losetup -D
 + fi
 +diff -Naru ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
 +--- ../so3.base/rootfs/deploy.sh	2023-03-31 13:07:30.750172824 +0200
