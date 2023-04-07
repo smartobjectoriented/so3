@@ -175,7 +175,7 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-04-07 12:55:48.440017909 +0200
++++ ./so3_ci.patch	2023-04-07 13:00:53.348678067 +0200
 @@ -0,0 +1,175 @@
 +diff -Naru ../so3.base/Dockerfile ./Dockerfile
 +--- ../so3.base/Dockerfile	2023-04-02 13:19:24.698875432 +0200
@@ -354,11 +354,22 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + 	}
 diff -Naru ../so3.base/st ./st
 --- ../so3.base/st	2023-03-31 13:07:30.622176387 +0200
-+++ ./st	2023-04-07 12:55:15.072820813 +0200
-@@ -37,16 +37,16 @@
++++ ./st	2023-04-07 13:00:48.928784491 +0200
+@@ -20,7 +20,7 @@
+     done < build.conf
+ 
+     if [ "$PLATFORM" == "virt64" ]; then
+-
++	echo Starting on ARM64
+     sudo qemu-system-aarch64 $@ ${USR_OPTION} \
+  	-smp 4  \
+ 	-serial mon:stdio  \
+@@ -35,18 +35,19 @@
+         -gdb tcp::${GDB_PORT}
+ 
      else    
-    echo Starting on ARM32
-    sudo qemu-system-arm $@ ${USR_OPTION} \
+-   echo Starting on ARM32
+-   sudo qemu-system-arm $@ ${USR_OPTION} \
 -  	-smp 4 \
 -	-serial mon:stdio  \
 -	-M vexpress-a15,secure=on  -cpu cortex-a15 \
@@ -369,9 +380,12 @@ diff -Naru ../so3.base/st ./st
 -	-sd filesystem/sdcard.img.vexpress \
 -	-nographic \
 -	-gdb tcp::${GDB_PORT}
++	echo Starting on ARM32
++	CHECKPERF_LOG= "perf_check_$(date +"%Y_%m_%d_%I_%M_%p").log"
++	sudo qemu-system-arm $@ ${USR_OPTION} \
 +  	-icount shift=auto,sleep=off \
 +	-semihosting \
-+	-chardev stdio,id=char0,mux=on,logfile=serial.log,signal=off \
++	-chardev stdio,id=char0,mux=on,logfile=${CHECKPERF_LOG},signal=off \
 +	-serial chardev:char0  \
 +	-mon chardev=char0 \
 + 	-M vexpress-a15,secure=on  -cpu cortex-a15 \
