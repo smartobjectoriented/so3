@@ -175,7 +175,7 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-04-02 13:32:13.495040103 +0200
++++ ./so3_ci.patch	2023-04-07 12:55:48.440017909 +0200
 @@ -0,0 +1,175 @@
 +diff -Naru ../so3.base/Dockerfile ./Dockerfile
 +--- ../so3.base/Dockerfile	2023-04-02 13:19:24.698875432 +0200
@@ -352,6 +352,36 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + 		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
 + 		kernel_panic();
 + 	}
+diff -Naru ../so3.base/st ./st
+--- ../so3.base/st	2023-03-31 13:07:30.622176387 +0200
++++ ./st	2023-04-07 12:55:15.072820813 +0200
+@@ -37,16 +37,16 @@
+     else    
+    echo Starting on ARM32
+    sudo qemu-system-arm $@ ${USR_OPTION} \
+-  	-smp 4 \
+-	-serial mon:stdio  \
+-	-M vexpress-a15,secure=on  -cpu cortex-a15 \
+-	-m 1024 \
+-	-kernel u-boot/u-boot \
+-	-semihosting-config enable,target=native \
+-	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
+-	-sd filesystem/sdcard.img.vexpress \
+-	-nographic \
+-	-gdb tcp::${GDB_PORT}
++  	-icount shift=auto,sleep=off \
++	-semihosting \
++	-chardev stdio,id=char0,mux=on,logfile=serial.log,signal=off \
++	-serial chardev:char0  \
++	-mon chardev=char0 \
++ 	-M vexpress-a15,secure=on  -cpu cortex-a15 \
++ 	-m 1024 \
++ 	-kernel u-boot/u-boot \
++ 	-sd filesystem/sdcard.img.vexpress \
++	-nographic > /dev/null
+         
+     fi
+  
 diff -Naru ../so3.base/usr/lib/CMakeLists.txt ./usr/lib/CMakeLists.txt
 --- ../so3.base/usr/lib/CMakeLists.txt	2023-03-31 13:07:31.074163803 +0200
 +++ ./usr/lib/CMakeLists.txt	2023-04-02 13:31:15.732481747 +0200

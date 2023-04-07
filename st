@@ -20,7 +20,7 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
     done < build.conf
 
     if [ "$PLATFORM" == "virt64" ]; then
-
+	echo Starting on ARM64
     sudo qemu-system-aarch64 $@ ${USR_OPTION} \
  	-smp 4  \
 	-serial mon:stdio  \
