@@ -6,11 +6,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-      - name: Install texlive Apt dependencies
-        using: Eeems-Org/apt-cache-action
+      - name: Install required APT packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-        packages: cmake gcc-arm-none-eabi  device-tree-compileru-boot-tools pkg-config bridge-utils qemu-system-arm
-      
+          packages: cmake gcc-arm-none-eabi device-tree-compiler u-boot-tools pkg-config bridge-utils qemu-system-arm
+          version: 1.0
+          
       - name: Remove useless dependency
         run: |
           sudo apt-get remove -y libyaml-dev
@@ -35,9 +36,9 @@ jobs:
       - name: SO3-LVGL performance check
         run: |
           cd so3
-          ./st
+          ./st > /dev/null
           
-      - name: Download_artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: test_performance
