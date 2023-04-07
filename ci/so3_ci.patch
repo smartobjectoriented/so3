@@ -175,7 +175,7 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-04-07 13:05:04.862620764 +0200
++++ ./so3_ci.patch	2023-04-07 13:15:01.636981456 +0200
 @@ -0,0 +1,175 @@
 +diff -Naru ../so3.base/Dockerfile ./Dockerfile
 +--- ../so3.base/Dockerfile	2023-04-02 13:19:24.698875432 +0200
@@ -354,8 +354,16 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + 	}
 diff -Naru ../so3.base/st ./st
 --- ../so3.base/st	2023-04-07 13:04:46.499063078 +0200
-+++ ./st	2023-04-07 13:00:48.928784491 +0200
-@@ -35,18 +35,19 @@
++++ ./st	2023-04-07 13:14:52.361191057 +0200
+@@ -9,6 +9,7 @@
+ QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
+ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
+ 
++CHECKPERF_LOG="perf_check_$(date +"%Y_%m_%d_%I_%M_%S").log"
+ 
+     echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
+     echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
+@@ -35,18 +36,19 @@
          -gdb tcp::${GDB_PORT}
  
      else    
@@ -372,7 +380,7 @@ diff -Naru ../so3.base/st ./st
 -	-nographic \
 -	-gdb tcp::${GDB_PORT}
 +	echo Starting on ARM32
-+	CHECKPERF_LOG= "perf_check_$(date +"%Y_%m_%d_%I_%M_%p").log"
++
 +	sudo qemu-system-arm $@ ${USR_OPTION} \
 +  	-icount shift=auto,sleep=off \
 +	-semihosting \
