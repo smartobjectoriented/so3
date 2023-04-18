@@ -457,10 +457,9 @@ void memory_init(void) {
 
 #ifdef CONFIG_AVZ
 #warning For ARM64VT we still need fo address the ME in the hypervisor...
-#ifndef CONFIG_ARM64VT
 	/* Finally, create the agency domain area and for being able to read the device tree. */
-	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr, CONFIG_RAM_SIZE, false);
-#endif
+	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr,
+		       memslot[MEMSLOT_AGENCY].size, false);
 #endif /* CONFIG_AVZ */
 
 	/*

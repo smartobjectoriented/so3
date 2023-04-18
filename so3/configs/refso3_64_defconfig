@@ -8,9 +8,7 @@ CONFIG_SO3VIRT=y
 CONFIG_ARCH="arm64"
 CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
 # CONFIG_ARM_TRUSTZONE is not set
-CONFIG_KERNEL_VADDR=0xffff800000000000
-CONFIG_RAM_BASE=0x41000000
-CONFIG_RAM_SIZE=0x3f000000
+CONFIG_KERNEL_VADDR=0xffff800010000000
 
 #
 # Platform
@@ -88,15 +86,6 @@ CONFIG_MMU=y
 # SOO Mobile Entity - Smart Object Oriented subsystem
 #
 CONFIG_SOO_REFSO3=y
-# CONFIG_SOO_BLIND is not set
-# CONFIG_SOO_OUTDOOR is not set
-# CONFIG_SOO_AGENCY is not set
-# CONFIG_SOO_NET is not set
-# CONFIG_SOO_LEDCTRL is not set
-# CONFIG_SOO_CHAT is not set
-# CONFIG_SOO_WAGOLED is not set
-# CONFIG_SOO_SWITCH_KNX is not set
-# CONFIG_SOO_SWITCH_ENOCEAN is not set
 
 #
 # SOO Mobile Entity frontend drivers

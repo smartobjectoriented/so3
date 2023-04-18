@@ -158,8 +158,11 @@ void agency_ctl(agency_ctl_args_t *args)
 		args->u.agencyUID = domains[0]->avz_shared->dom_desc.u.agency.agencyUID;
 		return ;
 
-	case AG_COOPERATE:
+	case AG_LOCAL_COOPERATE:
+		soo_cooperate(args->u.cooperate_args.slotID);
+		return;
 
+	case AG_COOPERATE:
 		domcall_args.cmd = CB_COOPERATE;
 
 		/* Initiator slotID must be filled by the ME - during the cooperation - through the target slotID */
@@ -172,7 +175,7 @@ void agency_ctl(agency_ctl_args_t *args)
 		memcpy(&domcall_args.u.cooperate_args.u.initiator_coop.spad, &domains[args->slotID]->avz_shared->dom_desc.u.ME.spad, sizeof(spad_t));
 
 		/* Transfer the SPID of the target ME */
-		domcall_args.u.cooperate_args.u.initiator_coop.spid = domains[args->slotID]->avz_shared->dom_desc.u.ME.spid;
+		domcall_args.u.cooperate_args.u.initiator_coop.spid = domains[args->u.cooperate_args.slotID]->avz_shared->dom_desc.u.ME.spid;
 
 		domcall_args.u.cooperate_args.role = COOPERATE_TARGET;
 		target_dom = domains[args->slotID];
@@ -505,6 +508,11 @@ void do_soo_hypercall(soo_hyp_t *args) {
 		break;
 	}
 
+	case AVZ_TRIGGER_LOCAL_COOPERATION:
+		slotID = *((unsigned int *) op.p_val1);
+		soo_cooperate(slotID);
+		break;
+		
 	case AVZ_AGENCY_CTL:
 		/*
 		 * Primary agency ctl processing- The args contains the slotID of the ME the agency_ctl is issued from.

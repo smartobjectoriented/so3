@@ -131,8 +131,9 @@ ENTRY(__vectors)
 
 	// Current EL with SPx / Synchronous
 	.align 7
-	mov 	x0, lr
-	b		trap_handle_error
+	
+	mov		x0, lr
+	b 		trap_handle_error
 
 	// Current EL with SPx / IRQ
 	.align 7

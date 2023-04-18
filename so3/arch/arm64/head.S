@@ -109,7 +109,6 @@ __start:
 
 #endif /* CONFIG_SO3VIRT */
 
-	
     // Set up the MMU
     b setup_mmu
 

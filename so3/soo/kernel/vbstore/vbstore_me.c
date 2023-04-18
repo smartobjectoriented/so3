@@ -217,34 +217,10 @@ void remove_vbstore_entries(void) {
 
 	vbus_rm(VBT_NIL, rootname, entry);
 
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vleds,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: Removing vLEDS from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vleds");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: Removing vUIHandler from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vuihandler");
-	}
-
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuart,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vuart from vbstore...\n", __func__);
 		vbstore_dev_remove(ME_domID(), "vuart");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vweather,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: removing vweather from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vweather");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdoga12v6nm,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: removing vdoga12v6nm from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vdoga12v6nm");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
@@ -263,24 +239,6 @@ void remove_vbstore_entries(void) {
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vsensej from vbstore...\n", __func__);
 		vbstore_dev_remove(ME_domID(), "vsensej");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vwagoled,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: removing vwagoled from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vwagoled");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "venocean,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: removing venocean from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "venocean");
-	}
-
-	fdt_node = fdt_find_compatible_node(__fdt_addr, "vknx,frontend");
-	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
-		DBG("%s: removing vknx from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vknx");
 	}
 }
 

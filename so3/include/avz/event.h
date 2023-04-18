@@ -41,6 +41,8 @@ int evtchn_unmask(unsigned int port);
 
 bool handle_guest_bound_irq(unsigned int irq);
 
+void do_event_channel_op(int cmd, void *args);
+
 void event_channel_init(void);
 
 #endif /* __EVENT_H__ */

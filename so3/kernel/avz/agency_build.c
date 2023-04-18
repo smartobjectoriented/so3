@@ -70,6 +70,16 @@ int construct_agency(struct domain *d) {
 
 	clear_bit(_VPF_down, &d->pause_flags);
 
+#ifdef CONFIG_SOO
+
+	/*
+	 * Keep a reference in the primary agency domain to its sub-domain.
+	 * Indeed, there is only one shared page mapped in the guest.
+	 */
+	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
+
+#endif /* CONFIG_SOO */
+
 #ifdef CONFIG_ARM64VT
 	__setup_dom_pgtable(d, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size);
 #else
@@ -102,12 +112,6 @@ int construct_agency(struct domain *d) {
 	/* We set the realtime domain in pseudo-usr mode since the primary domain will start it, not us. */
 	__pseudo_usr_mode[AGENCY_RT_CPU] = 1;
 #endif
-
-	/*
-	 * Keep a reference in the primary agency domain to its sub-domain.
-	 * Indeed, there is only one shared page mapped in the guest.
-	 */
-	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
 
 	/* Domain related information */
 	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;

@@ -22,6 +22,8 @@
 
 #include <soo/console.h>
 
+#include <avz/uapi/avz.h>
+
 #include <me/common.h>
 
 /**
@@ -263,3 +265,11 @@ void dump_hosts(struct list_head *hosts) {
 	lprintk("\n--- End of list ---\n");
 }
 
+/**
+ * Perform a local cooperation in target domain <domID>
+ *
+ * @param domID
+ */
+void do_local_cooperation(int domID) {
+	do_sync_dom(DOMID_AGENCY, DC_TRIGGER_LOCAL_COOPERATION);
+}

@@ -499,7 +499,8 @@ static irq_return_t directcomm_isr(int irq, void *data) {
 	case DC_FORCE_TERMINATE:
 	case DC_POST_ACTIVATE:
 	case DC_TRIGGER_DEV_PROBE:
-
+	case DC_TRIGGER_LOCAL_COOPERATION:
+	
 		/* Check if it is the response to a dc_event. */
 		if (atomic_read(&dc_outgoing_domID[dc_event]) != -1) {
 			dc_stable(dc_event);

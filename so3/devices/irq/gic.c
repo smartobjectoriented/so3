@@ -432,7 +432,7 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
 			break;
 
 		if (irq_nr < 16)
-			/* At this leve, IPI are used to trigger a guest because
+			/* At this level, IPI are used to trigger a guest because
 			 * an event has been raised. So, the domain will check for
 			 * this event along the return path.
 			 */

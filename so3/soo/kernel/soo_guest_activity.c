@@ -291,7 +291,7 @@ void perform_task(dc_event_t dc_event)
 void do_soo_activity(void *arg)
 {
 	soo_domcall_arg_t *args = (soo_domcall_arg_t *) arg;
-
+	
 	switch (args->cmd) {
 
 	case CB_PRE_SUSPEND: /* Called by perform_pre_suspend */
