@@ -2,10 +2,9 @@
 
 if [ -z $1 ]
 then
-    echo "Need to specify a platform (ex.: vexpress, rpi4, etc.)"
+    echo "Need to specify a platform (ex.: vexpress, virt64, rpi4, rpi4_64, etc.)"
     exit
 fi
 
-mkimage -f $1.its $1.itb 
-
+mkimage -f $1.its $1.itb
 
