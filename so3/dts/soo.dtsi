@@ -75,6 +75,11 @@
 				status = "disabled";
 			};
 
+			vuihandler {
+				compatible = "vuihandler,frontend";
+				status = "disabled";
+			};
+
 			vuart {
 				compatible = "vuart,frontend";
 				status = "disabled";

@@ -10,14 +10,14 @@ config VDUMMY_FRONTEND
 config VUART_FRONTEND
 	bool "vuart serial driver"
 
+config VUIHANDLER_FRONTEND
+	bool "vuihandler UI manager driver"
+
 config VSENSELED_FRONTEND
     bool "vsenseled led matrix Sense HAT frontend"
 
 config VSENSEJ_FRONTEND
     bool "vsensej joystick Sense HAT frontend"
-
-config VUIHANDLER_FRONTEND
-	bool "vuihandler UI manager driver"
 
 endmenu
 
