@@ -277,7 +277,7 @@ ARCH	= arm64
 CROSS_COMPILE = aarch64-linux-gnu-
 endif
 
-ifeq ($(PLATFORM),$(filter $(PLATFORM),vexpress bbb))
+ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
 ARCH = arm
 CROSS_COMPILE = arm-linux-gnueabihf-
 endif

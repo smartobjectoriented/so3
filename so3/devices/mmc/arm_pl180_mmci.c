@@ -415,6 +415,6 @@ static int arm_pl180_mmci_init(dev_t *dev, int fdt_offset) {
 	return 0;
 }
 
-REGISTER_DRIVER_POSTCORE("vexpress,mmc-pl180", arm_pl180_mmci_init);
+REGISTER_DRIVER_POSTCORE("virt32,mmc-pl180", arm_pl180_mmci_init);
 
 

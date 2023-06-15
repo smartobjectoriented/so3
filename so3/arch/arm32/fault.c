@@ -62,7 +62,7 @@ void kernel_panic(void)
 	else {
 		lprintk("%s: entering infinite loop... CPU: %d\n", __func__, smp_processor_id());
 
-#ifdef CONFIG_VEXPRESS
+#ifdef CONFIG_VIRT32
 		{
 			extern void send_qemu_halt(void);
 			send_qemu_halt();

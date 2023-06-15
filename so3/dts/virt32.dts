@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,42 +19,48 @@
 /dts-v1/;
  
 / {
-	model = "SO3 Vexpress";
-	compatible = "arm,vexpress";
+	model = "SO3 Virt32";
+	compatible = "arm,virt32";
 
 	#address-cells = <1>;
 	#size-cells = <1>;
 
 	cpus {
 		device_type = "cpu";
-		compatible = "arm,vexpress";
+		compatible = "arm,virt23";
 	};
 
-	memory@80000000 {
+	memory {
 		device_type = "memory";
-		reg = <0x80000000 0x20000000>; /* 512 MB */
+		reg = <0x40000000 0x20000000>; /* 512 MB */
 	};
 	
 	agency {
 	        domain-size = <0x10000000>; /* 256 MB */
 	};
 
+	fw-cfg@9020000 {
+		reg = <0x9020000 0x18>;
+		compatible = "qemu,fw-cfg-mmio";
+		status = "ok";
+	};
+	
 	/* GIC interrupt controller */
-	gic:interrupt-controller@2c001000 {
+	gic:interrupt-controller@0x08000000 {
 		compatible = "intc,gic";
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		
-		reg = <0x2c001000 0x1000 0x2c002000 0x1000>;
+		reg = <0x08000000 0x1000 0x08010000 0x1000>;
 		status = "ok";
 	};
 	
-	/*Vexpress console UART */
-	serial@1c090000 {
+	/* QEMU/virt console UART */
+	serial@09000000 {
 		compatible = "serial,pl011";
-		reg = <0x1c090000 0x1000>;
+		reg = <0x09000000 0x1000>;
 		interrupt-parent = <&gic>;
-		interrupts = <0 5 4>;
+		interrupts = <0 1 4>;
 		status = "ok";
 	};
 
@@ -100,9 +106,10 @@
 		status = "ok";
 	};
 #endif
+
 	/* MMC */
 	mmc@1c050000 {
-		compatible = "vexpress,mmc-pl180";
+		compatible = "virt32,mmc-pl180";
 		reg = <0x1c050000 0x1000>;
 		power = <191>;
 		clkdiv = <454>;
@@ -123,9 +130,9 @@
 	/* PL111 Color LCD Controller
 	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0293c/index.html
 	 */
-	clcd@1c1f0000 {
+	clcd@08800000{
 		compatible = "arm,pl111";
-		reg = <0x1c1f0000 0x1000>;
+		reg = <0x08800000 0x1000>;
 
 		status = "ok";
 	};
@@ -133,11 +140,11 @@
 	/* PL050 PS2 Keyboard/Mouse Interface
 	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
 	 */
-	kmi@1c060000 { /* keyboard */
+	kmi@0x08801000 { /* keyboard */
 		compatible = "arm,pl050,keyboard";
-		reg = <0x1c060000 0x100>;
+		reg = <0x08801000 0x1000>;
 		interrupt-parent = <&gic>;
-		interrupts = <0 12 4>;
+		interrupts = <0 36 4>;
 
 		status = "ok";
 	};
@@ -145,12 +152,12 @@
 	/* PL050 PS2 Keyboard/Mouse Interface
 	 *   http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0143c/index.html
 	 */
-	kmi@1c070000 { /* mouse */
+	kmi@0x08802000 { /* mouse */
 		compatible = "arm,pl050,mouse";
-		reg = <0x1c070000 0x100>;
+		reg = <0x08802000  0x1000>;
 		
 		interrupt-parent = <&gic>;
-		interrupts = <0 13 4>;
+		interrupts = <0 37 4>;
 
 		status = "ok";
 	};

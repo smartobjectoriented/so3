@@ -151,7 +151,7 @@ int serial_gwinsize(struct winsize *wsz)
 	 * manage an internal buffer to read many chars.
 	 */
 
-#if defined(CONFIG_VEXPRESS) && !defined(CONFIG_SOO)
+#if defined(CONFIG_VIRT32) && !defined(CONFIG_SOO)
 
 	serial_ops.disable_irq();
 
@@ -173,7 +173,7 @@ int serial_gwinsize(struct winsize *wsz)
 	return 0;
 }
 
-#ifdef CONFIG_VEXPRESS
+#ifdef CONFIG_VIRT32
 /*
  * Send a specific char code to Qemu to ask it to exit immediately.
  */
