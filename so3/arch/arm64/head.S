@@ -61,7 +61,7 @@ __start:
 	mov		x9, x21
 #endif
 
-	//Store the DT addr in a safe place which can be accessed on a relocatable address
+	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
 
@@ -84,7 +84,7 @@ __start:
 #ifndef CONFIG_SO3VIRT
 
 	// Initialize the vector table
-	ldr	x0, =__vectors
+	adrp x0, __vectors
 
 #ifdef CONFIG_ARM64VT
 	msr vbar_el2, x0

@@ -93,6 +93,10 @@ void mmu_setup(void *pgtable)
 
 	/* and enable the mmu */
 	reg = get_cr();	/* get control reg. */
+
+	/* No alignment trap */
+	reg &= ~CR_A;
+
 	set_cr(reg | CR_V | CR_M);
 }
 

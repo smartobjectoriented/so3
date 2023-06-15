@@ -499,14 +499,26 @@ void *memalign(size_t size, unsigned int alignment) {
 	return __malloc(size, alignment);
 }
 
-/*
- * Free an allocated area
+/**
+ * Free an allocated area.
+ *
+ * From section 7.20.3.2/2 of the C99 standard:
+ *
+ * The free function causes the space pointed to by ptr to be deallocated, that is,
+ * made available for further allocation. If ptr is a null pointer, no action occurs.
+ *
+ * @param ptr
  */
 void free(void *ptr)
 {
 	uint32_t flags;
-	mem_chunk_t *chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
+	mem_chunk_t *chunk;
 	mem_chunk_t tmp_memchunk;
+
+	if (!ptr)
+		return ;
+
+	chunk = (mem_chunk_t *)((char *) ptr - sizeof(mem_chunk_t));
 
 	flags = spin_lock_irqsave(&heap_lock);
 

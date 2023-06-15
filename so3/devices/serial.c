@@ -151,7 +151,7 @@ int serial_gwinsize(struct winsize *wsz)
 	 * manage an internal buffer to read many chars.
 	 */
 
-#ifdef CONFIG_VEXPRESS
+#if defined(CONFIG_VEXPRESS) && !defined(CONFIG_SOO)
 
 	serial_ops.disable_irq();
 

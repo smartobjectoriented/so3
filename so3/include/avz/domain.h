@@ -96,7 +96,7 @@ struct domain
 #endif
 	avz_shared_t *avz_shared;     /* shared data area between AVZ and the domain */
 
-	unsigned int max_pages;    /* maximum value for tot_pages        */
+	unsigned int max_pages;    /* maximum value for tot_pages */
 
 	/* Event channel information. */
 	struct evtchn evtchn[NR_EVTCHN];

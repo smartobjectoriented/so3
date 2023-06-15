@@ -39,12 +39,12 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
    sudo qemu-system-arm $@ ${USR_OPTION} \
   	-smp 4 \
 	-serial mon:stdio  \
-	-M vexpress-a15,secure=on  -cpu cortex-a15 \
+	-M virt,secure=on  -cpu cortex-a15 \
+	-device virtio-blk-device,drive=hd0 \
+	-drive if=none,file=filesystem/sdcard.img.vexpress,id=hd0,format=raw,file.locking=off \
 	-m 1024 \
-	-kernel u-boot/u-boot \
-	-semihosting-config enable,target=native \
+	-bios u-boot/u-boot.bin \
 	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
-	-sd filesystem/sdcard.img.vexpress \
 	-nographic \
 	-gdb tcp::${GDB_PORT}
         

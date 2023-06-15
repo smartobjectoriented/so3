@@ -20,6 +20,10 @@
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+#define MOUSE_STATUS_REMOTE     0x40
+#define MOUSE_STATUS_ENABLED    0x20
+#define MOUSE_STATUS_SCALE21    0x10
+
 /* Mouse packet byte indexes. */
 #define PS2_STATE 0
 #define PS2_X     1

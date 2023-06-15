@@ -19,6 +19,7 @@
 @ SO3 Kernel entry point
 
 #include <linkage.h>
+#include <sizes.h>
 
 #include <generated/autoconf.h>
 
@@ -34,6 +35,7 @@
 .extern mmu_configure
 .extern __stack_top
 .extern __vectors_start
+.extern __bss_start, __bss_end
 
 #ifdef CONFIG_SO3VIRT
 .extern avz_start_info
@@ -81,22 +83,34 @@ __start:
   ldr	r10, =avz_shared
   str 	r12, [r10]
 
+  @ For future conversion to physical which is not required in this case.
+  mov   r8, #0
+
 #else /* !CONFIG_SO3VIRT */
   safe_svcmode_maskall r9
 
   msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
 
   @ Configure address of the vector table
-  ldr 	r1, =.LCvectors
+  adrl 	r1, .LCvectors
   ldr	r1, [r1]
+
+  @ Convert to physical address
+  ldr r8, =(CONFIG_RAM_BASE-CONFIG_KERNEL_VADDR)
+
+  add r1, r1, r8
 
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
 #endif
 
-  @ prepare to clear bss and zero fp
+  @ Prepare to clear bss and zero fp
   ldr	r6, =__bss_start
   ldr	r7, =__bss_end
+
+  # Convert to physical address
+  add	r6, r6, r8
+  add	r7, r7, r8
 
   mov	fp, #0			@ Clear BSS (and zero fp)
 1:
@@ -109,7 +123,7 @@ __start:
 
   @ Initialize stack pointers for current mode (normal case if no MMU is used)
   ldr  	sp, =__stack_top
-
+  add	sp, sp, r8
 
   @ Up to here, a stack should be initialized
 

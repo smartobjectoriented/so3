@@ -2,6 +2,11 @@ config PL111_CLCD
 	bool "PL111 CLCD framebuffer device"
 	depends on VEXPRESS || VIRT64
 
+config QEMU_RAMFB
+	bool "QEMU RAMFB Framebuffer device"
+	depends on VEXPRESS || VIRT64
+
 config SOO_FB
 	bool "SOO Virtualized FB device"
 	depends on SOO && !AVZ
+
