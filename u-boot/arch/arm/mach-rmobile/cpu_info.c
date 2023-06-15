@@ -76,6 +76,7 @@ static const struct {
 	{ RMOBILE_CPU_TYPE_R8A77980, "R8A77980" },
 	{ RMOBILE_CPU_TYPE_R8A77990, "R8A77990" },
 	{ RMOBILE_CPU_TYPE_R8A77995, "R8A77995" },
+	{ RMOBILE_CPU_TYPE_R8A779A0, "R8A779A0" },
 	{ 0x0, "CPU" },
 };
 
@@ -118,7 +119,7 @@ int print_cpuinfo(void)
 {
 	int i = rmobile_cpuinfo_idx();
 
-	printf("CPU: Renesas Electronics %s rev %d.%d\n",
+	printf("CPU:   Renesas Electronics %s rev %d.%d\n",
 		get_cpu_name(i), rmobile_get_cpu_rev_integer(),
 		rmobile_get_cpu_rev_fraction());
 

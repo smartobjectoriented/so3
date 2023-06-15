@@ -66,8 +66,21 @@ void enable_tzc380(void)
 	/* Enable TZASC and lock setting */
 	setbits_le32(&gpr->gpr[10], GPR_TZASC_EN);
 	setbits_le32(&gpr->gpr[10], GPR_TZASC_EN_LOCK);
+
+	/*
+	 * According to TRM, TZASC_ID_SWAP_BYPASS should be set in
+	 * order to avoid AXI Bus errors when GPU is in use
+	 */
 	if (is_imx8mm() || is_imx8mn() || is_imx8mp())
-		setbits_le32(&gpr->gpr[10], BIT(1));
+		setbits_le32(&gpr->gpr[10], GPR_TZASC_ID_SWAP_BYPASS);
+
+	/*
+	 * imx8mn and imx8mp implements the lock bit for
+	 * TZASC_ID_SWAP_BYPASS, enable it to lock settings
+	 */
+	if (is_imx8mn() || is_imx8mp())
+		setbits_le32(&gpr->gpr[10], GPR_TZASC_ID_SWAP_BYPASS_LOCK);
+
 	/*
 	 * set Region 0 attribute to allow secure and non-secure
 	 * read/write permission. Found some masters like usb dwc3
@@ -294,6 +307,30 @@ phys_size_t get_effective_memsize(void)
 #else
 	return gd->ram_size;
 #endif
+}
+
+ulong board_get_usable_ram_top(ulong total_size)
+{
+	ulong top_addr = PHYS_SDRAM + gd->ram_size;
+
+	/*
+	 * Some IPs have their accessible address space restricted by
+	 * the interconnect. Let's make sure U-Boot only ever uses the
+	 * space below the 4G address boundary (which is 3GiB big),
+	 * even when the effective available memory is bigger.
+	 */
+	if (top_addr > 0x80000000)
+		top_addr = 0x80000000;
+
+	/*
+	 * rom_pointer[0] stores the TEE memory start address.
+	 * rom_pointer[1] stores the size TEE uses.
+	 * We need to reserve the memory region for TEE.
+	 */
+	if (rom_pointer[0] && rom_pointer[1] && top_addr > rom_pointer[0])
+		top_addr = rom_pointer[0];
+
+	return top_addr;
 }
 
 static u32 get_cpu_variant_type(u32 type)
@@ -568,6 +605,67 @@ enum boot_device get_boot_device(void)
 	}
 
 	return boot_dev;
+}
+#endif
+
+#if defined(CONFIG_IMX8M)
+#include <spl.h>
+int spl_mmc_emmc_boot_partition(struct mmc *mmc)
+{
+	u32 *rom_log_addr = (u32 *)0x9e0;
+	u32 *rom_log;
+	u8 event_id;
+	int i, part;
+
+	part = default_spl_mmc_emmc_boot_partition(mmc);
+
+	/* If the ROM event log pointer is not valid. */
+	if (*rom_log_addr < 0x900000 || *rom_log_addr >= 0xb00000 ||
+	    *rom_log_addr & 0x3)
+		return part;
+
+	/* Parse the ROM event ID version 2 log */
+	rom_log = (u32 *)(uintptr_t)(*rom_log_addr);
+	for (i = 0; i < 128; i++) {
+		event_id = rom_log[i] >> 24;
+		switch (event_id) {
+		case 0x00: /* End of list */
+			return part;
+		/* Log entries with 1 parameter, skip 1 */
+		case 0x80: /* Start to perform the device initialization */
+		case 0x81: /* The boot device initialization completes */
+		case 0x8f: /* The boot device initialization fails */
+		case 0x90: /* Start to read data from boot device */
+		case 0x91: /* Reading data from boot device completes */
+		case 0x9f: /* Reading data from boot device fails */
+			i += 1;
+			continue;
+		/* Log entries with 2 parameters, skip 2 */
+		case 0xa0: /* Image authentication result */
+		case 0xc0: /* Jump to the boot image soon */
+			i += 2;
+			continue;
+		/* Boot from the secondary boot image */
+		case 0x51:
+			/*
+			 * Swap the eMMC boot partitions in case there was a
+			 * fallback event (i.e. primary image was corrupted
+			 * and that corruption was recognized by the BootROM),
+			 * so the SPL loads the rest of the U-Boot from the
+			 * correct eMMC boot partition, since the BootROM
+			 * leaves the boot partition set to the corrupted one.
+			 */
+			if (part == 1)
+				part = 2;
+			else if (part == 2)
+				part = 1;
+			continue;
+		default:
+			continue;
+		}
+	}
+
+	return part;
 }
 #endif
 
@@ -1231,55 +1329,35 @@ void do_error(struct pt_regs *pt_regs, unsigned int esr)
 enum env_location env_get_location(enum env_operation op, int prio)
 {
 	enum boot_device dev = get_boot_device();
-	enum env_location env_loc = ENVL_UNKNOWN;
 
 	if (prio)
-		return env_loc;
+		return ENVL_UNKNOWN;
 
 	switch (dev) {
-#ifdef CONFIG_ENV_IS_IN_SPI_FLASH
 	case QSPI_BOOT:
-		env_loc = ENVL_SPI_FLASH;
-		break;
-#endif
-#ifdef CONFIG_ENV_IS_IN_NAND
+		if (IS_ENABLED(CONFIG_ENV_IS_IN_SPI_FLASH))
+			return ENVL_SPI_FLASH;
+		return ENVL_NOWHERE;
 	case NAND_BOOT:
-		env_loc = ENVL_NAND;
-		break;
-#endif
-#ifdef CONFIG_ENV_IS_IN_MMC
+		if (IS_ENABLED(CONFIG_ENV_IS_IN_NAND))
+			return ENVL_NAND;
+		return ENVL_NOWHERE;
 	case SD1_BOOT:
 	case SD2_BOOT:
 	case SD3_BOOT:
 	case MMC1_BOOT:
 	case MMC2_BOOT:
 	case MMC3_BOOT:
-		env_loc =  ENVL_MMC;
-		break;
-#endif
+		if (IS_ENABLED(CONFIG_ENV_IS_IN_MMC))
+			return ENVL_MMC;
+		else if (IS_ENABLED(CONFIG_ENV_IS_IN_EXT4))
+			return ENVL_EXT4;
+		else if (IS_ENABLED(CONFIG_ENV_IS_IN_FAT))
+			return ENVL_FAT;
+		return ENVL_NOWHERE;
 	default:
-#if defined(CONFIG_ENV_IS_NOWHERE)
-		env_loc = ENVL_NOWHERE;
-#endif
-		break;
+		return ENVL_NOWHERE;
 	}
-
-	return env_loc;
 }
 
-#ifndef ENV_IS_EMBEDDED
-long long env_get_offset(long long defautl_offset)
-{
-	enum boot_device dev = get_boot_device();
-
-	switch (dev) {
-	case NAND_BOOT:
-		return (60 << 20);  /* 60MB offset for NAND */
-	default:
-		break;
-	}
-
-	return defautl_offset;
-}
-#endif
 #endif

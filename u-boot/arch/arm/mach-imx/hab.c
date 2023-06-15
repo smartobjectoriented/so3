@@ -591,7 +591,7 @@ static ulong get_image_ivt_offset(ulong img_addr)
 		return (image_get_image_size((image_header_t *)img_addr)
 			+ 0x1000 - 1)  & ~(0x1000 - 1);
 #endif
-#if IMAGE_ENABLE_FIT
+#if CONFIG_IS_ENABLED(FIT)
 	case IMAGE_FORMAT_FIT:
 		return (fit_get_size(buf) + 0x1000 - 1)  & ~(0x1000 - 1);
 #endif
@@ -609,12 +609,12 @@ static int do_authenticate_image(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (argc < 3)
 		return CMD_RET_USAGE;
 
-	addr = simple_strtoul(argv[1], NULL, 16);
-	length = simple_strtoul(argv[2], NULL, 16);
+	addr = hextoul(argv[1], NULL);
+	length = hextoul(argv[2], NULL);
 	if (argc == 3)
 		ivt_offset = get_image_ivt_offset(addr);
 	else
-		ivt_offset = simple_strtoul(argv[3], NULL, 16);
+		ivt_offset = hextoul(argv[3], NULL);
 
 	rcode = imx_hab_authenticate_image(addr, length, ivt_offset);
 	if (rcode == 0)

@@ -14,8 +14,6 @@
 #define CONFIG_SYS_BOOTM_LEN		(32 * SZ_1M)
 #define CONFIG_SPL_MAX_SIZE		(148 * 1024)
 #define CONFIG_SYS_MONITOR_LEN		SZ_512K
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR
-#define CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR	0x300
 #define CONFIG_SYS_UBOOT_BASE	\
 	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
 
@@ -74,14 +72,13 @@
 	"fdt_addr=0x43000000\0"			\
 	"fdt_addr_r=0x43000000\0" \
 	"boot_fit=no\0" \
-	"dfu_alt_info=mmc 2=flash-bin raw 0x42 0x250 mmcpart 1;" \
-		"u-boot-itb raw 0x300 0x1B00 mmcpart 1\0"	 \
+	"dfu_alt_info=mmc 2=flash-bin raw 0x42 0x1D00 mmcpart 1\0" \
 	"fdt_file=sb-iotgimx8.dtb\0" \
 	"fdtfile=sb-iotgimx8.dtb\0" \
 	"initrd_addr=0x43800000\0"		\
 	"bootm_size=0x10000000\0" \
 	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
+	"mmcpart=1\0" \
 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
 	"mmcautodetect=yes\0" \
 	"mmcargs=setenv bootargs console=${console} root=${mmcroot}\0 " \
@@ -125,24 +122,7 @@
 			"fi; " \
 		"fi;\0"
 
-#ifndef CONFIG_BOOTCOMMAND
-#define CONFIG_BOOTCOMMAND \
-	   "mmc dev ${mmcdev}; if mmc rescan; then " \
-		   "if run loadbootscript; then " \
-			   "run bootscript; " \
-		   "else " \
-			   "if run loadimage; then " \
-				   "run mmcboot; " \
-			   "else run netboot; " \
-			   "fi; " \
-		   "fi; " \
-	   "fi;"
-#endif
-
 /* Link Definitions */
-#define CONFIG_LOADADDR			0x40480000
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
 #define CONFIG_SYS_INIT_RAM_ADDR	0x40000000
 #define CONFIG_SYS_INIT_RAM_SIZE	0x80000
@@ -153,9 +133,6 @@
 
 #define CONFIG_MMCROOT			"/dev/mmcblk1p2"  /* USDHC2 */
 
-/* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		SZ_32M
-
 #define CONFIG_SYS_SDRAM_BASE		0x40000000
 #define PHYS_SDRAM			0x40000000
 #define PHYS_SDRAM_SIZE			0x80000000 /* 2GB DDR */
@@ -163,7 +140,6 @@
 #define CONFIG_MXC_UART_BASE		UART3_BASE_ADDR
 
 /* Monitor Command Prompt */
-#define CONFIG_SYS_PROMPT_HUSH_PS2	"> "
 #define CONFIG_SYS_CBSIZE		2048
 #define CONFIG_SYS_MAXARGS		64
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
@@ -171,14 +147,9 @@
 					sizeof(CONFIG_SYS_PROMPT) + 16)
 
 /* USDHC */
-#define CONFIG_FSL_USDHC
 
 #define CONFIG_SYS_FSL_USDHC_NUM	2
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
-
-#define CONFIG_SYS_MMC_IMG_LOAD_PART	1
-
-#define CONFIG_SYS_I2C_SPEED		100000
 
 #define CONFIG_ETHPRIME			"FEC"
 

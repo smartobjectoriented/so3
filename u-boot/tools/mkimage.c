@@ -10,8 +10,12 @@
 #include "imagetool.h"
 #include "mkimage.h"
 #include "imximage.h"
+#include <fit_common.h>
 #include <image.h>
 #include <version.h>
+#ifdef __linux__
+#include <sys/ioctl.h>
+#endif
 
 static void copy_file(int, const char *, int);
 
@@ -78,8 +82,9 @@ static int show_valid_options(enum ih_category category)
 static void usage(const char *msg)
 {
 	fprintf(stderr, "Error: %s\n", msg);
-	fprintf(stderr, "Usage: %s -l image\n"
-			 "          -l ==> list image header information\n",
+	fprintf(stderr, "Usage: %s [-T type] -l image\n"
+			 "          -l ==> list image header information\n"
+			 "          -T ==> parse image file as 'type'\n",
 		params.cmdname);
 	fprintf(stderr,
 		"       %s [-x] -A arch -O os -T type -C comp -a addr -e ep -n name -d data_file[:data_file...] image\n"
@@ -143,7 +148,6 @@ static int add_content(int type, const char *fname)
 	return 0;
 }
 
-#define OPT_STRING "a:A:b:B:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qstT:vVx"
 static void process_args(int argc, char **argv)
 {
 	char *ptr;
@@ -152,7 +156,7 @@ static void process_args(int argc, char **argv)
 	int opt;
 
 	while ((opt = getopt(argc, argv,
-		   "a:A:b:B:c:C:d:D:e:Ef:FG:k:i:K:ln:N:p:O:rR:qstT:vVx")) != -1) {
+		   "a:A:b:B:c:C:d:D:e:Ef:FG:k:i:K:ln:N:p:o:O:rR:qstT:vVx")) != -1) {
 		switch (opt) {
 		case 'a':
 			params.addr = strtoull(optarg, &ptr, 16);
@@ -248,6 +252,9 @@ static void process_args(int argc, char **argv)
 		case 'N':
 			params.engine_id = optarg;
 			break;
+		case 'o':
+			params.algo_name = optarg;
+			break;
 		case 'O':
 			params.os = genimg_get_os_id(optarg);
 			if (params.os < 0) {
@@ -323,7 +330,7 @@ static void process_args(int argc, char **argv)
 			params.datafile = datafile;
 		else if (!params.datafile)
 			usage("Missing data file for auto-FIT (use -d)");
-	} else if (type != IH_TYPE_INVALID) {
+	} else if (params.lflag || type != IH_TYPE_INVALID) {
 		if (type == IH_TYPE_SCRIPT && !params.datafile)
 			usage("Missing data file for script (use -d)");
 		params.type = type;
@@ -352,7 +359,7 @@ int main(int argc, char **argv)
 
 	/* set tparams as per input type_id */
 	tparams = imagetool_get_type(params.type);
-	if (tparams == NULL) {
+	if (tparams == NULL && !params.lflag) {
 		fprintf (stderr, "%s: unsupported type %s\n",
 			params.cmdname, genimg_get_type_name(params.type));
 		exit (EXIT_FAILURE);
@@ -362,18 +369,23 @@ int main(int argc, char **argv)
 	 * check the passed arguments parameters meets the requirements
 	 * as per image type to be generated/listed
 	 */
-	if (tparams->check_params)
+	if (tparams && tparams->check_params)
 		if (tparams->check_params (&params))
 			usage("Bad parameters for image type");
 
 	if (!params.eflag) {
 		params.ep = params.addr;
 		/* If XIP, entry point must be after the U-Boot header */
-		if (params.xflag)
+		if (params.xflag && tparams)
 			params.ep += tparams->header_size;
 	}
 
 	if (params.fflag){
+		if (!tparams) {
+			fprintf(stderr, "%s: Missing FIT support\n",
+				params.cmdname);
+			exit (EXIT_FAILURE);
+		}
 		if (tparams->fflag_handle)
 			/*
 			 * in some cases, some additional processing needs
@@ -384,7 +396,7 @@ int main(int argc, char **argv)
 			retval = tparams->fflag_handle(&params);
 
 		if (retval != EXIT_SUCCESS)
-			exit (retval);
+			usage("Bad parameters for FIT image type");
 	}
 
 	if (params.lflag || params.fflag) {
@@ -402,6 +414,7 @@ int main(int argc, char **argv)
 	}
 
 	if (params.lflag || params.fflag) {
+		uint64_t size;
 		/*
 		 * list header information of existing image
 		 */
@@ -412,14 +425,35 @@ int main(int argc, char **argv)
 			exit (EXIT_FAILURE);
 		}
 
-		if ((unsigned)sbuf.st_size < tparams->header_size) {
+		if ((sbuf.st_mode & S_IFMT) == S_IFBLK) {
+#ifdef __linux__
+#if defined(__linux__) && defined(_IOR) && !defined(BLKGETSIZE64)
+#define BLKGETSIZE64 _IOR(0x12,114,size_t)	/* return device size in bytes (u64 *arg) */
+#endif
+			if (ioctl(ifd, BLKGETSIZE64, &size) < 0) {
+				fprintf (stderr,
+					"%s: failed to get size of block device \"%s\"\n",
+					params.cmdname, params.imagefile);
+				exit (EXIT_FAILURE);
+			}
+#else
 			fprintf (stderr,
-				"%s: Bad size: \"%s\" is not valid image\n",
+				"%s: \"%s\" is block device, don't know how to get its size\n",
 				params.cmdname, params.imagefile);
 			exit (EXIT_FAILURE);
+#endif
+		} else if (tparams && sbuf.st_size < (off_t)tparams->header_size) {
+			fprintf (stderr,
+				"%s: Bad size: \"%s\" is not valid image: size %llu < %u\n",
+				params.cmdname, params.imagefile,
+				(unsigned long long) sbuf.st_size,
+				tparams->header_size);
+			exit (EXIT_FAILURE);
+		} else {
+			size = sbuf.st_size;
 		}
 
-		ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
+		ptr = mmap(0, size, PROT_READ, MAP_SHARED, ifd, 0);
 		if (ptr == MAP_FAILED) {
 			fprintf (stderr, "%s: Can't read %s: %s\n",
 				params.cmdname, params.imagefile,
@@ -427,24 +461,18 @@ int main(int argc, char **argv)
 			exit (EXIT_FAILURE);
 		}
 
-		if (params.fflag) {
-			/*
-			 * Verifies the header format based on the expected header for image
-			 * type in tparams
-			 */
-			retval = imagetool_verify_print_header_by_type(ptr, &sbuf,
-					tparams, &params);
-		} else {
-			/**
-			 * When listing the image, we are not given the image type. Simply check all
-			 * image types to find one that matches our header
-			 */
-			retval = imagetool_verify_print_header(ptr, &sbuf,
-					tparams, &params);
-		}
+		/*
+		 * Verifies the header format based on the expected header for image
+		 * type in tparams. If tparams is NULL simply check all image types
+		 * to find one that matches our header.
+		 */
+		retval = imagetool_verify_print_header(ptr, &sbuf, tparams, &params);
 
 		(void) munmap((void *)ptr, sbuf.st_size);
 		(void) close (ifd);
+		if (!retval)
+			summary_show(&params.summary, params.imagefile,
+				     params.keydest);
 
 		exit (retval);
 	}
@@ -705,6 +733,12 @@ copy_file (int ifd, const char *datafile, int pad)
 	if (fstat(dfd, &sbuf) < 0) {
 		fprintf (stderr, "%s: Can't stat %s: %s\n",
 			params.cmdname, datafile, strerror(errno));
+		exit (EXIT_FAILURE);
+	}
+
+	if (sbuf.st_size == 0) {
+		fprintf (stderr, "%s: Input file %s is empty, bailing out\n",
+			params.cmdname, datafile);
 		exit (EXIT_FAILURE);
 	}
 

@@ -34,7 +34,7 @@
 &cbass_main{
 	u-boot,dm-spl;
 
-	main-navss {
+	main_navss: bus@30000000 {
 		u-boot,dm-spl;
 	};
 };
@@ -46,18 +46,32 @@
 		compatible = "ti,omap5430-timer";
 		reg = <0x0 0x40400000 0x0 0x80>;
 		ti,timer-alwon;
-		clock-frequency = <25000000>;
+		clock-frequency = <250000000>;
 		u-boot,dm-spl;
 	};
 
-	mcu-navss {
+	mcu_navss: bus@28380000 {
 		u-boot,dm-spl;
 
 		ringacc@2b800000 {
+			reg =	<0x0 0x2b800000 0x0 0x400000>,
+				<0x0 0x2b000000 0x0 0x400000>,
+				<0x0 0x28590000 0x0 0x100>,
+				<0x0 0x2a500000 0x0 0x40000>,
+				<0x0 0x28440000 0x0 0x40000>;
+			reg-names = "rt", "fifos", "proxy_gcfg", "proxy_target", "cfg";
 			u-boot,dm-spl;
 		};
 
 		dma-controller@285c0000 {
+			reg =	<0x0 0x285c0000 0x0 0x100>,
+				<0x0 0x284c0000 0x0 0x4000>,
+				<0x0 0x2a800000 0x0 0x40000>,
+				<0x0 0x284a0000 0x0 0x4000>,
+				<0x0 0x2aa00000 0x0 0x40000>,
+				<0x0 0x28400000 0x0 0x2000>;
+			reg-names = "gcfg", "rchan", "rchanrt", "tchan",
+					    "tchanrt", "rflow";
 			u-boot,dm-spl;
 		};
 	};
@@ -115,13 +129,17 @@
 	u-boot,dm-spl;
 };
 
+&wiz3_pll1_refclk {
+	assigned-clocks = <&wiz3_pll1_refclk>, <&wiz3_pll0_refclk>;
+	assigned-clock-parents = <&k3_clks 295 0>, <&k3_clks 295 9>;
+};
+
 &main_usbss0_pins_default {
 	u-boot,dm-spl;
 };
 
 &usbss0 {
 	u-boot,dm-spl;
-	ti,usb2-only;
 };
 
 &usb0 {
@@ -200,4 +218,32 @@
 
 &main_r5fss1 {
 	ti,cluster-mode = <0>;
+};
+
+&wiz3_pll1_refclk {
+	assigned-clocks = <&wiz3_pll1_refclk>, <&wiz3_pll0_refclk>;
+	assigned-clock-parents = <&k3_clks 295 0>, <&k3_clks 295 9>;
+};
+
+&serdes_ln_ctrl {
+	u-boot,mux-autoprobe;
+};
+
+&usb_serdes_mux {
+	u-boot,mux-autoprobe;
+};
+
+&serdes0 {
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-parents;
+};
+
+&serdes0_pcie_link {
+	assigned-clocks = <&serdes0 CDNS_SIERRA_PLL_CMNLC>;
+	assigned-clock-parents = <&wiz0_pll1_refclk>;
+};
+
+&serdes0_qsgmii_link {
+	assigned-clocks = <&serdes0 CDNS_SIERRA_PLL_CMNLC1>;
+	assigned-clock-parents = <&wiz0_pll1_refclk>;
 };

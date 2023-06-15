@@ -45,6 +45,14 @@ __weak void dfu_initiated_callback(struct dfu_entity *dfu)
 }
 
 /*
+ * The purpose of the dfu_error_callback() function is to
+ * provide callback for dfu user
+ */
+__weak void dfu_error_callback(struct dfu_entity *dfu, const char *msg)
+{
+}
+
+/*
  * The purpose of the dfu_usb_get_reset() function is to
  * provide information if after USB_DETACH request
  * being sent the dfu-util performed reset of USB
@@ -115,9 +123,10 @@ int dfu_config_interfaces(char *env)
 	s = env;
 	while (s) {
 		ret = -EINVAL;
-		i = strsep(&s, " ");
+		i = strsep(&s, " \t");
 		if (!i)
 			break;
+		s = skip_spaces(s);
 		d = strsep(&s, "=");
 		if (!d)
 			break;
@@ -342,6 +351,7 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 		printf("%s: Wrong sequence number! [%d] [%d]\n",
 		       __func__, dfu->i_blk_seq_num, blk_seq_num);
 		dfu_transaction_cleanup(dfu);
+		dfu_error_callback(dfu, "Wrong sequence number");
 		return -1;
 	}
 
@@ -366,6 +376,7 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 		ret = dfu_write_buffer_drain(dfu);
 		if (ret) {
 			dfu_transaction_cleanup(dfu);
+			dfu_error_callback(dfu, "DFU write error");
 			return ret;
 		}
 	}
@@ -375,6 +386,7 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 		pr_err("Buffer overflow! (0x%p + 0x%x > 0x%p)\n", dfu->i_buf,
 		      size, dfu->i_buf_end);
 		dfu_transaction_cleanup(dfu);
+		dfu_error_callback(dfu, "Buffer overflow");
 		return -1;
 	}
 
@@ -386,6 +398,7 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 		ret = dfu_write_buffer_drain(dfu);
 		if (ret) {
 			dfu_transaction_cleanup(dfu);
+			dfu_error_callback(dfu, "DFU write error");
 			return ret;
 		}
 	}
@@ -487,11 +500,29 @@ int dfu_read(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 static int dfu_fill_entity(struct dfu_entity *dfu, char *s, int alt,
 			   char *interface, char *devstr)
 {
+	char *argv[DFU_MAX_ENTITY_ARGS];
+	int argc;
 	char *st;
 
 	debug("%s: %s interface: %s dev: %s\n", __func__, s, interface, devstr);
-	st = strsep(&s, " ");
-	strcpy(dfu->name, st);
+	st = strsep(&s, " \t");
+	strlcpy(dfu->name, st, DFU_NAME_SIZE);
+
+	/* Parse arguments */
+	for (argc = 0; s && argc < DFU_MAX_ENTITY_ARGS; argc++) {
+		s = skip_spaces(s);
+		if (!*s)
+			break;
+		argv[argc] = strsep(&s, " \t");
+	}
+
+	if (argc == DFU_MAX_ENTITY_ARGS && s) {
+		s = skip_spaces(s);
+		if (*s) {
+			log_err("Too many arguments for %s\n", dfu->name);
+			return -EINVAL;
+		}
+	}
 
 	dfu->alt = alt;
 	dfu->max_buf_size = 0;
@@ -499,22 +530,22 @@ static int dfu_fill_entity(struct dfu_entity *dfu, char *s, int alt,
 
 	/* Specific for mmc device */
 	if (strcmp(interface, "mmc") == 0) {
-		if (dfu_fill_entity_mmc(dfu, devstr, s))
+		if (dfu_fill_entity_mmc(dfu, devstr, argv, argc))
 			return -1;
 	} else if (strcmp(interface, "mtd") == 0) {
-		if (dfu_fill_entity_mtd(dfu, devstr, s))
+		if (dfu_fill_entity_mtd(dfu, devstr, argv, argc))
 			return -1;
 	} else if (strcmp(interface, "nand") == 0) {
-		if (dfu_fill_entity_nand(dfu, devstr, s))
+		if (dfu_fill_entity_nand(dfu, devstr, argv, argc))
 			return -1;
 	} else if (strcmp(interface, "ram") == 0) {
-		if (dfu_fill_entity_ram(dfu, devstr, s))
+		if (dfu_fill_entity_ram(dfu, devstr, argv, argc))
 			return -1;
 	} else if (strcmp(interface, "sf") == 0) {
-		if (dfu_fill_entity_sf(dfu, devstr, s))
+		if (dfu_fill_entity_sf(dfu, devstr, argv, argc))
 			return -1;
 	} else if (strcmp(interface, "virt") == 0) {
-		if (dfu_fill_entity_virt(dfu, devstr, s))
+		if (dfu_fill_entity_virt(dfu, devstr, argv, argc))
 			return -1;
 	} else {
 		printf("%s: Device %s not (yet) supported!\n",
@@ -723,6 +754,7 @@ int dfu_write_from_mem_addr(struct dfu_entity *dfu, void *buf, int size)
 	ret = dfu_flush(dfu, NULL, 0, i);
 	if (ret)
 		pr_err("DFU flush failed!");
+	puts("\n");
 
 	return ret;
 }

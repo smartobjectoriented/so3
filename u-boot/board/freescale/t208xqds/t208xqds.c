@@ -5,6 +5,7 @@
  */
 
 #include <common.h>
+#include <clock_legacy.h>
 #include <command.h>
 #include <env.h>
 #include <fdt_support.h>
@@ -22,6 +23,7 @@
 #include <asm/fsl_serdes.h>
 #include <asm/fsl_liodn.h>
 #include <fm_eth.h>
+#include "../common/i2c_mux.h"
 
 #include "../common/qixis.h"
 #include "../common/vsc3316_3308.h"
@@ -75,31 +77,6 @@ int checkboard(void)
 	       freq[(sw >> 4) & 0x3]);
 	printf("SD2_CLK1=%s, SD2_CLK2=%s\n", freq[(sw & 0xf) >> 2],
 	       freq[sw & 0x3]);
-
-	return 0;
-}
-
-int select_i2c_ch_pca9547(u8 ch, int bus_num)
-{
-	int ret;
-
-#if CONFIG_IS_ENABLED(DM_I2C)
-	struct udevice *dev;
-
-	ret = i2c_get_chip_for_busnum(bus_num, I2C_MUX_PCA_ADDR_PRI, 1, &dev);
-	if (ret) {
-		printf("%s: Cannot find udev for a bus %d\n", __func__,
-		       bus_num);
-		return ret;
-	}
-	ret = dm_i2c_write(dev, 0, &ch, 1);
-#else
-	ret = i2c_write(I2C_MUX_PCA_ADDR_PRI, 0, 1, &ch, 1);
-#endif
-	if (ret) {
-		puts("PCA: failed to select proper channel\n");
-		return ret;
-	}
 
 	return 0;
 }
@@ -160,14 +137,14 @@ int brd_mux_lane_to_slot(void)
 		break;
 	case 0x66:
 	case 0x67:
-		/* SD1(A:D) => XFI cage
+		/* SD1(A:D) => 10GBase-R cage
 		 * SD1(E:H) => SLOT1 PCIe4
 		 */
 		QIXIS_WRITE(brdcfg[12], 0xfe);
 		break;
 	case 0x6a:
 	case 0x6b:
-		/* SD1(A:D) => XFI cage
+		/* SD1(A:D) => 10GBase-R cage
 		 * SD1(E)   => SLOT1 PCIe4
 		 * SD1(F:H) => SLOT2 SGMII
 		 */
@@ -175,14 +152,14 @@ int brd_mux_lane_to_slot(void)
 		break;
 	case 0x6c:
 	case 0x6d:
-		/* SD1(A:B) => XFI cage
+		/* SD1(A:B) => 10GBase-R cage
 		 * SD1(C:D) => SLOT3 SGMII
 		 * SD1(E:H) => SLOT1 PCIe4
 		 */
 		QIXIS_WRITE(brdcfg[12], 0xda);
 		break;
 	case 0x6e:
-		/* SD1(A:B) => SFP Module, XFI
+		/* SD1(A:B) => SFP Module, 10GBase-R
 		 * SD1(C:D) => SLOT3 SGMII
 		 * SD1(E:F) => SLOT1 PCIe4 x2
 		 * SD1(G:H) => SLOT2 SGMII

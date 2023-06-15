@@ -4,17 +4,20 @@
 
 / {
 	aliases {
-		mmc0 = &esdhc1;
-		mmc1 = &esdhc0;
 		i2c0 = &i2c0;
 		i2c1 = &i2c3;
 		i2c2 = &i2c4;
-		rtc0 = &rtc;
-		ethernet2 = &enetc2;
-		ethernet3 = &enetc6;
+		ethernet2 = &enetc_port2;
+		ethernet3 = &enetc_port3;
 	};
 
 	binman: binman {
+		multiple-images;
+	};
+};
+
+&binman {
+	u_boot_rom: u-boot-rom {
 		filename = "u-boot.rom";
 		pad-byte = <0xff>;
 
@@ -24,6 +27,7 @@
 		fit {
 			offset = <CONFIG_SPL_PAD_TO>;
 			description = "FIT image with multiple configurations";
+			fit,fdt-list = "of-list";
 
 			images {
 				uboot {
@@ -38,95 +42,45 @@
 					};
 				};
 
-				fdt-1 {
-					description = "fsl-ls1028a-kontron-sl28";
+				@fdt-SEQ {
+					description = "NAME";
 					type = "flat_dt";
-					arch = "arm";
 					compression = "none";
-
-					blob {
-						filename = "arch/arm/dts/fsl-ls1028a-kontron-sl28.dtb";
-					};
-				};
-
-				fdt-2 {
-					description = "fsl-ls1028a-kontron-sl28-var1";
-					type = "flat_dt";
-					arch = "arm";
-					compression = "none";
-
-					blob {
-						filename = "arch/arm/dts/fsl-ls1028a-kontron-sl28-var1.dtb";
-					};
-				};
-
-				fdt-3 {
-					description = "fsl-ls1028a-kontron-sl28-var2";
-					type = "flat_dt";
-					arch = "arm";
-					compression = "none";
-
-					blob {
-						filename = "arch/arm/dts/fsl-ls1028a-kontron-sl28-var2.dtb";
-					};
-				};
-
-				fdt-4 {
-					description = "fsl-ls1028a-kontron-sl28-var3";
-					type = "flat_dt";
-					arch = "arm";
-					compression = "none";
-
-					blob {
-						filename = "arch/arm/dts/fsl-ls1028a-kontron-sl28-var3.dtb";
-					};
-				};
-
-				fdt-5 {
-					description = "fsl-ls1028a-kontron-sl28-var4";
-					type = "flat_dt";
-					arch = "arm";
-					compression = "none";
-
-					blob {
-						filename = "arch/arm/dts/fsl-ls1028a-kontron-sl28-var4.dtb";
-					};
 				};
 			};
 
 			configurations {
-				default = "conf-1";
+				default = "@config-DEFAULT-SEQ";
 
-				conf-1 {
-					description = "fsl-ls1028a-kontron-sl28";
+				@config-SEQ {
+					description = "NAME";
 					firmware = "uboot";
-					fdt = "fdt-1";
+					fdt = "fdt-SEQ";
 				};
+			};
+		};
+	};
+};
 
-				conf-2 {
-					description = "fsl-ls1028a-kontron-sl28-var1";
-					firmware = "uboot";
-					fdt = "fdt-2";
-				};
+&binman {
+	u-boot-update {
+		filename = "u-boot.update";
 
-				conf-3 {
-					description = "fsl-ls1028a-kontron-sl28-var2";
-					firmware = "uboot";
-					fdt = "fdt-3";
-				};
+		fit {
+			description = "FIT update image";
 
-				conf-4 {
-					description = "fsl-ls1028a-kontron-sl28-var3";
-					firmware = "uboot";
-					loadables = "uboot";
-					fdt = "fdt-4";
-				};
+			images {
+				u-boot-bin {
+					description = "U-Boot";
+					type = "firmware";
+					os = "u-boot";
+					arch = "arm";
+					compression = "none";
+					load = <0>; /* unused */
 
-				conf-5 {
-					description = "fsl-ls1028a-kontron-sl28-var4";
-					firmware = "uboot";
-					loadables = "uboot";
-					fdt = "fdt-5";
+					blob {
+						filename = "u-boot.rom";
+					};
 				};
 			};
 		};
@@ -142,7 +96,7 @@
 #endif
 
 #ifdef CONFIG_SL28_SPL_LOADS_ATF_BL31
-&binman {
+&u_boot_rom {
 	fit {
 		images {
 			bl31 {
@@ -161,27 +115,7 @@
 		};
 
 		configurations {
-			conf-1 {
-				firmware = "bl31";
-				loadables = "uboot";
-			};
-
-			conf-2 {
-				firmware = "bl31";
-				loadables = "uboot";
-			};
-
-			conf-3 {
-				firmware = "bl31";
-				loadables = "uboot";
-			};
-
-			conf-4 {
-				firmware = "bl31";
-				loadables = "uboot";
-			};
-
-			conf-5 {
+			@config-SEQ {
 				firmware = "bl31";
 				loadables = "uboot";
 			};
@@ -191,7 +125,7 @@
 #endif
 
 #ifdef CONFIG_SL28_SPL_LOADS_OPTEE_BL32
-&binman {
+&u_boot_rom {
 	fit {
 		images {
 			bl32 {
@@ -210,34 +144,13 @@
 		};
 
 		configurations {
-			conf-1 {
-				loadables = "uboot", "bl32";
-			};
-
-			conf-2 {
-				loadables = "uboot", "bl32";
-			};
-
-			conf-3 {
-				loadables = "uboot", "bl32";
-			};
-
-			conf-4 {
-				loadables = "uboot", "bl32";
-			};
-
-			conf-5 {
+			@config-SEQ {
 				loadables = "uboot", "bl32";
 			};
 		};
 	};
 };
 #endif
-
-&i2c0 {
-	rtc: rtc@32 {
-	};
-};
 
 &fspi {
 	u-boot,dm-pre-reloc;
@@ -250,7 +163,7 @@
 	u-boot,dm-pre-reloc;
 };
 
-&esdhc0 {
+&esdhc {
 	u-boot,dm-pre-reloc;
 };
 
@@ -262,7 +175,28 @@
 	u-boot,dm-pre-reloc;
 };
 
-&serial0 {
+&duart0 {
+	u-boot,dm-pre-reloc;
+};
+
+/*
+ * u-boot will enable the device in the linux device tree in place. Because
+ * we are using the linux device tree, we have to enable the PCI controller
+ * ourselves.
+ */
+&pcie1 {
+	status = "okay";
+};
+
+&pcie2 {
+	status = "okay";
+};
+
+&sata {
+	status = "okay";
+};
+
+&soc {
 	u-boot,dm-pre-reloc;
 };
 

@@ -704,18 +704,6 @@ void do_close(int fd)
 
 		ASSERT(gfd > STDERR); /* Abnormal situation if we attempt to remove the std* file descriptors */
 
-		/* For /dev entries, we attach the default callback operations of the regular filesystem */
-		if (open_fds[gfd]->filename && !strncmp(DEV_PREFIX, open_fds[gfd]->filename, DEV_PREFIX_LEN)) {
-
-			/* First, check if the driver has a customized close() and execute if any. */
-			if (open_fds[gfd]->fops->close)
-				open_fds[gfd]->fops->close(gfd);
-
-			/* Anyway, we need to close from VFS point of view. */
-			open_fds[gfd]->fops = registered_fs_ops[0];
-
-		}
-
 		/* The close() callback operation in the sub-layers must NOT suspend. */
 		if (open_fds[gfd]->fops->close)
 			open_fds[gfd]->fops->close(gfd);

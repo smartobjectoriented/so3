@@ -10,15 +10,15 @@ config KERNEL_VADDR
 choice
   prompt "Target"
 	
-	config VEXPRESS
-    		bool "Vexpress"
+	config VIRT32
+    		bool "QEMU virt 32-bit machine"
 	
 	config RPI4    	
     		bool "Raspberry Pi 4 Model B support"
  		
 endchoice
 
-source "arch/arm32/vexpress/Kconfig"
+source "arch/arm32/virt32/Kconfig"
 source "arch/arm32/rpi4/Kconfig"
 
 endmenu

@@ -44,15 +44,6 @@
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_SDRAM_BASE + 0xffff0)
 
 /** Heap size for U-Boot */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 64 * 1024 * 1024)
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_SYS_SDRAM_BASE
-
-/* Allow environment variable to be overwritten */
-#define CONFIG_ENV_OVERWRITE
-
-/** Reduce hashes printed out */
-#define CONFIG_TFTP_TSIZE
 
 /* Autoboot options */
 #define CONFIG_RESET_TO_RETRY
@@ -70,17 +61,6 @@
 # define CONFIG_SYS_64BIT_LBA
 #endif
 
-/***** SPI Defines *********/
-#ifdef CONFIG_DM_SPI_FLASH
-# define CONFIG_SF_DEFAULT_BUS	0
-# define CONFIG_SF_DEFAULT_CS	0
-#endif
-
-/** Environment defines */
-#if defined(CONFIG_ENV_IS_IN_MMC)
-#define CONFIG_SYS_MMC_ENV_DEV		0
-#endif
-
 /* Monitor Command Prompt */
 #define CONFIG_SYS_CBSIZE		1024	/** Console I/O Buffer Size */
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
@@ -89,19 +69,11 @@
 
 #define CONFIG_SYS_MMC_MAX_BLK_COUNT	8192
 
-#undef CONFIG_SYS_PROMPT
-#define CONFIG_SYS_PROMPT		env_get("prompt")
-
 /** EMMC specific defines */
-#if defined(CONFIG_MMC_OCTEONTX)
-#define CONFIG_SUPPORT_EMMC_BOOT
-#define CONFIG_SUPPORT_EMMC_RPMB
-#endif
 
 #if defined(CONFIG_NAND_OCTEONTX)
 /*#define CONFIG_MTD_CONCAT */
 #define CONFIG_SYS_MAX_NAND_DEVICE 8
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 #endif
 
 #endif /* __OCTEONTX_COMMON_H__ */

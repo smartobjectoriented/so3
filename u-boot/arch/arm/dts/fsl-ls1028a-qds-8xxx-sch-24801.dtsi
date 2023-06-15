@@ -2,7 +2,7 @@
 /*
  * NXP LS1028A-QDS device tree fragment for RCW 8xxx
  *
- * Copyright 2019-2021 NXP Semiconductors
+ * Copyright 2019-2021 NXP
  */
 
 /*
@@ -12,8 +12,9 @@
 	#include "fsl-sch-24801.dtsi"
 };
 
-&enetc0 {
+&enetc_port0 {
 	status = "okay";
+	managed = "in-band-status";
 	phy-mode = "sgmii";
-	phy-handle = <&{/i2c@2000000/fpga@66/mux-mdio@54/mdio@40/phy@1c}>;
+	phy-handle = <&{/soc/i2c@2000000/fpga@66/mux-mdio@54/mdio@40/phy@1c}>;
 };

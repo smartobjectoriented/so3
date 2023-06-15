@@ -6,6 +6,7 @@
 #
 
 from binman.entry import Entry
+from binman import state
 from dtoc import fdt_util
 from patman import tools
 from patman import tout
@@ -36,10 +37,11 @@ class Entry_blob(Entry):
 
     def ObtainContents(self):
         self._filename = self.GetDefaultFilename()
-        self._pathname = tools.GetInputFilename(self._filename,
+        self._pathname = tools.get_input_filename(self._filename,
             self.external and self.section.GetAllowMissing())
         # Allow the file to be missing
         if not self._pathname:
+            self._pathname = self.check_fake_fname(self._filename)
             self.SetContents(b'')
             self.missing = True
             return True
@@ -47,10 +49,10 @@ class Entry_blob(Entry):
         self.ReadBlobContents()
         return True
 
-    def ReadBlobContents(self):
+    def ReadFileContents(self, pathname):
         """Read blob contents into memory
 
-        This function compresses the data before storing if needed.
+        This function compresses the data before returning if needed.
 
         We assume the data is small enough to fit into memory. If this
         is used for large filesystem image that might not be true.
@@ -58,9 +60,23 @@ class Entry_blob(Entry):
         new Entry method which can read in chunks. Then we could copy
         the data in chunks and avoid reading it all at once. For now
         this seems like an unnecessary complication.
+
+        Args:
+            pathname (str): Pathname to read from
+
+        Returns:
+            bytes: Data read
         """
-        indata = tools.ReadFile(self._pathname)
+        state.TimingStart('read')
+        indata = tools.read_file(pathname)
+        state.TimingAccum('read')
+        state.TimingStart('compress')
         data = self.CompressData(indata)
+        state.TimingAccum('compress')
+        return data
+
+    def ReadBlobContents(self):
+        data = self.ReadFileContents(self._pathname)
         self.SetContents(data)
         return True
 
@@ -70,3 +86,14 @@ class Entry_blob(Entry):
     def ProcessContents(self):
         # The blob may have changed due to WriteSymbols()
         return self.ProcessContentsUpdate(self.data)
+
+    def CheckFakedBlobs(self, faked_blobs_list):
+        """Check if any entries in this section have faked external blobs
+
+        If there are faked blobs, the entries are added to the list
+
+        Args:
+            fake_blobs_list: List of Entry objects to be added to
+        """
+        if self.faked:
+            faked_blobs_list.append(self)

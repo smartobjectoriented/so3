@@ -43,11 +43,7 @@ Note that standalone/API support is not available at present.
 Prerequisites
 -------------
 
-Here are some packages that are worth installing if you are doing sandbox or
-tools development in U-Boot:
-
-   python3-pytest lzma lzma-alone lz4 python3 python3-virtualenv
-   libssl1.0-dev
+Install the dependencies noted in :doc:`../build/gcc`.
 
 
 Basic Operation
@@ -510,7 +506,7 @@ that are mapped into that memory:
 Addr      Config                     Usage
 =======   ========================   ===============================
       0   CONFIG_SYS_FDT_LOAD_ADDR   Device tree
-   e000   CONFIG_BLOBLIST_ADDR       Blob list
+   c000   CONFIG_BLOBLIST_ADDR       Blob list
   10000   CONFIG_MALLOC_F_ADDR       Early memory allocation
   f0000   CONFIG_PRE_CON_BUF_ADDR    Pre-console buffer
  100000   CONFIG_TRACE_EARLY_ADDR    Early trace buffer (if enabled). Also used

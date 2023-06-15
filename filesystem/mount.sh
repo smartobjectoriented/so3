@@ -2,7 +2,7 @@
 
 if [ "$PLATFORM" == "" ]; then
     if [ "$2" == "" ]; then
-        echo "PLATFORM must be defined (vexpress, virt64, rpi4, rpi4_64)"
+        echo "PLATFORM must be defined (virt32, virt64, rpi4, rpi4_64)"
         echo "You can invoke mount.sh <partition_nr> <platform>"
         exit 0
     fi
@@ -13,7 +13,7 @@ fi
 sudo rm -rf fs/*
 mkdir -p fs
  
-if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
     devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
     FS_IMG=sdcard.img.${PLATFORM}
 

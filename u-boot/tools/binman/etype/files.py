@@ -34,6 +34,9 @@ class Entry_files(Entry_section):
         from binman import state
 
         super().__init__(section, etype, node)
+
+    def ReadNode(self):
+        super().ReadNode()
         self._pattern = fdt_util.GetString(self._node, 'pattern')
         if not self._pattern:
             self.Raise("Missing 'pattern' property")
@@ -44,7 +47,7 @@ class Entry_files(Entry_section):
                                                 'require-matches')
 
     def ExpandEntries(self):
-        files = tools.GetInputFilenameGlob(self._pattern)
+        files = tools.get_input_filename_glob(self._pattern)
         if self._require_matches and not files:
             self.Raise("Pattern '%s' matched no files" % self._pattern)
         for fname in files:
@@ -61,4 +64,4 @@ class Entry_files(Entry_section):
                 state.AddInt(subnode, 'align', self._files_align)
 
         # Read entries again, now that we have some
-        self._ReadEntries()
+        self.ReadEntries()

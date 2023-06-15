@@ -31,6 +31,8 @@ int ofnode_read_fmap_entry(ofnode node, struct fmap_entry *entry)
 	if (prop) {
 		if (!strcmp(prop, "lz4"))
 			entry->compress_algo = FMAP_COMPRESS_LZ4;
+		else if (!strcmp(prop, "lzma"))
+			entry->compress_algo = FMAP_COMPRESS_LZMA;
 		else
 			return log_msg_ret("compression algo", -EINVAL);
 	} else {
@@ -152,4 +154,16 @@ bool ofnode_phy_is_fixed_link(ofnode eth_node, ofnode *phy_node)
 		*phy_node = node;
 
 	return true;
+}
+
+bool ofnode_eth_uses_inband_aneg(ofnode eth_node)
+{
+	bool inband_aneg = false;
+	const char *managed;
+
+	managed = ofnode_read_string(eth_node, "managed");
+	if (managed && !strcmp(managed, "in-band-status"))
+		inband_aneg = true;
+
+	return inband_aneg;
 }

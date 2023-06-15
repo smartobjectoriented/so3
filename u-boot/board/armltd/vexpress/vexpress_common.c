@@ -21,35 +21,14 @@
 #include <init.h>
 #include <malloc.h>
 #include <errno.h>
+#include <net.h>
+#include <netdev.h>
 #include <asm/global_data.h>
 #include <asm/io.h>
 #include <asm/mach-types.h>
 #include <asm/arch/systimer.h>
 #include <asm/arch/sysctrl.h>
 #include <asm/arch/wdt.h>
-#ifdef CONFIG_ARM_PL180_MMCI
-#include "../drivers/mmc/arm_pl180_mmci.h"
-#endif
-
-#define SYS_CFG_START           (1 << 31)
-#define SYS_CFG_WRITE           (1 << 30)
-#define SYS_CFG_OSC             (1 << 20)
-#define SYS_CFG_VOLT            (2 << 20)
-#define SYS_CFG_AMP             (3 << 20)
-#define SYS_CFG_TEMP            (4 << 20)
-#define SYS_CFG_RESET           (5 << 20)
-#define SYS_CFG_SCC             (6 << 20)
-#define SYS_CFG_MUXFPGA         (7 << 20)
-#define SYS_CFG_SHUTDOWN        (8 << 20)
-#define SYS_CFG_REBOOT          (9 << 20)
-#define SYS_CFG_DVIMODE         (11 << 20)
-#define SYS_CFG_POWER           (12 << 20)
-#define SYS_CFG_SITE_MB         (0 << 16)
-#define SYS_CFG_SITE_DB1        (1 << 16)
-#define SYS_CFG_SITE_DB2        (2 << 16)
-#define SYS_CFG_STACK(n)        ((n) << 12)
-#define SYS_CFG_ERR             (1 << 1)
-#define SYS_CFG_COMPLETE        (1 << 0)
 
 static struct systimer *systimer_base = (struct systimer *)V2M_TIMER01;
 static struct sysctrl *sysctrl_base = (struct sysctrl *)SCTL_BASE;
@@ -65,40 +44,23 @@ void show_boot_progress(int progress)
 }
 #endif
 
+static inline void delay(ulong loops)
+{
+	__asm__ volatile ("1:\n"
+		"subs %0, %1, #1\n"
+		"bne 1b" : "=r" (loops) : "0" (loops));
+}
+
 int board_init(void)
 {
+	gd->bd->bi_boot_params = LINUX_BOOT_PARAM_ADDR;
+	gd->bd->bi_arch_number = MACH_TYPE_VEXPRESS;
+
 	icache_enable();
 	flash__init();
 	vexpress_timer_init();
 
 	return 0;
-}
-
-int cpu_mmc_init(struct bd_info *bis)
-{
-	int rc = 0;
-	(void) bis;
-#ifdef CONFIG_ARM_PL180_MMCI
-	struct pl180_mmc_host *host;
-	struct mmc *mmc;
-
-	host = malloc(sizeof(struct pl180_mmc_host));
-	if (!host)
-		return -ENOMEM;
-	memset(host, 0, sizeof(*host));
-
-	strcpy(host->name, "MMC");
-	host->base = (struct sdi_registers *)CONFIG_ARM_PL180_MMCI_BASE;
-	host->pwr_init = INIT_PWR;
-	host->clkdiv_init = SDI_CLKCR_CLKDIV_INIT_V1 | SDI_CLKCR_CLKEN;
-	host->voltages = VOLTAGE_WINDOW_MMC;
-	host->caps = 0;
-	host->clock_in = ARM_MCLK;
-	host->clock_min = ARM_MCLK / (2 * (SDI_CLKCR_CLKDIV_INIT_V1 + 1));
-	host->clock_max = CONFIG_ARM_PL180_MMCI_CLOCK_FREQ;
-	rc = arm_pl180_mmci_init(host, &mmc);
-#endif
-	return rc;
 }
 
 static void flash__init(void)
@@ -110,20 +72,14 @@ static void flash__init(void)
 
 int dram_init(void)
 {
-/* SOO.tech */
-/* We still avoid using DM for vExpress */
 	gd->ram_size =
 		get_ram_size((long *)CONFIG_SYS_SDRAM_BASE, PHYS_SDRAM_1_SIZE);
 	return 0;
-#if 0 /* SOO.tech */
- 	return fdtdec_setup_mem_size_base();
-#endif /* SOO.tech */
 }
 
 int dram_init_banksize(void)
 {
-/* SOO.tech */
-        gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
+	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
 	gd->bd->bi_dram[0].size =
 			get_ram_size((long *)PHYS_SDRAM_1, PHYS_SDRAM_1_SIZE);
 	gd->bd->bi_dram[1].start = PHYS_SDRAM_2;
@@ -131,9 +87,6 @@ int dram_init_banksize(void)
 			get_ram_size((long *)PHYS_SDRAM_2, PHYS_SDRAM_2_SIZE);
 
 	return 0;
-#if 0 /* SOO.tech */
-	return fdtdec_setup_memory_banksize();
-#endif /* SOO.tech */
 }
 
 /*
@@ -163,7 +116,7 @@ static void vexpress_timer_init(void)
 	       &systimer_base->timer0control);
 }
 
-static int v2m_cfg_write(u32 devfn, u32 data)
+int v2m_cfg_write(u32 devfn, u32 data)
 {
 	/* Configuration interface broken? */
 	u32 val;
@@ -208,7 +161,7 @@ void smp_set_core_boot_addr(unsigned long addr, int corenr)
 	 * by writing to the next address, since any writes to the address
 	 * at offset 0 will only be ORed in
 	 */
-	writel(~0, VEXPRESS_SYSFLAGS_ADDR + 4);
-	writel(addr, VEXPRESS_SYSFLAGS_ADDR);
+	writel(~0, CONFIG_SYSFLAGS_ADDR + 4);
+	writel(addr, CONFIG_SYSFLAGS_ADDR);
 }
 #endif

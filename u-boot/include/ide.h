@@ -41,13 +41,6 @@ int ide_preinit(void);
 int ide_device_present(int dev);
 #endif
 
-#if defined(CONFIG_IDE_AHB)
-unsigned char ide_read_register(int dev, unsigned int port);
-void ide_write_register(int dev, unsigned int port, unsigned char val);
-void ide_read_data(int dev, ulong *sect_buf, int words);
-void ide_write_data(int dev, const ulong *sect_buf, int words);
-#endif
-
 /*
  * I/O function overrides
  */
@@ -64,7 +57,7 @@ void ide_led(uchar led, uchar status);
 /**
  * board_start_ide() - Start up the board IDE interfac
  *
- * @return 0 if ok
+ * Return: 0 if ok
  */
 int board_start_ide(void);
 

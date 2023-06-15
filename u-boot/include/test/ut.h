@@ -52,7 +52,7 @@ void ut_failf(struct unit_test_state *uts, const char *fname, int line,
  *
  * @uts: Test state
  * @fmt: printf() format string for the error, followed by args
- * @return 0 if OK, other value on error
+ * Return: 0 if OK, other value on error
  */
 int ut_check_console_line(struct unit_test_state *uts, const char *fmt, ...)
 			__attribute__ ((format (__printf__, 2, 3)));
@@ -69,7 +69,7 @@ int ut_check_console_line(struct unit_test_state *uts, const char *fmt, ...)
  *
  * @uts: Test state
  * @fmt: printf() format string for the error, followed by args
- * @return 0 if OK, other value on error
+ * Return: 0 if OK, other value on error
  */
 int ut_check_console_linen(struct unit_test_state *uts, const char *fmt, ...)
 			__attribute__ ((format (__printf__, 2, 3)));
@@ -78,9 +78,24 @@ int ut_check_console_linen(struct unit_test_state *uts, const char *fmt, ...)
  * ut_check_skipline() - Check that the next console line exists and skip it
  *
  * @uts: Test state
- * @return 0 if OK, other value on error
+ * Return: 0 if OK, other value on error
  */
 int ut_check_skipline(struct unit_test_state *uts);
+
+/**
+ * ut_check_skip_to_line() - skip output until a line is found
+ *
+ * This creates a string and then checks it against the following lines of
+ * console output obtained with console_record_readline() until it is found.
+ *
+ * After the function returns, uts->expect_str holds the expected string and
+ * uts->actual_str holds the actual string read from the console.
+ *
+ * @uts: Test state
+ * @fmt: printf() format string to look for, followed by args
+ * Return: 0 if OK, -ENOENT if not found, other value on error
+ */
+int ut_check_skip_to_line(struct unit_test_state *uts, const char *fmt, ...);
 
 /**
  * ut_check_console_end() - Check there is no more console output
@@ -89,7 +104,7 @@ int ut_check_skipline(struct unit_test_state *uts);
  * from the console
  *
  * @uts: Test state
- * @return 0 if OK (console has no output), other value on error
+ * Return: 0 if OK (console has no output), other value on error
  */
 int ut_check_console_end(struct unit_test_state *uts);
 
@@ -99,7 +114,7 @@ int ut_check_console_end(struct unit_test_state *uts);
  * This only supports a byte dump.
  *
  * @total_bytes: Size of the expected dump in bytes`
- * @return 0 if OK (looks like a dump and the length matches), other value on
+ * Return: 0 if OK (looks like a dump and the length matches), other value on
  *	error
  */
 int ut_check_console_dump(struct unit_test_state *uts, int total_bytes);
@@ -286,6 +301,15 @@ int ut_check_console_dump(struct unit_test_state *uts, int total_bytes);
 		return CMD_RET_FAILURE;					\
 	}								\
 
+/* Assert that a following console output line matches */
+#define ut_assert_skip_to_line(fmt, args...)				\
+	if (ut_check_skip_to_line(uts, fmt, ##args)) {			\
+		ut_failf(uts, __FILE__, __LINE__, __func__,		\
+			 "console", "\nExpected '%s',\n     got to '%s'", \
+			 uts->expect_str, uts->actual_str);		\
+		return CMD_RET_FAILURE;					\
+	}								\
+
 /* Assert that there is no more console output */
 #define ut_assert_console_end()						\
 	if (ut_check_console_end(uts)) {				\
@@ -308,7 +332,7 @@ int ut_check_console_dump(struct unit_test_state *uts, int total_bytes);
 /**
  * ut_check_free() - Return the number of bytes free in the malloc() pool
  *
- * @return bytes free
+ * Return: bytes free
  */
 ulong ut_check_free(void);
 
@@ -316,7 +340,7 @@ ulong ut_check_free(void);
  * ut_check_delta() - Return the number of bytes allocated/freed
  *
  * @last: Last value from ut_check_free
- * @return free memory delta from @last; positive means more memory has been
+ * Return: free memory delta from @last; positive means more memory has been
  *	allocated, negative means less has been allocated (i.e. some is freed)
  */
 long ut_check_delta(ulong last);
@@ -353,7 +377,7 @@ void ut_set_skip_delays(struct unit_test_state *uts, bool skip_delays);
 /**
  * test_get_state() - Get the active test state
  *
- * @return the currently active test state, or NULL if none
+ * Return: the currently active test state, or NULL if none
  */
 struct unit_test_state *test_get_state(void);
 
@@ -379,7 +403,7 @@ void test_set_state(struct unit_test_state *uts);
  * @count: Number of tests to run
  * @select_name: Name of a single test to run (from the list provided). If NULL
  *	then all tests are run
- * @return 0 if all tests passed, -1 if any failed
+ * Return: 0 if all tests passed, -1 if any failed
  */
 int ut_run_list(const char *name, const char *prefix, struct unit_test *tests,
 		int count, const char *select_name);

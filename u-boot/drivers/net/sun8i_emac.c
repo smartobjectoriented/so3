@@ -14,9 +14,9 @@
 #include <log.h>
 #include <asm/cache.h>
 #include <asm/global_data.h>
+#include <asm/gpio.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
-#include <asm/arch/gpio.h>
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
@@ -31,9 +31,6 @@
 #include <reset.h>
 #include <dt-bindings/pinctrl/sun4i-a10.h>
 #include <wait_bit.h>
-#if CONFIG_IS_ENABLED(DM_GPIO)
-#include <asm-generic/gpio.h>
-#endif
 
 #define MDIO_CMD_MII_BUSY		BIT(0)
 #define MDIO_CMD_MII_WRITE		BIT(1)
@@ -403,7 +400,7 @@ static int sun8i_phy_init(struct emac_eth_dev *priv, void *dev)
 }
 
 #define cache_clean_descriptor(desc)					\
-	flush_dcache_range((uintptr_t)(desc), 				\
+	flush_dcache_range((uintptr_t)(desc),				\
 			   (uintptr_t)(desc) + sizeof(struct emac_dma_desc))
 
 #define cache_inv_descriptor(desc)					\

@@ -1,0 +1,106 @@
+/*
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+ 
+/ {
+	model = "SO3 Virt32";
+	compatible = "arm,virt32";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,virt23";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x40000000 0xc00000>; /* 12 MB */
+	};
+	
+	fw-cfg@9020000 {
+		reg = <0x9020000 0x18>;
+		compatible = "qemu,fw-cfg-mmio";
+		status = "ok";
+	};
+	
+	/* GIC interrupt controller */
+	gic:interrupt-controller@0x08000000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		
+		reg = <0x08000000 0x1000 0x08010000 0x1000>;
+		status = "ok";
+	};
+	
+	/*Vexpress console UART */
+	serial@09000000 {
+		compatible = "serial,pl011";
+		reg = <0x09000000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 1 4>;
+		status = "ok";
+	};
+
+#if 1 /* If we want to use ARM CP15 timer */
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 11 4>;
+		status = "ok";
+	};
+	
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+#endif
+
+#if 0 /* Basic SP804 on-board timer */
+	/* Periodic timer (Dual-timer 01) */
+	periodic-timer@1c110000 {
+		compatible = "sp804,periodic-timer";
+		reg = <0x1c110000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 2 4>;
+		status = "ok";
+	};
+
+	/* Oneshot timer (Dual-timer 23) */
+	oneshot-timer@1c120000 {
+		compatible = "sp804,oneshot-timer";
+		reg = <0x1c120000 0x1000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 3 4>;
+		status = "ok";
+	};
+
+	/* Free-running clocksource */
+	clocksource-timer@1c110020 {
+		compatible = "sp804,clocksource-timer";
+		reg = <0x1c110020 0x1000>;
+		status = "ok";
+	};
+#endif
+    	
+};

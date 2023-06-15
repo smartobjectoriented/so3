@@ -91,6 +91,10 @@ ENTRY(_main)
 	mov	x18, x0
 	bl	board_init_f_init_reserve
 
+#if defined(CONFIG_DEBUG_UART) && CONFIG_IS_ENABLED(SERIAL)
+	bl	debug_uart_init
+#endif
+
 	mov	x0, #0
 	bl	board_init_f
 
@@ -103,6 +107,10 @@ ENTRY(_main)
 	ldr	x0, [x18, #GD_START_ADDR_SP]	/* x0 <- gd->start_addr_sp */
 	bic	sp, x0, #0xf	/* 16-byte alignment for ABI compliance */
 	ldr	x18, [x18, #GD_NEW_GD]		/* x18 <- gd->new_gd */
+
+	/* Skip relocation in case gd->gd_flags & GD_FLG_SKIP_RELOC */
+	ldr	x0, [x18, #GD_FLAGS]		/* x0 <- gd->flags */
+	tbnz	x0, 11, relocation_return	/* GD_FLG_SKIP_RELOC is bit 11 */
 
 	adr	lr, relocation_return
 #if CONFIG_POSITION_INDEPENDENT

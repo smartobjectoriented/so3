@@ -78,7 +78,8 @@
 #define LED (0 <<  0)
 
 /* Framebuffer base addresses (first 2 bits must be 0) */
-#define LCDUPBASE 0x18000000 /* upper panel, corresponds to VRAM */
+#define LCDUPBASE 0x30000000 /* upper panel, corresponds to VRAM */
+//#define LCDUPBASE 0x08900000
 #define LCDLPBASE        0x0 /* lower panel */
 
 /* Control register values */
@@ -94,7 +95,6 @@
 #define LCDBW     (0 <<  4) /* unused for TFT */
 #define LCDBPP    (5 <<  1) /* 5: 24bpp, 6: 16bpp565 */
 #define LCDEN     (1 <<  0) /* enable display */
-
 
 void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
@@ -161,10 +161,12 @@ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
 {
 	uint32_t i, page;
 	pcb_t *pcb = current()->pcb;
-
+#if 0
 	virt_addr = malloc(page_count*PAGE_SIZE);
 	BUG_ON(!virt_addr);
-#if 0
+#endif
+
+#if 1
 	for (i = 0; i < page_count; i++) {
 		/* Map a process' virtual page to the physical one (here the VRAM). */
 		page = LCDUPBASE + i * PAGE_SIZE;
@@ -188,7 +190,7 @@ int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return 0;
 
 	case IOCTL_SIZE:
-		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
+		*((uint32_t *) args) = HRES * VRES * 4; /* 32 bpp */
 		return 0;
 
 	default:

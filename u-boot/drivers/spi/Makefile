@@ -11,12 +11,14 @@ obj-$(CONFIG_SANDBOX) += spi-emul-uclass.o
 obj-$(CONFIG_SOFT_SPI) += soft_spi.o
 obj-$(CONFIG_SPI_MEM) += spi-mem.o
 obj-$(CONFIG_TI_QSPI) += ti_qspi.o
+obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
 else
 obj-y += spi.o
 obj-$(CONFIG_SPI_MEM) += spi-mem-nodm.o
 endif
 
 obj-$(CONFIG_ALTERA_SPI) += altera_spi.o
+obj-$(CONFIG_APPLE_SPI) += apple_spi.o
 obj-$(CONFIG_ATH79_SPI) += ath79_spi.o
 obj-$(CONFIG_ATMEL_QSPI) += atmel-quadspi.o
 obj-$(CONFIG_ATMEL_SPI) += atmel_spi.o
@@ -30,8 +32,9 @@ obj-$(CONFIG_DESIGNWARE_SPI) += designware_spi.o
 obj-$(CONFIG_EXYNOS_SPI) += exynos_spi.o
 obj-$(CONFIG_FSL_DSPI) += fsl_dspi.o
 obj-$(CONFIG_FSL_ESPI) += fsl_espi.o
-obj-$(CONFIG_FSL_QSPI) += fsl_qspi.o
+obj-$(CONFIG_SYNQUACER_SPI) += spi-synquacer.o
 obj-$(CONFIG_ICH_SPI) +=  ich.o
+obj-$(CONFIG_IPROC_QSPI) += iproc_qspi.o
 obj-$(CONFIG_KIRKWOOD_SPI) += kirkwood_spi.o
 obj-$(CONFIG_MESON_SPIFC) += meson_spifc.o
 obj-$(CONFIG_MPC8XX_SPI) += mpc8xx_spi.o
@@ -51,7 +54,9 @@ obj-$(CONFIG_OMAP3_SPI) += omap3_spi.o
 obj-$(CONFIG_PIC32_SPI) += pic32_spi.o
 obj-$(CONFIG_PL022_SPI) += pl022_spi.o
 obj-$(CONFIG_SPI_QUP) += spi-qup.o
+obj-$(CONFIG_SPI_MXIC) += spi-mxic.o
 obj-$(CONFIG_RENESAS_RPC_SPI) += renesas_rpc_spi.o
+obj-$(CONFIG_ROCKCHIP_SFC) += rockchip_sfc.o
 obj-$(CONFIG_ROCKCHIP_SPI) += rk_spi.o
 obj-$(CONFIG_SANDBOX_SPI) += sandbox_spi.o
 obj-$(CONFIG_SPI_SIFIVE) += spi-sifive.o

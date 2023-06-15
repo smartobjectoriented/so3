@@ -1,10 +1,10 @@
-.TH MKIMAGE 1 "2010-05-16"
+.TH MKIMAGE 1 "2022-02-07"
 
 .SH NAME
 mkimage \- Generate image for U-Boot
 .SH SYNOPSIS
 .B mkimage
-.RB "\-l [" "uimage file name" "]"
+.RB [ \-T " \fItype\fP] " \-l " [\fIuimage file name\fP]"
 
 .B mkimage
 .RB [\fIoptions\fP] " \-f [" "image tree source file" "]" " [" "uimage file name" "]"
@@ -46,6 +46,12 @@ supports verified boot.
 .TP
 .BI "\-l [" "uimage file name" "]"
 mkimage lists the information contained in the header of an existing U-Boot image.
+
+.TP
+.BI "\-T [" "image type" "]"
+Parse image file as type.
+Pass \-h as the image to see the list of supported image type.
+Without this option image type is autodetected.
 
 .P
 .B Create old legacy image:
@@ -154,6 +160,11 @@ public key information into. When a private key is used to sign an image,
 the corresponding public key is written into this file for for run-time
 verification. Typically the file here is the device tree binary used by
 CONFIG_OF_CONTROL in U-Boot.
+
+.TP
+.BI "\-o [" "signing algorithm" "]"
+Specifies the algorithm to be used for signing a FIT image. The default is
+taken from the signature node's 'algo' property.
 
 .TP
 .BI "\-p [" "external position" "]"

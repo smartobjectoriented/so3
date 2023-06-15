@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Devicetree file for running sandbox tests
+ *
+ * This includes lots of extra devices used by various tests.
+ *
+ * Note that SPL use the main sandbox.dts file
+ */
+
 /dts-v1/;
 
 #include <dt-bindings/gpio/gpio.h>
@@ -53,10 +62,31 @@
 	};
 
 	config {
+		testing-bool;
+		testing-int = <123>;
+		testing-str = "testing";
 		environment {
 			from_fdt = "yes";
 			fdt_env_path = "";
 		};
+	};
+
+	reboot-mode0 {
+		compatible = "reboot-mode-gpio";
+		gpios = <&gpio_c 0 GPIO_ACTIVE_HIGH>, <&gpio_c 1 GPIO_ACTIVE_HIGH>;
+		u-boot,env-variable = "bootstatus";
+		mode-test = <0x01>;
+		mode-download = <0x03>;
+	};
+
+	reboot_mode1: reboot-mode@14 {
+		compatible = "reboot-mode-rtc";
+		rtc = <&rtc_0>;
+		reg = <0x30 4>;
+		u-boot,env-variable = "bootstatus";
+		big-endian;
+		mode-test = <0x21969147>;
+		mode-download = <0x51939147>;
 	};
 
 	audio: audio-codec {
@@ -139,6 +169,12 @@
 				size = <0x10000>;
 			};
 		};
+
+		cros_ec_pwm: cros-ec-pwm {
+			compatible = "google,cros-ec-pwm";
+			#pwm-cells = <1>;
+		};
+
 	};
 
 	dsi_host: dsi_host {
@@ -171,6 +207,7 @@
 		test4-gpios = <&gpio_a 14>, <&gpio_b 4 1 3 2 1>;
 		test5-gpios = <&gpio_a 19>;
 
+		bool-value;
 		int-value = <1234>;
 		uint-value = <(-1234)>;
 		int64-value = /bits/ 64 <0x1111222233334444>;
@@ -462,6 +499,10 @@
 		compatible = "sandbox,clk-ccf";
 	};
 
+	efi-media {
+		compatible = "sandbox,efi-media";
+	};
+
 	eth@10002000 {
 		compatible = "sandbox,eth";
 		reg = <0x10002000 0x1000>;
@@ -707,11 +748,30 @@
 		i2c-eeprom = <&bootcount_i2c>;
 	};
 
+	bootcount_4@0 {
+		compatible = "u-boot,bootcount-syscon";
+		syscon = <&syscon0>;
+		reg = <0x0 0x04>, <0x0 0x04>;
+		reg-names = "syscon_reg", "offset";
+	};
+
+	bootcount_2@0 {
+		compatible = "u-boot,bootcount-syscon";
+		syscon = <&syscon0>;
+		reg = <0x0 0x04>, <0x0 0x02> ;
+		reg-names = "syscon_reg", "offset";
+	};
+
 	adc: adc@0 {
 		compatible = "sandbox,adc";
 		#io-channel-cells = <1>;
 		vdd-supply = <&buck2>;
 		vss-microvolts = <0>;
+	};
+
+	iommu: iommu@0 {
+		compatible = "sandbox,iommu";
+		#iommu-cells = <0>;
 	};
 
 	irq: irq {
@@ -755,6 +815,13 @@
 		};
 	};
 
+	gpio-wdt {
+		gpios = <&gpio_a 7 0>;
+		compatible = "linux,wdt-gpio";
+		hw_margin_ms = <100>;
+		always-running;
+	};
+
 	mbox: mbox {
 		compatible = "sandbox,mbox";
 		#mbox-cells = <1>;
@@ -767,19 +834,27 @@
 	};
 
 	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
 		timebase-frequency = <2000000>;
-		cpu-test1 {
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			reg = <0x1>;
 			timebase-frequency = <3000000>;
 			compatible = "sandbox,cpu_sandbox";
 			u-boot,dm-pre-reloc;
 		};
 
-		cpu-test2 {
+		cpu2: cpu@2 {
+			device_type = "cpu";
+			reg = <0x2>;
 			compatible = "sandbox,cpu_sandbox";
 			u-boot,dm-pre-reloc;
 		};
 
-		cpu-test3 {
+		cpu3: cpu@3 {
+			device_type = "cpu";
+			reg = <0x3>;
 			compatible = "sandbox,cpu_sandbox";
 			u-boot,dm-pre-reloc;
 		};
@@ -813,6 +888,7 @@
 
 	mmc2 {
 		compatible = "sandbox,mmc";
+		non-removable;
 	};
 
 	mmc1 {
@@ -1160,6 +1236,7 @@
 
 	usb_1: usb@1 {
 		compatible = "sandbox,usb";
+		iommus = <&iommu>;
 		hub {
 			compatible = "usb-hub";
 			usb,device-class = <9>;
@@ -1233,6 +1310,7 @@
 
 	wdt0: wdt@0 {
 		compatible = "sandbox,wdt";
+		hw_margin_ms = <200>;
 	};
 
 	axi: axi@0 {

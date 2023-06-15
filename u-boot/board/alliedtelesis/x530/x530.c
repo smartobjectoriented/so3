@@ -73,6 +73,7 @@ static struct mv_ddr_topology_map board_topology_map = {
 	{0},				/* timing parameters */
 	{ {0} },			/* electrical configuration */
 	{0},				/* electrical parameters */
+	0,				/* ODT configuration */
 	0,				/* Clock enable mask */
 	160				/* Clock delay */
 };
@@ -121,9 +122,8 @@ int board_init(void)
 
 void arch_preboot_os(void)
 {
-#ifdef CONFIG_WATCHDOG
-	wdt_stop(gd->watchdog_dev);
-#endif
+	if (CONFIG_IS_ENABLED(WDT))
+		wdt_stop_all();
 }
 
 static int led_7seg_init(unsigned int segments)

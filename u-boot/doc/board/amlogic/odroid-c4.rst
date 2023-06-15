@@ -17,6 +17,9 @@ Co. Ltd with the following specifications:
  - UART serial
  - Infrared receiver
 
+The ODROID-HC4 is a variant with a PCIe-SATA controller, the same commands
+applies for HC4.
+
 Schematics are available on the manufacturer website.
 
 U-Boot compilation
@@ -30,6 +33,8 @@ U-Boot compilation
 
 Image creation
 --------------
+
+For simplified usage, pleaser refer to :doc:`pre-generated-fip` with codename `odroid-c4` or `odroid-hc4`
 
 Amlogic doesn't provide sources for the firmware and for tools needed
 to create the bootloader image, so it is necessary to obtain them from

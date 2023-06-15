@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <autoboot.h>
 #include <bloblist.h>
 #include <errno.h>
 #include <fdtdec.h>
@@ -78,6 +79,10 @@ static int state_read_file(struct sandbox_state *state, const char *fname)
 err_read:
 	os_close(fd);
 err_open:
+	/*
+	 * tainted scalar, since size is obtained from the file. But we can rely
+	 * on os_malloc() to handle invalid values.
+	 */
 	os_free(state->state_fdt);
 	state->state_fdt = NULL;
 
@@ -96,7 +101,7 @@ err_open:
  * @state: Sandbox state
  * @io: Method to use for reading state
  * @blob: FDT containing state
- * @return 0 if OK, -EINVAL if the read function returned failure
+ * Return: 0 if OK, -EINVAL if the read function returned failure
  */
 int sandbox_read_state_nodes(struct sandbox_state *state,
 			     struct sandbox_state_io *io, const void *blob)
@@ -185,7 +190,7 @@ int sandbox_read_state(struct sandbox_state *state, const char *fname)
  *
  * @state: Sandbox state
  * @io: Method to use for writing state
- * @return 0 if OK, -EIO if there is a fatal error (such as out of space
+ * Return: 0 if OK, -EIO if there is a fatal error (such as out of space
  * for adding the data), -EINVAL if the write function failed.
  */
 int sandbox_write_state_node(struct sandbox_state *state,
@@ -372,6 +377,23 @@ void state_reset_for_test(struct sandbox_state *state)
 	 */
 	INIT_LIST_HEAD(&state->mapmem_head);
 	state->next_tag = state->ram_size;
+}
+
+bool autoboot_keyed(void)
+{
+	struct sandbox_state *state = state_get_current();
+
+	return IS_ENABLED(CONFIG_AUTOBOOT_KEYED) && state->autoboot_keyed;
+}
+
+bool autoboot_set_keyed(bool autoboot_keyed)
+{
+	struct sandbox_state *state = state_get_current();
+	bool old_val = state->autoboot_keyed;
+
+	state->autoboot_keyed = autoboot_keyed;
+
+	return old_val;
 }
 
 int state_init(void)

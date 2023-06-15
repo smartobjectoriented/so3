@@ -48,10 +48,10 @@ for that board. It will be either 32-bit or 64-bit. Alternatively, you can
 opt for using QEMU [1] and the OVMF [2], as detailed below.
 
 To build U-Boot as an EFI application (32-bit EFI required), enable CONFIG_EFI
-and CONFIG_EFI_APP. The efi-x86_app config (efi-x86_app_defconfig) is set up
+and CONFIG_EFI_APP. The efi-x86_app config (efi-x86_app32_defconfig) is set up
 for this. Just build U-Boot as normal, e.g.::
 
-   make efi-x86_app_defconfig
+   make efi-x86_app32_defconfig
    make
 
 To build U-Boot as an EFI payload (32-bit or 64-bit EFI can be used), enable
@@ -72,17 +72,19 @@ You will end up with one of these files depending on what you build for:
 Trying it out
 -------------
 QEMU is an emulator and it can emulate an x86 machine. Please make sure your
-QEMU version is 2.3.0 or above to test this. You can run the payload with
+QEMU version is 6.0.0 or above to test this. You can run the payload with
 something like this::
 
    mkdir /tmp/efi
    cp /path/to/u-boot*.efi /tmp/efi
-   qemu-system-x86_64 -bios bios.bin -hda fat:/tmp/efi/
+   qemu-system-x86_64 -pflash edk2-x86_64-code.fd -hda fat:rw:/tmp/efi/
 
 Add -nographic if you want to use the terminal for output. Once it starts
 type 'fs0:u-boot-payload.efi' to run the payload or 'fs0:u-boot-app.efi' to
-run the application. 'bios.bin' is the EFI 'BIOS'. Check [2] to obtain a
-prebuilt EFI BIOS for QEMU or you can build one from source as well.
+run the application. 'edk2-x86_64-code.fd' is the EFI 'BIOS'. QEMU already
+ships both 32-bit and 64-bit EFI BIOS images. For 32-bit EFI 'BIOS' image,
+use 'edk2-i386-code.fd'.
+
 
 To try it on real hardware, put u-boot-app.efi on a suitable boot medium,
 such as a USB stick. Then you can type something like this to start it::
@@ -96,6 +98,11 @@ that EFI does not support booting a 64-bit application from a 32-bit
 EFI (or vice versa). Also it will often fail to print an error message if
 you get this wrong.
 
+You may find the script `scripts/build-efi.sh` helpful for building and testing
+U-Boot on UEFI on QEMU. It also includes links to UEFI binaries dating from
+2021.
+
+See `Example run`_ for an example run.
 
 Inner workings
 --------------
@@ -191,23 +198,78 @@ of code is built this way (see the extra- line in lib/efi/Makefile).
 Everything else is built as a normal U-Boot, so is always 32-bit on x86 at
 present.
 
+Example run
+-----------
+
+This shows running with serial enabled (see `include/configs/efi-x86_app.h`)::
+
+   $ scripts/build-efi.sh -wsPr
+   Packaging efi-x86_app32
+   Running qemu-system-i386
+
+   BdsDxe: failed to load Boot0001 "UEFI QEMU HARDDISK QM00005 " from PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0): Not Found
+   BdsDxe: loading Boot0002 "EFI Internal Shell" from Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(7C04A583-9E3E-4F1C-AD65-E05268D0B4D1)
+   BdsDxe: starting Boot0002 "EFI Internal Shell" from Fv(7CB8BDC9-F8EB-4F34-AAEA-3EE4AF6516A1)/FvFile(7C04A583-9E3E-4F1C-AD65-E05268D0B4D1)
+
+   UEFI Interactive Shell v2.2
+   EDK II
+   UEFI v2.70 (EDK II, 0x00010000)
+   Mapping table
+         FS0: Alias(s):HD0a65535a1:;BLK1:
+             PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)/HD(1,GPT,0FFD5E61-3B0C-4326-8049-BDCDC910AF72,0x800,0xB000)
+        BLK0: Alias(s):
+             PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+
+   Press ESC in 5 seconds to skip startup.nsh or any other key to continue.
+   Shell> fs0:u-boot-app.efi
+   U-Boot EFI App (using allocated RAM address 47d4000) key=8d4, image=06a6f610
+   starting
+
+
+   U-Boot 2022.01-rc4 (Sep 19 2021 - 14:03:20 -0600)
+
+   CPU: x86, vendor Intel, device 663h
+   DRAM:  32 MiB
+    0: efi_media_0  PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)
+    1: <partition>  PciRoot(0x0)/Pci(0x3,0x0)/Sata(0x0,0xFFFF,0x0)/HD(1,GPT,0FFD5E61-3B0C-4326-8049-BDCDC910AF72,0x800,0xB000)
+   Loading Environment from nowhere... OK
+   Model: EFI x86 Application
+   Hit any key to stop autoboot:  0
+
+   Partition Map for EFI device 0  --   Partition Type: EFI
+
+   Part    Start LBA       End LBA            Name
+           Attributes
+           Type GUID
+           Partition GUID
+     1     0x00000800      0x0000b7ff      "boot"
+           attrs:  0x0000000000000000
+           type:   ebd0a0a2-b9e5-4433-87c0-68b6b72699c7
+           guid:   0ffd5e61-3b0c-4326-8049-bdcdc910af72
+          19   startup.nsh
+      528384   u-boot-app.efi
+       10181   NvVars
+
+   3 file(s), 0 dir(s)
+
+   => QEMU: Terminated
+
+
 Future work
 -----------
 This work could be extended in a number of ways:
 
 - Add ARM support
 
-- Add 64-bit application support
+- Add 64-bit application support (in progress)
 
 - Figure out how to solve the interrupt problem
 
-- Add more drivers to the application side (e.g. video, block devices, USB,
-  environment access). This would mostly be an academic exercise as a strong
-  use case is not readily apparent, but it might be fun.
+- Add more drivers to the application side (e.g.USB, environment access).
 
 - Avoid turning off boot services in the stub. Instead allow U-Boot to make
   use of boot services in case it wants to. It is unclear what it might want
-  though.
+  though. It is better to use the app.
 
 Where is the code?
 ------------------
@@ -232,4 +294,4 @@ Google, Inc
 July 2015
 
 * [1] http://www.qemu.org
-* [2] http://www.tianocore.org/ovmf/
+* [2] https://github.com/tianocore/tianocore.github.io/wiki/OVMF

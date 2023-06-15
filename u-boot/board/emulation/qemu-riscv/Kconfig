@@ -51,12 +51,12 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	imply E1000
 	imply NVME
 	imply PCI
-	imply DM_PCI
 	imply PCIE_ECAM_GENERIC
 	imply SCSI
 	imply DM_SCSI
 	imply SYS_NS16550
 	imply SIFIVE_SERIAL
+	imply HTIF_CONSOLE if 64BIT
 	imply SYSRESET
 	imply SYSRESET_CMD_POWEROFF
 	imply SYSRESET_SYSCON
@@ -64,5 +64,8 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	imply VIRTIO_PCI
 	imply VIRTIO_NET
 	imply VIRTIO_BLK
+	imply MTD_NOR_FLASH
+	imply CFI_FLASH
+	imply OF_HAS_PRIOR_STAGE
 
 endif

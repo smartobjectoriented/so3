@@ -7,6 +7,7 @@
 #include <common.h>
 #include <charset.h>
 #include <efi_loader.h>
+#include <efi_variable.h>
 #include <image.h>
 #include <hexdump.h>
 #include <malloc.h>
@@ -146,9 +147,34 @@ static bool efi_hash_regions(struct image_region *regs, int count,
 }
 
 /**
+ * hash_algo_supported - check if the requested hash algorithm is supported
+ * @guid: guid of the algorithm
+ *
+ * Return: true if supported false otherwise
+ */
+static bool hash_algo_supported(const efi_guid_t guid)
+{
+	int i;
+	const efi_guid_t unsupported_hashes[] = {
+		 EFI_CERT_SHA1_GUID,
+		 EFI_CERT_SHA224_GUID,
+		 EFI_CERT_SHA384_GUID,
+		 EFI_CERT_SHA512_GUID,
+	};
+
+	for (i = 0; i < ARRAY_SIZE(unsupported_hashes); i++) {
+		if (!guidcmp(&unsupported_hashes[i], &guid))
+			return false;
+	}
+
+	return true;
+}
+
+/**
  * efi_signature_lookup_digest - search for an image's digest in sigdb
  * @regs:	List of regions to be authenticated
  * @db:		Signature database for trusted certificates
+ * @dbx		Caller needs to set this to true if he is searching dbx
  *
  * A message digest of image pointed to by @regs is calculated and
  * its hash value is compared to entries in signature database pointed
@@ -157,13 +183,16 @@ static bool efi_hash_regions(struct image_region *regs, int count,
  * Return:	true if found, false if not
  */
 bool efi_signature_lookup_digest(struct efi_image_regions *regs,
-				 struct efi_signature_store *db)
+				 struct efi_signature_store *db,
+				 bool dbx)
+
 {
 	struct efi_signature_store *siglist;
 	struct efi_sig_data *sig_data;
 	void *hash = NULL;
 	size_t size = 0;
 	bool found = false;
+	bool hash_done = false;
 
 	EFI_PRINT("%s: Enter, %p, %p\n", __func__, regs, db);
 
@@ -171,17 +200,27 @@ bool efi_signature_lookup_digest(struct efi_image_regions *regs,
 		goto out;
 
 	for (siglist = db; siglist; siglist = siglist->next) {
-		/* TODO: support other hash algorithms */
-		if (guidcmp(&siglist->sig_type, &efi_guid_sha256)) {
-			EFI_PRINT("Digest algorithm is not supported: %pUl\n",
-				  &siglist->sig_type);
-			break;
-		}
+		/*
+		 * if the hash algorithm is unsupported and we get an entry in
+		 * dbx reject the image
+		 */
+		if (dbx && !hash_algo_supported(siglist->sig_type)) {
+			found = true;
+			continue;
+		};
+		/*
+		 * Only support sha256 for now, that's what
+		 * hash-to-efi-sig-list produces
+		 */
+		if (guidcmp(&siglist->sig_type, &efi_guid_sha256))
+			continue;
 
-		if (!efi_hash_regions(regs->reg, regs->num, &hash, &size)) {
+		if (!hash_done &&
+		    !efi_hash_regions(regs->reg, regs->num, &hash, &size)) {
 			EFI_PRINT("Digesting an image failed\n");
 			break;
 		}
+		hash_done = true;
 
 		for (sig_data = siglist->sig_data_list; sig_data;
 		     sig_data = sig_data->next) {
@@ -479,12 +518,11 @@ bool efi_signature_verify(struct efi_image_regions *regs,
 			goto out;
 
 		EFI_PRINT("Verifying last certificate in chain\n");
-		if (signer->self_signed) {
-			if (efi_lookup_certificate(signer, db))
-				if (efi_signature_check_revocation(sinfo,
-								   signer, dbx))
-					break;
-		} else if (efi_verify_certificate(signer, db, &root)) {
+		if (efi_lookup_certificate(signer, db))
+			if (efi_signature_check_revocation(sinfo, signer, dbx))
+				break;
+		if (!signer->self_signed &&
+		    efi_verify_certificate(signer, db, &root)) {
 			bool check;
 
 			check = efi_signature_check_revocation(sinfo, root,
@@ -740,44 +778,15 @@ err:
  */
 struct efi_signature_store *efi_sigstore_parse_sigdb(u16 *name)
 {
-	struct efi_signature_store *sigstore = NULL;
 	const efi_guid_t *vendor;
 	void *db;
 	efi_uintn_t db_size;
-	efi_status_t ret;
 
-	if (!u16_strcmp(name, L"PK") || !u16_strcmp(name, L"KEK")) {
-		vendor = &efi_global_variable_guid;
-	} else if (!u16_strcmp(name, L"db") || !u16_strcmp(name, L"dbx")) {
-		vendor = &efi_guid_image_security_database;
-	} else {
-		EFI_PRINT("unknown signature database, %ls\n", name);
-		return NULL;
-	}
-
-	/* retrieve variable data */
-	db_size = 0;
-	ret = EFI_CALL(efi_get_variable(name, vendor, NULL, &db_size, NULL));
-	if (ret == EFI_NOT_FOUND) {
-		EFI_PRINT("variable, %ls, not found\n", name);
-		sigstore = calloc(sizeof(*sigstore), 1);
-		return sigstore;
-	} else if (ret != EFI_BUFFER_TOO_SMALL) {
-		EFI_PRINT("Getting variable, %ls, failed\n", name);
-		return NULL;
-	}
-
-	db = malloc(db_size);
+	vendor = efi_auth_var_get_guid(name);
+	db = efi_get_var(name, vendor, &db_size);
 	if (!db) {
-		EFI_PRINT("Out of memory\n");
-		return NULL;
-	}
-
-	ret = EFI_CALL(efi_get_variable(name, vendor, NULL, &db_size, db));
-	if (ret != EFI_SUCCESS) {
-		EFI_PRINT("Getting variable, %ls, failed\n", name);
-		free(db);
-		return NULL;
+		EFI_PRINT("variable, %ls, not found\n", name);
+		return calloc(sizeof(struct efi_signature_store), 1);
 	}
 
 	return efi_build_signature_store(db, db_size);

@@ -42,7 +42,7 @@ done < build.conf
 # and ${PLATFORM_TYPE} to be used when the type is required.
 # Note that ${PLATFORM_TYPE} can be equal to ${PLATFORM} if no type is specified.
 
-if [ "$PLATFORM" != "vexpress" -a "$PLATFORM" != "virt64" ]; then
+if [ "$PLATFORM" != "virt32" -a "$PLATFORM" != "vexpress" -a "$PLATFORM" != "virt64" ]; then
     echo "Specify the device name of MMC (ex: sdb or mmcblk0 or other...)" 
     read devname
     export devname="$devname"
@@ -82,7 +82,7 @@ if [ "$deploy_boot" == "y" ]; then
     [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
     sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
        
-    if [ "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+    if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
 	# Nothing else ...
         ./umount.sh
         cd ..

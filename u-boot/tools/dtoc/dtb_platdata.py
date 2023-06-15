@@ -62,6 +62,7 @@ VAL_PREFIX = 'dtv_'
 # a phandle property.
 PHANDLE_PROPS = {
     'clocks': '#clock-cells',
+    'interrupts-extended': '#interrupt-cells',
     'gpios': '#gpio-cells',
     'sandbox,emul': '#emul-cells',
     }
@@ -71,7 +72,7 @@ class Ftype(IntEnum):
 
 
 # This holds information about each type of output file dtoc can create
-# type: Type of file (Ftype)
+# ftype: Type of file (Ftype)
 # fname: Filename excluding directory, e.g. 'dt-plat.c'
 # hdr_comment: Comment explaining the purpose of the file
 OutputFile = collections.namedtuple('OutputFile',
@@ -749,6 +750,15 @@ class DtbPlatdata():
                     break
 
         if node.parent and node.parent.parent:
+            if node.parent not in self._valid_nodes:
+                # This might indicate that the parent node is not in the
+                # SPL/TPL devicetree but the child is. For example if we are
+                # dealing with of-platdata in TPL, the parent has a
+                # u-boot,dm-tpl tag but the child has u-boot,dm-pre-reloc. In
+                # this case the child node exists in TPL but the parent does
+                # not.
+                raise ValueError("Node '%s' requires parent node '%s' but it is not in the valid list" %
+                                 (node.path, node.parent.path))
             self.buf('\t.parent\t\t= DM_DEVICE_REF(%s),\n' %
                      node.parent.var_name)
         if priv_name:

@@ -1,7 +1,7 @@
 
 config SP804
 	bool "SP804 Timer"
-	depends on VEXPRESS
+	depends on VIRT32
 	
 config ARM_TIMER
 	bool "ARM architected CP15 timer for clocksource & clockevent"

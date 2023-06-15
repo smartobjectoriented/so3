@@ -16,17 +16,20 @@
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/ps7_init_gpl.h>
 
-void board_init_f(ulong dummy)
+#if defined(CONFIG_DEBUG_UART_BOARD_INIT)
+void board_debug_uart_init(void)
 {
 	ps7_init();
+}
+#endif
+
+void board_init_f(ulong dummy)
+{
+#if !defined(CONFIG_DEBUG_UART_BOARD_INIT)
+	ps7_init();
+#endif
 
 	arch_cpu_init();
-
-#ifdef CONFIG_DEBUG_UART
-	/* Uart debug for sure */
-	debug_uart_init();
-	puts("Debug uart enabled\n"); /* or printch() */
-#endif
 }
 
 #ifdef CONFIG_SPL_BOARD_INIT
@@ -45,7 +48,7 @@ u32 spl_boot_device(void)
 	u32 mode;
 
 	switch ((zynq_slcr_get_boot_mode()) & ZYNQ_BM_MASK) {
-#ifdef CONFIG_SPL_SPI_SUPPORT
+#ifdef CONFIG_SPL_SPI
 	case ZYNQ_BM_QSPI:
 		mode = BOOT_DEVICE_SPI;
 		break;
@@ -56,7 +59,7 @@ u32 spl_boot_device(void)
 	case ZYNQ_BM_NOR:
 		mode = BOOT_DEVICE_NOR;
 		break;
-#ifdef CONFIG_SPL_MMC_SUPPORT
+#ifdef CONFIG_SPL_MMC
 	case ZYNQ_BM_SD:
 		mode = BOOT_DEVICE_MMC1;
 		break;

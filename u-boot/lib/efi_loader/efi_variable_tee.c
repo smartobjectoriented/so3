@@ -15,7 +15,6 @@
 #include <malloc.h>
 #include <mm_communication.h>
 
-#define OPTEE_PAGE_SIZE BIT(12)
 extern struct efi_var_file __efi_runtime_data *efi_var_buf;
 static efi_uintn_t max_buffer_size;	/* comm + var + func + data */
 static efi_uintn_t max_payload_size;	/* func + data */
@@ -114,7 +113,11 @@ static efi_status_t optee_mm_communicate(void *comm_buf, ulong dsize)
 	rc = tee_invoke_func(conn.tee, &arg, 2, param);
 	tee_shm_free(shm);
 	tee_close_session(conn.tee, conn.session);
-	if (rc || arg.ret != TEE_SUCCESS)
+	if (rc)
+		return EFI_DEVICE_ERROR;
+	if (arg.ret == TEE_ERROR_EXCESS_DATA)
+		log_err("Variable payload too large\n");
+	if (arg.ret != TEE_SUCCESS)
 		return EFI_DEVICE_ERROR;
 
 	switch (param[1].u.value.a) {
@@ -256,15 +259,6 @@ efi_status_t EFIAPI get_max_payload(efi_uintn_t *size)
 	}
 	*size = var_payload->size;
 	/*
-	 * Although the max payload is configurable on StMM, we only share a
-	 * single page from OP-TEE for the non-secure buffer used to communicate
-	 * with StMM. Since OP-TEE will reject to map anything bigger than that,
-	 * make sure we are in bounds.
-	 */
-	if (*size > OPTEE_PAGE_SIZE)
-		*size = OPTEE_PAGE_SIZE - MM_COMMUNICATE_HEADER_SIZE  -
-			MM_VARIABLE_COMMUNICATE_SIZE;
-	/*
 	 * There seems to be a bug in EDK2 miscalculating the boundaries and
 	 * size checks, so deduct 2 more bytes to fulfill this requirement. Fix
 	 * it up here to ensure backwards compatibility with older versions
@@ -284,7 +278,8 @@ out:
  * StMM can store internal attributes and properties for variables, i.e enabling
  * R/O variables
  */
-static efi_status_t set_property_int(u16 *variable_name, efi_uintn_t name_size,
+static efi_status_t set_property_int(const u16 *variable_name,
+				     efi_uintn_t name_size,
 				     const efi_guid_t *vendor,
 				     struct var_check_property *var_property)
 {
@@ -317,7 +312,8 @@ out:
 	return ret;
 }
 
-static efi_status_t get_property_int(u16 *variable_name, efi_uintn_t name_size,
+static efi_status_t get_property_int(const u16 *variable_name,
+				     efi_uintn_t name_size,
 				     const efi_guid_t *vendor,
 				     struct var_check_property *var_property)
 {
@@ -361,7 +357,8 @@ out:
 	return ret;
 }
 
-efi_status_t efi_get_variable_int(u16 *variable_name, const efi_guid_t *vendor,
+efi_status_t efi_get_variable_int(const u16 *variable_name,
+				  const efi_guid_t *vendor,
 				  u32 *attributes, efi_uintn_t *data_size,
 				  void *data, u64 *timep)
 {
@@ -371,7 +368,7 @@ efi_status_t efi_get_variable_int(u16 *variable_name, const efi_guid_t *vendor,
 	efi_uintn_t name_size;
 	efi_uintn_t tmp_dsize;
 	u8 *comm_buf = NULL;
-	efi_status_t ret;
+	efi_status_t ret, tmp;
 
 	if (!variable_name || !vendor || !data_size) {
 		ret = EFI_INVALID_PARAMETER;
@@ -410,22 +407,31 @@ efi_status_t efi_get_variable_int(u16 *variable_name, const efi_guid_t *vendor,
 
 	/* Communicate */
 	ret = mm_communicate(comm_buf, payload_size);
-	if (ret == EFI_SUCCESS || ret == EFI_BUFFER_TOO_SMALL) {
-		/* Update with reported data size for trimmed case */
-		*data_size = var_acc->data_size;
-	}
-	if (ret != EFI_SUCCESS)
+	if (ret != EFI_SUCCESS && ret != EFI_BUFFER_TOO_SMALL)
 		goto out;
 
-	ret = get_property_int(variable_name, name_size, vendor, &var_property);
-	if (ret != EFI_SUCCESS)
-		goto out;
-
+	/* Update with reported data size for trimmed case */
+	*data_size = var_acc->data_size;
+	/*
+	 * UEFI > 2.7 needs the attributes set even if the buffer is
+	 * smaller
+	 */
 	if (attributes) {
+		tmp = get_property_int(variable_name, name_size, vendor,
+				       &var_property);
+		if (tmp != EFI_SUCCESS) {
+			ret = tmp;
+			goto out;
+		}
 		*attributes = var_acc->attr;
-		if (var_property.property & VAR_CHECK_VARIABLE_PROPERTY_READ_ONLY)
+		if (var_property.property &
+		    VAR_CHECK_VARIABLE_PROPERTY_READ_ONLY)
 			*attributes |= EFI_VARIABLE_READ_ONLY;
 	}
+
+	/* return if ret is EFI_BUFFER_TOO_SMALL */
+	if (ret != EFI_SUCCESS)
+		goto out;
 
 	if (data)
 		memcpy(data, (u8 *)var_acc->name + var_acc->name_size,
@@ -502,9 +508,10 @@ out:
 	return ret;
 }
 
-efi_status_t efi_set_variable_int(u16 *variable_name, const efi_guid_t *vendor,
-				  u32 attributes, efi_uintn_t data_size,
-				  const void *data, bool ro_check)
+efi_status_t efi_set_variable_int(const u16 *variable_name,
+				  const efi_guid_t *vendor, u32 attributes,
+				  efi_uintn_t data_size, const void *data,
+				  bool ro_check)
 {
 	efi_status_t ret, alt_ret = EFI_SUCCESS;
 	struct var_check_property var_property;
@@ -590,7 +597,7 @@ efi_status_t efi_set_variable_int(u16 *variable_name, const efi_guid_t *vendor,
 	if (alt_ret != EFI_SUCCESS)
 		goto out;
 
-	if (!u16_strcmp(variable_name, L"PK"))
+	if (!u16_strcmp(variable_name, u"PK"))
 		alt_ret = efi_init_secure_state();
 out:
 	free(comm_buf);

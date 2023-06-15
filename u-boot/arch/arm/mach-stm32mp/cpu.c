@@ -12,6 +12,7 @@
 #include <env.h>
 #include <init.h>
 #include <log.h>
+#include <lmb.h>
 #include <misc.h>
 #include <net.h>
 #include <asm/io.h>
@@ -90,8 +91,8 @@
  */
 u8 early_tlb[PGTABLE_SIZE] __section(".data") __aligned(0x4000);
 
-#if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
-#ifndef CONFIG_TFABOOT
+struct lmb lmb;
+
 static void security_init(void)
 {
 	/* Disable the backup domain write protection */
@@ -151,7 +152,6 @@ static void security_init(void)
 	writel(BIT(0), RCC_MP_AHB5ENSETR);
 	writel(0x0, GPIOZ_SECCFGR);
 }
-#endif /* CONFIG_TFABOOT */
 
 /*
  * Debug init
@@ -163,7 +163,7 @@ static void dbgmcu_init(void)
 	 * done in TF-A for TRUSTED boot and
 	 * DBGMCU access is controlled by BSEC_DENABLE.DBGSWENABLE
 	*/
-	if (!IS_ENABLED(CONFIG_TFABOOT) && bsec_dbgswenable()) {
+	if (bsec_dbgswenable()) {
 		setbits_le32(RCC_DBGCFGR, RCC_DBGCFGR_DBGCKEN);
 		setbits_le32(DBGMCU_APB4FZ1, DBGMCU_APB4FZ1_IWDG2);
 	}
@@ -171,12 +171,17 @@ static void dbgmcu_init(void)
 
 void spl_board_init(void)
 {
-	dbgmcu_init();
-}
-#endif /* !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD) */
+	struct udevice *dev;
+	int ret;
 
-#if !defined(CONFIG_TFABOOT) && \
-	(!defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD))
+	dbgmcu_init();
+
+	/* force probe of BSEC driver to shadow the upper OTP */
+	ret = uclass_get_device_by_driver(UCLASS_MISC, DM_DRIVER_GET(stm32mp_bsec), &dev);
+	if (ret)
+		log_warning("BSEC probe failed: %d\n", ret);
+}
+
 /* get bootmode from ROM code boot context: saved in TAMP register */
 static void update_bootmode(void)
 {
@@ -202,7 +207,6 @@ static void update_bootmode(void)
 			TAMP_BOOT_MODE_MASK,
 			boot_mode << TAMP_BOOT_MODE_SHIFT);
 }
-#endif
 
 u32 get_bootmode(void)
 {
@@ -221,6 +225,8 @@ void dram_bank_mmu_setup(int bank)
 	int	i;
 	phys_addr_t start;
 	phys_size_t size;
+	bool use_lmb = false;
+	enum dcache_option option;
 
 	if (IS_ENABLED(CONFIG_SPL_BUILD)) {
 		start = ALIGN_DOWN(STM32_SYSRAM_BASE, MMU_SECTION_SIZE);
@@ -229,6 +235,7 @@ void dram_bank_mmu_setup(int bank)
 		/* bd->bi_dram is available only after relocation */
 		start = bd->bi_dram[bank].start;
 		size =  bd->bi_dram[bank].size;
+		use_lmb = true;
 	} else {
 		/* mark cacheable and executable the beggining of the DDR */
 		start = STM32_DDR_BASE;
@@ -237,8 +244,12 @@ void dram_bank_mmu_setup(int bank)
 
 	for (i = start >> MMU_SECTION_SHIFT;
 	     i < (start >> MMU_SECTION_SHIFT) + (size >> MMU_SECTION_SHIFT);
-	     i++)
-		set_section_dcache(i, DCACHE_DEFAULT_OPTION);
+	     i++) {
+		option = DCACHE_DEFAULT_OPTION;
+		if (use_lmb && lmb_is_reserved_flags(&lmb, i << MMU_SECTION_SHIFT, LMB_NOMAP))
+			option = 0; /* INVALID ENTRY in TLB */
+		set_section_dcache(i, option);
+	}
 }
 /*
  * initialize the MMU and activate cache in SPL or in U-Boot pre-reloc stage
@@ -273,35 +284,35 @@ int arch_cpu_init(void)
 	/* early armv7 timer init: needed for polling */
 	timer_init();
 
-#if !defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD)
-#ifndef CONFIG_TFABOOT
-	security_init();
-	update_bootmode();
-#endif
-	/* Reset Coprocessor state unless it wakes up from Standby power mode */
-	if (!(readl(PWR_MCUCR) & PWR_MCUCR_SBF)) {
-		writel(TAMP_COPRO_STATE_OFF, TAMP_COPRO_STATE);
-		writel(0, TAMP_COPRO_RSC_TBL_ADDRESS);
+	if (IS_ENABLED(CONFIG_SPL_BUILD)) {
+		security_init();
+		update_bootmode();
 	}
-#endif
+/* reset copro state in SPL, when used, or in U-Boot */
+	if (!IS_ENABLED(CONFIG_SPL) || IS_ENABLED(CONFIG_SPL_BUILD)) {
+		/* Reset Coprocessor state unless it wakes up from Standby power mode */
+		if (!(readl(PWR_MCUCR) & PWR_MCUCR_SBF)) {
+			writel(TAMP_COPRO_STATE_OFF, TAMP_COPRO_STATE);
+			writel(0, TAMP_COPRO_RSC_TBL_ADDRESS);
+		}
+	}
 
 	boot_mode = get_bootmode();
 
 	if (IS_ENABLED(CONFIG_CMD_STM32PROG_SERIAL) &&
 	    (boot_mode & TAMP_BOOT_DEVICE_MASK) == BOOT_SERIAL_UART)
 		gd->flags |= GD_FLG_SILENT | GD_FLG_DISABLE_CONSOLE;
-#if defined(CONFIG_DEBUG_UART) && \
-	!defined(CONFIG_TFABOOT) && \
-	(!defined(CONFIG_SPL) || defined(CONFIG_SPL_BUILD))
-	else
+	else if (IS_ENABLED(CONFIG_DEBUG_UART) && IS_ENABLED(CONFIG_SPL_BUILD))
 		debug_uart_init();
-#endif
 
 	return 0;
 }
 
 void enable_caches(void)
 {
+	/* parse device tree when data cache is still activated */
+	lmb_init_and_reserve(&lmb, gd->bd, (void *)gd->fdt_blob);
+
 	/* I-cache is already enabled in start.S: icache_enable() not needed */
 
 	/* deactivate the data cache, early enabled in arch_cpu_init() */
@@ -446,7 +457,7 @@ void get_soc_name(char name[SOC_NAME_SIZE])
 		 soc_type[type], soc_pkg[pkg], soc_rev[rev]);
 }
 
-#if defined(CONFIG_DISPLAY_CPUINFO)
+/* used when CONFIG_DISPLAY_CPUINFO is activated */
 int print_cpuinfo(void)
 {
 	char name[SOC_NAME_SIZE];
@@ -456,7 +467,6 @@ int print_cpuinfo(void)
 
 	return 0;
 }
-#endif /* CONFIG_DISPLAY_CPUINFO */
 
 static void setup_boot_mode(void)
 {
@@ -469,6 +479,11 @@ static void setup_boot_mode(void)
 		STM32_USART6_BASE,
 		STM32_UART7_BASE,
 		STM32_UART8_BASE
+	};
+	const u32 sdmmc_addr[] = {
+		STM32_SDMMC1_BASE,
+		STM32_SDMMC2_BASE,
+		STM32_SDMMC3_BASE
 	};
 	char cmd[60];
 	u32 boot_ctx = readl(TAMP_BOOT_CONTEXT);
@@ -512,7 +527,16 @@ static void setup_boot_mode(void)
 		break;
 	case BOOT_FLASH_SD:
 	case BOOT_FLASH_EMMC:
-		sprintf(cmd, "%d", instance);
+		if (instance > ARRAY_SIZE(sdmmc_addr))
+			break;
+		/* search associated sdmmc node in devicetree */
+		sprintf(cmd, "mmc@%x", sdmmc_addr[instance]);
+		if (uclass_get_device_by_name(UCLASS_MMC, cmd, &dev)) {
+			printf("mmc%d = %s not found in device tree!\n",
+			       instance, cmd);
+			break;
+		}
+		sprintf(cmd, "%d", dev_seq(dev));
 		env_set("boot_device", "mmc");
 		env_set("boot_instance", cmd);
 		break;
@@ -529,7 +553,9 @@ static void setup_boot_mode(void)
 		env_set("boot_instance", "0");
 		break;
 	default:
-		log_debug("unexpected boot mode = %x\n", boot_mode);
+		env_set("boot_device", "invalid");
+		env_set("boot_instance", "");
+		log_err("unexpected boot mode = %x\n", boot_mode);
 		break;
 	}
 
@@ -570,12 +596,14 @@ static void setup_boot_mode(void)
  */
 __weak int setup_mac_address(void)
 {
-#if defined(CONFIG_NET)
 	int ret;
 	int i;
 	u32 otp[2];
 	uchar enetaddr[6];
 	struct udevice *dev;
+
+	if (!IS_ENABLED(CONFIG_NET))
+		return 0;
 
 	/* MAC already in environment */
 	if (eth_env_get_enetaddr("ethaddr", enetaddr))
@@ -603,7 +631,6 @@ __weak int setup_mac_address(void)
 	ret = eth_env_set_enetaddr("ethaddr", enetaddr);
 	if (ret)
 		log_err("Failed to set mac address %pM from OTP: %d\n", enetaddr, ret);
-#endif
 
 	return 0;
 }

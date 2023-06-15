@@ -9,15 +9,7 @@
 #ifndef __CONFIG_ZYNQ_COMMON_H
 #define __CONFIG_ZYNQ_COMMON_H
 
-/* CPU clock */
-#ifndef CONFIG_CPU_FREQ_HZ
-# define CONFIG_CPU_FREQ_HZ	800000000
-#endif
-
-#define CONFIG_REMAKE_ELF
-
 /* Cache options */
-#define CONFIG_SYS_L2CACHE_OFF
 #ifndef CONFIG_SYS_L2CACHE_OFF
 # define CONFIG_SYS_L2_PL310
 # define CONFIG_SYS_PL310_BASE		0xf8f02000
@@ -41,7 +33,6 @@
 
 /* NOR */
 #ifdef CONFIG_MTD_NOR_FLASH
-# define CONFIG_SYS_MAX_FLASH_BANKS	1
 # define CONFIG_SYS_MAX_FLASH_SECT	512
 # define CONFIG_SYS_FLASH_ERASE_TOUT	1000
 # define CONFIG_SYS_FLASH_WRITE_TOUT	5000
@@ -52,13 +43,9 @@
 
 #ifdef CONFIG_NAND_ZYNQ
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 #endif
 
 #ifdef CONFIG_USB_EHCI_ZYNQ
-# define CONFIG_EHCI_IS_TDI
-
-# define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x600000
 # define DFU_DEFAULT_POLL_TIMEOUT	300
 # define CONFIG_THOR_RESET_OFF
 #endif
@@ -66,7 +53,6 @@
 /* enable preboot to be loaded before CONFIG_BOOTDELAY */
 
 /* Boot configuration */
-#define CONFIG_SYS_LOAD_ADDR		0 /* default? */
 
 #ifdef CONFIG_SPL_BUILD
 #define BOOTENV
@@ -239,7 +225,6 @@
 /* Not using MMC raw mode - just for compilation purpose */
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTOR	0
 #define CONFIG_SYS_MMCSD_RAW_MODE_ARGS_SECTORS	0
-#define CONFIG_SYS_MMCSD_RAW_MODE_KERNEL_SECTOR	0
 
 /* qspi mode is working fine */
 #ifdef CONFIG_ZYNQ_QSPI

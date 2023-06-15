@@ -425,7 +425,7 @@ static int smc911x_initialize_mii(struct smc911x_priv *priv)
 	if (!mdiodev)
 		return -ENOMEM;
 
-	strncpy(mdiodev->name, priv->dev.name, MDIO_NAME_LEN);
+	strlcpy(mdiodev->name, priv->dev.name, MDIO_NAME_LEN);
 	mdiodev->read = smc911x_miiphy_read;
 	mdiodev->write = smc911x_miiphy_write;
 
@@ -478,7 +478,7 @@ static int smc911x_recv(struct eth_device *dev)
 	return ret;
 }
 
-int smc911x_initialize(u8 dev_num, int base_addr)
+int smc911x_initialize(u8 dev_num, phys_addr_t base_addr)
 {
 	struct smc911x_priv *priv;
 	int ret;

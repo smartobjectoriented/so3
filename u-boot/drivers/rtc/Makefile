@@ -7,7 +7,6 @@
 obj-$(CONFIG_$(SPL_TPL_)DM_RTC) += rtc-uclass.o
 
 obj-$(CONFIG_RTC_AT91SAM9_RTT) += at91sam9_rtt.o
-obj-y += rtc-lib.o
 obj-$(CONFIG_RTC_ARMADA38X) += armada38x.o
 obj-$(CONFIG_RTC_DAVINCI) += davinci.o
 obj-$(CONFIG_RTC_DS1302) += ds1302.o
@@ -58,3 +57,4 @@ obj-$(CONFIG_RTC_STM32) += stm32_rtc.o
 obj-$(CONFIG_SANDBOX) += sandbox_rtc.o
 obj-$(CONFIG_RTC_X1205) += x1205.o
 obj-$(CONFIG_RTC_ABX80X) += abx80x.o
+obj-$(CONFIG_RTC_ZYNQMP) += zynqmp_rtc.o

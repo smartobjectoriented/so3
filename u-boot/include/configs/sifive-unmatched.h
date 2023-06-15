@@ -28,17 +28,9 @@
 #define CONFIG_SYS_SDRAM_BASE		0x80000000
 #define CONFIG_SYS_INIT_SP_ADDR		(CONFIG_SYS_SDRAM_BASE + SZ_2M)
 
-#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + SZ_2M)
-
-#define CONFIG_SYS_MALLOC_LEN		SZ_8M
-
 #define CONFIG_SYS_BOOTM_LEN		SZ_64M
 
 #define CONFIG_STANDALONE_LOAD_ADDR	0x80200000
-
-#define CONFIG_SYS_PCI_64BIT		1	/* enable 64-bit resources */
-
-#define CONFIG_SYS_CACHELINE_SIZE	64
 
 /* Environment options */
 
@@ -47,6 +39,7 @@
 	func(NVME, nvme, 0) \
 	func(USB, usb, 0) \
 	func(MMC, mmc, 0) \
+	func(SCSI, scsi, 0) \
 	func(PXE, pxe, na) \
 	func(DHCP, dhcp, na)
 
@@ -73,11 +66,10 @@
 	"type_guid_gpt_loader2=" TYPE_GUID_LOADER2 "\0" \
 	"type_guid_gpt_system=" TYPE_GUID_SYSTEM "\0" \
 	"partitions=" PARTS_DEFAULT "\0" \
+	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
 	BOOTENV
-
-#define CONFIG_PREBOOT \
-	"setenv fdt_addr ${fdtcontroladdr};" \
-	"fdt addr ${fdtcontroladdr};"
 #endif /* CONFIG_SPL_BUILD */
+
+#define CONFIG_SYS_EEPROM_BUS_NUM		0
 
 #endif /* __SIFIVE_UNMATCHED_H */

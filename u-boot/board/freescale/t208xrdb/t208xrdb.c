@@ -109,16 +109,6 @@ int board_early_init_r(void)
 	return 0;
 }
 
-unsigned long get_board_sys_clk(void)
-{
-	return CONFIG_SYS_CLK_FREQ;
-}
-
-unsigned long get_board_ddr_clk(void)
-{
-	return CONFIG_DDR_CLK_FREQ;
-}
-
 int misc_init_r(void)
 {
 	u8 reg;
@@ -127,6 +117,13 @@ int misc_init_r(void)
 	reg = CPLD_READ(reset_ctl);
 	reg |= CPLD_RSTCON_EDC_RST;
 	CPLD_WRITE(reset_ctl, reg);
+
+	/* Enable POR for boards revisions D and up */
+	if (get_hw_revision() >= 'D') {
+		reg = CPLD_READ(misc_csr);
+		reg |= CPLD_MISC_POR_EN;
+		CPLD_WRITE(misc_csr, reg);
+	}
 
 	return 0;
 }
@@ -157,4 +154,24 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 #endif
 
 	return 0;
+}
+
+ulong *cs4340_get_fw_addr(void)
+{
+	ulong cortina_fw_addr = CONFIG_CORTINA_FW_ADDR;
+
+#ifdef CONFIG_SYS_CORTINA_FW_IN_NOR
+	u8 reg;
+
+	reg = CPLD_READ(flash_csr);
+	if (!(reg & CPLD_BOOT_SEL)) {
+		reg = ((reg & CPLD_LBMAP_MASK) >> CPLD_LBMAP_SHIFT);
+		if (reg == 0)
+			cortina_fw_addr = CORTINA_FW_ADDR_IFCNOR;
+		else if (reg == 4)
+			cortina_fw_addr = CORTINA_FW_ADDR_IFCNOR_ALTBANK;
+	}
+#endif
+
+	return (ulong *)cortina_fw_addr;
 }

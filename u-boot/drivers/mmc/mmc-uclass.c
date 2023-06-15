@@ -5,6 +5,8 @@
  * Written by Simon Glass <sjg@chromium.org>
  */
 
+#define LOG_CATEGORY UCLASS_MMC
+
 #include <common.h>
 #include <log.h>
 #include <mmc.h>
@@ -318,7 +320,7 @@ struct blk_desc *mmc_get_blk_desc(struct mmc *mmc)
 	struct blk_desc *desc;
 	struct udevice *dev;
 
-	device_find_first_child(mmc->dev, &dev);
+	device_find_first_child_by_uclass(mmc->dev, UCLASS_BLK, &dev);
 	if (!dev)
 		return NULL;
 	desc = dev_get_uclass_plat(dev);
@@ -340,6 +342,9 @@ void mmc_do_preinit(void)
 
 		if (!m)
 			continue;
+
+		m->user_speed_mode = MMC_MODES_END;  /* Initialising user set speed mode */
+
 		if (m->preinit)
 			mmc_start_init(m);
 	}
@@ -412,7 +417,7 @@ int mmc_bind(struct udevice *dev, struct mmc *mmc, const struct mmc_config *cfg)
 	/* setup initial part type */
 	bdesc->part_type = cfg->part_type;
 	mmc->dev = dev;
-
+	mmc->user_speed_mode = MMC_MODES_END;
 	return 0;
 }
 
@@ -420,7 +425,7 @@ int mmc_unbind(struct udevice *dev)
 {
 	struct udevice *bdev;
 
-	device_find_first_child(dev, &bdev);
+	device_find_first_child_by_uclass(dev, UCLASS_BLK, &bdev);
 	if (bdev) {
 		device_remove(bdev, DM_REMOVE_NORMAL);
 		device_unbind(bdev);

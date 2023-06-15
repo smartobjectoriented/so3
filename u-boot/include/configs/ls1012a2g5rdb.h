@@ -14,16 +14,8 @@
 #define CONFIG_SYS_SDRAM_SIZE		0x40000000
 
 /* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
-#define CONFIG_SCSI_AHCI_PLAT
 
 #define CONFIG_SYS_SATA				AHCI_BASE_ADDR
-
-#define CONFIG_SYS_SCSI_MAX_SCSI_ID		1
-#define CONFIG_SYS_SCSI_MAX_LUN			1
-#define CONFIG_SYS_SCSI_MAX_DEVICE		(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
-						CONFIG_SYS_SCSI_MAX_LUN)
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS		\
@@ -74,16 +66,10 @@
 		"$kernelheader_size && esbc_validate ${kernelheader_addr_r}; " \
 		"bootm $load_addr#$board\0"
 
-#undef CONFIG_BOOTCOMMAND
 #ifdef CONFIG_TFABOOT
 #undef QSPI_NOR_BOOTCOMMAND
 #define QSPI_NOR_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; " \
 			     "env exists secureboot && esbc_halt;"
-#else
-#if defined(CONFIG_QSPI_BOOT) || defined(CONFIG_SD_BOOT_QSPI)
-#define CONFIG_BOOTCOMMAND "run distro_bootcmd; run qspi_bootcmd; " \
-			   "env exists secureboot && esbc_halt;"
-#endif
 #endif
 
 #define DEFAULT_PFE_MDIO_NAME "PFE_MDIO"

@@ -23,6 +23,8 @@
 #include <fdtdec.h>
 #include <membuff.h>
 #include <linux/list.h>
+#include <linux/build_bug.h>
+#include <asm-offsets.h>
 
 struct acpi_ctx;
 struct driver_rt;
@@ -242,6 +244,10 @@ struct global_data {
 	 * @fdt_size: space reserved for relocated device space
 	 */
 	unsigned long fdt_size;
+	/**
+	 * @fdt_src: Source of FDT
+	 */
+	enum fdt_source_t fdt_src;
 #if CONFIG_IS_ENABLED(OF_LIVE)
 	/**
 	 * @of_root: root node of the live tree
@@ -275,7 +281,7 @@ struct global_data {
 	 */
 	void *trace_buff;
 #endif
-#if defined(CONFIG_SYS_I2C)
+#if CONFIG_IS_ENABLED(SYS_I2C_LEGACY)
 	/**
 	 * @cur_i2c_bus: currently used I2C bus
 	 */
@@ -445,17 +451,15 @@ struct global_data {
 	 */
 	fdt_addr_t translation_offset;
 #endif
-#if CONFIG_IS_ENABLED(WDT)
-	/**
-	 * @watchdog_dev: watchdog device
-	 */
-	struct udevice *watchdog_dev;
-#endif
 #ifdef CONFIG_GENERATE_ACPI_TABLE
 	/**
 	 * @acpi_ctx: ACPI context pointer
 	 */
 	struct acpi_ctx *acpi_ctx;
+	/**
+	 * @acpi_start: Start address of ACPI tables
+	 */
+	ulong acpi_start;
 #endif
 #if CONFIG_IS_ENABLED(GENERATE_SMBIOS_TABLE)
 	/**
@@ -464,6 +468,9 @@ struct global_data {
 	char *smbios_version;
 #endif
 };
+#ifndef DO_DEPS_ONLY
+static_assert(sizeof(struct global_data) == GD_SIZE);
+#endif
 
 /**
  * gd_board_type() - retrieve board type
@@ -509,8 +516,20 @@ struct global_data {
 
 #ifdef CONFIG_GENERATE_ACPI_TABLE
 #define gd_acpi_ctx()		gd->acpi_ctx
+#define gd_acpi_start()		gd->acpi_start
+#define gd_set_acpi_start(addr)	gd->acpi_start = addr
 #else
 #define gd_acpi_ctx()		NULL
+#define gd_acpi_start()		0UL
+#define gd_set_acpi_start(addr)
+#endif
+
+#if CONFIG_IS_ENABLED(MULTI_DTB_FIT)
+#define gd_multi_dtb_fit()	gd->multi_dtb_fit
+#define gd_set_multi_dtb_fit(_dtb)	gd->multi_dtb_fit = _dtb
+#else
+#define gd_multi_dtb_fit()	NULL
+#define gd_set_multi_dtb_fit(_dtb)
 #endif
 
 /**
@@ -572,29 +591,33 @@ enum gd_flags {
 	 */
 	GD_FLG_RECORD = 0x01000,
 	/**
+	 * @GD_FLG_RECORD_OVF: record console overflow
+	 */
+	GD_FLG_RECORD_OVF = 0x02000,
+	/**
 	 * @GD_FLG_ENV_DEFAULT: default variable flag
 	 */
-	GD_FLG_ENV_DEFAULT = 0x02000,
+	GD_FLG_ENV_DEFAULT = 0x04000,
 	/**
 	 * @GD_FLG_SPL_EARLY_INIT: early SPL initialization is done
 	 */
-	GD_FLG_SPL_EARLY_INIT = 0x04000,
+	GD_FLG_SPL_EARLY_INIT = 0x08000,
 	/**
 	 * @GD_FLG_LOG_READY: log system is ready for use
 	 */
-	GD_FLG_LOG_READY = 0x08000,
+	GD_FLG_LOG_READY = 0x10000,
 	/**
 	 * @GD_FLG_WDT_READY: watchdog is ready for use
 	 */
-	GD_FLG_WDT_READY = 0x10000,
+	GD_FLG_WDT_READY = 0x20000,
 	/**
 	 * @GD_FLG_SKIP_LL_INIT: don't perform low-level initialization
 	 */
-	GD_FLG_SKIP_LL_INIT = 0x20000,
+	GD_FLG_SKIP_LL_INIT = 0x40000,
 	/**
 	 * @GD_FLG_SMP_READY: SMP initialization is complete
 	 */
-	GD_FLG_SMP_READY = 0x40000,
+	GD_FLG_SMP_READY = 0x80000,
 };
 
 #endif /* __ASSEMBLY__ */

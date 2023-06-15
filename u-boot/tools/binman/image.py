@@ -36,6 +36,8 @@ class Image(section.Entry_section):
         fdtmap_data: Contents of the fdtmap when loading from a file
         allow_repack: True to add properties to allow the image to be safely
             repacked later
+        test_section_timeout: Use a zero timeout for section multi-threading
+            (for testing)
 
     Args:
         copy_to_orig: Copy offset/size to orig_offset/orig_size after reading
@@ -61,9 +63,17 @@ class Image(section.Entry_section):
             to ignore 'u-boot-bin' in this case, and build it ourselves in
             binman with 'u-boot-dtb.bin' and 'u-boot.dtb'. See
             Entry_u_boot_expanded and Entry_blob_phase for details.
+        missing_etype: Use a default entry type ('blob') if the requested one
+            does not exist in binman. This is useful if an image was created by
+            binman a newer version of binman but we want to list it in an older
+            version which does not support all the entry types.
+        generate: If true, generator nodes are processed. If false they are
+            ignored which is useful when an existing image is read back from a
+            file.
     """
     def __init__(self, name, node, copy_to_orig=True, test=False,
-                 ignore_missing=False, use_expanded=False):
+                 ignore_missing=False, use_expanded=False, missing_etype=False,
+                 generate=True):
         super().__init__(None, 'section', node, test=test)
         self.copy_to_orig = copy_to_orig
         self.name = 'main-section'
@@ -73,7 +83,11 @@ class Image(section.Entry_section):
         self.fdtmap_data = None
         self.allow_repack = False
         self._ignore_missing = ignore_missing
+        self.missing_etype = missing_etype
         self.use_expanded = use_expanded
+        self.test_section_timeout = False
+        self.bintools = {}
+        self.generate = generate
         if not test:
             self.ReadNode()
 
@@ -97,7 +111,7 @@ class Image(section.Entry_section):
         Raises:
             ValueError if something goes wrong
         """
-        data = tools.ReadFile(fname)
+        data = tools.read_file(fname)
         size = len(data)
 
         # First look for an image header
@@ -114,14 +128,15 @@ class Image(section.Entry_section):
         dtb_size = probe_dtb.GetFdtObj().totalsize()
         fdtmap_data = data[pos:pos + dtb_size + fdtmap.FDTMAP_HDR_LEN]
         fdt_data = fdtmap_data[fdtmap.FDTMAP_HDR_LEN:]
-        out_fname = tools.GetOutputFilename('fdtmap.in.dtb')
-        tools.WriteFile(out_fname, fdt_data)
+        out_fname = tools.get_output_filename('fdtmap.in.dtb')
+        tools.write_file(out_fname, fdt_data)
         dtb = fdt.Fdt(out_fname)
         dtb.Scan()
 
         # Return an Image with the associated nodes
         root = dtb.GetRoot()
-        image = Image('image', root, copy_to_orig=False, ignore_missing=True)
+        image = Image('image', root, copy_to_orig=False, ignore_missing=True,
+                      missing_etype=True, generate=False)
 
         image.image_node = fdt_util.GetString(root, 'image-node', 'image')
         image.fdtmap_dtb = dtb
@@ -159,12 +174,12 @@ class Image(section.Entry_section):
 
     def BuildImage(self):
         """Write the image to a file"""
-        fname = tools.GetOutputFilename(self._filename)
-        tout.Info("Writing image to '%s'" % fname)
+        fname = tools.get_output_filename(self._filename)
+        tout.info("Writing image to '%s'" % fname)
         with open(fname, 'wb') as fd:
             data = self.GetPaddedData()
             fd.write(data)
-        tout.Info("Wrote %#x bytes" % len(data))
+        tout.info("Wrote %#x bytes" % len(data))
 
     def WriteMap(self):
         """Write a map of the image to a .map file
@@ -173,7 +188,7 @@ class Image(section.Entry_section):
             Filename of map file written
         """
         filename = '%s.map' % self.image_name
-        fname = tools.GetOutputFilename(filename)
+        fname = tools.get_output_filename(filename)
         with open(fname, 'w') as fd:
             print('%8s  %8s  %8s  %s' % ('ImagePos', 'Offset', 'Size', 'Name'),
                   file=fd)
@@ -214,8 +229,8 @@ class Image(section.Entry_section):
             entries = entry.GetEntries()
         return entry
 
-    def ReadData(self, decomp=True):
-        tout.Debug("Image '%s' ReadData(), size=%#x" %
+    def ReadData(self, decomp=True, alt_format=None):
+        tout.debug("Image '%s' ReadData(), size=%#x" %
                    (self.GetPath(), len(self._data)))
         return self._data
 
@@ -385,3 +400,16 @@ class Image(section.Entry_section):
         self._CollectEntries(entries, entries_by_name, self)
         return self.LookupSymbol(sym_name, optional, msg, base_addr,
                                  entries_by_name)
+
+    def CollectBintools(self):
+        """Collect all the bintools used by this image
+
+        Returns:
+            Dict of bintools:
+                key: name of tool
+                value: Bintool object
+        """
+        bintools = {}
+        super().AddBintools(bintools)
+        self.bintools = bintools
+        return bintools

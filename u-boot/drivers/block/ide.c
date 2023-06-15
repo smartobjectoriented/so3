@@ -4,6 +4,8 @@
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  */
 
+#define LOG_CATEGORY UCLASS_IDE
+
 #include <common.h>
 #include <ata.h>
 #include <blk.h>
@@ -42,10 +44,6 @@ struct blk_desc ide_dev_desc[CONFIG_SYS_IDE_MAXDEVICE];
 #define ATAPI_TIME_OUT	7000	/* 7 sec timeout (5 sec seems to work...) */
 
 #define IDE_SPIN_UP_TIME_OUT 5000 /* 5 sec spin-up timeout */
-
-#ifndef CONFIG_SYS_ATA_PORT_ADDR
-#define CONFIG_SYS_ATA_PORT_ADDR(port) (port)
-#endif
 
 #ifdef CONFIG_IDE_RESET
 extern void ide_set_reset(int idereset);
@@ -676,35 +674,19 @@ static void ide_ident(struct blk_desc *dev_desc)
 __weak void ide_outb(int dev, int port, unsigned char val)
 {
 	debug("ide_outb (dev= %d, port= 0x%x, val= 0x%02x) : @ 0x%08lx\n",
-	      dev, port, val,
-	      (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
+	      dev, port, val, ATA_CURR_BASE(dev) + port);
 
-#if defined(CONFIG_IDE_AHB)
-	if (port) {
-		/* write command */
-		ide_write_register(dev, port, val);
-	} else {
-		/* write data */
-		outb(val, (ATA_CURR_BASE(dev)));
-	}
-#else
-	outb(val, (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
-#endif
+	outb(val, ATA_CURR_BASE(dev) + port);
 }
 
 __weak unsigned char ide_inb(int dev, int port)
 {
 	uchar val;
 
-#if defined(CONFIG_IDE_AHB)
-	val = ide_read_register(dev, port);
-#else
-	val = inb((ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)));
-#endif
+	val = inb(ATA_CURR_BASE(dev) + port);
 
 	debug("ide_inb (dev= %d, port= 0x%x) : @ 0x%08lx -> 0x%02x\n",
-	      dev, port,
-	      (ATA_CURR_BASE(dev) + CONFIG_SYS_ATA_PORT_ADDR(port)), val);
+	      dev, port, ATA_CURR_BASE(dev) + port, val);
 	return val;
 }
 
@@ -828,9 +810,6 @@ __weak void ide_input_swap_data(int dev, ulong *sect_buf, int words)
 
 __weak void ide_output_data(int dev, const ulong *sect_buf, int words)
 {
-#if defined(CONFIG_IDE_AHB)
-	ide_write_data(dev, sect_buf, words);
-#else
 	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf;
 
@@ -841,14 +820,10 @@ __weak void ide_output_data(int dev, const ulong *sect_buf, int words)
 		EIEIO;
 		outw(cpu_to_le16(*dbuf++), paddr);
 	}
-#endif /* CONFIG_IDE_AHB */
 }
 
 __weak void ide_input_data(int dev, ulong *sect_buf, int words)
 {
-#if defined(CONFIG_IDE_AHB)
-	ide_read_data(dev, sect_buf, words);
-#else
 	uintptr_t paddr = (ATA_CURR_BASE(dev) + ATA_DATA_REG);
 	ushort *dbuf;
 
@@ -862,7 +837,6 @@ __weak void ide_input_data(int dev, ulong *sect_buf, int words)
 		EIEIO;
 		*dbuf++ = le16_to_cpu(inw(paddr));
 	}
-#endif /* CONFIG_IDE_AHB */
 }
 
 #ifdef CONFIG_BLK

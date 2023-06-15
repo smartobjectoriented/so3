@@ -14,7 +14,6 @@
 #include "rcar-gen3-common.h"
 
 /* Ethernet RAVB */
-#define CONFIG_NET_MULTI
 #define CONFIG_BITBANGMII_MULTI
 
 /* Generic Timer Definitions (use in assembler source) */
@@ -26,9 +25,7 @@
 #define CONFIG_FLASH_SHOW_PROGRESS	45
 #define CONFIG_SYS_FLASH_QUIET_TEST
 #define CONFIG_SYS_FLASH_BANKS_LIST	{ 0x08000000 }
-#define CONFIG_SYS_FLASH_CFI
 #define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
-#define CONFIG_SYS_MAX_FLASH_BANKS_DETECT	1
 #define CONFIG_SYS_MAX_FLASH_SECT	256
 #define CONFIG_SYS_WRITE_SWAPPED_DATA
 

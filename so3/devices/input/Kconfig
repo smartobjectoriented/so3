@@ -1,6 +1,6 @@
 config PL050_KMI
 	bool "PL050 Keyboard/Mouse Interface"
-	depends on VEXPRESS || VIRT64
+	depends on VIRT32 || VIRT64
 
 config SOO_INPUT
 	bool "SOO Virtualized input device"

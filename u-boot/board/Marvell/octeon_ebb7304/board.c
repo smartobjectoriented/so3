@@ -103,9 +103,7 @@ static int get_lmac_fdt_node(const void *fdt, int search_node, int search_bgx, i
 	int parent;
 
 	/* Iterate through all bgx ports */
-	node = -1;
-	while ((node = fdt_node_offset_by_compatible((void *)fdt, node,
-						     compat)) >= 0) {
+	fdt_for_each_node_by_compatible(node, (void *)fdt, -1, compat) {
 		/* Get the node and bgx from the physical address */
 		parent = fdt_parent_offset(fdt, node);
 		reg = fdt_getprop(fdt, parent, "reg", &len);
@@ -146,9 +144,8 @@ static int get_mix_fdt_node(const void *fdt, int search_node, int search_index)
 	int node;
 
 	/* Iterate through all the mix fdt nodes */
-	node = -1;
-	while ((node = fdt_node_offset_by_compatible((void *)fdt, node,
-						     "cavium,octeon-7890-mix")) >= 0) {
+	fdt_for_each_node_by_compatible(node, (void *)fdt, -1,
+					"cavium,octeon-7890-mix") {
 		int parent;
 		int len;
 		const char *name;
@@ -205,7 +202,7 @@ static int fdt_fix_mix(const void *fdt)
 		int env_lmac = -1;
 		int lmac_fdt_node = -1;
 		int mix_fdt_node = -1;
-		int lmac_phandle;
+		unsigned int lmac_phandle;
 		char *compat;
 
 		/* Get the lmac for this environment variable */
@@ -229,8 +226,7 @@ static int fdt_fix_mix(const void *fdt)
 			}
 		}
 
-		lmac_phandle = fdt_alloc_phandle((void *)fdt);
-		fdt_set_phandle((void *)fdt, lmac_fdt_node, lmac_phandle);
+		lmac_phandle = fdt_create_phandle((void *)fdt, lmac_fdt_node);
 
 		/* Get the fdt mix node corresponding to this lmac */
 		mix_fdt_node = get_mix_fdt_node(fdt, env_node, env_lmac);
@@ -339,7 +335,7 @@ void __fixup_fdt(void)
 		case CVMX_QLM_MODE_XFI:
 		case CVMX_QLM_MODE_RGMII_XFI:
 		case CVMX_QLM_MODE_RGMII_XFI_1X1:
-			type_str = "xfi";
+			type_str = "10gbase-r";
 			break;
 		case CVMX_QLM_MODE_10G_KR:
 		case CVMX_QLM_MODE_RGMII_10G_KR:
@@ -393,7 +389,7 @@ void __fixup_fdt(void)
 				if (pmd_control.s.train_en)
 					type_str = "10G_KR";
 				else
-					type_str = "xfi";
+					type_str = "10gbase-r";
 				break;
 			case 4:
 				if (pmd_control.s.train_en)
@@ -618,7 +614,7 @@ static void board_configure_qlms(void)
 					speed[qlm] = 103125;
 			}
 			printf("QLM %d: XLAUI\n", qlm);
-		} else if (!strncmp(mode_str, "xfi", 3)) {
+		} else if (!strncmp(mode_str, "10gbase-r", 3)) {
 			bool rgmii = false;
 
 			speed[qlm] = 103125;

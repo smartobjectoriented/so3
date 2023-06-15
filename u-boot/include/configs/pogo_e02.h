@@ -12,31 +12,11 @@
 #ifndef _CONFIG_POGO_E02_H
 #define _CONFIG_POGO_E02_H
 
-/*
- * Machine type definition and ID
- */
-#define CONFIG_MACH_TYPE		MACH_TYPE_POGO_E02
-
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_FEROCEON_88FR131		/* CPU Core subversion */
-#define CONFIG_KW88F6281		/* SOC Name */
-#define CONFIG_SKIP_LOWLEVEL_INIT	/* disable board lowlevel_init */
-
 #include "mv-common.h"
-
-/*
- *  Environment variables configurations
- */
 
 /*
  * Default environment variables
  */
-#define CONFIG_BOOTCOMMAND \
-	"setenv bootargs $(bootargs_console); " \
-	"run bootcmd_usb; " \
-	"bootm 0x00800000 0x01100000"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"mtdparts=mtdparts=orion_nand:1M(u-boot),4M(uImage)," \
@@ -49,13 +29,10 @@
 /*
  * Ethernet Driver configuration
  */
-#ifdef CONFIG_CMD_NET
 #define CONFIG_MVGBE_PORTS	{1, 0}	/* enable port 0 only */
 #define CONFIG_PHY_BASE_ADR	0
-#endif /* CONFIG_CMD_NET */
-
-/*
- * File system
- */
+#ifdef CONFIG_RESET_PHY_R
+#undef CONFIG_RESET_PHY_R	/* remove legacy reset_phy() */
+#endif
 
 #endif /* _CONFIG_POGO_E02_H */

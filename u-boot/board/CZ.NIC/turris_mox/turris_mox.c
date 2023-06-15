@@ -21,7 +21,6 @@
 #include <linux/libfdt.h>
 #include <linux/string.h>
 #include <miiphy.h>
-#include <mvebu/comphy.h>
 #include <spi.h>
 
 #include "mox_sp.h"
@@ -41,22 +40,15 @@
 #define ARMADA_37XX_SPI_DOUT	(MVEBU_REGISTER(0x10608))
 #define ARMADA_37XX_SPI_DIN	(MVEBU_REGISTER(0x1060c))
 
-#define ETH1_PATH	"/soc/internal-regs@d0000000/ethernet@40000"
-#define MDIO_PATH	"/soc/internal-regs@d0000000/mdio@32004"
-#define SFP_GPIO_PATH	"/soc/internal-regs@d0000000/spi@10600/moxtet@1/gpio@0"
-#define PCIE_PATH	"/soc/pcie@d0070000"
-#define SFP_PATH	"/sfp"
-#define LED_PATH	"/leds/led"
-#define BUTTON_PATH	"/gpio-keys/reset"
-
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_OF_BOARD_FIXUP)
 int board_fix_fdt(void *blob)
 {
+	enum fdt_status status_pcie, status_eth1;
 	u8 topology[MAX_MOX_MODULES];
-	int i, size, node;
-	bool enable;
+	int i, size, ret;
+	bool eth1_sgmii;
 
 	/*
 	 * SPI driver is not loaded in driver model yet, but we have to find out
@@ -64,14 +56,20 @@ int board_fix_fdt(void *blob)
 	 * to read SPI by reading/writing SPI registers directly
 	 */
 
-	writel(0x10df, ARMADA_37XX_SPI_CFG);
 	/* put pin from GPIO to SPI mode */
 	clrbits_le32(ARMADA_37XX_NB_GPIO_SEL, BIT(12));
+	/* configure cpol, cpha, prescale */
+	writel(0x10df, ARMADA_37XX_SPI_CFG);
+	mdelay(1);
 	/* enable SPI CS1 */
 	setbits_le32(ARMADA_37XX_SPI_CTRL, BIT(17));
 
 	while (!(readl(ARMADA_37XX_SPI_CTRL) & 0x2))
 		udelay(1);
+
+	status_pcie = FDT_STATUS_DISABLED;
+	status_eth1 = FDT_STATUS_DISABLED;
+	eth1_sgmii = false;
 
 	for (i = 0; i < MAX_MOX_MODULES; ++i) {
 		writel(0x0, ARMADA_37XX_SPI_DOUT);
@@ -84,6 +82,15 @@ int board_fix_fdt(void *blob)
 			break;
 
 		topology[i] &= 0xf;
+
+		if (topology[i] == MOX_MODULE_SFP &&
+		    status_pcie == FDT_STATUS_DISABLED)
+			eth1_sgmii = true;
+
+		if (topology[i] == MOX_MODULE_SFP ||
+		    topology[i] == MOX_MODULE_TOPAZ ||
+		    topology[i] == MOX_MODULE_PERIDOT)
+			status_eth1 = FDT_STATUS_OKAY;
 	}
 
 	size = i;
@@ -91,24 +98,30 @@ int board_fix_fdt(void *blob)
 	/* disable SPI CS1 */
 	clrbits_le32(ARMADA_37XX_SPI_CTRL, BIT(17));
 
+	ret = fdt_set_status_by_alias(blob, "ethernet1", status_eth1);
+	if (ret < 0)
+		printf("Cannot set status for eth1 in U-Boot's device tree: %s!\n",
+		       fdt_strerror(ret));
+
+	if (eth1_sgmii) {
+		ret = fdt_path_offset(blob, "ethernet1");
+		if (ret >= 0)
+			ret = fdt_setprop_string(blob, ret, "phy-mode", "sgmii");
+		if (ret < 0)
+			printf("Cannot set phy-mode for eth1 to sgmii in U-Boot device tree: %s!\n",
+			       fdt_strerror(ret));
+	}
+
 	if (size > 1 && (topology[1] == MOX_MODULE_PCI ||
 			 topology[1] == MOX_MODULE_USB3 ||
 			 topology[1] == MOX_MODULE_PASSPCI))
-		enable = true;
-	else
-		enable = false;
+		status_pcie = FDT_STATUS_OKAY;
 
-	node = fdt_path_offset(blob, PCIE_PATH);
-
-	if (node < 0) {
-		printf("Cannot find PCIe node in U-Boot's device tree!\n");
-		return 0;
-	}
-
-	if (fdt_setprop_string(blob, node, "status",
-			       enable ? "okay" : "disabled") < 0) {
-		printf("Cannot %s PCIe in U-Boot's device tree!\n",
-		       enable ? "enable" : "disable");
+	ret = fdt_set_status_by_compatible(blob, "marvell,armada-3700-pcie",
+					   status_pcie);
+	if (ret < 0) {
+		printf("Cannot set status for PCIe in U-Boot's device tree: %s!\n",
+		       fdt_strerror(ret));
 		return 0;
 	}
 
@@ -196,38 +209,6 @@ static int mox_get_topology(const u8 **ptopology, int *psize, int *pis_sd)
 		*psize = size;
 	if (pis_sd)
 		*pis_sd = is_sd;
-
-	return 0;
-}
-
-int comphy_update_map(struct comphy_map *serdes_map, int count)
-{
-	int ret, i, size, sfpindex = -1, swindex = -1;
-	const u8 *topology;
-
-	ret = mox_get_topology(&topology, &size, NULL);
-	if (ret)
-		return ret;
-
-	for (i = 0; i < size; ++i) {
-		if (topology[i] == MOX_MODULE_SFP && sfpindex == -1)
-			sfpindex = i;
-		else if ((topology[i] == MOX_MODULE_TOPAZ ||
-			  topology[i] == MOX_MODULE_PERIDOT) &&
-			 swindex == -1)
-			swindex = i;
-	}
-
-	if (sfpindex >= 0 && swindex >= 0) {
-		if (sfpindex < swindex)
-			serdes_map[0].speed = COMPHY_SPEED_1_25G;
-		else
-			serdes_map[0].speed = COMPHY_SPEED_3_125G;
-	} else if (sfpindex >= 0) {
-		serdes_map[0].speed = COMPHY_SPEED_1_25G;
-	} else if (swindex >= 0) {
-		serdes_map[0].speed = COMPHY_SPEED_3_125G;
-	}
 
 	return 0;
 }
@@ -359,20 +340,22 @@ static int get_reset_gpio(struct gpio_desc *reset_gpio)
 
 int misc_init_r(void)
 {
-	int ret;
-	u8 mac1[6], mac2[6];
+	u8 mac[2][6];
+	int i, ret;
 
-	ret = mbox_sp_get_board_info(NULL, mac1, mac2, NULL, NULL);
+	ret = mbox_sp_get_board_info(NULL, mac[0], mac[1], NULL, NULL);
 	if (ret < 0) {
 		printf("Cannot read data from OTP!\n");
 		return 0;
 	}
 
-	if (is_valid_ethaddr(mac1) && !env_get("ethaddr"))
-		eth_env_set_enetaddr("ethaddr", mac1);
+	for (i = 0; i < 2; ++i) {
+		u8 oldmac[6];
 
-	if (is_valid_ethaddr(mac2) && !env_get("eth1addr"))
-		eth_env_set_enetaddr("eth1addr", mac2);
+		if (is_valid_ethaddr(mac[i]) &&
+		    !eth_env_get_enetaddr_by_index("eth", i, oldmac))
+			eth_env_set_enetaddr_by_index("eth", i, mac[i]);
+	}
 
 	return 0;
 }
@@ -392,8 +375,22 @@ static void mox_phy_leds_start_blinking(void)
 {
 	struct phy_device *phydev;
 	struct mii_dev *bus;
+	const char *node_name;
+	int node;
 
-	bus = miiphy_get_dev_by_name("neta@30000");
+	node = fdt_path_offset(gd->fdt_blob, "ethernet0");
+	if (node < 0) {
+		printf("Cannot get eth0!\n");
+		return;
+	}
+
+	node_name = fdt_get_name(gd->fdt_blob, node, NULL);
+	if (!node_name) {
+		printf("Cannot get eth0 node name!\n");
+		return;
+	}
+
+	bus = miiphy_get_dev_by_name(node_name);
 	if (!bus) {
 		printf("Cannot get MDIO bus device!\n");
 		return;
@@ -414,12 +411,18 @@ static bool read_reset_button(void)
 	struct udevice *button, *led;
 	int i;
 
-	if (device_get_global_by_ofnode(ofnode_path(BUTTON_PATH), &button)) {
+	if (device_get_global_by_ofnode(
+			ofnode_first_subnode(ofnode_by_compatible(ofnode_null(),
+								  "gpio-keys")),
+			&button)) {
 		printf("Cannot find reset button!\n");
 		return false;
 	}
 
-	if (device_get_global_by_ofnode(ofnode_path(LED_PATH), &led)) {
+	if (device_get_global_by_ofnode(
+			ofnode_first_subnode(ofnode_by_compatible(ofnode_null(),
+								  "gpio-leds")),
+			&led)) {
 		printf("Cannot find status LED!\n");
 		return false;
 	}
@@ -485,44 +488,34 @@ static void handle_reset_button(void)
 	}
 }
 
-static void mox_print_info(void)
+int show_board_info(void)
 {
-	int ret, board_version, ram_size;
-	u64 serial_number;
+	int i, ret, board_version, ram_size, is_sd;
 	const char *pub_key;
+	const u8 *topology;
+	u64 serial_number;
+
+	printf("Model: CZ.NIC Turris Mox Board\n");
 
 	ret = mbox_sp_get_board_info(&serial_number, NULL, NULL, &board_version,
 				     &ram_size);
-	if (ret < 0)
-		return;
-
-	printf("Turris Mox:\n");
-	printf("  Board version: %i\n", board_version);
-	printf("  RAM size: %i MiB\n", ram_size);
-	printf("  Serial Number: %016llX\n", serial_number);
+	if (ret < 0) {
+		printf("  Cannot read board info: %i\n", ret);
+	} else {
+		printf("  Board version: %i\n", board_version);
+		printf("  RAM size: %i MiB\n", ram_size);
+		printf("  Serial Number: %016llX\n", serial_number);
+	}
 
 	pub_key = mox_sp_get_ecdsa_public_key();
 	if (pub_key)
 		printf("  ECDSA Public Key: %s\n", pub_key);
 	else
-		printf("Cannot read ECDSA Public Key\n");
-}
-
-int last_stage_init(void)
-{
-	int ret, i;
-	const u8 *topology;
-	int is_sd;
-	struct mii_dev *bus;
-	struct gpio_desc reset_gpio = {};
-
-	mox_print_info();
+		printf("  Cannot read ECDSA Public Key\n");
 
 	ret = mox_get_topology(&topology, &module_count, &is_sd);
-	if (ret) {
+	if (ret)
 		printf("Cannot read module topology!\n");
-		return 0;
-	}
 
 	printf("  SD/eMMC version: %s\n", is_sd ? "SD" : "eMMC");
 
@@ -554,8 +547,7 @@ int last_stage_init(void)
 		}
 	}
 
-	/* now check if modules are connected in supported mode */
-
+	/* check if modules are connected in supported mode */
 	for (i = 0; i < module_count; ++i) {
 		switch (topology[i]) {
 		case MOX_MODULE_SFP:
@@ -616,10 +608,16 @@ int last_stage_init(void)
 		}
 	}
 
-	/* now configure modules */
+	return 0;
+}
 
+int last_stage_init(void)
+{
+	struct gpio_desc reset_gpio = {};
+
+	/* configure modules */
 	if (get_reset_gpio(&reset_gpio) < 0)
-		return 0;
+		goto handle_reset_btn;
 
 	if (peridot > 0) {
 		if (configure_peridots(&reset_gpio) < 0) {
@@ -633,16 +631,23 @@ int last_stage_init(void)
 		mdelay(50);
 	}
 
+	/*
+	 * check if the addresses are set by reading Scratch & Misc register
+	 * 0x70 of Peridot (and potentially Topaz) modules
+	 */
 	if (peridot || topaz) {
-		/*
-		 * now check if the addresses are set by reading Scratch & Misc
-		 * register 0x70 of Peridot (and potentially Topaz) modules
-		 */
+		struct mii_dev *bus;
+		const char *node_name;
+		int node;
 
-		bus = miiphy_get_dev_by_name("neta@30000");
+		node = fdt_path_offset(gd->fdt_blob, "ethernet0");
+		node_name = (node >= 0) ? fdt_get_name(gd->fdt_blob, node, NULL) : NULL;
+		bus = node_name ? miiphy_get_dev_by_name(node_name) : NULL;
 		if (!bus) {
 			printf("Cannot get MDIO bus device!\n");
 		} else {
+			int i;
+
 			for (i = 0; i < peridot; ++i)
 				check_switch_address(bus, 0x10 + i);
 
@@ -653,82 +658,13 @@ int last_stage_init(void)
 		}
 	}
 
-	printf("\n");
-
+handle_reset_btn:
 	handle_reset_button();
 
 	return 0;
 }
 
 #if defined(CONFIG_OF_BOARD_SETUP)
-
-static int vnode_by_path(void *blob, const char *fmt, va_list ap)
-{
-	char path[128];
-
-	vsnprintf(path, 128, fmt, ap);
-	return fdt_path_offset(blob, path);
-}
-
-static int node_by_path(void *blob, const char *fmt, ...)
-{
-	va_list ap;
-	int res;
-
-	va_start(ap, fmt);
-	res = vnode_by_path(blob, fmt, ap);
-	va_end(ap);
-
-	return res;
-}
-
-static int phandle_by_path(void *blob, const char *fmt, ...)
-{
-	va_list ap;
-	int node, phandle, res;
-
-	va_start(ap, fmt);
-	node = vnode_by_path(blob, fmt, ap);
-	va_end(ap);
-
-	if (node < 0)
-		return node;
-
-	phandle = fdt_get_phandle(blob, node);
-	if (phandle > 0)
-		return phandle;
-
-	phandle = fdt_get_max_phandle(blob);
-	if (phandle < 0)
-		return phandle;
-
-	phandle += 1;
-
-	res = fdt_setprop_u32(blob, node, "linux,phandle", phandle);
-	if (res < 0)
-		return res;
-
-	res = fdt_setprop_u32(blob, node, "phandle", phandle);
-	if (res < 0)
-		return res;
-
-	return phandle;
-}
-
-static int enable_by_path(void *blob, const char *fmt, ...)
-{
-	va_list ap;
-	int node;
-
-	va_start(ap, fmt);
-	node = vnode_by_path(blob, fmt, ap);
-	va_end(ap);
-
-	if (node < 0)
-		return node;
-
-	return fdt_setprop_string(blob, node, "status", "okay");
-}
 
 static bool is_topaz(int id)
 {
@@ -742,12 +678,22 @@ static int switch_addr(int id)
 
 static int setup_switch(void *blob, int id)
 {
-	int res, addr, i, node, phandle;
+	int res, addr, i, node;
+	char mdio_path[64];
+
+	node = fdt_node_offset_by_compatible(blob, -1, "marvell,orion-mdio");
+	if (node < 0)
+		return node;
+
+	res = fdt_get_path(blob, node, mdio_path, sizeof(mdio_path));
+	if (res < 0)
+		return res;
 
 	addr = switch_addr(id);
 
 	/* first enable the switch by setting status = "okay" */
-	res = enable_by_path(blob, MDIO_PATH "/switch%i@%x", id, addr);
+	res = fdt_status_okay_by_pathf(blob, "%s/switch%i@%x", mdio_path, id,
+				       addr);
 	if (res < 0)
 		return res;
 
@@ -756,13 +702,13 @@ static int setup_switch(void *blob, int id)
 	 * enable corresponding ports
 	 */
 	if (id < peridot + topaz - 1) {
-		res = enable_by_path(blob,
-				     MDIO_PATH "/switch%i@%x/ports/port@a",
-				     id, addr);
+		res = fdt_status_okay_by_pathf(blob,
+					       "%s/switch%i@%x/ports/port@a",
+					       mdio_path, id, addr);
 	} else if (id == peridot - 1 && !topaz && sfp) {
-		res = enable_by_path(blob,
-				     MDIO_PATH "/switch%i@%x/ports/port-sfp@a",
-				     id, addr);
+		res = fdt_status_okay_by_pathf(blob,
+					       "%s/switch%i@%x/ports/port-sfp@a",
+					       mdio_path, id, addr);
 	} else {
 		res = 0;
 	}
@@ -773,18 +719,21 @@ static int setup_switch(void *blob, int id)
 		return 0;
 
 	/* finally change link property if needed */
-	node = node_by_path(blob, MDIO_PATH "/switch%i@%x/ports/port@a", id,
-			    addr);
+	node = fdt_node_offset_by_pathf(blob, "%s/switch%i@%x/ports/port@a",
+					mdio_path, id, addr);
 	if (node < 0)
 		return node;
 
 	for (i = id + 1; i < peridot + topaz; ++i) {
-		phandle = phandle_by_path(blob,
-					  MDIO_PATH "/switch%i@%x/ports/port@%x",
-					  i, switch_addr(i),
-					  is_topaz(i) ? 5 : 9);
-		if (phandle < 0)
-			return phandle;
+		unsigned int phandle;
+
+		phandle = fdt_create_phandle_by_pathf(blob,
+						      "%s/switch%i@%x/ports/port@%x",
+						      mdio_path, i,
+						      switch_addr(i),
+						      is_topaz(i) ? 5 : 9);
+		if (!phandle)
+			return -FDT_ERR_NOPHANDLES;
 
 		if (i == id + 1)
 			res = fdt_setprop_u32(blob, node, "link", phandle);
@@ -797,38 +746,17 @@ static int setup_switch(void *blob, int id)
 	return 0;
 }
 
-static int remove_disabled_nodes(void *blob)
-{
-	while (1) {
-		int res, offset;
-
-		offset = fdt_node_offset_by_prop_value(blob, -1, "status",
-						       "disabled", 9);
-		if (offset < 0)
-			break;
-
-		res = fdt_del_node(blob, offset);
-		if (res < 0)
-			return res;
-	}
-
-	return 0;
-}
-
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
-	int node, phandle, res;
+	int res;
 
 	/*
 	 * If MOX B (PCI), MOX F (USB) or MOX G (Passthrough PCI) modules are
 	 * connected, enable the PCIe node.
 	 */
 	if (pci || usb || passpci) {
-		node = fdt_path_offset(blob, PCIE_PATH);
-		if (node < 0)
-			return node;
-
-		res = fdt_setprop_string(blob, node, "status", "okay");
+		res = fdt_status_okay_by_compatible(blob,
+						    "marvell,armada-3700-pcie");
 		if (res < 0)
 			return res;
 
@@ -845,7 +773,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	if (peridot || topaz) {
 		int i;
 
-		res = enable_by_path(blob, ETH1_PATH);
+		res = fdt_status_okay_by_alias(blob, "ethernet1");
 		if (res < 0)
 			return res;
 
@@ -863,20 +791,25 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	 * Also enable and configure SFP GPIO controller node.
 	 */
 	if (sfp) {
-		res = enable_by_path(blob, SFP_PATH);
+		int node;
+
+		res = fdt_status_okay_by_compatible(blob, "sff,sfp");
 		if (res < 0)
 			return res;
 
-		res = enable_by_path(blob, ETH1_PATH);
+		res = fdt_status_okay_by_alias(blob, "ethernet1");
 		if (res < 0)
 			return res;
 
 		if (!peridot) {
-			phandle = phandle_by_path(blob, SFP_PATH);
-			if (phandle < 0)
-				return res;
+			unsigned int phandle;
 
-			node = node_by_path(blob, ETH1_PATH);
+			phandle = fdt_create_phandle_by_compatible(blob,
+								   "sff,sfp");
+			if (!phandle)
+				return -FDT_ERR_NOPHANDLES;
+
+			node = fdt_path_offset(blob, "ethernet1");
 			if (node < 0)
 				return node;
 
@@ -890,7 +823,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 				return res;
 		}
 
-		res = enable_by_path(blob, SFP_GPIO_PATH);
+		res = fdt_status_okay_by_compatible(blob, "cznic,moxtet-gpio");
 		if (res < 0)
 			return res;
 
@@ -898,7 +831,8 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 			char newname[16];
 
 			/* moxtet-sfp is on non-zero position, change default */
-			node = node_by_path(blob, SFP_GPIO_PATH);
+			node = fdt_node_offset_by_compatible(blob, -1,
+							     "cznic,moxtet-gpio");
 			if (node < 0)
 				return node;
 
@@ -917,7 +851,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	fdt_fixup_ethernet(blob);
 
 	/* Finally remove disabled nodes, as per Rob Herring's request. */
-	remove_disabled_nodes(blob);
+	fdt_delete_disabled_nodes(blob);
 
 	return 0;
 }

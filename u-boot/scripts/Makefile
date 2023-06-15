@@ -9,5 +9,4 @@ hostprogs-$(CONFIG_BUILD_BIN2C)		+= bin2c
 always		:= $(hostprogs-y)
 
 # Let clean descend into subdirs
-subdir-	+= basic kconfig
-subdir-$(CONFIG_DTC)	+= dtc
+subdir-	+= basic kconfig dtc

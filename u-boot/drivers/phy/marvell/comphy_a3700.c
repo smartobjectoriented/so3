@@ -4,13 +4,14 @@
  */
 
 #include <common.h>
-#include <fdtdec.h>
+#include <fdt_support.h>
 #include <log.h>
 #include <asm/global_data.h>
 #include <asm/io.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/soc.h>
 #include <linux/delay.h>
+#include <phy.h>
 
 #include "comphy_a3700.h"
 
@@ -200,7 +201,7 @@ static int comphy_pcie_power_up(u32 speed, u32 invert)
 	 * 6. Enable the output of 100M/125M/500M clock
 	 */
 	reg_set16(phy_addr(PCIE, MISC_REG0),
-		  0xA00D | rb_clk500m_en | rb_clk100m_125m_en, 0xFFFF);
+		  0xA00D | rb_clk500m_en | rb_txdclk_2x_sel | rb_clk100m_125m_en, 0xFFFF);
 
 	/*
 	 * 7. Enable TX
@@ -230,9 +231,13 @@ static int comphy_pcie_power_up(u32 speed, u32 invert)
 	 */
 	if (invert & COMPHY_POLARITY_TXD_INVERT)
 		reg_set16(phy_addr(PCIE, SYNC_PATTERN), phy_txd_inv, 0);
+	else
+		reg_set16(phy_addr(PCIE, SYNC_PATTERN), 0, phy_txd_inv);
 
 	if (invert & COMPHY_POLARITY_RXD_INVERT)
 		reg_set16(phy_addr(PCIE, SYNC_PATTERN), phy_rxd_inv, 0);
+	else
+		reg_set16(phy_addr(PCIE, SYNC_PATTERN), 0, phy_rxd_inv);
 
 	/*
 	 * 11. Release SW reset
@@ -467,9 +472,13 @@ static int comphy_usb3_power_up(u32 lane, u32 type, u32 speed, u32 invert)
 	 */
 	if (invert & COMPHY_POLARITY_TXD_INVERT)
 		usb3_reg_set16(SYNC_PATTERN, phy_txd_inv, 0, lane);
+	else
+		usb3_reg_set16(SYNC_PATTERN, 0, phy_txd_inv, lane);
 
 	if (invert & COMPHY_POLARITY_RXD_INVERT)
 		usb3_reg_set16(SYNC_PATTERN, phy_rxd_inv, 0, lane);
+	else
+		usb3_reg_set16(SYNC_PATTERN, 0, phy_rxd_inv, lane);
 
 	/*
 	 * 10. Set max speed generation to USB3.0 5Gbps
@@ -586,24 +595,30 @@ static int comphy_usb2_power_up(u8 usb32)
 			      rb_usb2phy_pllcal_done,	/* value */
 			      rb_usb2phy_pllcal_done,	/* mask */
 			      POLL_32B_REG);		/* 32bit */
-	if (!ret)
+	if (!ret) {
 		printf("Failed to end USB2 PLL calibration\n");
+		goto out;
+	}
 
 	/* Assert impedance calibration done */
 	ret = comphy_poll_reg(USB2_PHY_CAL_CTRL_ADDR(usb32),
 			      rb_usb2phy_impcal_done,	/* value */
 			      rb_usb2phy_impcal_done,	/* mask */
 			      POLL_32B_REG);		/* 32bit */
-	if (!ret)
+	if (!ret) {
 		printf("Failed to end USB2 impedance calibration\n");
+		goto out;
+	}
 
 	/* Assert squetch calibration done */
 	ret = comphy_poll_reg(USB2_PHY_RX_CHAN_CTRL1_ADDR(usb32),
 			      rb_usb2phy_sqcal_done,	/* value */
 			      rb_usb2phy_sqcal_done,	/* mask */
 			      POLL_32B_REG);		/* 32bit */
-	if (!ret)
+	if (!ret) {
 		printf("Failed to end USB2 unknown calibration\n");
+		goto out;
+	}
 
 	/* Assert PLL is ready */
 	ret = comphy_poll_reg(USB2_PHY_PLL_CTRL0_ADDR(usb32),
@@ -611,9 +626,12 @@ static int comphy_usb2_power_up(u8 usb32)
 			      rb_usb2phy_pll_ready,		/* mask */
 			      POLL_32B_REG);		/* 32bit */
 
-	if (!ret)
+	if (!ret) {
 		printf("Failed to lock USB2 PLL\n");
+		goto out;
+	}
 
+out:
 	debug_exit();
 
 	return ret;
@@ -839,9 +857,13 @@ static int comphy_sgmii_power_up(u32 lane, u32 speed, u32 invert)
 	 */
 	if (invert & COMPHY_POLARITY_TXD_INVERT)
 		reg_set16(sgmiiphy_addr(lane, SYNC_PATTERN), phy_txd_inv, 0);
+	else
+		reg_set16(sgmiiphy_addr(lane, SYNC_PATTERN), 0, phy_txd_inv);
 
 	if (invert & COMPHY_POLARITY_RXD_INVERT)
 		reg_set16(sgmiiphy_addr(lane, SYNC_PATTERN), phy_rxd_inv, 0);
+	else
+		reg_set16(sgmiiphy_addr(lane, SYNC_PATTERN), 0, phy_rxd_inv);
 
 	/*
 	 * 19. Set PHY input ports PIN_PU_PLL, PIN_PU_TX and PIN_PU_RX to 1
@@ -861,8 +883,10 @@ static int comphy_sgmii_power_up(u32 lane, u32 speed, u32 invert)
 			      rb_pll_ready_tx | rb_pll_ready_rx, /* value */
 			      rb_pll_ready_tx | rb_pll_ready_rx, /* mask */
 			      POLL_32B_REG);			/* 32bit */
-	if (!ret)
+	if (!ret) {
 		printf("Failed to lock PLL for SGMII PHY %d\n", lane);
+		goto out;
+	}
 
 	/*
 	 * 21. Set COMPHY input port PIN_TX_IDLE=0
@@ -883,14 +907,17 @@ static int comphy_sgmii_power_up(u32 lane, u32 speed, u32 invert)
 			      rb_rx_init_done,			/* value */
 			      rb_rx_init_done,			/* mask */
 			      POLL_32B_REG);			/* 32bit */
-	if (!ret)
+	if (!ret) {
 		printf("Failed to init RX of SGMII PHY %d\n", lane);
+		goto out;
+	}
 
 	/*
 	 * Restore saved selector.
 	 */
 	reg_set(COMPHY_SEL_ADDR, saved_selector, 0xFFFFFFFF);
 
+out:
 	debug_exit();
 
 	return ret;
@@ -910,7 +937,7 @@ void comphy_dedicated_phys_init(void)
 		 */
 		if (usb32 == 0) {
 			node = fdt_node_offset_by_compatible(
-				blob, -1, "marvell,armada3700-ehci");
+				blob, -1, "marvell,armada-3700-ehci");
 		} else {
 			node = fdt_node_offset_by_compatible(
 				blob, -1, "marvell,armada3700-xhci");
@@ -954,6 +981,138 @@ void comphy_dedicated_phys_init(void)
 	}
 
 	debug_exit();
+}
+
+static int find_available_node_by_compatible(int offset, const char *compatible)
+{
+	fdt_for_each_node_by_compatible(offset, gd->fdt_blob, offset,
+					compatible)
+		if (fdtdec_get_is_enabled(gd->fdt_blob, offset))
+			return offset;
+
+	return -1;
+}
+
+static bool comphy_a3700_find_lane(const int nodes[3], int node,
+				   int port, int *lane, int *invert)
+{
+	int res, i, j;
+
+	for (i = 0; ; i++) {
+		struct fdtdec_phandle_args args;
+
+		res = fdtdec_parse_phandle_with_args(gd->fdt_blob, node, "phys",
+						     "#phy-cells", 0, i, &args);
+		if (res)
+			return false;
+
+		for (j = 0; j < 3; j++) {
+			if (nodes[j] >= 0 && args.node == nodes[j] &&
+			    (args.args_count >= 1 ? args.args[0] : 0) == port) {
+				*lane = j;
+				*invert = args.args_count >= 2 ? args.args[1]
+							       : 0;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+static void comphy_a3700_fill_cfg(struct chip_serdes_phy_config *cfg,
+				  const int nodes[3], const char *compatible,
+				  int type)
+{
+	int node, lane, port, speed, invert;
+
+	port = (type == COMPHY_TYPE_SGMII1) ? 1 : 0;
+
+	node = -1;
+	while (1) {
+		node = find_available_node_by_compatible(node, compatible);
+		if (node < 0)
+			return;
+
+		if (comphy_a3700_find_lane(nodes, node, port, &lane, &invert))
+			break;
+	}
+
+	if (cfg->comphy_map_data[lane].type != COMPHY_TYPE_UNCONNECTED) {
+		printf("Error: More PHYs defined for lane %d, skipping\n",
+		       lane);
+		return;
+	}
+
+	if (type == COMPHY_TYPE_SGMII0 || type == COMPHY_TYPE_SGMII1) {
+		const char *phy_mode;
+
+		phy_mode = fdt_getprop(gd->fdt_blob, node, "phy-mode", NULL);
+		if (phy_mode &&
+		    !strcmp(phy_mode,
+			    phy_string_for_interface(PHY_INTERFACE_MODE_2500BASEX)))
+			speed = COMPHY_SPEED_3_125G;
+		else
+			speed = COMPHY_SPEED_1_25G;
+	} else if (type == COMPHY_TYPE_SATA0) {
+		speed = COMPHY_SPEED_6G;
+	} else {
+		speed = COMPHY_SPEED_5G;
+	}
+
+	cfg->comphy_map_data[lane].type = type;
+	cfg->comphy_map_data[lane].speed = speed;
+	cfg->comphy_map_data[lane].invert = invert;
+}
+
+static const fdt32_t comphy_a3700_mux_lane_order[3] = {
+	__constant_cpu_to_be32(1),
+	__constant_cpu_to_be32(0),
+	__constant_cpu_to_be32(2),
+};
+
+int comphy_a3700_init_serdes_map(int node, struct chip_serdes_phy_config *cfg)
+{
+	int comphy_nodes[3];
+	int child, i;
+
+	for (i = 0; i < ARRAY_SIZE(comphy_nodes); i++)
+		comphy_nodes[i] = -FDT_ERR_NOTFOUND;
+
+	fdt_for_each_subnode(child, gd->fdt_blob, node) {
+		if (!fdtdec_get_is_enabled(gd->fdt_blob, child))
+			continue;
+
+		i = fdtdec_get_int(gd->fdt_blob, child, "reg", -1);
+		if (i < 0 || i >= ARRAY_SIZE(comphy_nodes))
+			continue;
+
+		comphy_nodes[i] = child;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(comphy_nodes); i++) {
+		cfg->comphy_map_data[i].type = COMPHY_TYPE_UNCONNECTED;
+		cfg->comphy_map_data[i].speed = COMPHY_SPEED_INVALID;
+	}
+
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada3700-u3d",
+			      COMPHY_TYPE_USB3_DEVICE);
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada3700-xhci",
+			      COMPHY_TYPE_USB3_HOST0);
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada-3700-pcie",
+			      COMPHY_TYPE_PEX0);
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada-3700-ahci",
+			      COMPHY_TYPE_SATA0);
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada-3700-neta",
+			      COMPHY_TYPE_SGMII0);
+	comphy_a3700_fill_cfg(cfg, comphy_nodes, "marvell,armada-3700-neta",
+			      COMPHY_TYPE_SGMII1);
+
+	cfg->comphy_lanes_count = 3;
+	cfg->comphy_mux_bitcount = 4;
+	cfg->comphy_mux_lane_order = comphy_a3700_mux_lane_order;
+
+	return 0;
 }
 
 int comphy_a3700_init(struct chip_serdes_phy_config *chip_cfg,

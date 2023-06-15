@@ -22,6 +22,25 @@ ENDPROC(s_init)
 
 .pushsection .text.lowlevel_init, "ax"
 WEAK(lowlevel_init)
+
+	/* SOO.tech */
+
+	/*
+	 * Examine if we are running on CPU > #0
+	 * If yes, we suspend the CPU with wfi instruction.
+	 */
+
+	 mrc p15, 0, r0, c0, c0, 5
+	 ands r0, r0, #3
+
+	 beq cont
+
+loop:
+	 wfi
+	 b loop
+
+cont:
+
 	/*
 	 * Setup a temporary stack. Global data is not available yet.
 	 */

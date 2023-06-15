@@ -102,7 +102,6 @@ config MX6_OCRAM_256KB
 config MX6_DDRCAL
 	bool "Include dynamic DDR calibration routines"
 	depends on SPL
-	default n
 	help
 	  Say "Y" if your board uses dynamic (per-boot) DDR calibration.
 	  If unsure, say N.
@@ -231,15 +230,23 @@ config TARGET_GW_VENTANA
 	imply CMD_SATA
 	imply CMD_SPL
 
+config TARGET_KONTRON_MX6UL
+	bool "Kontron Electronics SL/BL i.MX6UL/ULL (N63xx/N64xx)"
+	depends on MX6UL
+	select BINMAN
+	select DM
+	select DM_THERMAL
+	select SUPPORT_SPL
+	imply CMD_DM
+
 config TARGET_KOSAGI_NOVENA
 	bool "Kosagi Novena"
 	select BOARD_LATE_INIT
 	select DM_ETH
 	select DM_GPIO
 	select DM_MMC
-	select DM_PCI
+	select PCI
 	select DM_SCSI
-	select DM_USB
 	select DM_VIDEO
 	select OF_CONTROL
 	select SUPPORT_SPL
@@ -302,20 +309,20 @@ config TARGET_MX6DL_MAMOJ
 	select PINCTRL
 	select SPL
 	select SPL_DM if SPL
-	select SPL_GPIO_SUPPORT if SPL
+	select SPL_GPIO if SPL
 	select SPL_LIBCOMMON_SUPPORT if SPL
 	select SPL_LIBDISK_SUPPORT if SPL
 	select SPL_LIBGENERIC_SUPPORT if SPL
-	select SPL_MMC_SUPPORT if SPL
+	select SPL_MMC if SPL
 	select SPL_OF_CONTROL if SPL
 	select SPL_OF_LIBFDT if SPL
 	select SPL_PINCTRL if SPL
 	select SPL_SEPARATE_BSS if SPL
-	select SPL_SERIAL_SUPPORT if SPL
+	select SPL_SERIAL if SPL
 	select SPL_USB_GADGET if SPL
-	select SPL_USB_HOST_SUPPORT if SPL
+	select SPL_USB_HOST if SPL
 	select SPL_USB_SDP_SUPPORT if SPL
-	select SPL_WATCHDOG_SUPPORT if SPL
+	select SPL_WATCHDOG if SPL
 	select SUPPORT_SPL
 	imply CMD_DM
 
@@ -556,14 +563,13 @@ config TARGET_KP_IMX6Q_TPC
 	select DM_SERIAL
 	select DM_I2C
 	select DM_GPIO
-	select DM_USB
 	select SUPPORT_SPL
 	select SPL_SEPARATE_BSS if SPL
 	imply CMD_DM
 	imply CMD_SPL
 
 config TARGET_TQMA6
-	bool "TQ Systems TQMa6 board"
+	bool "TQ-Systems TQMa6 board"
 	select BOARD_EARLY_INIT_F
 	select BOARD_LATE_INIT
 	select MXC_SPI
@@ -582,6 +588,7 @@ config TARGET_UDOO
 	depends on MX6QDL
 	select BOARD_LATE_INIT
 	select SUPPORT_SPL
+	imply CMD_DM
 
 config TARGET_UDOO_NEO
 	bool "UDOO Neo"
@@ -671,6 +678,7 @@ source "board/grinn/liteboard/Kconfig"
 source "board/phytec/pcm058/Kconfig"
 source "board/phytec/pcl063/Kconfig"
 source "board/gateworks/gw_ventana/Kconfig"
+source "board/kontron/sl-mx6ul/Kconfig"
 source "board/kosagi/novena/Kconfig"
 source "board/softing/vining_2000/Kconfig"
 source "board/liebherr/display5/Kconfig"
@@ -681,7 +689,7 @@ source "board/somlabs/visionsom-6ull/Kconfig"
 source "board/technexion/pico-imx6/Kconfig"
 source "board/technexion/pico-imx6ul/Kconfig"
 source "board/tbs/tbs2910/Kconfig"
-source "board/tqc/tqma6/Kconfig"
+source "board/tq/tqma6/Kconfig"
 source "board/toradex/apalis_imx6/Kconfig"
 source "board/toradex/colibri_imx6/Kconfig"
 source "board/toradex/colibri-imx6ull/Kconfig"

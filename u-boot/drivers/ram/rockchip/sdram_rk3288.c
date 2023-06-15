@@ -862,7 +862,7 @@ static int sdram_init(struct dram_info *dram,
 		 * CS1, n=2
 		 * CS0 & CS1, n = 3
 		 */
-		sdram_params->ch[channel].rank = 2,
+		sdram_params->ch[channel].rank = 2;
 		clrsetbits_le32(&publ->pgcr, 0xF << 18,
 				(sdram_params->ch[channel].rank | 1) << 18);
 
@@ -973,9 +973,11 @@ static int setup_sdram(struct udevice *dev)
 
 static int rk3288_dmc_of_to_plat(struct udevice *dev)
 {
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
 	struct rk3288_sdram_params *params = dev_get_plat(dev);
 	int ret;
+
+	if (!CONFIG_IS_ENABLED(OF_REAL))
+		return 0;
 
 	/* Rk3288 supports dual-channel, set default channel num to 2 */
 	params->num_channels = 2;
@@ -1008,7 +1010,6 @@ static int rk3288_dmc_of_to_plat(struct udevice *dev)
 	ret = regmap_init_mem(dev_ofnode(dev), &params->map);
 	if (ret)
 		return ret;
-#endif
 
 	return 0;
 }

@@ -12,18 +12,6 @@
 #ifndef _CONFIG_DNS325_H
 #define _CONFIG_DNS325_H
 
-/*
- * Machine number definition
- */
-#define CONFIG_MACH_TYPE		MACH_TYPE_DNS325
-
-/*
- * High Level Configuration Options (easy to change)
- */
-#define CONFIG_FEROCEON_88FR131		/* CPU Core subversion */
-#define CONFIG_KW88F6281		/* SOC Name */
-#define CONFIG_SKIP_LOWLEVEL_INIT	/* disable board lowlevel_init */
-
 #include "mv-common.h"
 
 /* Remove or override few declarations from mv-common.h */
@@ -38,7 +26,6 @@
 /*
  * Enable GPI0 support
  */
-#define CONFIG_KIRKWOOD_GPIO
 
 /*
  * Environment variables configurations
@@ -77,18 +64,5 @@
 		"setenv bootenvroot ${nandroot}; " \
 		"setenv bootenvrootfstype ${nandrootfstype}; " \
 		"setenv bootenvloadimage ${nandloadimage}\0"
-
-#define CONFIG_BOOTCOMMAND \
-	"if test -n ${bootenv} && usb start; then " \
-		"if run loadbootenv; then " \
-			"echo Loaded environment ${bootenv} from usb;" \
-			"run importbootenv;" \
-		"fi;" \
-		"if test -n ${bootenvcmd}; then " \
-			"echo Running bootenvcmd ...;" \
-			"run bootenvcmd;" \
-		"fi;" \
-	"fi;" \
-	"run setnandbootenv subbootcmd;"
 
 #endif /* _CONFIG_DNS325_H */
