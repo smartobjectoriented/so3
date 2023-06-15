@@ -64,18 +64,6 @@ static int ti_sci_clk_of_xlate(struct clk *clk,
 	return 0;
 }
 
-static int ti_sci_clk_request(struct clk *clk)
-{
-	debug("%s(clk=%p)\n", __func__, clk);
-	return 0;
-}
-
-static int ti_sci_clk_free(struct clk *clk)
-{
-	debug("%s(clk=%p)\n", __func__, clk);
-	return 0;
-}
-
 static ulong ti_sci_clk_get_rate(struct clk *clk)
 {
 	struct ti_sci_clk_data *data = dev_get_priv(clk->dev);
@@ -111,10 +99,12 @@ static ulong ti_sci_clk_set_rate(struct clk *clk, ulong rate)
 #endif
 
 	ret = cops->set_freq(sci, clk->id, clk->data, 0, rate, ULONG_MAX);
-	if (ret)
+	if (ret) {
 		dev_err(clk->dev, "%s: set_freq failed (%d)\n", __func__, ret);
+		return ret;
+	}
 
-	return ret;
+	return rate;
 }
 
 static int ti_sci_clk_set_parent(struct clk *clk, struct clk *parent)
@@ -206,8 +196,6 @@ static const struct udevice_id ti_sci_clk_of_match[] = {
 
 static struct clk_ops ti_sci_clk_ops = {
 	.of_xlate = ti_sci_clk_of_xlate,
-	.request = ti_sci_clk_request,
-	.rfree = ti_sci_clk_free,
 	.get_rate = ti_sci_clk_get_rate,
 	.set_rate = ti_sci_clk_set_rate,
 	.set_parent = ti_sci_clk_set_parent,

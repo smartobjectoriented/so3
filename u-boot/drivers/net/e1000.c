@@ -5251,11 +5251,7 @@ e1000_configure_tx(struct e1000_hw *hw)
 		mdelay(20);
 	}
 
-
-
 	E1000_WRITE_REG(hw, TCTL, tctl);
-
-
 }
 
 /**
@@ -5796,7 +5792,7 @@ static int do_e1000(struct cmd_tbl *cmdtp, int flag, int argc,
 	}
 
 	/* Make sure we can find the requested e1000 card */
-	cardnum = simple_strtoul(argv[1], NULL, 10);
+	cardnum = dectoul(argv[1], NULL);
 #ifdef CONFIG_DM_ETH
 	e1000_name(name, cardnum);
 	ret = uclass_get_device_by_name(UCLASS_ETH, name, &dev);

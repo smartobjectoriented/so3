@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+
 
 #include <common.h>
+#include <clk.h>
 #include <dm.h>
 #include <dt-structs.h>
+#include <irq.h>
 #include <dm/test.h>
 #include <test/test.h>
 #include <test/ut.h>
+#include <asm-generic/gpio.h>
 #include <asm/global_data.h>
 
 /* Test that we can find a device using of-platdata */
@@ -27,20 +30,19 @@ static int dm_test_of_plat_props(struct unit_test_state *uts)
 	struct udevice *dev;
 	int i;
 
-	/* Skip the clock */
-	ut_assertok(uclass_first_device_err(UCLASS_MISC, &dev));
-	ut_asserteq_str("sandbox_clk_test", dev->name);
+	ut_assertok(uclass_get_device_by_name(UCLASS_MISC, "sandbox_spl_test",
+					      &dev));
 
-	ut_assertok(uclass_next_device_err(&dev));
 	plat = dev_get_plat(dev);
 	ut_assert(plat->boolval);
 	ut_asserteq(1, plat->intval);
-	ut_asserteq(4, ARRAY_SIZE(plat->intarray));
+	ut_asserteq(3, ARRAY_SIZE(plat->intarray));
 	ut_asserteq(2, plat->intarray[0]);
 	ut_asserteq(3, plat->intarray[1]);
 	ut_asserteq(4, plat->intarray[2]);
-	ut_asserteq(0, plat->intarray[3]);
 	ut_asserteq(5, plat->byteval);
+	ut_asserteq(1, ARRAY_SIZE(plat->maybe_empty_int));
+	ut_asserteq(0, plat->maybe_empty_int[0]);
 	ut_asserteq(3, ARRAY_SIZE(plat->bytearray));
 	ut_asserteq(6, plat->bytearray[0]);
 	ut_asserteq(0, plat->bytearray[1]);
@@ -61,7 +63,6 @@ static int dm_test_of_plat_props(struct unit_test_state *uts)
 	ut_asserteq(5, plat->intarray[0]);
 	ut_asserteq(0, plat->intarray[1]);
 	ut_asserteq(0, plat->intarray[2]);
-	ut_asserteq(0, plat->intarray[3]);
 	ut_asserteq(8, plat->byteval);
 	ut_asserteq(3, ARRAY_SIZE(plat->bytearray));
 	ut_asserteq(1, plat->bytearray[0]);
@@ -80,6 +81,7 @@ static int dm_test_of_plat_props(struct unit_test_state *uts)
 	ut_asserteq_str("one", plat->stringarray[0]);
 	ut_asserteq_str("", plat->stringarray[1]);
 	ut_asserteq_str("", plat->stringarray[2]);
+	ut_asserteq(1, plat->maybe_empty_int[0]);
 
 	ut_assertok(uclass_next_device_err(&dev));
 	plat = dev_get_plat(dev);
@@ -101,7 +103,7 @@ DM_TEST(dm_test_of_plat_props, UT_TESTF_SCAN_PDATA);
  * @uts: Test state
  * @parent: Parent to search
  * @found: bool array to update
- * @return 0 if OK, non-zero on error
+ * Return: 0 if OK, non-zero on error
  */
 static int find_driver_info(struct unit_test_state *uts, struct udevice *parent,
 			    bool found[])
@@ -221,3 +223,59 @@ static int dm_test_of_plat_parent(struct unit_test_state *uts)
 }
 DM_TEST(dm_test_of_plat_parent, UT_TESTF_SCAN_PDATA);
 #endif
+
+/* Test clocks with of-platdata */
+static int dm_test_of_plat_clk(struct unit_test_state *uts)
+{
+	struct dtd_sandbox_clk_test *plat;
+	struct udevice *dev;
+	struct clk clk;
+
+	ut_assertok(uclass_first_device_err(UCLASS_MISC, &dev));
+	ut_asserteq_str("sandbox_clk_test", dev->name);
+	plat = dev_get_plat(dev);
+
+	ut_assertok(clk_get_by_phandle(dev, &plat->clocks[0], &clk));
+	ut_asserteq_str("sandbox_fixed_clock", clk.dev->name);
+
+	return 0;
+}
+DM_TEST(dm_test_of_plat_clk, UT_TESTF_SCAN_PDATA);
+
+/* Test irqs with of-platdata */
+static int dm_test_of_plat_irq(struct unit_test_state *uts)
+{
+	struct dtd_sandbox_irq_test *plat;
+	struct udevice *dev;
+	struct irq irq;
+
+	ut_assertok(uclass_get_device_by_name(UCLASS_MISC, "sandbox_irq_test",
+					      &dev));
+	plat = dev_get_plat(dev);
+
+	ut_assertok(irq_get_by_phandle(dev, &plat->interrupts_extended[0],
+				       &irq));
+	ut_asserteq_str("sandbox_irq", irq.dev->name);
+
+	return 0;
+}
+DM_TEST(dm_test_of_plat_irq, UT_TESTF_SCAN_PDATA);
+
+/* Test GPIOs with of-platdata */
+static int dm_test_of_plat_gpio(struct unit_test_state *uts)
+{
+	struct dtd_sandbox_gpio_test *plat;
+	struct udevice *dev;
+	struct gpio_desc desc;
+
+	ut_assertok(uclass_get_device_by_name(UCLASS_MISC, "sandbox_gpio_test",
+					      &dev));
+	plat = dev_get_plat(dev);
+
+	ut_assertok(gpio_request_by_phandle(dev, &plat->test_gpios[0], &desc,
+					    GPIOD_IS_OUT));
+	ut_asserteq_str("sandbox_gpio", desc.dev->name);
+
+	return 0;
+}
+DM_TEST(dm_test_of_plat_gpio, UT_TESTF_SCAN_PDATA);

@@ -5,9 +5,9 @@ config SPL
 	select SPL_CLK
 	select SPL_DM
 	select SPL_DM_SEQ_ALIAS
-	select SPL_DRIVERS_MISC_SUPPORT
+	select SPL_DRIVERS_MISC
 	select SPL_FRAMEWORK
-	select SPL_GPIO_SUPPORT
+	select SPL_GPIO
 	select SPL_LIBCOMMON_SUPPORT
 	select SPL_LIBGENERIC_SUPPORT
 	select SPL_OF_CONTROL
@@ -15,14 +15,14 @@ config SPL
 	select SPL_PINCTRL
 	select SPL_REGMAP
 	select SPL_DM_RESET
-	select SPL_SERIAL_SUPPORT
+	select SPL_SERIAL
 	select SPL_SYSCON
-	select SPL_WATCHDOG_SUPPORT if WATCHDOG
+	select SPL_WATCHDOG if WATCHDOG
 	imply BOOTSTAGE_STASH if SPL_BOOTSTAGE
 	imply SPL_BOOTSTAGE if BOOTSTAGE
 	imply SPL_DISPLAY_PRINT
 	imply SPL_LIBDISK_SUPPORT
-	imply SPL_SPI_LOAD if SPL_SPI_SUPPORT
+	imply SPL_SPI_LOAD if SPL_SPI
 
 config SYS_SOC
 	default "stm32mp"
@@ -35,11 +35,12 @@ config ENV_SIZE
 
 config STM32MP15x
 	bool "Support STMicroelectronics STM32MP15x Soc"
-	select ARCH_SUPPORT_PSCI if !TFABOOT
-	select ARM_SMCCC if TFABOOT
+	select ARCH_SUPPORT_PSCI
+	select BINMAN
 	select CPU_V7A
-	select CPU_V7_HAS_NONSEC if !TFABOOT
+	select CPU_V7_HAS_NONSEC
 	select CPU_V7_HAS_VIRT
+	select OF_BOARD if TFABOOT
 	select OF_BOARD_SETUP
 	select PINCTRL_STM32
 	select STM32_RCC
@@ -47,14 +48,19 @@ config STM32MP15x
 	select STM32_SERIAL
 	select SYS_ARCH_TIMER
 	imply CMD_NVEDIT_INFO
-	imply SYSRESET_PSCI if TFABOOT
-	imply SYSRESET_SYSCON if !TFABOOT
 	help
 		support of STMicroelectronics SOC STM32MP15x family
 		STM32MP157, STM32MP153 or STM32MP151
 		STMicroelectronics MPU with core ARMv7
 		dual core A7 for STM32MP157/3, monocore for STM32MP151
 		target all the STMicroelectronics board with SOC STM32MP1 family
+
+config STM32MP15x_STM32IMAGE
+	bool "Support STM32 image for generated U-Boot image"
+	depends on STM32MP15x && TFABOOT
+	help
+		Support of STM32 image generation for SOC STM32MP15x
+		for TF-A boot when FIP container is not used
 
 choice
 	prompt "STM32MP15x board select"
@@ -63,9 +69,7 @@ choice
 config TARGET_ST_STM32MP15x
 	bool "STMicroelectronics STM32MP15x boards"
 	select STM32MP15x
-	imply BOOTCOUNT_LIMIT
 	imply BOOTSTAGE
-	imply CMD_BOOTCOUNT
 	imply CMD_BOOTSTAGE
 	imply CMD_CLS if CMD_BMP
 	imply DISABLE_CONSOLE
@@ -80,9 +84,7 @@ config TARGET_ST_STM32MP15x
 config TARGET_MICROGEA_STM32MP1
 	bool "Engicam MicroGEA STM32MP1 SOM"
 	select STM32MP15x
-	imply BOOTCOUNT_LIMIT
 	imply BOOTSTAGE
-	imply CMD_BOOTCOUNT
 	imply CMD_BOOTSTAGE
 	imply CMD_CLS if CMD_BMP
 	imply DISABLE_CONSOLE
@@ -107,9 +109,7 @@ config TARGET_MICROGEA_STM32MP1
 config TARGET_ICORE_STM32MP1
 	bool "Engicam i.Core STM32MP1 SOM"
 	select STM32MP15x
-	imply BOOTCOUNT_LIMIT
 	imply BOOTSTAGE
-	imply CMD_BOOTCOUNT
 	imply CMD_BOOTSTAGE
 	imply CMD_CLS if CMD_BMP
 	imply DISABLE_CONSOLE
@@ -131,8 +131,6 @@ config TARGET_ICORE_STM32MP1
 config TARGET_DH_STM32MP1_PDK2
 	bool "DH STM32MP1 PDK2"
 	select STM32MP15x
-	imply BOOTCOUNT_LIMIT
-	imply CMD_BOOTCOUNT
 	help
 		Target the DH PDK2 development kit with STM32MP15x SoM.
 
@@ -146,7 +144,6 @@ config NR_DRAM_BANKS
 
 config DDR_CACHEABLE_SIZE
 	hex "Size of the DDR marked cacheable in pre-reloc stage"
-	default 0x10000000 if TFABOOT
 	default 0x40000000
 	help
 		Define the size of the DDR marked as cacheable in U-Boot
@@ -169,15 +166,26 @@ config STM32_ETZPC
 	bool "STM32 Extended TrustZone Protection"
 	depends on STM32MP15x
 	default y
+	imply BOOTP_SERVERIP
 	help
 	  Say y to enable STM32 Extended TrustZone Protection
 
+config STM32_ECDSA_VERIFY
+	bool "STM32 ECDSA verification via the ROM API"
+	depends on SPL_ECDSA_VERIFY
+	default y
+	help
+	  Say y to enable the uclass driver for ECDSA verification using the
+	  ROM API provided on STM32MP.
+	  The ROM API is only available during SPL for now.
+
 config CMD_STM32KEY
 	bool "command stm32key to fuse public key hash"
-	default y
 	help
 		fuse public key hash in corresponding fuse used to authenticate
 		binary.
+		This command is used to evaluate the secure boot on stm32mp SOC,
+		it is deactivated by default in real products.
 
 config PRE_CON_BUF_ADDR
 	default 0xC02FF000
@@ -188,7 +196,7 @@ config PRE_CON_BUF_SZ
 config BOOTSTAGE_STASH_ADDR
 	default 0xC3000000
 
-if BOOTCOUNT_LIMIT
+if BOOTCOUNT_GENERIC
 config SYS_BOOTCOUNT_SINGLEWORD
 	default y
 

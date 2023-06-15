@@ -5,13 +5,18 @@
 # Holds and modifies the state information held by binman
 #
 
+from collections import defaultdict
 import hashlib
 import re
+import time
+import threading
 
 from dtoc import fdt
 import os
 from patman import tools
 from patman import tout
+
+OUR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Map an dtb etype to its expected filename
 DTB_TYPE_FNAME = {
@@ -54,6 +59,30 @@ allow_entry_expansion = True
 # result in a larger compressed size than the new ones, but then after updating
 # to the new ones, the compressed size increases, etc.
 allow_entry_contraction = False
+
+# Number of threads to use for binman (None means machine-dependent)
+num_threads = None
+
+
+class Timing:
+    """Holds information about an operation that is being timed
+
+    Properties:
+        name: Operation name (only one of each name is stored)
+        start: Start time of operation in seconds (None if not start)
+        accum:: Amount of time spent on this operation so far, in seconds
+    """
+    def __init__(self, name):
+        self.name = name
+        self.start = None # cause an error if TimingStart() is not called
+        self.accum = 0.0
+
+
+# Holds timing info for each name:
+#    key: name of Timing info (Timing.name)
+#    value: Timing object
+timing_info = {}
+
 
 def GetFdtForEtype(etype):
     """Get the Fdt object for a particular device-tree entry
@@ -109,8 +138,8 @@ def GetFdtContents(etype='u-boot-dtb'):
         data = GetFdtForEtype(etype).GetContents()
     else:
         fname = output_fdt_info[etype][1]
-        pathname = tools.GetInputFilename(fname)
-        data = tools.ReadFile(pathname)
+        pathname = tools.get_input_filename(fname)
+        data = tools.read_file(pathname)
     return pathname, data
 
 def UpdateFdtContents(etype, data):
@@ -125,7 +154,7 @@ def UpdateFdtContents(etype, data):
     """
     dtb, fname = output_fdt_info[etype]
     dtb_fname = dtb.GetFilename()
-    tools.WriteFile(dtb_fname, data)
+    tools.write_file(dtb_fname, data)
     dtb = fdt.FdtScan(dtb_fname)
     output_fdt_info[etype] = [dtb, fname]
 
@@ -141,16 +170,16 @@ def SetEntryArgs(args):
     global entry_args
 
     entry_args = {}
-    tout.Debug('Processing entry args:')
+    tout.debug('Processing entry args:')
     if args:
         for arg in args:
             m = re.match('([^=]*)=(.*)', arg)
             if not m:
                 raise ValueError("Invalid entry arguemnt '%s'" % arg)
             name, value = m.groups()
-            tout.Debug('   %20s = %s' % (name, value))
+            tout.debug('   %20s = %s' % (name, value))
             entry_args[name] = value
-    tout.Debug('Processing entry args done')
+    tout.debug('Processing entry args done')
 
 def GetEntryArg(name):
     """Get the value of an entry argument
@@ -206,12 +235,12 @@ def Prepare(images, dtb):
     else:
         fdt_set = {}
         for etype, fname in DTB_TYPE_FNAME.items():
-            infile = tools.GetInputFilename(fname, allow_missing=True)
+            infile = tools.get_input_filename(fname, allow_missing=True)
             if infile and os.path.exists(infile):
                 fname_dtb = fdt_util.EnsureCompiled(infile)
-                out_fname = tools.GetOutputFilename('%s.out' %
+                out_fname = tools.get_output_filename('%s.out' %
                         os.path.split(fname)[1])
-                tools.WriteFile(out_fname, tools.ReadFile(fname_dtb))
+                tools.write_file(out_fname, tools.read_file(fname_dtb))
                 other_dtb = fdt.FdtScan(out_fname)
                 output_fdt_info[etype] = [other_dtb, out_fname]
 
@@ -234,21 +263,21 @@ def PrepareFromLoadedData(image):
     """
     global output_fdt_info, main_dtb, fdt_path_prefix
 
-    tout.Info('Preparing device trees')
+    tout.info('Preparing device trees')
     output_fdt_info.clear()
     fdt_path_prefix = ''
     output_fdt_info['fdtmap'] = [image.fdtmap_dtb, 'u-boot.dtb']
     main_dtb = None
-    tout.Info("   Found device tree type 'fdtmap' '%s'" % image.fdtmap_dtb.name)
+    tout.info("   Found device tree type 'fdtmap' '%s'" % image.fdtmap_dtb.name)
     for etype, value in image.GetFdts().items():
         entry, fname = value
-        out_fname = tools.GetOutputFilename('%s.dtb' % entry.etype)
-        tout.Info("   Found device tree type '%s' at '%s' path '%s'" %
+        out_fname = tools.get_output_filename('%s.dtb' % entry.etype)
+        tout.info("   Found device tree type '%s' at '%s' path '%s'" %
                   (etype, out_fname, entry.GetPath()))
         entry._filename = entry.GetDefaultFilename()
         data = entry.ReadData()
 
-        tools.WriteFile(out_fname, data)
+        tools.write_file(out_fname, data)
         dtb = fdt.Fdt(out_fname)
         dtb.Scan()
         image_node = dtb.GetNode('/binman')
@@ -256,7 +285,7 @@ def PrepareFromLoadedData(image):
             image_node = dtb.GetNode('/binman/%s' % image.image_node)
         fdt_path_prefix = image_node.path
         output_fdt_info[etype] = [dtb, None]
-    tout.Info("   FDT path prefix '%s'" % fdt_path_prefix)
+    tout.info("   FDT path prefix '%s'" % fdt_path_prefix)
 
 
 def GetAllFdts():
@@ -355,7 +384,7 @@ def SetInt(node, prop, value, for_repack=False):
         for_repack: True is this property is only needed for repacking
     """
     for n in GetUpdateNodes(node, for_repack):
-        tout.Detail("File %s: Update node '%s' prop '%s' to %#x" %
+        tout.detail("File %s: Update node '%s' prop '%s' to %#x" %
                     (n.GetFdt().name, n.path, prop, value))
         n.SetInt(prop, value)
 
@@ -368,7 +397,7 @@ def CheckAddHashProp(node):
         if algo.value == 'sha256':
             size = 32
         else:
-            return "Unknown hash algorithm '%s'" % algo
+            return "Unknown hash algorithm '%s'" % algo.value
         for n in GetUpdateNodes(hash_node):
             n.AddEmptyProp('value', size)
 
@@ -420,3 +449,87 @@ def AllowEntryContraction():
             raised
     """
     return allow_entry_contraction
+
+def SetThreads(threads):
+    """Set the number of threads to use when building sections
+
+    Args:
+        threads: Number of threads to use (None for default, 0 for
+            single-threaded)
+    """
+    global num_threads
+
+    num_threads = threads
+
+def GetThreads():
+    """Get the number of threads to use when building sections
+
+    Returns:
+        Number of threads to use (None for default, 0 for single-threaded)
+    """
+    return num_threads
+
+def GetTiming(name):
+    """Get the timing info for a particular operation
+
+    The object is created if it does not already exist.
+
+    Args:
+        name: Operation name to get
+
+    Returns:
+        Timing object for the current thread
+    """
+    threaded_name = '%s:%d' % (name, threading.get_ident())
+    timing = timing_info.get(threaded_name)
+    if not timing:
+        timing = Timing(threaded_name)
+        timing_info[threaded_name] = timing
+    return timing
+
+def TimingStart(name):
+    """Start the timer for an operation
+
+    Args:
+        name: Operation name to start
+    """
+    timing = GetTiming(name)
+    timing.start = time.monotonic()
+
+def TimingAccum(name):
+    """Stop and accumlate the time for an operation
+
+    This measures the time since the last TimingStart() and adds that to the
+    accumulated time.
+
+    Args:
+        name: Operation name to start
+    """
+    timing = GetTiming(name)
+    timing.accum += time.monotonic() - timing.start
+
+def TimingShow():
+    """Show all timing information"""
+    duration = defaultdict(float)
+    for threaded_name, timing in timing_info.items():
+        name = threaded_name.split(':')[0]
+        duration[name] += timing.accum
+
+    for name, seconds in duration.items():
+        print('%10s: %10.1fms' % (name, seconds * 1000))
+
+def GetVersion(path=OUR_PATH):
+    """Get the version string for binman
+
+    Args:
+        path: Path to 'version' file
+
+    Returns:
+        str: String version, e.g. 'v2021.10'
+    """
+    version_fname = os.path.join(path, 'version')
+    if os.path.exists(version_fname):
+        version = tools.read_file(version_fname, binary=False)
+    else:
+        version = '(unreleased)'
+    return version

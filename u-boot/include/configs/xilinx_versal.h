@@ -10,8 +10,6 @@
 #ifndef __XILINX_VERSAL_H
 #define __XILINX_VERSAL_H
 
-#define CONFIG_REMAKE_ELF
-
 /* #define CONFIG_ARMV8_SWITCH_TO_EL1 */
 
 /* Generic Interrupt Controller Definitions */
@@ -26,8 +24,6 @@
 #endif
 
 /* Serial setup */
-#define CONFIG_CPU_ARMV8
-
 #define CONFIG_SYS_BAUDRATE_TABLE \
 	{ 4800, 9600, 19200, 38400, 57600, 115200 }
 
@@ -36,25 +32,20 @@
 #define CONFIG_BOOTP_MAY_FAIL
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_LOAD_ADDR		0x8000000
 
 /* Monitor Command Prompt */
 /* Console I/O Buffer Size */
 #define CONFIG_SYS_CBSIZE		2048
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					sizeof(CONFIG_SYS_PROMPT) + 16)
 #define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 #define CONFIG_SYS_MAXARGS		64
 
 #if defined(CONFIG_CMD_DFU)
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	0x1800000
 #define DFU_DEFAULT_POLL_TIMEOUT	300
 #define CONFIG_THOR_RESET_OFF
 #endif
 
 /* Ethernet driver */
 #if defined(CONFIG_ZYNQ_GEM)
-# define CONFIG_NET_MULTI
 # define CONFIG_SYS_FAULT_ECHO_LINK_DOWN
 # define PHY_ANEG_TIMEOUT       20000
 #endif
@@ -69,6 +60,8 @@
 	"pxefile_addr_r=0x10000000\0" \
 	"kernel_addr_r=0x18000000\0" \
 	"kernel_size_r=0x10000000\0" \
+	"kernel_comp_addr_r=0x30000000\0" \
+	"kernel_comp_size=0x3C00000\0" \
 	"scriptaddr=0x20000000\0" \
 	"ramdisk_addr_r=0x02100000\0" \
 	"script_size_f=0x80000\0"

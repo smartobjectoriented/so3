@@ -2,7 +2,9 @@
 # Copyright (c) 2015 Stephen Warren
 # Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
 
-# Logic to interact with the sandbox port of U-Boot, running as a sub-process.
+"""
+Logic to interact with the sandbox port of U-Boot, running as a sub-process.
+"""
 
 import time
 from u_boot_spawn import Spawn
@@ -55,11 +57,14 @@ class ConsoleSandbox(ConsoleBase):
         cmd += self.sandbox_flags
         return Spawn(cmd, cwd=self.config.source_dir)
 
-    def restart_uboot_with_flags(self, flags):
+    def restart_uboot_with_flags(self, flags, expect_reset=False):
         """Run U-Boot with the given command-line flags
 
         Args:
             flags: List of flags to pass, each a string
+            expect_reset: Boolean indication whether this boot is expected
+                to be reset while the 1st boot process after main boot before
+                prompt. False by default.
 
         Returns:
             A u_boot_spawn.Spawn object that is attached to U-Boot.
@@ -67,7 +72,7 @@ class ConsoleSandbox(ConsoleBase):
 
         try:
             self.sandbox_flags = flags
-            return self.restart_uboot()
+            return self.restart_uboot(expect_reset)
         finally:
             self.sandbox_flags = []
 

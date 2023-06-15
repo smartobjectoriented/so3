@@ -28,6 +28,7 @@
 #include <dm/uclass.h>
 #include <dm/uclass-internal.h>
 #include <dm/util.h>
+#include <iommu.h>
 #include <linux/err.h>
 #include <linux/list.h>
 #include <power-domain.h>
@@ -87,8 +88,10 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
 		if (CONFIG_IS_ENABLED(OF_CONTROL) &&
 		    !CONFIG_IS_ENABLED(OF_PLATDATA)) {
 			if (uc->uc_drv->name && ofnode_valid(node)) {
-				if (!dev_read_alias_seq(dev, &dev->seq_))
+				if (!dev_read_alias_seq(dev, &dev->seq_)) {
 					auto_seq = false;
+					log_debug("   - seq=%d\n", dev->seq_);
+					}
 			}
 		}
 	}
@@ -343,7 +346,7 @@ static void *alloc_priv(int size, uint flags)
  * device_alloc_priv() - Allocate priv/plat data required by the device
  *
  * @dev: Device to process
- * @return 0 if OK, -ENOMEM if out of memory
+ * Return: 0 if OK, -ENOMEM if out of memory
  */
 static int device_alloc_priv(struct udevice *dev)
 {
@@ -515,6 +518,14 @@ int device_probe(struct udevice *dev)
 
 	dev_or_flags(dev, DM_FLAG_ACTIVATED);
 
+	if (CONFIG_IS_ENABLED(POWER_DOMAIN) && dev->parent &&
+	    (device_get_uclass_id(dev) != UCLASS_POWER_DOMAIN) &&
+	    !(drv->flags & DM_FLAG_DEFAULT_PD_CTRL_OFF)) {
+		ret = dev_power_domain_on(dev);
+		if (ret)
+			goto fail;
+	}
+
 	/*
 	 * Process pinctrl for everything except the root device, and
 	 * continue regardless of the result of pinctrl. Don't process pinctrl
@@ -530,13 +541,16 @@ int device_probe(struct udevice *dev)
 	 * is set just above. However, the PCI bus' probe() method and
 	 * associated uclass methods have not yet been called.
 	 */
-	if (dev->parent && device_get_uclass_id(dev) != UCLASS_PINCTRL)
-		pinctrl_select_state(dev, "default");
+	if (dev->parent && device_get_uclass_id(dev) != UCLASS_PINCTRL) {
+		ret = pinctrl_select_state(dev, "default");
+		if (ret && ret != -ENOSYS)
+			log_debug("Device '%s' failed to configure default pinctrl: %d (%s)\n",
+				  dev->name, ret, errno_str(ret));
+	}
 
-	if (CONFIG_IS_ENABLED(POWER_DOMAIN) && dev->parent &&
-	    (device_get_uclass_id(dev) != UCLASS_POWER_DOMAIN) &&
-	    !(drv->flags & DM_FLAG_DEFAULT_PD_CTRL_OFF)) {
-		ret = dev_power_domain_on(dev);
+	if (CONFIG_IS_ENABLED(IOMMU) && dev->parent &&
+	    (device_get_uclass_id(dev) != UCLASS_IOMMU)) {
+		ret = dev_iommu_enable(dev);
 		if (ret)
 			goto fail;
 	}
@@ -561,7 +575,7 @@ int device_probe(struct udevice *dev)
 		 * Process 'assigned-{clocks/clock-parents/clock-rates}'
 		 * properties
 		 */
-		ret = clk_set_defaults(dev, 0);
+		ret = clk_set_defaults(dev, CLK_DEFAULTS_PRE);
 		if (ret)
 			goto fail;
 	}
@@ -576,8 +590,12 @@ int device_probe(struct udevice *dev)
 	if (ret)
 		goto fail_uclass;
 
-	if (dev->parent && device_get_uclass_id(dev) == UCLASS_PINCTRL)
-		pinctrl_select_state(dev, "default");
+	if (dev->parent && device_get_uclass_id(dev) == UCLASS_PINCTRL) {
+		ret = pinctrl_select_state(dev, "default");
+		if (ret && ret != -ENOSYS)
+			log_debug("Device '%s' failed to configure default pinctrl: %d (%s)\n",
+				  dev->name, ret, errno_str(ret));
+	}
 
 	return 0;
 fail_uclass:
@@ -668,7 +686,7 @@ static int device_get_device_tail(struct udevice *dev, int ret,
 	return 0;
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 /**
  * device_find_by_ofnode() - Return device associated with given ofnode
  *
@@ -717,6 +735,17 @@ int device_get_child_count(const struct udevice *parent)
 
 	list_for_each_entry(dev, &parent->child_head, sibling_node)
 		count++;
+
+	return count;
+}
+
+int device_get_decendent_count(const struct udevice *parent)
+{
+	const struct udevice *dev;
+	int count = 1;
+
+	list_for_each_entry(dev, &parent->child_head, sibling_node)
+		count += device_get_decendent_count(dev);
 
 	return count;
 }
@@ -892,21 +921,28 @@ int device_find_first_child_by_uclass(const struct udevice *parent,
 	return -ENODEV;
 }
 
-int device_find_child_by_name(const struct udevice *parent, const char *name,
-			      struct udevice **devp)
+int device_find_child_by_namelen(const struct udevice *parent, const char *name,
+				 int len, struct udevice **devp)
 {
 	struct udevice *dev;
 
 	*devp = NULL;
 
 	list_for_each_entry(dev, &parent->child_head, sibling_node) {
-		if (!strcmp(dev->name, name)) {
+		if (!strncmp(dev->name, name, len) &&
+		    strlen(dev->name) == len) {
 			*devp = dev;
 			return 0;
 		}
 	}
 
 	return -ENODEV;
+}
+
+int device_find_child_by_name(const struct udevice *parent, const char *name,
+			      struct udevice **devp)
+{
+	return device_find_child_by_namelen(parent, name, strlen(name), devp);
 }
 
 int device_first_child_err(struct udevice *parent, struct udevice **devp)
@@ -1072,7 +1108,7 @@ void dev_set_uclass_plat(struct udevice *dev, void *uclass_plat)
 	dev->uclass_plat_ = uclass_plat;
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 bool device_is_compatible(const struct udevice *dev, const char *compat)
 {
 	return ofnode_device_is_compatible(dev_ofnode(dev), compat);
@@ -1133,7 +1169,7 @@ int dev_enable_by_path(const char *path)
 	if (ret)
 		return ret;
 
-	return lists_bind_fdt(parent, node, NULL, false);
+	return lists_bind_fdt(parent, node, NULL, NULL, false);
 }
 #endif
 

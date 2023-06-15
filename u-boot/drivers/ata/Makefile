@@ -5,7 +5,7 @@
 
 obj-$(CONFIG_DWC_AHCI) += dwc_ahci.o
 obj-$(CONFIG_AHCI) += ahci-uclass.o
-obj-$(CONFIG_AHCI_PCI) += ahci-pci.o
+obj-$(CONFIG_$(SPL_)AHCI_PCI) += ahci-pci.o
 obj-$(CONFIG_SCSI_AHCI) += ahci.o
 obj-$(CONFIG_DWC_AHSATA) += dwc_ahsata.o
 obj-$(CONFIG_FSL_SATA) += fsl_sata.o
@@ -13,7 +13,6 @@ obj-$(CONFIG_LIBATA) += libata.o
 obj-$(CONFIG_SATA) += sata.o
 obj-$(CONFIG_SATA_CEVA) += sata_ceva.o
 obj-$(CONFIG_SATA_MV) += sata_mv.o
-obj-$(CONFIG_SATA_SIL3114) += sata_sil3114.o
 obj-$(CONFIG_SATA_SIL) += sata_sil.o
 obj-$(CONFIG_SANDBOX) += sata_sandbox.o
 obj-$(CONFIG_AHCI_MVEBU) += ahci_mvebu.o

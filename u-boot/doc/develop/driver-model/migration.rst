@@ -75,15 +75,6 @@ Partially converted::
 * Status: In progress
 * Deadline: 2019.07
 
-CONFIG_DM_PCI
--------------
-Deadline: 2019.07
-
-The PCI subsystem has supported driver model since mid 2015. Maintainers should
-submit patches switching over to using CONFIG_DM_PCI and other base driver
-model options in time for inclusion in the 2019.07 release.
-
-
 CONFIG_DM_VIDEO
 ---------------
 Deadline: 2019.07
@@ -107,3 +98,31 @@ Deadline: 2021.10
 The I2C subsystem has supported the driver model since early 2015.
 Maintainers should submit patches switching over to using CONFIG_DM_I2C and
 other base driver model options in time for inclusion in the 2021.10 release.
+
+CONFIG_KEYBOARD
+---------------
+Deadline: 2022.10
+
+This is a legacy option which has been replaced by driver model.
+Maintainers should submit patches switching over to using CONFIG_DM_KEYBOARD and
+other base driver model options in time for inclusion in the 2022.10 release.
+
+CONFIG_SYS_TIMER_RATE and CONFIG_SYS_TIMER_COUNTER
+--------------------------------------------------
+Deadline: 2023.01
+
+These are legacy options which have been replaced by driver model.
+Maintainers should submit patches switching over to using CONFIG_TIMER and
+other base driver model options in time for inclusion in the 2022.10 release.
+
+There is only one method to implement, unless you want to support bootstage,
+in which case you need an early timer also. For example drivers, see
+sandbox_timer.c and rockchip_timer.c
+
+CONFIG_DM_SERIAL
+----------------
+Deadline: 2023.04
+
+The serial subsystem has supported the driver model since late 2014.
+Maintainers should submit patches switching over to using CONFIG_DM_SERIAL and
+other base driver model options in time for inclusion in the 2022.10 release.

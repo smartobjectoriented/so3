@@ -10,6 +10,7 @@
 #include <common.h>
 #include <asm/io.h>
 #include <spl.h>
+#include <fdt_support.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/sys_proto.h>
 #include <env.h>
@@ -57,6 +58,37 @@ int board_fit_config_name_match(const char *name)
 	}
 
 	return -1;
+}
+#endif
+
+#if defined(CONFIG_SPL_BUILD) && CONFIG_IS_ENABLED(USB_STORAGE)
+static int fixup_usb_boot(const void *fdt_blob)
+{
+	int ret = 0;
+
+	switch (spl_boot_device()) {
+	case BOOT_DEVICE_USB:
+		/*
+		 * If the boot mode is host, fixup the dr_mode to host
+		 * before cdns3 bind takes place
+		 */
+		ret = fdt_find_and_setprop((void *)fdt_blob,
+					   "/bus@f4000/cdns-usb@f900000/usb@f400000",
+					   "dr_mode", "host", 5, 0);
+		if (ret)
+			printf("%s: fdt_find_and_setprop() failed:%d\n",
+			       __func__, ret);
+		fallthrough;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+void spl_perform_fixups(struct spl_image_info *spl_image)
+{
+	fixup_usb_boot(spl_image->fdt_addr);
 }
 #endif
 
@@ -120,7 +152,7 @@ static void setup_serial(void)
 	if (env_get("serial#"))
 		return;
 
-	board_serial = simple_strtoul(ep->serial, &endp, 16);
+	board_serial = hextoul(ep->serial, &endp);
 	if (*endp != '\0') {
 		pr_err("Error: Can't set serial# to %s\n", ep->serial);
 		return;
@@ -150,5 +182,22 @@ int board_late_init(void)
 	}
 
 	return 0;
+}
+#endif
+
+#define CTRLMMR_USB0_PHY_CTRL	0x43004008
+#define CORE_VOLTAGE		0x80000000
+
+#ifdef CONFIG_SPL_BOARD_INIT
+void spl_board_init(void)
+{
+	u32 val;
+	/* Set USB PHY core voltage to 0.85V */
+	val = readl(CTRLMMR_USB0_PHY_CTRL);
+	val &= ~(CORE_VOLTAGE);
+	writel(val, CTRLMMR_USB0_PHY_CTRL);
+
+	/* Init DRAM size for R5/A53 SPL */
+	dram_init_banksize();
 }
 #endif

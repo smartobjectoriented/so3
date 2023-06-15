@@ -12,12 +12,7 @@
 
 /* Booting Linux */
 #define CONFIG_BOOTFILE		"fitImage"
-#define CONFIG_BOOTCOMMAND	"run selboot"
 #define CONFIG_SYS_BOOTM_LEN	0x2000000	/* 32 MiB */
-#define CONFIG_LOADADDR		0x01000000
-#define CONFIG_SYS_LOAD_ADDR	CONFIG_LOADADDR
-
-/* Ethernet on SoC (EMAC) */
 
 /* Extra Environment */
 #define CONFIG_HOSTNAME			"socfpga_vining_fpga"
@@ -65,7 +60,7 @@
 		"256k(softing1),"					\
 		"256k(softing2),"					\
 		"14720k(rcvrfs),"	/* Recovery */			\
-		"64m(rootfs),"		/* Root */			\
+		"192m(rootfs),"		/* Root */			\
 		"-(userfs)\0"		/* User */			\
 	"mtdparts_1_128m=ff705000.spi.1:" /* 16MiB+128MiB SF config */	\
 		"64m(rootfs),"						\

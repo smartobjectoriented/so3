@@ -20,8 +20,11 @@ The support for following drivers are already enabled:
 4. SiFive SPI Driver.
 5. MMC SPI Driver for MMC/SD support.
 
-Booting from uSD using U-Boot SPL
----------------------------------
+Booting from micro SD card using U-Boot SPL
+-------------------------------------------
+
+Booting from an SD card requires that the boot mode selection DIP switches
+MSEL[3:0] are set to 1011.
 
 Building
 --------
@@ -61,31 +64,31 @@ device tree blob (hifive-unmatched-a00.dtb)
 
 Format the SD card (make sure the disk has GPT, otherwise use gdisk to switch)
 
-.. code-block:: none
+.. code-block:: bash
 
-	# sudo sgdisk -g --clear -a 1 \
-	> --new=1:34:2081         --change-name=1:spl --typecode=1:5B193300-FC78-40CD-8002-E86C45580B47 \
-	> --new=2:2082:10273      --change-name=2:uboot  --typecode=2:2E54B353-1271-4842-806F-E436D6AF6985 \
-	> --new=3:16384:282623    --change-name=3:boot --typecode=3:0x0700 \
-	> --new=4:286720:13918207 --change-name=4:root --typecode=4:0x8300 \
-	> /dev/sdb
+	sudo sgdisk -g --clear -a 1 \
+	  --new=1:34:2081         --change-name=1:spl --typecode=1:5B193300-FC78-40CD-8002-E86C45580B47 \
+	  --new=2:2082:10273      --change-name=2:uboot  --typecode=2:2E54B353-1271-4842-806F-E436D6AF6985 \
+	  --new=3:16384:282623    --change-name=3:boot --typecode=3:0x0700 \
+	  --new=4:286720:13918207 --change-name=4:root --typecode=4:0x8300 \
+	  /dev/sdX
 
 Copy linux Image.gz and hifive-unmatched-a00.dtb to boot partition
 
-.. code-block:: none
+.. code-block:: bash
 
-	sudo mkfs.vfat /dev/sdb3
-	sudo mkfs.ext4 /dev/sdb4
+	sudo mkfs.vfat /dev/sdX3
+	sudo mkfs.ext4 /dev/sdX4
 
-	sudo mount /dev/sdb3 /media/sdb3
-	sudo cp Image.gz hifive-unmatched-a00.dtb /media/sdb3/
+	sudo mount /dev/sdX3 /media/sdX3
+	sudo cp Image.gz hifive-unmatched-a00.dtb /media/sdX3/
 
 Program the SD card
 
-.. code-block:: none
+.. code-block:: bash
 
-	sudo dd if=spl/u-boot-spl.bin of=/dev/sda seek=34
-	sudo dd if=u-boot.itb of=/dev/sda seek=2082
+	sudo dd if=spl/u-boot-spl.bin of=/dev/sdX seek=34
+	sudo dd if=u-boot.itb of=/dev/sdX seek=2082
 
 Booting
 -------
@@ -534,3 +537,34 @@ Sample boot log from HiFive Unmatched board
 	OpenEmbedded nodistro.0 unmatched ttySIF0
 
 	unmatched login:
+
+
+Booting from SPI
+----------------
+
+Use Building steps from "Booting from uSD using U-Boot SPL" section.
+
+Partition the SPI in Linux via mtdblock.  The partition types here are
+"HiFive Unleashed FSBL", "HiFive Unleashed BBL", and "U-Boot environment"
+for partitions one through three respectively.
+
+.. code-block:: none
+
+	sgdisk --clear -a 1 \
+	    --new=1:40:2087     --change-name=1:spl   --typecode=1:5B193300-FC78-40CD-8002-E86C45580B47 \
+	    --new=2:2088:10279  --change-name=2:uboot --typecode=2:2E54B353-1271-4842-806F-E436D6AF6985 \
+	    --new=3:10280:10535 --change-name=3:env   --typecode=3:3DE21764-95BD-54BD-A5C3-4ABE786F38A8 \
+	    /dev/mtdblock0
+
+Write U-boot SPL and U-boot to their partitions.
+
+.. code-block:: none
+
+	dd if=spl/u-boot-spl.bin of=/dev/mtdblock0 bs=4096 seek=5 conv=sync
+	dd if=u-boot.itb  of=/dev/mtdblock0 bs=4096 seek=261 conv=sync
+
+Power off the board.
+
+Change DIP switches MSEL[3:0] to 0110.
+
+Power up the board.

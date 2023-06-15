@@ -36,6 +36,10 @@ DECLARE_GLOBAL_DATA_PTR;
 			(COMPHY_CALLER_UBOOT | ((pcie_width) << 18) |	\
 			((clk_src) << 17) | COMPHY_FW_FORMAT(mode, 0, speeds))
 
+/* Invert polarity are bits 1-0 of the mode */
+#define COMPHY_FW_SATA_FORMAT(mode, invert)	\
+			((invert) | COMPHY_FW_MODE_FORMAT(mode))
+
 #define COMPHY_SATA_MODE	0x1
 #define COMPHY_SGMII_MODE	0x2	/* SGMII 1G */
 #define COMPHY_HS_SGMII_MODE	0x3	/* SGMII 2.5G */
@@ -550,6 +554,64 @@ void comphy_dedicated_phys_init(void)
 	debug_exit();
 }
 
+int comphy_cp110_init_serdes_map(int node, struct chip_serdes_phy_config *cfg)
+{
+	int lane, subnode;
+
+	cfg->comphy_lanes_count = fdtdec_get_int(gd->fdt_blob, node,
+						 "max-lanes", 0);
+	if (cfg->comphy_lanes_count <= 0) {
+		printf("comphy max lanes is wrong\n");
+		return -EINVAL;
+	}
+
+	cfg->comphy_mux_bitcount = fdtdec_get_int(gd->fdt_blob, node,
+						  "mux-bitcount", 0);
+	if (cfg->comphy_mux_bitcount <= 0) {
+		printf("comphy mux bit count is wrong\n");
+		return -EINVAL;
+	}
+
+	cfg->comphy_mux_lane_order = fdtdec_locate_array(gd->fdt_blob, node,
+							 "mux-lane-order",
+							 cfg->comphy_lanes_count);
+
+	lane = 0;
+	fdt_for_each_subnode(subnode, gd->fdt_blob, node) {
+		/* Skip disabled ports */
+		if (!fdtdec_get_is_enabled(gd->fdt_blob, subnode))
+			continue;
+
+		cfg->comphy_map_data[lane].type =
+			fdtdec_get_int(gd->fdt_blob, subnode, "phy-type",
+				       COMPHY_TYPE_INVALID);
+
+		if (cfg->comphy_map_data[lane].type == COMPHY_TYPE_INVALID) {
+			printf("no phy type for lane %d, setting lane as unconnected\n",
+			       lane + 1);
+			continue;
+		}
+
+		cfg->comphy_map_data[lane].speed =
+			fdtdec_get_int(gd->fdt_blob, subnode, "phy-speed",
+				       COMPHY_SPEED_INVALID);
+
+		cfg->comphy_map_data[lane].invert =
+			fdtdec_get_int(gd->fdt_blob, subnode, "phy-invert",
+				       COMPHY_POLARITY_NO_INVERT);
+
+		cfg->comphy_map_data[lane].clk_src =
+			fdtdec_get_bool(gd->fdt_blob, subnode, "clk-src");
+
+		cfg->comphy_map_data[lane].end_point =
+			fdtdec_get_bool(gd->fdt_blob, subnode, "end_point");
+
+		lane++;
+	}
+
+	return 0;
+}
+
 int comphy_cp110_init(struct chip_serdes_phy_config *ptr_chip_cfg,
 		      struct comphy_map *serdes_map)
 {
@@ -607,7 +669,8 @@ int comphy_cp110_init(struct chip_serdes_phy_config *ptr_chip_cfg,
 			break;
 		case COMPHY_TYPE_SATA0:
 		case COMPHY_TYPE_SATA1:
-			mode =  COMPHY_FW_MODE_FORMAT(COMPHY_SATA_MODE);
+			mode = COMPHY_FW_SATA_FORMAT(COMPHY_SATA_MODE,
+						     serdes_map[lane].invert);
 			ret = comphy_sata_power_up(lane, hpipe_base_addr,
 						   comphy_base_addr,
 						   ptr_chip_cfg->cp_index,

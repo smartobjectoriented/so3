@@ -59,6 +59,9 @@ RE_DIFF = re.compile(r'^>.*diff --git a/(.*) b/(.*)$')
 # Detect a context line, like '> @@ -153,8 +153,13 @@ CheckPatch
 RE_LINE = re.compile(r'>.*@@ \-(\d+),\d+ \+(\d+),\d+ @@ *(.*)')
 
+# Detect line with invalid TAG
+RE_INV_TAG = re.compile('^Serie-([a-z-]*): *(.*)')
+
 # States we can be in - can we use range() and still have comments?
 STATE_MSG_HEADER = 0        # Still in the message header
 STATE_PATCH_SUBJECT = 1     # In patch subject (first line of log for a commit)
@@ -177,7 +180,7 @@ class PatchStream:
             who (str): Person who gave that rtag, e.g.
                  'Fred Bloggs <fred@bloggs.org>'
         """
-        self.commit.AddRtag(rtag_type, who)
+        self.commit.add_rtag(rtag_type, who)
 
     def _close_commit(self):
         """Save the current commit into our commit list, and reset our state"""
@@ -227,7 +230,7 @@ class PatchStream:
         elif self.in_change == 'Cover':
             self.series.AddChange(self.change_version, None, change)
         elif self.in_change == 'Commit':
-            self.commit.AddChange(self.change_version, change)
+            self.commit.add_change(self.change_version, change)
         self.change_lines = []
 
     def _finalise_snippet(self):
@@ -318,6 +321,7 @@ class PatchStream:
         leading_whitespace_match = RE_LEADING_WHITESPACE.match(line)
         diff_match = RE_DIFF.match(line)
         line_match = RE_LINE.match(line)
+        invalid_match = RE_INV_TAG.match(line)
         tag_match = None
         if self.state == STATE_PATCH_HEADER:
             tag_match = RE_TAG.match(line)
@@ -471,6 +475,11 @@ class PatchStream:
                 self._add_warn('Line %d: Ignoring Commit-%s' %
                                (self.linenum, name))
 
+        # Detect invalid tags
+        elif invalid_match:
+            raise ValueError("Line %d: Invalid tag = '%s'" %
+                (self.linenum, line))
+
         # Detect the start of a new commit
         elif commit_match:
             self._close_commit()
@@ -485,14 +494,14 @@ class PatchStream:
                     who.find(os.getenv('USER') + '@') != -1):
                 self._add_warn("Ignoring '%s'" % line)
             elif rtag_type == 'Patch-cc':
-                self.commit.AddCc(who.split(','))
+                self.commit.add_cc(who.split(','))
             else:
                 out = [line]
 
         # Suppress duplicate signoffs
         elif signoff_match:
             if (self.is_log or not self.commit or
-                    self.commit.CheckDuplicateSignoff(signoff_match.group(1))):
+                    self.commit.check_duplicate_signoff(signoff_match.group(1))):
                 out = [line]
 
         # Well that means this is an ordinary line
@@ -587,6 +596,8 @@ class PatchStream:
         # These seem like they would be nice to include.
         if 'prefix' in self.series:
             parts.append(self.series['prefix'])
+        if 'postfix' in self.series:
+            parts.append(self.serties['postfix'])
         if 'version' in self.series:
             parts.append("v%s" % self.series['version'])
 
@@ -653,6 +664,7 @@ def insert_tags(msg, tags_to_emit):
     out = []
     done = False
     emit_tags = False
+    emit_blank = False
     for line in msg.splitlines():
         if not done:
             signoff_match = RE_SIGNOFF.match(line)
@@ -663,9 +675,13 @@ def insert_tags(msg, tags_to_emit):
                 out += tags_to_emit
                 emit_tags = False
                 done = True
+            emit_blank = not (signoff_match or tag_match)
+        else:
+            emit_blank = line
         out.append(line)
     if not done:
-        out.append('')
+        if emit_blank:
+            out.append('')
         out += tags_to_emit
     return '\n'.join(out)
 
@@ -682,9 +698,9 @@ def get_list(commit_range, git_dir=None, count=None):
     Returns
         str: String containing the contents of the git log
     """
-    params = gitutil.LogCmd(commit_range, reverse=True, count=count,
+    params = gitutil.log_cmd(commit_range, reverse=True, count=count,
                             git_dir=git_dir)
-    return command.RunPipe([params], capture=True).stdout
+    return command.run_pipe([params], capture=True).stdout
 
 def get_metadata_for_list(commit_range, git_dir=None, count=None,
                           series=None, allow_overwrite=False):

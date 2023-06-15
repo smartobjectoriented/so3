@@ -65,7 +65,6 @@ static struct module_pin_mux mmc0_pin_mux[] = {
 	{OFFSET(mmc0_dat0), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_DAT0 */
 	{OFFSET(mmc0_clk), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CLK */
 	{OFFSET(mmc0_cmd), (MODE(0) | RXACTIVE | PULLUP_EN)},	/* MMC0_CMD */
-	{OFFSET(mcasp0_aclkr), (MODE(4) | RXACTIVE)},		/* MMC0_WP */
 	{OFFSET(spi0_cs1), (MODE(7) | RXACTIVE | PULLUP_EN)},	/* GPIO0_6 */
 	{-1},
 };
@@ -345,14 +344,6 @@ void enable_i2c2_pin_mux(void)
 static unsigned short detect_daughter_board_profile(void)
 {
 	unsigned short val;
-
-#if !CONFIG_IS_ENABLED(DM_I2C)
-	if (i2c_probe(I2C_CPLD_ADDR))
-		return PROFILE_NONE;
-
-	if (i2c_read(I2C_CPLD_ADDR, CFG_REG, 1, (unsigned char *)(&val), 2))
-		return PROFILE_NONE;
-#else
 	struct udevice *dev = NULL;
 	int rc;
 
@@ -362,14 +353,17 @@ static unsigned short detect_daughter_board_profile(void)
 	rc = dm_i2c_read(dev, CFG_REG, (unsigned char *)(&val), 2);
 	if (rc)
 		return PROFILE_NONE;
-#endif
 	return (1 << (val & PROFILE_MASK));
 }
 
 void enable_board_pin_mux(void)
 {
 	/* Do board-specific muxes. */
-	if (board_is_bone()) {
+	if (board_is_beaglelogic()) {
+		/* BeagleLogic pinmux */
+		configure_module_pin_mux(mii1_pin_mux);
+		configure_module_pin_mux(mmc0_pin_mux);
+	} else if (board_is_bone()) {
 		/* Beaglebone pinmux */
 		configure_module_pin_mux(mii1_pin_mux);
 		configure_module_pin_mux(mmc0_pin_mux);

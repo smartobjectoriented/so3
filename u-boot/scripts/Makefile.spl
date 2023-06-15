@@ -92,10 +92,10 @@ libs-y += common/init/
 
 # Special handling for a few options which support SPL/TPL
 ifeq ($(CONFIG_TPL_BUILD),y)
-libs-$(CONFIG_TPL_LIBCOMMON_SUPPORT) += common/ cmd/ env/
+libs-$(CONFIG_TPL_LIBCOMMON_SUPPORT) += boot/ common/ cmd/ env/
 libs-$(CONFIG_TPL_LIBGENERIC_SUPPORT) += lib/
 else
-libs-$(CONFIG_SPL_LIBCOMMON_SUPPORT) += common/ cmd/ env/
+libs-$(CONFIG_SPL_LIBCOMMON_SUPPORT) += boot/ common/ cmd/ env/
 libs-$(CONFIG_SPL_LIBGENERIC_SUPPORT) += lib/
 ifdef CONFIG_SPL_FRAMEWORK
 libs-$(CONFIG_PARTITIONS) += disk/
@@ -108,7 +108,7 @@ libs-$(CONFIG_SPL_USB_GADGET) += drivers/usb/cdns3/
 libs-y += dts/
 libs-y += fs/
 libs-$(CONFIG_SPL_POST_MEM_SUPPORT) += post/drivers/
-libs-$(CONFIG_SPL_NET_SUPPORT) += net/
+libs-$(CONFIG_SPL_NET) += net/
 libs-$(CONFIG_SPL_UNIT_TEST) += test/
 
 head-y		:= $(addprefix $(obj)/,$(head-y))
@@ -295,16 +295,13 @@ else
 FINAL_DTB_CONTAINER = $(obj)/$(SPL_BIN).multidtb.fit
 endif
 
-# Build the .dtb file if:
-#   - we are not using OF_PLATDATA
-#   - we are using OF_CONTROL
+# Build the .dtb file if needed
+#   - OF_REAL is enabled
 #   - we have either OF_SEPARATE or OF_HOSTFILE
 build_dtb :=
-ifeq ($(CONFIG_$(SPL_TPL_)OF_PLATDATA),)
-ifneq ($(CONFIG_$(SPL_TPL_)OF_CONTROL),)
-ifeq ($(CONFIG_OF_SEPARATE)$(CONFIG_OF_HOSTFILE),y)
+ifneq ($(CONFIG_$(SPL_TPL_)OF_REAL),)
+ifeq ($(CONFIG_OF_SEPARATE)$(CONFIG_SANDBOX),y)
 build_dtb := y
-endif
 endif
 endif
 
@@ -459,7 +456,7 @@ u-boot-spl-keep-syms-lto_c := \
 
 quiet_cmd_keep_syms_lto = KSL     $@
       cmd_keep_syms_lto = \
-	NM=$(NM) $(srctree)/scripts/gen_ll_addressable_symbols.sh $^ >$@
+	$(srctree)/scripts/gen_ll_addressable_symbols.sh $(NM) $^ > $@
 
 quiet_cmd_keep_syms_lto_cc = KSLCC   $@
       cmd_keep_syms_lto_cc = \

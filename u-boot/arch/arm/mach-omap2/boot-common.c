@@ -10,6 +10,8 @@
 #include <common.h>
 #include <ahci.h>
 #include <log.h>
+#include <dm/uclass.h>
+#include <fs_loader.h>
 #include <spl.h>
 #include <asm/global_data.h>
 #include <asm/omap_common.h>
@@ -19,8 +21,13 @@
 #include <watchdog.h>
 #include <scsi.h>
 #include <i2c.h>
+#include <remoteproc.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+#define IPU1_LOAD_ADDR         (0xa17ff000)
+#define MAX_REMOTECORE_BIN_SIZE (8 * 0x100000)
+#define IPU2_LOAD_ADDR         (IPU1_LOAD_ADDR + MAX_REMOTECORE_BIN_SIZE)
 
 __weak u32 omap_sys_boot_device(void)
 {
@@ -104,7 +111,7 @@ void save_omap_boot_params(void)
 			sys_boot_device = 1;
 			break;
 #endif
-#if defined(BOOT_DEVICE_CPGMAC) && !defined(CONFIG_SPL_ETH_SUPPORT)
+#if defined(BOOT_DEVICE_CPGMAC) && !defined(CONFIG_SPL_ETH)
 		case BOOT_DEVICE_CPGMAC:
 			sys_boot_device = 1;
 			break;
@@ -194,6 +201,91 @@ u32 spl_mmc_boot_mode(const u32 boot_device)
 	return gd->arch.omap_boot_mode;
 }
 
+int load_firmware(char *name_fw, u32 *loadaddr)
+{
+	struct udevice *fsdev;
+	int size = 0;
+
+	if (!IS_ENABLED(CONFIG_FS_LOADER))
+		return 0;
+
+	if (!*loadaddr)
+		return 0;
+
+	if (!uclass_get_device(UCLASS_FS_FIRMWARE_LOADER, 0, &fsdev)) {
+		size = request_firmware_into_buf(fsdev, name_fw,
+						 (void *)*loadaddr, 0, 0);
+	}
+
+	return size;
+}
+
+void spl_boot_ipu(void)
+{
+	int ret, size;
+	u32 loadaddr = IPU1_LOAD_ADDR;
+
+	if (!IS_ENABLED(CONFIG_SPL_BUILD) ||
+	    !IS_ENABLED(CONFIG_REMOTEPROC_TI_IPU))
+		return;
+
+	size = load_firmware("dra7-ipu1-fw.xem4", &loadaddr);
+	if (size <= 0) {
+		pr_err("Firmware loading failed\n");
+		goto skip_ipu1;
+	}
+
+	enable_ipu1_clocks();
+	ret = rproc_dev_init(0);
+	if (ret) {
+		debug("%s: IPU1 failed to initialize on rproc (%d)\n",
+		      __func__, ret);
+		goto skip_ipu1;
+	}
+
+	ret = rproc_load(0, IPU1_LOAD_ADDR, 0x2000000);
+	if (ret) {
+		debug("%s: IPU1 failed to load on rproc (%d)\n", __func__,
+		      ret);
+		goto skip_ipu1;
+	}
+
+	debug("Starting IPU1...\n");
+
+	ret = rproc_start(0);
+	if (ret)
+		debug("%s: IPU1 failed to start (%d)\n", __func__, ret);
+
+skip_ipu1:
+	loadaddr = IPU2_LOAD_ADDR;
+	size = load_firmware("dra7-ipu2-fw.xem4", &loadaddr);
+	if (size <= 0) {
+		pr_err("Firmware loading failed for ipu2\n");
+		return;
+	}
+
+	enable_ipu2_clocks();
+	ret = rproc_dev_init(1);
+	if (ret) {
+		debug("%s: IPU2 failed to initialize on rproc (%d)\n", __func__,
+		      ret);
+		return;
+	}
+
+	ret = rproc_load(1, IPU2_LOAD_ADDR, 0x2000000);
+	if (ret) {
+		debug("%s: IPU2 failed to load on rproc (%d)\n", __func__,
+		      ret);
+		return;
+	}
+
+	debug("Starting IPU2...\n");
+
+	ret = rproc_start(1);
+	if (ret)
+		debug("%s: IPU2 failed to start (%d)\n", __func__, ret);
+}
+
 void spl_board_init(void)
 {
 	/* Prepare console output */
@@ -202,10 +294,10 @@ void spl_board_init(void)
 #if defined(CONFIG_SPL_NAND_SUPPORT) || defined(CONFIG_SPL_ONENAND_SUPPORT)
 	gpmc_init();
 #endif
-#if defined(CONFIG_SPL_I2C_SUPPORT) && !CONFIG_IS_ENABLED(DM_I2C)
-	i2c_init(CONFIG_SYS_OMAP24_I2C_SPEED, CONFIG_SYS_OMAP24_I2C_SLAVE);
+#if defined(CONFIG_SPL_I2C) && !CONFIG_IS_ENABLED(DM_I2C)
+	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
-#if defined(CONFIG_AM33XX) && defined(CONFIG_SPL_MUSB_NEW_SUPPORT)
+#if defined(CONFIG_AM33XX) && defined(CONFIG_SPL_MUSB_NEW)
 	arch_misc_init();
 #endif
 #if defined(CONFIG_HW_WATCHDOG) || defined(CONFIG_WATCHDOG)
@@ -214,6 +306,9 @@ void spl_board_init(void)
 #ifdef CONFIG_AM33XX
 	am33xx_spl_board_init();
 #endif
+	if (IS_ENABLED(CONFIG_SPL_BUILD) &&
+	    IS_ENABLED(CONFIG_REMOTEPROC_TI_IPU))
+		spl_boot_ipu();
 }
 
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)

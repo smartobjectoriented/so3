@@ -163,8 +163,8 @@ Consider sunxi. It has the following steps:
 
 Binman is intended to replace the last step. The U-Boot build system builds
 u-boot.bin and sunxi-spl.bin. Binman can then take over creation of
-sunxi-spl.bin (by calling mksunxiboot, or hopefully one day mkimage). In any
-case, it would then create the image from the component parts.
+sunxi-spl.bin by calling mksunxiboot or mkimage. In any case, it would then
+create the image from the component parts.
 
 This simplifies the U-Boot Makefile somewhat, since various pieces of logic
 can be replaced by a call to binman.
@@ -185,13 +185,36 @@ Binman is intended to replace all of this, with ifdtool left to handle only
 the configuration of the Intel-format descriptor.
 
 
-Running binman
---------------
+Installing binman
+-----------------
 
 First install prerequisites, e.g::
 
     sudo apt-get install python-pyelftools python3-pyelftools lzma-alone \
         liblz4-tool
+
+You can run binman directly if you put it on your PATH. But if you want to
+install into your `~/.local` Python directory, use::
+
+    pip install tools/patman tools/dtoc tools/binman
+
+Note that binman makes use of libraries from patman and dtoc, which is why these
+need to be installed. Also you need `libfdt` and `pylibfdt` which can be
+installed like this::
+
+   git clone git://git.kernel.org/pub/scm/utils/dtc/dtc.git
+   cd dtc
+   pip install .
+   make NO_PYTHON=1 install
+
+This installs the `libfdt.so` library into `~/lib` so you can use
+`LD_LIBRARY_PATH=~/lib` when running binman. If you want to install it in the
+system-library directory, replace the last line with::
+
+   make NO_PYTHON=1 PREFIX=/ install
+
+Running binman
+--------------
 
 Type::
 
@@ -230,30 +253,6 @@ Once binman is executed it will pick up its instructions from a device-tree
 file, typically <soc>-u-boot.dtsi, where <soc> is your CONFIG_SYS_SOC value.
 You can use other, more specific CONFIG options - see 'Automatic .dtsi
 inclusion' below.
-
-
-Using binman with OF_BOARD or OF_PRIOR_STAGE
---------------------------------------------
-
-Normally binman is used with a board configured with OF_SEPARATE or OF_EMBED.
-This is a typical scenario where a device tree source that contains the binman
-node is provided in the arch/<arch>/dts directory for a specific board.
-
-However for a board configured with OF_BOARD or OF_PRIOR_STAGE, no device tree
-blob is provided in the U-Boot build phase hence the binman node information
-is not available. In order to support such use case, a new Kconfig option
-BINMAN_STANDALONE_FDT is introduced, to tell the build system that a standalone
-device tree blob containing binman node is explicitly required.
-
-Note there is a Kconfig option BINMAN_FDT which enables U-Boot run time to
-access information about binman entries, stored in the device tree in a binman
-node. Generally speaking, this option makes sense for OF_SEPARATE or OF_EMBED.
-For the other OF_CONTROL methods, it's quite possible binman node is not
-available as binman is invoked during the build phase, thus this option is not
-turned on by default for these OF_CONTROL methods.
-
-See qemu-riscv64_spl_defconfig for an example of how binman is used with
-OF_PRIOR_STAGE to generate u-boot.itb image.
 
 
 Access to binman entry offsets at run time (symbols)
@@ -731,7 +730,7 @@ The above feature ensures that the devicetree is clearly separated from the
 U-Boot executable and can be updated separately by binman as needed. It can be
 disabled with the --no-expanded flag if required.
 
-The same applies for u-boot-spl and u-boot-spl. In those cases, the expansion
+The same applies for u-boot-spl and u-boot-tpl. In those cases, the expansion
 includes the BSS padding, so for example::
 
     spl {
@@ -814,12 +813,50 @@ Binman will search for the following files in arch/<arch>/dts::
 
 U-Boot will only use the first one that it finds. If you need to include a
 more general file you can do that from the more specific file using #include.
-If you are having trouble figuring out what is going on, you can uncomment
-the 'warning' line in scripts/Makefile.lib to see what it has found::
+If you are having trouble figuring out what is going on, you can use
+`DEVICE_TREE_DEBUG=1` with your build::
 
-   # Uncomment for debugging
-   # This shows all the files that were considered and the one that we chose.
-   # u_boot_dtsi_options_debug = $(u_boot_dtsi_options_raw)
+   make DEVICE_TREE_DEBUG=1
+   scripts/Makefile.lib:334: Automatic .dtsi inclusion: options:
+     arch/arm/dts/juno-r2-u-boot.dtsi arch/arm/dts/-u-boot.dtsi
+     arch/arm/dts/armv8-u-boot.dtsi arch/arm/dts/armltd-u-boot.dtsi
+     arch/arm/dts/u-boot.dtsi ... found: "arch/arm/dts/juno-r2-u-boot.dtsi"
+
+
+Updating an ELF file
+====================
+
+For the EFI app, where U-Boot is loaded from UEFI and runs as an app, there is
+no way to update the devicetree after U-Boot is built. Normally this works by
+creating a new u-boot.dtb.out with he updated devicetree, which is automatically
+built into the output image. With ELF this is not possible since the ELF is
+not part of an image, just a stand-along file. We must create an updated ELF
+file with the new devicetree.
+
+This is handled by the --update-fdt-in-elf option. It takes four arguments,
+separated by comma:
+
+   infile     - filename of input ELF file, e.g. 'u-boot's
+   outfile    - filename of output ELF file, e.g. 'u-boot.out'
+   begin_sym - symbol at the start of the embedded devicetree, e.g.
+   '__dtb_dt_begin'
+   end_sym   - symbol at the start of the embedded devicetree, e.g.
+   '__dtb_dt_end'
+
+When this flag is used, U-Boot does all the normal packaging, but as an
+additional step, it creates a new ELF file with the new devicetree embedded in
+it.
+
+If logging is enabled you will see a message like this::
+
+   Updating file 'u-boot' with data length 0x400a (16394) between symbols
+   '__dtb_dt_begin' and '__dtb_dt_end'
+
+There must be enough space for the updated devicetree. If not, an error like
+the following is produced::
+
+   ValueError: Not enough space in 'u-boot' for data length 0x400a (16394);
+   size is 0x1744 (5956)
 
 
 Entry Documentation
@@ -881,6 +918,11 @@ or with wildcards::
           u-boot-dtb        180   108  u-boot-dtb        80          3b5
       image-header          bf8     8  image-header     bf8
 
+If an older version of binman is used to list images created by a newer one, it
+is possible that it will contain entry types that are not supported. These still
+show with the correct type, but binman just sees them as blobs (plain binary
+data). Any special features of that etype are not supported by the old binman.
+
 
 Extracting files from images
 ----------------------------
@@ -905,12 +947,41 @@ or just a selection::
 
     $ binman extract -i image.bin "*u-boot*" -O outdir
 
+Some entry types have alternative formats, for example fdtmap which allows
+extracted just the devicetree binary without the fdtmap header::
+
+    $ binman extract -i /tmp/b/odroid-c4/image.bin -f out.dtb -F fdt fdtmap
+    $ fdtdump out.dtb
+    /dts-v1/;
+    // magic:               0xd00dfeed
+    // totalsize:           0x8ab (2219)
+    // off_dt_struct:       0x38
+    // off_dt_strings:      0x82c
+    // off_mem_rsvmap:      0x28
+    // version:             17
+    // last_comp_version:   2
+    // boot_cpuid_phys:     0x0
+    // size_dt_strings:     0x7f
+    // size_dt_struct:      0x7f4
+
+    / {
+        image-node = "binman";
+        image-pos = <0x00000000>;
+        size = <0x0011162b>;
+        ...
+
+Use `-F list` to see what alternative formats are available::
+
+    $ binman extract -i /tmp/b/odroid-c4/image.bin -F list
+    Flag (-F)   Entry type            Description
+    fdt         fdtmap                Extract the devicetree blob from the fdtmap
+
 
 Replacing files in an image
 ---------------------------
 
 You can replace files in an existing firmware image created by binman, provided
-that there is an 'fdtmap' entry in the image. For example:
+that there is an 'fdtmap' entry in the image. For example::
 
     $ binman replace -i image.bin section/cbfs/u-boot
 
@@ -954,6 +1025,77 @@ by increasing the -v/--verbosity from the default of 1:
    5: debug (all output)
 
 You can use BINMAN_VERBOSE=5 (for example) when building to select this.
+
+
+Bintools
+========
+
+`Bintool` is the name binman gives to a binary tool which it uses to create and
+manipulate binaries that binman cannot handle itself. Bintools are often
+necessary since Binman only supports a subset of the available file formats
+natively.
+
+Many SoC vendors invent ways to load code into their SoC using new file formats,
+sometimes changing the format with successive SoC generations. Sometimes the
+tool is available as Open Source. Sometimes it is a pre-compiled binary that
+must be downloaded from the vendor's website. Sometimes it is available in
+source form but difficult or slow to build.
+
+Even for images that use bintools, binman still assembles the image from its
+image description. It may handle parts of the image natively and part with
+various bintools.
+
+Binman relies on these tools so provides various features to manage them:
+
+- Determining whether the tool is currently installed
+- Downloading or building the tool
+- Determining the version of the tool that is installed
+- Deciding which tools are needed to build an image
+
+The Bintool class is an interface to the tool, a thin level of abstration, using
+Python functions to run the tool for each purpose (e.g. creating a new
+structure, adding a file to an existing structure) rather than just lists of
+string arguments.
+
+As with external blobs, bintools (which are like 'external' tools) can be
+missing. When building an image requires a bintool and it is not installed,
+binman detects this and reports the problem, but continues to build an image.
+This is useful in CI systems which want to check that everything is correct but
+don't have access to the bintools.
+
+To make this work, all calls to bintools (e.g. with Bintool.run_cmd()) must cope
+with the tool being missing, i.e. when None is returned, by:
+
+- Calling self.record_missing_bintool()
+- Setting up some fake contents so binman can continue
+
+Of course the image will not work, but binman reports which bintools are needed
+and also provide a way to fetch them.
+
+To see the available bintools, use::
+
+    binman tool --list
+
+To fetch tools which are missing, use::
+
+    binman tool --fetch missing
+
+You can also use `--fetch all` to fetch all tools or `--fetch <tool>` to fetch
+a particular tool. Some tools are built from source code, in which case you will
+need to have at least the `build-essential` and `git` packages installed.
+
+Bintool Documentation
+=====================
+
+To provide details on the various bintools supported by binman, bintools.rst is
+generated from the source code using:
+
+    binman bintool-docs >tools/binman/bintools.rst
+
+.. toctree::
+   :maxdepth: 2
+
+   bintools
 
 
 Technical details
@@ -1049,6 +1191,35 @@ the tool's output will be used for the target or for the host machine. If those
 aren't given, it will also try to derive target-specific versions from the
 CROSS_COMPILE environment variable during a cross-compilation.
 
+If the tool is not available in the path you can use BINMAN_TOOLPATHS to specify
+a space-separated list of paths to search, e.g.::
+
+   BINMAN_TOOLPATHS="/tools/g12a /tools/tegra" binman ...
+
+
+External blobs
+--------------
+
+Binary blobs, even if the source code is available, complicate building
+firmware. The instructions can involve multiple steps and the binaries may be
+hard to build or obtain. Binman at least provides a unified description of how
+to build the final image, no matter what steps are needed to get there.
+
+Binman also provides a `blob-ext` entry type that pulls in a binary blob from an
+external file. If the file is missing, binman can optionally complete the build
+and just report a warning. Use the `-M/--allow-missing` option to enble this.
+This is useful in CI systems which want to check that everything is correct but
+don't have access to the blobs.
+
+If the blobs are in a different directory, you can specify this with the `-I`
+option.
+
+For U-Boot, you can use set the BINMAN_INDIRS environment variable to provide a
+space-separated list of directories to search for binary blobs::
+
+   BINMAN_INDIRS="odroid-c4/fip/g12a \
+       odroid-c4/build/board/hardkernel/odroidc4/firmware \
+       odroid-c4/build/scp_task" binman ...
 
 Code coverage
 -------------
@@ -1059,6 +1230,35 @@ implementations target 100% test coverage. Run 'binman test -T' to check this.
 To enable Python test coverage on Debian-type distributions (e.g. Ubuntu)::
 
    $ sudo apt-get install python-coverage python3-coverage python-pytest
+
+
+Error messages
+--------------
+
+This section provides some guidance for some of the less obvious error messages
+produced by binman.
+
+
+Expected __bss_size symbol
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Example::
+
+   binman: Node '/binman/u-boot-spl-ddr/u-boot-spl/u-boot-spl-bss-pad':
+      Expected __bss_size symbol in spl/u-boot-spl
+
+This indicates that binman needs the `__bss_size` symbol to be defined in the
+SPL binary, where `spl/u-boot-spl` is the ELF file containing the symbols. The
+symbol tells binman the size of the BSS region, in bytes. It needs this to be
+able to pad the image so that the following entries do not overlap the BSS,
+which would cause them to be overwritte by variable access in SPL.
+
+This symbols is normally defined in the linker script, immediately after
+_bss_start and __bss_end are defined, like this::
+
+    __bss_size = __bss_end - __bss_start;
+
+You may need to add it to your linker script if you get this error.
 
 
 Concurrent tests
@@ -1142,6 +1342,108 @@ adds a -v<level> option to the call to binman::
    make BINMAN_VERBOSE=5
 
 
+Building sections in parallel
+-----------------------------
+
+By default binman uses multiprocessing to speed up compilation of large images.
+This works at a section level, with one thread for each entry in the section.
+This can speed things up if the entries are large and use compression.
+
+This feature can be disabled with the '-T' flag, which defaults to a suitable
+value for your machine. This depends on the Python version, e.g on v3.8 it uses
+12 threads on an 8-core machine. See ConcurrentFutures_ for more details.
+
+The special value -T0 selects single-threaded mode, useful for debugging during
+development, since dealing with exceptions and problems in threads is more
+difficult. This avoids any use of ThreadPoolExecutor.
+
+
+Collecting data for an entry type
+---------------------------------
+
+Some entry types deal with data obtained from others. For example,
+`Entry_mkimage` calls the `mkimage` tool with data from its subnodes::
+
+    mkimage {
+        args = "-n test -T script";
+
+        u-boot-spl {
+        };
+
+        u-boot {
+        };
+    };
+
+This shows mkimage being passed a file consisting of SPL and U-Boot proper. It
+is create by calling `Entry.collect_contents_to_file()`. Note that in this case,
+the data is passed to mkimage for processing but does not appear separately in
+the image. It may not appear at all, depending on what mkimage does. The
+contents of the `mkimage` entry are entirely dependent on the processing done
+by the entry, with the provided subnodes (`u-boot-spl` and `u-boot`) simply
+providing the input data for that processing.
+
+Note that `Entry.collect_contents_to_file()` simply concatenates the data from
+the different entries together, with no control over alignment, etc. Another
+approach is to subclass `Entry_section` so that those features become available,
+such as `size` and `pad-byte`. Then the contents of the entry can be obtained by
+calling `BuildSectionData()`.
+
+There are other ways to obtain data also, depending on the situation. If the
+entry type is simply signing data which exists elsewhere in the image, then
+you can use `Entry_collection`  as a base class. It lets you use a property
+called `content` which lists the entries containing data to be processed. This
+is used by `Entry_vblock`, for example::
+
+    u_boot: u-boot {
+    };
+    vblock {
+        content = <&u_boot &dtb>;
+        keyblock = "firmware.keyblock";
+        signprivate = "firmware_data_key.vbprivk";
+        version = <1>;
+        kernelkey = "kernel_subkey.vbpubk";
+        preamble-flags = <1>;
+    };
+
+    dtb: u-boot-dtb {
+    };
+
+which shows an image containing `u-boot` and `u-boot-dtb`, with the `vblock`
+image collecting their contents to produce input for its signing process,
+without affecting those entries, which still appear in the final image
+untouched.
+
+Another example is where an entry type needs several independent pieces of input
+to function. For example, `Entry_fip` allows a number of different binary blobs
+to be placed in their own individual places in a custom data structure in the
+output image. To make that work you can add subnodes for each of them and call
+`Entry.Create()` on each subnode, as `Entry_fip` does. Then the data for each
+blob can come from any suitable place, such as an `Entry_u_boot` or an
+`Entry_blob` or anything else::
+
+    atf-fip {
+        fip-hdr-flags = /bits/ 64 <0x123>;
+        soc-fw {
+            fip-flags = /bits/ 64 <0x123456789abcdef>;
+            filename = "bl31.bin";
+        };
+
+        u-boot {
+            fip-uuid = [fc 65 13 92 4a 5b 11 ec
+                    94 35 ff 2d 1c fc 79 9c];
+        };
+    };
+
+The `soc-fw` node is a `blob-ext` (i.e. it reads in a named binary file) whereas
+`u-boot` is a normal entry type. This works because `Entry_fip` selects the
+`blob-ext` entry type if the node name (here `soc-fw`) is recognised as being
+a known blob type.
+
+When adding new entry types you are encouraged to use subnodes to provide the
+data for processing, unless the `content` approach is more suitable. Ad-hoc
+properties and other methods of obtaining data are discouraged, since it adds to
+confusion for users.
+
 History / Credits
 -----------------
 
@@ -1186,7 +1488,17 @@ Some ideas:
 - Detect invalid properties in nodes
 - Sort the fdtmap by offset
 - Output temporary files to a different directory
+- Rationalise the fdt, fdt_util and pylibfdt modules which currently have some
+  overlapping and confusing functionality
+- Update the fdt library to use a better format for Prop.value (the current one
+  is useful for dtoc but not much else)
+- Figure out how to make Fdt support changing the node order, so that
+  Node.AddSubnode() can support adding a node before another, existing node.
+  Perhaps it should completely regenerate the flat tree?
+
 
 --
 Simon Glass <sjg@chromium.org>
 7/7/2016
+
+.. _ConcurrentFutures: https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor

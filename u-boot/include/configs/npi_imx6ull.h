@@ -15,9 +15,6 @@
 
 #define CONFIG_SYS_FSL_USDHC_NUM	1
 
-/* Size of malloc() poll */
-#define CONFIG_SYS_MALLOC_LEN		SZ_2M
-
 /* Console configs */
 #define CONFIG_MXC_UART_BASE		UART1_BASE
 
@@ -25,9 +22,6 @@
 #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC2_BASE_ADDR
 
 #define CONFIG_NETMASK			255.255.255.0
-
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
-#define CONFIG_SYS_HZ			1000
 
 /* Physical Memory Map */
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
@@ -40,15 +34,6 @@
 	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_ADDR	\
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-/* environment settings */
-#if defined(CONFIG_ENV_IS_IN_MMC)
-#define CONFIG_SYS_MMC_ENV_DEV		0
-#elif defined(CONFIG_ENV_IS_IN_NAND)
-#undef CONFIG_ENV_SIZE
-#define CONFIG_ENV_SECT_SIZE		(128 << 10)
-#define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
-#endif
 
 /* NAND */
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
@@ -66,8 +51,6 @@
 #define CONFIG_FEC_XCV_TYPE		RMII
 #define CONFIG_ETHPRIME			"eth0"
 #endif
-
-#define CONFIG_IMX_THERMAL
 
 #define CONFIG_FEC_ENET_DEV		1
 

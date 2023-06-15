@@ -46,7 +46,7 @@ static int scsi_max_devs; /* number of highest available scsi device */
 
 static int scsi_curr_dev; /* current device */
 
-static struct blk_desc scsi_dev_desc[CONFIG_SYS_SCSI_MAX_DEVICE];
+static struct blk_desc scsi_dev_desc[SCSI_MAX_DEVICE];
 #endif
 
 /* almost the maximum amount of the scsi_ext command.. */
@@ -284,7 +284,6 @@ void scsi_init(void)
 	 */
 	for (i = 0; i < ARRAY_SIZE(scsi_device_list); i++) {
 		/* get PCI Device ID */
-#ifdef CONFIG_DM_PCI
 		struct udevice *dev;
 		int ret;
 
@@ -294,11 +293,6 @@ void scsi_init(void)
 			busdevfunc = dm_pci_get_bdf(dev);
 			break;
 		}
-#else
-		busdevfunc = pci_find_device(scsi_device_list[i].vendor,
-					     scsi_device_list[i].device,
-					     0);
-#endif
 		if (busdevfunc != -1)
 			break;
 	}
@@ -661,7 +655,7 @@ int scsi_scan(bool verbose)
 
 	if (verbose)
 		printf("scanning bus for devices...\n");
-	for (i = 0; i < CONFIG_SYS_SCSI_MAX_DEVICE; i++)
+	for (i = 0; i < SCSI_MAX_DEVICE; i++)
 		scsi_init_dev_desc(&scsi_dev_desc[i], i);
 
 	scsi_max_devs = 0;
@@ -709,7 +703,7 @@ U_BOOT_DRIVER(scsi_blk) = {
 U_BOOT_LEGACY_BLK(scsi) = {
 	.if_typename	= "scsi",
 	.if_type	= IF_TYPE_SCSI,
-	.max_devs	= CONFIG_SYS_SCSI_MAX_DEVICE,
+	.max_devs	= SCSI_MAX_DEVICE,
 	.desc		= scsi_dev_desc,
 };
 #endif

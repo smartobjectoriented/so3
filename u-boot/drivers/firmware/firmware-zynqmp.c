@@ -6,7 +6,9 @@
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
+#include <dm/lists.h>
 #include <log.h>
 #include <zynqmp_firmware.h>
 #include <asm/cache.h>
@@ -19,16 +21,72 @@
 #define PMUFW_PAYLOAD_ARG_CNT	8
 
 #define XST_PM_NO_ACCESS	2002L
+#define XST_PM_ALREADY_CONFIGURED	2009L
 
 struct zynqmp_power {
 	struct mbox_chan tx_chan;
 	struct mbox_chan rx_chan;
 } zynqmp_power;
 
+#define NODE_ID_LOCATION	5
+
+static unsigned int xpm_configobject[] = {
+	/**********************************************************************/
+	/* HEADER */
+	2,	/* Number of remaining words in the header */
+	1,	/* Number of sections included in config object */
+	PM_CONFIG_OBJECT_TYPE_OVERLAY,	/* Type of Config object as overlay */
+	/**********************************************************************/
+	/* SLAVE SECTION */
+
+	PM_CONFIG_SLAVE_SECTION_ID,	/* Section ID */
+	1,				/* Number of slaves */
+
+	0, /* Node ID which will be changed below */
+	PM_SLAVE_FLAG_IS_SHAREABLE,
+	PM_CONFIG_IPI_PSU_CORTEXA53_0_MASK |
+	PM_CONFIG_IPI_PSU_CORTEXR5_0_MASK |
+	PM_CONFIG_IPI_PSU_CORTEXR5_1_MASK, /* IPI Mask */
+};
+
+static unsigned int xpm_configobject_close[] = {
+	/**********************************************************************/
+	/* HEADER */
+	2,	/* Number of remaining words in the header */
+	1,	/* Number of sections included in config object */
+	PM_CONFIG_OBJECT_TYPE_OVERLAY,	/* Type of Config object as overlay */
+	/**********************************************************************/
+	/* SET CONFIG SECTION */
+	PM_CONFIG_SET_CONFIG_SECTION_ID,
+	0U,	/* Loading permission to Overlay config object */
+};
+
+int zynqmp_pmufw_config_close(void)
+{
+	zynqmp_pmufw_load_config_object(xpm_configobject_close,
+					sizeof(xpm_configobject_close));
+	return 0;
+}
+
+int zynqmp_pmufw_node(u32 id)
+{
+	/* Record power domain id */
+	xpm_configobject[NODE_ID_LOCATION] = id;
+
+	zynqmp_pmufw_load_config_object(xpm_configobject,
+					sizeof(xpm_configobject));
+
+	return 0;
+}
+
 static int ipi_req(const u32 *req, size_t req_len, u32 *res, size_t res_maxlen)
 {
 	struct zynqmp_ipi_msg msg;
 	int ret;
+	u32 buffer[PAYLOAD_ARG_CNT];
+
+	if (!res)
+		res = buffer;
 
 	if (req_len > PMUFW_PAYLOAD_ARG_CNT ||
 	    res_maxlen > PMUFW_PAYLOAD_ARG_CNT)
@@ -93,12 +151,20 @@ void zynqmp_pmufw_load_config_object(const void *cfg_obj, size_t size)
 	int err;
 	u32 ret_payload[PAYLOAD_ARG_CNT];
 
-	printf("Loading new PMUFW cfg obj (%ld bytes)\n", size);
+	if (IS_ENABLED(CONFIG_SPL_BUILD))
+		printf("Loading new PMUFW cfg obj (%ld bytes)\n", size);
+
+	flush_dcache_range((ulong)cfg_obj, (ulong)(cfg_obj + size));
 
 	err = xilinx_pm_request(PM_SET_CONFIGURATION, (u32)(u64)cfg_obj, 0, 0,
 				0, ret_payload);
 	if (err == XST_PM_NO_ACCESS) {
 		printf("PMUFW no permission to change config object\n");
+		return;
+	}
+
+	if (err == XST_PM_ALREADY_CONFIGURED) {
+		debug("PMUFW Node is already configured\n");
 		return;
 	}
 
@@ -164,6 +230,7 @@ int __maybe_unused xilinx_pm_request(u32 api_id, u32 arg0, u32 arg1, u32 arg2,
 		 * firmware API is limited by the SMC call size
 		 */
 		u32 regs[] = {api_id, arg0, arg1, arg2, arg3};
+		int ret;
 
 		if (api_id == PM_FPGA_LOAD) {
 			/* Swap addr_hi/low because of incompatibility */
@@ -173,7 +240,10 @@ int __maybe_unused xilinx_pm_request(u32 api_id, u32 arg0, u32 arg1, u32 arg2,
 			regs[2] = temp;
 		}
 
-		ipi_req(regs, PAYLOAD_ARG_CNT, ret_payload, PAYLOAD_ARG_CNT);
+		ret = ipi_req(regs, PAYLOAD_ARG_CNT, ret_payload,
+			      PAYLOAD_ARG_CNT);
+		if (ret)
+			return ret;
 #else
 		return -EPERM;
 #endif
@@ -208,8 +278,27 @@ static const struct udevice_id zynqmp_firmware_ids[] = {
 	{ }
 };
 
+static int zynqmp_firmware_bind(struct udevice *dev)
+{
+	int ret;
+	struct udevice *child;
+
+	if (IS_ENABLED(CONFIG_ZYNQMP_POWER_DOMAIN)) {
+		ret = device_bind_driver_to_node(dev, "zynqmp_power_domain",
+						 "zynqmp_power_domain",
+						 dev_ofnode(dev), &child);
+		if (ret) {
+			printf("zynqmp power domain driver is not bound: %d\n", ret);
+			return ret;
+		}
+	}
+
+	return dm_scan_fdt_dev(dev);
+}
+
 U_BOOT_DRIVER(zynqmp_firmware) = {
 	.id = UCLASS_FIRMWARE,
 	.name = "zynqmp_firmware",
 	.of_match = zynqmp_firmware_ids,
+	.bind = zynqmp_firmware_bind,
 };

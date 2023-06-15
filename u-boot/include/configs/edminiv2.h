@@ -28,9 +28,6 @@
  * High Level Configuration Options (easy to change)
  */
 
-#define CONFIG_FEROCEON		1	/* CPU Core subversion */
-#define CONFIG_88F5182		1	/* SOC Name */
-
 #include <asm/arch/orion5x.h>
 /*
  * CLKs configurations
@@ -88,20 +85,10 @@
  * FLASH configuration
  */
 
-#define CONFIG_SYS_MAX_FLASH_BANKS	1  /* max num of flash banks       */
 #define CONFIG_SYS_MAX_FLASH_SECT	11 /* max num of sects on one chip */
 #define CONFIG_SYS_FLASH_BASE		0xfff80000
 
 /* auto boot */
-
-/*
- * For booting Linux, the board info and command line data
- * have to be in the first 8 MB of memory, since this is
- * the maximum mapped by the Linux kernel during initialization.
- */
-#define CONFIG_CMDLINE_TAG	1	/* enable passing of ATAGs  */
-#define CONFIG_INITRD_TAG	1	/* enable INITRD tag */
-#define CONFIG_SETUP_MEMORY_TAGS 1	/* enable memory tag */
 
 #define	CONFIG_SYS_CBSIZE	1024	/* Console I/O Buff Size */
 
@@ -122,23 +109,13 @@
  */
 #ifdef CONFIG_IDE
 #define __io
-/* Needs byte-swapping for ATA data register */
-#define CONFIG_IDE_SWAP_IO
 /* Data, registers and alternate blocks are at the same offset */
-#define CONFIG_SYS_ATA_DATA_OFFSET	(0x0100)
-#define CONFIG_SYS_ATA_REG_OFFSET	(0x0100)
-#define CONFIG_SYS_ATA_ALT_OFFSET	(0x0100)
 /* Each 8-bit ATA register is aligned to a 4-bytes address */
-#define CONFIG_SYS_ATA_STRIDE		4
 /* Controller supports 48-bits LBA addressing */
 #define CONFIG_LBA48
 /* A single bus, a single device */
-#define CONFIG_SYS_IDE_MAXBUS		1
-#define CONFIG_SYS_IDE_MAXDEVICE	1
 /* ATA registers base is at SATA controller base */
-#define CONFIG_SYS_ATA_BASE_ADDR	ORION5X_SATA_BASE
 /* ATA bus 0 is orion5x port 1 on ED Mini V2 */
-#define CONFIG_SYS_ATA_IDE0_OFFSET	ORION5X_SATA_PORT1_OFFSET
 /* end of IDE defines */
 #endif /* CMD_IDE */
 
@@ -153,28 +130,12 @@
  * I2C related stuff
  */
 #ifdef CONFIG_CMD_I2C
-#define CONFIG_SYS_I2C
-#define CONFIG_SYS_I2C_MVTWSI
 #define CONFIG_I2C_MVTWSI_BASE0		ORION5X_TWSI_BASE
-#define CONFIG_SYS_I2C_SLAVE		0x0
-#define CONFIG_SYS_I2C_SPEED		100000
 #endif
 
 /*
  *  Environment variables configurations
  */
-
-/*
- * Size of malloc() pool
- */
-#define CONFIG_SYS_MALLOC_LEN	(1024 * 256) /* 256kB for malloc() */
-
-/*
- * Other required minimal configurations
- */
-
-#define CONFIG_SYS_LOAD_ADDR		0x00800000
-#define CONFIG_SYS_RESET_ADDRESS	0xffff0000
 
 /* Enable command line editing */
 

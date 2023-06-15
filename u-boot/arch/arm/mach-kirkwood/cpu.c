@@ -54,11 +54,11 @@ unsigned int kw_winctrl_calcsize(unsigned int sizeval)
 
 static struct mbus_win windows[] = {
 	/* Window 0: PCIE MEM address space */
-	{ KW_DEFADR_PCI_MEM, 1024 * 1024 * 256,
+	{ KW_DEFADR_PCI_MEM, KW_DEFADR_PCI_MEM_SIZE,
 	  KWCPU_TARGET_PCIE, KWCPU_ATTR_PCIE_MEM },
 
 	/* Window 1: PCIE IO address space */
-	{ KW_DEFADR_PCI_IO, 1024 * 64,
+	{ KW_DEFADR_PCI_IO, KW_DEFADR_PCI_IO_SIZE,
 	  KWCPU_TARGET_PCIE, KWCPU_ATTR_PCIE_IO },
 
 	/* Window 2: NAND Flash address space */
@@ -125,7 +125,7 @@ static void kw_sysrst_check(void)
 		return;
 
 	/* read sysrstdelay value */
-	sysrst_dly = (u32) simple_strtoul(s, NULL, 10);
+	sysrst_dly = (u32)dectoul(s, NULL);
 
 	/* read SysRst Length counter register (bits 28:0) */
 	sysrst_cnt = (0x1fffffff & readl(KW_REG_SYSRST_CNT));
@@ -278,4 +278,3 @@ int cpu_eth_init(struct bd_info *bis)
 	return 0;
 }
 #endif
-

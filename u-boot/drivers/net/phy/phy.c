@@ -463,7 +463,7 @@ static struct phy_driver genphy_driver = {
 	.shutdown	= genphy_shutdown,
 };
 
-int genphy_init(void)
+static int genphy_init(void)
 {
 	return phy_register(&genphy_driver);
 }
@@ -528,6 +528,9 @@ int phy_init(void)
 #endif
 #ifdef CONFIG_PHY_NATSEMI
 	phy_natsemi_init();
+#endif
+#ifdef CONFIG_NXP_C45_TJA11XX_PHY
+	phy_nxp_tja11xx_init();
 #endif
 #ifdef CONFIG_PHY_REALTEK
 	phy_realtek_init();

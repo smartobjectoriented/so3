@@ -133,6 +133,19 @@ int os_write_file(const char *fname, const void *buf, int size)
 	return 0;
 }
 
+int os_filesize(int fd)
+{
+	off_t size;
+
+	size = os_lseek(fd, 0, OS_SEEK_END);
+	if (size < 0)
+		return -errno;
+	if (os_lseek(fd, 0, OS_SEEK_SET) < 0)
+		return -errno;
+
+	return size;
+}
+
 int os_read_file(const char *fname, void **bufp, int *sizep)
 {
 	off_t size;
@@ -144,15 +157,12 @@ int os_read_file(const char *fname, void **bufp, int *sizep)
 		printf("Cannot open file '%s'\n", fname);
 		goto err;
 	}
-	size = os_lseek(fd, 0, OS_SEEK_END);
+	size = os_filesize(fd);
 	if (size < 0) {
-		printf("Cannot seek to end of file '%s'\n", fname);
+		printf("Cannot get file size of '%s'\n", fname);
 		goto err;
 	}
-	if (os_lseek(fd, 0, OS_SEEK_SET) < 0) {
-		printf("Cannot seek to start of file '%s'\n", fname);
-		goto err;
-	}
+
 	*bufp = os_malloc(size);
 	if (!*bufp) {
 		printf("Not enough memory to read file '%s'\n", fname);
@@ -170,6 +180,45 @@ int os_read_file(const char *fname, void **bufp, int *sizep)
 err:
 	os_close(fd);
 	return ret;
+}
+
+int os_map_file(const char *pathname, int os_flags, void **bufp, int *sizep)
+{
+	void *ptr;
+	int size;
+	int ifd;
+
+	ifd = os_open(pathname, os_flags);
+	if (ifd < 0) {
+		printf("Cannot open file '%s'\n", pathname);
+		return -EIO;
+	}
+	size = os_filesize(ifd);
+	if (size < 0) {
+		printf("Cannot get file size of '%s'\n", pathname);
+		return -EIO;
+	}
+
+	ptr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, ifd, 0);
+	if (ptr == MAP_FAILED) {
+		printf("Can't map file '%s': %s\n", pathname, strerror(errno));
+		return -EPERM;
+	}
+
+	*bufp = ptr;
+	*sizep = size;
+
+	return 0;
+}
+
+int os_unmap(void *buf, int size)
+{
+	if (munmap(buf, size)) {
+		printf("Can't unmap %p %x\n", buf, size);
+		return -EIO;
+	}
+
+	return 0;
 }
 
 /* Restore tty state when we exit */
@@ -226,7 +275,7 @@ int os_setup_signal_handlers(void)
 
 	act.sa_sigaction = os_signal_handler;
 	sigemptyset(&act.sa_mask);
-	act.sa_flags = SA_SIGINFO | SA_NODEFER;
+	act.sa_flags = SA_SIGINFO;
 	if (sigaction(SIGILL, &act, NULL) ||
 	    sigaction(SIGBUS, &act, NULL) ||
 	    sigaction(SIGSEGV, &act, NULL))
@@ -575,7 +624,13 @@ const char *os_dirent_get_typename(enum os_dirent_t type)
 	return os_dirent_typename[OS_FILET_UNKNOWN];
 }
 
-int os_get_filesize(const char *fname, loff_t *size)
+/*
+ * For compatibility reasons avoid loff_t here.
+ * U-Boot defines loff_t as long long.
+ * But /usr/include/linux/types.h may not define it at all.
+ * Alpine Linux being one example.
+ */
+int os_get_filesize(const char *fname, long long *size)
 {
 	struct stat buf;
 	int ret;
@@ -589,7 +644,7 @@ int os_get_filesize(const char *fname, loff_t *size)
 
 void os_putc(int ch)
 {
-	putchar(ch);
+	fputc(ch, stdout);
 }
 
 void os_puts(const char *str)
@@ -618,7 +673,7 @@ int os_read_ram_buf(const char *fname)
 {
 	struct sandbox_state *state = state_get_current();
 	int fd, ret;
-	loff_t size;
+	long long size;
 
 	ret = os_get_filesize(fname, &size);
 	if (ret < 0)
@@ -663,7 +718,7 @@ static int make_exec(char *fname, const void *data, int size)
  * @argvp:  Returns newly allocated args list
  * @add_args: Arguments to add, each a string
  * @count: Number of arguments in @add_args
- * @return 0 if OK, -ENOMEM if out of memory
+ * Return: 0 if OK, -ENOMEM if out of memory
  */
 static int add_args(char ***argvp, char *add_args[], int count)
 {
@@ -690,7 +745,6 @@ static int add_args(char ***argvp, char *add_args[], int count)
 				continue;
 			}
 		} else if (!strcmp(arg, "--rm_memory")) {
-			ap++;
 			continue;
 		}
 		argv[argc++] = arg;
@@ -710,7 +764,7 @@ static int add_args(char ***argvp, char *add_args[], int count)
  * execs it.
  *
  * @fname: Filename to exec
- * @return does not return on success, any return value is an error
+ * Return: does not return on success, any return value is an error
  */
 static int os_jump_to_file(const char *fname, bool delete_it)
 {
@@ -783,12 +837,14 @@ int os_jump_to_image(const void *dest, int size)
 	return os_jump_to_file(fname, true);
 }
 
-int os_find_u_boot(char *fname, int maxlen, bool use_img)
+int os_find_u_boot(char *fname, int maxlen, bool use_img,
+		   const char *cur_prefix, const char *next_prefix)
 {
 	struct sandbox_state *state = state_get_current();
 	const char *progname = state->argv[0];
 	int len = strlen(progname);
-	const char *suffix;
+	char subdir[10];
+	char *suffix;
 	char *p;
 	int fd;
 
@@ -798,45 +854,36 @@ int os_find_u_boot(char *fname, int maxlen, bool use_img)
 	strcpy(fname, progname);
 	suffix = fname + len - 4;
 
-	/* If we are TPL, boot to SPL */
-	if (!strcmp(suffix, "-tpl")) {
-		fname[len - 3] = 's';
-		fd = os_open(fname, O_RDONLY);
-		if (fd >= 0) {
-			close(fd);
-			return 0;
-		}
+	/* Change the existing suffix to the new one */
+	if (*suffix != '-')
+		return -EINVAL;
 
-		/* Look for 'u-boot-spl' in the spl/ directory */
-		p = strstr(fname, "/spl/");
-		if (p) {
-			p[1] = 's';
-			fd = os_open(fname, O_RDONLY);
-			if (fd >= 0) {
-				close(fd);
-				return 0;
-			}
-		}
-		return -ENOENT;
+	if (*next_prefix)
+		strcpy(suffix + 1, next_prefix);  /* e.g. "-tpl" to "-spl" */
+	else
+		*suffix = '\0';  /* e.g. "-spl" to "" */
+	fd = os_open(fname, O_RDONLY);
+	if (fd >= 0) {
+		close(fd);
+		return 0;
 	}
 
-	/* Look for 'u-boot' in the same directory as 'u-boot-spl' */
-	if (!strcmp(suffix, "-spl")) {
-		fname[len - 4] = '\0';
-		fd = os_open(fname, O_RDONLY);
-		if (fd >= 0) {
-			close(fd);
-			return 0;
-		}
-	}
-
-	/* Look for 'u-boot' in the parent directory of spl/ */
-	p = strstr(fname, "spl/");
+	/*
+	 * We didn't find it, so try looking for 'u-boot-xxx' in the xxx/
+	 * directory. Replace the old dirname with the new one.
+	 */
+	snprintf(subdir, sizeof(subdir), "/%s/", cur_prefix);
+	p = strstr(fname, subdir);
 	if (p) {
-		/* Remove the "spl" characters */
-		memmove(p, p + 4, strlen(p + 4) + 1);
+		if (*next_prefix)
+			/* e.g. ".../tpl/u-boot-spl"  to "../spl/u-boot-spl" */
+			memcpy(p + 1, next_prefix, strlen(next_prefix));
+		else
+			/* e.g. ".../spl/u-boot" to ".../u-boot" */
+			strcpy(p, p + 1 + strlen(cur_prefix));
 		if (use_img)
 			strcat(p, ".img");
+
 		fd = os_open(fname, O_RDONLY);
 		if (fd >= 0) {
 			close(fd);

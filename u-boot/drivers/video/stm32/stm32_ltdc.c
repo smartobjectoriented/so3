@@ -17,7 +17,6 @@
 #include <video.h>
 #include <video_bridge.h>
 #include <asm/io.h>
-#include <asm/arch/gpio.h>
 #include <dm/device-internal.h>
 #include <dm/device_compat.h>
 #include <linux/bitops.h>
@@ -339,6 +338,7 @@ static int stm32_ltdc_probe(struct udevice *dev)
 	struct display_timing timings;
 	struct clk pclk;
 	struct reset_ctl rst;
+	ulong rate;
 	int ret;
 
 	priv->regs = (void *)dev_read_addr(dev);
@@ -376,13 +376,13 @@ static int stm32_ltdc_probe(struct udevice *dev)
 		}
 	}
 
-	ret = clk_set_rate(&pclk, timings.pixelclock.typ);
-	if (ret)
-		dev_warn(dev, "fail to set pixel clock %d hz\n",
-			 timings.pixelclock.typ);
+	rate = clk_set_rate(&pclk, timings.pixelclock.typ);
+	if (IS_ERR_VALUE(rate))
+		dev_warn(dev, "fail to set pixel clock %d hz, ret=%ld\n",
+			 timings.pixelclock.typ, rate);
 
 	dev_dbg(dev, "Set pixel clock req %d hz get %ld hz\n",
-		timings.pixelclock.typ, clk_get_rate(&pclk));
+		timings.pixelclock.typ, rate);
 
 	ret = reset_get_by_index(dev, 0, &rst);
 	if (ret) {
@@ -460,7 +460,10 @@ static int stm32_ltdc_bind(struct udevice *dev)
 	uc_plat->size = CONFIG_VIDEO_STM32_MAX_XRES *
 			CONFIG_VIDEO_STM32_MAX_YRES *
 			(CONFIG_VIDEO_STM32_MAX_BPP >> 3);
-	dev_dbg(dev, "frame buffer max size %d bytes\n", uc_plat->size);
+	/* align framebuffer on kernel MMU_SECTION_SIZE = max 2MB for LPAE */
+	uc_plat->align = SZ_2M;
+	dev_dbg(dev, "frame buffer max size %d bytes align %x\n",
+		uc_plat->size, uc_plat->align);
 
 	return 0;
 }

@@ -136,6 +136,7 @@ config RTC_RX8010SJ
 
 config RTC_RX8025
 	bool "Enable RX8025 driver"
+	depends on DM_RTC
 	help
 	  Support for Epson RX8025 Real Time Clock devices.
 
@@ -187,5 +188,19 @@ config RTC_ABX80X
 	  If you say yes here you get support for Abracon AB080X and AB180X
 	  families of ultra-low-power  battery- and capacitor-backed real-time
 	  clock chips.
+
+config RTC_DAVINCI
+	bool "Enable TI OMAP RTC driver"
+	depends on ARCH_DAVINCI || ARCH_OMAP2PLUS
+	help
+	  Say "yes" here to support the on chip real time clock
+	  present on TI OMAP1, AM33xx, DA8xx/OMAP-L13x, AM43xx and DRA7xx.
+
+config RTC_ZYNQMP
+	bool "Enable ZynqMP RTC driver"
+	depends on ARCH_ZYNQMP
+	help
+	  Say "yes" here to support the on chip real time clock
+	  present on Xilinx ZynqMP SoC.
 
 endmenu

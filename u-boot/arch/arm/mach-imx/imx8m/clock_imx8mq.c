@@ -359,10 +359,18 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		clock_get_target_val(IPG_CLK_ROOT, &val);
 		val = val & 0x3;
 		return get_root_clk(AHB_CLK_ROOT) / (val + 1);
+	case MXC_CSPI_CLK:
+		return get_root_clk(ECSPI1_CLK_ROOT);
 	case MXC_ESDHC_CLK:
 		return get_root_clk(USDHC1_CLK_ROOT);
 	case MXC_ESDHC2_CLK:
 		return get_root_clk(USDHC2_CLK_ROOT);
+	case MXC_I2C_CLK:
+		return get_root_clk(I2C1_CLK_ROOT);
+	case MXC_UART_CLK:
+		return get_root_clk(UART1_CLK_ROOT);
+	case MXC_QSPI_CLK:
+		return get_root_clk(QSPI_CLK_ROOT);
 	default:
 		return get_root_clk(clk);
 	}
@@ -400,6 +408,28 @@ void init_wdog_clk(void)
 	clock_enable(CCGR_WDOG3, 1);
 }
 
+void init_usb_clk(void)
+{
+	if (!is_usb_boot()) {
+		clock_enable(CCGR_USB_CTRL1, 0);
+		clock_enable(CCGR_USB_CTRL2, 0);
+		clock_enable(CCGR_USB_PHY1, 0);
+		clock_enable(CCGR_USB_PHY2, 0);
+		/* 500MHz */
+		clock_set_target_val(USB_BUS_CLK_ROOT, CLK_ROOT_ON |
+				     CLK_ROOT_SOURCE_SEL(1));
+		/* 100MHz */
+		clock_set_target_val(USB_CORE_REF_CLK_ROOT, CLK_ROOT_ON |
+				     CLK_ROOT_SOURCE_SEL(1));
+		/* 100MHz */
+		clock_set_target_val(USB_PHY_REF_CLK_ROOT, CLK_ROOT_ON |
+				     CLK_ROOT_SOURCE_SEL(1));
+		clock_enable(CCGR_USB_CTRL1, 1);
+		clock_enable(CCGR_USB_CTRL2, 1);
+		clock_enable(CCGR_USB_PHY1, 1);
+		clock_enable(CCGR_USB_PHY2, 1);
+	}
+}
 
 void init_nand_clk(void)
 {

@@ -105,7 +105,7 @@ The UEFI specification[1] defines a secure way of executing UEFI images
 by verifying a signature (or message digest) of image with certificates.
 This feature on U-Boot is enabled with::
 
-    CONFIG_UEFI_SECURE_BOOT=y
+    CONFIG_EFI_SECURE_BOOT=y
 
 To make the boot sequence safe, you need to establish a chain of trust;
 In UEFI secure boot the chain trust is defined by the following UEFI variables
@@ -248,9 +248,9 @@ OP-TEE Build instructions
     $ export ARCH=arm
     $ CROSS_COMPILE32=arm-linux-gnueabihf- make -j32 CFG_ARM64_core=y \
         PLATFORM=<myboard> CFG_STMM_PATH=BL32_AP_MM.fd CFG_RPMB_FS=y \
-        CFG_RPMB_FS_DEV_ID=0 CFG_CORE_HEAP_SIZE=524288 CFG_RPMB_WRITE_KEY=1 \
-        CFG_CORE_HEAP_SIZE=524288 CFG_CORE_DYN_SHM=y CFG_RPMB_TESTKEY=y \
-        CFG_REE_FS=n CFG_CORE_ARM64_PA_BITS=48  CFG_TEE_CORE_LOG_LEVEL=1 \
+        CFG_RPMB_FS_DEV_ID=0 CFG_CORE_HEAP_SIZE=524288 CFG_RPMB_WRITE_KEY=y \
+        CFG_CORE_DYN_SHM=y CFG_RPMB_TESTKEY=y CFG_REE_FS=n \
+        CFG_CORE_ARM64_PA_BITS=48 CFG_TEE_CORE_LOG_LEVEL=1 \
         CFG_TEE_TA_LOG_LEVEL=1 CFG_SCTLR_ALIGNMENT_CHECK=n
 
 U-Boot Build instructions
@@ -276,6 +276,131 @@ Enable ``CONFIG_OPTEE``, ``CONFIG_CMD_OPTEE_RPMB`` and ``CONFIG_EFI_MM_COMM_TEE`
       the only kind of memory U-Boot supports for now.
 
 [1] https://optee.readthedocs.io/en/latest/building/efi_vars/stmm.html
+
+Enabling UEFI Capsule Update feature
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Support has been added for the UEFI capsule update feature which
+enables updating the U-Boot image using the UEFI firmware management
+protocol (FMP). The capsules are not passed to the firmware through
+the UpdateCapsule runtime service. Instead, capsule-on-disk
+functionality is used for fetching capsules from the EFI System
+Partition (ESP) by placing capsule files under the directory::
+
+    \EFI\UpdateCapsule
+
+The directory is checked for capsules only within the
+EFI system partition on the device specified in the active boot option,
+which is determined by BootXXXX variable in BootNext, or if not, the highest
+priority one within BootOrder. Any BootXXXX variables referring to devices
+not present are ignored when determining the active boot option.
+
+Please note that capsules will be applied in the alphabetic order of
+capsule file names.
+
+Creating a capsule file
+***********************
+
+A capsule file can be created by using tools/mkeficapsule.
+To build this tool, enable::
+
+    CONFIG_TOOLS_MKEFICAPSULE=y
+    CONFIG_TOOLS_LIBCRYPTO=y
+
+Run the following command
+
+.. code-block:: console
+
+    $ mkeficapsule \
+      --index 1 --instance 0 \
+      [--fit <FIT image> | --raw <raw image>] \
+      <capsule_file_name>
+
+Performing the update
+*********************
+
+Put capsule files under the directory mentioned above.
+Then, following the UEFI specification, you'll need to set
+the EFI_OS_INDICATIONS_FILE_CAPSULE_DELIVERY_SUPPORTED
+bit in OsIndications variable with
+
+.. code-block:: console
+
+    => setenv -e -nv -bs -rt -v OsIndications =0x04
+
+Since U-boot doesn't currently support SetVariable at runtime, its value
+won't be taken over across the reboot. If this is the case, you can skip
+this feature check with the Kconfig option (CONFIG_EFI_IGNORE_OSINDICATIONS)
+set.
+
+Finally, the capsule update can be initiated by rebooting the board.
+
+Enabling Capsule Authentication
+*******************************
+
+The UEFI specification defines a way of authenticating the capsule to
+be updated by verifying the capsule signature. The capsule signature
+is computed and prepended to the capsule payload at the time of
+capsule generation. This signature is then verified by using the
+public key stored as part of the X509 certificate. This certificate is
+in the form of an efi signature list (esl) file, which is embedded in
+a device tree.
+
+The capsule authentication feature can be enabled through the
+following config, in addition to the configs listed above for capsule
+update::
+
+    CONFIG_EFI_CAPSULE_AUTHENTICATE=y
+
+The public and private keys used for the signing process are generated
+and used by the steps highlighted below.
+
+1. Install utility commands on your host
+       * openssl
+       * efitools
+
+2. Create signing keys and certificate files on your host
+
+.. code-block:: console
+
+    $ openssl req -x509 -sha256 -newkey rsa:2048 -subj /CN=CRT/ \
+        -keyout CRT.key -out CRT.crt -nodes -days 365
+    $ cert-to-efi-sig-list CRT.crt CRT.esl
+
+3. Run the following command to create and sign the capsule file
+
+.. code-block:: console
+
+    $ mkeficapsule --monotonic-count 1 \
+      --private-key CRT.key \
+      --certificate CRT.crt \
+      --index 1 --instance 0 \
+      [--fit | --raw | --guid <guid-string] \
+      <image_blob> <capsule_file_name>
+
+4. Insert the signature list into a device tree in the following format::
+
+    {
+            signature {
+                    capsule-key = [ <binary of signature list> ];
+            }
+            ...
+    }
+
+You can do step-4 manually with
+
+.. code-block:: console
+
+    $ dtc -@ -I dts -O dtb -o signature.dtbo signature.dts
+    $ fdtoverlay -i orig.dtb -o new.dtb -v signature.dtbo
+
+where signature.dts looks like::
+
+    &{/} {
+            signature {
+                    capsule-key = /incbin/("CRT.esl");
+            };
+    };
 
 Executing the boot manager
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,12 +621,12 @@ EFI_DRIVER_BINDING_PROTOCOL implementation for the UEFI drivers.
 
 A linker created list is used to keep track of the UEFI drivers. To create an
 entry in the list the UEFI driver uses the U_BOOT_DRIVER macro specifying
-UCLASS_EFI as the ID of its uclass, e.g::
+UCLASS_EFI_LOADER as the ID of its uclass, e.g::
 
     /* Identify as UEFI driver */
     U_BOOT_DRIVER(efi_block) = {
         .name  = "EFI block driver",
-        .id    = UCLASS_EFI,
+        .id    = UCLASS_EFI_LOADER,
         .ops   = &driver_ops,
     };
 
@@ -527,8 +652,8 @@ UEFI block IO driver
 The UEFI block IO driver supports devices exposing the EFI_BLOCK_IO_PROTOCOL.
 
 When connected it creates a new U-Boot block IO device with interface type
-IF_TYPE_EFI, adds child controllers mapping the partitions, and installs the
-EFI_SIMPLE_FILE_SYSTEM_PROTOCOL on these. This can be used together with the
+IF_TYPE_EFI_LOADER, adds child controllers mapping the partitions, and installs
+the EFI_SIMPLE_FILE_SYSTEM_PROTOCOL on these. This can be used together with the
 software iPXE to boot from iSCSI network drives [4].
 
 This driver is only available if U-Boot is configured with::

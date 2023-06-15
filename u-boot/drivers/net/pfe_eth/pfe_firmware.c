@@ -37,7 +37,7 @@ static const void *pfe_esbc_hdr_addr;
  * @param pe_mask	Mask of PE id's to load firmware to
  * @param pfe_firmware	Pointer to the firmware image
  *
- * @return		0 on success, a negative value on error
+ * Return:		0 on success, a negative value on error
  */
 static int pfe_load_elf(int pe_mask, uint8_t *pfe_firmware)
 {
@@ -99,7 +99,7 @@ err:
  * @param size pointer to size of the firmware
  * @param fw_name pfe firmware name, either class or tmu
  *
- * @return 0 on success, a negative value on error
+ * Return: 0 on success, a negative value on error
  */
 static int pfe_get_fw(const void **data,
 		      size_t *size, char *fw_name)
@@ -148,7 +148,7 @@ static int pfe_get_fw(const void **data,
 /*
  * Check PFE FIT image
  *
- * @return 0 on success, a negative value on error
+ * Return: 0 on success, a negative value on error
  */
 static int pfe_fit_check(void)
 {
@@ -179,10 +179,10 @@ int pfe_spi_flash_init(void)
 	if (!addr)
 		return -ENOMEM;
 
-	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS,
-				     CONFIG_ENV_SPI_CS,
-				     CONFIG_ENV_SPI_MAX_HZ,
-				     CONFIG_ENV_SPI_MODE,
+	ret = spi_flash_probe_bus_cs(CONFIG_SYS_FSL_PFE_SPI_BUS,
+				     CONFIG_SYS_FSL_PFE_SPI_CS,
+				     CONFIG_SYS_FSL_PFE_SPI_MAX_HZ,
+				     CONFIG_SYS_FSL_PFE_SPI_MODE,
 				     &new);
 	if (ret) {
 		printf("SF: failed to probe spi\n");
@@ -248,7 +248,7 @@ int pfe_spi_flash_init(void)
  * firmware files
  * Takes PE's out of reset
  *
- * @return 0 on success, a negative value on error
+ * Return: 0 on success, a negative value on error
  */
 int pfe_firmware_init(void)
 {
@@ -298,7 +298,7 @@ int pfe_firmware_init(void)
 	if (!p) {
 		max_fw_count = 2;
 	} else {
-		max_fw_count = simple_strtoul(p, NULL, 10);
+		max_fw_count = dectoul(p, NULL);
 		if (max_fw_count)
 			max_fw_count = 3;
 		else

@@ -104,10 +104,6 @@ pie_skip_reloc:
 pie_fixup_done:
 #endif
 
-#ifdef CONFIG_SYS_RESET_SCTRL
-	bl reset_sctrl
-#endif
-
 #if defined(CONFIG_ARMV8_SPL_EXCEPTION_VECTORS) || !defined(CONFIG_SPL_BUILD)
 .macro	set_vbar, regname, reg
 	msr	\regname, \reg
@@ -127,20 +123,25 @@ pie_fixup_done:
 	orr	x0, x0, #0xf			/* SCR_EL3.NS|IRQ|FIQ|EA */
 	msr	scr_el3, x0
 	msr	cptr_el3, xzr			/* Enable FP/SIMD */
-#ifdef COUNTER_FREQUENCY
-	ldr	x0, =COUNTER_FREQUENCY
-	msr	cntfrq_el0, x0			/* Initialize CNTFRQ */
-#endif
 	b	0f
-2:	set_vbar	vbar_el2, x0
+2:	mrs	x1, hcr_el2
+	tbnz	x1, #34, 1f			/* HCR_EL2.E2H */
+	set_vbar vbar_el2, x0
 	mov	x0, #0x33ff
 	msr	cptr_el2, x0			/* Enable FP/SIMD */
 	b	0f
-1:	set_vbar	vbar_el1, x0
+1:	set_vbar vbar_el1, x0
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0			/* Enable FP/SIMD */
 0:
-	isb
+
+#ifdef COUNTER_FREQUENCY
+	branch_if_not_highest_el x0, 4f
+	ldr	x0, =COUNTER_FREQUENCY
+	msr	cntfrq_el0, x0			/* Initialize CNTFRQ */
+#endif
+
+4:	isb
 
 	/*
 	 * Enable SMPEN bit for coherency.
@@ -189,39 +190,6 @@ slave_cpu:
 #endif /* CONFIG_ARMV8_MULTIENTRY */
 master_cpu:
 	bl	_main
-
-#ifdef CONFIG_SYS_RESET_SCTRL
-reset_sctrl:
-	switch_el x1, 3f, 2f, 1f
-3:
-	mrs	x0, sctlr_el3
-	b	0f
-2:
-	mrs	x0, sctlr_el2
-	b	0f
-1:
-	mrs	x0, sctlr_el1
-
-0:
-	ldr	x1, =0xfdfffffa
-	and	x0, x0, x1
-
-	switch_el x1, 6f, 5f, 4f
-6:
-	msr	sctlr_el3, x0
-	b	7f
-5:
-	msr	sctlr_el2, x0
-	b	7f
-4:
-	msr	sctlr_el1, x0
-
-7:
-	dsb	sy
-	isb
-	b	__asm_invalidate_tlb_all
-	ret
-#endif
 
 /*-----------------------------------------------------------------------*/
 

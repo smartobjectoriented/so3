@@ -4,8 +4,7 @@ config MMC
 	bool "MMC/SD/SDIO card support"
 	default ARM || PPC || SANDBOX
 	select HAVE_BLOCK_DEVICE
-# SOO.tech
-	#select DM_MMC if DM
+	select DM_MMC if DM
 	help
 	  This selects MultiMediaCard, Secure Digital and Secure
 	  Digital I/O support.
@@ -124,7 +123,6 @@ config MMC_IO_VOLTAGE
 
 config SPL_MMC_IO_VOLTAGE
 	bool "Support IO voltage configuration in SPL"
-	default n
 	help
 	  IO voltage configuration allows selecting the voltage level of the IO
 	  lines (not the level of main supply). This is required for UHS
@@ -194,7 +192,6 @@ config MMC_VERBOSE
 
 config MMC_TRACE
 	bool "MMC debugging"
-	default n
 	help
 	  This is an option for use by developer. Enable MMC core debugging.
 
@@ -222,7 +219,6 @@ config MMC_DW_CORTINA
 	depends on DM_MMC
 	depends on MMC_DW
 	depends on BLK
-	default n
 	help
 	  This selects support for Cortina SoC specific extensions to the
 	  Synopsys DesignWare Memory Card Interface driver. Select this option
@@ -298,6 +294,13 @@ config MMC_MXC
 	  with a Multimedia Card slot, say Y here.
 
 	  If unsure, say N.
+
+config MMC_OWL
+	bool "Actions OWL Multimedia Card Interface support"
+	depends on ARCH_OWL && DM_MMC && BLK
+	help
+	  This selects the OWL SD/MMC host controller found on board
+	  based on Actions S700/S900 SoC.
 
 config MMC_MXS
 	bool "Freescale MXS Multimedia Card Interface support"
@@ -562,6 +565,16 @@ config MMC_SDHCI_IPROC
 
 	  If unsure, say N.
 
+config MMC_SDHCI_F_SDH30
+	bool "SDHCI support for Fujitsu Semiconductor F_SDH30"
+	depends on BLK && DM_MMC
+	depends on MMC_SDHCI
+	help
+	  This selects the Secure Digital Host Controller Interface (SDHCI)
+	  Needed by some Fujitsu SoC for MMC / SD / SDIO support.
+	  If you have a controller with this interface, say Y or M here.
+	  If unsure, say N.
+
 config MMC_SDHCI_KONA
 	bool "SDHCI support on Broadcom KONA platform"
 	depends on MMC_SDHCI
@@ -728,6 +741,15 @@ config MMC_SUNXI_HAS_MODE_SWITCH
 	bool
 	depends on MMC_SUNXI
 
+config MMC_PITON
+	bool "MMC support for OpenPiton SoC"
+	depends on DM_MMC && BLK
+	help
+	  This selects support for the SD host controller on OpenPiton SoC.
+	  Note that this SD controller directly exposes the contents of the
+	  SD card as memory mapped, so there is no manual configuration
+	  required
+
 config GENERIC_ATMEL_MCI
 	bool "Atmel Multimedia Card Interface support"
 	depends on DM_MMC && BLK && ARCH_AT91
@@ -752,7 +774,6 @@ config FTSDC010
 
 config FTSDC010_SDIO
 	bool "Support ftsdc010 sdio"
-	default n
 	depends on FTSDC010
 	help
 		This can enable ftsdc010 sdio function.
@@ -787,7 +808,6 @@ config FSL_ESDHC_SUPPORT_ADMA2
 config FSL_ESDHC_33V_IO_RELIABILITY_WORKAROUND
 	bool "enable eSDHC workaround for 3.3v IO reliability issue"
 	depends on FSL_ESDHC && DM_MMC
-	default n
 	help
 	  When eSDHC operates at 3.3v, damage can accumulate in an internal
 	  level shifter at a higher than expected rate. The faster the interface
@@ -814,7 +834,7 @@ config FSL_ESDHC_IMX
 
 config FSL_USDHC
 	bool "Freescale/NXP i.MX uSDHC controller support"
-	depends on MX6 || MX7 ||ARCH_MX7ULP || IMX8 || IMX8M || IMXRT
+	depends on MX6 || MX7 ||ARCH_MX7ULP || IMX8 || IMX8M || IMX8ULP || IMXRT
 	select FSL_ESDHC_IMX
 	help
 	  This enables the Ultra Secured Digital Host Controller enhancements

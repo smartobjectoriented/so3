@@ -147,7 +147,7 @@ bool log_has_file(const char *file_list, const char *file)
  *
  * @ldev: Log device to check
  * @rec: Log record to check
- * @return true if @rec is not blocked by the filters in @ldev, false if it is
+ * Return: true if @rec is not blocked by the filters in @ldev, false if it is
  */
 static bool log_passes_filters(struct log_device *ldev, struct log_rec *rec)
 {
@@ -284,6 +284,36 @@ int _log(enum log_category_t cat, enum log_level_t level, const char *file,
 	return 0;
 }
 
+#define MAX_LINE_LENGTH_BYTES		64
+#define DEFAULT_LINE_LENGTH_BYTES	16
+
+int _log_buffer(enum log_category_t cat, enum log_level_t level,
+		const char *file, int line, const char *func, ulong addr,
+		const void *data, uint width, uint count, uint linelen)
+{
+	if (linelen * width > MAX_LINE_LENGTH_BYTES)
+		linelen = MAX_LINE_LENGTH_BYTES / width;
+	if (linelen < 1)
+		linelen = DEFAULT_LINE_LENGTH_BYTES / width;
+
+	while (count) {
+		uint thislinelen;
+		char buf[HEXDUMP_MAX_BUF_LENGTH(width * linelen)];
+
+		thislinelen = hexdump_line(addr, data, width, count, linelen,
+					   buf, sizeof(buf));
+		assert(thislinelen >= 0);
+		_log(cat, level, file, line, func, "%s\n", buf);
+
+		/* update references */
+		data += thislinelen * width;
+		addr += thislinelen * width;
+		count -= thislinelen;
+	}
+
+	return 0;
+}
+
 int log_add_filter_flags(const char *drv_name, enum log_category_t cat_list[],
 			 enum log_level_t level, const char *file_list,
 			 int flags)
@@ -360,7 +390,7 @@ int log_remove_filter(const char *drv_name, int filter_num)
  * log_find_device_by_drv() - Find a device by its driver
  *
  * @drv: Log driver
- * @return Device associated with that driver, or NULL if not found
+ * Return: Device associated with that driver, or NULL if not found
  */
 static struct log_device *log_find_device_by_drv(struct log_driver *drv)
 {

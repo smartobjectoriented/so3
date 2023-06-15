@@ -16,6 +16,7 @@
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx8mm_pins.h>
+#include <asm/arch/imx8mn_pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/mach-imx/boot_mode.h>
 #include <asm/arch/ddr.h>
@@ -26,6 +27,7 @@
 #include <dm/uclass-internal.h>
 #include <dm/device-internal.h>
 
+#include <power/bd71837.h>
 #include <power/mp5416.h>
 
 #include "gsc.h"
@@ -40,8 +42,12 @@ static void spl_dram_init(int size)
 	struct dram_timing_info *dram_timing;
 
 	switch (size) {
+#ifdef CONFIG_IMX8MM
 	case 1:
 		dram_timing = &dram_timing_1gb;
+		break;
+	case 2:
+		dram_timing = &dram_timing_2gb;
 		break;
 	case 4:
 		dram_timing = &dram_timing_4gb;
@@ -50,16 +56,34 @@ static void spl_dram_init(int size)
 		printf("Unknown DDR configuration: %d GiB\n", size);
 		dram_timing = &dram_timing_1gb;
 		size = 1;
+#endif
+#ifdef CONFIG_IMX8MN
+	case 1:
+		dram_timing = &dram_timing_1gb_single_die;
+		break;
+	case 2:
+		if (!strcmp(gsc_get_model(), "GW7902-SP466-A") ||
+		    !strcmp(gsc_get_model(), "GW7902-SP466-B")) {
+			dram_timing = &dram_timing_2gb_dual_die;
+		} else {
+			dram_timing = &dram_timing_2gb_single_die;
+		}
+		break;
+	default:
+		printf("Unknown DDR configuration: %d GiB\n", size);
+		dram_timing = &dram_timing_2gb_dual_die;
+		size = 2;
+#endif
 	}
 
 	printf("DRAM    : LPDDR4 %d GiB\n", size);
 	ddr_init(dram_timing);
-	writel(size, M4_BOOTROM_BASE_ADDR);
 }
 
 #define UART_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_FSEL1)
 #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
 
+#ifdef CONFIG_IMX8MM
 static iomux_v3_cfg_t const uart_pads[] = {
 	IMX8MM_PAD_UART2_RXD_UART2_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
 	IMX8MM_PAD_UART2_TXD_UART2_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
@@ -68,6 +92,17 @@ static iomux_v3_cfg_t const uart_pads[] = {
 static iomux_v3_cfg_t const wdog_pads[] = {
 	IMX8MM_PAD_GPIO1_IO02_WDOG1_WDOG_B  | MUX_PAD_CTRL(WDOG_PAD_CTRL),
 };
+#endif
+#ifdef CONFIG_IMX8MN
+static const iomux_v3_cfg_t uart_pads[] = {
+	IMX8MN_PAD_UART2_RXD__UART2_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+	IMX8MN_PAD_UART2_TXD__UART2_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+};
+
+static const iomux_v3_cfg_t wdog_pads[] = {
+	IMX8MN_PAD_GPIO1_IO02__WDOG1_WDOG_B  | MUX_PAD_CTRL(WDOG_PAD_CTRL),
+};
+#endif
 
 int board_early_init_f(void)
 {
@@ -88,8 +123,23 @@ int board_early_init_f(void)
  * Note that we can not use pmic dm drivers here as we have a generic
  * venice dt that does not have board-specific pmic's defined.
  *
- * Instead we must use dm_i2c.
+ * Instead we must use dm_i2c so we a helpers to give us
+ * clrsetbit functions we would otherwise have if we could use PMIC dm
+ * drivers.
  */
+static int dm_i2c_clrsetbits(struct udevice *dev, uint reg, uint clr, uint set)
+{
+	int ret;
+	u8 val;
+
+	ret = dm_i2c_read(dev, reg, &val, 1);
+	if (ret)
+		return ret;
+	val = (val & ~clr) | set;
+
+	return dm_i2c_write(dev, reg, &val, 1);
+}
+
 static int power_init_board(void)
 {
 	const char *model = gsc_get_model();
@@ -100,7 +150,7 @@ static int power_init_board(void)
 	if ((!strncmp(model, "GW71", 4)) ||
 	    (!strncmp(model, "GW72", 4)) ||
 	    (!strncmp(model, "GW73", 4))) {
-		ret = uclass_get_device_by_name(UCLASS_I2C, "i2c@30a20000", &bus);
+		ret = uclass_get_device_by_seq(UCLASS_I2C, 0, &bus);
 		if (ret) {
 			printf("PMIC    : failed I2C1 probe: %d\n", ret);
 			return ret;
@@ -115,6 +165,47 @@ static int power_init_board(void)
 		/* set VDD_ARM SW3 to 0.92V for 1.6GHz */
 		dm_i2c_reg_write(dev, MP5416_VSET_SW3,
 				 BIT(7) | MP5416_VSET_SW3_SVAL(920000));
+	}
+
+	else if ((!strncmp(model, "GW7901", 6)) ||
+		 (!strncmp(model, "GW7902", 6))) {
+		if (!strncmp(model, "GW7901", 6))
+			ret = uclass_get_device_by_seq(UCLASS_I2C, 1, &bus);
+		else
+			ret = uclass_get_device_by_seq(UCLASS_I2C, 0, &bus);
+		if (ret) {
+			printf("PMIC    : failed I2C2 probe: %d\n", ret);
+			return ret;
+		}
+		ret = dm_i2c_probe(bus, 0x4b, 0, &dev);
+		if (ret) {
+			printf("PMIC    : failed probe: %d\n", ret);
+			return ret;
+		}
+		puts("PMIC    : BD71847\n");
+
+		/* unlock the PMIC regs */
+		dm_i2c_reg_write(dev, BD718XX_REGLOCK, 0x1);
+
+		/* set switchers to forced PWM mode */
+		dm_i2c_clrsetbits(dev, BD718XX_BUCK1_CTRL, 0, 0x8);
+		dm_i2c_clrsetbits(dev, BD718XX_BUCK2_CTRL, 0, 0x8);
+		dm_i2c_clrsetbits(dev, BD718XX_1ST_NODVS_BUCK_CTRL, 0, 0x8);
+		dm_i2c_clrsetbits(dev, BD718XX_2ND_NODVS_BUCK_CTRL, 0, 0x8);
+		dm_i2c_clrsetbits(dev, BD718XX_3RD_NODVS_BUCK_CTRL, 0, 0x8);
+		dm_i2c_clrsetbits(dev, BD718XX_4TH_NODVS_BUCK_CTRL, 0, 0x8);
+
+		/* increase VDD_0P95 (VDD_GPU/VPU/DRAM) to 0.975v for 1.5Ghz DDR */
+		dm_i2c_reg_write(dev, BD718XX_1ST_NODVS_BUCK_VOLT, 0x83);
+
+		/* increase VDD_SOC to 0.85v before first DRAM access */
+		dm_i2c_reg_write(dev, BD718XX_BUCK1_VOLT_RUN, 0x0f);
+
+		/* increase VDD_ARM to 0.92v for 800 and 1600Mhz */
+		dm_i2c_reg_write(dev, BD718XX_BUCK2_VOLT_RUN, 0x16);
+
+		/* Lock the PMIC regs */
+		dm_i2c_reg_write(dev, BD718XX_REGLOCK, 0x11);
 	}
 
 	return 0;

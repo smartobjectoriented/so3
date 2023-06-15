@@ -156,6 +156,19 @@ static int tsec_mcast_addr(struct udevice *dev, const u8 *mcast_mac, int join)
 	return 0;
 }
 
+static int __maybe_unused tsec_set_promisc(struct udevice *dev, bool enable)
+{
+	struct tsec_private *priv = dev_get_priv(dev);
+	struct tsec __iomem *regs = priv->regs;
+
+	if (enable)
+		setbits_be32(&regs->rctrl, RCTRL_PROM);
+	else
+		clrbits_be32(&regs->rctrl, RCTRL_PROM);
+
+	return 0;
+}
+
 /*
  * Initialized required registers to appropriate values, zeroing
  * those we don't care about (unless zero is bad, in which case,
@@ -185,8 +198,6 @@ static void init_registers(struct tsec __iomem *regs)
 	out_be32(&regs->hash.gaddr5, 0);
 	out_be32(&regs->hash.gaddr6, 0);
 	out_be32(&regs->hash.gaddr7, 0);
-
-	out_be32(&regs->rctrl, 0x00000000);
 
 	/* Init RMON mib registers */
 	memset((void *)&regs->rmon, 0, sizeof(regs->rmon));
@@ -432,7 +443,7 @@ static void tsec_halt(struct udevice *dev)
  * of the eTSEC port initialization sequence,
  * the eTSEC Rx logic may not be properly initialized.
  */
-void redundant_init(struct tsec_private *priv)
+static void redundant_init(struct tsec_private *priv)
 {
 	struct tsec __iomem *regs = priv->regs;
 	uint t, count = 0;
@@ -454,7 +465,7 @@ void redundant_init(struct tsec_private *priv)
 		0x71, 0x72};
 
 	/* Enable promiscuous mode */
-	setbits_be32(&regs->rctrl, 0x8);
+	setbits_be32(&regs->rctrl, RCTRL_PROM);
 	/* Enable loopback mode */
 	setbits_be32(&regs->maccfg1, MACCFG1_LOOPBACK);
 	/* Enable transmit and receive */
@@ -506,7 +517,7 @@ void redundant_init(struct tsec_private *priv)
 	if (fail)
 		panic("eTSEC init fail!\n");
 	/* Disable promiscuous mode */
-	clrbits_be32(&regs->rctrl, 0x8);
+	clrbits_be32(&regs->rctrl, RCTRL_PROM);
 	/* Disable loopback mode */
 	clrbits_be32(&regs->maccfg1, MACCFG1_LOOPBACK);
 }
@@ -638,7 +649,7 @@ static int tsec_init(struct udevice *dev)
 	return priv->phydev->link ? 0 : -1;
 }
 
-static phy_interface_t tsec_get_interface(struct tsec_private *priv)
+static phy_interface_t __maybe_unused tsec_get_interface(struct tsec_private *priv)
 {
 	struct tsec __iomem *regs = priv->regs;
 	u32 ecntrl;
@@ -700,8 +711,6 @@ static int init_phy(struct tsec_private *priv)
 
 	/* Assign a Physical address to the TBI */
 	out_be32(&regs->tbipa, priv->tbiaddr);
-
-	priv->interface = tsec_get_interface(priv);
 
 	if (priv->interface == PHY_INTERFACE_MODE_SGMII)
 		tsec_configure_serdes(priv);
@@ -886,12 +895,13 @@ int tsec_probe(struct udevice *dev)
 	priv->tbiaddr = tbiaddr;
 
 	phy_mode = dev_read_prop(dev, "phy-connection-type", NULL);
+	if (!phy_mode)
+		phy_mode = dev_read_prop(dev, "phy-mode", NULL);
 	if (phy_mode)
 		pdata->phy_interface = phy_get_interface_by_name(phy_mode);
-	if (pdata->phy_interface == -1) {
-		printf("Invalid PHY interface '%s'\n", phy_mode);
-		return -EINVAL;
-	}
+	if (pdata->phy_interface == -1)
+		pdata->phy_interface = tsec_get_interface(priv);
+
 	priv->interface = pdata->phy_interface;
 
 	/* Check for speed limit, default is 1000Mbps */
@@ -933,6 +943,7 @@ static const struct eth_ops tsec_ops = {
 	.free_pkt = tsec_free_pkt,
 	.stop = tsec_halt,
 	.mcast = tsec_mcast_addr,
+	.set_promisc = tsec_set_promisc,
 };
 
 static struct tsec_data etsec2_data = {

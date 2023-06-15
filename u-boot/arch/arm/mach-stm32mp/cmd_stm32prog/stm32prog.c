@@ -253,7 +253,7 @@ static int parse_type(struct stm32prog_data *data,
 				result = -EINVAL;
 			else
 				part->bin_nb =
-					simple_strtoul(&p[7], NULL, 10);
+					dectoul(&p[7], NULL);
 		}
 	} else if (!strcmp(p, "System")) {
 		part->part_type = PART_SYSTEM;
@@ -369,23 +369,24 @@ static int parse_flash_layout(struct stm32prog_data *data,
 	bool end_of_line, eof;
 	char *p, *start, *last, *col;
 	struct stm32prog_part_t *part;
+	struct image_header_s header;
 	int part_list_size;
 	int i;
 
 	data->part_nb = 0;
 
 	/* check if STM32image is detected */
-	stm32prog_header_check((struct raw_header_s *)addr, &data->header);
-	if (data->header.type == HEADER_STM32IMAGE) {
+	stm32prog_header_check((struct raw_header_s *)addr, &header);
+	if (header.type == HEADER_STM32IMAGE) {
 		u32 checksum;
 
 		addr = addr + BL_HEADER_SIZE;
-		size = data->header.image_length;
+		size = header.image_length;
 
-		checksum = stm32prog_header_checksum(addr, &data->header);
-		if (checksum != data->header.image_checksum) {
+		checksum = stm32prog_header_checksum(addr, &header);
+		if (checksum != header.image_checksum) {
 			stm32prog_err("Layout: invalid checksum : 0x%x expected 0x%x",
-				      checksum, data->header.image_checksum);
+				      checksum, header.image_checksum);
 			return -EIO;
 		}
 	}
@@ -823,7 +824,9 @@ static int treat_partition_list(struct stm32prog_data *data)
 		INIT_LIST_HEAD(&data->dev[j].part_list);
 	}
 
+#ifdef CONFIG_STM32MP15x_STM32IMAGE
 	data->tee_detected = false;
+#endif
 	data->fsbl_nor_detected = false;
 	for (i = 0; i < data->part_nb; i++) {
 		part = &data->part_array[i];
@@ -832,8 +835,8 @@ static int treat_partition_list(struct stm32prog_data *data)
 		/* skip partition with IP="none" */
 		if (part->target == STM32PROG_NONE) {
 			if (IS_SELECT(part)) {
-				stm32prog_err("Layout: selected none phase = 0x%x",
-					      part->id);
+				stm32prog_err("Layout: selected none phase = 0x%x for part %s",
+					      part->id, part->name);
 				return -EINVAL;
 			}
 			continue;
@@ -841,14 +844,14 @@ static int treat_partition_list(struct stm32prog_data *data)
 
 		if (part->id == PHASE_FLASHLAYOUT ||
 		    part->id > PHASE_LAST_USER) {
-			stm32prog_err("Layout: invalid phase = 0x%x",
-				      part->id);
+			stm32prog_err("Layout: invalid phase = 0x%x for part %s",
+				      part->id, part->name);
 			return -EINVAL;
 		}
 		for (j = i + 1; j < data->part_nb; j++) {
 			if (part->id == data->part_array[j].id) {
-				stm32prog_err("Layout: duplicated phase 0x%x at line %d and %d",
-					      part->id, i, j);
+				stm32prog_err("Layout: duplicated phase 0x%x for part %s and %s",
+					      part->id, part->name, data->part_array[j].name);
 				return -EINVAL;
 			}
 		}
@@ -877,10 +880,12 @@ static int treat_partition_list(struct stm32prog_data *data)
 			/* fallthrough */
 		case STM32PROG_NAND:
 		case STM32PROG_SPI_NAND:
+#ifdef CONFIG_STM32MP15x_STM32IMAGE
 			if (!data->tee_detected &&
 			    !strncmp(part->name, "tee", 3))
 				data->tee_detected = true;
 			break;
+#endif
 		default:
 			break;
 		}
@@ -1149,7 +1154,10 @@ static int dfu_init_entities(struct stm32prog_data *data)
 	struct dfu_entity *dfu;
 	int alt_nb;
 
-	alt_nb = 3; /* number of virtual = CMD, OTP, PMIC*/
+	alt_nb = 2; /* number of virtual = CMD, OTP*/
+	if (CONFIG_IS_ENABLED(DM_PMIC))
+		alt_nb++; /* PMIC NVMEM*/
+
 	if (data->part_nb == 0)
 		alt_nb++;  /* +1 for FlashLayout */
 	else
@@ -1195,13 +1203,13 @@ static int dfu_init_entities(struct stm32prog_data *data)
 	}
 
 	if (!ret)
-		ret = stm32prog_alt_add_virt(dfu, "virtual", PHASE_CMD, 512);
+		ret = stm32prog_alt_add_virt(dfu, "virtual", PHASE_CMD, CMD_SIZE);
 
 	if (!ret)
-		ret = stm32prog_alt_add_virt(dfu, "OTP", PHASE_OTP, 512);
+		ret = stm32prog_alt_add_virt(dfu, "OTP", PHASE_OTP, OTP_SIZE);
 
 	if (!ret && CONFIG_IS_ENABLED(DM_PMIC))
-		ret = stm32prog_alt_add_virt(dfu, "PMIC", PHASE_PMIC, 8);
+		ret = stm32prog_alt_add_virt(dfu, "PMIC", PHASE_PMIC, PMIC_SIZE);
 
 	if (ret)
 		stm32prog_err("dfu init failed: %d", ret);
@@ -1472,7 +1480,7 @@ error:
 	return ret;
 }
 
-static void stm32prog_end_phase(struct stm32prog_data *data)
+static void stm32prog_end_phase(struct stm32prog_data *data, u64 offset)
 {
 	if (data->phase == PHASE_FLASHLAYOUT) {
 		if (parse_flash_layout(data, STM32_DDR_BASE, 0))
@@ -1488,6 +1496,10 @@ static void stm32prog_end_phase(struct stm32prog_data *data)
 			data->uimage = data->cur_part->addr;
 		if (data->cur_part->part_type == PART_FILESYSTEM)
 			data->dtb = data->cur_part->addr;
+		if (data->cur_part->part_type == PART_BINARY) {
+			data->initrd = data->cur_part->addr;
+			data->initrd_size = offset;
+		}
 	}
 
 	if (CONFIG_IS_ENABLED(MMC) &&
@@ -1727,7 +1739,6 @@ void stm32prog_clean(struct stm32prog_data *data)
 	free(data->part_array);
 	free(data->otp_part);
 	free(data->buffer);
-	free(data->header_data);
 }
 
 /* DFU callback: used after serial and direct DFU USB access */
@@ -1747,7 +1758,7 @@ void dfu_flush_callback(struct dfu_entity *dfu)
 	if (dfu->dev_type == DFU_DEV_RAM) {
 		if (dfu->alt == 0 &&
 		    stm32prog_data->phase == PHASE_FLASHLAYOUT) {
-			stm32prog_end_phase(stm32prog_data);
+			stm32prog_end_phase(stm32prog_data, dfu->offset);
 			/* waiting DFU DETACH for reenumeration */
 		}
 	}
@@ -1756,7 +1767,7 @@ void dfu_flush_callback(struct dfu_entity *dfu)
 		return;
 
 	if (dfu->alt == stm32prog_data->cur_part->alt_id) {
-		stm32prog_end_phase(stm32prog_data);
+		stm32prog_end_phase(stm32prog_data, dfu->offset);
 		stm32prog_next_phase(stm32prog_data);
 	}
 }
@@ -1775,4 +1786,18 @@ void dfu_initiated_callback(struct dfu_entity *dfu)
 		stm32prog_data->dfu_seq = 0;
 		log_debug("dfu offset = 0x%llx\n", dfu->offset);
 	}
+}
+
+void dfu_error_callback(struct dfu_entity *dfu, const char *msg)
+{
+	struct stm32prog_data *data = stm32prog_data;
+
+	if (!stm32prog_data)
+		return;
+
+	if (!stm32prog_data->cur_part)
+		return;
+
+	if (dfu->alt == stm32prog_data->cur_part->alt_id)
+		stm32prog_err(msg);
 }

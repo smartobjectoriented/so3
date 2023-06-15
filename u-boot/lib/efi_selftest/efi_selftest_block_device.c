@@ -57,7 +57,7 @@ static u8 *image;
  * Reset service of the block IO protocol.
  *
  * @this	block IO protocol
- * @return	status code
+ * Return:	status code
  */
 static efi_status_t EFIAPI reset(
 			struct efi_block_io *this,
@@ -74,7 +74,7 @@ static efi_status_t EFIAPI reset(
  * @lba		start of the read in logical blocks
  * @buffer_size	number of bytes to read
  * @buffer	target buffer
- * @return	status code
+ * Return:	status code
  */
 static efi_status_t EFIAPI read_blocks(
 			struct efi_block_io *this, u32 media_id, u64 lba,
@@ -99,7 +99,7 @@ static efi_status_t EFIAPI read_blocks(
  * @lba		start of the write in logical blocks
  * @buffer_size	number of bytes to read
  * @buffer	source buffer
- * @return	status code
+ * Return:	status code
  */
 static efi_status_t EFIAPI write_blocks(
 			struct efi_block_io *this, u32 media_id, u64 lba,
@@ -120,7 +120,7 @@ static efi_status_t EFIAPI write_blocks(
  * Flush service of the block IO protocol.
  *
  * @this	block IO protocol
- * @return	status code
+ * Return:	status code
  */
 static efi_status_t EFIAPI flush_blocks(struct efi_block_io *this)
 {
@@ -131,7 +131,7 @@ static efi_status_t EFIAPI flush_blocks(struct efi_block_io *this)
  * Decompress the disk image.
  *
  * @image	decompressed disk image
- * @return	status code
+ * Return:	status code
  */
 static efi_status_t decompress(u8 **image)
 {
@@ -180,7 +180,7 @@ static efi_handle_t disk_handle;
  *
  * @handle:	handle of the loaded image
  * @systable:	system table
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int setup(const efi_handle_t handle,
 		 const struct efi_system_table *systable)
@@ -240,7 +240,7 @@ static int setup(const efi_handle_t handle,
 /*
  * Tear down unit test.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int teardown(void)
 {
@@ -278,7 +278,7 @@ static int teardown(void)
  * Get length of device path without end tag.
  *
  * @dp		device path
- * @return	length of device path in bytes
+ * Return:	length of device path in bytes
  */
 static efi_uintn_t dp_size(struct efi_device_path *dp)
 {
@@ -292,7 +292,7 @@ static efi_uintn_t dp_size(struct efi_device_path *dp)
 /*
  * Execute unit test.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int execute(void)
 {
@@ -407,7 +407,7 @@ static int execute(void)
 	}
 
 	/* Read file */
-	ret = root->open(root, &file, L"hello.txt", EFI_FILE_MODE_READ,
+	ret = root->open(root, &file, u"hello.txt", EFI_FILE_MODE_READ,
 			 0);
 	if (ret != EFI_SUCCESS) {
 		efi_st_error("Failed to open file\n");
@@ -451,7 +451,7 @@ static int execute(void)
 
 #ifdef CONFIG_FAT_WRITE
 	/* Write file */
-	ret = root->open(root, &file, L"u-boot.txt", EFI_FILE_MODE_READ |
+	ret = root->open(root, &file, u"u-boot.txt", EFI_FILE_MODE_READ |
 			 EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0);
 	if (ret != EFI_SUCCESS) {
 		efi_st_error("Failed to open file\n");
@@ -483,7 +483,7 @@ static int execute(void)
 
 	/* Verify file */
 	boottime->set_mem(buf, sizeof(buf), 0);
-	ret = root->open(root, &file, L"u-boot.txt", EFI_FILE_MODE_READ,
+	ret = root->open(root, &file, u"u-boot.txt", EFI_FILE_MODE_READ,
 			 0);
 	if (ret != EFI_SUCCESS) {
 		efi_st_error("Failed to open file\n");

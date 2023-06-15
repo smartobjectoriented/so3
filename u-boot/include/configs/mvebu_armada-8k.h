@@ -19,27 +19,11 @@
 #define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, \
 					  115200, 230400, 460800, 921600 }
 
-/*
- * For booting Linux, the board info and command line data
- * have to be in the first 8 MB of memory, since this is
- * the maximum mapped by the Linux kernel during initialization.
- */
-#define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs  */
-#define CONFIG_INITRD_TAG		/* enable INITRD tag */
-#define CONFIG_SETUP_MEMORY_TAGS	/* enable memory tag */
-
 #define	CONFIG_SYS_CBSIZE	1024	/* Console I/O Buff Size */
-
-/*
- * Size of malloc() pool
- */
-#define CONFIG_SYS_MALLOC_LEN	(4 << 20) /* 4MiB for malloc() */
 
 /*
  * Other required minimal configurations
  */
-#define CONFIG_SYS_LOAD_ADDR	0x00800000	/* default load adr- 8M */
-#define CONFIG_SYS_RESET_ADDRESS 0xffff0000	/* Rst Vector Adr */
 #define CONFIG_SYS_MAXARGS	32	/* max number of command args */
 
 /* End of 16M scrubbed by training in bootrom */
@@ -48,8 +32,6 @@
 /* When runtime detection fails this is the default */
 
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_SYS_NAND_MAX_CHIPS	1
-#define CONFIG_SYS_NAND_ONFI_DETECTION
 
 /*
  * Ethernet Driver configuration
@@ -64,21 +46,12 @@
 /*
  * SATA/SCSI/AHCI configuration
  */
-#define CONFIG_SCSI_AHCI_PLAT
 #define CONFIG_LBA48
 #define CONFIG_SYS_64BIT_LBA
-
-#define CONFIG_SYS_SCSI_MAX_SCSI_ID	2
-#define CONFIG_SYS_SCSI_MAX_LUN		1
-#define CONFIG_SYS_SCSI_MAX_DEVICE	(CONFIG_SYS_SCSI_MAX_SCSI_ID * \
-					 CONFIG_SYS_SCSI_MAX_LUN)
 
 /*
  * PCI configuration
  */
-#ifdef CONFIG_PCIE_DW_MVEBU
-#define CONFIG_E1000
-#endif
 
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 1) \

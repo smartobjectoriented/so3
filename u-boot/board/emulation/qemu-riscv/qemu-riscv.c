@@ -5,6 +5,7 @@
 
 #include <common.h>
 #include <dm.h>
+#include <dm/ofnode.h>
 #include <env.h>
 #include <fdtdec.h>
 #include <image.h>
@@ -13,6 +14,19 @@
 #include <init.h>
 #include <virtio_types.h>
 #include <virtio.h>
+
+DECLARE_GLOBAL_DATA_PTR;
+
+#if IS_ENABLED(CONFIG_MTD_NOR_FLASH)
+int is_flash_available(void)
+{
+	if (!ofnode_equal(ofnode_by_compatible(ofnode_null(), "cfi-flash"),
+			  ofnode_null()))
+		return 1;
+
+	return 0;
+}
+#endif
 
 int board_init(void)
 {
@@ -69,3 +83,10 @@ int board_fit_config_name_match(const char *name)
 	return 0;
 }
 #endif
+
+void *board_fdt_blob_setup(int *err)
+{
+	*err = 0;
+	/* Stored the DTB address there during our init */
+	return (void *)(ulong)gd->arch.firmware_fdt_addr;
+}

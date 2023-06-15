@@ -215,16 +215,16 @@ For example:
 
     static int mmc_of_to_plat(struct udevice *dev)
     {
-    #if !CONFIG_IS_ENABLED(OF_PLATDATA)
+        if (CONFIG_IS_ENABLED(OF_REAL)) {
             /* Decode the devicetree data */
             struct mmc_plat *plat = dev_get_plat(dev);
             const void *blob = gd->fdt_blob;
             int node = dev_of_offset(dev);
 
             plat->fifo_depth = fdtdec_get_int(blob, node, "fifo-depth", 0);
-    #endif
+        }
 
-            return 0;
+        return 0;
     }
 
     static int mmc_probe(struct udevice *dev)
@@ -597,6 +597,191 @@ as a macro included in the driver definition::
 
 
 
+Problems
+--------
+
+This section shows some common problems and how to fix them.
+
+Driver not found
+~~~~~~~~~~~~~~~~
+
+In some cases you will you see something like this::
+
+   WARNING: the driver rockchip_rk3188_grf was not found in the driver list
+
+The driver list is a list of drivers, each with a name. The name is in the
+U_BOOT_DRIVER() declaration, repeated twice, one in brackets and once as the
+.name member. For example, in the following declaration the driver name is
+`rockchip_rk3188_grf`::
+
+  U_BOOT_DRIVER(rockchip_rk3188_grf) = {
+       .name = "rockchip_rk3188_grf",
+       .id = UCLASS_SYSCON,
+       .of_match = rk3188_syscon_ids + 1,
+       .bind = rk3188_syscon_bind_of_plat,
+  };
+
+The first name U_BOOT_DRIVER(xx) is used to create a linker symbol so that the
+driver can be accessed at build-time without any overhead. The second one
+(.name = "xx") is used at runtime when something wants to print out the driver
+name.
+
+The dtoc tool expects to be able to find a driver for each compatible string in
+the devicetree. For example, if the devicetree has::
+
+   grf: grf@20008000 {
+      compatible = "rockchip,rk3188-grf", "syscon";
+      reg = <0x20008000 0x200>;
+      u-boot,dm-spl;
+   };
+
+then dtoc looks at the first compatible string ("rockchip,rk3188-grf"),
+converts that to a C identifier (rockchip_rk3188_grf) and then looks for that.
+
+Missing .compatible or Missing .id
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Various things can cause dtoc to fail to find the driver and it tries to
+warn about these. For example::
+
+   rockchip_rk3188_uart: Missing .compatible in drivers/serial/serial_rockchip.c
+                    : WARNING: the driver rockchip_rk3188_uart was not found in the driver list
+
+Without a compatible string a driver cannot be used by dtoc, even if the
+compatible string is not actually needed at runtime.
+
+If the problem is simply that there are multiple compatible strings, the
+DM_DRIVER_ALIAS() macro can be used to tell dtoc about this and avoid a problem.
+
+Checks are also made to confirm that the referenced driver has a .compatible
+member and a .id member. The first provides the array of compatible strings and
+the second provides the uclass ID.
+
+Missing parent
+~~~~~~~~~~~~~~
+
+When a device is used, its parent must be present as well. If you see an error
+like::
+
+   Node '/i2c@0/emul/emul0' requires parent node '/i2c@0/emul' but it is not in
+      the valid list
+
+it indicates that you are using a node whose parent is not present in the
+devicetree. In this example, if you look at the device tree output
+(e.g. fdtdump tpl/u-boot-tpl.dtb in your build directory), you may see something
+like this::
+
+   emul {
+       emul0 {
+           compatible = "sandbox,i2c-rtc-emul";
+           #emul-cells = <0x00000000>;
+           phandle = <0x00000003>;
+       };
+   };
+
+In this example, 'emul0' exists but its parent 'emul' has no properties. These
+have been dropped by fdtgrep in an effort to reduce the devicetree size. This
+indicates that the two nodes have different phase settings. Looking at the
+source .dts::
+
+   i2c_emul: emul {
+      u-boot,dm-spl;
+      reg = <0xff>;
+      compatible = "sandbox,i2c-emul-parent";
+      emul0: emul0 {
+         u-boot,dm-pre-reloc;
+         compatible = "sandbox,i2c-rtc-emul";
+         #emul-cells = <0>;
+      };
+   };
+
+you can see that the child node 'emul0' usees 'u-boot,dm-pre-reloc', indicating
+that the node is present in all SPL builds, but its parent uses 'u-boot,dm-spl'
+indicating it is only present in SPL, not TPL. For a TPL build, this will fail
+with the above message. The fix is to change 'emul0' to use the same
+'u-boot,dm-spl' condition, so that it is not present in TPL, like its parent.
+
+Link errors / undefined reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes dtoc does not find the problem for you, but something is wrong and
+you get a link error, e.g.::
+
+   :(.u_boot_list_2_udevice_2_spl_test5+0x0): undefined reference to
+      `_u_boot_list_2_driver_2_sandbox_spl_test'
+   /usr/bin/ld: dts/dt-uclass.o:(.u_boot_list_2_uclass_2_misc+0x8):
+        undefined reference to `_u_boot_list_2_uclass_driver_2_misc'
+
+The first one indicates that the device cannot find its driver. This means that
+there is a driver 'sandbox_spl_test' but it is not compiled into the build.
+Check your Kconfig settings to make sure it is. If you don't want that in the
+build, adjust your phase settings, e.g. by using 'u-boot,dm-spl' in the node
+to exclude it from the TPL build::
+
+	spl-test5 {
+		u-boot,dm-tpl;
+		compatible = "sandbox,spl-test";
+		stringarray = "tpl";
+	};
+
+We can drop the 'u-boot,dm-tpl' line so this node won't appear in the TPL
+devicetree and thus the driver won't be needed.
+
+The second error above indicates that the MISC uclass is needed by the driver
+(since it is in the MISC uclass) but that uclass is not compiled in the build.
+The fix above would fix this error too. But if you do want this uclass in the
+build, check your Kconfig settings to make sure the uclass is being built
+(CONFIG_MISC in this case).
+
+Another error that can crop up is something like::
+
+   spl/dts/dt-device.c:257:38: error: invalid application of ‘sizeof’ to
+         incomplete type ‘struct sandbox_irq_priv’
+      257 | u8 _sandbox_irq_priv_irq_sbox[sizeof(struct sandbox_irq_priv)]
+          |                                      ^~~~~~
+
+This indicates that `struct sandbox_irq_priv` is not defined anywhere. The
+solution is to add a DM_HEADER() line, as below, so this is included in the
+dt-device.c file::
+
+   U_BOOT_DRIVER(sandbox_irq) = {
+      .name		= "sandbox_irq",
+      .id		= UCLASS_IRQ,
+      .of_match	= sandbox_irq_ids,
+      .ops		= &sandbox_irq_ops,
+      .priv_auto	= sizeof(struct sandbox_irq_priv),
+      DM_HEADER(<asm/irq.h>)
+   };
+
+Note that there is no dependency checking on the above, so U-Boot will not
+regenerate the dt-device.c file when you update the source file (here,
+`irq_sandbox.c`). You need to run `make mrproper` first to get a fresh build.
+
+Another error that can crop up is something like::
+
+   spl/dts/dt-device.c:257:38: error: invalid application of ‘sizeof’ to
+         incomplete type ‘struct sandbox_irq_priv’
+      257 | u8 _sandbox_irq_priv_irq_sbox[sizeof(struct sandbox_irq_priv)]
+          |                                      ^~~~~~
+
+This indicates that `struct sandbox_irq_priv` is not defined anywhere. The
+solution is to add a DM_HEADER() line, as below, so this is included in the
+dt-device.c file::
+
+   U_BOOT_DRIVER(sandbox_irq) = {
+      .name		= "sandbox_irq",
+      .id		= UCLASS_IRQ,
+      .of_match	= sandbox_irq_ids,
+      .ops		= &sandbox_irq_ops,
+      .priv_auto	= sizeof(struct sandbox_irq_priv),
+      DM_HEADER(<asm/irq.h>)
+   };
+
+Note that there is no dependency checking on the above, so U-Boot will not
+regenerate the dt-device.c file when you update the source file (here,
+`irq_sandbox.c`). You need to run `make mrproper` first to get a fresh build.
+
+
 Caveats
 -------
 
@@ -644,7 +829,7 @@ Internals
 ---------
 
 Generated files
-```````````````
+~~~~~~~~~~~~~~~
 
 When enabled, dtoc generates the following five files:
 
@@ -685,7 +870,7 @@ spl/dt-plat.c.
 
 
 CONFIG options
-``````````````
+~~~~~~~~~~~~~~
 
 Several CONFIG options are used to control the behaviour of of-platdata, all
 available for both SPL and TPL:
@@ -740,7 +925,7 @@ READ_ONLY
    the nodes cannot be updated, OF_PLATDATA_NO_BIND is enabled.
 
 Data structures
-```````````````
+~~~~~~~~~~~~~~~
 
 A few extra data structures are used with of-platdata:
 
@@ -768,7 +953,7 @@ A few extra data structures are used with of-platdata:
    `device_get_by_ofplat_idx()`.
 
 Other changes
-`````````````
+~~~~~~~~~~~~~
 
 Some other changes are made with of-platdata:
 

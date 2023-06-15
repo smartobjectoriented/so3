@@ -24,16 +24,19 @@ from patman import tools
 
 # A list of types we support
 class Type(IntEnum):
+    # Types in order from widest to narrowest
     (BYTE, INT, STRING, BOOL, INT64) = range(5)
 
-    def is_wider_than(self, other):
-        """Check if another type is 'wider' than this one
+    def needs_widening(self, other):
+        """Check if this type needs widening to hold a value from another type
 
-        A wider type is one that holds more information than an earlier one,
-        similar to the concept of type-widening in C.
+        A wider type is one that can hold a wider array of information than
+        another one, or is less restrictive, so it can hold the information of
+        another type as well as its own. This is similar to the concept of
+        type-widening in C.
 
         This uses a simple arithmetic comparison, since type values are in order
-        from narrowest (BYTE) to widest (INT64).
+        from widest (BYTE) to narrowest (INT64).
 
         Args:
             other: Other type to compare against
@@ -149,7 +152,19 @@ class Prop:
         update the current property to be like the second, since it is less
         specific.
         """
-        if self.type.is_wider_than(newprop.type):
+        if self.type.needs_widening(newprop.type):
+
+            # A boolean has an empty value: if it exists it is True and if not
+            # it is False. So when widening we always start with an empty list
+            # since the only valid integer property would be an empty list of
+            # integers.
+            # e.g. this is a boolean:
+            #    some-prop;
+            # and it would be widened to int list by:
+            #    some-prop = <1 2>;
+            if self.type == Type.BOOL:
+                self.type = Type.INT
+                self.value = [self.GetEmpty(self.type)]
             if self.type == Type.INT and newprop.type == Type.BYTE:
                 if type(self.value) == list:
                     new_value = []
@@ -160,13 +175,14 @@ class Prop:
                 self.value = new_value
             self.type = newprop.type
 
-        if type(newprop.value) == list and type(self.value) != list:
-            self.value = [self.value]
+        if type(newprop.value) == list:
+            if type(self.value) != list:
+                self.value = [self.value]
 
-        if type(self.value) == list and len(newprop.value) > len(self.value):
-            val = self.GetEmpty(self.type)
-            while len(self.value) < len(newprop.value):
-                self.value.append(val)
+            if len(newprop.value) > len(self.value):
+                val = self.GetEmpty(self.type)
+                while len(self.value) < len(newprop.value):
+                    self.value.append(val)
 
     @classmethod
     def GetEmpty(self, type):
@@ -340,6 +356,8 @@ class Node:
 
         offset = fdt_obj.first_subnode(self._offset, QUIET_NOTFOUND)
         for subnode in self.subnodes:
+            if subnode._offset is None:
+                continue
             if subnode.name != fdt_obj.get_name(offset):
                 raise ValueError('Internal error, node name mismatch %s != %s' %
                                  (subnode.name, fdt_obj.get_name(offset)))
@@ -380,7 +398,7 @@ class Node:
             prop_name: Name of property
         """
         self.props[prop_name] = Prop(self, None, prop_name,
-                                     tools.GetBytes(0, 4))
+                                     tools.get_bytes(0, 4))
 
     def AddEmptyProp(self, prop_name, len):
         """Add a property with a fixed data size, for filling in later
@@ -392,7 +410,7 @@ class Node:
             prop_name: Name of property
             len: Length of data in property
         """
-        value = tools.GetBytes(0, len)
+        value = tools.get_bytes(0, len)
         self.props[prop_name] = Prop(self, None, prop_name, value)
 
     def _CheckProp(self, prop_name):
@@ -485,6 +503,24 @@ class Node:
         val = bytes(val, 'utf-8')
         return self.AddData(prop_name, val + b'\0')
 
+    def AddStringList(self, prop_name, val):
+        """Add a new string-list property to a node
+
+        The device tree is marked dirty so that the value will be written to
+        the blob on the next sync.
+
+        Args:
+            prop_name: Name of property to add
+            val (list of str): List of strings to add
+
+        Returns:
+            Prop added
+        """
+        out = b''
+        for string in val:
+            out += bytes(string, 'utf-8') + b'\0'
+        return self.AddData(prop_name, out)
+
     def AddInt(self, prop_name, val):
         """Add a new integer property to a node
 
@@ -513,6 +549,23 @@ class Node:
         subnode = Node(self._fdt, self, None, name, path)
         self.subnodes.append(subnode)
         return subnode
+
+    def Delete(self):
+        """Delete a node
+
+        The node is deleted and the offset cache is invalidated.
+
+        Args:
+            node (Node): Node to delete
+
+        Raises:
+            ValueError if the node does not exist
+        """
+        CheckErr(self._fdt._fdt_obj.del_node(self.Offset()),
+                 "Node '%s': delete" % self.path)
+        parent = self.parent
+        self._fdt.Invalidate()
+        parent.subnodes.remove(self)
 
     def Sync(self, auto_resize=False):
         """Sync node changes back to the device tree

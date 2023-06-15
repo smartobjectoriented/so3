@@ -6,6 +6,8 @@
  * Pavel Herrmann <morpheus.ibis@gmail.com>
  */
 
+#define LOG_CATEGORY UCLASS_ROOT
+
 #include <common.h>
 #include <errno.h>
 #include <fdtdec.h>
@@ -24,6 +26,7 @@
 #include <dm/read.h>
 #include <dm/root.h>
 #include <dm/uclass.h>
+#include <dm/uclass-internal.h>
 #include <dm/util.h>
 #include <linux/list.h>
 
@@ -111,9 +114,6 @@ void fix_uclass(void)
 			entry->init += gd->reloc_off;
 		if (entry->destroy)
 			entry->destroy += gd->reloc_off;
-		/* FIXME maybe also need to fix these ops */
-		if (entry->ops)
-			entry->ops += gd->reloc_off;
 	}
 }
 
@@ -246,7 +246,7 @@ int dm_scan_plat(bool pre_reloc_only)
 	return ret;
 }
 
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
+#if CONFIG_IS_ENABLED(OF_REAL)
 /**
  * dm_scan_fdt_node() - Scan the device tree and bind drivers for a node
  *
@@ -257,7 +257,7 @@ int dm_scan_plat(bool pre_reloc_only)
  * @node: Node to scan
  * @pre_reloc_only: If true, bind only drivers with the DM_FLAG_PRE_RELOC
  * flag. If false bind all drivers.
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 static int dm_scan_fdt_node(struct udevice *parent, ofnode parent_node,
 			    bool pre_reloc_only)
@@ -277,7 +277,7 @@ static int dm_scan_fdt_node(struct udevice *parent, ofnode parent_node,
 			pr_debug("   - ignoring disabled device\n");
 			continue;
 		}
-		err = lists_bind_fdt(parent, node, NULL, pre_reloc_only);
+		err = lists_bind_fdt(parent, node, NULL, NULL, pre_reloc_only);
 		if (err && !ret) {
 			ret = err;
 			debug("%s: ret=%d\n", node_name, ret);
@@ -373,7 +373,7 @@ static int dm_scan(bool pre_reloc_only)
 		return ret;
 	}
 
-	if (CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)) {
+	if (CONFIG_IS_ENABLED(OF_REAL)) {
 		ret = dm_extended_scan(pre_reloc_only);
 		if (ret) {
 			debug("dm_extended_scan() failed: %d\n", ret);
@@ -406,6 +406,12 @@ int dm_init_and_scan(bool pre_reloc_only)
 	}
 
 	return 0;
+}
+
+void dm_get_stats(int *device_countp, int *uclass_countp)
+{
+	*device_countp = device_get_decendent_count(gd->dm_root);
+	*uclass_countp = uclass_get_count();
 }
 
 #ifdef CONFIG_ACPIGEN

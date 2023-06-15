@@ -177,6 +177,20 @@ static int dm_test_autobind_uclass_pdata_alloc(struct unit_test_state *uts)
 }
 DM_TEST(dm_test_autobind_uclass_pdata_alloc, UT_TESTF_SCAN_PDATA);
 
+/* compare node names ignoring the unit address */
+static int dm_test_compare_node_name(struct unit_test_state *uts)
+{
+	ofnode node;
+
+	node = ofnode_path("/mmio-bus@0");
+	ut_assert(ofnode_valid(node));
+	ut_assert(ofnode_name_eq(node, "mmio-bus"));
+
+	return 0;
+}
+
+DM_TEST(dm_test_compare_node_name, UT_TESTF_SCAN_PDATA);
+
 /* Test that binding with uclass plat setting occurs correctly */
 static int dm_test_autobind_uclass_pdata_valid(struct unit_test_state *uts)
 {
@@ -293,10 +307,14 @@ static int dm_test_lifecycle(struct unit_test_state *uts)
 {
 	int op_count[DM_TEST_OP_COUNT];
 	struct udevice *dev, *test_dev;
+	int start_dev_count, start_uc_count;
+	int dev_count, uc_count;
 	int pingret;
 	int ret;
 
 	memcpy(op_count, dm_testdrv_op_count, sizeof(op_count));
+
+	dm_get_stats(&start_dev_count, &start_uc_count);
 
 	ut_assertok(device_bind_by_name(uts->root, false, &driver_info_manual,
 					&dev));
@@ -304,6 +322,11 @@ static int dm_test_lifecycle(struct unit_test_state *uts)
 	ut_assert(dm_testdrv_op_count[DM_TEST_OP_BIND]
 			== op_count[DM_TEST_OP_BIND] + 1);
 	ut_assert(!dev_get_priv(dev));
+
+	/* We should have one more device */
+	dm_get_stats(&dev_count, &uc_count);
+	ut_asserteq(start_dev_count + 1, dev_count);
+	ut_asserteq(start_uc_count, uc_count);
 
 	/* Probe the device - it should fail allocating private data */
 	uts->force_fail_alloc = 1;
@@ -338,6 +361,11 @@ static int dm_test_lifecycle(struct unit_test_state *uts)
 	ut_assertok(device_unbind(dev));
 	ut_asserteq(1, dm_testdrv_op_count[DM_TEST_OP_UNBIND]);
 	ut_asserteq(1, dm_testdrv_op_count[DM_TEST_OP_PRE_UNBIND]);
+
+	/* We should have one less device */
+	dm_get_stats(&dev_count, &uc_count);
+	ut_asserteq(start_dev_count, dev_count);
+	ut_asserteq(start_uc_count, uc_count);
 
 	return 0;
 }
@@ -512,16 +540,30 @@ DM_TEST(dm_test_leak, 0);
 /* Test uclass init/destroy methods */
 static int dm_test_uclass(struct unit_test_state *uts)
 {
+	int dev_count, uc_count;
 	struct uclass *uc;
+
+	/* We should have just the root device and uclass */
+	dm_get_stats(&dev_count, &uc_count);
+	ut_asserteq(1, dev_count);
+	ut_asserteq(1, uc_count);
 
 	ut_assertok(uclass_get(UCLASS_TEST, &uc));
 	ut_asserteq(1, dm_testdrv_op_count[DM_TEST_OP_INIT]);
 	ut_asserteq(0, dm_testdrv_op_count[DM_TEST_OP_DESTROY]);
 	ut_assert(uclass_get_priv(uc));
 
+	dm_get_stats(&dev_count, &uc_count);
+	ut_asserteq(1, dev_count);
+	ut_asserteq(2, uc_count);
+
 	ut_assertok(uclass_destroy(uc));
 	ut_asserteq(1, dm_testdrv_op_count[DM_TEST_OP_INIT]);
 	ut_asserteq(1, dm_testdrv_op_count[DM_TEST_OP_DESTROY]);
+
+	dm_get_stats(&dev_count, &uc_count);
+	ut_asserteq(1, dev_count);
+	ut_asserteq(1, uc_count);
 
 	return 0;
 }
@@ -537,7 +579,7 @@ DM_TEST(dm_test_uclass, 0);
  *		receive an incrementing value
  * @child:	If not NULL, then the child device pointers are written into
  *		this array.
- * @return 0 if OK, -ve on error
+ * Return: 0 if OK, -ve on error
  */
 static int create_children(struct unit_test_state *uts, struct udevice *parent,
 			   int count, int key, struct udevice *child[])
@@ -980,6 +1022,7 @@ static int dm_test_uclass_before_ready(struct unit_test_state *uts)
 	memset(&gd->uclass_root, '\0', sizeof(gd->uclass_root));
 
 	ut_asserteq_ptr(NULL, uclass_find(UCLASS_TEST));
+	ut_asserteq(-EDEADLK, uclass_get(UCLASS_TEST, &uc));
 
 	return 0;
 }
@@ -1171,6 +1214,7 @@ static int dm_test_all_have_seq(struct unit_test_state *uts)
 }
 DM_TEST(dm_test_all_have_seq, UT_TESTF_SCAN_PDATA);
 
+#if CONFIG_IS_ENABLED(DM_DMA)
 static int dm_test_dma_offset(struct unit_test_state *uts)
 {
        struct udevice *dev;
@@ -1200,3 +1244,17 @@ static int dm_test_dma_offset(struct unit_test_state *uts)
        return 0;
 }
 DM_TEST(dm_test_dma_offset, UT_TESTF_SCAN_PDATA | UT_TESTF_SCAN_FDT);
+#endif
+
+/* Test dm_get_stats() */
+static int dm_test_get_stats(struct unit_test_state *uts)
+{
+	int dev_count, uc_count;
+
+	dm_get_stats(&dev_count, &uc_count);
+	ut_assert(dev_count > 50);
+	ut_assert(uc_count > 30);
+
+	return 0;
+}
+DM_TEST(dm_test_get_stats, UT_TESTF_SCAN_FDT);
