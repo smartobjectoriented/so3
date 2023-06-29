@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 	int cpt_columns = -1, cpt_line = 0;
 	int err;
 	char key;
-
+int a = key%3;
 	if (argc > 2) {
 		printf("Usage: more <file>\n");
 		return 1;

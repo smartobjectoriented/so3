@@ -16,4 +16,6 @@ target_sources(c
 		listen.c
 		accept.c
 		connect.c
+		ntohs.c
+		ntohl.c
 )
