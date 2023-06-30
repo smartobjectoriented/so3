@@ -17,8 +17,8 @@ WORKDIR so3
 
 RUN     find / -name thumb | xargs rm -r; \
         patch -s -p0 < ci/so3_ci.patch; \
-        cd u-boot; make vexpress_defconfig; make -j8; cd ..; \
-        cd so3; make vexpress_fb_defconfig; make -j8; cd ..; \
+        cd u-boot; make virt32_defconfig; make -j8; cd ..; \
+        cd so3; make virt32_defconfig; make -j8; cd ..; \
         cd usr; ./build.sh
 
 # Stage 2

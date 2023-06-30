@@ -1,30 +1,233 @@
-diff -Naru ../so3.base/Dockerfile ./Dockerfile
---- ../so3.base/Dockerfile	2023-04-02 13:19:24.698875432 +0200
-+++ ./Dockerfile	2023-04-02 13:18:33.832210718 +0200
-@@ -9,14 +9,16 @@
-     bridge-utils iptables dnsmasq \
-     util-linux qemu-system-arm
- 
--RUN cd /; \
--    wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
--    unzip master.zip; mv so3-master so3
-+COPY        / /so3
- 
- WORKDIR so3
- 
- RUN     find / -name thumb | xargs rm -r; \
--        patch -s -p0 < ci/so3_ci.patch; \
-+        cd filesystem; patch -s -p0 < ../ci/filesystem.patch; cd ..; \
-+        patch -p0 st ci/st.patch; \
-+        patch -p0 deploy.sh ci/deploy.sh.patch; \
-+        cd rootfs; patch -s -p0 < ../ci/rootfs.patch; cd ..; \
-+        cd usr; patch -s -p0 < ../ci/usr.patch; cd ..; \
-         cd u-boot; make vexpress_defconfig; make -j8; cd ..; \
-         cd so3; make vexpress_fb_defconfig; make -j8; cd ..; \
-         cd usr; ./build.sh
-diff -Naru ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
---- ../so3.base/so3/arch/arm32/context.S	2023-03-31 13:07:30.754172712 +0200
-+++ ./so3/arch/arm32/context.S	2023-04-02 13:30:44.697258301 +0200
+diff -Naur ../so3.base/qemu/build.sh ./qemu/build.sh
+--- ../so3.base/qemu/build.sh	2023-06-30 11:52:00.139967146 +0200
++++ ./qemu/build.sh	1970-01-01 01:00:00.000000000 +0100
+@@ -1,4 +0,0 @@
+-wget https://download.qemu.org/qemu-8.0.0.tar.xz
+-tar xf qemu-8.0.0.tar.xz
+-mv qemu-8.0.0 qemu
+-rm qemu-8.0.0.tar.xz
+diff -Naur ../so3.base/qemu/qemu.patch ./qemu/qemu.patch
+--- ../so3.base/qemu/qemu.patch	2023-06-30 11:57:17.245313125 +0200
++++ ./qemu/qemu.patch	1970-01-01 01:00:00.000000000 +0100
+@@ -1,192 +0,0 @@
+-diff -Naur ../qemu.clean/hw/arm/virt.c ./hw/arm/virt.c
+---- ../qemu.clean/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
+-+++ ./hw/arm/virt.c	2023-06-30 11:36:55.952744365 +0200
+-@@ -81,6 +81,8 @@
+- #include "hw/char/pl011.h"
+- #include "qemu/guest-random.h"
+- 
+-+#include "hw/input/ps2.h"
+-+
+- #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
+-     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
+-                                                     void *data) \
+-@@ -144,6 +146,11 @@
+-     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
+-     /* This redistributor space allows up to 2*64kB*123 CPUs */
+-     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
+-+
+-+	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
+-+	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
+-+	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
+-+
+-     [VIRT_UART] =               { 0x09000000, 0x00001000 },
+-     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
+-     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
+-@@ -198,6 +205,11 @@
+-     [VIRT_SECURE_UART] = 8,
+-     [VIRT_ACPI_GED] = 9,
+-     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
+-+
+-+	[VIRT_CLCD] = 35,
+-+	[VIRT_KMI0] = 36,
+-+	[VIRT_KMI1] = 37,
+-+
+-     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
+-     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
+-     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
+-@@ -2018,6 +2030,14 @@
+-     }
+- }
+- 
+-+struct IRQState {
+-+    Object parent_obj;
+-+
+-+    qemu_irq_handler handler;
+-+    void *opaque;
+-+    int n;
+-+};
+-+
+- static void machvirt_init(MachineState *machine)
+- {
+-     VirtMachineState *vms = VIRT_MACHINE(machine);
+-@@ -2326,6 +2346,27 @@
+-                                vms->fw_cfg, OBJECT(vms));
+-     }
+- 
+-+    {
+-+    	   MemoryRegion *sysmem = get_system_memory();
+-+    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
+-+    	   ram_addr_t vram_size;
+-+
+-+    	   vram_size = 0x800000;
+-+
+-+    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
+-+    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
+-+
+-+    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
+-+
+-+    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
+-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
+-+
+-+
+-+    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
+-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
+-+
+-+    }
+-+
+-     vms->bootinfo.ram_size = machine->ram_size;
+-     vms->bootinfo.board_id = -1;
+-     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
+-diff -Naur ../qemu.clean/include/hw/arm/virt.h ./include/hw/arm/virt.h
+---- ../qemu.clean/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
+-+++ ./include/hw/arm/virt.h	2023-06-30 11:36:56.054742478 +0200
+-@@ -68,6 +68,11 @@
+-     VIRT_GIC_VCPU,
+-     VIRT_GIC_ITS,
+-     VIRT_GIC_REDIST,
+-+
+-+	VIRT_CLCD,
+-+	VIRT_KMI0,
+-+	VIRT_KMI1,
+-+
+-     VIRT_SMMU,
+-     VIRT_UART,
+-     VIRT_MMIO,
+-diff -Naur ../qemu.clean/qemu.patch ./qemu.patch
+---- ../qemu.clean/qemu.patch	1970-01-01 01:00:00.000000000 +0100
+-+++ ./qemu.patch	2023-06-30 11:57:17.153315365 +0200
+-@@ -0,0 +1,94 @@
+-+diff -Naur ../qemu.clean/hw/arm/virt.c ./hw/arm/virt.c
+-+--- ../qemu.clean/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
+-++++ ./hw/arm/virt.c	2023-06-30 11:36:55.952744365 +0200
+-+@@ -81,6 +81,8 @@
+-+ #include "hw/char/pl011.h"
+-+ #include "qemu/guest-random.h"
+-+ 
+-++#include "hw/input/ps2.h"
+-++
+-+ #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
+-+     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
+-+                                                     void *data) \
+-+@@ -144,6 +146,11 @@
+-+     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
+-+     /* This redistributor space allows up to 2*64kB*123 CPUs */
+-+     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
+-++
+-++	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
+-++	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
+-++	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
+-++
+-+     [VIRT_UART] =               { 0x09000000, 0x00001000 },
+-+     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
+-+     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
+-+@@ -198,6 +205,11 @@
+-+     [VIRT_SECURE_UART] = 8,
+-+     [VIRT_ACPI_GED] = 9,
+-+     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
+-++
+-++	[VIRT_CLCD] = 35,
+-++	[VIRT_KMI0] = 36,
+-++	[VIRT_KMI1] = 37,
+-++
+-+     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
+-+     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
+-+     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
+-+@@ -2018,6 +2030,14 @@
+-+     }
+-+ }
+-+ 
+-++struct IRQState {
+-++    Object parent_obj;
+-++
+-++    qemu_irq_handler handler;
+-++    void *opaque;
+-++    int n;
+-++};
+-++
+-+ static void machvirt_init(MachineState *machine)
+-+ {
+-+     VirtMachineState *vms = VIRT_MACHINE(machine);
+-+@@ -2326,6 +2346,27 @@
+-+                                vms->fw_cfg, OBJECT(vms));
+-+     }
+-+ 
+-++    {
+-++    	   MemoryRegion *sysmem = get_system_memory();
+-++    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
+-++    	   ram_addr_t vram_size;
+-++
+-++    	   vram_size = 0x800000;
+-++
+-++    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
+-++    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
+-++
+-++    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
+-++
+-++    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
+-++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
+-++
+-++
+-++    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
+-++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
+-++
+-++    }
+-++
+-+     vms->bootinfo.ram_size = machine->ram_size;
+-+     vms->bootinfo.board_id = -1;
+-+     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
+-+diff -Naur ../qemu.clean/include/hw/arm/virt.h ./include/hw/arm/virt.h
+-+--- ../qemu.clean/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
+-++++ ./include/hw/arm/virt.h	2023-06-30 11:36:56.054742478 +0200
+-+@@ -68,6 +68,11 @@
+-+     VIRT_GIC_VCPU,
+-+     VIRT_GIC_ITS,
+-+     VIRT_GIC_REDIST,
+-++
+-++	VIRT_CLCD,
+-++	VIRT_KMI0,
+-++	VIRT_KMI1,
+-++
+-+     VIRT_SMMU,
+-+     VIRT_UART,
+-+     VIRT_MMIO,
+diff -Naur ../so3.base/qemu/README.so3 ./qemu/README.so3
+--- ../so3.base/qemu/README.so3	2023-06-30 11:58:34.522430073 +0200
++++ ./qemu/README.so3	1970-01-01 01:00:00.000000000 +0100
+@@ -1,19 +0,0 @@
+-Read the documentation in qemu-doc.html or on http://wiki.qemu.org
+-
+-- QEMU team
+-
+-- Need the SDL library
+-sudo apt-get install libsdl1.2-dev
+-
+-Configure options:
+-
+-AArch32 version:
+-
+-./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
+-
+-AArch64 version:
+-
+-./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
+-
+-
+-
+diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
+--- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
++++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
 @@ -280,7 +280,7 @@
  	.equ welcome_len, . - .LC_welcome
  
@@ -34,126 +237,29 @@ diff -Naru ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
  
  .LCnoshell:
  	.string "so3: No init proc(shell) found ...\n"
-diff -Naru ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
---- ../so3.base/so3/devices/fb/pl111.c	2023-03-31 13:07:30.754172712 +0200
-+++ ./so3/devices/fb/pl111.c	2023-04-02 13:31:08.824654469 +0200
-@@ -99,9 +99,59 @@
- void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
- int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
+diff -Naur ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
+--- ../so3.base/so3/devices/fb/pl111.c	2023-06-30 11:32:40.108465704 +0200
++++ ./so3/devices/fb/pl111.c	2023-06-30 11:32:39.754471734 +0200
+@@ -107,10 +107,16 @@
+ 	uint32_t i, page;
+ 	pcb_t *pcb = current()->pcb;
  
-+static addr_t __vaddr;
-+
-+void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
-+{
-+	uint32_t i, page;
-+	pcb_t *pcb = current()->pcb;
-+
 +	/* Just for doing some test with performance analysis */
 +	virt_addr = malloc(page_count*PAGE_SIZE);
 +	BUG_ON(!virt_addr);
 +#if 0
-+	for (i = 0; i < page_count; i++) {
-+		/* Map a process' virtual page to the physical one (here the VRAM). */
-+		page = LCDUPBASE + i * PAGE_SIZE;
-+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+ 	for (i = 0; i < page_count; i++) {
+ 		/* Map a process' virtual page to the physical one (here the VRAM). */
+ 		page = LCDUPBASE + i * PAGE_SIZE;
+ 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
 +	}
 +#endif
-+
-+	__vaddr = virt_addr;
-+
-+	return (void *) virt_addr;
-+}
-+
-+int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
-+{
-+	switch (cmd) {
-+
-+	case IOCTL_HRES:
-+		*((uint32_t *) args) = HRES;
-+		return 0;
-+
-+	case IOCTL_VRES:
-+		*((uint32_t *) args) = VRES;
-+		return 0;
-+
-+	case IOCTL_SIZE:
-+		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
-+		return 0;
-+
-+	default:
-+		/* Unknown command. */
-+		return -1;
-+	}
-+}
-+
-+int fb_close(int fd) {
-+	free((void *) __vaddr);
-+}
-+
- struct file_operations pl111_fops = {
- 	.mmap = fb_mmap,
--	.ioctl = fb_ioctl
-+	.ioctl = fb_ioctl,
-+	.close = fb_close
- };
  
- struct devclass pl111_cdev = {
-@@ -110,7 +160,6 @@
- 	.fops = &pl111_fops,
- };
+ 	__vaddr = virt_addr;
  
--
- /*
-  * Initialisation of the PL111 CLCD Controller.
-  * Linux driver: video/fbdev/amba-clcd.c
-@@ -157,44 +206,4 @@
- 	return 0;
- }
- 
--void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
--{
--	uint32_t i, page;
--	pcb_t *pcb = current()->pcb;
--
--	virt_addr = malloc(page_count*PAGE_SIZE);
--	BUG_ON(!virt_addr);
--#if 0
--	for (i = 0; i < page_count; i++) {
--		/* Map a process' virtual page to the physical one (here the VRAM). */
--		page = LCDUPBASE + i * PAGE_SIZE;
--		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
--	}
--#endif
--
--	return (void *) virt_addr;
--}
--
--int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
--{
--	switch (cmd) {
--
--	case IOCTL_HRES:
--		*((uint32_t *) args) = HRES;
--		return 0;
--
--	case IOCTL_VRES:
--		*((uint32_t *) args) = VRES;
--		return 0;
--
--	case IOCTL_SIZE:
--		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
--		return 0;
--
--	default:
--		/* Unknown command. */
--		return -1;
--	}
--}
--
- REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);
-diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
---- ../so3.base/so3/kernel/process.c	2023-03-31 13:07:30.758172601 +0200
-+++ ./so3/kernel/process.c	2023-04-02 13:30:37.853429741 +0200
+diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
+--- ../so3.base/so3/kernel/process.c	2023-06-30 11:28:35.978058041 +0200
++++ ./so3/kernel/process.c	2023-06-30 11:25:57.456816584 +0200
 @@ -848,10 +848,18 @@
  	pcb_t *pcb;
  	unsigned i;
@@ -173,37 +279,240 @@ diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
  		kernel_panic();
  	}
-diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
+diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-04-07 13:57:53.878359557 +0200
-@@ -0,0 +1,175 @@
-+diff -Naru ../so3.base/Dockerfile ./Dockerfile
-+--- ../so3.base/Dockerfile	2023-04-02 13:19:24.698875432 +0200
-++++ ./Dockerfile	2023-04-02 13:18:33.832210718 +0200
-+@@ -9,14 +9,16 @@
-+     bridge-utils iptables dnsmasq \
-+     util-linux qemu-system-arm
-+ 
-+-RUN cd /; \
-+-    wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
-+-    unzip master.zip; mv so3-master so3
-++COPY        / /so3
-+ 
-+ WORKDIR so3
-+ 
-+ RUN     find / -name thumb | xargs rm -r; \
-+-        patch -s -p0 < ci/so3_ci.patch; \
-++        cd filesystem; patch -s -p0 < ../ci/filesystem.patch; cd ..; \
-++        patch -p0 st ci/st.patch; \
-++        patch -p0 deploy.sh ci/deploy.sh.patch; \
-++        cd rootfs; patch -s -p0 < ../ci/rootfs.patch; cd ..; \
-++        cd usr; patch -s -p0 < ../ci/usr.patch; cd ..; \
-+         cd u-boot; make vexpress_defconfig; make -j8; cd ..; \
-+         cd so3; make vexpress_fb_defconfig; make -j8; cd ..; \
-+         cd usr; ./build.sh
-+diff -Naru ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
-+--- ../so3.base/so3/arch/arm32/context.S	2023-03-31 13:07:30.754172712 +0200
-++++ ./so3/arch/arm32/context.S	2023-04-02 13:30:44.697258301 +0200
++++ ./so3_ci.patch	2023-06-30 11:59:15.585427942 +0200
+@@ -0,0 +1,281 @@
++diff -Naur ../so3.base/qemu/build.sh ./qemu/build.sh
++--- ../so3.base/qemu/build.sh	2023-06-30 11:52:00.139967146 +0200
+++++ ./qemu/build.sh	1970-01-01 01:00:00.000000000 +0100
++@@ -1,4 +0,0 @@
++-wget https://download.qemu.org/qemu-8.0.0.tar.xz
++-tar xf qemu-8.0.0.tar.xz
++-mv qemu-8.0.0 qemu
++-rm qemu-8.0.0.tar.xz
++diff -Naur ../so3.base/qemu/qemu.patch ./qemu/qemu.patch
++--- ../so3.base/qemu/qemu.patch	2023-06-30 11:57:17.245313125 +0200
+++++ ./qemu/qemu.patch	1970-01-01 01:00:00.000000000 +0100
++@@ -1,192 +0,0 @@
++-diff -Naur ../qemu.clean/hw/arm/virt.c ./hw/arm/virt.c
++---- ../qemu.clean/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
++-+++ ./hw/arm/virt.c	2023-06-30 11:36:55.952744365 +0200
++-@@ -81,6 +81,8 @@
++- #include "hw/char/pl011.h"
++- #include "qemu/guest-random.h"
++- 
++-+#include "hw/input/ps2.h"
++-+
++- #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
++-     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
++-                                                     void *data) \
++-@@ -144,6 +146,11 @@
++-     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
++-     /* This redistributor space allows up to 2*64kB*123 CPUs */
++-     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
++-+
++-+	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
++-+	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
++-+	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
++-+
++-     [VIRT_UART] =               { 0x09000000, 0x00001000 },
++-     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
++-     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
++-@@ -198,6 +205,11 @@
++-     [VIRT_SECURE_UART] = 8,
++-     [VIRT_ACPI_GED] = 9,
++-     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
++-+
++-+	[VIRT_CLCD] = 35,
++-+	[VIRT_KMI0] = 36,
++-+	[VIRT_KMI1] = 37,
++-+
++-     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
++-     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
++-     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
++-@@ -2018,6 +2030,14 @@
++-     }
++- }
++- 
++-+struct IRQState {
++-+    Object parent_obj;
++-+
++-+    qemu_irq_handler handler;
++-+    void *opaque;
++-+    int n;
++-+};
++-+
++- static void machvirt_init(MachineState *machine)
++- {
++-     VirtMachineState *vms = VIRT_MACHINE(machine);
++-@@ -2326,6 +2346,27 @@
++-                                vms->fw_cfg, OBJECT(vms));
++-     }
++- 
++-+    {
++-+    	   MemoryRegion *sysmem = get_system_memory();
++-+    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
++-+    	   ram_addr_t vram_size;
++-+
++-+    	   vram_size = 0x800000;
++-+
++-+    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
++-+    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
++-+
++-+    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
++-+
++-+    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
++-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
++-+
++-+
++-+    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
++-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
++-+
++-+    }
++-+
++-     vms->bootinfo.ram_size = machine->ram_size;
++-     vms->bootinfo.board_id = -1;
++-     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
++-diff -Naur ../qemu.clean/include/hw/arm/virt.h ./include/hw/arm/virt.h
++---- ../qemu.clean/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
++-+++ ./include/hw/arm/virt.h	2023-06-30 11:36:56.054742478 +0200
++-@@ -68,6 +68,11 @@
++-     VIRT_GIC_VCPU,
++-     VIRT_GIC_ITS,
++-     VIRT_GIC_REDIST,
++-+
++-+	VIRT_CLCD,
++-+	VIRT_KMI0,
++-+	VIRT_KMI1,
++-+
++-     VIRT_SMMU,
++-     VIRT_UART,
++-     VIRT_MMIO,
++-diff -Naur ../qemu.clean/qemu.patch ./qemu.patch
++---- ../qemu.clean/qemu.patch	1970-01-01 01:00:00.000000000 +0100
++-+++ ./qemu.patch	2023-06-30 11:57:17.153315365 +0200
++-@@ -0,0 +1,94 @@
++-+diff -Naur ../qemu.clean/hw/arm/virt.c ./hw/arm/virt.c
++-+--- ../qemu.clean/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
++-++++ ./hw/arm/virt.c	2023-06-30 11:36:55.952744365 +0200
++-+@@ -81,6 +81,8 @@
++-+ #include "hw/char/pl011.h"
++-+ #include "qemu/guest-random.h"
++-+ 
++-++#include "hw/input/ps2.h"
++-++
++-+ #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
++-+     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
++-+                                                     void *data) \
++-+@@ -144,6 +146,11 @@
++-+     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
++-+     /* This redistributor space allows up to 2*64kB*123 CPUs */
++-+     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
++-++
++-++	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
++-++	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
++-++	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
++-++
++-+     [VIRT_UART] =               { 0x09000000, 0x00001000 },
++-+     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
++-+     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
++-+@@ -198,6 +205,11 @@
++-+     [VIRT_SECURE_UART] = 8,
++-+     [VIRT_ACPI_GED] = 9,
++-+     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
++-++
++-++	[VIRT_CLCD] = 35,
++-++	[VIRT_KMI0] = 36,
++-++	[VIRT_KMI1] = 37,
++-++
++-+     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
++-+     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
++-+     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
++-+@@ -2018,6 +2030,14 @@
++-+     }
++-+ }
++-+ 
++-++struct IRQState {
++-++    Object parent_obj;
++-++
++-++    qemu_irq_handler handler;
++-++    void *opaque;
++-++    int n;
++-++};
++-++
++-+ static void machvirt_init(MachineState *machine)
++-+ {
++-+     VirtMachineState *vms = VIRT_MACHINE(machine);
++-+@@ -2326,6 +2346,27 @@
++-+                                vms->fw_cfg, OBJECT(vms));
++-+     }
++-+ 
++-++    {
++-++    	   MemoryRegion *sysmem = get_system_memory();
++-++    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
++-++    	   ram_addr_t vram_size;
++-++
++-++    	   vram_size = 0x800000;
++-++
++-++    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
++-++    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
++-++
++-++    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
++-++
++-++    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
++-++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
++-++
++-++
++-++    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
++-++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
++-++
++-++    }
++-++
++-+     vms->bootinfo.ram_size = machine->ram_size;
++-+     vms->bootinfo.board_id = -1;
++-+     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
++-+diff -Naur ../qemu.clean/include/hw/arm/virt.h ./include/hw/arm/virt.h
++-+--- ../qemu.clean/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
++-++++ ./include/hw/arm/virt.h	2023-06-30 11:36:56.054742478 +0200
++-+@@ -68,6 +68,11 @@
++-+     VIRT_GIC_VCPU,
++-+     VIRT_GIC_ITS,
++-+     VIRT_GIC_REDIST,
++-++
++-++	VIRT_CLCD,
++-++	VIRT_KMI0,
++-++	VIRT_KMI1,
++-++
++-+     VIRT_SMMU,
++-+     VIRT_UART,
++-+     VIRT_MMIO,
++diff -Naur ../so3.base/qemu/README.so3 ./qemu/README.so3
++--- ../so3.base/qemu/README.so3	2023-06-30 11:58:34.522430073 +0200
+++++ ./qemu/README.so3	1970-01-01 01:00:00.000000000 +0100
++@@ -1,19 +0,0 @@
++-Read the documentation in qemu-doc.html or on http://wiki.qemu.org
++-
++-- QEMU team
++-
++-- Need the SDL library
++-sudo apt-get install libsdl1.2-dev
++-
++-Configure options:
++-
++-AArch32 version:
++-
++-./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
++-
++-AArch64 version:
++-
++-./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
++-
++-
++-
++diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
++--- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
+++++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
 +@@ -280,7 +280,7 @@
 + 	.equ welcome_len, . - .LC_welcome
 + 
@@ -213,126 +522,29 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + 
 + .LCnoshell:
 + 	.string "so3: No init proc(shell) found ...\n"
-+diff -Naru ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
-+--- ../so3.base/so3/devices/fb/pl111.c	2023-03-31 13:07:30.754172712 +0200
-++++ ./so3/devices/fb/pl111.c	2023-04-02 13:31:08.824654469 +0200
-+@@ -99,9 +99,59 @@
-+ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
-+ int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
++diff -Naur ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
++--- ../so3.base/so3/devices/fb/pl111.c	2023-06-30 11:32:40.108465704 +0200
+++++ ./so3/devices/fb/pl111.c	2023-06-30 11:32:39.754471734 +0200
++@@ -107,10 +107,16 @@
++ 	uint32_t i, page;
++ 	pcb_t *pcb = current()->pcb;
 + 
-++static addr_t __vaddr;
-++
-++void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
-++{
-++	uint32_t i, page;
-++	pcb_t *pcb = current()->pcb;
-++
 ++	/* Just for doing some test with performance analysis */
 ++	virt_addr = malloc(page_count*PAGE_SIZE);
 ++	BUG_ON(!virt_addr);
 ++#if 0
-++	for (i = 0; i < page_count; i++) {
-++		/* Map a process' virtual page to the physical one (here the VRAM). */
-++		page = LCDUPBASE + i * PAGE_SIZE;
-++		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
++ 	for (i = 0; i < page_count; i++) {
++ 		/* Map a process' virtual page to the physical one (here the VRAM). */
++ 		page = LCDUPBASE + i * PAGE_SIZE;
++ 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
 ++	}
 ++#endif
-++
-++	__vaddr = virt_addr;
-++
-++	return (void *) virt_addr;
-++}
-++
-++int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
-++{
-++	switch (cmd) {
-++
-++	case IOCTL_HRES:
-++		*((uint32_t *) args) = HRES;
-++		return 0;
-++
-++	case IOCTL_VRES:
-++		*((uint32_t *) args) = VRES;
-++		return 0;
-++
-++	case IOCTL_SIZE:
-++		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
-++		return 0;
-++
-++	default:
-++		/* Unknown command. */
-++		return -1;
-++	}
-++}
-++
-++int fb_close(int fd) {
-++	free((void *) __vaddr);
-++}
-++
-+ struct file_operations pl111_fops = {
-+ 	.mmap = fb_mmap,
-+-	.ioctl = fb_ioctl
-++	.ioctl = fb_ioctl,
-++	.close = fb_close
-+ };
 + 
-+ struct devclass pl111_cdev = {
-+@@ -110,7 +160,6 @@
-+ 	.fops = &pl111_fops,
-+ };
++ 	__vaddr = virt_addr;
 + 
-+-
-+ /*
-+  * Initialisation of the PL111 CLCD Controller.
-+  * Linux driver: video/fbdev/amba-clcd.c
-+@@ -157,44 +206,4 @@
-+ 	return 0;
-+ }
-+ 
-+-void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
-+-{
-+-	uint32_t i, page;
-+-	pcb_t *pcb = current()->pcb;
-+-
-+-	virt_addr = malloc(page_count*PAGE_SIZE);
-+-	BUG_ON(!virt_addr);
-+-#if 0
-+-	for (i = 0; i < page_count; i++) {
-+-		/* Map a process' virtual page to the physical one (here the VRAM). */
-+-		page = LCDUPBASE + i * PAGE_SIZE;
-+-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
-+-	}
-+-#endif
-+-
-+-	return (void *) virt_addr;
-+-}
-+-
-+-int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
-+-{
-+-	switch (cmd) {
-+-
-+-	case IOCTL_HRES:
-+-		*((uint32_t *) args) = HRES;
-+-		return 0;
-+-
-+-	case IOCTL_VRES:
-+-		*((uint32_t *) args) = VRES;
-+-		return 0;
-+-
-+-	case IOCTL_SIZE:
-+-		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
-+-		return 0;
-+-
-+-	default:
-+-		/* Unknown command. */
-+-		return -1;
-+-	}
-+-}
-+-
-+ REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);
-+diff -Naru ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
-+--- ../so3.base/so3/kernel/process.c	2023-03-31 13:07:30.758172601 +0200
-++++ ./so3/kernel/process.c	2023-04-02 13:30:37.853429741 +0200
++diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
++--- ../so3.base/so3/kernel/process.c	2023-06-30 11:28:35.978058041 +0200
+++++ ./so3/kernel/process.c	2023-06-30 11:25:57.456816584 +0200
 +@@ -848,10 +848,18 @@
 + 	pcb_t *pcb;
 + 	unsigned i;
@@ -352,9 +564,9 @@ diff -Naru ../so3.base/so3_ci.patch ./so3_ci.patch
 + 		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
 + 		kernel_panic();
 + 	}
-diff -Naru ../so3.base/st ./st
---- ../so3.base/st	2023-04-07 13:04:46.499063078 +0200
-+++ ./st	2023-04-07 13:14:52.361191057 +0200
+diff -Naur ../so3.base/st ./st
+--- ../so3.base/st	2023-06-30 11:28:35.461067351 +0200
++++ ./st	2023-06-30 11:26:40.437041485 +0200
 @@ -9,6 +9,7 @@
  QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
  GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
@@ -363,51 +575,35 @@ diff -Naru ../so3.base/st ./st
  
      echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
      echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
-@@ -35,18 +36,19 @@
-         -gdb tcp::${GDB_PORT}
+@@ -36,17 +37,19 @@
  
      else    
--   echo Starting on ARM32
--   sudo qemu-system-arm $@ ${USR_OPTION} \
--  	-smp 4 \
+    echo Starting on ARM32
+-   sudo qemu/build/arm-softmmu/qemu-system-arm $@ ${USR_OPTION} \
+-  	-smp 2 \
 -	-serial mon:stdio  \
--	-M vexpress-a15,secure=on  -cpu cortex-a15 \
--	-m 1024 \
--	-kernel u-boot/u-boot \
--	-semihosting-config enable,target=native \
--	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
--	-sd filesystem/sdcard.img.vexpress \
--	-nographic \
--	-gdb tcp::${GDB_PORT}
-+	echo Starting on ARM32
-+
-+	sudo qemu-system-arm $@ ${USR_OPTION} \
++   
++    sudo qemu/build/arm-softmmu/qemu-system-arm $@ ${USR_OPTION} \
 +  	-icount shift=auto,sleep=off \
 +	-semihosting \
 +	-chardev stdio,id=char0,mux=on,logfile=${CHECKPERF_LOG},signal=off \
 +	-serial chardev:char0  \
 +	-mon chardev=char0 \
-+ 	-M vexpress-a15,secure=on  -cpu cortex-a15 \
-+ 	-m 1024 \
-+ 	-kernel u-boot/u-boot \
-+ 	-sd filesystem/sdcard.img.vexpress \
+ 	-M virt  -cpu cortex-a15 \
+ 	-device virtio-blk-device,drive=hd0 \
+ 	-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
+ 	-m 1024 \
+ 	-bios u-boot/u-boot.bin \
+-	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
+-	-nographic \
+-	-gdb tcp::${GDB_PORT}
 +	-nographic > /dev/null
          
      fi
   
-diff -Naru ../so3.base/usr/lib/CMakeLists.txt ./usr/lib/CMakeLists.txt
---- ../so3.base/usr/lib/CMakeLists.txt	2023-03-31 13:07:31.074163803 +0200
-+++ ./usr/lib/CMakeLists.txt	2023-04-02 13:31:15.732481747 +0200
-@@ -1,6 +1,5 @@
- 
- add_subdirectory(libc)
- add_subdirectory(lvgl)
--add_subdirectory(libxml2)
- 
-                     
-diff -Naru ../so3.base/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
---- ../so3.base/usr/src/CMakeLists.txt	2023-04-07 13:57:43.986606187 +0200
-+++ ./usr/src/CMakeLists.txt	2023-03-19 15:06:41.347458285 +0100
+diff -Naur ../so3.base/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
+--- ../so3.base/usr/src/CMakeLists.txt	2023-06-30 11:28:36.274052711 +0200
++++ ./usr/src/CMakeLists.txt	2023-06-30 11:23:49.767119965 +0200
 @@ -5,7 +5,6 @@
  add_executable(time.elf time.c)
  add_executable(ping.elf ping.c)
@@ -416,9 +612,9 @@ diff -Naru ../so3.base/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
  add_subdirectory(stress)
  
  target_link_libraries(sh.elf c)
-diff -Naru ../so3.base/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLists.txt
---- ../so3.base/usr/src/widgets/CMakeLists.txt	2023-03-31 13:07:31.154161577 +0200
-+++ ./usr/src/widgets/CMakeLists.txt	2023-03-19 15:06:41.347458285 +0100
+diff -Naur ../so3.base/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLists.txt
+--- ../so3.base/usr/src/widgets/CMakeLists.txt	2023-06-30 11:28:36.265052874 +0200
++++ ./usr/src/widgets/CMakeLists.txt	2023-06-30 11:16:22.558198671 +0200
 @@ -4,6 +4,10 @@
  #add_compile_options("-DLV_LVGL_H_INCLUDE_SIMPLE")
  
@@ -432,10 +628,47 @@ diff -Naru ../so3.base/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLis
 \ No newline at end of file
 +target_link_libraries(demofb.elf c lvgl)
 +target_link_libraries(lvgl_perf.elf c lvgl)
-\ No newline at end of file
-diff -Naru ../so3.base/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
+diff -Naur ../so3.base/usr/src/widgets/demofb.c ./usr/src/widgets/demofb.c
+--- ../so3.base/usr/src/widgets/demofb.c	2023-06-30 11:28:36.265052874 +0200
++++ ./usr/src/widgets/demofb.c	2023-06-30 11:23:18.848677863 +0200
+@@ -55,7 +55,7 @@
+ void *tick_routine(void *args)
+ {
+ 	while (1) {
+-		/* Tell LittlevGL that 1 millisecond were elapsed */
++		/* Tell LittlevGL that 5 milliseconds were elapsed */
+ 		usleep(1000);
+ 		lv_tick_inc(1);
+ 	}
+@@ -72,7 +72,7 @@
+ 
+ 	drv.open_cb = fs_open_cb;		/* Callback to open a file */
+ 	drv.close_cb = fs_close_cb;		/* Callback to close a file */
+-	drv.read_cb = fs_read_cb;
++	drv.read_cb = fs_read_cb;		/* Callback to read a file */
+ 	drv.seek_cb = fs_seek_cb;		/* Callback to seek in a file (Move cursor) */
+ 	drv.tell_cb = fs_tell_cb;		/* Callback to tell the cursor position */
+ 
+@@ -154,8 +154,6 @@
+ 		return -1;
+ 	}
+ 
+-	printf("Resolution: %d x %d\n", scr_hres, scr_vres);
+-
+ 	/* Map the framebuffer into process memory. */
+ 	fbp = mmap(NULL, fb_size, 0, 0, fd, 0);
+ 	if (!fbp) {
+@@ -308,7 +306,6 @@
+ int main(int argc, char **argv)
+ {
+ 	pthread_t tick_thread;
+-	int x, y;
+ 
+ 	/* Initialisation of lvgl. */
+ 	lv_init();
+diff -Naur ../so3.base/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
 --- ../so3.base/usr/src/widgets/lvgl_perf.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./usr/src/widgets/lvgl_perf.c	2023-03-10 13:24:05.353985296 +0100
++++ ./usr/src/widgets/lvgl_perf.c	2023-04-07 13:06:50.872067219 +0200
 @@ -0,0 +1,245 @@
 +/*
 + * Copyright (C) 2020 Nikolaos Garanis <nikolaos.garanis@heig-vd.ch>
@@ -682,9 +915,9 @@ diff -Naru ../so3.base/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
 +
 +	return 0;
 +}
-diff -Naru ../so3.base/usr/src/widgets/lvgl_perf_drawing.c ./usr/src/widgets/lvgl_perf_drawing.c
+diff -Naur ../so3.base/usr/src/widgets/lvgl_perf_drawing.c ./usr/src/widgets/lvgl_perf_drawing.c
 --- ../so3.base/usr/src/widgets/lvgl_perf_drawing.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./usr/src/widgets/lvgl_perf_drawing.c	2023-03-10 13:20:15.074867284 +0100
++++ ./usr/src/widgets/lvgl_perf_drawing.c	2023-04-07 13:06:50.868067316 +0200
 @@ -0,0 +1,133 @@
 +/**
 + * @file lv_demo_widgets.c

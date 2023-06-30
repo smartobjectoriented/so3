@@ -78,8 +78,9 @@
 #define LED (0 <<  0)
 
 /* Framebuffer base addresses (first 2 bits must be 0) */
-#define LCDUPBASE 0x30000000 /* upper panel, corresponds to VRAM */
-//#define LCDUPBASE 0x08900000
+
+#define LCDUPBASE 0x30000000 /* upper panel */
+
 #define LCDLPBASE        0x0 /* lower panel */
 
 /* Control register values */
@@ -99,9 +100,53 @@
 void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
 
+static addr_t __vaddr;
+
+void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
+{
+	uint32_t i, page;
+	pcb_t *pcb = current()->pcb;
+
+	for (i = 0; i < page_count; i++) {
+		/* Map a process' virtual page to the physical one (here the VRAM). */
+		page = LCDUPBASE + i * PAGE_SIZE;
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+
+	__vaddr = virt_addr;
+
+	return (void *) virt_addr;
+}
+
+int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
+{
+	switch (cmd) {
+
+	case IOCTL_HRES:
+		*((uint32_t *) args) = HRES;
+		return 0;
+
+	case IOCTL_VRES:
+		*((uint32_t *) args) = VRES;
+		return 0;
+
+	case IOCTL_SIZE:
+		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
+		return 0;
+
+	default:
+		/* Unknown command. */
+		return -1;
+	}
+}
+
+int fb_close(int fd) {
+	free((void *) __vaddr);
+}
+
 struct file_operations pl111_fops = {
 	.mmap = fb_mmap,
-	.ioctl = fb_ioctl
+	.ioctl = fb_ioctl,
+	.close = fb_close
 };
 
 struct devclass pl111_cdev = {
@@ -109,7 +154,6 @@ struct devclass pl111_cdev = {
 	.type = VFS_TYPE_DEV_FB,
 	.fops = &pl111_fops,
 };
-
 
 /*
  * Initialisation of the PL111 CLCD Controller.
@@ -155,26 +199,6 @@ static int pl111_init(dev_t *dev, int fdt_offset)
 	devclass_register(dev, &pl111_cdev);
 
 	return 0;
-}
-
-void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
-{
-	uint32_t i, page;
-	pcb_t *pcb = current()->pcb;
-#if 0
-	virt_addr = malloc(page_count*PAGE_SIZE);
-	BUG_ON(!virt_addr);
-#endif
-
-#if 1
-	for (i = 0; i < page_count; i++) {
-		/* Map a process' virtual page to the physical one (here the VRAM). */
-		page = LCDUPBASE + i * PAGE_SIZE;
-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
-	}
-#endif
-
-	return (void *) virt_addr;
 }
 
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args)

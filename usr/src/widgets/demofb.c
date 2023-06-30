@@ -154,6 +154,8 @@ int fb_init(void)
 		return -1;
 	}
 
+	printf("Resolution: %d x %d\n", scr_hres, scr_vres);
+
 	/* Map the framebuffer into process memory. */
 	fbp = mmap(NULL, fb_size, 0, 0, fd, 0);
 	if (!fbp) {
