@@ -7,7 +7,7 @@ RUN apk update; \
     bison flex bash patch mount dtc \
     dosfstools u-boot-tools net-tools \
     bridge-utils iptables dnsmasq libressl-dev \
-    util-linux qemu-system-arm
+    util-linux qemu-system-arm e2fsprogs
 
 RUN cd /; \
     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
