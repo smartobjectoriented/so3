@@ -1,3 +1,167 @@
+diff -Naur ../so3.base/deploy.sh ./deploy.sh
+--- ../so3.base/deploy.sh	2023-06-30 11:28:35.461067351 +0200
++++ ./deploy.sh	2023-06-30 16:07:08.890135194 +0200
+@@ -76,11 +76,11 @@
+     
+ # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
+     if [ "$deploy_rootfs" != "y" ]; then
+-    sudo rm -rf fs/*
++    rm -rf fs/*
+     fi
+     
+-    [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
+-    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
++    [ -f ../target/${PLATFORM}.itb ] && cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
++    cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
+        
+     if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
+ 	# Nothing else ...
+@@ -89,15 +89,15 @@
+     fi
+  
+     if [ "$PLATFORM" == "rpi4" ]; then
+-        sudo cp -r ../bsp/rpi4/* fs/
+-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
++        cp -r ../bsp/rpi4/* fs/
++        cp ../u-boot/u-boot.bin fs/kernel7.img
+         ./umount.sh
+         cd ..
+     fi
+     
+     if [ "$PLATFORM" == "rpi4_64" ]; then
+-        sudo cp -r ../bsp/rpi4/* fs/
+-        sudo cp ../u-boot/u-boot.bin fs/kernel8.img
++        cp -r ../bsp/rpi4/* fs/
++        cp ../u-boot/u-boot.bin fs/kernel8.img
+         ./umount.sh
+         cd ..
+     fi
+diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
+--- ../so3.base/filesystem/create_img.sh	2023-06-30 11:28:35.817060941 +0200
++++ ./filesystem/create_img.sh	2023-06-30 16:05:15.509925334 +0200
+@@ -14,7 +14,7 @@
+     echo Creating sdcard.img.$1 ... 
+     dd_size=256M
+     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
++    devname=$(losetup --partscan --find --show sdcard.img.$1)
+ 
+     # Keep device name only without /dev/
+     devname=${devname#"/dev/"}
+@@ -27,7 +27,7 @@
+ 
+ if [ "$1" == "virt32" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
+ #create the partition layout this way
+-    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | sudo fdisk /dev/"$devname";
++    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | fdisk /dev/"$devname";
+ fi
+ 
+ echo Waiting...
+@@ -38,10 +38,10 @@
+     export devname="${devname}p"
+ fi
+ 
+-sudo mkfs.fat -F32 -v /dev/"$devname"1
+-sudo mkfs.ext4 /dev/"$devname"2
++mkfs.fat -F32 -v /dev/"$devname"1
++mkfs.ext4 /dev/"$devname"2
+ 
+ if [ "$1" == "virt32" -o "$1" == "virt64" ]; then
+-	sudo losetup -D
++	losetup -D
+ fi
+ 
+diff -Naur ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
+--- ../so3.base/filesystem/mount.sh	2023-06-30 11:28:35.817060941 +0200
++++ ./filesystem/mount.sh	2023-06-30 16:05:36.386943276 +0200
+@@ -10,18 +10,18 @@
+     PLATFORM=$2
+ fi
+ 
+-sudo rm -rf fs/*
++rm -rf fs/*
+ mkdir -p fs
+  
+ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
+-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
++    devname=$(losetup --partscan --find --show sdcard.img.${PLATFORM})
+     FS_IMG=sdcard.img.${PLATFORM}
+ 
+     #sudo losetup -P --find --show flash
+-   
++
+ 
+     # device is loopback (loop<n>)
+-    sudo mount ${devname}p$1 fs 
++    mount ${devname}p$1 fs
+     exit 0
+ fi
+ 
+@@ -35,5 +35,5 @@
+ fi
+ 
+ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
+-    sudo mount /dev/"${devname}"$1 fs
++    mount /dev/"${devname}"$1 fs
+ fi
+diff -Naur ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
+--- ../so3.base/filesystem/umount.sh	2023-06-30 11:28:35.817060941 +0200
++++ ./filesystem/umount.sh	2023-06-30 16:04:50.214054550 +0200
+@@ -12,11 +12,11 @@
+ 
+ sleep 1
+ 
+-sudo umount fs
++umount fs
+ 
+ # Let the filesystem be synchronized
+ sleep 1
+ 
+ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
+-    sudo losetup -D
++    losetup -D
+ fi
+diff -Naur ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
+--- ../so3.base/rootfs/deploy.sh	2023-06-30 11:28:35.925058996 +0200
++++ ./rootfs/deploy.sh	2023-06-30 16:06:02.634650079 +0200
+@@ -15,8 +15,8 @@
+ ./mount_ramfs.sh ${PLATFORM}
+ cd ../filesystem
+ ./mount.sh 1
+-sudo rm -rf fs/*
+-sudo cp -rf ../rootfs/fs/* fs/
++rm -rf fs/*
++cp -rf ../rootfs/fs/* fs/
+ 
+ # Sometimes, syncing between RAM and FS takes some time
+ sleep 1
+diff -Naur ../so3.base/rootfs/mount_ramfs.sh ./rootfs/mount_ramfs.sh
+--- ../so3.base/rootfs/mount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
++++ ./rootfs/mount_ramfs.sh	2023-06-30 16:06:37.483842565 +0200
+@@ -12,6 +12,6 @@
+ # mount the rootfs
+ mkdir -p fs
+ 
+-DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/rootfs.fat)
++DEVLOOP=$(losetup --partscan --find --show ./board/$1/rootfs.fat)
+ 
+-sudo mount ${DEVLOOP}p1 fs
++mount ${DEVLOOP}p1 fs
+diff -Naur ../so3.base/rootfs/umount_ramfs.sh ./rootfs/umount_ramfs.sh
+--- ../so3.base/rootfs/umount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
++++ ./rootfs/umount_ramfs.sh	2023-06-30 16:06:13.696087008 +0200
+@@ -8,8 +8,8 @@
+ 
+ echo "Here: board is $1"
+  
+-sudo umount fs
+-sudo losetup -D
+-sudo rm -rf fs
++umount fs
++losetup -D
++rm -rf fs
+ 
+ 
 diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
 --- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
 +++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
@@ -54,8 +218,172 @@ diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-06-30 15:49:22.286060628 +0200
-@@ -0,0 +1,54 @@
++++ ./so3_ci.patch	2023-06-30 16:07:22.152394088 +0200
+@@ -0,0 +1,218 @@
++diff -Naur ../so3.base/deploy.sh ./deploy.sh
++--- ../so3.base/deploy.sh	2023-06-30 11:28:35.461067351 +0200
+++++ ./deploy.sh	2023-06-30 16:07:08.890135194 +0200
++@@ -76,11 +76,11 @@
++     
++ # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
++     if [ "$deploy_rootfs" != "y" ]; then
++-    sudo rm -rf fs/*
+++    rm -rf fs/*
++     fi
++     
++-    [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
++-    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
+++    [ -f ../target/${PLATFORM}.itb ] && cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
+++    cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
++        
++     if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
++ 	# Nothing else ...
++@@ -89,15 +89,15 @@
++     fi
++  
++     if [ "$PLATFORM" == "rpi4" ]; then
++-        sudo cp -r ../bsp/rpi4/* fs/
++-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
+++        cp -r ../bsp/rpi4/* fs/
+++        cp ../u-boot/u-boot.bin fs/kernel7.img
++         ./umount.sh
++         cd ..
++     fi
++     
++     if [ "$PLATFORM" == "rpi4_64" ]; then
++-        sudo cp -r ../bsp/rpi4/* fs/
++-        sudo cp ../u-boot/u-boot.bin fs/kernel8.img
+++        cp -r ../bsp/rpi4/* fs/
+++        cp ../u-boot/u-boot.bin fs/kernel8.img
++         ./umount.sh
++         cd ..
++     fi
++diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
++--- ../so3.base/filesystem/create_img.sh	2023-06-30 11:28:35.817060941 +0200
+++++ ./filesystem/create_img.sh	2023-06-30 16:05:15.509925334 +0200
++@@ -14,7 +14,7 @@
++     echo Creating sdcard.img.$1 ... 
++     dd_size=256M
++     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
++-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
+++    devname=$(losetup --partscan --find --show sdcard.img.$1)
++ 
++     # Keep device name only without /dev/
++     devname=${devname#"/dev/"}
++@@ -27,7 +27,7 @@
++ 
++ if [ "$1" == "virt32" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
++ #create the partition layout this way
++-    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | sudo fdisk /dev/"$devname";
+++    (echo o; echo n; echo p; echo; echo; echo +128M; echo t; echo c; echo n; echo p; echo; echo; echo +400M; echo n; echo p; echo; echo; echo +100M; echo n; echo p; echo; echo; echo; echo w)   | fdisk /dev/"$devname";
++ fi
++ 
++ echo Waiting...
++@@ -38,10 +38,10 @@
++     export devname="${devname}p"
++ fi
++ 
++-sudo mkfs.fat -F32 -v /dev/"$devname"1
++-sudo mkfs.ext4 /dev/"$devname"2
+++mkfs.fat -F32 -v /dev/"$devname"1
+++mkfs.ext4 /dev/"$devname"2
++ 
++ if [ "$1" == "virt32" -o "$1" == "virt64" ]; then
++-	sudo losetup -D
+++	losetup -D
++ fi
++ 
++diff -Naur ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
++--- ../so3.base/filesystem/mount.sh	2023-06-30 11:28:35.817060941 +0200
+++++ ./filesystem/mount.sh	2023-06-30 16:05:36.386943276 +0200
++@@ -10,18 +10,18 @@
++     PLATFORM=$2
++ fi
++ 
++-sudo rm -rf fs/*
+++rm -rf fs/*
++ mkdir -p fs
++  
++ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
++-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
+++    devname=$(losetup --partscan --find --show sdcard.img.${PLATFORM})
++     FS_IMG=sdcard.img.${PLATFORM}
++ 
++     #sudo losetup -P --find --show flash
++-   
+++
++ 
++     # device is loopback (loop<n>)
++-    sudo mount ${devname}p$1 fs 
+++    mount ${devname}p$1 fs
++     exit 0
++ fi
++ 
++@@ -35,5 +35,5 @@
++ fi
++ 
++ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
++-    sudo mount /dev/"${devname}"$1 fs
+++    mount /dev/"${devname}"$1 fs
++ fi
++diff -Naur ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
++--- ../so3.base/filesystem/umount.sh	2023-06-30 11:28:35.817060941 +0200
+++++ ./filesystem/umount.sh	2023-06-30 16:04:50.214054550 +0200
++@@ -12,11 +12,11 @@
++ 
++ sleep 1
++ 
++-sudo umount fs
+++umount fs
++ 
++ # Let the filesystem be synchronized
++ sleep 1
++ 
++ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
++-    sudo losetup -D
+++    losetup -D
++ fi
++diff -Naur ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
++--- ../so3.base/rootfs/deploy.sh	2023-06-30 11:28:35.925058996 +0200
+++++ ./rootfs/deploy.sh	2023-06-30 16:06:02.634650079 +0200
++@@ -15,8 +15,8 @@
++ ./mount_ramfs.sh ${PLATFORM}
++ cd ../filesystem
++ ./mount.sh 1
++-sudo rm -rf fs/*
++-sudo cp -rf ../rootfs/fs/* fs/
+++rm -rf fs/*
+++cp -rf ../rootfs/fs/* fs/
++ 
++ # Sometimes, syncing between RAM and FS takes some time
++ sleep 1
++diff -Naur ../so3.base/rootfs/mount_ramfs.sh ./rootfs/mount_ramfs.sh
++--- ../so3.base/rootfs/mount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
+++++ ./rootfs/mount_ramfs.sh	2023-06-30 16:06:37.483842565 +0200
++@@ -12,6 +12,6 @@
++ # mount the rootfs
++ mkdir -p fs
++ 
++-DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/rootfs.fat)
+++DEVLOOP=$(losetup --partscan --find --show ./board/$1/rootfs.fat)
++ 
++-sudo mount ${DEVLOOP}p1 fs
+++mount ${DEVLOOP}p1 fs
++diff -Naur ../so3.base/rootfs/umount_ramfs.sh ./rootfs/umount_ramfs.sh
++--- ../so3.base/rootfs/umount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
+++++ ./rootfs/umount_ramfs.sh	2023-06-30 16:06:13.696087008 +0200
++@@ -8,8 +8,8 @@
++ 
++ echo "Here: board is $1"
++  
++-sudo umount fs
++-sudo losetup -D
++-sudo rm -rf fs
+++umount fs
+++losetup -D
+++rm -rf fs
++ 
++ 
 +diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
 +--- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
 ++++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
