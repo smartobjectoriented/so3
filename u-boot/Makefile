@@ -279,7 +279,7 @@ endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
 ARCH = arm
-CROSS_COMPILE = arm-linux-gnueabihf-
+CROSS_COMPILE = arm-none-eabi-
 endif
 
 KCONFIG_CONFIG	?= .config
