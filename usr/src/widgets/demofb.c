@@ -55,7 +55,7 @@ static lv_group_t *keyboard_group;
 void *tick_routine(void *args)
 {
 	while (1) {
-		/* Tell LittlevGL that 5 milliseconds were elapsed */
+		/* Tell LittlevGL that 1 millisecond were elapsed */
 		usleep(1000);
 		lv_tick_inc(1);
 	}
@@ -72,7 +72,7 @@ void fs_init(void)
 
 	drv.open_cb = fs_open_cb;		/* Callback to open a file */
 	drv.close_cb = fs_close_cb;		/* Callback to close a file */
-	drv.read_cb = fs_read_cb;		/* Callback to read a file */
+	drv.read_cb = fs_read_cb;
 	drv.seek_cb = fs_seek_cb;		/* Callback to seek in a file (Move cursor) */
 	drv.tell_cb = fs_tell_cb;		/* Callback to tell the cursor position */
 
