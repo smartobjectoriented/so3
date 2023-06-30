@@ -1,0 +1,3 @@
+fdt_high=ffffffff
+initrd_high=ffffffff
+start=load virtio 0 0x70000000 virt32.itb; bootm 0x70000000
