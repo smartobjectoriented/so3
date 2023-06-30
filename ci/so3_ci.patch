@@ -281,7 +281,7 @@ diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-06-30 11:59:15.585427942 +0200
++++ ./so3_ci.patch	2023-06-30 12:34:19.213740546 +0200
 @@ -0,0 +1,281 @@
 +diff -Naur ../so3.base/qemu/build.sh ./qemu/build.sh
 +--- ../so3.base/qemu/build.sh	2023-06-30 11:52:00.139967146 +0200
