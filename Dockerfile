@@ -6,7 +6,7 @@ RUN apk update; \
     apk add make cmake gcc-arm-none-eabi libc-dev \
     bison flex bash patch mount dtc \
     dosfstools u-boot-tools net-tools \
-    bridge-utils iptables dnsmasq \
+    bridge-utils iptables dnsmasq libressl-dev \
     util-linux qemu-system-arm
 
 RUN cd /; \

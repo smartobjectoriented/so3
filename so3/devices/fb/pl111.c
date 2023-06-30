@@ -97,9 +97,6 @@
 #define LCDBPP    (5 <<  1) /* 5: 24bpp, 6: 16bpp565 */
 #define LCDEN     (1 <<  0) /* enable display */
 
-void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count);
-int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
-
 static addr_t __vaddr;
 
 void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
@@ -201,26 +198,5 @@ static int pl111_init(dev_t *dev, int fdt_offset)
 	return 0;
 }
 
-int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
-{
-	switch (cmd) {
-
-	case IOCTL_HRES:
-		*((uint32_t *) args) = HRES;
-		return 0;
-
-	case IOCTL_VRES:
-		*((uint32_t *) args) = VRES;
-		return 0;
-
-	case IOCTL_SIZE:
-		*((uint32_t *) args) = HRES * VRES * 4; /* 32 bpp */
-		return 0;
-
-	default:
-		/* Unknown command. */
-		return -1;
-	}
-}
 
 REGISTER_DRIVER_POSTCORE("arm,pl111", pl111_init);
