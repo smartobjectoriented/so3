@@ -38,7 +38,7 @@ diff -Naur ../so3.base/deploy.sh ./deploy.sh
      fi
 diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
 --- ../so3.base/filesystem/create_img.sh	2023-06-30 17:27:01.141409090 +0200
-+++ ./filesystem/create_img.sh	2023-06-30 17:26:36.478023529 +0200
++++ ./filesystem/create_img.sh	2023-06-30 17:28:53.180522656 +0200
 @@ -14,7 +14,7 @@
      echo Creating sdcard.img.$1 ... 
      dd_size=256M
@@ -48,6 +48,15 @@ diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
  
      # Keep device name only without /dev/
      devname=${devname#"/dev/"}
+@@ -27,7 +27,7 @@
+ 
+ if [ "$1" == "virt32" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
+ #create the partition layout this way
+-    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | sudo fdisk /dev/"$devname";
++    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | fdisk /dev/"$devname";
+ fi
+ 
+ echo Waiting...
 @@ -38,10 +38,10 @@
      export devname="${devname}p"
  fi
@@ -209,8 +218,8 @@ diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  	}
 diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 --- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-06-30 17:27:07.060260431 +0200
-@@ -0,0 +1,209 @@
++++ ./so3_ci.patch	2023-06-30 17:29:03.402252258 +0200
+@@ -0,0 +1,218 @@
 +diff -Naur ../so3.base/deploy.sh ./deploy.sh
 +--- ../so3.base/deploy.sh	2023-06-30 11:28:35.461067351 +0200
 ++++ ./deploy.sh	2023-06-30 16:07:08.890135194 +0200
@@ -251,7 +260,7 @@ diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 +     fi
 +diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
 +--- ../so3.base/filesystem/create_img.sh	2023-06-30 17:27:01.141409090 +0200
-++++ ./filesystem/create_img.sh	2023-06-30 17:26:36.478023529 +0200
+++++ ./filesystem/create_img.sh	2023-06-30 17:28:53.180522656 +0200
 +@@ -14,7 +14,7 @@
 +     echo Creating sdcard.img.$1 ... 
 +     dd_size=256M
@@ -261,6 +270,15 @@ diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
 + 
 +     # Keep device name only without /dev/
 +     devname=${devname#"/dev/"}
++@@ -27,7 +27,7 @@
++ 
++ if [ "$1" == "virt32" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
++ #create the partition layout this way
++-    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | sudo fdisk /dev/"$devname";
+++    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | fdisk /dev/"$devname";
++ fi
++ 
++ echo Waiting...
 +@@ -38,10 +38,10 @@
 +     export devname="${devname}p"
 + fi
