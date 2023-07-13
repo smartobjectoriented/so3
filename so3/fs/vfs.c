@@ -22,6 +22,7 @@
 #define DEBUG
 #endif
 
+#include <common.h>
 #include <vfs.h>
 #include <process.h>
 #include <heap.h>
@@ -91,23 +92,6 @@ int vfs_get_gfd(int localfd)
 }
 
 /*
- * @brief Get a new available global file descriptor (gfd)
- *
- * vfs_lock must be hold.
- */
-static int vfs_new_gfd(void)
-{
-	int i;
-
-	ASSERT(mutex_is_locked(&vfs_lock));
-
-	for (i = 0; i < FD_MAX ; i++)
-		if (open_fds[i] == NULL)
-			return i;
-	return -1;
-}
-
-/*
  * @brief Get the refcount of a specific global fd.
  *
  */
@@ -128,11 +112,12 @@ int vfs_refcount(int gfd) {
 	return ret;
 }
 
-/* @brief This function will increment the fd ref_count
- *		to keep track on how many instance are
- *		using the the file descriptor
- * @return the new refcount
+/**
+ * This function will increment the global fd ref_count to keep track on how many instances
+ * are using this global descriptor.
  *
+ * @param gfd
+ * @return
  */
 static int vfs_inc_ref(int gfd)
 {
@@ -287,9 +272,9 @@ uint32_t vfs_get_open_mode(int gfd)
 {
 	ASSERT(mutex_is_locked(&vfs_lock));
 
-	if (open_fds[gfd]) {
+	if (open_fds[gfd])
 		return open_fds[gfd]->flags_open;
-	}
+
 
 	return 0;
 }
@@ -352,29 +337,6 @@ int vfs_set_operating_mode(int gfd, uint32_t flags_operating_mode)
 }
 
 /*
- * Duplicate a gfd.
- *
- * vfs_lock must be hold.
- */
-static int vfs_copy_gfd(int gfd_src, int gfd_dst)
-{
-	struct fd *fdesc;
-
-	ASSERT(mutex_is_locked(&vfs_lock));
-
-	fdesc = (struct fd *) malloc(sizeof(struct fd));
-	if (!fdesc) {
-		printk("%s: failed to allocate memory\n", __func__);
-		return -1;
-	}
-
-	memcpy(fdesc, open_fds[gfd_src], sizeof(struct fd));
-	open_fds[gfd_dst] = fdesc;
-
-	return 0;
-}
-
-/*
  * @brief this function will link a process fd (localfd) with the table of global fd (fd).
  * In addition, the function will increment the ref_count.
  */
@@ -397,54 +359,22 @@ void vfs_link_fd(int fd, int gfd)
 int vfs_clone_fd(int *fd_src, int *fd_dst)
 {
 	unsigned i;
-	int newgfd;
-	int rc;
 
 	mutex_lock(&vfs_lock);
 
-	/* The standard streams are not cloned. Only the reference is 
-	 * incremented
+	/* All file descriptors are duplicated at the process level.
+	 * However, the global descriptor remains the same in all cases.
 	 */
+	for (i = 0; i < FD_MAX; i++) {
 
-	for (i = 0; i < STDERR + 1; i++) {
-		fd_dst[i] = fd_src[i];
-		vfs_inc_ref(fd_src[i]);
-	}
-
-	for (i = STDERR + 1; i < FD_MAX; i++) {
 		/* If invalid fd */
 		if ((fd_src[i] < 0) || (open_fds[fd_src[i]] == NULL)) {
 			fd_dst[i] = -1;
 			continue;
 		}
 
-		/* In the case of pipe, the (global) file descriptor must remain
-		 * the same.
-		 * The clone() callback operation in the sub-layers must NOT suspend.
-		 */
-		if (open_fds[fd_src[i]]->fops->clone != NULL)
-			open_fds[fd_src[i]]->fops->clone(fd_src[i]);
-
-		if (open_fds[fd_src[i]]->type == VFS_TYPE_PIPE) {
-
-			fd_dst[i] = fd_src[i];
-			vfs_inc_ref(fd_src[i]);
-
-		} else {
-
-			newgfd = vfs_new_gfd();
-			if (newgfd < 0) {
-				mutex_unlock(&vfs_lock);
-				return newgfd;
-			}
-
-			if ((rc = vfs_copy_gfd(fd_src[i], newgfd))) {
-				mutex_unlock(&vfs_lock);
-				return rc;
-			}
-
-			fd_dst[i] = newgfd;
-		}
+		fd_dst[i] = fd_src[i];
+		vfs_inc_ref(fd_src[i]);
 	}
 
 	mutex_unlock(&vfs_lock);

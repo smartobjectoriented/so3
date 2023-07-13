@@ -108,6 +108,7 @@ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
 		/* Map a process' virtual page to the physical one (here the VRAM). */
 		page = LCDUPBASE + i * PAGE_SIZE;
 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+	}
 
 	__vaddr = virt_addr;
 

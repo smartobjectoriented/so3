@@ -29,3 +29,4 @@ WORKDIR so3
 EXPOSE 1234
 
 CMD    ./st
+COPY /*.log /

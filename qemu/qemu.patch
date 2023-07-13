@@ -1,94 +1,457 @@
-diff -Naur ../qemu.clean/hw/arm/virt.c ./hw/arm/virt.c
---- ../qemu.clean/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
-+++ ./hw/arm/virt.c	2023-06-30 11:36:55.952744365 +0200
-@@ -81,6 +81,8 @@
+diff -Naru ../qemu.1/build.sh ./build.sh
+--- ../qemu.1/build.sh	2023-06-30 12:07:57.819595805 +0200
++++ ./build.sh	1970-01-01 01:00:00.000000000 +0100
+@@ -1,18 +0,0 @@
+-#!/bin/bash
+-
+-echo Fetching QEMU 8.0.0
+-wget https://download.qemu.org/qemu-8.0.0.tar.xz
+-
+-echo Extracting QEMU tar
+-tar xf qemu-8.0.0.tar.xz
+-
+-echo Moving to its final destination
+-mv qemu-8.0.0/* .
+-rm -rf qemu-8.0.0
+-
+-echo Patching
+-patch -p1 < qemu.patch
+-
+-echo Removing the tar file
+-rm qemu-8.0.0.tar.xz
+-
+diff -Naru ../qemu.1/chardev/char-fe.c ./chardev/char-fe.c
+--- ../qemu.1/chardev/char-fe.c	2023-07-13 12:41:34.263997785 +0200
++++ ./chardev/char-fe.c	2023-04-19 18:31:47.000000000 +0200
+@@ -31,66 +31,15 @@
+ #include "chardev/char-io.h"
+ #include "chardev-internal.h"
+ 
+-/* heig-vd */
+-#include <sys/ioctl.h>
+-
+-/* The way how to get the Window size back to the guest is to
+- * trap an event as sending the code \254 from the guest and
+- * to query the Window size via ioctl/TIOCGWINSZ and report
+- * back to the guest via the serial line.
+- *
+- * To do that, with the current QEMU release, we get a pointer
+- * to the Chardev dedicated to the "read" channel from the guest.
+- */
+-extern Chardev *__chr_in;
+-
+ int qemu_chr_fe_write(CharBackend *be, const uint8_t *buf, int len)
+ {
+-	Chardev *s = be->chr;
+-
+-	if (!s) {
+-		return 0;
+-	}
+-
+-	/* heig-vd */
+-	/* Our patch to get ws_{row,col} for the host window size */
+-
+-	if (*buf == (uint8_t) '\254') {
+-		char winsz;
+-		struct winsize {
+-			unsigned short ws_row;
+-			unsigned short ws_col;
+-			unsigned short ws_xpixel;   /* unused */
+-			unsigned short ws_ypixel;   /* unused */
+-		} ws;
+-
+-		MuxChardev *d = MUX_CHARDEV(__chr_in);
+-		CharBackend *be_read = d->backends[1];
+-
+-
+-		/* If we receive a '\254' char code from the emulated code, i.e. from the SO3 kernel, we
+-		 * query the window dimension in order to propagate it to upside.
+-		 * The guest *must* read two bytes separately.
+-		 */
+-
+-		ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+-
+-		/* This magic call is inspired from char-mux.c which processes
+-		 * the char to PL011 uart interface.
+-		 *
+-		 * easy, huh?
+-		 *
+-		 */
+-		winsz = (char) ws.ws_row;
+-		be_read->chr_read(be_read->opaque, (uint8_t *) &winsz, 1);
+-
+-		winsz = (char) ws.ws_col;
+-		be_read->chr_read(be_read->opaque, (uint8_t *) &winsz, 1);
++    Chardev *s = be->chr;
+ 
+-		return 0;
++    if (!s) {
++        return 0;
++    }
+ 
+-	} else
+-		return qemu_chr_write(s, buf, len, false);
++    return qemu_chr_write(s, buf, len, false);
+ }
+ 
+ int qemu_chr_fe_write_all(CharBackend *be, const uint8_t *buf, int len)
+diff -Naru ../qemu.1/chardev/char-mux.c ./chardev/char-mux.c
+--- ../qemu.1/chardev/char-mux.c	2023-07-13 12:41:42.138804798 +0200
++++ ./chardev/char-mux.c	2023-04-19 18:31:47.000000000 +0200
+@@ -217,11 +217,6 @@
+     return 0;
+ }
+ 
+-/* heig-vd */
+-
+-/* For explanations, see char-fe.c */
+-Chardev *__chr_in;
+-
+ static void mux_chr_read(void *opaque, const uint8_t *buf, int size)
+ {
+     Chardev *chr = CHARDEV(opaque);
+@@ -230,8 +225,6 @@
+     CharBackend *be = d->backends[m];
+     int i;
+ 
+-   __chr_in = chr;
+-
+     mux_chr_accept_input(opaque);
+ 
+     for (i = 0; i < size; i++)
+diff -Naru ../qemu.1/hw/arm/virt.c ./hw/arm/virt.c
+--- ../qemu.1/hw/arm/virt.c	2023-06-30 12:08:10.662279873 +0200
++++ ./hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
+@@ -81,8 +81,6 @@
  #include "hw/char/pl011.h"
  #include "qemu/guest-random.h"
  
-+#include "hw/input/ps2.h"
-+
+-#include "hw/input/ps2.h"
+-
  #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
      static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
                                                      void *data) \
-@@ -144,6 +146,11 @@
+@@ -146,11 +144,6 @@
      [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
      /* This redistributor space allows up to 2*64kB*123 CPUs */
      [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
-+
-+	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
-+	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
-+	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
-+
+-
+-	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
+-	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
+-	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
+-
      [VIRT_UART] =               { 0x09000000, 0x00001000 },
      [VIRT_RTC] =                { 0x09010000, 0x00001000 },
      [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
-@@ -198,6 +205,11 @@
+@@ -205,11 +198,6 @@
      [VIRT_SECURE_UART] = 8,
      [VIRT_ACPI_GED] = 9,
      [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
-+
-+	[VIRT_CLCD] = 35,
-+	[VIRT_KMI0] = 36,
-+	[VIRT_KMI1] = 37,
-+
+-
+-	[VIRT_CLCD] = 35,
+-	[VIRT_KMI0] = 36,
+-	[VIRT_KMI1] = 37,
+-
      [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
      [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
      [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
-@@ -2018,6 +2030,14 @@
+@@ -2030,14 +2018,6 @@
      }
  }
  
-+struct IRQState {
-+    Object parent_obj;
-+
-+    qemu_irq_handler handler;
-+    void *opaque;
-+    int n;
-+};
-+
+-struct IRQState {
+-    Object parent_obj;
+-
+-    qemu_irq_handler handler;
+-    void *opaque;
+-    int n;
+-};
+-
  static void machvirt_init(MachineState *machine)
  {
      VirtMachineState *vms = VIRT_MACHINE(machine);
-@@ -2326,6 +2346,27 @@
+@@ -2346,27 +2326,6 @@
                                 vms->fw_cfg, OBJECT(vms));
      }
  
-+    {
-+    	   MemoryRegion *sysmem = get_system_memory();
-+    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
-+    	   ram_addr_t vram_size;
-+
-+    	   vram_size = 0x800000;
-+
-+    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
-+    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
-+
-+    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
-+
-+    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
-+
-+
-+    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
-+    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
-+
-+    }
-+
+-    {
+-    	   MemoryRegion *sysmem = get_system_memory();
+-    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
+-    	   ram_addr_t vram_size;
+-
+-    	   vram_size = 0x800000;
+-
+-    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
+-    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
+-
+-    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
+-
+-    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
+-    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
+-
+-
+-    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
+-    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
+-
+-    }
+-
      vms->bootinfo.ram_size = machine->ram_size;
      vms->bootinfo.board_id = -1;
      vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
-diff -Naur ../qemu.clean/include/hw/arm/virt.h ./include/hw/arm/virt.h
---- ../qemu.clean/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
-+++ ./include/hw/arm/virt.h	2023-06-30 11:36:56.054742478 +0200
-@@ -68,6 +68,11 @@
+diff -Naru ../qemu.1/include/hw/arm/virt.h ./include/hw/arm/virt.h
+--- ../qemu.1/include/hw/arm/virt.h	2023-06-30 12:08:10.662279873 +0200
++++ ./include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
+@@ -68,11 +68,6 @@
      VIRT_GIC_VCPU,
      VIRT_GIC_ITS,
      VIRT_GIC_REDIST,
-+
-+	VIRT_CLCD,
-+	VIRT_KMI0,
-+	VIRT_KMI1,
-+
+-
+-	VIRT_CLCD,
+-	VIRT_KMI0,
+-	VIRT_KMI1,
+-
      VIRT_SMMU,
      VIRT_UART,
      VIRT_MMIO,
+diff -Naru ../qemu.1/qemu.patch ./qemu.patch
+--- ../qemu.1/qemu.patch	1970-01-01 01:00:00.000000000 +0100
++++ ./qemu.patch	2023-07-13 14:42:37.284823955 +0200
+@@ -0,0 +1,215 @@
++diff -Naru ../qemu.1/build.sh ./build.sh
++--- ../qemu.1/build.sh	2023-06-30 12:07:57.819595805 +0200
+++++ ./build.sh	1970-01-01 01:00:00.000000000 +0100
++@@ -1,18 +0,0 @@
++-#!/bin/bash
++-
++-echo Fetching QEMU 8.0.0
++-wget https://download.qemu.org/qemu-8.0.0.tar.xz
++-
++-echo Extracting QEMU tar
++-tar xf qemu-8.0.0.tar.xz
++-
++-echo Moving to its final destination
++-mv qemu-8.0.0/* .
++-rm -rf qemu-8.0.0
++-
++-echo Patching
++-patch -p1 < qemu.patch
++-
++-echo Removing the tar file
++-rm qemu-8.0.0.tar.xz
++-
++diff -Naru ../qemu.1/chardev/char-fe.c ./chardev/char-fe.c
++--- ../qemu.1/chardev/char-fe.c	2023-07-13 12:41:34.263997785 +0200
+++++ ./chardev/char-fe.c	2023-04-19 18:31:47.000000000 +0200
++@@ -31,66 +31,15 @@
++ #include "chardev/char-io.h"
++ #include "chardev-internal.h"
++ 
++-/* heig-vd */
++-#include <sys/ioctl.h>
++-
++-/* The way how to get the Window size back to the guest is to
++- * trap an event as sending the code \254 from the guest and
++- * to query the Window size via ioctl/TIOCGWINSZ and report
++- * back to the guest via the serial line.
++- *
++- * To do that, with the current QEMU release, we get a pointer
++- * to the Chardev dedicated to the "read" channel from the guest.
++- */
++-extern Chardev *__chr_in;
++-
++ int qemu_chr_fe_write(CharBackend *be, const uint8_t *buf, int len)
++ {
++-	Chardev *s = be->chr;
++-
++-	if (!s) {
++-		return 0;
++-	}
++-
++-	/* heig-vd */
++-	/* Our patch to get ws_{row,col} for the host window size */
++-
++-	if (*buf == (uint8_t) '\254') {
++-		char winsz;
++-		struct winsize {
++-			unsigned short ws_row;
++-			unsigned short ws_col;
++-			unsigned short ws_xpixel;   /* unused */
++-			unsigned short ws_ypixel;   /* unused */
++-		} ws;
++-
++-		MuxChardev *d = MUX_CHARDEV(__chr_in);
++-		CharBackend *be_read = d->backends[1];
++-
++-
++-		/* If we receive a '\254' char code from the emulated code, i.e. from the SO3 kernel, we
++-		 * query the window dimension in order to propagate it to upside.
++-		 * The guest *must* read two bytes separately.
++-		 */
++-
++-		ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
++-
++-		/* This magic call is inspired from char-mux.c which processes
++-		 * the char to PL011 uart interface.
++-		 *
++-		 * easy, huh?
++-		 *
++-		 */
++-		winsz = (char) ws.ws_row;
++-		be_read->chr_read(be_read->opaque, (uint8_t *) &winsz, 1);
++-
++-		winsz = (char) ws.ws_col;
++-		be_read->chr_read(be_read->opaque, (uint8_t *) &winsz, 1);
+++    Chardev *s = be->chr;
++ 
++-		return 0;
+++    if (!s) {
+++        return 0;
+++    }
++ 
++-	} else
++-		return qemu_chr_write(s, buf, len, false);
+++    return qemu_chr_write(s, buf, len, false);
++ }
++ 
++ int qemu_chr_fe_write_all(CharBackend *be, const uint8_t *buf, int len)
++diff -Naru ../qemu.1/chardev/char-mux.c ./chardev/char-mux.c
++--- ../qemu.1/chardev/char-mux.c	2023-07-13 12:41:42.138804798 +0200
+++++ ./chardev/char-mux.c	2023-04-19 18:31:47.000000000 +0200
++@@ -217,11 +217,6 @@
++     return 0;
++ }
++ 
++-/* heig-vd */
++-
++-/* For explanations, see char-fe.c */
++-Chardev *__chr_in;
++-
++ static void mux_chr_read(void *opaque, const uint8_t *buf, int size)
++ {
++     Chardev *chr = CHARDEV(opaque);
++@@ -230,8 +225,6 @@
++     CharBackend *be = d->backends[m];
++     int i;
++ 
++-   __chr_in = chr;
++-
++     mux_chr_accept_input(opaque);
++ 
++     for (i = 0; i < size; i++)
++diff -Naru ../qemu.1/hw/arm/virt.c ./hw/arm/virt.c
++--- ../qemu.1/hw/arm/virt.c	2023-06-30 12:08:10.662279873 +0200
+++++ ./hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
++@@ -81,8 +81,6 @@
++ #include "hw/char/pl011.h"
++ #include "qemu/guest-random.h"
++ 
++-#include "hw/input/ps2.h"
++-
++ #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
++     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
++                                                     void *data) \
++@@ -146,11 +144,6 @@
++     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
++     /* This redistributor space allows up to 2*64kB*123 CPUs */
++     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
++-
++-	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
++-	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
++-	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
++-
++     [VIRT_UART] =               { 0x09000000, 0x00001000 },
++     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
++     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
++@@ -205,11 +198,6 @@
++     [VIRT_SECURE_UART] = 8,
++     [VIRT_ACPI_GED] = 9,
++     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
++-
++-	[VIRT_CLCD] = 35,
++-	[VIRT_KMI0] = 36,
++-	[VIRT_KMI1] = 37,
++-
++     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
++     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
++     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
++@@ -2030,14 +2018,6 @@
++     }
++ }
++ 
++-struct IRQState {
++-    Object parent_obj;
++-
++-    qemu_irq_handler handler;
++-    void *opaque;
++-    int n;
++-};
++-
++ static void machvirt_init(MachineState *machine)
++ {
++     VirtMachineState *vms = VIRT_MACHINE(machine);
++@@ -2346,27 +2326,6 @@
++                                vms->fw_cfg, OBJECT(vms));
++     }
++ 
++-    {
++-    	   MemoryRegion *sysmem = get_system_memory();
++-    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
++-    	   ram_addr_t vram_size;
++-
++-    	   vram_size = 0x800000;
++-
++-    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
++-    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
++-
++-    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
++-
++-    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
++-    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
++-
++-
++-    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
++-    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
++-
++-    }
++-
++     vms->bootinfo.ram_size = machine->ram_size;
++     vms->bootinfo.board_id = -1;
++     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
++diff -Naru ../qemu.1/include/hw/arm/virt.h ./include/hw/arm/virt.h
++--- ../qemu.1/include/hw/arm/virt.h	2023-06-30 12:08:10.662279873 +0200
+++++ ./include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
++@@ -68,11 +68,6 @@
++     VIRT_GIC_VCPU,
++     VIRT_GIC_ITS,
++     VIRT_GIC_REDIST,
++-
++-	VIRT_CLCD,
++-	VIRT_KMI0,
++-	VIRT_KMI1,
++-
++     VIRT_SMMU,
++     VIRT_UART,
++     VIRT_MMIO,
+diff -Naru ../qemu.1/README.so3 ./README.so3
+--- ../qemu.1/README.so3	2023-06-30 11:58:34.522430073 +0200
++++ ./README.so3	1970-01-01 01:00:00.000000000 +0100
+@@ -1,19 +0,0 @@
+-Read the documentation in qemu-doc.html or on http://wiki.qemu.org
+-
+-- QEMU team
+-
+-- Need the SDL library
+-sudo apt-get install libsdl1.2-dev
+-
+-Configure options:
+-
+-AArch32 version:
+-
+-./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
+-
+-AArch64 version:
+-
+-./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
+-
+-
+-
