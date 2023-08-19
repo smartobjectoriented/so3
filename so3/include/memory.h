@@ -40,15 +40,6 @@
 
 #ifndef __ASSEMBLY__
 
-#ifdef CONFIG_SO3VIRT
-
-extern addr_t avz_guest_phys_offset;
-
-#undef CONFIG_RAM_BASE
-#define CONFIG_RAM_BASE	avz_guest_phys_offset
-
-#endif
-
 extern struct list_head io_maplist;
 
 /* Manage the io_maplist. The list is sorted by ascending vaddr. */
@@ -60,6 +51,10 @@ typedef struct {
 	struct list_head list;
 } io_map_t;
 
+/*
+ * mem_info structure which contains the information from the <memory> node
+ * of the device tree.
+ */
 struct mem_info {
 	addr_t phys_base;
 	unsigned long size;
@@ -114,8 +109,8 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state);
 
 #define ipa_to_lva(memslot, ipa)	(__lva(ipa_to_phys(memslot, ipa)))
 
-#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + ((addr_t) CONFIG_RAM_BASE))
-#define __va(paddr) (((addr_t) paddr) - ((addr_t) CONFIG_RAM_BASE) + CONFIG_KERNEL_VADDR)
+#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + mem_info.phys_base)
+#define __va(paddr) (((addr_t) paddr) - mem_info.phys_base + CONFIG_KERNEL_VADDR)
 
 #define page_to_pfn(page) ((addr_t) ((addr_t) (page - frame_table) + pfn_start))
 #define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
@@ -160,7 +155,7 @@ extern int __irq_safe[];
 
 extern struct domain *idle_domain[];
 
-void early_memory_init(void);
+void early_memory_init(void *fdt_paddr);
 void memory_init(void);
 
 uint32_t get_kernel_size(void);

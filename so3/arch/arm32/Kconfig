@@ -18,9 +18,6 @@ choice
  		
 endchoice
 
-source "arch/arm32/virt32/Kconfig"
-source "arch/arm32/rpi4/Kconfig"
-
 endmenu
 
 endif

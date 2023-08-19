@@ -124,6 +124,8 @@
  * only 64M, the remaining 25M starting at 0x02700000 should allow quite
  * large initrds before they start colliding with U-Boot.
  */
+
+#if 0 /* HEIG-VD/DRE */
 #define ENV_MEM_LAYOUT_SETTINGS \
 	"fdt_high=" FDT_HIGH "\0" \
 	"initrd_high=" INITRD_HIGH "\0" \
@@ -168,12 +170,21 @@
 
 #include <config_distro_bootcmd.h>
 
+#endif /* 0 */
+
+#define CONFIG_BOOTCOMMAND \
+            "fatload mmc 0 0x02000000 uEnv.txt; env import 0x02000000; run start\0\0" \
+            "bootdelay=0\0"
+
+
+#if 0
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"dhcpuboot=usb start; dhcp u-boot.uimg; bootm\0" \
 	ENV_DEVICE_SETTINGS \
 	ENV_DFU_SETTINGS \
 	ENV_MEM_LAYOUT_SETTINGS \
 	BOOTENV
+#endif /* 0 */
 
 
 #endif

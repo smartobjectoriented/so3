@@ -597,15 +597,15 @@ void mmu_configure(addr_t fdt_addr) {
 
 		/* Create an identity mapping of 1 GB on running kernel so that the kernel code can go ahead right after the MMU on */
 #ifdef CONFIG_VA_BITS_48
-		__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
-		set_pte_table(&__sys_root_pgtable[l0pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+		__sys_root_pgtable[l0pte_index(mem_info.phys_base)] = (u64) __sys_idmap_l1pgtable & TTB_L0_TABLE_ADDR_MASK;
+		set_pte_table(&__sys_root_pgtable[l0pte_index(mem_info.phys_base)], DCACHE_WRITEALLOC);
 
-		__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+		__sys_idmap_l1pgtable[l1pte_index(mem_info.phys_base)] = mem_info.phys_base & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(mem_info.phys_base)], DCACHE_WRITEALLOC);
 
 #elif CONFIG_VA_BITS_39
-		__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_RAM_BASE)], DCACHE_WRITEALLOC);
+		__sys_root_pgtable[l1pte_index(mem_info.phys_base)] = mem_info.phys_base & TTB_L1_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_root_pgtable[l1pte_index(mem_info.phys_base)], DCACHE_WRITEALLOC);
 #else
 #error "Wrong VA_BITS configuration."
 #endif
@@ -624,11 +624,11 @@ void mmu_configure(addr_t fdt_addr) {
 		 * a better granularity.
 		 */
 		for (i = 0; i < 32; i++) {
-			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)] = (CONFIG_RAM_BASE + i*SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
+			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)] = (mem_info.phys_base + i*SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
 			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)], DCACHE_WRITEALLOC);
 		}
 #elif CONFIG_VA_BITS_39
-		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = CONFIG_RAM_BASE & TTB_L1_BLOCK_ADDR_MASK;
+		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = mem_info.phys_base & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
 #else
 #error "Wrong VA_BITS configuration."

@@ -327,8 +327,8 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	 */
 
 	/* Create an identity mapping of 1 MB on running kernel so that the kernel code can go ahead right after the MMU on */
-	__pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE;
-	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_RAM_BASE)], L1_SECT_DCACHE_WRITEALLOC);
+	__pgtable[l1pte_index(mem_info.phys_base)] = mem_info.phys_base;
+	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(mem_info.phys_base)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Now, create a linear mapping in the kernel space */
 #ifdef CONFIG_AVZ
@@ -337,7 +337,7 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 #else
 	for (i = 0; i < 64; i++) {
 #endif /* CONFIG_AVZ */
-		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
+		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = mem_info.phys_base + i * TTB_SECT_SIZE;
 
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}

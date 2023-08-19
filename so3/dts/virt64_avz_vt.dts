@@ -47,7 +47,7 @@
 		
 		status = "ok";
 	};
- 
+
 	/* virt64 console UART */
 	serial@09000000 {
 		compatible = "serial,pl011";

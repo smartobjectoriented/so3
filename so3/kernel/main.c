@@ -96,9 +96,6 @@ void *rest_init(void *dummy) {
 
 void kernel_start(void) {
 
-	/* Basic low-level initialization */
-	early_memory_init();
-
 	lprintk("\n\n********** Smart Object Oriented SO3 Operating System **********\n");
 	lprintk("Copyright (c) 2014-2020 REDS Institute, HEIG-VD, Yverdon\n");
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);

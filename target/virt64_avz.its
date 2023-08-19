@@ -30,8 +30,8 @@
             os = "linux";
 			arch = "arm64";
 			compression = "none";
-			load = <0x40000000>;
-			entry = <0x40000000>;
+			load = <0x40080000>;
+			entry = <0x40080000>;
 		};
 		
 		avz_pv_dt {
@@ -43,6 +43,7 @@
 			load = <0x40f00000>;
 		};
 		
+		/* This AVZ DT works with VT support (GIC reg cells number appropriate) */
 		avz_vt_dt {
 			description = "Flattened Device Tree blob";
 			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
@@ -59,8 +60,8 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            load = <0x41000000>;
-			entry = <0x41000000>;
+            load = <0x41080000>;
+			entry = <0x41080000>;
 		};
  
         fdt_so3 {

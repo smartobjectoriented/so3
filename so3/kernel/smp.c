@@ -243,7 +243,7 @@ void smp_init(void)
 	 * The size must be enough to reach the stack.
 	 */
 
-	create_mapping(NULL, CONFIG_RAM_BASE, CONFIG_RAM_BASE, SZ_32M, false);
+	create_mapping(NULL, mem_info.phys_base, mem_info.phys_base, SZ_32M, false);
 
 #ifdef CONFIG_SOO
 

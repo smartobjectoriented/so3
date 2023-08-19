@@ -92,13 +92,9 @@ __start:
   msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
 
   @ Configure address of the vector table
-  adrl 	r1, .LCvectors
-  ldr	r1, [r1]
+  @ The pseudo is using the current PC so we are with the physical address here.
 
-  @ Convert to physical address
-  ldr r8, =(CONFIG_RAM_BASE-CONFIG_KERNEL_VADDR)
-
-  add r1, r1, r8
+  adrl 	r1, __vectors
 
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
@@ -126,6 +122,10 @@ __start:
   add	sp, sp, r8
 
   @ Up to here, a stack should be initialized
+
+  @ Basic low-level initialization
+  @ mov r0, r9
+  bl early_memory_init
 
 #ifdef CONFIG_MMU
 
@@ -168,6 +168,7 @@ mmu_setup:
 #ifdef CONFIG_SO3VIRT
   ldr 	r4, =CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET
 #else
+#warning Make the adaptation to replace CONFIG_RAM_BASE
   ldr	r4, =CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET
 #endif
 
@@ -260,9 +261,6 @@ temp_stack:
   .word secondary_start_kernel
 
 #endif /* CONFIG_SMP */
-
-.LCvectors:
-  .word __vectors_start
 
 .LCsys_root_pgtable:
   .word __sys_root_pgtable

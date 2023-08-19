@@ -767,6 +767,9 @@ int boot_get_loadable(int argc, char *const argv[], bootm_headers_t *images,
 	const char *uname;
 	u8 img_type;
 
+	/* heig-vd */
+	ulong load, entry;
+
 	/* Check to see if the images struct has a FIT configuration */
 	if (!genimg_has_config(images)) {
 		debug("## FIT configuration was not specified\n");
@@ -815,6 +818,24 @@ int boot_get_loadable(int argc, char *const argv[], bootm_headers_t *images,
 				/* Something went wrong! */
 				return fit_img_result;
 			}
+
+			/* heig-vd - Prepare to send information of agency image to the AVZ hypervisor */
+
+			fit_image_get_load(buf, fit_image_get_node(buf, uname), &load);
+			fit_image_get_entry(buf, fit_image_get_node(buf, uname), &entry);
+
+			fdt_add_mem_rsv(images->ft_addr, load, img_len);
+
+			fdt_shrink_to_minimum(images->ft_addr, 128);
+
+			fdt_record_loadable(images->ft_addr, loadables_index, uname,
+					    load, img_len, entry,
+					    fdt_getprop(buf, fit_image_get_node(buf, uname), "type", NULL),
+					    fdt_getprop(buf, fit_image_get_node(buf, uname), "os", NULL),
+						fdt_getprop(buf, fit_image_get_node(buf, uname), "arch", NULL));
+
+
+			/************/
 
 			fit_loadable_process(img_type, img_data, img_len);
 		}
