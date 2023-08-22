@@ -33,8 +33,8 @@
 #ifdef CONFIG_AVZ
 #include <avz/domain.h>
 
-.globl  pseudo_usr_mode
-.globl	hypervisor_stack
+.global  pseudo_usr_mode
+.global	hypervisor_stack
 
 #endif
 

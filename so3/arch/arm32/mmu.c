@@ -299,15 +299,17 @@ void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
  * Initial configuration of system page table
  * MMU is off
  */
-void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
+void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 
-#ifndef CONFIG_SO3VIRT
+#ifdef CONFIG_SO3VIRT
+
+	uint32_t *__pgtable = (uint32_t *) (CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET);
+
+#else /* CONFIG_SO3VIRT */
+
 	unsigned int i;
-#endif /* CONFIG_SO3VIRT */
 
-	uint32_t *__pgtable = (uint32_t *) l1pgtable;
-
-#ifndef CONFIG_SO3VIRT
+	uint32_t *__pgtable = (uint32_t *) (phys_base + TTB_L1_SYS_OFFSET);
 
 	icache_disable();
 	dcache_disable();
@@ -326,9 +328,11 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	 * Otherwise, strex has weird behaviour -> updated memory resulting with the value of 1 in the destination register (failure).
 	 */
 
-	/* Create an identity mapping of 1 MB on running kernel so that the kernel code can go ahead right after the MMU on */
-	__pgtable[l1pte_index(mem_info.phys_base)] = mem_info.phys_base;
-	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(mem_info.phys_base)], L1_SECT_DCACHE_WRITEALLOC);
+	/* Create an identity mapping of 1 MB on running kernel so that the kernel code can go ahead right after the MMU on.
+	 * Do not forget that the stack must be reachable within this 1 MB range.
+	 */
+	__pgtable[l1pte_index(phys_base)] = phys_base;
+	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(phys_base)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Now, create a linear mapping in the kernel space */
 #ifdef CONFIG_AVZ
@@ -337,7 +341,7 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 #else
 	for (i = 0; i < 64; i++) {
 #endif /* CONFIG_AVZ */
-		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = mem_info.phys_base + i * TTB_SECT_SIZE;
+		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = phys_base + i * TTB_SECT_SIZE;
 
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
