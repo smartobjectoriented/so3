@@ -1,0 +1,37 @@
+
+
+QEMU for SO3 environment
+(c) 2013 HEIG-VD, REDS Institute
+################################
+
+Pre-requisite
+=============
+
+Install the SDL library with the following command:
+
+sudo apt-get install libsdl1.2-dev
+
+
+Build
+=====
+
+Launch ./build.sh to fetch QEMU 8.0.0 and to apply the path for framebuffer and input support.
+
+QEMU Configuration and compilation
+==================================
+
+Configure options:
+
+AArch32 version:
+
+./configure --target-list=arm-softmmu --disable-attr --disable-werror --disable-docs
+
+AArch64 version:
+
+./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
+
+To build:
+
+make -j<#cpus>
+
+
