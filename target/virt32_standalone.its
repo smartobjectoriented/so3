@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Kernel and rootfs components for virt32 environment";
+
+	images {
+
+		so3 {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
+			type = "kernel";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <0x40008000>;
+			entry = <0x40008000>;
+		};
+                
+		fdt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../so3/dts/virt32.dtb");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			load = <0x44a00000>;
+
+		};	
+
+                ramfs {
+                        description = "SO3 environment minimal rootfs";
+                        data = /incbin/("../rootfs/board/virt32/rootfs.fat");
+                        type = "ramdisk";
+                        arch = "arm";
+                        os = "linux";
+                        compression = "none";
+                        load = <0x44c00000>;
+                };
+
+
+    };
+	configurations {
+		default = "so3_ramfs";
+                
+		so3_ramfs {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+                        ramdisk = "ramfs"; 
+		};
+                
+                so3_mmc {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
+		};
+	};
+};

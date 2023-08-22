@@ -301,11 +301,7 @@ void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
  */
 void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 
-#ifdef CONFIG_SO3VIRT
-
-	uint32_t *__pgtable = (uint32_t *) (CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET);
-
-#else /* CONFIG_SO3VIRT */
+#ifndef CONFIG_SO3VIRT
 
 	unsigned int i;
 
@@ -346,8 +342,6 @@ void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
 
-#endif /* !CONFIG_SO3VIRT */
-
 	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
 	__pgtable[l1pte_index(fdt_addr)] = fdt_addr;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(fdt_addr)], L1_SECT_DCACHE_WRITEALLOC);
@@ -355,8 +349,6 @@ void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 	/* Early mapping I/O for UART */
 	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
-
-#ifndef CONFIG_SO3VIRT
 
 #ifdef CONFIG_AVZ
 	}
@@ -366,7 +358,6 @@ void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 
 	dcache_enable();
 	icache_enable();
-#else
 
 	mmu_page_table_flush((uint32_t) __pgtable, (uint32_t) (__pgtable + TTB_L1_ENTRIES));
 
@@ -424,9 +415,12 @@ void *new_root_pgtable(void) {
 	memset(pgtable, 0, 4 * TTB_L1_ENTRIES);
 
 #ifdef CONFIG_SO3VIRT
+
 	/* Let's copy 12 MB of hypervisor */
+
 	for (i = 0; i < 12; i++)
-		*l1pte_offset((u32 *) pgtable+i, avz_shared->hypervisor_vaddr) = *l1pte_offset((u32 *) __sys_root_pgtable+i, avz_shared->hypervisor_vaddr);
+		*l1pte_offset((u32 *) pgtable + i, avz_shared->hypervisor_vaddr) =
+			*l1pte_offset((u32 *) __sys_root_pgtable + i, avz_shared->hypervisor_vaddr);
 #endif
 
 	return pgtable;

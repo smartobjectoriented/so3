@@ -139,12 +139,10 @@ cont:
 #endif /* CONFIG_MMU */
 
 __kernel_main:
+
   @ Basic low-level initialization
   mov 	r0, r9
   bl 	early_memory_init
-
-  ldr	r0, =__fdt_addr
-  str	r9, [r0]
 
 #if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
   bl 	avz_setup
@@ -171,9 +169,7 @@ mmu_setup:
   add	r0, r8, #CONFIG_KERNEL_VADDR
   mov	r1, r9 @ fdt addr
 
-#ifndef CONFIG_SO3VIRT
   bl 	mmu_configure
-#endif
 
   @ Readjust the stack
   ldr	sp, =__stack_top
