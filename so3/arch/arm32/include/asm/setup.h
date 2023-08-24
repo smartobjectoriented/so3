@@ -19,21 +19,6 @@
 #ifndef ASM_SETUP_H
 #define ASM_SETUP_H
 
-/*
- * Memory map description
- */
-#define NR_BANKS 8
-
-struct meminfo {
-	int nr_banks;
-	unsigned long end;
-	struct {
-		unsigned long start;
-		unsigned long size;
-		int           node;
-	} bank[NR_BANKS];
-};
-
 extern struct meminfo meminfo;
 
 extern addr_t __cpu1_stack[];

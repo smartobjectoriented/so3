@@ -68,7 +68,7 @@ static void init_baseaddr_2nd_bitmap(void) {
 static void set_baseaddr_2nd_bitmap(unsigned int baseaddr) {
 	unsigned int pos, mod;
 
-	baseaddr = (baseaddr - (CONFIG_RAM_BASE + (heap_base_vaddr - CONFIG_KERNEL_VADDR))) >> 10;
+	baseaddr = (baseaddr - (mem_info.phys_base + (heap_base_vaddr - CONFIG_KERNEL_VADDR))) >> 10;
 
 	pos = baseaddr >> 3;
 	mod = baseaddr % 8;
@@ -82,7 +82,7 @@ static void set_baseaddr_2nd_bitmap(unsigned int baseaddr) {
 static unsigned int is_set_baseaddr_2nd_bitmap(unsigned int baseaddr) {
 	unsigned int pos, mod;
 
-	baseaddr = (baseaddr - (CONFIG_RAM_BASE + (heap_base_vaddr - CONFIG_KERNEL_VADDR))) >> 10;
+	baseaddr = (baseaddr - (mem_info.phys_base + (heap_base_vaddr - CONFIG_KERNEL_VADDR))) >> 10;
 
 	pos = baseaddr >> 3;
 	mod = baseaddr % 8;

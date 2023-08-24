@@ -102,7 +102,7 @@
 
 	b __start  // To be compliant with reset vector (unavailable in aarch64)
 
-.align 11
+.align 12
 ENTRY(__vectors)
 
 	// Current EL with SP0 / Synchronous

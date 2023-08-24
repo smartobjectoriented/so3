@@ -28,7 +28,7 @@
 #include <avz/uapi/avz.h>
 
 avz_shared_t *avz_shared = (avz_shared_t *) 0xbeef;
-addr_t avz_guest_phys_offset;
+
 void (*__printch)(char c);
 
 volatile uint32_t *HYPERVISOR_hypercall_addr;
@@ -40,7 +40,6 @@ volatile uint32_t *HYPERVISOR_hypercall_addr;
  */
 void avz_setup(void) {
 
-	avz_guest_phys_offset = avz_shared->dom_phys_offset;
 	__printch = avz_shared->printch;
 
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;

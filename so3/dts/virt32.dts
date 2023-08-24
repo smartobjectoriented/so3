@@ -32,7 +32,7 @@
 
 	memory {
 		device_type = "memory";
-		reg = <0x40000000 0x20000000>; /* 512 MB */
+		reg = <0x41000000 0x20000000>; /* 512 MB */
 	};
 	
 	agency {
@@ -42,7 +42,7 @@
 	fw-cfg@9020000 {
 		reg = <0x9020000 0x18>;
 		compatible = "qemu,fw-cfg-mmio";
-		status = "ok";
+		status = "disabled";
 	};
 	
 	/* GIC interrupt controller */

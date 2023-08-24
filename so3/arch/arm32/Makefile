@@ -5,6 +5,7 @@ obj-y += cache_v7_asm.o cache_v7.o cache-cp15.o
 obj-y += thread.o ptrace.o
 obj-y += vfp.o
 obj-y += backtrace.o backtrace_asm.o
+obj-y += smccc-call.o
 
 obj-y += lib/
 

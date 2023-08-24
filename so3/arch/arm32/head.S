@@ -34,15 +34,10 @@
 .extern clear_bss
 .extern mmu_configure
 .extern __stack_top
-.extern __vectors_start
+.extern __vectors
 .extern __bss_start, __bss_end
 
-#ifdef CONFIG_SO3VIRT
-.extern avz_start_info
-#endif /* CONFIG_SO3VIRT */
-
 .section ".head.text","ax"
-
 
 /*
  * Helper macro to enter SVC mode cleanly and mask interrupts. reg is
@@ -91,15 +86,22 @@ __start:
 
   msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
 
+  @ Determine the offset to use for converting virtual to physical (virtual address compiled)
+  ldr  r8, =__virtaddr
+  sub  r8, pc, r8
+
+  b cont
+
+__virtaddr:
+	.word
+
+cont:
+
   @ Configure address of the vector table
-  adrl 	r1, .LCvectors
-  ldr	r1, [r1]
+  @ The pseudo is using the current PC so we are with the physical address here.
 
-  @ Convert to physical address
-  ldr r8, =(CONFIG_RAM_BASE-CONFIG_KERNEL_VADDR)
-
-  add r1, r1, r8
-
+  ldr 	r1, =__vectors
+  add	r1, r1, r8
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
 #endif
@@ -121,8 +123,10 @@ __start:
   @ Preserve the (physical address of) device tree base in r9
   mov 	r9, r2
 
-  @ Initialize stack pointers for current mode (normal case if no MMU is used)
-  ldr  	sp, =__stack_top
+  @ Take a initial stack not too far away from this code (see comment below)
+  ldr  	sp, =temp_stack
+
+  @ And convert to physical address
   add	sp, sp, r8
 
   @ Up to here, a stack should be initialized
@@ -130,19 +134,20 @@ __start:
 #ifdef CONFIG_MMU
 
   @ Set up the MMU and other flags of the system control register
-  b		mmu_setup
+  b	mmu_setup
 
 #endif /* CONFIG_MMU */
 
 __kernel_main:
 
-  ldr	r0, =__fdt_addr
-  str	r9, [r0]
+  @ Basic low-level initialization
+  mov 	r0, r9
+  bl 	early_memory_init
 
 #if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
-  bl avz_setup
+  bl 	avz_setup
 #else
-  bl setup_arch
+  bl 	setup_arch
 #endif
 
   @ C main entry point
@@ -161,22 +166,10 @@ __kernel_main:
 
 mmu_setup:
 
-  @ Use a temporary stack
-  adrl	sp, temp_stack
-
-  @ Refer to the 1st-level page table
-#ifdef CONFIG_SO3VIRT
-  ldr 	r4, =CONFIG_KERNEL_VADDR + TTB_L1_SYS_OFFSET
-#else
-  ldr	r4, =CONFIG_RAM_BASE + TTB_L1_SYS_OFFSET
-#endif
-
-  mov	r0, r4
+  add	r0, r8, #CONFIG_KERNEL_VADDR
   mov	r1, r9 @ fdt addr
 
-#ifndef CONFIG_SO3VIRT
   bl 	mmu_configure
-#endif
 
   @ Readjust the stack
   ldr	sp, =__stack_top
@@ -188,7 +181,7 @@ mmu_setup:
   ldr	r0, =.LCvirt_entry
   ldr	pc, [r0]
 
- #endif /* CONFIG_MMU */
+#endif /* CONFIG_MMU */
 
 #ifdef CONFIG_SMP
 
@@ -246,7 +239,10 @@ __fdt_addr:
 
 .align 13
 
-@ Before MMU is enabled, we cannot refer to the normal stack as declared in the linker script
+@ Before MMU is enabled, we cannot refer to the normal stack as declared 
+@ in the linker script because the stack is too far away from this code
+@ and will not be within the 1-MB direct mapping after the MMU is enabled.
+
 temp_stack_bottom:
 	.space 4096
 temp_stack:
@@ -260,9 +256,6 @@ temp_stack:
   .word secondary_start_kernel
 
 #endif /* CONFIG_SMP */
-
-.LCvectors:
-  .word __vectors_start
 
 .LCsys_root_pgtable:
   .word __sys_root_pgtable

@@ -299,15 +299,13 @@ void release_mapping(void *pgtable, addr_t virt_base, uint32_t size) {
  * Initial configuration of system page table
  * MMU is off
  */
-void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
+void mmu_configure(addr_t phys_base, addr_t fdt_addr) {
 
 #ifndef CONFIG_SO3VIRT
+
 	unsigned int i;
-#endif /* CONFIG_SO3VIRT */
 
-	uint32_t *__pgtable = (uint32_t *) l1pgtable;
-
-#ifndef CONFIG_SO3VIRT
+	uint32_t *__pgtable = (uint32_t *) (phys_base + TTB_L1_SYS_OFFSET);
 
 	icache_disable();
 	dcache_disable();
@@ -326,9 +324,11 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	 * Otherwise, strex has weird behaviour -> updated memory resulting with the value of 1 in the destination register (failure).
 	 */
 
-	/* Create an identity mapping of 1 MB on running kernel so that the kernel code can go ahead right after the MMU on */
-	__pgtable[l1pte_index(CONFIG_RAM_BASE)] = CONFIG_RAM_BASE;
-	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_RAM_BASE)], L1_SECT_DCACHE_WRITEALLOC);
+	/* Create an identity mapping of 1 MB on running kernel so that the kernel code can go ahead right after the MMU on.
+	 * Do not forget that the stack must be reachable within this 1 MB range.
+	 */
+	__pgtable[l1pte_index(phys_base)] = phys_base;
+	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(phys_base)], L1_SECT_DCACHE_WRITEALLOC);
 
 	/* Now, create a linear mapping in the kernel space */
 #ifdef CONFIG_AVZ
@@ -337,12 +337,10 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 #else
 	for (i = 0; i < 64; i++) {
 #endif /* CONFIG_AVZ */
-		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = CONFIG_RAM_BASE + i * TTB_SECT_SIZE;
+		__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i] = phys_base + i * TTB_SECT_SIZE;
 
 		set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_KERNEL_VADDR) + i], L1_SECT_DCACHE_WRITEALLOC);
 	}
-
-#endif /* !CONFIG_SO3VIRT */
 
 	/* At the moment, we keep a virtual mapping on the device tree - fdt_addr contains the physical address. */
 	__pgtable[l1pte_index(fdt_addr)] = fdt_addr;
@@ -352,8 +350,6 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 	__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR;
 	set_l1_pte_sect_dcache(&__pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], L1_SECT_DCACHE_OFF);
 
-#ifndef CONFIG_SO3VIRT
-
 #ifdef CONFIG_AVZ
 	}
 #endif /* CONFIG_AVZ */
@@ -362,7 +358,6 @@ void mmu_configure(addr_t l1pgtable, addr_t fdt_addr) {
 
 	dcache_enable();
 	icache_enable();
-#else
 
 	mmu_page_table_flush((uint32_t) __pgtable, (uint32_t) (__pgtable + TTB_L1_ENTRIES));
 
@@ -420,9 +415,12 @@ void *new_root_pgtable(void) {
 	memset(pgtable, 0, 4 * TTB_L1_ENTRIES);
 
 #ifdef CONFIG_SO3VIRT
+
 	/* Let's copy 12 MB of hypervisor */
+
 	for (i = 0; i < 12; i++)
-		*l1pte_offset((u32 *) pgtable+i, avz_shared->hypervisor_vaddr) = *l1pte_offset((u32 *) __sys_root_pgtable+i, avz_shared->hypervisor_vaddr);
+		*l1pte_offset((u32 *) pgtable + i, avz_shared->hypervisor_vaddr) =
+			*l1pte_offset((u32 *) __sys_root_pgtable + i, avz_shared->hypervisor_vaddr);
 #endif
 
 	return pgtable;

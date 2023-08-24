@@ -45,13 +45,14 @@
 # define BOOT_TARGET_DHCP(func)
 #endif
 
+#if 0 /* EDGEMTech */
+
 #define BOOT_TARGET_DEVICES(func) \
 	BOOT_TARGET_USB(func) \
 	BOOT_TARGET_SCSI(func) \
 	BOOT_TARGET_VIRTIO(func) \
 	BOOT_TARGET_DHCP(func)
 
-#if 0 /* SOO.tech */
 #include <config_distro_bootcmd.h>
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -70,9 +71,8 @@
 		"serverip=10.0.2.2\0" \
 		"ipaddr=10.0.2.15\0" \
 		"console=ttyAMA0,38400n8\0" \
-		"go=tftp target/vexpress.itb;bootm\0" \
-		"dram=1024M\0" \
-		"bootargs=console=\"ttyAMA0,38400n1\"\0"
+		"go=tftp target/virt32.itb;bootm\0" \
+		"dram=1024M\0"
 
 #define CONFIG_SYS_CBSIZE 512
 

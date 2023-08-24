@@ -53,15 +53,20 @@ static uint32_t kernel_size;
 /* Current available I/O range address */
 struct list_head io_maplist;
 
-void early_memory_init(void) {
+void early_memory_init(void *fdt_paddr) {
 	int offset;
 
-#ifdef CONFIG_SO3VIRT
-	__fdt_addr = (void *) __va(__fdt_addr);
-#endif /* CONFIG_SO3VIRT */
-
 	/* Access to device tree */
-	offset = get_mem_info((void *) __fdt_addr, &mem_info);
+#ifdef CONFIG_SO3VIRT
+
+	mem_info.phys_base = avz_shared->dom_phys_offset;
+	mem_info.size = avz_shared->nr_pages << PAGE_SHIFT;
+
+	__fdt_addr = (void *) __va(fdt_paddr);
+#else
+	offset = get_mem_info((void *) fdt_paddr, &mem_info);
+#endif
+
 	if (offset >= 0)
 		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 }
@@ -397,7 +402,7 @@ void frame_table_init(addr_t frame_table_start) {
 	ft_pfn_end = (ft_phys >> PAGE_SHIFT) + ft_pages - 1;
 
 	/* Set the definitive kernel size */
-	kernel_size = ((ft_pfn_end + 1) << PAGE_SHIFT) - CONFIG_RAM_BASE;
+	kernel_size = ((ft_pfn_end + 1) << PAGE_SHIFT) - mem_info.phys_base;
 
 	/* First available pfn (right after the frame table) */
 	pfn_start = __pa(frame_table) >> PAGE_SHIFT;
@@ -450,7 +455,7 @@ void memory_init(void) {
 	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) = *((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
 #endif
 
-	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, CONFIG_RAM_BASE, get_kernel_size(), false);
+	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, mem_info.phys_base, get_kernel_size(), false);
 
 	/* Mapping UART I/O for debugging purposes */
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);

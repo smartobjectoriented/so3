@@ -60,7 +60,7 @@
 #define MAX_NODE_SIZE 		128
 #define MAX_SUBNODE		4
 
-/* Reference to the current device tree */
+/* Virtual address of the current device tree */
 extern void *__fdt_addr;
 
 int fdt_find_compatible_node(void *fdt_addr, char *compat);

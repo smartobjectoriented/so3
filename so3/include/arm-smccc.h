@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  *
  */
-#ifndef __LINUX_ARM_SMCCC_H
-#define __LINUX_ARM_SMCCC_H
+#ifndef __ARM_SMCCC_H
+#define __ARM_SMCCC_H
 
 #include <const.h>
 
@@ -292,4 +292,4 @@ void __arm_smccc_hvc(unsigned long a0, unsigned long a1,
 #define arm_smccc_1_1_hvc(...)	__arm_smccc_1_1(SMCCC_HVC_INST, __VA_ARGS__)
 
 #endif /*__ASSEMBLY__*/
-#endif /*__LINUX_ARM_SMCCC_H*/
+#endif /*__ARM_SMCCC_H*/
