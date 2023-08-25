@@ -62,9 +62,12 @@ void early_memory_init(void *fdt_paddr) {
 	mem_info.phys_base = avz_shared->dom_phys_offset;
 	mem_info.size = avz_shared->nr_pages << PAGE_SHIFT;
 
-	__fdt_addr = (void *) __va(fdt_paddr);
 #else
 	offset = get_mem_info((void *) fdt_paddr, &mem_info);
+#endif
+
+#ifndef CONFIG_AVZ
+	__fdt_addr = (void *) __va(fdt_paddr);
 #endif
 
 	if (offset >= 0)
@@ -462,9 +465,21 @@ void memory_init(void) {
 
 #ifdef CONFIG_AVZ
 #warning For ARM64VT we still need fo address the ME in the hypervisor...
-	/* Finally, create the agency domain area and for being able to read the device tree. */
+
+#ifdef CONFIG_SOO
+	/* Actually, with SOO, the agency must also be able to access the ME memory area, so we
+	 * need to expand to the total RAM.
+	 */
+	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr,
+		       memslot[MEMSLOT_AVZ].size, false);
+
+#else
+	/* Finally, create the agency domain area and for being able to read the device tree.*/
 	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr,
 		       memslot[MEMSLOT_AGENCY].size, false);
+#endif /* !CONFIG_SOO */
+
+
 #endif /* CONFIG_AVZ */
 
 	/*

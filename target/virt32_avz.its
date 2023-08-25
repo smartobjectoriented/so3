@@ -40,7 +40,7 @@
 			type = "avz_dt";
 			arch = "arm";
 			compression = "none";
-			load = <0x40f00000>;
+			load = <0x40b00000>;
 		};
 		
 		so3 {
@@ -60,7 +60,7 @@
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";
-			load = <0x54a00000>;
+			load = <0x45a00000>;
 
 		};	
 
@@ -71,7 +71,7 @@
             arch = "arm";
             os = "linux";
             compression = "none";
-            load = <0x54c00000>;
+            load = <0x45c00000>;
         };
 
 	};

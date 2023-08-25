@@ -646,58 +646,6 @@ out_irq:
 	eret
 
 
-.align 5
-
-avz_el0_sync_handler:
-
-	kernel_entry
-
-	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_PC]
-
-	mrs		x0, sp_el0
-	str		x0, [sp, #OFFSET_SP]
-
-	mrs		x0, spsr_el1
-	str		x0, [sp, #OFFSET_PSTATE]
-
-	current_cpu	x10
-
-	mov		x1, sp
-	ldr 	x0, .LChypervisor_stack // Get the running hypervisor SVC stack
-	ldr		x0, [x0, x10, lsl #3]
-
-	mov		sp, x0
-	curdom  x10, x12
-	ldr		x12, [x10, #OFFSET_AVZ_SHARED]
-	ldr		x10, [x12, #OFFSET_TRAPS_CALLBACK]
-
-	// Come back on the domain stack
-	mov		sp, x1
-
-	cmp		x10, #0
-	b.eq	out_sync
-
-	// Make sure r0 refers to the base of the stack frame
-	mov		x0, sp
-
-    blr		x10
-
-out_sync:
-
-	ldr		x0, [sp, #OFFSET_PC]
-	msr		elr_el1, x0
-
-	ldr 	x0, [sp, #OFFSET_SP]
-	msr		sp_el0, x0
-
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
-	kernel_exit
-
-	eret
-
 /*
  * The following function is used to restore the migrated domain.
  * Indeed, the receiver environment has not saved anything on its stack regarding

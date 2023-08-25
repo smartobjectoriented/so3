@@ -141,7 +141,18 @@ cont:
 __kernel_main:
 
   @ Basic low-level initialization
-  mov 	r0, r9
+
+  /* The device tree is accessible through a direct mapping */
+
+	mov r0, r9
+
+#ifdef CONFIG_AVZ
+
+  	bl 	__get_avz_fdt_paddr
+	@ r0 now contains the right paddr of the AVZ device tree
+
+#endif /* CONFIG_AVZ */
+
   bl 	early_memory_init
 
 #if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)

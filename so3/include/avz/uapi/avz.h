@@ -92,7 +92,7 @@ struct avz_shared {
 	addr_t domcall_vaddr;
 
 	/* Trap routine in the domain */
-	addr_t traps_vaddr;
+	int (*trap_handle)(cpu_regs_t *);
 
 	addr_t fdt_paddr;
 

@@ -126,22 +126,8 @@ void cpu_init(void) {
  */
 void setup_arch(void) {
 
-#ifndef CONFIG_SO3VIRT
+#ifdef CONFIG_SO3VIRT
 
-#ifndef CONFIG_AVZ
-
-	/* Retrieve information about the main memory (RAM) from the DT */
-	int offset;
-
-	/* Access to device tree */
-	offset = get_mem_info((void *) __fdt_addr, &mem_info);
-	if (offset >= 0)
-		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
-#endif /* CONFIG_AVZ */
-
-#else /* CONFIG_SO3VIRT */
-
-	avz_guest_phys_offset = avz_shared->dom_phys_offset;
 	__printch = avz_shared->printch;
 
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
