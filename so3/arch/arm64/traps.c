@@ -134,6 +134,8 @@ int trap_handle(cpu_regs_t *regs) {
 		local_irq_enable();
 		regs->x0 = syscall_handle(regs->x0, regs->x1, regs->x2, regs->x3);
 		local_irq_disable();
+#else
+		current_domain->avz_shared->trap_handle(regs);
 #endif
 		break;
 
