@@ -19,6 +19,10 @@
 #ifndef ASM_SETUP_H
 #define ASM_SETUP_H
 
+#define L_TEXT_OFFSET	0x8000
+
+#ifndef __ASSEMBLY__
+
 extern struct meminfo meminfo;
 
 extern addr_t __cpu1_stack[];
@@ -26,5 +30,7 @@ extern addr_t __cpu3_stack[];
 
 void setup_arch(void);
 void cpu_init(void);
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* ASM_SETUP_H */

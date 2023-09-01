@@ -168,11 +168,14 @@ ENTRY(__vectors)
 
 	// Lower EL using AArch64 / Synchronous
 	.align 7
+
+	// This vector is concerned with the syscall interrupt.
+
 #ifdef CONFIG_ARM64VT
 	b 		el12_sync_handler
-#else
+#else /* CONFIG_ARM64VT */
 	b 		el01_sync_handler
-#endif
+#endif /* !CONFIG_ARM64VT */
 
 	// Lower EL using AArch64 / IRQ
 	.align 7
@@ -180,13 +183,13 @@ ENTRY(__vectors)
 
 #ifdef CONFIG_ARM64VT
 	b 		el1_2_12_irq_handler
-#else
+#else /* CONFIG_ARM64VT */
 	b 		avz_el01_1_irq_handler
-#endif
+#endif /* !CONFIG_ARM64VT */
 
-#else
+#else /* CONFIG_AVZ */
 	b 		el0_irq_handler
-#endif
+#endif /* !CONFIG_AVZ */
 
 	// Lower EL using AArch64 / FIQ
 	.align 7
@@ -660,7 +663,6 @@ ENTRY(after_migrate_to_user)
 
 	b upcall_path
 
-
 // Hypervisor stack is used for the *current* (running) vcpu svc stack address
 svc_path:
 
@@ -706,6 +708,21 @@ hypervisor_stack:
 
 el01_sync_handler:
 
+// If the syscall interrupt occurs with the SO3-on-avz configuration,
+// the stack frame is built in AVZ (interrupt vector at this level).
+// Hence, the SO3 domain (guest) will just need to preserve the
+// return address and make the local processing.
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	// x0 contains the reference to the stack frame at the entry
+	// of the syscall
+
+	// Preserve the return address from avz call
+	str		lr, [sp, #-8]!
+
+#else
+
 	kernel_entry
 
 	mrs		x0, elr_el1
@@ -720,15 +737,27 @@ el01_sync_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
+#endif
+
     bl 		trap_handle
 
 __ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
-	// Is there any pending signals for this process?
 
+	// Is there any pending signals for this process?
 	check_pending_signal
+
 #endif /* CONFIG_IPC_SIGNAL */
+
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	// Back to avz
+	ldr		lr, [sp], #8
+	ret
+
+#else
 
 	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
@@ -742,6 +771,8 @@ __ret_from_fork:
 	kernel_exit
 
 	eret
+
+#endif
 
 .align  5
 el0_irq_handler:
@@ -810,7 +841,31 @@ ret_from_fork:
 
 	str		xzr, [sp, #OFFSET_X0]
 
+// With the SO3-on-avz configuration, the creation of new process remains
+// identical as other configurations, and prepare the stack frame to
+// be correctly processed along the upcall path, even if, for such a configuration,
+// the guest does not handle the stack frame (see the sync interrupt handling below).
+// Therefore, and only for this case, we need to handle that.
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	ldr		x0, [sp, #OFFSET_PC]
+	msr		elr_el1, x0
+
+	ldr 	x0, [sp, #OFFSET_SP]
+	msr		sp_el0, x0
+
+	ldr		x0, [sp, #OFFSET_PSTATE]
+	msr		spsr_el1, x0
+
+	kernel_exit
+
+	eret
+
+#else
 	b		__ret_from_fork
+#endif
+
 
 // IRQs are off
 // ARM EABI: the syscall nr is stored in x8
@@ -985,3 +1040,5 @@ ENTRY(avz_vector_callback)
 	eret
 
 #endif
+
+

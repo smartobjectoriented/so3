@@ -1,22 +1,30 @@
 #
-# Automatically generated file; DO NOT EDIT.
-# SO3 Configuration
+# Automatically generated make config: don't edit
+# SO3 Polymorphic OS Configuration
 #
 CONFIG_ARCH_ARM32=y
 # CONFIG_ARCH_ARM64 is not set
+CONFIG_SO3VIRT=y
 CONFIG_ARCH="arm32"
-CONFIG_CROSS_COMPILE="arm-none-linux-gnueabihf-"
+CONFIG_CROSS_COMPILE="arm-none-eabi-"
+# CONFIG_ARM_TRUSTZONE is not set
 
 #
 # Platform
 #
-# CONFIG_VEXPRESS is not set
+CONFIG_KERNEL_VADDR=0xc0000000
+CONFIG_VIRT32=y
 # CONFIG_RPI4 is not set
-CONFIG_SO3VIRT=y
-# end of Platform
-
 # CONFIG_THREAD_ENV is not set
 CONFIG_PROC_ENV=y
+
+#
+# Kernel & CPU features
+#
+# CONFIG_SMP is not set
+CONFIG_NR_CPUS=4
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
 
 #
 # SO3 Scheduling configuration
@@ -24,34 +32,37 @@ CONFIG_PROC_ENV=y
 CONFIG_SCHED_RR=y
 # CONFIG_SCHED_PRIO is not set
 CONFIG_SCHED_FREQ_PREEMPTION=y
-# end of SO3 Scheduling configuration
 
 #
 # Drivers
 #
 CONFIG_UART=y
+CONFIG_IO_MAPPING_BASE=0xe0000000
 # CONFIG_I2C is not set
 # CONFIG_NET is not set
 # CONFIG_FB is not set
 # CONFIG_INPUT is not set
-# CONFIG_DW_APB_UART is not set
-CONFIG_SO3VIRT_SERIAL=y
+# CONFIG_NS16550 is not set
+# CONFIG_PL011_UART is not set
+CONFIG_UART_LL_PADDR=0x09000000
+CONFIG_SOO_SERIAL=y
 # CONFIG_MMC is not set
 CONFIG_RAMDEV=y
+# CONFIG_SP804 is not set
 # CONFIG_ARM_TIMER is not set
+CONFIG_SOO_TIMER=y
 # CONFIG_GIC is not set
-CONFIG_VIRQ=y
-# CONFIG_SO3VIRT_FB is not set
-# CONFIG_SO3VIRT_INPUT is not set
-# end of Drivers
+CONFIG_SOO_IRQ=y
+# CONFIG_PL111_CLCD is not set
+# CONFIG_QEMU_RAMFB is not set
+# CONFIG_SOO_FB is not set
+# CONFIG_PL050_KMI is not set
+# CONFIG_SOO_INPUT is not set
 
 #
 # SO3 Applications
 #
 # CONFIG_APP_SAMPLE is not set
-# end of SO3 Applications
-
-CONFIG_KERNEL_VIRT_ADDR=0xc0000000
 
 #
 # Filesystems
@@ -60,14 +71,18 @@ CONFIG_FS_FAT=y
 # CONFIG_ROOTFS_NONE is not set
 # CONFIG_ROOTFS_MMC is not set
 CONFIG_ROOTFS_RAMDEV=y
-# end of Filesystems
 
 #
 # IPC
 #
 CONFIG_IPC_SIGNAL=y
 CONFIG_IPC_PIPE=y
-# end of IPC
+CONFIG_HEAP_SIZE=8
+# CONFIG_RTOS is not set
+# CONFIG_AVZ is not set
+CONFIG_SOO=y
+CONFIG_MMU=y
+# CONFIG_DEBUG_PRINTK is not set
 
 #
 # SOO Mobile Entity - Smart Object Oriented subsystem
@@ -78,6 +93,11 @@ CONFIG_SOO_REFSO3=y
 # CONFIG_SOO_AGENCY is not set
 # CONFIG_SOO_NET is not set
 # CONFIG_SOO_LEDCTRL is not set
+# CONFIG_SOO_CHAT is not set
+# CONFIG_SOO_WAGOLED is not set
+# CONFIG_SOO_IUOC is not set
+# CONFIG_SOO_SWITCH_KNX is not set
+# CONFIG_SOO_SWITCH_ENOCEAN is not set
 
 #
 # SOO Mobile Entity frontend drivers
@@ -94,13 +114,9 @@ CONFIG_VUART_FRONTEND=y
 #
 # vnet frontend
 #
-# end of vnet frontend
-
 # CONFIG_VSENSELED_FRONTEND is not set
 # CONFIG_VSENSEJ_FRONTEND is not set
-# end of SOO Mobile Entity frontend drivers
-# end of SOO Mobile Entity - Smart Object Oriented subsystem
-
-# CONFIG_RTOS is not set
-CONFIG_MMU=y
-# CONFIG_DEBUG_PRINTK is not set
+# CONFIG_VENOCEAN_FRONTEND is not set
+# CONFIG_VWAGOLED_FRONTEND is not set
+# CONFIG_VIUOC_FRONTEND is not set
+# CONFIG_VKNX_FRONTEND is not set

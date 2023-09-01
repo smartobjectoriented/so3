@@ -139,6 +139,10 @@ static void restore_domain_migration_info(unsigned int ME_slotID, struct domain 
 
 	*(me->avz_shared) = mig_info->avz_shared;
 
+	/* Check that our signature is valid so that the image transfer should be good. */
+	if (strcmp(me->avz_shared->signature, SOO_ME_SIGNATURE))
+		panic("%s: Cannot find the correct signature in the shared page (" SOO_ME_SIGNATURE ")...\n", __func__);
+
 	me->avz_shared->logbool_ht = logbool_ht;
 
 	/* Update the domID of course */
@@ -533,5 +537,8 @@ void migration_init(soo_hyp_t *op) {
 
 	/* Used for future restore operation */
 	vaddr_start_ME  = (unsigned long) __lva(memslot[slotID].base_paddr);
+
+	DBG("ME base physical address: %lx\n", memslot[slotID].base_paddr);
+	DBG("Agency virtual address of the ME: %lx\n", vaddr_start_ME);
 }
 

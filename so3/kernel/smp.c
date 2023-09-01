@@ -232,9 +232,10 @@ void cpu_up(unsigned int cpu)
 /* Called by boot processor to activate the rest. */
 void smp_init(void)
 {
-#if !defined(CONFIG_SOO) && defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
 	int i;
-#endif
+
+	for (i = 0; i < CONFIG_NR_CPUS; i++)
+		spin_lock_init(&per_cpu(softint_lock, i));
 
 #if defined(CONFIG_AVZ)
 

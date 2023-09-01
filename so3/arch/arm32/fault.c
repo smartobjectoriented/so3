@@ -97,9 +97,3 @@ void dumpregisters(void) {
 	lprintk("## lr_usr: %x\n", *(sp + OFFSET_LR_USR/4));
 
 }
-
-void trap_handle(cpu_regs_t *regs) {
-
-	/* To be implemented */
-
-}

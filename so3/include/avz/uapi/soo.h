@@ -24,6 +24,11 @@
 
 #include <avz/uapi/me_access.h>
 
+/* This signature is used to check the coherency of the ME image, after a migration
+ * or a restoration for example.
+ */
+#define SOO_ME_SIGNATURE	"SooZ"
+
 #define MAX_ME_DOMAINS	5
 
 /* We include the (non-RT & RT) agency domain */

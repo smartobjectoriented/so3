@@ -82,6 +82,7 @@ __start:
   mov   r8, #0
 
 #else /* !CONFIG_SO3VIRT */
+
   safe_svcmode_maskall r9
 
   msr  	cpsr_c, #PSR_F_BIT | PSR_I_BIT | PSR_SVC_MODE @ ensure svc mode and irqs disabled
@@ -219,7 +220,19 @@ ENTRY(secondary_startup)
     ldr		sp, [lr, r7]	   @ get the stack pointer (virt. address)
 	add		sp, sp, lr		   @ convert to phys address.
 
+  	@ Determine the offset to use for converting virtual to physical (virtual address compiled)
+  	ldr  r8, =__secondary_virtaddr
+  	sub  r8, pc, r8
+
+  	b __secondary_cont
+
+__secondary_virtaddr:
+		.word
+__secondary_cont:
+
   	@ Up to here, a stack should be initialized
+
+ 	add	r0, r8, #CONFIG_KERNEL_VADDR
 
   	@ Set up the MMU - The second argument (fdt addr) is not used in this context.
   	bl 	mmu_configure

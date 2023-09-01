@@ -359,6 +359,14 @@ static struct keyhandler dump_timerq_keyhandler = {
  */
 void timer_init(void) {
 
+	int i;
+
+	for (i = 0; i < CONFIG_NR_CPUS; i++) {
+		per_cpu(timers, i).heap = NULL;
+		per_cpu(timers, i).list = NULL;
+		per_cpu(timers, i).running = NULL;
+	}
+
 	register_softirq(TIMER_SOFTIRQ, timer_softirq_action);
 
 	spin_lock_init(&per_cpu(timers, smp_processor_id()).lock);

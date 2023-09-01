@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,6 +21,7 @@
 #include <heap.h>
 #include <initcall.h>
 #include <syscall.h>
+#include <banner.h>
 
 #include <asm/cacheflush.h>
 #include <asm/mmu.h>
@@ -39,16 +40,6 @@
 
 extern volatile uint32_t *HYPERVISOR_hypercall_addr;
 
-#ifdef CONFIG_ARCH_ARM32
-
-void *__guestvectors = NULL;
-
-/* Avoid large area on stack (limited to 1024 bytes */
-
-unsigned char vectors_tmp[PAGE_SIZE];
-
-#endif
-
 int do_presetup_adjust_variables(void *arg)
 {
 	struct DOMCALL_presetup_adjust_variables_args *args = arg;
@@ -57,8 +48,6 @@ int do_presetup_adjust_variables(void *arg)
 	 * We need to readjust this address after migration.
 	 */
 	avz_shared = args->avz_shared;
-
-	avz_guest_phys_offset = avz_shared->dom_phys_offset;
 
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
 
@@ -101,8 +90,6 @@ void avz_setup(void) {
 
 	__printch = avz_shared->printch;
 
-	avz_guest_phys_offset = avz_shared->dom_phys_offset;
-
 	/* Immediately prepare for hypercall processing */
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
 
@@ -110,13 +97,12 @@ void avz_setup(void) {
 
 	lprintk("- Virtual address of printch() function: %lx\n", __printch);
 	lprintk("- Hypercall addr: %lx\n", (addr_t) HYPERVISOR_hypercall_addr);
-	lprintk("- Dom phys offset: %lx\n\n", (addr_t) avz_guest_phys_offset);
+	lprintk("- Dom phys offset: %lx\n\n", (addr_t) mem_info.phys_base);
 
 	__ht_set = (ht_set_t) avz_shared->logbool_ht_set_addr;
 
 	avz_shared->domcall_vaddr = (unsigned long) domcall;
 	avz_shared->vectors_vaddr = (unsigned long) avz_vector_callback;
-	avz_shared->traps_vaddr = (unsigned long) trap_handle;
 
 	virq_init();
 }
@@ -172,47 +158,9 @@ void post_init_setup(void) {
 	/* How create all vbstore entries required by the frontend drivers */
 	vbstore_init_dev_populate();
 
-	printk("SO3  Operating System -- Copyright (c) 2016-2022 REDS Institute (HEIG-VD)\n\n");
+	lprintk("%s", SO3_BANNER);
 
 	DBG("ME running as domain %d\n", ME_domID());
 }
-
-#ifdef CONFIG_ARCH_ARM32
-
-void vectors_setup(void) {
-
- 	/* Make a copy of the existing vectors. The L2 pagetable was allocated by AVZ and cannot be used as such by the guest.
- 	 * Therefore, we will make our own mapping in the guest for this vector page.
- 	 */
- 	memcpy(vectors_tmp, (void *) VECTOR_VADDR, PAGE_SIZE);
-
- 	/* Reset the L1 PTE used for the vector page. */
- 	clear_l1pte(NULL, VECTOR_VADDR);
-
- 	create_mapping(NULL, VECTOR_VADDR, __pa((uint32_t) __guestvectors), PAGE_SIZE, true);
-
- 	memcpy((void *) VECTOR_VADDR, vectors_tmp, PAGE_SIZE);
-
-	/* We need to add handling of swi/svc software interrupt instruction for syscall processing.
-	 * Such an exception is fully processed by the SO3 domain.
-	 */
-	inject_syscall_vector();
-
-	__asm_flush_dcache_range(VECTOR_VADDR, VECTOR_VADDR + PAGE_SIZE);
-	invalidate_icache_all();
-}
-
-void pre_irq_init_setup(void) {
-
-	/* Create a private vector page for the guest vectors */
-	 __guestvectors = memalign(PAGE_SIZE, PAGE_SIZE);
-	BUG_ON(!__guestvectors);
-
-	vectors_setup();
-}
-
-REGISTER_PRE_IRQ_INIT(pre_irq_init_setup)
-
-#endif /* CONFIG_ARCH_ARM32 */
 
 REGISTER_POSTINIT(post_init_setup)

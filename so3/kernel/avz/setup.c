@@ -22,6 +22,7 @@
 #include <smp.h>
 #include <version.h>
 #include <percpu.h>
+#include <initcall.h>
 
 #include <avz/sched.h>
 #include <avz/domain.h>
@@ -85,6 +86,12 @@ void avz_start(void)
 	/* Memory manager subsystem initialization */
 	memory_init();
 
+	percpu_init_areas();
+
+	/* allocate pages for per-cpu areas */
+	for (i = 0; i < CONFIG_NR_CPUS; i++)
+		init_percpu_area(i);
+
 	devices_init();
 
 	timer_init();
@@ -93,13 +100,7 @@ void avz_start(void)
 
 	initialize_keytable();
 
-	percpu_init_areas();
-
 	softirq_init();
-
-	/* allocate pages for per-cpu areas */
-	for (i = 0; i < CONFIG_NR_CPUS; i++)
-		init_percpu_area(i);
 
 	/* Prepare to adapt the serial virtual address at a better location in the I/O space. */
 	console_init_post();

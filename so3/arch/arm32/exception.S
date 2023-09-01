@@ -30,7 +30,10 @@
 #include <syscall.h>
 #include <asm-offsets.h>
 
+#include <asm/setup.h>
+
 #ifdef CONFIG_AVZ
+
 #include <avz/domain.h>
 
 .global  pseudo_usr_mode
@@ -53,8 +56,6 @@
 .extern __data_abort
 .extern __undefined_instruction
 
-.extern do_exit
-.extern schedule_isr
 .extern __check_ptrace_syscall
 .extern sig_check
 .extern __stack_alignment_fault
@@ -86,6 +87,30 @@
 .endm
 
 #endif /* 0 */
+
+/*
+ * The following macros helps to manage the stack pointer when
+ * avz issues a syscall. The first handling is made in avz
+ * and the return address is saved under the stack frame
+ */
+
+.macro SET_REAL_STACK_FRAME
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+	@ The real stack frame base in the interrupt context
+	add 	sp, sp, #8
+#endif
+
+.endm
+
+.macro SET_AVZ_STACK_FRAME
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+	@ To preserve the return address in avz
+	sub 	sp, sp, #8
+#endif
+
+.endm
 
 /* use the special section (.vectors.text), to enable fine-tuning
  * of the placement of this section inside the linker script
@@ -126,14 +151,15 @@ __prepare_sig_handler:
 	tst		sp, #0x7	@ 8-bytes aligned
 	bne		__stack_alignment_fault
 
-	str		sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]	@ save sp
+	str		sp, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_SP)]	@ save sp
+
 	@ Build a new stack frame based on the current
 	sub		sp, sp, #SVC_STACK_FRAME_SIZE
 
 	@ Make sure the spsr is with Thumb de-activated to perform normal execution of the handler
 
 	mov		r1, #PSR_USR_MODE		@ Ensure the handler will run in user mode (situation where
-								@ the current frame inherits from code running in SVC).
+									@ the current frame inherits from code running in SVC).
 
 	str		r1, [sp, #OFFSET_PSR]		@ Save the updated SPSR
 
@@ -155,7 +181,31 @@ __prepare_sig_handler:
 	ldr 	r0, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
 	str		r0, [sp, #OFFSET_SP_USR]
 
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	@ We shortcut the return to avz for this kind of processing.
+	@ The signal handler can be called directly from here.
+	@ It will return back to the kernel via the sigreturn() syscall.
+
+    ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+    msr		spsr, lr
+
+	@ Restoring user mode registers (sp_usr, lr_usr)
+	add		lr, sp, #OFFSET_SP_USR
+	ldmia	lr, {sp, lr}^
+
+ 	ldmia 	sp, {r0-r12}
+	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
+
+	ldmia 	sp, {sp, lr, pc}^
+
+#else
 	mov		pc, lr				@ Back to the caller
+#endif
+
 
 .macro check_pending_signal
 	@ Is there any pending signals for this process?
@@ -174,6 +224,16 @@ __prepare_sig_handler:
 @ ARM EABI: the syscall nr is stored in r7
 .align  5
 syscall_interrupt:
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	@ Preserve the return address of avz
+	str 	lr, [sp, #-8]
+
+	@ Temporary, we let sp unchanged even if we pushed the return address
+	@ since sp will be manipulated by the "standard" handler below.
+
+#else
 
 	@ At the exception entry, the stack must be 8-byte aligned.
 	@ If it is not the case (gcc might not respect the AAPCS convention for optimization purposes),
@@ -195,7 +255,7 @@ syscall_interrupt:
 	str		lr, [sp, #OFFSET_LR]	@ save lr in lr
 	str		lr, [sp, #OFFSET_PC]	@ save lr in pc
 
-	stmia 	sp, {r0-r12}  	@ Store registers
+	stmia 	sp, {r0-r12}  			@ Store registers
 
     mrs 	lr, spsr        		@ Get spsr
 	str		lr, [sp, #OFFSET_PSR]	@ Store spsr
@@ -203,6 +263,16 @@ syscall_interrupt:
 	@ Saving user mode registers (sp_usr, lr_usr)
 	add		lr, sp, #OFFSET_SP_USR
 	stmia	lr, {sp, lr}^
+#endif
+
+#ifdef CONFIG_AVZ
+
+	ldr 	lr, =ME_VOFFSET + L_TEXT_OFFSET
+	add		lr, lr, #0x8   @ SWI interrupt
+
+	blx 	lr
+
+#else /* !CONFIG_AVZ */
 
 	ldr		r0, [sp, #OFFSET_SP_USR]
 	ldr 	r1, .LCcurrent
@@ -212,6 +282,8 @@ syscall_interrupt:
 
 	@ Restore r0-r2
 	ldmia	sp, {r0-r2}
+
+	SET_AVZ_STACK_FRAME
 
 #ifdef CONFIG_MMU
 	@ Give a chance to a ptrace tracer to monitor us (before the syscall)
@@ -229,6 +301,8 @@ syscall_interrupt:
 	cmp		r7, #SYSCALL_SIGRETURN
 	bne		__no_sigreturn
 
+	SET_REAL_STACK_FRAME
+
 	@ Reset the stack frame by removing the one issued from sigreturn
 	add		sp, sp, #SVC_STACK_FRAME_SIZE
 
@@ -243,17 +317,30 @@ __no_sigreturn:
 
 __ret_from_fork:
 
+	SET_REAL_STACK_FRAME
+
 	@ Store the return value on the stack frame
 	cmp		r7, #SYSCALL_SIGRETURN
 	strne	r0, [sp, #OFFSET_R0]
 
+	SET_AVZ_STACK_FRAME
+
 #ifdef CONFIG_IPC_SIGNAL
 	@ Is there any pending signals for this process?
-
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
 
-    ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+#endif /* !CONFIG_AVZ */
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	ldr		lr, [sp], #8
+	mov		pc, lr
+
+#else
+
+	@ get the saved spsr and adjust the stack pointer
+    ldr 	lr, [sp, #OFFSET_PSR]
     msr		spsr, lr
 
 	@ Restoring user mode registers (sp_usr, lr_usr)
@@ -268,12 +355,38 @@ __ret_from_fork:
 
 	ldmia 	sp, {sp, lr, pc}^
 
-
+#endif
 
 @ Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
 	mov		r0, #0
+
+#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
+
+	str		r0, [sp, #OFFSET_R0]
+
+ 	ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
+    msr		spsr, lr
+
+	@ Restoring user mode registers (sp_usr, lr_usr)
+	add		lr, sp, #OFFSET_SP_USR
+	ldmia	lr, {sp, lr}^
+
+ 	ldmia 	sp, {r0-r12}
+	add		sp, sp, #OFFSET_SP
+
+	dsb
+	isb
+
+	ldmia 	sp, {sp, lr, pc}^
+
+#else
+
+#ifndef CONFIG_AVZ
 	b		__ret_from_fork
+#endif
+
+#endif
 
 .align  5
 prefetch_abort:
@@ -425,7 +538,6 @@ hyp_path:
 
 #ifdef CONFIG_IPC_SIGNAL
 	@ Is there any pending signals for this process?
-
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
 

@@ -26,10 +26,9 @@
 #include <sizes.h>
 
 #ifdef CONFIG_AVZ
+
 #define AGENCY_VOFFSET	UL(0xc0000000)
 #define ME_VOFFSET	UL(0xc0000000)
-
-#define L_TEXT_OFFSET	0x8000
 
 #endif
 
