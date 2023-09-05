@@ -78,6 +78,20 @@ u64 __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 		BUG();
 	}
 
+	/* Let us map this DT since it will be accessed by early_memory_init() */
+#ifdef CONFIG_ARCH_ARM32
+	((uint32_t *) __sys_root_pgtable)[l1pte_index(avz_dt_paddr)] = avz_dt_paddr;
+		set_l1_pte_sect_dcache(&((uint32_t *) __sys_root_pgtable)[l1pte_index(avz_dt_paddr)], L1_SECT_DCACHE_WRITEALLOC);
+
+	mmu_page_table_flush((uint32_t) __sys_root_pgtable, (uint32_t) (__sys_root_pgtable + TTB_L1_ENTRIES));
+#endif /* CONFIG_ARM32 */
+
+	/* Assign the agency DT addr to the general __fdt_addr here
+	 * since loadAgency() will need it to parse the complete device tree.
+	 * It will be re-adjusted at the end of loadAgency().
+	 */
+	__fdt_addr = agency_fdt_paddr; /* Mapped as with direct-mapping by mmu_configure() */
+
 	return avz_dt_paddr;
 }
 

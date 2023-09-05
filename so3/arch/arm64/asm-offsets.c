@@ -50,7 +50,6 @@ int main(void)
 
 	DEFINE(OFFSET_HYPERVISOR_CALLBACK,  offsetof(struct avz_shared, vectors_vaddr));
 	DEFINE(OFFSET_DOMCALL_CALLBACK, offsetof(struct avz_shared, domcall_vaddr));
-	DEFINE(OFFSET_TRAPS_CALLBACK, offsetof(struct avz_shared, traps_vaddr));
 
 	DEFINE(OFFSET_G_SP,		 offsetof(struct domain, g_sp));
 

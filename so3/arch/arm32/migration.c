@@ -34,6 +34,7 @@
  The rest of the page table will get fixed directly in the ME using a DOMCALL.
  ------------------------------------------------------------------------------*/
 extern unsigned long vaddr_start_ME;
+
 void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 {
 	struct domain *me = domains[ME_slotID];
@@ -108,7 +109,8 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 
 
 	/**********************/
-	/* We re-adjust the PTE entries for the whole kernel space until the hypervisor area. */
+
+	/* Fix the vector page physical offset */
 
 	l1pte = pgtable_ME + (VECTOR_VADDR >> TTB_I1_SHIFT);
 
@@ -120,6 +122,7 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 
 	flush_pte_entry((void *) l1pte);
 
+	/* Walk through the 2nd-level page table */
 	for (j = 0; j < 256; j++) {
 
 		l2pte = ((uint32_t *) __lva(*l1pte & TTB_L1_PAGE_ADDR_MASK)) + j;

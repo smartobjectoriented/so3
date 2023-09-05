@@ -313,5 +313,7 @@ long syscall_handle(unsigned long r0, unsigned long r1, unsigned long r2, unsign
 			break;
 	}
 
+#warning do_softirq?
+
 	return result;
 }

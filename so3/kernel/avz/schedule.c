@@ -231,16 +231,29 @@ static void agency_wake(struct domain *d) {
 	raise_softirq(SCHEDULE_SOFTIRQ);
 }
 
+struct scheduler sched_agency;
+
+void sched_agency_init(void) {
+
+	sched_flip.sched_data.current_dom = 0;
+
+	spin_lock_init(&sched_agency.sched_data.schedule_lock);
+
+	init_timer(&sched_agency.sched_data.s_timer, NULL, NULL, AGENCY_CPU);
+}
+
 struct scheduler sched_agency = {
 	.name = "SOO AVZ agency activation",
 
+	.init = sched_agency_init,
+
+	.do_schedule = agency_schedule,
 	.wake = agency_wake,
-	.do_schedule = agency_schedule
 };
 
 
 /* Initialise the data structures. */
-void  domain_scheduler_init(void)
+void domain_scheduler_init(void)
 {
 	per_cpu(current_domain, AGENCY_CPU) = NULL;
 
@@ -248,6 +261,7 @@ void  domain_scheduler_init(void)
 
 	register_softirq(SCHEDULE_SOFTIRQ, domain_schedule);
 
+	sched_agency.init();
 	sched_flip.init();
 }
 

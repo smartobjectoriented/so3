@@ -1,6 +1,4 @@
 
-
-
 ifneq ($(CONFIG_ARM64VT),y)
 obj-y += hyp-stub.o
 endif

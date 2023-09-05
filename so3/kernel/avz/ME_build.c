@@ -45,9 +45,12 @@ int construct_ME(struct domain *d) {
 	printk("***************************** Loading Mobile Entity (ME) *****************************\n");
 
 	if (memslot[slotID].size == 0)
-		panic("No domU image supplied\n");
+		panic("No ME image supplied\n");
 
 	/* We are already on the swapper_pg_dir page table to have full access to RAM */
+
+	/* Put the signature for consistency checking */
+	strcpy(d->avz_shared->signature, SOO_ME_SIGNATURE);
 
 	d->max_pages = ~0U;
 

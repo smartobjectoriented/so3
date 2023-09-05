@@ -19,6 +19,15 @@
 
 #ifndef VERSION_H
 
+/* CHANGES 2023.6.0 */
+/**
+ * - Removed CONFIG_RAM_BASE and CONFIG_RAM_SIZE. These information are available from the device tree.
+ * - Removed old meminfo structure which is not used anymore.
+ * - Removed avz_guest_phys_offset and rely on avz_shared to initialize mem_info structure (phys base + size)
+ * - Upgrade U-boot to 2022.04
+ */
+
+
 #define SO3_KERNEL_VERSION "2023.6.0"
 
 

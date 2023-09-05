@@ -27,6 +27,9 @@
 	/* SPID on 128-bit encoding */
 	spid = /bits/ 64 <0x0010000000000001>;
 	
+	/* SPAD capabilities on 64-bit encoding */
+	spadcaps = /bits/ 64 <0x0000000000000000>;
+	
 	/* Name of this ME */
 	me_name = "SOO.refso3";
 	
@@ -41,7 +44,7 @@ applications.";
 		
 		/* Enabling vdummy for testing purposes */
 		vdummy {
-			status = "ok";
+			status = "disabled";
 		};
 
 		/* Enabling the console */
@@ -49,9 +52,6 @@ applications.";
 			status = "ok";
 		};
 
-		vvext {
-			status = "ok";
-		};
 	};
 };
 			

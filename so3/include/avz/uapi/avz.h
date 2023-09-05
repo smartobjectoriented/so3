@@ -91,9 +91,6 @@ struct avz_shared {
 	/* Domcall routine in the domain */
 	addr_t domcall_vaddr;
 
-	/* Trap routine in the domain */
-	addr_t traps_vaddr;
-
 	addr_t fdt_paddr;
 
 	/* Low-level print function mainly for debugging purpose */
@@ -142,6 +139,9 @@ struct avz_shared {
 
 	/* Reference to the logbool hashtable (one per each domain) */
 	void *logbool_ht;
+
+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	char signature[4];
 };
 
 typedef struct avz_shared avz_shared_t;
