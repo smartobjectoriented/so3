@@ -89,6 +89,14 @@ else
 fi
 cd -
 
+if [ "$PLATFORM" == "virt64" ]; then
+echo "Compiling microPython"
+cd src/micropython/ports/soo
+make
+cp build/firmware.elf ../../../../build/src/uPython.elf
+cd -
+fi
+
 
 mkdir -p build/deploy/
 
