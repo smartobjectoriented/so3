@@ -88,12 +88,6 @@ CONFIG_MMU=y
 # SOO Mobile Entity - Smart Object Oriented subsystem
 #
 CONFIG_SOO_REFSO3=y
-# CONFIG_SOO_BLIND is not set
-# CONFIG_SOO_OUTDOOR is not set
-# CONFIG_SOO_AGENCY is not set
-# CONFIG_SOO_NET is not set
-# CONFIG_SOO_LEDCTRL is not set
-
 #
 # SOO Mobile Entity frontend drivers
 #
@@ -102,9 +96,3 @@ CONFIG_VUART_FRONTEND=y
 #
 # CONFIG_VSENSELED_FRONTEND is not set
 # CONFIG_VSENSEJ_FRONTEND is not set
-# end of SOO Mobile Entity frontend drivers
-# end of SOO Mobile Entity - Smart Object Oriented subsystem
-
-# CONFIG_RTOS is not set
-CONFIG_MMU=y
-# CONFIG_DEBUG_PRINTK is not set

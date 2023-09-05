@@ -24,7 +24,7 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
     sudo qemu-system-aarch64 $@ ${USR_OPTION} \
  	-smp 4  \
 	-serial mon:stdio  \
-	-M virt,gic-version=2 -cpu cortex-a72  \
+	-M virt -cpu cortex-a72  \
 	-device virtio-blk-device,drive=hd0 \
 	-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
 	-m 1024 \
@@ -37,9 +37,9 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
     else    
    echo Starting on ARM32
    sudo qemu/build/arm-softmmu/qemu-system-arm $@ ${USR_OPTION} \
-  	-smp 2 \
+  	-smp 4 \
 	-serial mon:stdio  \
-	-M virt  -cpu cortex-a15 \
+	-M virt   -cpu cortex-a15 \
 	-device virtio-blk-device,drive=hd0 \
 	-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
 	-m 1024 \
