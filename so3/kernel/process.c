@@ -608,8 +608,10 @@ void load_process(elf_img_info_t *elf_img_info)
 {
 	unsigned long section_start, section_end;
 	unsigned long segment_start, segment_end;
-	int i, j, k;
+	int i, j, k, l;
 	bool section_supported;
+	char section_base_name[16];
+	int section_name_dots;
 
 	/* Loading the different segments */
 	for (i = 0; i < elf_img_info->header->e_phnum; i++)
@@ -630,17 +632,29 @@ void load_process(elf_img_info_t *elf_img_info)
 			if ((section_start < segment_start) || (section_end > segment_end))
 				continue;
 
+			// Copy only base name of the section
+			l = 0;
+			section_name_dots = 0;
+			do {
+				section_base_name[l] = elf_img_info->section_names[j][l];
+				if(section_base_name[l] == '.' && section_name_dots++) break; //Base name stops at second '.'
+			} while (section_base_name[l++] != '\0');
+			section_base_name[l] = '\0'; //Terminate string correctly (replace second '.' if stopped by it)
+
 			/* Not all sections are supported */
 			section_supported = false;
 			for (k = 0; k < SUPPORTED_SECTION_COUNT; k++) {
-				if (!strcmp(elf_img_info->section_names[j], supported_section_names[k])) {
+				if (!strcmp(section_base_name, supported_section_names[k])) {
 					section_supported = true;
 					break;
 				}
 			}
 
-			if (!section_supported)
+			if (!section_supported){
+				DBG("Section %s not loaded: unsupported name\n", elf_img_info->section_names[j]);
 				continue;
+			}
+			
 
 			/* Load this section into the process' virtual memory */
 			if (elf_img_info->sections[j].sh_type == SHT_NOBITS)

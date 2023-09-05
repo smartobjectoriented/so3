@@ -32,7 +32,7 @@ extern "C" {
 
 #include <bits/alltypes.h>
 
-typedef uint32_t	intptr_t;
+typedef _Addr	intptr_t; /*SOO-Tech*/
 
 ssize_t read(int, void *, size_t);
 ssize_t write(int, const void *, size_t);
