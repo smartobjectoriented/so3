@@ -2,7 +2,7 @@
 
 if [ "$PLATFORM" == "" ]; then
     if [ "$1" == "" ]; then
-        echo "PLATFORM must be defined (vexpress, rpi4)"
+        echo "PLATFORM must be defined (vexpress, rpi4, so3virt)"
         echo "You can invoke deploy.sh <platform>"
         exit 0
     fi
