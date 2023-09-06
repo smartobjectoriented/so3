@@ -88,11 +88,12 @@ CONFIG_MMU=y
 # SOO Mobile Entity - Smart Object Oriented subsystem
 #
 CONFIG_SOO_REFSO3=y
+
 #
 # SOO Mobile Entity frontend drivers
 #
-CONFIG_VDUMMY_FRONTEND=n
+# CONFIG_VDUMMY_FRONTEND is not set
 CONFIG_VUART_FRONTEND=y
-#
+# CONFIG_VUIHANDLER_FRONTEND is not set
 # CONFIG_VSENSELED_FRONTEND is not set
 # CONFIG_VSENSEJ_FRONTEND is not set
