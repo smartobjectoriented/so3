@@ -93,16 +93,11 @@ CONFIG_SOO_REFSO3=y
 # CONFIG_SOO_AGENCY is not set
 # CONFIG_SOO_NET is not set
 # CONFIG_SOO_LEDCTRL is not set
-# CONFIG_SOO_CHAT is not set
-# CONFIG_SOO_WAGOLED is not set
-# CONFIG_SOO_IUOC is not set
-# CONFIG_SOO_SWITCH_KNX is not set
-# CONFIG_SOO_SWITCH_ENOCEAN is not set
 
 #
 # SOO Mobile Entity frontend drivers
 #
-CONFIG_VDUMMY_FRONTEND=y
+CONFIG_VDUMMY_FRONTEND=n
 CONFIG_VUART_FRONTEND=y
 # CONFIG_VFB_FRONTEND is not set
 # CONFIG_VINPUT_FRONTEND is not set
@@ -114,9 +109,13 @@ CONFIG_VUART_FRONTEND=y
 #
 # vnet frontend
 #
+# end of vnet frontend
+
 # CONFIG_VSENSELED_FRONTEND is not set
 # CONFIG_VSENSEJ_FRONTEND is not set
-# CONFIG_VENOCEAN_FRONTEND is not set
-# CONFIG_VWAGOLED_FRONTEND is not set
-# CONFIG_VIUOC_FRONTEND is not set
-# CONFIG_VKNX_FRONTEND is not set
+# end of SOO Mobile Entity frontend drivers
+# end of SOO Mobile Entity - Smart Object Oriented subsystem
+
+# CONFIG_RTOS is not set
+CONFIG_MMU=y
+# CONFIG_DEBUG_PRINTK is not set
