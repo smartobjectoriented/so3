@@ -1,0 +1,30 @@
+build/shared/libc/printf.o: ../../shared/libc/printf.c \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h \
+ ../../py/mpconfig.h mpconfigport.h ../../../../lib/libc/include/stdint.h \
+ ../../../../lib/libc/include/bits/alltypes.h \
+ ../../../../lib/libc/include/bits/stdint.h \
+ ../../../../lib/libc/include/unistd.h \
+ ../../../../lib/libc/include/features.h \
+ ../../../../lib/libc/include/alloca.h \
+ ../../../../lib/libc/include/string.h \
+ ../../../../lib/libc/include/stdarg.h ../../py/obj.h \
+ ../../../../lib/libc/include/assert.h ../../py/misc.h \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/lib/gcc/aarch64-none-linux-gnu/10.2.1/include/stdbool.h \
+ ../../../../lib/libc/include/stddef.h build/genhdr/compressed.data.h \
+ ../../py/qstr.h build/genhdr/qstrdefs.generated.h ../../py/mpprint.h \
+ ../../py/runtime0.h ../../py/mphal.h mphalport.h ../../extmod/virtpin.h
+../../shared/libc/printf.c :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h :
+ ../../py/mpconfig.h mpconfigport.h ../../../../lib/libc/include/stdint.h :
+ ../../../../lib/libc/include/bits/alltypes.h :
+ ../../../../lib/libc/include/bits/stdint.h :
+ ../../../../lib/libc/include/unistd.h :
+ ../../../../lib/libc/include/features.h :
+ ../../../../lib/libc/include/alloca.h :
+ ../../../../lib/libc/include/string.h :
+ ../../../../lib/libc/include/stdarg.h ../../py/obj.h :
+ ../../../../lib/libc/include/assert.h ../../py/misc.h :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/lib/gcc/aarch64-none-linux-gnu/10.2.1/include/stdbool.h :
+ ../../../../lib/libc/include/stddef.h build/genhdr/compressed.data.h :
+ ../../py/qstr.h build/genhdr/qstrdefs.generated.h ../../py/mpprint.h :
+ ../../py/runtime0.h ../../py/mphal.h mphalport.h ../../extmod/virtpin.h :

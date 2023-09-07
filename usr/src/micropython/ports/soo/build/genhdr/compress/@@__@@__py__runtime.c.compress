@@ -1,0 +1,22 @@
+name not defined
+unsupported type for operator
+negative shift count
+negative shift count
+negative power with no float support
+unsupported type for operator
+divide by zero
+object not callable
+wrong number of values to unpack
+wrong number of values to unpack
+wrong number of values to unpack
+no such attribute
+no such attribute
+object not iterable
+object not an iterator
+object not an iterator
+generator raised StopIteration
+exceptions must derive from BaseException
+can't import name %q
+memory allocation failed, heap is locked
+memory allocation failed, allocating %u bytes
+can't convert to int

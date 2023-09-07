@@ -1,0 +1,12 @@
+wrong number of arguments
+join expects a list of str/bytes objects consistent with self object
+empty separator
+rsplit(None,n)
+empty separator
+substring not found
+start/end indices
+bad format string
+tuple index out of range
+attributes not supported
+tuple index out of range
+can't convert to str implicitly

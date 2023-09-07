@@ -1,0 +1,9 @@
+expected tuple/list
+tuple/list has wrong length
+indices must be integers
+index out of range
+object has no len
+object doesn't support item deletion
+object isn't subscriptable
+object doesn't support item assignment
+object with buffer protocol required

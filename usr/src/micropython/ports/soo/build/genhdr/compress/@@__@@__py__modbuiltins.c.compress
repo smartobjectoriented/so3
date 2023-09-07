@@ -1,0 +1,4 @@
+chr() arg not in range(256)
+ord expects a character
+3-arg pow() not supported
+must use keyword argument for key function

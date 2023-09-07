@@ -1,0 +1,9 @@
+__init__() should return None
+object not callable
+type takes 1 or 3 arguments
+can't create instance
+type isn't an acceptable base type
+multiple inheritance not supported
+multiple bases have instance lay-out conflict
+issubclass() arg 2 must be a class or a tuple of classes
+issubclass() arg 1 must be a class

@@ -1,0 +1,22 @@
+build/py/asmx86.o: ../../py/asmx86.c \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h \
+ ../../../../lib/libc/include/stdint.h \
+ ../../../../lib/libc/include/bits/alltypes.h \
+ ../../../../lib/libc/include/bits/stdint.h \
+ ../../../../lib/libc/include/stdio.h \
+ ../../../../lib/libc/include/features.h \
+ ../../../../lib/libc/include/assert.h \
+ ../../../../lib/libc/include/string.h ../../py/mpconfig.h mpconfigport.h \
+ ../../../../lib/libc/include/unistd.h \
+ ../../../../lib/libc/include/alloca.h
+../../py/asmx86.c :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h :
+ ../../../../lib/libc/include/stdint.h :
+ ../../../../lib/libc/include/bits/alltypes.h :
+ ../../../../lib/libc/include/bits/stdint.h :
+ ../../../../lib/libc/include/stdio.h :
+ ../../../../lib/libc/include/features.h :
+ ../../../../lib/libc/include/assert.h :
+ ../../../../lib/libc/include/string.h ../../py/mpconfig.h mpconfigport.h :
+ ../../../../lib/libc/include/unistd.h :
+ ../../../../lib/libc/include/alloca.h :

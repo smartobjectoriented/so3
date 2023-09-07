@@ -1,0 +1,16 @@
+build/uart_core.o: uart_core.c \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h \
+ ../../../../lib/libc/include/unistd.h \
+ ../../../../lib/libc/include/features.h \
+ ../../../../lib/libc/include/bits/alltypes.h ../../py/mpconfig.h \
+ mpconfigport.h ../../../../lib/libc/include/stdint.h \
+ ../../../../lib/libc/include/bits/stdint.h \
+ ../../../../lib/libc/include/alloca.h
+uart_core.c :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h :
+ ../../../../lib/libc/include/unistd.h :
+ ../../../../lib/libc/include/features.h :
+ ../../../../lib/libc/include/bits/alltypes.h ../../py/mpconfig.h :
+ mpconfigport.h ../../../../lib/libc/include/stdint.h :
+ ../../../../lib/libc/include/bits/stdint.h :
+ ../../../../lib/libc/include/alloca.h :

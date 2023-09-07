@@ -1,0 +1,52 @@
+build/py/runtime.o: ../../py/runtime.c \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h \
+ ../../../../lib/libc/include/assert.h \
+ ../../../../lib/libc/include/features.h \
+ ../../../../lib/libc/include/stdarg.h \
+ ../../../../lib/libc/include/bits/alltypes.h \
+ ../../../../lib/libc/include/stdio.h \
+ ../../../../lib/libc/include/string.h \
+ ../../../../lib/libc/include/unistd.h ../../py/parsenum.h \
+ ../../py/mpconfig.h mpconfigport.h ../../../../lib/libc/include/stdint.h \
+ ../../../../lib/libc/include/bits/stdint.h \
+ ../../../../lib/libc/include/alloca.h ../../py/lexer.h ../../py/qstr.h \
+ ../../py/misc.h \
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/lib/gcc/aarch64-none-linux-gnu/10.2.1/include/stdbool.h \
+ ../../../../lib/libc/include/stddef.h build/genhdr/compressed.data.h \
+ build/genhdr/qstrdefs.generated.h ../../py/reader.h ../../py/obj.h \
+ ../../py/mpprint.h ../../py/runtime0.h ../../py/compile.h \
+ ../../py/parse.h ../../py/emitglue.h ../../py/bc.h ../../py/runtime.h \
+ ../../py/mpstate.h ../../py/mpthread.h ../../py/nlr.h \
+ ../../../../lib/libc/include/limits.h \
+ ../../../../lib/libc/include/bits/limits.h ../../py/objlist.h \
+ ../../py/objexcept.h ../../py/objtuple.h build/genhdr/root_pointers.h \
+ ../../py/pystack.h ../../py/objstr.h ../../py/objarray.h \
+ ../../py/objtype.h ../../py/objmodule.h build/genhdr/moduledefs.h \
+ ../../py/objgenerator.h ../../py/smallint.h ../../py/builtin.h \
+ ../../py/stackctrl.h ../../py/gc.h
+../../py/runtime.c :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/aarch64-none-linux-gnu/libc/usr/include/stdc-predef.h :
+ ../../../../lib/libc/include/assert.h :
+ ../../../../lib/libc/include/features.h :
+ ../../../../lib/libc/include/stdarg.h :
+ ../../../../lib/libc/include/bits/alltypes.h :
+ ../../../../lib/libc/include/stdio.h :
+ ../../../../lib/libc/include/string.h :
+ ../../../../lib/libc/include/unistd.h ../../py/parsenum.h :
+ ../../py/mpconfig.h mpconfigport.h ../../../../lib/libc/include/stdint.h :
+ ../../../../lib/libc/include/bits/stdint.h :
+ ../../../../lib/libc/include/alloca.h ../../py/lexer.h ../../py/qstr.h :
+ ../../py/misc.h :
+ /opt/toolchains/aarch64-none-linux-gnu_10.2/lib/gcc/aarch64-none-linux-gnu/10.2.1/include/stdbool.h :
+ ../../../../lib/libc/include/stddef.h build/genhdr/compressed.data.h :
+ build/genhdr/qstrdefs.generated.h ../../py/reader.h ../../py/obj.h :
+ ../../py/mpprint.h ../../py/runtime0.h ../../py/compile.h :
+ ../../py/parse.h ../../py/emitglue.h ../../py/bc.h ../../py/runtime.h :
+ ../../py/mpstate.h ../../py/mpthread.h ../../py/nlr.h :
+ ../../../../lib/libc/include/limits.h :
+ ../../../../lib/libc/include/bits/limits.h ../../py/objlist.h :
+ ../../py/objexcept.h ../../py/objtuple.h build/genhdr/root_pointers.h :
+ ../../py/pystack.h ../../py/objstr.h ../../py/objarray.h :
+ ../../py/objtype.h ../../py/objmodule.h build/genhdr/moduledefs.h :
+ ../../py/objgenerator.h ../../py/smallint.h ../../py/builtin.h :
+ ../../py/stackctrl.h ../../py/gc.h :
