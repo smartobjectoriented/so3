@@ -60,7 +60,7 @@ int construct_agency(struct domain *d) {
 
 	d->max_pages = ~0U;
 
-	printk("-> Agency entry point from ITB: %lx\n", memslot[MEMSLOT_AGENCY].base_paddr);
+	printk("-> Agency base address from ITB: %lx\n", memslot[MEMSLOT_AGENCY].base_paddr);
 	printk("-> Max dom size %d\n", memslot[MEMSLOT_AGENCY].size);
 
 	ASSERT(d);
