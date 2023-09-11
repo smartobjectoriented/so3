@@ -614,8 +614,7 @@ void load_process(elf_img_info_t *elf_img_info)
 	int section_name_dots;
 
 	/* Loading the different segments */
-	for (i = 0; i < elf_img_info->header->e_phnum; i++)
-	{
+	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
 		if (elf_img_info->segments[i].p_type != PT_LOAD)
 			/* Skip unloadable segments */
 			continue;
@@ -637,7 +636,7 @@ void load_process(elf_img_info_t *elf_img_info)
 			section_name_dots = 0;
 			do {
 				section_base_name[l] = elf_img_info->section_names[j][l];
-				if(section_base_name[l] == '.' && section_name_dots++) break; //Base name stops at second '.'
+				if (section_base_name[l] == '.' && section_name_dots++) break; //Base name stops at second '.'
 			} while (section_base_name[l++] != '\0');
 			section_base_name[l] = '\0'; //Terminate string correctly (replace second '.' if stopped by it)
 
@@ -650,7 +649,7 @@ void load_process(elf_img_info_t *elf_img_info)
 				}
 			}
 
-			if (!section_supported){
+			if (!section_supported) {
 				DBG("Section %s not loaded: unsupported name\n", elf_img_info->section_names[j]);
 				continue;
 			}
