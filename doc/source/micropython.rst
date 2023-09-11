@@ -7,10 +7,10 @@ Micropython is an implementation of the Python 3 language designed to run on emb
 Integration of MicroPython in SO3
 ---------------------------------
 
-A minimal port of micropython is available in SO3. This version only supports the basic features of the language and the modules implemented in the base folder
+A minimal port of micropython is available in SO3. This version only supports the basic features of the language
 
 
-Using LVGL in the emulated environment
+Using Micropython in the emulated environment
 --------------------------------------
 
 .. note::
