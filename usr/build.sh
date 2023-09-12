@@ -57,6 +57,12 @@ SCRIPTPATH=`dirname $SCRIPT`
 if [ $clean == y ]; then
   echo "Cleaning $SCRIPTPATH/build"
   rm -rf $SCRIPTPATH/build
+  if [ "$PLATFORM" == "virt64" ]; then
+    echo "Cleaning microPython"
+    cd src/micropython/ports/soo
+    make clean
+    cd -
+  fi
   exit
 fi
 
