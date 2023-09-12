@@ -19,7 +19,7 @@
 /dts-v1/;
 
 / {
-	model = "SO3 Vexpress";
+	model = "SO3 RPi4";
 	compatible = "arm,vexpress";
 
 	#address-cells = <1>;

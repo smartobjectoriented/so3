@@ -91,33 +91,12 @@ CONFIG_MMU=y
 # SOO Mobile Entity - Smart Object Oriented subsystem
 #
 CONFIG_SOO_REFSO3=y
-# CONFIG_SOO_BLIND is not set
-# CONFIG_SOO_OUTDOOR is not set
-# CONFIG_SOO_AGENCY is not set
-# CONFIG_SOO_NET is not set
-# CONFIG_SOO_LEDCTRL is not set
-# CONFIG_SOO_CHAT is not set
-# CONFIG_SOO_WAGOLED is not set
-# CONFIG_SOO_SWITCH_KNX is not set
-# CONFIG_SOO_SWITCH_ENOCEAN is not set
 
 #
 # SOO Mobile Entity frontend drivers
 #
 # CONFIG_VDUMMY_FRONTEND is not set
 # CONFIG_VUART_FRONTEND is not set
-# CONFIG_VFB_FRONTEND is not set
-# CONFIG_VINPUT_FRONTEND is not set
-# CONFIG_VDOGA12V6NM_FRONTEND is not set
-# CONFIG_VWEATHER_FRONTEND is not set
-# CONFIG_VUIHANDLER_FRONTEND is not set
-# CONFIG_VNET_FRONTEND is not set
 
-#
-# vnet frontend
-#
 # CONFIG_VSENSELED_FRONTEND is not set
 # CONFIG_VSENSEJ_FRONTEND is not set
-# CONFIG_VENOCEAN_FRONTEND is not set
-# CONFIG_VWAGOLED_FRONTEND is not set
-# CONFIG_VKNX_FRONTEND is not set
