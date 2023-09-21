@@ -36,9 +36,12 @@
 					 CONFIG_SYS_SDRAM_SIZE - \
 					 GENERATED_GBL_DATA_SIZE)
 
+#if 0 /* heig-vd */
 #ifdef CONFIG_ARM64
 #define CONFIG_SYS_BOOTM_LEN		SZ_64M
 #endif
+#endif /* 0 */
+#define CONFIG_SYS_BOOTM_LEN		SZ_64M
 
 /* Devices */
 /* GPIO */

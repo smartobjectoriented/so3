@@ -43,7 +43,7 @@ GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
 	-device virtio-blk-device,drive=hd0 \
 	-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
 	-m 1024 \
-	-bios u-boot/u-boot.bin \
+	-kernel u-boot/u-boot \
 	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
 	-nographic \
 	-gdb tcp::${GDB_PORT}

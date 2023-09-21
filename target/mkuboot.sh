@@ -2,7 +2,7 @@
 
 if [ -z $1 ]
 then
-    echo "Need to specify a platform (ex.: virt32, virt64, rpi4, rpi4_64, etc.)"
+    echo "Need to specify a platform (ex.: virt32, virt64, rpi4, rpi4_64, so3virt, etc.)"
     exit
 fi
 
