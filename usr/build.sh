@@ -57,6 +57,12 @@ SCRIPTPATH=`dirname $SCRIPT`
 if [ $clean == y ]; then
   echo "Cleaning $SCRIPTPATH/build"
   rm -rf $SCRIPTPATH/build
+  if [ "$PLATFORM" == "virt64" ]; then
+    echo "Cleaning microPython"
+    cd src/micropython/ports/soo
+    make clean
+    cd -
+  fi
   exit
 fi
 
@@ -74,7 +80,7 @@ cd $SCRIPTPATH/build
 if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "vexpress" -o "$PLATFORM" == "rpi4" ]; then
 cmake -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../arm_toolchain.cmake ..
 fi
-if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" -o "$PLATFORM" == "rpi4_64" ]; then
+if [ "$PLATFORM" == "virt64" -o "$PLATFORM" == "rpi4_64" ]; then
 cmake -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=$build_type -DCMAKE_TOOLCHAIN_FILE=../aarch64_toolchain.cmake ..
 fi
 if [ $singlecore == y ]; then
@@ -88,6 +94,14 @@ else
 	make -j$NRPROC
 fi
 cd -
+
+if [ "$PLATFORM" == "virt64" ]; then
+  echo "Compiling microPython"
+  cd src/micropython/ports/soo
+  make
+  cp build/firmware.elf ../../../../build/src/uPython.elf
+  cd -
+fi
 
 
 mkdir -p build/deploy/
