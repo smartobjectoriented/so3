@@ -163,6 +163,8 @@ static int pl111_init(dev_t *dev, int fdt_offset)
 	int prop_len;
 	void *base;
 
+	printk("%s: probing a framebufer (PL111) device, please make sure such a framebuffer is available...\n", __func__);
+
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
