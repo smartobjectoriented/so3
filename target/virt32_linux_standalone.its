@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Kernel and rootfs components for virt32 environment";
+
+	images {
+
+		linux {
+			description = "Linux kernel";
+			data = /incbin/("../linux/linux/arch/arm/boot/Image");
+			/* type = "avz" */
+			type = "kernel";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <0x41008000>;
+			entry = <0x41008000>;
+		};
+
+		fdt_linux {
+			description = "Linux device tree blob";
+			data = /incbin/("../linux/linux/arch/arm/boot/dts/virt32.dtb");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			load = <0x5a000000>;
+		};
+
+		initrd {
+			description = "Initial rootfs (initrd)";
+			data = /incbin/("../rootfs/board/virt32/initrd.cpio");
+			type = "ramdisk";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <0x50c00000>;
+		};
+
+    };
+	configurations {
+		default = "linux";
+                
+		linux {
+			description = "SO3 kernel image including device tree";
+			kernel = "linux";
+			fdt = "fdt_linux";
+			ramdisk = "initrd";
+		};
+	};
+};
