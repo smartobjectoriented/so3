@@ -274,7 +274,7 @@ include ../build.conf
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64))
 ARCH	= arm64
-CROSS_COMPILE = aarch64-linux-gnu-
+CROSS_COMPILE = aarch64-none-linux-gnu-
 endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
