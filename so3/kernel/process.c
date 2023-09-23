@@ -631,7 +631,7 @@ void load_process(elf_img_info_t *elf_img_info)
 			if ((section_start < segment_start) || (section_end > segment_end))
 				continue;
 
-			// Copy only base name of the section
+			/* Copy only base name of the section */
 			l = 0;
 			section_name_dots = 0;
 			do {
