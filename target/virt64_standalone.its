@@ -45,7 +45,7 @@ so3 {
 
         ramfs {
         	description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/board/virt64/rootfs.fat");
+			data = /incbin/("../rootfs/rootfs.fat");
 			type = "ramdisk";
 			arch = "arm64";
 			os = "linux";

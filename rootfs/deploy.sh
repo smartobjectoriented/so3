@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo Deploying secondary rootfs into the second partition...
+echo Deploying the rootfs in the primary partition...
 
 if [ "$PLATFORM" == "" ]; then
     if [ "$1" == "" ]; then
@@ -12,7 +12,7 @@ if [ "$PLATFORM" == "" ]; then
     PLATFORM=$1
 fi
 
-./mount_ramfs.sh ${PLATFORM}
+./mount_ramfs.sh
 cd ../filesystem
 ./mount.sh 1
 sudo rm -rf fs/*
@@ -23,5 +23,5 @@ sleep 1
 
 ./umount.sh 
 cd ../rootfs
-./umount_ramfs.sh ${PLATFORM}
+./umount_ramfs.sh
 
