@@ -27,7 +27,7 @@
 
 	cpus {
 		device_type = "cpu";
-		compatible = "arm,virt23";
+		compatible = "arm,virt32";
 	};
 
 	memory {

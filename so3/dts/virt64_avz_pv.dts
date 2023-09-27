@@ -57,21 +57,18 @@
 	};
 
 	/* Periodic timer based on ARM CP15 timer */
-	periodic-timer@0 {
+	periodic-timer {
 		compatible = "arm,periodic-timer";
-		reg = <0 0 0 0>;
 		interrupt-parent = <&gic>;
 		
-		/* Choose IRQ 10 with VT support or 11 without */
+		/* IRQ 10 with VT support or 11 without */
 		interrupts = <1 11 4>;
 		status = "ok";
 	};
 	
 	/* Clocksource free-running timer based on ARM CP15 timer */
-	clocksource-timer@0 {
+	clocksource-timer {
 		compatible = "arm,clocksource-timer";
-		reg = <0 0 0 0>;
 		status = "ok";
 	};
- 	
 };

@@ -48,6 +48,10 @@ u64 __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 	u64 avz_dt_paddr;
 	const char *propstring;
 	bool found = false;
+	volatile char *ptr;
+	addr_t val;
+	const fdt64_t *fdt_val;
+	int i;
 
 	nodeoffset = 0;
 	depth = 0;
@@ -62,11 +66,19 @@ u64 __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 
 			/* According to U-boot, the <load> and <entry> properties are both on 64-bit even for aarch32 configuration. */
 
-			ret = fdt_property_read_u64(agency_fdt_paddr, nodeoffset, "load", (u64 *) &avz_dt_paddr);
-			if (ret == -1) {
-				lprintk("!! Missing load-addr in the avz_dt node !!\n");
-				BUG();
-			}
+			fdt_val = fdt_getprop(agency_fdt_paddr, nodeoffset, "load", NULL);
+
+			/* We avoid to make a memory access beyond the byte,
+			 * since the function is called from head.S with MMU off
+			 * and memory access must be aligned.
+			 */
+
+			ptr = (char *) fdt_val;
+
+			for (i = 0; i < 8; i++)
+				*(((char *) &val)+i) = *ptr++;
+
+			avz_dt_paddr = fdt64_to_cpu(val);
 
 			found = true;
 		}
@@ -268,6 +280,7 @@ void loadAgency(void)
 	/* Get the RAM information of the board */
 	early_memory_init(__fdt_addr);
 
+	lprintk("  AVZ DT at physical address : %lx\n", __fdt_addr);
 	lprintk("  AVZ memory descriptor : found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
 
 	memslot[MEMSLOT_AVZ].base_paddr = mem_info.phys_base;

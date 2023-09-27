@@ -20,7 +20,7 @@
 
 / {
 	model = "SO3 RPi4";
-	compatible = "arm,vexpress";
+	compatible = "arm,rpi4";
 
 	#address-cells = <1>;
 	#size-cells = <1>;

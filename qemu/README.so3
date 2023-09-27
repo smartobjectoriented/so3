@@ -11,7 +11,6 @@ Install the SDL library with the following command:
 
 sudo apt-get install libsdl1.2-dev
 
-
 Build
 =====
 
@@ -29,6 +28,10 @@ AArch32 version:
 AArch64 version:
 
 ./configure --target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs
+
+Both versions:
+
+./configure --target-list=arm-softmmu,aarch64-softmmu --disable-attr --disable-werror --disable-docs
 
 To build:
 

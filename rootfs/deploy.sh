@@ -12,7 +12,7 @@ if [ "$PLATFORM" == "" ]; then
     PLATFORM=$1
 fi
 
-./mount_ramfs.sh
+./mount.sh
 cd ../filesystem
 ./mount.sh 1
 sudo rm -rf fs/*
@@ -23,5 +23,5 @@ sleep 1
 
 ./umount.sh 
 cd ../rootfs
-./umount_ramfs.sh
+./umount.sh
 

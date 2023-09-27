@@ -139,6 +139,8 @@ int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 
 int fb_close(int fd) {
 	free((void *) __vaddr);
+
+	return 0;
 }
 
 struct file_operations pl111_fops = {
