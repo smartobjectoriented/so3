@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,50 +19,57 @@
 /dts-v1/;
 
 / {
-	description = "Kernel and rootfs components for virt32 environment";
+	description = "Kernel and rootfs components for virt64 (armv8) environment";
 
 	images {
 
-		linux {
-			description = "Linux kernel";
-			data = /incbin/("../linux/linux/arch/arm/boot/Image");
-			/* type = "avz" */
+so3 {
+			description = "SO3 OS kernel";
+			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
-			arch = "arm";
+			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x41008000>;
-			entry = <0x41008000>;
+            load = <0x41080000>;
+			entry = <0x41080000>;
 		};
-
-		fdt_linux {
-			description = "Linux device tree blob";
-			data = /incbin/("../linux/linux/arch/arm/boot/dts/virt32.dtb");
+ 
+        fdt {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("../so3/dts/virt64.dtb");
 			type = "flat_dt";
-			arch = "arm";
+			arch = "arm64";
 			compression = "none";
-			load = <0x5a000000>;
-		};
+			load = <0x44a00000>;
+		};	
 
-		initrd {
-			description = "Initial rootfs (initrd)";
-			data = /incbin/("../rootfs/board/virt32/initrd.cpio");
+        ramfs {
+        	description = "SO3 environment minimal rootfs";
+			data = /incbin/("../rootfs/rootfs.fat");
 			type = "ramdisk";
-			arch = "arm";
+			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x50c00000>;
-		};
-
-    };
-	configurations {
-		default = "linux";
+			load = <0x44c00000>;
+    	};
                 
-		linux {
+};
+
+	configurations {
+		default = "so3_ramfs";
+                
+		so3_ramfs {
 			description = "SO3 kernel image including device tree";
-			kernel = "linux";
-			fdt = "fdt_linux";
-			ramdisk = "initrd";
+			kernel = "so3";
+			fdt = "fdt";
+            ramdisk = "ramfs"; 
+		};
+                
+        so3_mmc {
+			description = "SO3 kernel image including device tree";
+			kernel = "so3";
+			fdt = "fdt";
 		};
 	};
+
 };

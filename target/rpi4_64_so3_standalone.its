@@ -25,33 +25,33 @@
 
 		so3 {
 			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3.bin");
+			data = /incbin/("../so3/so3/so3.bin");
 			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x41008000>;
-			entry = <0x41008000>;
+			load = <0x01080000>;
+			entry = <0x01080000>;
 		};
                 
 		fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/rpi4_64.dtb");
+			data = /incbin/("../so3/so3/dts/rpi4_64.dtb");
 			type = "flat_dt";
-			arch = "arm64;
+			arch = "arm64";
 			compression = "none";
-			load = <0x44a00000>;
+			load = <0x04a00000>;
 
 		};	
 
         ramfs {
             description = "SO3 environment minimal rootfs";
-            data = /incbin/("../rootfs/board/rpi4_64/rootfs.fat");
+            data = /incbin/("../rootfs/rootfs.fat");
             type = "ramdisk";
             arch = "arm64";
             os = "linux";
             compression = "none";
-            load = <0x44c00000>;
+            load = <0x04c00000>;
         };
                 
 	};

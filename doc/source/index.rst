@@ -23,6 +23,7 @@
    lvgl
    lwip
    micropython
+   Coding conventions <coding_conventions>
    
 ============================================
 Smart Object Oriented (SO3) Operating System

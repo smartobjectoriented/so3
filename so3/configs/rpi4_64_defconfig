@@ -9,7 +9,6 @@ CONFIG_ARCH="arm64"
 CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
 # CONFIG_ARM_TRUSTZONE is not set
 CONFIG_KERNEL_VADDR=0xffff800000000000
-CONFIG_RAM_BASE=0x00000000
 
 #
 # Platform
@@ -56,7 +55,7 @@ CONFIG_GIC=y
 #
 # SO3 Applications
 #
-CONFIG_APP_SAMPLE=y
+# CONFIG_APP_SAMPLE is not set
 
 #
 # Filesystems
@@ -76,4 +75,4 @@ CONFIG_HEAP_SIZE=8
 # CONFIG_AVZ is not set
 # CONFIG_SOO is not set
 CONFIG_MMU=y
-# CONFIG_DEBUG_PRINTK is not set
+CONFIG_DEBUG_PRINTK=y

@@ -456,6 +456,7 @@ const void *fdt_getprop_namelen(const void *fdt, int nodeoffset,
 	if (fdt_version(fdt) < 0x10 && (poffset + sizeof(*prop)) % 8 &&
 	    fdt32_ld(&prop->len) >= 8)
 		return prop->data + 4;
+
 	return prop->data;
 }
 

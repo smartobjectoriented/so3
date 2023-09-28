@@ -34,10 +34,9 @@
 			entry = <0x40080000>;
 		};
 		
-		/* This AVZ DT works with VT support (GIC reg cells number appropriate) */
-		avz_vt_dt {
+		avz_pv_dt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
+			data = /incbin/("../avz/dts/virt64_avz_pv.dtb");
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";
@@ -46,7 +45,7 @@
 		
 		so3_agency {
 			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3.bin");
+			data = /incbin/("../so3/so3/so3.bin");
 			type = "avz";
 			arch = "arm64";
 			os = "linux";
@@ -57,7 +56,7 @@
  
         fdt_so3 {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/virt64.dtb");
+			data = /incbin/("../so3/so3/dts/virt64.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -82,7 +81,7 @@
 		so3_avz {
 			description = "SO3/AVZ on virt64";
 		    kernel = "avz";
-            loadables = "avz_vt_dt", "so3_agency";
+            loadables = "avz_pv_dt", "so3_agency";
             fdt = "fdt_so3";
             ramdisk = "ramfs"; 
 		};

@@ -1,13 +1,11 @@
 .. _user_guide:
 
-##########
 User Guide
 ##########
 
 The following instructions have been validated with Ubuntu 22.04, but for sure
 it will work with lower release.
 
-*************
 Pre-requisite
 *************
 
@@ -40,7 +38,6 @@ prevent annoying warnings:
 
    sudo apt-get install bison flex
 
-********************************
 Files and directroy organisation
 ********************************
 
@@ -67,7 +64,6 @@ SO3 root directory (main subdirs)::
 - The ``u-boot`` and ``qemu`` directories contain the *bootloader* and 
   the *emulator* respectively. 
 
-************************
 Build of the environment
 ************************
 
@@ -87,7 +83,7 @@ Quick setup & early test
 
 The following commands is helpful to have quick up-and-running
 environment with SO3, i.e. a shell running on top of the kernel in the
-emulated *vExpress* environment.
+emulated *virt32* environment.
 
 Setting up QEMU
 ===============
@@ -111,7 +107,7 @@ In u-boot/ directory:
 .. code-block:: bash
 
    cd u-boot
-   make vexpress_defconfig
+   make virt32_defconfig
    make -j8
 
 Creating the virtual disk image
@@ -149,7 +145,7 @@ the following script:
 .. code-block:: bash
 
    cd rootfs
-   ./create_ramfs.sh vexpress
+   ./create_ramfs.sh
 
 The deployment of user applications into this *ramfs* will be done below during
 the deployment into the SD-card (option ``-u`` of the ``deploy.sh`` script at 
@@ -163,7 +159,7 @@ The kernel has to be compiled in ``*so3*/`` after choosing a configuration:
 .. code-block:: bash
 
    cd so3
-   make vexpress_ramfs_defconfig
+   make virt32_ramfs_defconfig
    make
 
 In this example, we are working with an embedded *ramfs* which will be packed
@@ -184,7 +180,7 @@ then copied in the first partition of the SD-card.
    ./deploy.sh -bu
 
 Starting SO3
-============
+************
 
 Simply invoking the script st as following:
 
@@ -199,51 +195,38 @@ and you should run into the shell…
    To quit QEMU, type ``Ctrl+x`` followed by ``a`` (not Ctrl+a).
 
 
-**********************
-Default configurations
-**********************
+
+SO3 Configuration and ITS files
+*******************************
 
 This section describes the default configurations of the SO3 kernel
-which are present in “*so3/configs/*”.
+which are present in ``*so3/configs/*`` and in ``target/``
 
-vExpress platform
-=================
+SO3 works with the following plaforms: ``virt32``, ``virt64``, ``rpi4``, ``rpi4_64``
 
-+-----------------------------+----------------------------------------------------+
-| Name                        | Environment                                        |
-+=============================+====================================================+
-| *vexpress_mmc_defconfig*    | Basic environment with a separate *rootfs* needed  |
-|                             | to be stored in an MMC partition                   |
-+-----------------------------+----------------------------------------------------+
-| *vexpress_thread_defconfig* | Basic environment with no process support, hence   |
-|                             | no *user space*.                                   |
-+-----------------------------+----------------------------------------------------+
-| *vexpress_nommu_defconfig*  | The MMU is disabled and only threads are available |
-|                             | (no process/\ *user space*).                       |
-+-----------------------------+----------------------------------------------------+
-| *vexpress_net_defconfig*    | Environment with networking support (*lwip*)       |
-|                             |                                                    |
-+-----------------------------+----------------------------------------------------+
-| *vexpress_fb_defconfig*     | Environment with LVGL and framebuffer support      |
-|                             |                                                    |
-+-----------------------------+----------------------------------------------------+
-| *vexpress_full_defconfig*   | Complete environment with networking and           |
-|                             | framebuffer support                                |
-+-----------------------------+----------------------------------------------------+
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+| ITS                        | DTS                | Config               | virt32 | virt64 | rpi4 | rpi4_64 | avz | pv | vt | soo | rootfs | Validation |
++============================+====================+======================+========+========+======+=========+=====+====+====+=====+========+============+
+|                            |                    | virt32_defconfig     |        |        |      |         |     |    |    |     |        |            |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+|                            |                    | virt64_defconfig     |        | X      |      |         |     |    |    |     | X      |            |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+| rpi4_64_avz_so3_pv.its     | rpi4_64_avz_pv.dts | rpi4_64_pv_defconfig |        |        |      | X       | X   | X  |    |     | X      | 27.09.23   |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+| rpi4_64_so3_standalone.its | rpi4_64.dts        | rpi4_64_defconfig    |        |        |      | X       |     |    |    |     | X      | 26.09.23   |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+| virt64_avz_so3_pv.its      | virt64.dts         | virt64_pv_defconfig  |        | X      |      |         | X   | X  |    |     | X      | 26.09.23   |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
+| rpi4_64_avz_so3_vt.its     |                    | rpi4_64_defconfig    |        |        |      | X       | X   |    | X  |     | X      | 27.09.23   |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-----+--------+------------+
 
-Raspberry Pi 4 platform
-=======================
-
-Currently, there is only one default configuration file called
-*rpi4_defconfig* which has a basic environment, without networking and
-framebuffer support. The drivers required for networking and graphics
-are not available yet.
+*To be completed*
 
 Deployment of a *Hello World* application
-=========================================
+*****************************************
 
 Using a *ramfs* configuration
------------------------------
+=============================
 
 All user applications reside in ``usr/src`` directory. Adding a C file requires to update
 the ``CMakeLists.txt`` file.
@@ -273,7 +256,7 @@ at the root dir as follows:
    The next section shows how you should deploy with the MMC configuration.
 
 Using a *mmc* configuration
----------------------------
+===========================
 
 If you intend to use the *vexpress_mmc_defconfig* configuration for example, you
 will need to deploy the user apps manually (the ``deploy.sh`` script will be
@@ -295,7 +278,6 @@ The ``1`` refers to the partition #1.
    
 
 
-************************************
 Installation and run with SO3 docker
 ************************************
 

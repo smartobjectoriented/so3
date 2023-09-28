@@ -61,6 +61,12 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	const struct fdt_property *prop;
 	int prop_len;
 
+#ifdef CONFIG_ARCH_ARM64
+	volatile unsigned char *ptr;
+	unsigned long val;
+	int i;
+#endif /* CONFIG_ARCH_ARM64 */
+
 	offset = fdt_path_offset(fdt, "/memory");
 
 	/* "memory" node not found --> error */
@@ -77,10 +83,12 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 	 */
 
 	if (prop) {
+
 		if (prop_len == 8) {
 			info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 			info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);
 		} else {
+
 			BUG_ON(prop_len != 16);
 
 			/* Keep a possible conversion from 64-bit to 32-bit if the address & size are
@@ -90,9 +98,26 @@ int get_mem_info(const void *fdt, mem_info_t *info) {
 			info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 			info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);
 #else
-			info->phys_base = fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
-			info->size = fdt64_to_cpu(((const fdt64_t *) prop->data)[1]);
-#endif
+			
+			/* We avoid to make a memory access beyond the byte,
+			 * since the function is called from head.S with MMU off
+			 * and memory access must be 8-byte aligned.
+			 */
+
+			ptr = (char *) prop->data;
+
+			for (i = 0; i < 8; i++)
+				*(((char *) &val)+i) = *ptr++;
+
+			info->phys_base = fdt64_to_cpu(val);
+
+			for (i = 0; i < 8; i++)
+				*(((char *) &val)+i) = *ptr++;
+
+			info->size = fdt64_to_cpu(val);
+
+#endif /* !CONFIG_ARCH_ARM32 */
+
 		}
 	}
 

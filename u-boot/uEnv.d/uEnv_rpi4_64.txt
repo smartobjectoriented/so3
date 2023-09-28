@@ -1,0 +1,5 @@
+fdt_high=ffffffffffffffff
+initrd_high=ffffffffffffffff
+start=fatload mmc 0 0x30000000 rpi4_64.itb; bootm 0x30000000
+
+

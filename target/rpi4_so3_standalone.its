@@ -45,7 +45,7 @@
 		
 		ramfs {
 			description = "Initial SO3 rootfs (ramfs)";
-			data = /incbin/("../rootfs/board/rpi4/rootfs.fat");
+			data = /incbin/("../rootfs/rootfs.fat");
 			type = "ramdisk";
 			arch = "arm";
 			os = "linux";			

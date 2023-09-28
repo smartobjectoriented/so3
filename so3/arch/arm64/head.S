@@ -68,7 +68,7 @@ __start:
 	str 	x9, [x8]
 
 #ifndef CONFIG_SO3VIRT
-	// Mostly for future usage...
+	// CPU configuration
 	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 #endif /* !CONFIG_SO3VIRT */
@@ -82,6 +82,11 @@ __start:
 
 	cmp		x0, x1
 	b.cc	1b
+
+	// Enable FP/ASIMD
+	// Must be enabled *before* MMU is on
+	mov	x0, #3 << 20
+	msr	cpacr_el1, x0
 
   	// Initialize stack pointers for current mode (normal case if no MMU is used)
   	adrp	x0, __stack_top
@@ -97,6 +102,7 @@ __start:
 	/* Basic low-level initialization */
 #ifdef CONFIG_AVZ
 	mov 	x0, x9
+
 	bl 		__get_avz_fdt_paddr
 	// x0 now contains the right paddr of the AVZ device tree
 #else
@@ -124,10 +130,6 @@ __kernel_main:
 #else
 	msr vbar_el1, x0
 #endif /* !CONFIG_ARM64VT */ 	 
- 
-	// Enable FP/ASIMD
-	mov	x0, #3 << 20
-	msr	cpacr_el1, x0
 
 #endif /* !CONFIG_SOO */
 	
@@ -154,6 +156,8 @@ __kernel_main:
 	nop
 
 	// never returns...
+
+.align 3
 
 .LCfdt_addr_temp:
 	.quad 0
@@ -294,6 +298,7 @@ el2_setup:
 	mrs	x0, CurrentEL
 	cmp	x0, #CurrentEL_EL2
 	b.eq	1f
+
 	ldr x0, =(SCTLR_EL1_RES1 | ENDIAN_SET_EL1)
 
 	msr	sctlr_el1, x0
@@ -475,6 +480,7 @@ ENTRY(secondary_startup)
 #endif /* !CONFIG_SO3VIRT */
 
 	// Enable FP/ASIMD
+	// Must be enabled before MMU is on
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0
 
