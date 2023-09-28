@@ -30,7 +30,7 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            load = <0x01080000>;
+			load = <0x01080000>;
 			entry = <0x01080000>;
 		};
                 
