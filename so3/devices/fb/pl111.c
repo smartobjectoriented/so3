@@ -101,7 +101,8 @@ static addr_t __vaddr;
 
 void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
 {
-	uint32_t i, page;
+	uint32_t i;
+	addr_t page;
 	pcb_t *pcb = current()->pcb;
 
 	for (i = 0; i < page_count; i++) {
