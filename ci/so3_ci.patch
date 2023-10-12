@@ -402,6 +402,27 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  endif
  
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/aarch64_toolchain.cmake ./usr/aarch64_toolchain.cmake
+--- ../base/so3/usr/aarch64_toolchain.cmake	2023-10-10 20:01:17.135164327 +0200
++++ ./usr/aarch64_toolchain.cmake	2023-10-12 13:53:55.493764379 +0200
+@@ -17,13 +17,13 @@
+ set(CMAKE_INSTALL_SO_NO_EXE 0)
+ 
+ # This toolchain file can be used both inside and outside Buildroot.
+-set(CMAKE_C_COMPILER "aarch64-none-linux-gnu-gcc")
+-set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-linux-gnu-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
+-set(CMAKE_ASM_COMPILER "aarch64-none-linux-gnu-gcc")
++set(CMAKE_C_COMPILER "aarch64-none-elf")
++set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-elf-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
++set(CMAKE_ASM_COMPILER "aarch64-none-elf-gcc")
+ 
+ set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  -D__ARM64__  \
+         -g -ffreestanding -fno-common")
+  
+ set(CMAKE_ASM_FLAGS_DEBUG "-D__ASSEMBLY__")
+ 
+-set(CMAKE_LINKER "aarch64-none-linux-gnu-ld")
++set(CMAKE_LINKER "aarch64-none-elf-ld")
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/deploy.sh ./usr/deploy.sh
 --- ../base/so3/usr/deploy.sh	2023-10-12 12:09:15.740292247 +0200
 +++ ./usr/deploy.sh	2023-10-10 18:01:36.805583204 +0200
