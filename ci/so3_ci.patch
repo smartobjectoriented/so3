@@ -5,15 +5,6 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -PLATFORM := virt32
 +PLATFORM := virt64
  
-diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/ci/do_patch.sh ./ci/do_patch.sh
---- ../base/so3/ci/do_patch.sh	2023-10-12 12:09:29.571976775 +0200
-+++ ./ci/do_patch.sh	2023-10-12 12:16:07.723897288 +0200
-@@ -1 +1,4 @@
--diff -x "scripts" -x "*.o" -x ".*" -x "sdcard*" -Naru ../base/so3 . > so3_ci.patch
-+cd ..
-+diff -x "config" -x "scripts" -x "*.o" -x ".*" \
-+    -x "so3_ci.patch" -x "generated" -x "*.s" -x "sdcard*" -Naru ../base/so3 . > so3_ci.patch
-+
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/deploy.sh ./deploy.sh
 --- ../base/so3/deploy.sh	2023-10-10 20:01:16.400180635 +0200
 +++ ./deploy.sh	2023-10-10 18:00:34.901854910 +0200
@@ -52,28 +43,6 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
          ./umount.sh
          cd ..
      fi
-diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/Dockerfile ./Dockerfile
---- ../base/so3/Dockerfile	2023-10-10 20:01:16.295182965 +0200
-+++ ./Dockerfile	2023-10-12 11:12:14.433509766 +0200
-@@ -11,14 +11,14 @@
- 
- RUN cd /; \
-     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
--    unzip master.zip; mv so3-master so3
-+    unzip master.zip; mv so3-* so3
- 
- WORKDIR so3
- 
- RUN     find / -name thumb | xargs rm -r; \
--        patch -s -p0 < ci/so3_ci.patch; \
--        cd u-boot; make virt32_defconfig; make -j8; cd ..; \
--        cd so3; make virt32_defconfig; make -j8; cd ..; \
-+        patch -p1 < ci/so3_ci.patch; \
-+        cd u-boot; make virt64_defconfig; make -j8; cd ..; \
-+        cd so3; make virt64_defconfig; make -j8; cd ..; \
-         cd usr; ./build.sh
- 
- # Stage 2
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/filesystem/create_img.sh ./filesystem/create_img.sh
 --- ../base/so3/filesystem/create_img.sh	2023-10-10 20:01:16.409180435 +0200
 +++ ./filesystem/create_img.sh	2023-10-10 18:00:34.902854890 +0200
@@ -251,6 +220,18 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  
  .LCnoshell:
  	.string "so3: No init proc(shell) found ...\n"
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/configs/virt64_defconfig ./so3/configs/virt64_defconfig
+--- ../base/so3/so3/configs/virt64_defconfig	2023-10-10 20:01:16.414180324 +0200
++++ ./so3/configs/virt64_defconfig	2023-10-12 13:49:54.158347888 +0200
+@@ -6,7 +6,7 @@
+ CONFIG_ARCH_ARM64=y
+ # CONFIG_SO3VIRT is not set
+ CONFIG_ARCH="arm64"
+-CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
++CONFIG_CROSS_COMPILE="aarch64-none-elf-"
+ # CONFIG_ARM_TRUSTZONE is not set
+ CONFIG_KERNEL_VADDR=0xffff800000000000
+ 
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
 --- ../base/so3/so3/devices/fb/pl111.c	2023-10-12 12:09:15.740292247 +0200
 +++ ./so3/devices/fb/pl111.c	2023-10-12 12:06:43.684760660 +0200
@@ -409,6 +390,18 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  # CONFIG_AUTOBOOT_KEYED is not set
  # CONFIG_AUTOBOOT_USE_MENUKEY is not set
  # CONFIG_USE_BOOTARGS is not set
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/u-boot/Makefile ./u-boot/Makefile
+--- ../base/so3/u-boot/Makefile	2023-10-10 20:01:16.458179348 +0200
++++ ./u-boot/Makefile	2023-10-12 13:50:14.153885415 +0200
+@@ -274,7 +274,7 @@
+ 
+ ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64))
+ ARCH	= arm64
+-CROSS_COMPILE = aarch64-none-linux-gnu-
++CROSS_COMPILE = aarch64-none-elf-
+ endif
+ 
+ ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/deploy.sh ./usr/deploy.sh
 --- ../base/so3/usr/deploy.sh	2023-10-12 12:09:15.740292247 +0200
 +++ ./usr/deploy.sh	2023-10-10 18:01:36.805583204 +0200
