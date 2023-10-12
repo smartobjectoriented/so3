@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [ "$PLATFORM" == "" ]; then
-    if [ "$1" == "" ]; then
-        echo "PLATFORM must be defined (vexpress, rpi4, so3virt)"
+    if [ "$1" == "" ]; then  
+        echo "PLATFORM must be defined (virt32, virt64, rpi4, rpi4_64, so3virt)"
         echo "You can invoke deploy.sh <platform>"
         exit 0
     fi
