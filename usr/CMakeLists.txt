@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(so3-usr LANGUAGES C ASM)
 
+option(MICROPYTHON "Support for micro-python apps" OFF)
+
+
 # Detect the correct compiler runtime library and add it
 # to 'LIBCXX_LIBRARIES'. back to gcc_s if available.
 

@@ -13,3 +13,9 @@ target_link_libraries(ls.elf c)
 target_link_libraries(more.elf c)
 target_link_libraries(time.elf c)
 target_link_libraries(ping.elf c)
+
+if (MICROPYTHON AND (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
+	message("== Building uPython")
+	add_subdirectory(micropython)
+endif()
+
