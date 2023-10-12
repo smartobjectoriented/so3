@@ -199,7 +199,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  	.string "so3: No init proc(shell) found ...\n"
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/configs/virt64_defconfig ./so3/configs/virt64_defconfig
 --- ../base/so3/so3/configs/virt64_defconfig	2023-10-10 20:01:16.414180324 +0200
-+++ ./so3/configs/virt64_defconfig	2023-10-12 15:53:40.571091790 +0200
++++ ./so3/configs/virt64_defconfig	2023-10-12 16:15:49.434575952 +0200
 @@ -6,7 +6,7 @@
  CONFIG_ARCH_ARM64=y
  # CONFIG_SO3VIRT is not set
@@ -209,37 +209,76 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  # CONFIG_ARM_TRUSTZONE is not set
  CONFIG_KERNEL_VADDR=0xffff800000000000
  
+@@ -42,7 +42,7 @@
+ CONFIG_IO_MAPPING_BASE=0xffff900000000000
+ # CONFIG_I2C is not set
+ # CONFIG_NET is not set
+-# CONFIG_FB is not set
++CONFIG_FB=y
+ # CONFIG_INPUT is not set
+ # CONFIG_NS16550 is not set
+ CONFIG_PL011_UART=y
+@@ -51,9 +51,9 @@
+ CONFIG_RAMDEV=y
+ CONFIG_ARM_TIMER=y
+ CONFIG_GIC=y
+-# CONFIG_PL111_CLCD is not set
++CONFIG_PL111_CLCD=y
+ # CONFIG_QEMU_RAMFB is not set
+-# CONFIG_PL050_KMI is not set
++CONFIG_PL050_KMI=y
+ 
+ #
+ # SO3 Applications
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
 --- ../base/so3/so3/devices/fb/pl111.c	2023-10-12 12:09:15.740292247 +0200
-+++ ./so3/devices/fb/pl111.c	2023-10-12 15:53:40.571091790 +0200
-@@ -105,11 +105,17 @@
++++ ./so3/devices/fb/pl111.c	2023-10-12 17:41:44.239741689 +0200
+@@ -97,7 +97,9 @@
+ #define LCDBPP    (5 <<  1) /* 5: 24bpp, 6: 16bpp565 */
+ #define LCDEN     (1 <<  0) /* enable display */
+ 
++#ifdef CONFIG_ARCH_ARM32
+ static addr_t __vaddr;
++#endif
+ 
+ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count)
+ {
+@@ -105,13 +107,21 @@
  	addr_t page;
  	pcb_t *pcb = current()->pcb;
  
++#ifdef CONFIG_ARCH_ARM32
++
 +	/* Just for doing some test with performance analysis */
 +	virt_addr = malloc(page_count*PAGE_SIZE);
 +	BUG_ON(!virt_addr);
 +
-+#if 0
++	__vaddr = virt_addr;
++
++#else
  	for (i = 0; i < page_count; i++) {
  		/* Map a process' virtual page to the physical one (here the VRAM). */
  		page = LCDUPBASE + i * PAGE_SIZE;
  		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
  	}
+-
+-	__vaddr = virt_addr;
 +#endif
  
- 	__vaddr = virt_addr;
- 
-@@ -139,7 +145,7 @@
+ 	return (void *) virt_addr;
+ }
+@@ -139,8 +149,9 @@
  }
  
  int fb_close(int fd) {
--	free((void *) __vaddr);
-+	/* free((void *) __vaddr); */
- 
++#ifdef CONFIG_ARCH_ARM32
+ 	free((void *) __vaddr);
+-
++#endif
  	return 0;
  }
-@@ -179,7 +185,7 @@
+ 
+@@ -179,7 +190,7 @@
  	base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
  
  #endif
@@ -248,7 +287,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  	/* Disable interrupts. */
  	iowrite32(base + CLCD_IENB, 0);
  
-@@ -197,7 +203,7 @@
+@@ -197,7 +208,7 @@
  
  	/* Configure, enable and power on the controller. */
  	iowrite32(base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
