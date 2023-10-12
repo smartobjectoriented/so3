@@ -9,3 +9,14 @@ Be careful with the requirements of various configs.
 
 - avz_vt -> ./st must have virtualization on => use ./stv
 - avz_pv -> ./st must have virtualization off => use ./st
+
+
+To build the patch related to the CI:
+
+- diff -Naur <source> <result> > so3_ci.patch
+and put the ci/so3_ci.patch in ci/
+
+To apply the patch, in the root:
+- patch -p1 < ci/so3_ci.patch
+
+

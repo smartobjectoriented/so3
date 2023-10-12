@@ -1,2 +1,2 @@
-docker run -it --privileged -v /dev:/dev so3/virt32
+docker run -it --privileged -v /dev:/dev so3/virt64
 

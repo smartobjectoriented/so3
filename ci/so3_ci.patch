@@ -133,24 +133,6 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -    sudo losetup -D
 +    losetup -D
  fi
-diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/README.md ./README.md
---- ../base/so3/README.md	2023-10-10 20:01:16.295182965 +0200
-+++ ./README.md	2023-10-10 20:00:22.360379522 +0200
-@@ -9,3 +9,14 @@
- 
- - avz_vt -> ./st must have virtualization on => use ./stv
- - avz_pv -> ./st must have virtualization off => use ./st
-+
-+
-+To build the patch related to the CI:
-+
-+- diff -Naur <source> <result> > so3_ci.patch
-+and put the ci/so3_ci.patch in ci/
-+
-+To apply the patch, in the root:
-+- patch -p1 < ci/so3_ci.patch
-+
-+
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/rootfs/deploy.sh ./rootfs/deploy.sh
 --- ../base/so3/rootfs/deploy.sh	2023-10-10 20:01:16.409180435 +0200
 +++ ./rootfs/deploy.sh	2023-10-10 18:00:34.905854828 +0200
@@ -404,7 +386,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/aarch64_toolchain.cmake ./usr/aarch64_toolchain.cmake
 --- ../base/so3/usr/aarch64_toolchain.cmake	2023-10-10 20:01:17.135164327 +0200
-+++ ./usr/aarch64_toolchain.cmake	2023-10-12 13:53:55.493764379 +0200
++++ ./usr/aarch64_toolchain.cmake	2023-10-12 14:01:37.030079441 +0200
 @@ -17,13 +17,13 @@
  set(CMAKE_INSTALL_SO_NO_EXE 0)
  
@@ -412,7 +394,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -set(CMAKE_C_COMPILER "aarch64-none-linux-gnu-gcc")
 -set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-linux-gnu-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 -set(CMAKE_ASM_COMPILER "aarch64-none-linux-gnu-gcc")
-+set(CMAKE_C_COMPILER "aarch64-none-elf")
++set(CMAKE_C_COMPILER "aarch64-none-elf-gcc")
 +set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-elf-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 +set(CMAKE_ASM_COMPILER "aarch64-none-elf-gcc")
  

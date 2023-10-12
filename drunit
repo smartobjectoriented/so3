@@ -1,2 +1,2 @@
-docker run --privileged -it -v /dev:/dev -v $PWD:/host so3/virt32 /bin/sh
+docker run --privileged -it -v /dev:/dev -v $PWD:/host so3/virt64 /bin/sh
 
