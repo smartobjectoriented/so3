@@ -1,6 +1,22 @@
-diff -Naur ../so3.base/deploy.sh ./deploy.sh
---- ../so3.base/deploy.sh	2023-06-30 11:28:35.461067351 +0200
-+++ ./deploy.sh	2023-06-30 16:07:08.890135194 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/build.conf ./build.conf
+--- ../base/so3/build.conf	2023-10-10 20:01:16.400180635 +0200
++++ ./build.conf	2023-10-10 18:07:05.059670651 +0200
+@@ -1,2 +1,2 @@
+-PLATFORM := virt32
++PLATFORM := virt64
+ 
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/ci/do_patch.sh ./ci/do_patch.sh
+--- ../base/so3/ci/do_patch.sh	2023-10-12 12:09:29.571976775 +0200
++++ ./ci/do_patch.sh	2023-10-12 12:16:07.723897288 +0200
+@@ -1 +1,4 @@
+-diff -x "scripts" -x "*.o" -x ".*" -x "sdcard*" -Naru ../base/so3 . > so3_ci.patch
++cd ..
++diff -x "config" -x "scripts" -x "*.o" -x ".*" \
++    -x "so3_ci.patch" -x "generated" -x "*.s" -x "sdcard*" -Naru ../base/so3 . > so3_ci.patch
++
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/deploy.sh ./deploy.sh
+--- ../base/so3/deploy.sh	2023-10-10 20:01:16.400180635 +0200
++++ ./deploy.sh	2023-10-10 18:00:34.901854910 +0200
 @@ -76,11 +76,11 @@
      
  # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
@@ -36,9 +52,31 @@ diff -Naur ../so3.base/deploy.sh ./deploy.sh
          ./umount.sh
          cd ..
      fi
-diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
---- ../so3.base/filesystem/create_img.sh	2023-06-30 17:27:01.141409090 +0200
-+++ ./filesystem/create_img.sh	2023-06-30 17:28:53.180522656 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/Dockerfile ./Dockerfile
+--- ../base/so3/Dockerfile	2023-10-10 20:01:16.295182965 +0200
++++ ./Dockerfile	2023-10-12 11:12:14.433509766 +0200
+@@ -11,14 +11,14 @@
+ 
+ RUN cd /; \
+     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
+-    unzip master.zip; mv so3-master so3
++    unzip master.zip; mv so3-* so3
+ 
+ WORKDIR so3
+ 
+ RUN     find / -name thumb | xargs rm -r; \
+-        patch -s -p0 < ci/so3_ci.patch; \
+-        cd u-boot; make virt32_defconfig; make -j8; cd ..; \
+-        cd so3; make virt32_defconfig; make -j8; cd ..; \
++        patch -p1 < ci/so3_ci.patch; \
++        cd u-boot; make virt64_defconfig; make -j8; cd ..; \
++        cd so3; make virt64_defconfig; make -j8; cd ..; \
+         cd usr; ./build.sh
+ 
+ # Stage 2
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/filesystem/create_img.sh ./filesystem/create_img.sh
+--- ../base/so3/filesystem/create_img.sh	2023-10-10 20:01:16.409180435 +0200
++++ ./filesystem/create_img.sh	2023-10-10 18:00:34.902854890 +0200
 @@ -14,7 +14,7 @@
      echo Creating sdcard.img.$1 ... 
      dd_size=256M
@@ -71,9 +109,9 @@ diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
 +	losetup -D
  fi
  
-diff -Naur ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
---- ../so3.base/filesystem/mount.sh	2023-06-30 11:28:35.817060941 +0200
-+++ ./filesystem/mount.sh	2023-06-30 16:05:36.386943276 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/filesystem/mount.sh ./filesystem/mount.sh
+--- ../base/so3/filesystem/mount.sh	2023-10-10 20:01:16.409180435 +0200
++++ ./filesystem/mount.sh	2023-10-10 18:00:34.903854869 +0200
 @@ -10,18 +10,18 @@
      PLATFORM=$2
  fi
@@ -104,9 +142,14 @@ diff -Naur ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
 -    sudo mount /dev/"${devname}"$1 fs
 +    mount /dev/"${devname}"$1 fs
  fi
-diff -Naur ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
---- ../so3.base/filesystem/umount.sh	2023-06-30 11:28:35.817060941 +0200
-+++ ./filesystem/umount.sh	2023-06-30 16:04:50.214054550 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/filesystem/post_installation_done ./filesystem/post_installation_done
+--- ../base/so3/filesystem/post_installation_done	1970-01-01 01:00:00.000000000 +0100
++++ ./filesystem/post_installation_done	2023-10-12 11:12:52.517554767 +0200
+@@ -0,0 +1 @@
++OK
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/filesystem/umount.sh ./filesystem/umount.sh
+--- ../base/so3/filesystem/umount.sh	2023-10-10 20:01:16.409180435 +0200
++++ ./filesystem/umount.sh	2023-10-10 18:00:34.903854869 +0200
 @@ -12,11 +12,11 @@
  
  sleep 1
@@ -121,11 +164,29 @@ diff -Naur ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
 -    sudo losetup -D
 +    losetup -D
  fi
-diff -Naur ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
---- ../so3.base/rootfs/deploy.sh	2023-06-30 11:28:35.925058996 +0200
-+++ ./rootfs/deploy.sh	2023-06-30 16:06:02.634650079 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/README.md ./README.md
+--- ../base/so3/README.md	2023-10-10 20:01:16.295182965 +0200
++++ ./README.md	2023-10-10 20:00:22.360379522 +0200
+@@ -9,3 +9,14 @@
+ 
+ - avz_vt -> ./st must have virtualization on => use ./stv
+ - avz_pv -> ./st must have virtualization off => use ./st
++
++
++To build the patch related to the CI:
++
++- diff -Naur <source> <result> > so3_ci.patch
++and put the ci/so3_ci.patch in ci/
++
++To apply the patch, in the root:
++- patch -p1 < ci/so3_ci.patch
++
++
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/rootfs/deploy.sh ./rootfs/deploy.sh
+--- ../base/so3/rootfs/deploy.sh	2023-10-10 20:01:16.409180435 +0200
++++ ./rootfs/deploy.sh	2023-10-10 18:00:34.905854828 +0200
 @@ -15,8 +15,8 @@
- ./mount_ramfs.sh ${PLATFORM}
+ ./mount.sh
  cd ../filesystem
  ./mount.sh 1
 -sudo rm -rf fs/*
@@ -135,36 +196,40 @@ diff -Naur ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
  
  # Sometimes, syncing between RAM and FS takes some time
  sleep 1
-diff -Naur ../so3.base/rootfs/mount_ramfs.sh ./rootfs/mount_ramfs.sh
---- ../so3.base/rootfs/mount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
-+++ ./rootfs/mount_ramfs.sh	2023-06-30 16:06:37.483842565 +0200
-@@ -12,6 +12,6 @@
- # mount the rootfs
- mkdir -p fs
- 
--DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/rootfs.fat)
-+DEVLOOP=$(losetup --partscan --find --show ./board/$1/rootfs.fat)
- 
--sudo mount ${DEVLOOP}p1 fs
-+mount ${DEVLOOP}p1 fs
-diff -Naur ../so3.base/rootfs/umount_ramfs.sh ./rootfs/umount_ramfs.sh
---- ../so3.base/rootfs/umount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
-+++ ./rootfs/umount_ramfs.sh	2023-06-30 16:06:13.696087008 +0200
-@@ -8,8 +8,8 @@
- 
- echo "Here: board is $1"
-  
--sudo umount fs
--sudo losetup -D
--sudo rm -rf fs
-+umount fs
-+losetup -D
-+rm -rf fs
- 
- 
-diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
---- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
-+++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/rootfs/deploy.sh.orig ./rootfs/deploy.sh.orig
+--- ../base/so3/rootfs/deploy.sh.orig	1970-01-01 01:00:00.000000000 +0100
++++ ./rootfs/deploy.sh.orig	2023-10-10 17:48:51.297788289 +0200
+@@ -0,0 +1,27 @@
++#!/bin/bash
++
++echo Deploying the rootfs in the primary partition...
++
++if [ "$PLATFORM" == "" ]; then
++    if [ "$1" == "" ]; then
++        echo "PLATFORM must be defined (virt32, virt64, rpi4, rpi4_64)"
++        echo "You can invoke deploy.sh <platform>"
++        exit 0
++    fi
++    
++    PLATFORM=$1
++fi
++
++./mount.sh
++cd ../filesystem
++./mount.sh 1
++sudo rm -rf fs/*
++sudo cp -rf ../rootfs/fs/* fs/
++
++# Sometimes, syncing between RAM and FS takes some time
++sleep 1
++
++./umount.sh 
++cd ../rootfs
++./umount.sh
++
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
+--- ../base/so3/so3/arch/arm32/context.S	2023-10-10 20:01:16.410180413 +0200
++++ ./so3/arch/arm32/context.S	2023-10-10 18:00:47.897588994 +0200
 @@ -280,7 +280,7 @@
  	.equ welcome_len, . - .LC_welcome
  
@@ -174,63 +239,70 @@ diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
  
  .LCnoshell:
  	.string "so3: No init proc(shell) found ...\n"
-diff -Naur ../so3.base/so3/configs/virt32_defconfig ./so3/configs/virt32_defconfig
---- ../so3.base/so3/configs/virt32_defconfig	2023-06-30 11:28:35.959058383 +0200
-+++ ./so3/configs/virt32_defconfig	2023-07-01 10:06:55.164572793 +0200
-@@ -13,7 +13,7 @@
- # Platform
- #
- CONFIG_KERNEL_VADDR=0xc0000000
--CONFIG_VEXPRESS=y
-+CONFIG_VIRT32=y
- # CONFIG_RPI4 is not set
- CONFIG_RAM_BASE=0x40000000
- CONFIG_RAM_SIZE=0x3f000000
-@@ -42,7 +42,7 @@
- CONFIG_IO_MAPPING_BASE=0xe0000000
- # CONFIG_I2C is not set
- # CONFIG_NET is not set
--CONFIG_FB=y
-+# CONFIG_FB is not set
- CONFIG_INPUT=y
- # CONFIG_NS16550 is not set
- CONFIG_PL011_UART=y
-@@ -52,9 +52,9 @@
- # CONFIG_SP804 is not set
- CONFIG_ARM_TIMER=y
- CONFIG_GIC=y
--CONFIG_PL111_CLCD=y
-+# CONFIG_PL111_CLCD is not set
- # CONFIG_QEMU_RAMFB is not set
--CONFIG_PL050_KMI=y
-+# CONFIG_PL050_KMI is not set
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/arch/arm64/context.S ./so3/arch/arm64/context.S
+--- ../base/so3/so3/arch/arm64/context.S	2023-10-10 20:01:16.412180369 +0200
++++ ./so3/arch/arm64/context.S	2023-10-12 12:06:16.903371620 +0200
+@@ -323,7 +323,7 @@
+ 	.equ welcome_len, . - .LC_welcome
  
- #
- # SO3 Applications
-diff -Naur ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
---- ../so3.base/so3/devices/fb/pl111.c	2023-06-30 15:48:28.145384108 +0200
-+++ ./so3/devices/fb/pl111.c	2023-06-30 15:48:46.882818586 +0200
-@@ -104,10 +104,16 @@
- 	uint32_t i, page;
+ .LC_exec:
+-	.string "sh.elf"
++	.string "stress.elf"
+ 
+ .LCnoshell:
+ 	.string "so3: No init proc(shell) found ...\n"
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
+--- ../base/so3/so3/devices/fb/pl111.c	2023-10-12 12:09:15.740292247 +0200
++++ ./so3/devices/fb/pl111.c	2023-10-12 12:06:43.684760660 +0200
+@@ -105,11 +105,17 @@
+ 	addr_t page;
  	pcb_t *pcb = current()->pcb;
  
 +	/* Just for doing some test with performance analysis */
 +	virt_addr = malloc(page_count*PAGE_SIZE);
 +	BUG_ON(!virt_addr);
++
 +#if 0
  	for (i = 0; i < page_count; i++) {
  		/* Map a process' virtual page to the physical one (here the VRAM). */
  		page = LCDUPBASE + i * PAGE_SIZE;
  		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
-+	}
+ 	}
 +#endif
  
  	__vaddr = virt_addr;
  
-diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
---- ../so3.base/so3/kernel/process.c	2023-06-30 11:28:35.978058041 +0200
-+++ ./so3/kernel/process.c	2023-06-30 11:25:57.456816584 +0200
-@@ -848,10 +848,18 @@
+@@ -139,7 +145,7 @@
+ }
+ 
+ int fb_close(int fd) {
+-	free((void *) __vaddr);
++	/* free((void *) __vaddr); */
+ 
+ 	return 0;
+ }
+@@ -179,7 +185,7 @@
+ 	base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+ 
+ #endif
+-
++#if 0 /* lvgl */
+ 	/* Disable interrupts. */
+ 	iowrite32(base + CLCD_IENB, 0);
+ 
+@@ -197,7 +203,7 @@
+ 
+ 	/* Configure, enable and power on the controller. */
+ 	iowrite32(base + CLCD_CNTL, WATERMARK | LCDVCOMP | LCDPWR | BEPO | BEBO | BGR | LCDDUAL | LCDMONO8 | LCDTFT | LCDBW | LCDBPP | LCDEN);
+-
++#endif
+ 	/* Register the framebuffer so it can be accessed from user space. */
+ 	devclass_register(dev, &pl111_cdev);
+ 
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/kernel/process.c ./so3/kernel/process.c
+--- ../base/so3/so3/kernel/process.c	2023-10-10 20:01:16.437179814 +0200
++++ ./so3/kernel/process.c	2023-10-12 12:06:51.291587130 +0200
+@@ -861,10 +861,27 @@
  	pcb_t *pcb;
  	unsigned i;
  
@@ -241,272 +313,26 @@ diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
  
  	/* Never finish the root process */
  	if (pcb->parent == NULL) {
-+		reg0 = 0x18;    // angel_SWIreason_ReportException
-+		reg1 = 0x20026; // ADP_Stopped_ApplicationExit
++#ifdef CONFIG_ARCH_ARM32
++		reg0 = 0x18;    /* SYSEXIT */
++		reg1 = 0x20026; /* ADP_Stopped_ApplicationExit */
 +
 +		asm("svc 0x00123456");  // make semihosting call
++#else
++		reg0 = 0x18;    /* SYSEXIT */
++		reg1 = 0x20026;
++
++		__asm__("hlt 0xf000");  // make semihosting call
++
++
++#endif
 +
  		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
  		kernel_panic();
  	}
-diff -Naur ../so3.base/so3_ci.patch ./so3_ci.patch
---- ../so3.base/so3_ci.patch	1970-01-01 01:00:00.000000000 +0100
-+++ ./so3_ci.patch	2023-07-01 10:07:57.740928793 +0200
-@@ -0,0 +1,251 @@
-+diff -Naur ../so3.base/deploy.sh ./deploy.sh
-+--- ../so3.base/deploy.sh	2023-06-30 11:28:35.461067351 +0200
-++++ ./deploy.sh	2023-06-30 16:07:08.890135194 +0200
-+@@ -76,11 +76,11 @@
-+     
-+ # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
-+     if [ "$deploy_rootfs" != "y" ]; then
-+-    sudo rm -rf fs/*
-++    rm -rf fs/*
-+     fi
-+     
-+-    [ -f ../target/${PLATFORM}.itb ] && sudo cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
-+-    sudo cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
-++    [ -f ../target/${PLATFORM}.itb ] && cp ../target/${PLATFORM}.itb fs/ && echo ITB deployed.
-++    cp ../u-boot/uEnv.d/uEnv_${PLATFORM}.txt fs/uEnv.txt
-+        
-+     if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "vexpress" -o "$PLATFORM" == "virt64" ]; then
-+ 	# Nothing else ...
-+@@ -89,15 +89,15 @@
-+     fi
-+  
-+     if [ "$PLATFORM" == "rpi4" ]; then
-+-        sudo cp -r ../bsp/rpi4/* fs/
-+-        sudo cp ../u-boot/u-boot.bin fs/kernel7.img
-++        cp -r ../bsp/rpi4/* fs/
-++        cp ../u-boot/u-boot.bin fs/kernel7.img
-+         ./umount.sh
-+         cd ..
-+     fi
-+     
-+     if [ "$PLATFORM" == "rpi4_64" ]; then
-+-        sudo cp -r ../bsp/rpi4/* fs/
-+-        sudo cp ../u-boot/u-boot.bin fs/kernel8.img
-++        cp -r ../bsp/rpi4/* fs/
-++        cp ../u-boot/u-boot.bin fs/kernel8.img
-+         ./umount.sh
-+         cd ..
-+     fi
-+diff -Naur ../so3.base/filesystem/create_img.sh ./filesystem/create_img.sh
-+--- ../so3.base/filesystem/create_img.sh	2023-06-30 17:27:01.141409090 +0200
-++++ ./filesystem/create_img.sh	2023-06-30 17:28:53.180522656 +0200
-+@@ -14,7 +14,7 @@
-+     echo Creating sdcard.img.$1 ... 
-+     dd_size=256M
-+     dd if=/dev/zero of=sdcard.img.$1 bs="$dd_size" count=1
-+-    devname=$(sudo losetup --partscan --find --show sdcard.img.$1)
-++    devname=$(losetup --partscan --find --show sdcard.img.$1)
-+ 
-+     # Keep device name only without /dev/
-+     devname=${devname#"/dev/"}
-+@@ -27,7 +27,7 @@
-+ 
-+ if [ "$1" == "virt32" -o "$1" == "rpi4" -o "$1" == "rpi4_64" -o "$1" == "virt64" ]; then
-+ #create the partition layout this way
-+-    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | sudo fdisk /dev/"$devname";
-++    (echo o; echo n; echo p; echo; echo; echo; echo t; echo c; echo w) | fdisk /dev/"$devname";
-+ fi
-+ 
-+ echo Waiting...
-+@@ -38,10 +38,10 @@
-+     export devname="${devname}p"
-+ fi
-+ 
-+-sudo mkfs.fat -F32 -v /dev/"$devname"1
-+-sudo mkfs.ext4 /dev/"$devname"2
-++mkfs.fat -F32 -v /dev/"$devname"1
-++mkfs.ext4 /dev/"$devname"2
-+ 
-+ if [ "$1" == "virt32" -o "$1" == "virt64" ]; then
-+-	sudo losetup -D
-++	losetup -D
-+ fi
-+ 
-+diff -Naur ../so3.base/filesystem/mount.sh ./filesystem/mount.sh
-+--- ../so3.base/filesystem/mount.sh	2023-06-30 11:28:35.817060941 +0200
-++++ ./filesystem/mount.sh	2023-06-30 16:05:36.386943276 +0200
-+@@ -10,18 +10,18 @@
-+     PLATFORM=$2
-+ fi
-+ 
-+-sudo rm -rf fs/*
-++rm -rf fs/*
-+ mkdir -p fs
-+  
-+ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
-+-    devname=$(sudo losetup --partscan --find --show sdcard.img.${PLATFORM})
-++    devname=$(losetup --partscan --find --show sdcard.img.${PLATFORM})
-+     FS_IMG=sdcard.img.${PLATFORM}
-+ 
-+     #sudo losetup -P --find --show flash
-+-   
-++
-+ 
-+     # device is loopback (loop<n>)
-+-    sudo mount ${devname}p$1 fs 
-++    mount ${devname}p$1 fs
-+     exit 0
-+ fi
-+ 
-+@@ -35,5 +35,5 @@
-+ fi
-+ 
-+ if [ "$PLATFORM" == "rpi4" -o "$PLATFORM" == "rpi4_64" ]; then
-+-    sudo mount /dev/"${devname}"$1 fs
-++    mount /dev/"${devname}"$1 fs
-+ fi
-+diff -Naur ../so3.base/filesystem/umount.sh ./filesystem/umount.sh
-+--- ../so3.base/filesystem/umount.sh	2023-06-30 11:28:35.817060941 +0200
-++++ ./filesystem/umount.sh	2023-06-30 16:04:50.214054550 +0200
-+@@ -12,11 +12,11 @@
-+ 
-+ sleep 1
-+ 
-+-sudo umount fs
-++umount fs
-+ 
-+ # Let the filesystem be synchronized
-+ sleep 1
-+ 
-+ if [ "$PLATFORM" == "virt32" -o "$PLATFORM" == "virt64" ]; then
-+-    sudo losetup -D
-++    losetup -D
-+ fi
-+diff -Naur ../so3.base/rootfs/deploy.sh ./rootfs/deploy.sh
-+--- ../so3.base/rootfs/deploy.sh	2023-06-30 11:28:35.925058996 +0200
-++++ ./rootfs/deploy.sh	2023-06-30 16:06:02.634650079 +0200
-+@@ -15,8 +15,8 @@
-+ ./mount_ramfs.sh ${PLATFORM}
-+ cd ../filesystem
-+ ./mount.sh 1
-+-sudo rm -rf fs/*
-+-sudo cp -rf ../rootfs/fs/* fs/
-++rm -rf fs/*
-++cp -rf ../rootfs/fs/* fs/
-+ 
-+ # Sometimes, syncing between RAM and FS takes some time
-+ sleep 1
-+diff -Naur ../so3.base/rootfs/mount_ramfs.sh ./rootfs/mount_ramfs.sh
-+--- ../so3.base/rootfs/mount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
-++++ ./rootfs/mount_ramfs.sh	2023-06-30 16:06:37.483842565 +0200
-+@@ -12,6 +12,6 @@
-+ # mount the rootfs
-+ mkdir -p fs
-+ 
-+-DEVLOOP=$(sudo losetup --partscan --find --show ./board/$1/rootfs.fat)
-++DEVLOOP=$(losetup --partscan --find --show ./board/$1/rootfs.fat)
-+ 
-+-sudo mount ${DEVLOOP}p1 fs
-++mount ${DEVLOOP}p1 fs
-+diff -Naur ../so3.base/rootfs/umount_ramfs.sh ./rootfs/umount_ramfs.sh
-+--- ../so3.base/rootfs/umount_ramfs.sh	2023-06-30 11:28:35.925058996 +0200
-++++ ./rootfs/umount_ramfs.sh	2023-06-30 16:06:13.696087008 +0200
-+@@ -8,8 +8,8 @@
-+ 
-+ echo "Here: board is $1"
-+  
-+-sudo umount fs
-+-sudo losetup -D
-+-sudo rm -rf fs
-++umount fs
-++losetup -D
-++rm -rf fs
-+ 
-+ 
-+diff -Naur ../so3.base/so3/arch/arm32/context.S ./so3/arch/arm32/context.S
-+--- ../so3.base/so3/arch/arm32/context.S	2023-06-30 11:28:35.952058510 +0200
-++++ ./so3/arch/arm32/context.S	2023-06-30 11:20:33.242667429 +0200
-+@@ -280,7 +280,7 @@
-+ 	.equ welcome_len, . - .LC_welcome
-+ 
-+ .LC_exec:
-+-	.string "sh.elf"
-++	.string "stress.elf"
-+ 
-+ .LCnoshell:
-+ 	.string "so3: No init proc(shell) found ...\n"
-+diff -Naur ../so3.base/so3/configs/virt32_defconfig ./so3/configs/virt32_defconfig
-+--- ../so3.base/so3/configs/virt32_defconfig	2023-06-30 11:28:35.959058383 +0200
-++++ ./so3/configs/virt32_defconfig	2023-07-01 10:06:55.164572793 +0200
-+@@ -13,7 +13,7 @@
-+ # Platform
-+ #
-+ CONFIG_KERNEL_VADDR=0xc0000000
-+-CONFIG_VEXPRESS=y
-++CONFIG_VIRT32=y
-+ # CONFIG_RPI4 is not set
-+ CONFIG_RAM_BASE=0x40000000
-+ CONFIG_RAM_SIZE=0x3f000000
-+@@ -42,7 +42,7 @@
-+ CONFIG_IO_MAPPING_BASE=0xe0000000
-+ # CONFIG_I2C is not set
-+ # CONFIG_NET is not set
-+-CONFIG_FB=y
-++# CONFIG_FB is not set
-+ CONFIG_INPUT=y
-+ # CONFIG_NS16550 is not set
-+ CONFIG_PL011_UART=y
-+@@ -52,9 +52,9 @@
-+ # CONFIG_SP804 is not set
-+ CONFIG_ARM_TIMER=y
-+ CONFIG_GIC=y
-+-CONFIG_PL111_CLCD=y
-++# CONFIG_PL111_CLCD is not set
-+ # CONFIG_QEMU_RAMFB is not set
-+-CONFIG_PL050_KMI=y
-++# CONFIG_PL050_KMI is not set
-+ 
-+ #
-+ # SO3 Applications
-+diff -Naur ../so3.base/so3/devices/fb/pl111.c ./so3/devices/fb/pl111.c
-+--- ../so3.base/so3/devices/fb/pl111.c	2023-06-30 15:48:28.145384108 +0200
-++++ ./so3/devices/fb/pl111.c	2023-06-30 15:48:46.882818586 +0200
-+@@ -104,10 +104,16 @@
-+ 	uint32_t i, page;
-+ 	pcb_t *pcb = current()->pcb;
-+ 
-++	/* Just for doing some test with performance analysis */
-++	virt_addr = malloc(page_count*PAGE_SIZE);
-++	BUG_ON(!virt_addr);
-++#if 0
-+ 	for (i = 0; i < page_count; i++) {
-+ 		/* Map a process' virtual page to the physical one (here the VRAM). */
-+ 		page = LCDUPBASE + i * PAGE_SIZE;
-+ 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
-++	}
-++#endif
-+ 
-+ 	__vaddr = virt_addr;
-+ 
-+diff -Naur ../so3.base/so3/kernel/process.c ./so3/kernel/process.c
-+--- ../so3.base/so3/kernel/process.c	2023-06-30 11:28:35.978058041 +0200
-++++ ./so3/kernel/process.c	2023-06-30 11:25:57.456816584 +0200
-+@@ -848,10 +848,18 @@
-+ 	pcb_t *pcb;
-+ 	unsigned i;
-+ 
-++	register int reg0 asm("r0");
-++	register int reg1 asm("r1");
-++
-+ 	pcb = current()->pcb;
-+ 
-+ 	/* Never finish the root process */
-+ 	if (pcb->parent == NULL) {
-++		reg0 = 0x18;    // angel_SWIreason_ReportException
-++		reg1 = 0x20026; // ADP_Stopped_ApplicationExit
-++
-++		asm("svc 0x00123456");  // make semihosting call
-++
-+ 		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
-+ 		kernel_panic();
-+ 	}
-diff -Naur ../so3.base/st ./st
---- ../so3.base/st	2023-06-30 11:28:35.461067351 +0200
-+++ ./st	2023-06-30 16:25:06.106915058 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/st ./st
+--- ../base/so3/st	2023-10-10 20:01:16.456179392 +0200
++++ ./st	2023-10-10 19:47:55.408906002 +0200
 @@ -9,6 +9,18 @@
  QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
  GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
@@ -517,8 +343,8 @@ diff -Naur ../so3.base/st ./st
 +if [ ! -f post_installation_done ]; then
 +
 +	cd filesystem
-+	./create_img.sh virt32 && cd ..
-+	cd rootfs && ./create_ramfs.sh virt32 && cd ..
++	./create_img.sh virt64 && cd ..
++	cd rootfs && ./create_ramfs.sh virt64 && cd ..
 +	./deploy.sh -bu
 +	echo "OK" > post_installation_done
 +
@@ -534,49 +360,98 @@ diff -Naur ../so3.base/st ./st
 +    qemu-system-aarch64 $@ ${USR_OPTION} \
   	-smp 4  \
  	-serial mon:stdio  \
- 	-M virt,gic-version=2 -cpu cortex-a72  \
-@@ -36,17 +48,19 @@
- 
-     else    
-    echo Starting on ARM32
--   sudo qemu/build/arm-softmmu/qemu-system-arm $@ ${USR_OPTION} \
--  	-smp 2 \
--	-serial mon:stdio  \
-+   
-+	qemu-system-arm $@ ${USR_OPTION} \
-+  	-icount shift=auto,sleep=off \
+ 	-M virt -cpu cortex-a72  \
+@@ -29,10 +41,13 @@
+ 	-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
+ 	-m 1024 \
+ 	-kernel u-boot/u-boot \
+-	-nographic \
+-	-netdev tap,id=n1,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh \
+-	-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+-        -gdb tcp::${GDB_PORT}
++	-nographic > /dev/null \
++	-icount shift=auto,sleep=off \
 +	-semihosting \
 +	-chardev stdio,id=char0,mux=on,logfile=${CHECKPERF_LOG},signal=off \
 +	-serial chardev:char0  \
-+	-mon chardev=char0 \
- 	-M virt  -cpu cortex-a15 \
- 	-device virtio-blk-device,drive=hd0 \
- 	-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
- 	-m 1024 \
- 	-bios u-boot/u-boot.bin \
--	-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
--	-nographic \
--	-gdb tcp::${GDB_PORT}
-+	-nographic > /dev/null
-         
-     fi
-  
-diff -Naur ../so3.base/usr/deploy.sh ./usr/deploy.sh
---- ../so3.base/usr/deploy.sh	2023-06-30 11:28:36.023057231 +0200
-+++ ./usr/deploy.sh	2023-06-30 16:30:49.726769556 +0200
++	-mon chardev=char0
++
+ 
+     else    
+    echo Starting on ARM32
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/u-boot/configs/virt64_defconfig ./u-boot/configs/virt64_defconfig
+--- ../base/so3/u-boot/configs/virt64_defconfig	2023-10-10 20:01:16.806171627 +0200
++++ ./u-boot/configs/virt64_defconfig	2023-10-12 12:07:26.160791707 +0200
+@@ -4,7 +4,7 @@
+ #
+ 
+ #
+-# Compiler: aarch64-linux-gnu-gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
++# Compiler: aarch64-none-linux-gnu-gcc (Arm GNU Toolchain 11.3.Rel1) 11.3.1 20220712
+ #
+ CONFIG_CREATE_ARCH_SYMLINK=y
+ CONFIG_SYS_CACHE_SHIFT_6=y
+@@ -214,7 +214,7 @@
+ CONFIG_LOCALVERSION=""
+ CONFIG_LOCALVERSION_AUTO=y
+ CONFIG_CC_IS_GCC=y
+-CONFIG_GCC_VERSION=110400
++CONFIG_GCC_VERSION=110301
+ CONFIG_CLANG_VERSION=0
+ CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+ # CONFIG_OPTIMIZE_INLINING is not set
+@@ -299,7 +299,7 @@
+ # Autoboot options
+ #
+ CONFIG_AUTOBOOT=y
+-CONFIG_BOOTDELAY=2
++CONFIG_BOOTDELAY=0
+ # CONFIG_AUTOBOOT_KEYED is not set
+ # CONFIG_AUTOBOOT_USE_MENUKEY is not set
+ # CONFIG_USE_BOOTARGS is not set
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/deploy.sh ./usr/deploy.sh
+--- ../base/so3/usr/deploy.sh	2023-10-12 12:09:15.740292247 +0200
++++ ./usr/deploy.sh	2023-10-10 18:01:36.805583204 +0200
 @@ -17,7 +17,7 @@
  
  cd ../rootfs
- ./mount_ramfs.sh  ${PLATFORM}
+ ./mount.sh  ${PLATFORM}
 -sudo cp -r ../usr/out/* fs
 -sudo cp -r ../usr/build/deploy/* fs
 +cp -r ../usr/out/* fs
 +cp -r ../usr/build/deploy/* fs
- ./umount_ramfs.sh  ${PLATFORM}
+ ./umount.sh  ${PLATFORM}
  
-diff -Naur ../so3.base/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
---- ../so3.base/usr/src/CMakeLists.txt	2023-06-30 11:28:36.274052711 +0200
-+++ ./usr/src/CMakeLists.txt	2023-06-30 11:23:49.767119965 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/deploy.sh.orig ./usr/deploy.sh.orig
+--- ../base/so3/usr/deploy.sh.orig	1970-01-01 01:00:00.000000000 +0100
++++ ./usr/deploy.sh.orig	2023-10-10 18:00:54.562452395 +0200
+@@ -0,0 +1,23 @@
++#!/bin/bash
++
++if [ "$PLATFORM" == "" ]; then
++    if [ "$1" == "" ]; then  
++        echo "PLATFORM must be defined (virt32, virt64, rpi4, rpi4_64, so3virt)"
++        echo "You can invoke deploy.sh <platform>"
++        exit 0
++    fi
++    
++    PLATFORM=$1
++fi
++echo "Here: board is  ${PLATFORM}"
++echo "------------------- deploy usr apps in so3  ---------------"
++
++
++echo Deploying user apps into the ramfs partition
++
++cd ../rootfs
++./mount.sh  ${PLATFORM}
++sudo cp -r ../usr/out/* fs
++sudo cp -r ../usr/build/deploy/* fs
++./umount.sh  ${PLATFORM}
++
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
+--- ../base/so3/usr/src/CMakeLists.txt	2023-10-10 20:01:17.442157516 +0200
++++ ./usr/src/CMakeLists.txt	2023-10-10 18:00:54.563452374 +0200
 @@ -5,7 +5,6 @@
  add_executable(time.elf time.c)
  add_executable(ping.elf ping.c)
@@ -585,9 +460,9 @@ diff -Naur ../so3.base/usr/src/CMakeLists.txt ./usr/src/CMakeLists.txt
  add_subdirectory(stress)
  
  target_link_libraries(sh.elf c)
-diff -Naur ../so3.base/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLists.txt
---- ../so3.base/usr/src/widgets/CMakeLists.txt	2023-06-30 11:28:36.265052874 +0200
-+++ ./usr/src/widgets/CMakeLists.txt	2023-06-30 11:16:22.558198671 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLists.txt
+--- ../base/so3/usr/src/widgets/CMakeLists.txt	2023-10-10 20:01:17.516155874 +0200
++++ ./usr/src/widgets/CMakeLists.txt	2023-10-10 18:00:54.563452374 +0200
 @@ -4,6 +4,10 @@
  #add_compile_options("-DLV_LVGL_H_INCLUDE_SIMPLE")
  
@@ -601,9 +476,9 @@ diff -Naur ../so3.base/usr/src/widgets/CMakeLists.txt ./usr/src/widgets/CMakeLis
 \ No newline at end of file
 +target_link_libraries(demofb.elf c lvgl)
 +target_link_libraries(lvgl_perf.elf c lvgl)
-diff -Naur ../so3.base/usr/src/widgets/demofb.c ./usr/src/widgets/demofb.c
---- ../so3.base/usr/src/widgets/demofb.c	2023-06-30 12:44:41.164676756 +0200
-+++ ./usr/src/widgets/demofb.c	2023-06-30 11:23:18.848677863 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/src/widgets/demofb.c ./usr/src/widgets/demofb.c
+--- ../base/so3/usr/src/widgets/demofb.c	2023-10-10 20:01:17.516155874 +0200
++++ ./usr/src/widgets/demofb.c	2023-10-10 18:00:54.564452354 +0200
 @@ -55,7 +55,7 @@
  void *tick_routine(void *args)
  {
@@ -631,9 +506,9 @@ diff -Naur ../so3.base/usr/src/widgets/demofb.c ./usr/src/widgets/demofb.c
  	/* Map the framebuffer into process memory. */
  	fbp = mmap(NULL, fb_size, 0, 0, fd, 0);
  	if (!fbp) {
-diff -Naur ../so3.base/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
---- ../so3.base/usr/src/widgets/lvgl_perf.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./usr/src/widgets/lvgl_perf.c	2023-04-07 13:06:50.872067219 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
+--- ../base/so3/usr/src/widgets/lvgl_perf.c	1970-01-01 01:00:00.000000000 +0100
++++ ./usr/src/widgets/lvgl_perf.c	2023-10-10 18:00:54.564452354 +0200
 @@ -0,0 +1,245 @@
 +/*
 + * Copyright (C) 2020 Nikolaos Garanis <nikolaos.garanis@heig-vd.ch>
@@ -880,9 +755,9 @@ diff -Naur ../so3.base/usr/src/widgets/lvgl_perf.c ./usr/src/widgets/lvgl_perf.c
 +
 +	return 0;
 +}
-diff -Naur ../so3.base/usr/src/widgets/lvgl_perf_drawing.c ./usr/src/widgets/lvgl_perf_drawing.c
---- ../so3.base/usr/src/widgets/lvgl_perf_drawing.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./usr/src/widgets/lvgl_perf_drawing.c	2023-04-07 13:06:50.868067316 +0200
+diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/src/widgets/lvgl_perf_drawing.c ./usr/src/widgets/lvgl_perf_drawing.c
+--- ../base/so3/usr/src/widgets/lvgl_perf_drawing.c	1970-01-01 01:00:00.000000000 +0100
++++ ./usr/src/widgets/lvgl_perf_drawing.c	2023-10-10 18:00:54.564452354 +0200
 @@ -0,0 +1,133 @@
 +/**
 + * @file lv_demo_widgets.c

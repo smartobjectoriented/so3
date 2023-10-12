@@ -11,14 +11,14 @@ RUN apk update; \
 
 RUN cd /; \
     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
-    unzip master.zip; mv so3-master so3
+    unzip master.zip; mv so3-* so3
 
 WORKDIR so3
 
 RUN     find / -name thumb | xargs rm -r; \
-        patch -s -p0 < ci/so3_ci.patch; \
-        cd u-boot; make virt32_defconfig; make -j8; cd ..; \
-        cd so3; make virt32_defconfig; make -j8; cd ..; \
+        patch -p1 < ci/so3_ci.patch; \
+        cd u-boot; make virt64_defconfig; make -j8; cd ..; \
+        cd so3; make virt64_defconfig; make -j8; cd ..; \
         cd usr; ./build.sh
 
 # Stage 2
