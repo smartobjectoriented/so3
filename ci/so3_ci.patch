@@ -329,7 +329,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  	}
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/st ./st
 --- ../base/so3/st	2023-10-10 20:01:16.456179392 +0200
-+++ ./st	2023-10-12 16:08:10.073165024 +0200
++++ ./st	2023-10-13 11:28:33.128572929 +0200
 @@ -9,6 +9,18 @@
  QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
  GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
@@ -376,6 +376,13 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  
      else    
     echo Starting on ARM32
+@@ -49,4 +63,6 @@
+ 	-gdb tcp::${GDB_PORT}
+         
+     fi
++
++cp *.log /host
+  
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/u-boot/configs/virt64_defconfig ./u-boot/configs/virt64_defconfig
 --- ../base/so3/u-boot/configs/virt64_defconfig	2023-10-10 20:01:16.806171627 +0200
 +++ ./u-boot/configs/virt64_defconfig	2023-10-12 15:53:40.572091768 +0200

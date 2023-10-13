@@ -38,5 +38,5 @@ COPY --from=stage1 / /
 WORKDIR so3
 EXPOSE 1234
 
-CMD    ./st
-COPY /*.log /
+CMD ./st
+
