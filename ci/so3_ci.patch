@@ -199,13 +199,13 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  	.string "so3: No init proc(shell) found ...\n"
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/so3/configs/virt64_defconfig ./so3/configs/virt64_defconfig
 --- ../base/so3/so3/configs/virt64_defconfig	2023-10-10 20:01:16.414180324 +0200
-+++ ./so3/configs/virt64_defconfig	2023-10-13 15:48:53.530257175 +0200
++++ ./so3/configs/virt64_defconfig	2023-10-19 15:22:52.918216918 +0200
 @@ -6,7 +6,7 @@
  CONFIG_ARCH_ARM64=y
  # CONFIG_SO3VIRT is not set
  CONFIG_ARCH="arm64"
 -CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
-+CONFIG_CROSS_COMPILE="aarch64-linux-gnu-"
++CONFIG_CROSS_COMPILE="aarch64-none-elf-"
  # CONFIG_ARM_TRUSTZONE is not set
  CONFIG_KERNEL_VADDR=0xffff800000000000
  
@@ -415,19 +415,19 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  # CONFIG_USE_BOOTARGS is not set
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/u-boot/Makefile ./u-boot/Makefile
 --- ../base/so3/u-boot/Makefile	2023-10-10 20:01:16.458179348 +0200
-+++ ./u-boot/Makefile	2023-10-13 15:48:18.698192035 +0200
++++ ./u-boot/Makefile	2023-10-19 15:21:00.521835443 +0200
 @@ -274,7 +274,7 @@
  
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64))
  ARCH	= arm64
 -CROSS_COMPILE = aarch64-none-linux-gnu-
-+CROSS_COMPILE = aarch64-linux-gnu-
++CROSS_COMPILE = aarch64-none-elf-
  endif
  
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 vexpress bbb))
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/aarch64_toolchain.cmake ./usr/aarch64_toolchain.cmake
 --- ../base/so3/usr/aarch64_toolchain.cmake	2023-10-10 20:01:17.135164327 +0200
-+++ ./usr/aarch64_toolchain.cmake	2023-10-14 13:51:09.142531593 +0200
++++ ./usr/aarch64_toolchain.cmake	2023-10-19 15:24:32.902888381 +0200
 @@ -17,13 +17,13 @@
  set(CMAKE_INSTALL_SO_NO_EXE 0)
  
@@ -435,9 +435,9 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -set(CMAKE_C_COMPILER "aarch64-none-linux-gnu-gcc")
 -set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-linux-gnu-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 -set(CMAKE_ASM_COMPILER "aarch64-none-linux-gnu-gcc")
-+set(CMAKE_C_COMPILER "aarch64-linux-gnu-gcc")
-+set(CMAKE_C_LINK_EXECUTABLE "aarch64-linux-gnu-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
-+set(CMAKE_ASM_COMPILER "aarch64-linux-gnu-gcc")
++set(CMAKE_C_COMPILER "aarch64-none-elf-gcc")
++set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-elf-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
++set(CMAKE_ASM_COMPILER "aarch64-none-elf-gcc")
  
  set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  -D__ARM64__  \
          -g -ffreestanding -fno-common")
@@ -445,7 +445,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  set(CMAKE_ASM_FLAGS_DEBUG "-D__ASSEMBLY__")
  
 -set(CMAKE_LINKER "aarch64-none-linux-gnu-ld")
-+set(CMAKE_LINKER "aarch64-linux-gnu-ld")
++set(CMAKE_LINKER "aarch64-none-elf-ld")
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru ../base/so3/usr/deploy.sh ./usr/deploy.sh
 --- ../base/so3/usr/deploy.sh	2023-10-12 12:09:15.740292247 +0200
 +++ ./usr/deploy.sh	2023-10-12 15:53:40.574091722 +0200
