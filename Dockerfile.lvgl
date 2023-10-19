@@ -21,7 +21,12 @@ RUN apk update; \
 
 RUN cd /; \
     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/master.zip; \
-    unzip master.zip; mv so3-* so3
+    unzip master.zip; mv so3-* so3; \
+    rm -rf /so3/usr/lib/lvgl/*
+
+# Import the local LVGL library
+COPY /lvgl_base/* /so3/usr/lib/lvgl/
+COPY /lvgl_base/demos/stress/* /so3/usr/src/stress/
 
 WORKDIR so3
 
