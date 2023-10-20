@@ -23,7 +23,7 @@ ENDPROC(s_init)
 .pushsection .text.lowlevel_init, "ax"
 WEAK(lowlevel_init)
 
-	/* SOO.tech */
+	/* heig-vd */
 
 	/*
 	 * Examine if we are running on CPU > #0
