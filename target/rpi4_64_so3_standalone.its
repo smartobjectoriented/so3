@@ -25,7 +25,7 @@
 
 		so3 {
 			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3/so3.bin");
+			data = /incbin/("../so3/so3.bin");
 			type = "kernel";
 			arch = "arm64";
 			os = "linux";
@@ -36,7 +36,7 @@
                 
 		fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/so3/dts/rpi4_64.dtb");
+			data = /incbin/("../so3/dts/rpi4_64.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";

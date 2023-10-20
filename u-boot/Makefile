@@ -272,7 +272,7 @@ export	HOSTARCH HOSTOS
 # (SOO.tech) Usual toolchains for our systems
 include ../build.conf
 
-ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64))
+ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64 rpi4_64 cm4_64))
 ARCH	= arm64
 CROSS_COMPILE = aarch64-none-linux-gnu-
 endif
