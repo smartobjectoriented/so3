@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8. “C” coding conventions (Cconv) &mdash; SO3 Operating System 2021.4.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=ef5cc73b"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="7. MicroPython" href="micropython.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+          </a>
+              <div class="version">
+                2021.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">3. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">4. Debugging SO3 with JTAG on RPi4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">5. LVGL - Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">7. MicroPython</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">8. Coding conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#indentation">8.1. Indentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#breaking-long-lines-and-strings">8.2. Breaking long lines and strings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#placing-braces-and-spaces">8.3. Placing Braces and Spaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spaces">8.3.1. Spaces</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#naming">8.4. Naming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#typedefs">8.5. Typedefs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">8.6. Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#centralized-exiting-of-functions">8.7. Centralized exiting of functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commenting">8.8. Commenting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#macros-enums-and-rtl">8.9. Macros, Enums and RTL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#printing-logging-messages">8.10. Printing logging messages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#syslog-ng">8.10.1. Syslog-ng</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#function-return-values-and-names">8.11. Function return values and names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inline-assembly">8.12. Inline assembly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conditional-compilation">8.13. Conditional Compilation</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">8. </span>“C” coding conventions (Cconv)</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="admonition note" id="coding-conventions">
+<p class="admonition-title">Note</p>
+<p>This coding style document has been borrowed from the Linux coding style.</p>
+</div>
+<section id="c-coding-conventions-cconv">
+<h1><span class="section-number">8. </span>“C” coding conventions (Cconv)<a class="headerlink" href="#c-coding-conventions-cconv" title="Link to this heading">¶</a></h1>
+<section id="indentation">
+<h2><span class="section-number">8.1. </span>Indentation<a class="headerlink" href="#indentation" title="Link to this heading">¶</a></h2>
+<p>Tabs are 8 characters, and thus indentations are also 8 characters.</p>
+<p>Rationale: The whole idea behind indentation is to clearly define where
+a block of control starts and ends.  Especially when you’ve been looking
+at your screen for 20 straight hours, you’ll find it a lot easier to see
+how the indentation works if you have large indentations.</p>
+<p>Now, some people will claim that having 8-character indentations makes
+the code move too far to the right, and makes it hard to read on a
+80-character terminal screen.  The answer to that is that if you need
+more than 3 levels of indentation, you’re screwed anyway, and should fix
+your program.</p>
+<p>In short, 8-char indents make things easier to read, and have the added
+benefit of warning you when you’re nesting your functions too deep.
+Heed that warning.</p>
+<p>The preferred way to ease multiple indentation levels in a switch statement is
+to align the <code class="docutils literal notranslate"><span class="pre">switch</span></code> and its subordinate <code class="docutils literal notranslate"><span class="pre">case</span></code> labels in the same column
+instead of <code class="docutils literal notranslate"><span class="pre">double-indenting</span></code> the <code class="docutils literal notranslate"><span class="pre">case</span></code> labels.  E.g.:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;G&#39;</span><span class="p">:</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;g&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="n">mem</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="mi">30</span><span class="p">;</span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;M&#39;</span><span class="p">:</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;m&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="n">mem</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;K&#39;</span><span class="p">:</span>
+<span class="k">case</span><span class="w"> </span><span class="sc">&#39;k&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="n">mem</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="w">        </span><span class="cm">/* fall through */</span>
+<span class="k">default</span><span class="o">:</span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Don’t put multiple statements on a single line unless you have
+something to hide:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span><span class="w"> </span><span class="n">do_this</span><span class="p">;</span>
+<span class="w">  </span><span class="n">do_something_everytime</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Don’t put multiple assignments on a single line either. Coding style
+is super simple.  Avoid tricky expressions.</p>
+<p>Outside of comments, documentation and except in some files where it is required
+like Kconfig Linux kernel, spaces are never used for indentation,
+and the above example is deliberately broken.</p>
+<p>Get a decent editor and don’t leave whitespace at the end of lines.</p>
+</section>
+<section id="breaking-long-lines-and-strings">
+<h2><span class="section-number">8.2. </span>Breaking long lines and strings<a class="headerlink" href="#breaking-long-lines-and-strings" title="Link to this heading">¶</a></h2>
+<p>Coding style is all about readability and maintainability using commonly
+available tools.</p>
+<p>The limit on the length of lines should correspond to what a modern screen and
+editor is reasonibly able to display before the reader has to scroll horizontally
+(even if it is acceptable to scroll over a few characters).</p>
+<p>Statements too long will be broken into sensible chunks.
+Descendants are always substantially shorter than the parent and
+are placed substantially to the right. The same applies to function headers
+with a long argument list. However, avoid to break user-visible strings such as
+printk messages, because that breaks the ability to grep for them.</p>
+</section>
+<section id="placing-braces-and-spaces">
+<h2><span class="section-number">8.3. </span>Placing Braces and Spaces<a class="headerlink" href="#placing-braces-and-spaces" title="Link to this heading">¶</a></h2>
+<p>The other issue that always comes up in C styling is the placement of
+braces.  Unlike the indent size, there are few technical reasons to
+choose one placement strategy over the other, but the preferred way, as
+shown to us by the prophets Kernighan and Ritchie, is to put the opening
+brace last on the line, and put the closing brace first, thusly:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">we</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">y</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This applies to all non-function statement blocks (if, switch, for,
+while, do).  E.g.:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">action</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="k">case</span><span class="w"> </span><span class="no">KOBJ_ADD</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;add&quot;</span><span class="p">;</span>
+<span class="k">case</span><span class="w"> </span><span class="no">KOBJ_REMOVE</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;remove&quot;</span><span class="p">;</span>
+<span class="k">case</span><span class="w"> </span><span class="no">KOBJ_CHANGE</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;change&quot;</span><span class="p">;</span>
+<span class="k">default</span><span class="o">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>However, there is one special case, namely functions: they may have the
+opening brace at the beginning of the next line, thus:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">function</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">        </span><span class="n">body</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">function</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Note that the closing brace is empty on a line of its own, <strong>except</strong> in
+the cases where it is followed by a continuation of the same statement,
+ie a <code class="docutils literal notranslate"><span class="pre">while</span></code> in a do-statement or an <code class="docutils literal notranslate"><span class="pre">else</span></code> in an if-statement, like
+this:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">body</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="k">do</span><span class="o">-</span><span class="n">loop</span>
+<span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">..</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="p">....</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Rationale: K&amp;R.</p>
+<p>Also, note that this brace-placement also minimizes the number of empty
+(or almost empty) lines, without any loss of readability.</p>
+<p>Do not unnecessarily use braces where a single statement will do.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+<span class="w">        </span><span class="n">action</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>if (condition)
+        do_this();
+else
+        do_that();
+</pre></div>
+</div>
+<p>Also, prefer using braces when a loop contains more than a single simple statement:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
+<span class="w">                </span><span class="n">do_something</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="spaces">
+<h3><span class="section-number">8.3.1. </span>Spaces<a class="headerlink" href="#spaces" title="Link to this heading">¶</a></h3>
+<p>Use a space after (most) keywords. The notable exceptions are sizeof, typeof, alignof,
+and __attribute__, which look somewhat like functions (and are usually used with parentheses in Linux,
+although they are not required in the language, as in: <code class="docutils literal notranslate"><span class="pre">sizeof</span> <span class="pre">info</span></code> after
+<code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">fileinfo</span> <span class="pre">info;</span></code> is declared).</p>
+<p>So use a space after these keywords:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="p">,</span> <span class="n">switch</span><span class="p">,</span> <span class="n">case</span><span class="p">,</span> <span class="k">for</span><span class="p">,</span> <span class="n">do</span><span class="p">,</span> <span class="k">while</span>
+</pre></div>
+</div>
+<p>but not with sizeof, typeof, alignof, or __attribute__.  E.g.,</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Do not add spaces around (inside) parenthesized expressions.  This example is
+<strong>bad</strong>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">file</span><span class="w"> </span><span class="p">);</span>
+</pre></div>
+</div>
+<p>When declaring pointer data or a function that returns a pointer type, the
+preferred use of <code class="docutils literal notranslate"><span class="pre">*</span></code> is adjacent to the data name or function name and not
+adjacent to the type name.  Examples:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">linux_banner</span><span class="p">;</span>
+<span class="kt">unsigned</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">memparse</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">retptr</span><span class="p">);</span>
+<span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">match_strdup</span><span class="p">(</span><span class="n">substring_t</span><span class="w"> </span><span class="o">*</span><span class="n">s</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Use one space around (on each side of) most binary and ternary operators,
+such as any of these:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>=  +  -  &lt;  &gt;  *  /  %  |  &amp;  ^  &lt;=  &gt;=  ==  !=  ?  :
+</pre></div>
+</div>
+<p>but no space after unary operators:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&amp;  *  +  -  ~  !  sizeof  typeof  alignof  __attribute__  defined
+</pre></div>
+</div>
+<p>no space before the postfix increment &amp; decrement unary operators:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">++</span>  <span class="o">--</span>
+</pre></div>
+</div>
+<p>no space after the prefix increment &amp; decrement unary operators:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">++</span>  <span class="o">--</span>
+</pre></div>
+</div>
+<p>and no space around the <code class="docutils literal notranslate"><span class="pre">.</span></code> and <code class="docutils literal notranslate"><span class="pre">-&gt;</span></code> structure member operators.</p>
+<p>Do not leave trailing whitespace at the ends of lines.  Some editors with
+<code class="docutils literal notranslate"><span class="pre">smart</span></code> indentation will insert whitespace at the beginning of new lines as
+appropriate, so you can start typing the next line of code right away.
+However, some such editors do not remove the whitespace if you end up not
+putting a line of code there, such as if you leave a blank line. As a result,
+you end up with lines containing trailing whitespace.</p>
+<p>Git will warn you about patches that introduce trailing whitespace, and can
+optionally strip the trailing whitespace for you; however, if applying a series
+of patches, this may make later patches in the series fail by changing their
+context lines.</p>
+</section>
+</section>
+<section id="naming">
+<h2><span class="section-number">8.4. </span>Naming<a class="headerlink" href="#naming" title="Link to this heading">¶</a></h2>
+<p>C is a Spartan language, and so should your naming be.  Unlike Modula-2
+and Pascal programmers, C programmers do not use cute names like
+ThisVariableIsATemporaryCounter.  A C programmer would call that
+variable <code class="docutils literal notranslate"><span class="pre">tmp</span></code>, which is much easier to write, and not the least more
+difficult to understand.</p>
+<p>HOWEVER, while mixed-case names are frowned upon, descriptive names for
+global variables are a must.  To call a global function <code class="docutils literal notranslate"><span class="pre">foo</span></code> is a
+shooting offense.</p>
+<p>GLOBAL variables (to be used only if you <strong>really</strong> need them) need to
+have descriptive names, as do global functions.  If you have a function
+that counts the number of active users, you should call that
+<code class="docutils literal notranslate"><span class="pre">count_active_users()</span></code> or similar, you should <strong>not</strong> call it <code class="docutils literal notranslate"><span class="pre">cntusr()</span></code>.</p>
+<p>Encoding the type of a function into the name (so-called Hungarian
+notation) is brain damaged - the compiler knows the types anyway and can
+check those, and it only confuses the programmer. No wonder MicroSoft
+makes buggy programs.</p>
+<p>LOCAL variable names should be short, and to the point.  If you have
+some random integer loop counter, it should probably be called <code class="docutils literal notranslate"><span class="pre">i</span></code>.
+Calling it <code class="docutils literal notranslate"><span class="pre">loop_counter</span></code> is non-productive, if there is no chance of it
+being mis-understood.  Similarly, <code class="docutils literal notranslate"><span class="pre">tmp</span></code> can be just about any type of
+variable that is used to hold a temporary value.</p>
+<p>If you are afraid to mix up your local variable names, you have another
+problem, which is called the function-growth-hormone-imbalance syndrome.
+See chapter 6 (Functions).</p>
+</section>
+<section id="typedefs">
+<h2><span class="section-number">8.5. </span>Typedefs<a class="headerlink" href="#typedefs" title="Link to this heading">¶</a></h2>
+<p>The definition of a type should be either to hide the platform-dependent
+definition of a type or to define a struct and having a more readable
+type rather than <em>struct sensor</em>. Put a <code class="docutils literal notranslate"><span class="pre">_t</span></code> as suffix of a type
+definition. For example, <code class="docutils literal notranslate"><span class="pre">sensor_t</span></code>.</p>
+<p>Regarding the platform-dependent definition, it helps to define clear integer types,
+where the abstraction <strong>helps</strong> avoid confusion whether it is <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">long</span></code>.
+u8/u16/u32 are perfectly fine typedefs</p>
+<p>NEVER use a typedef to hide a pointer except for the pointer to a function.
+For example:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="p">)(</span><span class="o">*</span><span class="n">sigint_fn_t</span><span class="p">)(</span><span class="kt">int</span><span class="w"> </span><span class="n">sig</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is a correct usage of typedef.</p>
+</section>
+<section id="functions">
+<h2><span class="section-number">8.6. </span>Functions<a class="headerlink" href="#functions" title="Link to this heading">¶</a></h2>
+<p>Functions should be short and sweet, and do just one thing.</p>
+<p>The maximum length of a function is inversely proportional to the
+complexity and indentation level of that function.  So, if you have a
+conceptually simple function that is just one long (but simple)
+case-statement, where you have to do lots of small things for a lot of
+different cases, it’s OK to have a longer function.</p>
+<p>Another measure of the function is the number of local variables.  They
+shouldn’t exceed 5-10, or you’re doing something wrong.  Re-think the
+function, and split it into smaller pieces.  A human brain can
+generally easily keep track of about 7 different things, anything more
+and it gets confused.  You know you’re brilliant, but maybe you’d like
+to understand what you did 2 weeks from now.</p>
+<p>In source files, separate functions with one blank line.  If the function is
+exported, the <strong>EXPORT</strong> macro for it should follow immediately after the
+closing function brace line.  E.g.:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">system_is_up</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">system_state</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SYSTEM_RUNNING</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="n">EXPORT_SYMBOL</span><span class="p">(</span><span class="n">system_is_up</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>In function prototypes, include parameter names with their data types.
+Although this is not required by the C language, it is preferred
+because it is a simple way to add valuable information for the reader.</p>
+</section>
+<section id="centralized-exiting-of-functions">
+<h2><span class="section-number">8.7. </span>Centralized exiting of functions<a class="headerlink" href="#centralized-exiting-of-functions" title="Link to this heading">¶</a></h2>
+<p>Albeit deprecated by some people, the equivalent of the goto statement is
+used frequently by compilers in form of the unconditional jump instruction.</p>
+<p>The goto statement comes in handy when a function exits from multiple
+locations and some common work such as cleanup has to be done.  If there is no
+cleanup needed then just return directly.</p>
+<p>Choose label names which say what the goto does or why the goto exists.  An
+example of a good name could be <code class="docutils literal notranslate"><span class="pre">out_free_buffer:</span></code> if the goto frees <code class="docutils literal notranslate"><span class="pre">buffer</span></code>.
+Avoid using GW-BASIC names like <code class="docutils literal notranslate"><span class="pre">err1:</span></code> and <code class="docutils literal notranslate"><span class="pre">err2:</span></code>, as you would have to
+renumber them if you ever add or remove exit paths, and they make correctness
+difficult to verify anyway.</p>
+<p>The rationale for using gotos is:</p>
+<ul class="simple">
+<li><p>unconditional statements are easier to understand and follow</p></li>
+<li><p>nesting is reduced</p></li>
+<li><p>errors by not updating individual exit points when making
+modifications are prevented</p></li>
+<li><p>saves the compiler work to optimize redundant code away ;)</p></li>
+</ul>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="nf">fun</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmalloc</span><span class="p">(</span><span class="n">SIZE</span><span class="p">,</span><span class="w"> </span><span class="n">GFP_KERNEL</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">buffer</span><span class="p">)</span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">ENOMEM</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">loop1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="p">...</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">                </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">                </span><span class="k">goto</span><span class="w"> </span><span class="n">out_free_buffer</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="nl">out_free_buffer</span><span class="p">:</span>
+<span class="w">        </span><span class="n">kfree</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A common type of bug to be aware of is <code class="docutils literal notranslate"><span class="pre">one</span> <span class="pre">err</span> <span class="pre">bugs</span></code> which look like this:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="nl">err</span><span class="p">:</span>
+<span class="w">        </span><span class="n">kfree</span><span class="p">(</span><span class="n">foo</span><span class="o">-&gt;</span><span class="n">bar</span><span class="p">);</span>
+<span class="w">        </span><span class="n">kfree</span><span class="p">(</span><span class="n">foo</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The bug in this code is that on some exit paths <code class="docutils literal notranslate"><span class="pre">foo</span></code> is NULL.  Normally the
+fix for this is to split it up into two error labels <code class="docutils literal notranslate"><span class="pre">err_free_bar:</span></code> and
+<code class="docutils literal notranslate"><span class="pre">err_free_foo:</span></code>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="nl">err_free_bar</span><span class="p">:</span>
+<span class="w">       </span><span class="n">kfree</span><span class="p">(</span><span class="n">foo</span><span class="o">-&gt;</span><span class="n">bar</span><span class="p">);</span>
+<span class="nl">err_free_foo</span><span class="p">:</span>
+<span class="w">       </span><span class="n">kfree</span><span class="p">(</span><span class="n">foo</span><span class="p">);</span>
+<span class="w">       </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Ideally you should simulate errors to test all exit paths.</p>
+</section>
+<section id="commenting">
+<h2><span class="section-number">8.8. </span>Commenting<a class="headerlink" href="#commenting" title="Link to this heading">¶</a></h2>
+<p>Comments are good, but there is also a danger of over-commenting.  NEVER
+try to explain HOW your code works in a comment: it’s much better to
+write the code so that the <strong>working</strong> is obvious, and it’s a waste of
+time to explain badly written code.</p>
+<p>Generally, you want your comments to tell WHAT your code does, not HOW.
+Also, try to avoid putting comments inside a function body: if the
+function is so complex that you need to separately comment parts of it,
+you should probably go back to chapter 6 for a while.  You can make
+small comments to note or warn about something particularly clever (or
+ugly), but try to avoid excess.  Instead, put the comments at the head
+of the function, telling people what it does, and possibly WHY it does
+it.</p>
+<p>The preferred style for long (multi-line) comments is:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/*</span>
+<span class="cm"> * This is the preferred style for multi-line</span>
+<span class="cm"> * comments in the source code. Please use it consistently.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Description:  A column of asterisks on the left side,</span>
+<span class="cm"> * with beginning and ending almost-blank lines.</span>
+<span class="cm"> */</span>
+</pre></div>
+</div>
+<p>It’s also important to comment data, whether they are basic types or derived
+types.  To this end, use just one data declaration per line (no commas for
+multiple data declarations).  This leaves you room for a small comment on each
+item, explaining its use.</p>
+</section>
+<section id="macros-enums-and-rtl">
+<h2><span class="section-number">8.9. </span>Macros, Enums and RTL<a class="headerlink" href="#macros-enums-and-rtl" title="Link to this heading">¶</a></h2>
+<p>Names of macros defining constants and labels in enums are capitalized.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define CONSTANT 0x12345</span>
+</pre></div>
+</div>
+<p>Enums are preferred when defining several related constants.</p>
+<p>CAPITALIZED macro names are appreciated but macros resembling functions
+may be named in lower case.</p>
+<p>Generally, inline functions are preferable to macros resembling functions.</p>
+<p>Macros with multiple statements should be enclosed in a do - while block:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define macrofun(a, b, c)                       \</span>
+<span class="cp">        do {                                    \</span>
+<span class="cp">                if (a == 5)                     \</span>
+<span class="cp">                        do_this(b, c);          \</span>
+<span class="cp">        } while (0)</span>
+</pre></div>
+</div>
+<p>Things to avoid when using macros:</p>
+<ol class="arabic simple">
+<li><p>macros that affect control flow:</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define FOO(x)                                  \</span>
+<span class="cp">        do {                                    \</span>
+<span class="cp">                if (blah(x) &lt; 0)                \</span>
+<span class="cp">                        return -EBUGGERED;      \</span>
+<span class="cp">        } while (0)</span>
+</pre></div>
+</div>
+<p>is a <strong>very</strong> bad idea.  It looks like a function call but exits the <code class="docutils literal notranslate"><span class="pre">calling</span></code>
+function; don’t break the internal parsers of those who will read the code.</p>
+<ol class="arabic simple" start="2">
+<li><p>macros that depend on having a local variable with a magic name:</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define FOO(val) bar(index, val)</span>
+</pre></div>
+</div>
+<p>might look like a good thing, but it’s confusing as hell when one reads the
+code and it’s prone to breakage from seemingly innocent changes.</p>
+<p>3) macros with arguments that are used as l-values: FOO(x) = y; will
+bite you if somebody e.g. turns FOO into an inline function.</p>
+<p>4) forgetting about precedence: macros defining constants using expressions
+must enclose the expression in parentheses. Beware of similar issues with
+macros using parameters.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define CONSTANT 0x4000</span>
+<span class="cp">#define CONSTEXP (CONSTANT | 3)</span>
+</pre></div>
+</div>
+<p>5) namespace collisions when defining local variables in macros resembling
+functions:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define FOO(x)                          \</span>
+<span class="cp">({                                      \</span>
+<span class="cp">        typeof(x) ret;                  \</span>
+<span class="cp">        ret = calc_ret(x);              \</span>
+<span class="cp">        (ret);                          \</span>
+<span class="cp">})</span>
+</pre></div>
+</div>
+<p>ret is a common name for a local variable - __foo_ret is less likely
+to collide with an existing variable.</p>
+<p>The cpp manual deals with macros exhaustively. The gcc internals manual also
+covers RTL which is used frequently with assembly language in the kernel.</p>
+</section>
+<section id="printing-logging-messages">
+<h2><span class="section-number">8.10. </span>Printing logging messages<a class="headerlink" href="#printing-logging-messages" title="Link to this heading">¶</a></h2>
+<p>Do mind the spelling of messages to make a good impression. Do not use crippled
+words like <code class="docutils literal notranslate"><span class="pre">dont</span></code>; use <code class="docutils literal notranslate"><span class="pre">do</span> <span class="pre">not</span></code> or <code class="docutils literal notranslate"><span class="pre">don't</span></code> instead.  Make the messages
+concise, clear, and unambiguous.</p>
+<p>Usually, messages do not have to be terminated with a period.</p>
+<p>Coming up with good debugging messages can be quite a challenge; and once
+you have them, they can be a huge help for remote troubleshooting.  However
+debug message printing is handled differently than printing other non-debug
+messages.</p>
+<section id="syslog-ng">
+<h3><span class="section-number">8.10.1. </span>Syslog-ng<a class="headerlink" href="#syslog-ng" title="Link to this heading">¶</a></h3>
+<p>Syslog-ng enables logging messages in various forms and configurations.
+It can be used to log message on the console and/or in files typically
+stored in <code class="docutils literal notranslate"><span class="pre">/var/log</span></code> directory.</p>
+</section>
+</section>
+<section id="function-return-values-and-names">
+<h2><span class="section-number">8.11. </span>Function return values and names<a class="headerlink" href="#function-return-values-and-names" title="Link to this heading">¶</a></h2>
+<p>Functions can return values of many different kinds, and one of the
+most common is a value indicating whether the function succeeded or
+failed.  Such a value can be represented as an error-code integer
+(-Exxx = failure, 0 = success) or a <code class="docutils literal notranslate"><span class="pre">succeeded</span></code> boolean (0 = failure,
+non-zero = success).</p>
+<p>Mixing up these two sorts of representations is a fertile source of
+difficult-to-find bugs.  If the C language included a strong distinction
+between integers and booleans then the compiler would find these mistakes
+for us… but it doesn’t.  To help prevent such bugs, always follow this
+convention:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">If</span> <span class="n">the</span> <span class="n">name</span> <span class="n">of</span> <span class="n">a</span> <span class="n">function</span> <span class="ow">is</span> <span class="n">an</span> <span class="n">action</span> <span class="ow">or</span> <span class="n">an</span> <span class="n">imperative</span> <span class="n">command</span><span class="p">,</span>
+<span class="n">the</span> <span class="n">function</span> <span class="n">should</span> <span class="k">return</span> <span class="n">an</span> <span class="n">error</span><span class="o">-</span><span class="n">code</span> <span class="n">integer</span><span class="o">.</span>  <span class="n">If</span> <span class="n">the</span> <span class="n">name</span>
+<span class="ow">is</span> <span class="n">a</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">the</span> <span class="n">function</span> <span class="n">should</span> <span class="k">return</span> <span class="n">a</span> <span class="s2">&quot;succeeded&quot;</span> <span class="n">boolean</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">add</span> <span class="pre">work</span></code> is a command, and the add_work() function returns 0
+for success or -EBUSY for failure.  In the same way, <code class="docutils literal notranslate"><span class="pre">PCI</span> <span class="pre">device</span> <span class="pre">present</span></code> is
+a predicate, and the pci_dev_present() function returns 1 if it succeeds in
+finding a matching device or 0 if it doesn’t.</p>
+<p>Functions whose return value is the actual result of a computation, rather
+than an indication of whether the computation succeeded, are not subject to
+this rule.  Generally they indicate failure by returning some out-of-range
+result.  Typical examples would be functions that return pointers; they use
+NULL to report failure.</p>
+</section>
+<section id="inline-assembly">
+<h2><span class="section-number">8.12. </span>Inline assembly<a class="headerlink" href="#inline-assembly" title="Link to this heading">¶</a></h2>
+<p>In architecture-specific code, you may need to use inline assembly to interface
+with CPU or platform functionality.  Don’t hesitate to do so when necessary.
+However, don’t use inline assembly gratuitously when C can do the job.  You can
+and should poke hardware from C when possible.</p>
+<p>Consider writing simple helper functions that wrap common bits of inline
+assembly, rather than repeatedly writing them with slight variations.  Remember
+that inline assembly can use C parameters.</p>
+<p>Large, non-trivial assembly functions should go in .S files, with corresponding
+C prototypes defined in C header files.  The C prototypes for assembly
+functions should use <code class="docutils literal notranslate"><span class="pre">asmlinkage</span></code>.</p>
+<p>You may need to mark your asm statement as volatile, to prevent GCC from
+removing it if GCC doesn’t notice any side effects.  You don’t always need to
+do so, though, and doing so unnecessarily can limit optimization.</p>
+<p>When writing a single inline assembly statement containing multiple
+instructions, put each instruction on a separate line in a separate quoted
+string, and end each string except the last with <code class="docutils literal notranslate"><span class="pre">\n\t</span></code> to properly indent
+the next instruction in the assembly output:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">asm</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;magic %reg1, #42</span><span class="se">\n\t</span><span class="s">&quot;</span>
+<span class="w">     </span><span class="s">&quot;more_magic %reg2, %reg3&quot;</span>
+<span class="w">     </span><span class="o">:</span><span class="w"> </span><span class="cm">/* outputs */</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="cm">/* inputs */</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="cm">/* clobbers */</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="conditional-compilation">
+<h2><span class="section-number">8.13. </span>Conditional Compilation<a class="headerlink" href="#conditional-compilation" title="Link to this heading">¶</a></h2>
+<p>Using #if or #ifdef block should always have a comment on the #else or #endif
+statement with the name of the condition, like this:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="w">     </span><span class="cp">#ifdef CONFIG_SOMETHING</span>
+
+<span class="p">...</span>
+
+<span class="cp">#else </span><span class="cm">/* CONFIG_SOMETHING */</span>
+
+<span class="p">...</span>
+
+<span class="w">     </span><span class="cp">#endif </span><span class="cm">/* !CONFIG_SOMETHING */</span>
+</pre></div>
+</div>
+<p>It will greatly help the reading of the code.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="micropython.html" class="btn btn-neutral float-left" title="7. MicroPython" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Oct 2023, 09:17.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

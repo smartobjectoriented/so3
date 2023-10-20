@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Debugging SO3 with JTAG on RPi4 &mdash; SO3 Operating System 2021.4.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=ef5cc73b"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. LVGL - Light and Versatile Embedded Graphics Library" href="lvgl.html" />
+    <link rel="prev" title="3. User Guide" href="user_guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+          </a>
+              <div class="version">
+                2021.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">3. User Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Debugging SO3 with JTAG on RPi4</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">4.1. Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#jtag-probe">4.2. JTAG Probe</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#j-link-probe">4.2.1. J-Link Probe</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#wiring">4.2.2. Wiring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#openocd">4.3. OpenOCD</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#building-openocd">4.3.1. Building OpenOCD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-file-for-the-raspberry-pi-4">4.3.2. Configuration file for the Raspberry Pi 4</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#launching-openocd">4.3.3. Launching OpenOCD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connect-with-telnet">4.3.4. Connect with telnet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connect-with-gdb">4.3.5. Connect with GDB</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging-with-gdb">4.4. Debugging with GDB</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#debug-a-user-app">4.4.1. Debug a user app</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example">4.4.1.1. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#notes">4.4.2. Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#links">4.5. Links</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">5. LVGL - Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">7. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">8. Coding conventions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span>Debugging SO3 with JTAG on RPi4</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debugging-so3-with-jtag-on-rpi4">
+<span id="so3-jtag-rpi4"></span><h1><span class="section-number">4. </span>Debugging SO3 with JTAG on RPi4<a class="headerlink" href="#debugging-so3-with-jtag-on-rpi4" title="Link to this heading">¶</a></h1>
+<p>This pages gives instructions on how to debug SO3 or SO3 applications on
+the Raspberry Pi 4 through the JTAG interface.</p>
+<section id="requirements">
+<h2><span class="section-number">4.1. </span>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Raspberry Pi 4</p></li>
+<li><p>SD Card with bootloader and firmware</p></li>
+<li><p>JTAG Probe and cables</p></li>
+<li><p>OpenOCD</p></li>
+<li><p>GDB-multiarch</p></li>
+</ul>
+</section>
+<section id="jtag-probe">
+<h2><span class="section-number">4.2. </span>JTAG Probe<a class="headerlink" href="#jtag-probe" title="Link to this heading">¶</a></h2>
+<p>To enable JTAG on the Raspberry Pi 4 add <code class="docutils literal notranslate"><span class="pre">enable_jtag_gpio=1</span></code> in the
+<code class="docutils literal notranslate"><span class="pre">config.txt</span></code> file. This will select Alt4 mode for GPIO pins 22-27, and
+set up some internal SoC connections, thus enabling the JTAG interface
+for the ARM CPU. It works on all models of Raspberry Pi. (See <a class="reference external" href="https://www.raspberrypi.org/documentation/configuration/config-txt/gpio.md">Raspberry
+Pi
+Documentation</a>)</p>
+<section id="j-link-probe">
+<h3><span class="section-number">4.2.1. </span>J-Link Probe<a class="headerlink" href="#j-link-probe" title="Link to this heading">¶</a></h3>
+<p>The <a class="reference external" href="https://www.segger.com/products/debug-probes/j-link/models/j-link-edu/">SEGGER J-Link EDU probe</a>
+has been used for this project. The pinout for the 20-pin interface can be found here :
+<a class="reference external" href="https://www.segger.com/products/debug-probes/j-link/technology/interface-description/">https://www.segger.com/products/debug-probes/j-link/technology/interface-description/</a></p>
+<p><img alt="image0" src="https://www.segger.com/fileadmin/images/products/J-Link/Interface_Description/181129_JTAG.svg" /></p>
+<p>Required pins are VTref, nTRST, TDI, TMS, TCK, RTCK, TDO and GND.</p>
+</section>
+<section id="wiring">
+<h3><span class="section-number">4.2.2. </span>Wiring<a class="headerlink" href="#wiring" title="Link to this heading">¶</a></h3>
+<p>The JTAG pins should be connected to the corresponding pins on the
+Raspberry Pi (GPIO 22-27 in Alt4 mode). A nice representation of
+Raspberry Pi header pinout can be found here :
+<a class="reference external" href="http://www.panu.it/raspberry/">http://www.panu.it/raspberry/</a></p>
+<p>From the ALT4 column of the table we can find which pin goes to which
+location on the raspberry pi header.</p>
+<p>With the help of some 0.1” header wires the probe is easily connected to
+the raspberry pi header.</p>
+<p><img alt="image1" src="_images/rpi_jtags.jpg" /></p>
+<p>The extra wires at the bottom (red, green, blue) are for the UART serial
+port.</p>
+</section>
+</section>
+<section id="openocd">
+<h2><span class="section-number">4.3. </span>OpenOCD<a class="headerlink" href="#openocd" title="Link to this heading">¶</a></h2>
+<p>OpenOCD is Free Open On-Chip Debugger software for In-System Programming
+and Boundary-Scan Testing. Website : <a class="reference external" href="http://openocd.org/">http://openocd.org/</a></p>
+<p>Prebuilt binaries are available from : <a class="reference external" href="https://xpack.github.io/openocd/">https://xpack.github.io/openocd/</a></p>
+<p>Source code is available at :
+<a class="reference external" href="https://sourceforge.net/p/openocd/code/ci/master/tree/">https://sourceforge.net/p/openocd/code/ci/master/tree/</a></p>
+<section id="building-openocd">
+<h3><span class="section-number">4.3.1. </span>Building OpenOCD<a class="headerlink" href="#building-openocd" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://git.code.sf.net/p/openocd/code<span class="w"> </span>openocd-code
+<span class="nb">cd</span><span class="w"> </span>openocd-code
+./bootstrap<span class="w"> </span><span class="c1"># Will prepare and initialize git submodules</span>
+./configure<span class="w"> </span><span class="c1"># Will tell if you have missing build dependencies</span>
+make<span class="w"> </span><span class="c1"># Builds the binary in ./src/</span>
+sudo<span class="w"> </span>make<span class="w"> </span>install<span class="w"> </span><span class="c1"># System wide install (optional)</span>
+</pre></div>
+</div>
+<p>OpenOCD can be launched from the <code class="docutils literal notranslate"><span class="pre">./src/</span></code> directory e.g.,</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./src/openocd<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="configuration-file-for-the-raspberry-pi-4">
+<h3><span class="section-number">4.3.2. </span>Configuration file for the Raspberry Pi 4<a class="headerlink" href="#configuration-file-for-the-raspberry-pi-4" title="Link to this heading">¶</a></h3>
+<p>Create a configuration file (e.g., <code class="docutils literal notranslate"><span class="pre">rpi4.cfg</span></code>) with the following
+contents :</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">adapter driver jlink</span>
+
+<span class="go">set _CHIPNAME bcm2711</span>
+<span class="go">set _DAP_TAPID 0x4ba00477</span>
+
+<span class="go">adapter speed 1000</span>
+
+<span class="go">transport select jtag</span>
+<span class="go">reset_config trst_and_srst</span>
+
+<span class="go">telnet_port 4444</span>
+
+<span class="gp"># </span>create<span class="w"> </span>tap
+<span class="go">jtag newtap auto0 tap -irlen 4 -expected-id $_DAP_TAPID</span>
+
+<span class="gp"># </span>create<span class="w"> </span>dap
+<span class="go">dap create auto0.dap -chain-position auto0.tap</span>
+
+<span class="go">set CTIBASE {0x80420000 0x80520000 0x80620000 0x80720000}</span>
+<span class="go">set DBGBASE {0x80410000 0x80510000 0x80610000 0x80710000}</span>
+
+<span class="go">set _cores 4</span>
+
+<span class="go">set _TARGETNAME $_CHIPNAME.a72</span>
+<span class="go">set _CTINAME $_CHIPNAME.cti</span>
+<span class="go">set _smp_command &quot;&quot;</span>
+
+<span class="go">for {set _core 0} {$_core &lt; $_cores} { incr _core} {</span>
+<span class="go">    cti create $_CTINAME.$_core -dap auto0.dap -ap-num 0 -ctibase [lindex $CTIBASE $_core]</span>
+
+<span class="go">    set _command &quot;target create ${_TARGETNAME}.$_core aarch64 \</span>
+<span class="go">                    -dap auto0.dap  -dbgbase [lindex $DBGBASE $_core] \</span>
+<span class="go">                    -coreid $_core -cti $_CTINAME.$_core&quot;</span>
+<span class="go">    if {$_core != 0} {</span>
+<span class="go">        set _smp_command &quot;$_smp_command $_TARGETNAME.$_core&quot;</span>
+<span class="go">    } else {</span>
+<span class="go">        set _smp_command &quot;target smp $_TARGETNAME.$_core&quot;</span>
+<span class="go">    }</span>
+
+<span class="go">    eval $_command</span>
+<span class="go">}</span>
+
+<span class="go">eval $_smp_command</span>
+<span class="go">targets $_TARGETNAME.0</span>
+</pre></div>
+</div>
+<p>The configuration file was built from information found in :
+<a class="reference external" href="https://gist.github.com/tnishinaga/46a3380e1f47f5e892bbb74e55b3cf3e">https://gist.github.com/tnishinaga/46a3380e1f47f5e892bbb74e55b3cf3e</a> and
+<a class="reference external" href="https://www.raspberrypi.org/forums/viewtopic.php?t=252551">https://www.raspberrypi.org/forums/viewtopic.php?t=252551</a></p>
+<p>More information about the different fields and options of the config
+file can be found here
+<a class="reference external" href="https://metebalci.com/blog/bare-metal-raspberry-pi-3b-jtag/">https://metebalci.com/blog/bare-metal-raspberry-pi-3b-jtag/</a> (good read)</p>
+<p>The interface (J-Link probe) was specified as the first line of the
+config file, this may need to be changed if you use another probe.</p>
+<p>If the <code class="docutils literal notranslate"><span class="pre">dap</span></code> command is not understood by OpenOCD you may be using an
+older version, change to a more recent version.</p>
+</section>
+<section id="launching-openocd">
+<h3><span class="section-number">4.3.3. </span>Launching OpenOCD<a class="headerlink" href="#launching-openocd" title="Link to this heading">¶</a></h3>
+<p>OpenOCD can be launched with the following command :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">src</span><span class="o">/</span><span class="n">openocd</span> <span class="o">-</span><span class="n">f</span> <span class="n">rpi4</span><span class="o">.</span><span class="n">cfg</span>
+</pre></div>
+</div>
+<p><img alt="image2" src="_images/openocd1.png" /></p>
+<p>OpenOCD will listen on three ports :</p>
+<ul class="simple">
+<li><p><em>3333</em> : Listens for GDB connections</p></li>
+<li><p><em>4444</em> : Listens for telnet connections</p></li>
+<li><p><em>6666</em> : Listens for tcl connections</p></li>
+</ul>
+</section>
+<section id="connect-with-telnet">
+<h3><span class="section-number">4.3.4. </span>Connect with telnet<a class="headerlink" href="#connect-with-telnet" title="Link to this heading">¶</a></h3>
+<p>Connecting to OpenOCD through telnet allows to send OpenOCD commands
+(see <a class="reference external" href="http://openocd.org/doc/pdf/openocd.pdf">manual</a>)</p>
+<p><img alt="image3" src="_images/rick_rick-ThinkPad-P50___-reds-so3-ci-jtag_217.png" /></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">help</span></code> command may come in handy.</p>
+</section>
+<section id="connect-with-gdb">
+<h3><span class="section-number">4.3.5. </span>Connect with GDB<a class="headerlink" href="#connect-with-gdb" title="Link to this heading">¶</a></h3>
+<p>The CPU from the Raspberry Pi 4 is ARM AARCH64 and will be reported as
+such by OpenOCD. In order to debug ARM AARCH32 (e.g., SO3) on an X86
+host for a AARCH64 it is best to use gdb-multiarch (this allows to
+switch architectures).</p>
+<p>Launch gdb-multiarch and set the architecture to <code class="docutils literal notranslate"><span class="pre">arm</span></code> (arm 32-bit),
+then connect to OpenOCD with <code class="docutils literal notranslate"><span class="pre">target</span> <span class="pre">extended-remote</span> <span class="pre">localhost:3333</span></code></p>
+<p><img alt="image4" src="_images/gdb.png" /></p>
+<p>You can load the correct executable file with the <code class="docutils literal notranslate"><span class="pre">file</span></code> command</p>
+<p><img alt="image5" src="_images/gdb2.png" /></p>
+</section>
+</section>
+<section id="debugging-with-gdb">
+<h2><span class="section-number">4.4. </span>Debugging with GDB<a class="headerlink" href="#debugging-with-gdb" title="Link to this heading">¶</a></h2>
+<p>Kernel debugging works fine because the CPU is in supervisor mode,
+however, debugging 32-bit user mode on AARCH64 is not supported in
+OpenOCD and requires a patch.</p>
+<p>The patch can be found here : <a class="reference external" href="http://openocd.zylin.com/#/c/5826/">http://openocd.zylin.com/#/c/5826/</a></p>
+<p>If you want to Debug user mode (EL0) applications (e.g., ls.elf in SO3)
+you need to apply this patch and rebuild OpenOCD.</p>
+<section id="debug-a-user-app">
+<h3><span class="section-number">4.4.1. </span>Debug a user app<a class="headerlink" href="#debug-a-user-app" title="Link to this heading">¶</a></h3>
+<p>In order to break in an user app that is not currently launched in SO3 a
+hardware breakpoint is required, because since the app is not launched
+there is not context for the app (MMU translation table) and setting a
+software breakpoint will use the current context (e.g., SO3 kernel or
+other app such as sh.elf) to set the software breakpoint, this will
+corrupt the memory of the current context.</p>
+<section id="example">
+<h4><span class="section-number">4.4.1.1. </span>Example<a class="headerlink" href="#example" title="Link to this heading">¶</a></h4>
+<p>Let’s say we want to debug ls.elf</p>
+<p>First launch the Raspberry Pi 4 and OpenOCD (requires to ARM to have
+started, the Raspberry Pi boots on the GPU
+<a class="reference external" href="https://www.raspberrypi.org/documentation/hardware/raspberrypi/">[1]</a>
+<a class="reference external" href="https://raspberrypi.stackexchange.com/questions/14862/why-does-the-raspberry-pis-gpu-control-the-first-stages-of-the-boot-process">[2]</a>
+so you may need to wait a few seconds).</p>
+<p>Start gdb-multiarch, set the architecture to arm, connect to OpenOCD.</p>
+<p>Then set a <strong>hardware</strong> breakpoint at e.g., <code class="docutils literal notranslate"><span class="pre">main()</span></code>.</p>
+<p><img alt="image6" src="_images/gdb3.png" /></p>
+<p>Start the application from the shell.</p>
+<p><img alt="image7" src="_images/ls1.png" /></p>
+<p>The CPU will stop at any time the PC of the processor is equal to the
+hardware breakpoint that has been set. This means that it may stop in
+another app (other context) because apps share some common addresses
+(possible through virtualisation (MMU)).</p>
+<p><img alt="image8" src="_images/gdb4.png" /></p>
+<p>One way to check is to have a look at the disassembled code :</p>
+<p><img alt="image9" src="_images/gdb5.png" /></p>
+<p>Here if we compare to the disassembly of ls.elf (with objdump)</p>
+<p><img alt="image10" src="_images/objdump1.png" /></p>
+<p>We see that the instructions do not match ! We actually breaked into
+sh.elf, if we look at the disassembly of sh.elf (with objdump) we can
+see :</p>
+<p><img alt="image11" src="_images/objdump2.png" /></p>
+<p>These instructions match what we see in GDB. (offset and branch names in
+GDB are wrong because GDB thinks it is debugging ls.elf).</p>
+<p>So in GDB do not step/next (stepi/nexti is ok) otherwise you will
+corrupt the memory of sh.elf because of software breakpoints being set.</p>
+<p>Execute a continue instruction with GDB, GDB will break at the same
+address but this time in ls.elf, we can check this by having a look at
+the assembly instructions.</p>
+<p><img alt="image12" src="_images/gdb6.png" /></p>
+<p>We now see that the instructions match ls.elf.</p>
+<p>We can now do step by step debug and for example print variables (here
+we printed the dir variable which shows the current directory “.”).</p>
+<p><img alt="image13" src="_images/gdb7.png" /></p>
+<p>Once in the correct context (the context of ls.elf) we can set software
+breakpoints e.g.,</p>
+<p><img alt="image14" src="_images/gdb8.png" /> <img alt="image15" src="_images/gdb9.png" /></p>
+<section id="follow-a-syscall">
+<h5><span class="section-number">4.4.1.1.1. </span>Follow a syscall<a class="headerlink" href="#follow-a-syscall" title="Link to this heading">¶</a></h5>
+<p>If you want to follow a syscall inside SO3 you can change the file to
+<code class="docutils literal notranslate"><span class="pre">so3</span></code> and add a hardware breakpoint inside SO3 and continue, this
+allows to see how the kernel handles the syscall.</p>
+<p><img alt="image16" src="_images/syscall1.png" /></p>
+<p>We changed the executable to SO3</p>
+<p><img alt="image17" src="_images/syscall2.png" /></p>
+<p>Then we set a hardware breakpoint in the function that handles syscalls</p>
+<p><img alt="image18" src="_images/syscall3.png" /></p>
+<p>We can see the syscall number is 9</p>
+<p><img alt="image19" src="_images/syscall4.png" /></p>
+<p>Which corresponds to <code class="docutils literal notranslate"><span class="pre">readdir()</span></code>, after we are done we can reload
+ls.elf as the executable file and set a hardware breakpoint to go back
+to debugging ls.elf (if you don’t follow the signal inside SO3 you can
+just step/step over inside the application like you would normally do,
+since the soft breakpoints are set inside the correct context).</p>
+<p><img alt="image20" src="_images/gdb10.png" /></p>
+<p>When we continue the CPU will break at the instruction (note this may
+not be the correct context, check by looking at the disassembled code or
+variable contents).</p>
+<p><img alt="image21" src="_images/gdb11.png" /></p>
+<p>Here we printed to contents of the <code class="docutils literal notranslate"><span class="pre">p_entry</span></code> structure, filled by
+<code class="docutils literal notranslate"><span class="pre">readdir()</span></code> and we can see the entry name is <code class="docutils literal notranslate"><span class="pre">cat.elf</span></code>.</p>
+</section>
+</section>
+</section>
+<section id="notes">
+<h3><span class="section-number">4.4.2. </span>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>The reason we may break in the wrong place with hardware breakpoints
+is because it is a simple comparator on PC in the processor, and
+since multiple processes can share the same addresses through memory
+virtualization (MMU), the breakpoint will break at any of them. This
+could be changed by making OpenOCD/GDB aware of processes/threads in
+SO3. This can be done for example by adding the necessary code in
+<code class="docutils literal notranslate"><span class="pre">src/rtos/</span></code> for OpenOCD (nice project).</p></li>
+<li><p>The reason a software breakpoint cannot be set before an app is
+launched is because a software breakpoint through JTAG is simply
+replacing the instruction where we want to break by the ARM ‘HLT’
+instruction. However is the app is not yet loaded we don’t know where
+this would be.</p></li>
+<li><p>Once an app is loaded and is the active process the ‘HLT’ instruction
+can be set into the memory at the desired virtual address (translated
+by OpenOCD to physical address) and the instruction is set through
+JTAG at the correct spot. Once the processor executes the ‘HLT’
+instructions it goes in debug mode and OpenOCD will notify GDB. Once
+we continue the ‘HLT’ instruction will be replaced by the original
+instruction so that the program continues execution normally.</p></li>
+</ul>
+</section>
+</section>
+<section id="links">
+<h2><span class="section-number">4.5. </span>Links<a class="headerlink" href="#links" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://sourceforge.net/projects/openocd/">https://sourceforge.net/projects/openocd/</a></p></li>
+<li><p><a class="reference external" href="https://www.suse.com/c/debugging-raspberry-pi-3-with-jtag/">https://www.suse.com/c/debugging-raspberry-pi-3-with-jtag/</a></p></li>
+<li><p><a class="reference external" href="https://xihan94.gitbook.io/raspberry-pi/raspberry-pi-4-bringup">https://xihan94.gitbook.io/raspberry-pi/raspberry-pi-4-bringup</a></p></li>
+<li><p><a class="reference external" href="https://metebalci.com/blog/bare-metal-raspberry-pi-3b-jtag/">https://metebalci.com/blog/bare-metal-raspberry-pi-3b-jtag/</a> &lt;- Very
+good read</p></li>
+<li><p><a class="reference external" href="https://www.raspberrypi.org/documentation/configuration/config-txt/gpio.md">https://www.raspberrypi.org/documentation/configuration/config-txt/gpio.md</a></p></li>
+<li><p><a class="reference external" href="http://www.panu.it/raspberry/">http://www.panu.it/raspberry/</a></p></li>
+<li><p><a class="reference external" href="https://gist.github.com/tnishinaga/46a3380e1f47f5e892bbb74e55b3cf3e">https://gist.github.com/tnishinaga/46a3380e1f47f5e892bbb74e55b3cf3e</a></p></li>
+<li><p><a class="reference external" href="https://stackoverflow.com/questions/53714503/openocd-error-invalid-command-name-dap-cant-connect-blue-pill-via-st-link">https://stackoverflow.com/questions/53714503/openocd-error-invalid-command-name-dap-cant-connect-blue-pill-via-st-link</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="user_guide.html" class="btn btn-neutral float-left" title="3. User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lvgl.html" class="btn btn-neutral float-right" title="5. LVGL - Light and Versatile Embedded Graphics Library" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Oct 2023, 09:17.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. LVGL - Light and Versatile Embedded Graphics Library &mdash; SO3 Operating System 2021.4.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=ef5cc73b"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. lwIP - Lightweigth IP" href="lwip.html" />
+    <link rel="prev" title="4. Debugging SO3 with JTAG on RPi4" href="so3_jtag_rpi4.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+          </a>
+              <div class="version">
+                2021.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">3. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">4. Debugging SO3 with JTAG on RPi4</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. LVGL - Light and Versatile Embedded Graphics Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#integration-of-lvgl-in-so3">5.1. Integration of LVGL in SO3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-lvgl-in-the-emulated-environment">5.2. Using LVGL in the emulated environment</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">7. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">8. Coding conventions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>LVGL - Light and Versatile Embedded Graphics Library</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lvgl-light-and-versatile-embedded-graphics-library">
+<h1><span class="section-number">5. </span>LVGL - Light and Versatile Embedded Graphics Library<a class="headerlink" href="#lvgl-light-and-versatile-embedded-graphics-library" title="Link to this heading">¶</a></h1>
+<p>LVGL is a free and open-source library providing an efficient GUI for embedded systems.
+More information is available on the <a class="reference external" href="https://lvgl.io/">official site</a>.</p>
+<section id="integration-of-lvgl-in-so3">
+<h2><span class="section-number">5.1. </span>Integration of LVGL in SO3<a class="headerlink" href="#integration-of-lvgl-in-so3" title="Link to this heading">¶</a></h2>
+<p>The major work of porting LVGL in SO3 has been done by Nikolaos Garanis in the context of
+his <a class="reference external" href="https://nyg.gitlab.io/so3-support-graphique">Bachelor project</a>.</p>
+<p>Some details about the porting can be found in our <a class="reference external" href="https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18">discussion forum</a>.</p>
+<p>There is <a class="reference external" href="https://youtu.be/skn_mp3ZBhI">a small video</a> to show LVGL running in the QEMU/vExpress framebuffer emulated environment.</p>
+<p>In addition, from LVGL v8, the <code class="docutils literal notranslate"><span class="pre">lv_demo_widgets</span></code> is now fully supported. And yes, SO3 integrates LVGL v8.</p>
+<p>This part will be completed very soon…</p>
+</section>
+<section id="using-lvgl-in-the-emulated-environment">
+<h2><span class="section-number">5.2. </span>Using LVGL in the emulated environment<a class="headerlink" href="#using-lvgl-in-the-emulated-environment" title="Link to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>First, make sure you compiled the kernel with a configuration
+which has the framebuffer enabled (for example, <em>vexpress_fb_defconfig</em>)</p>
+</div>
+<p>In order to have a graphical framebuffer in the emulated QEMU/vExpress
+environment, it is necessary to start the emulator with the <code class="docutils literal notranslate"><span class="pre">stg</span></code> script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./stg
+</pre></div>
+</div>
+<p>QEMU will start a new GUI window used as framebuffer.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="so3_jtag_rpi4.html" class="btn btn-neutral float-left" title="4. Debugging SO3 with JTAG on RPi4" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lwip.html" class="btn btn-neutral float-right" title="6. lwIP - Lightweigth IP" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Oct 2023, 09:17.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

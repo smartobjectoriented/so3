@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7. MicroPython &mdash; SO3 Operating System 2021.4.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/style.css" type="text/css" />
+      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/documentation_options.js?v=ef5cc73b"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="8. “C” coding conventions (Cconv)" href="coding_conventions.html" />
+    <link rel="prev" title="6. lwIP - Lightweigth IP" href="lwip.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+          </a>
+              <div class="version">
+                2021.4
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">3. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">4. Debugging SO3 with JTAG on RPi4</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">5. LVGL - Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">6. lwIP - Lightweigth IP</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. MicroPython</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#integration-of-micropython-in-so3">7.1. Integration of MicroPython in SO3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-micropython-in-the-emulated-environment">7.2. Using Micropython in the emulated environment</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">8. Coding conventions</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">7. </span>MicroPython</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="micropython">
+<h1><span class="section-number">7. </span>MicroPython<a class="headerlink" href="#micropython" title="Link to this heading">¶</a></h1>
+<p>Micropython is an implementation of the Python 3 language designed to run on embedded platforms.
+It provides a small subset of Python’s standard library.
+More information is available on the <a class="reference external" href="https://micropython.org/">official site</a>.</p>
+<section id="integration-of-micropython-in-so3">
+<h2><span class="section-number">7.1. </span>Integration of MicroPython in SO3<a class="headerlink" href="#integration-of-micropython-in-so3" title="Link to this heading">¶</a></h2>
+<p>A minimal port of micropython is available in SO3. This version only supports the basic features
+of the language and some basic modules (list below)</p>
+</section>
+<section id="using-micropython-in-the-emulated-environment">
+<h2><span class="section-number">7.2. </span>Using Micropython in the emulated environment<a class="headerlink" href="#using-micropython-in-the-emulated-environment" title="Link to this heading">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Micropython currently works only for the virt64 platform</p>
+</div>
+<p>Micropython is built along with the rest of the user-space applications. The “usr/build.sh” script
+contains command lines to execute the Makefile found in the “usr/src/micropython/ports/soo” folder
+and export the resulting “firmware.elf” executable in the “deploy” folder where all the other
+executables are sent. The executable is renamed “uPython.elf” at the same time for the sake of clarity</p>
+<p>Once inside SO3, MicroPython can be launched like any other program:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">so3</span><span class="o">%</span> <span class="n">uPython</span>
+</pre></div>
+</div>
+<p>Launching the program will open an interactive interpreter from which code may be tested.
+There is currently no way to execute a python script</p>
+<p>Available <a class="reference external" href="https://docs.micropython.org/en/latest/library/index.html#">Micropython libraries</a> (modules):</p>
+<ul class="simple">
+<li><p>array</p></li>
+<li><p>collections</p></li>
+<li><p>struct</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="lwip.html" class="btn btn-neutral float-left" title="6. lwIP - Lightweigth IP" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="coding_conventions.html" class="btn btn-neutral float-right" title="8. “C” coding conventions (Cconv)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 20 Oct 2023, 09:17.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
