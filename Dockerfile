@@ -21,7 +21,7 @@ RUN apk update; \
 
 RUN cd /; \
     wget https://github.com/smartobjectoriented/so3/archive/refs/heads/main.zip; \
-    unzip master.zip; mv so3-* so3
+    unzip main.zip; mv so3-* so3
 
 WORKDIR so3
 
