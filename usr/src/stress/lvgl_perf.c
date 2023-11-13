@@ -42,8 +42,6 @@
 
 #include "lvgl_perf.h"
 
-#include "lv_demo_stress.h"
-
 /* Screen resolution. */
 static uint32_t scr_hres, scr_vres, *fbp;
 
