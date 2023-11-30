@@ -619,11 +619,11 @@ void mmu_configure(addr_t fdt_addr) {
 		__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l2pgtable & TTB_L1_TABLE_ADDR_MASK;
 		set_pte_table(&__sys_linearmap_l1pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
 
-		/* Set up a 64 MB linear mapping to progress with the bootstrap code
+		/* Set up a 128 MB linear mapping to progress with the bootstrap code
 		 * until the memory manager re-configure the memory mapping with
 		 * a better granularity.
 		 */
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < 64; i++) {
 			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)] = (mem_info.phys_base + i*SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
 			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)], DCACHE_WRITEALLOC);
 		}

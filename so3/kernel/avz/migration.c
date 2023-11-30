@@ -402,7 +402,7 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 
 	DBG0("DOMCALL_presetup_adjust_variables_in_ME\n");
 
-	/* Adjust variables in ME such as start_info */
+	/* Adjust variables in ME such as avz_shared */
 	presetup_adjust_variables_in_ME(ME_slotID, me->avz_shared);
 
 	/* Fix all page tables in the ME (all processes) via a domcall */

@@ -120,7 +120,7 @@ __start:
 
 __kernel_main:
 
-#ifndef CONFIG_SOO
+#if !defined(CONFIG_SOO) || defined(CONFIG_AVZ)
 
 	// Enable the interrupt
 	adrp x0, __vectors  // Virtual address as required
@@ -458,18 +458,12 @@ install_el2_stub:
 
 #ifdef CONFIG_SMP
 
-ENTRY(secondary_startup)
-	/*
-     * Common entry point for secondary CPUs.
-     */
+__secondary_kernel_main:
 
-	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
+#if !defined(CONFIG_SOO) || defined(CONFIG_AVZ)
 
-	// Initialize the vector table
-#ifndef CONFIG_SO3VIRT
-
-	// Initialize the vector table
-	ldr	x0, =__vectors
+	// Enable the interrupt
+	adrp x0, __vectors  // Virtual address as required
 
 #ifdef CONFIG_ARM64VT
 	msr vbar_el2, x0
@@ -477,7 +471,31 @@ ENTRY(secondary_startup)
 	msr vbar_el1, x0
 #endif /* !CONFIG_ARM64VT */
 
-#endif /* !CONFIG_SO3VIRT */
+#endif /* !CONFIG_SOO */
+
+	// C main entry point
+
+#ifdef CONFIG_AVZ
+
+  	ldr		x19, .LC_secondary_final_start_kernel
+  	blr		x19
+
+#else
+	b 	kernel_start
+#endif
+
+	nop
+	nop
+	nop
+
+	// never returns...
+
+ENTRY(secondary_startup)
+	/*
+     * Common entry point for secondary CPUs.
+     */
+
+	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 	// Enable FP/ASIMD
 	// Must be enabled before MMU is on
@@ -513,6 +531,22 @@ ENTRY(secondary_startup)
 
   	// Keep executing in the kernel space
 
+	// Initialize the vector table
+	// The vector table address is the virtual address
+
+#ifndef CONFIG_SO3VIRT
+
+	// Initialize the vector table
+	adrp x0, __vectors
+
+#ifdef CONFIG_ARM64VT
+	msr vbar_el2, x0
+#else
+	msr vbar_el1, x0
+#endif /* !CONFIG_ARM64VT */
+
+#endif /* !CONFIG_SO3VIRT */
+
   	// Store the virtual address which will be used to continue
     // execution after the MMU enabled.
   	ldr		x19, .LC_virt_secondary_entry
@@ -529,8 +563,11 @@ __secondary_data:
     .quad   .
     .quad   secondary_data
 
-.LC_virt_secondary_entry:
+.LC_secondary_final_start_kernel:
   .quad secondary_start_kernel
+
+.LC_virt_secondary_entry:
+  .quad __secondary_kernel_main
 
 #endif /* CONFIG_SMP */
 
