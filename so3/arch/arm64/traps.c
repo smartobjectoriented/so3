@@ -131,7 +131,7 @@ int trap_handle(cpu_regs_t *regs) {
 #endif
 
 #if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
-	vector_fn_t vector_fn = (vector_fn_t) (ME_VOFFSET + L_TEXT_OFFSET + PAGE_SIZE + 0x400);
+	vector_fn_t vector_fn = (vector_fn_t) (ME_VOFFSET + L_TEXT_OFFSET + PAGE_SIZE + SYSCALL_VECTOR_OFFSET);
 #endif
 
 	switch (ESR_ELx_EC(esr)) {

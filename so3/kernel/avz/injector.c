@@ -70,8 +70,9 @@ void inject_me(soo_hyp_t *op)
 	flags = local_irq_save();
 
 #ifdef CONFIG_ARCH_ARM64
+
 	/* First, we do a copy of the ME ITB into the avz heap to get independent from Linux mapping (either
-	 * in the user space, or in the vmalloc'd area
+	 * in the user space, or in the vmalloc'd area).
 	 */
 	itb_size = *((uint32_t *) op->p_val2);
 

@@ -174,10 +174,14 @@ void irq_handle(cpu_regs_t *regs) {
 	/* Out of this interrupt routine, IRQs must be enabled otherwise the thread
 	 * will block all interrupts.
 	 */
-#ifndef CONFIG_AVZ
-	/* Except of execution from an hypercall; when calling an hypercall, IRQs may
-	 * be off and this routine is called along an upcall path when an event
-	 * is raised.
+
+#if !defined(CONFIG_AVZ) && !defined(CONFIG_SOO)
+
+	/*
+	 * We do not check if IRQs were disabled before the handler in case of an hypercall
+	 * path which may happen in AVZ and in the ME because hypercalls are executed during
+	 * their initialization along which a timer IRQ can be raised up and lead to their processing
+	 * here.
 	 */
 
 	BUG_ON(irqs_disabled_flags(regs));

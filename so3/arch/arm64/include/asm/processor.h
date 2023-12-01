@@ -160,6 +160,7 @@
 #define ESR_ELx_EC_SHIFT	(26)
 #define ESR_ELx_EC_MASK		(UL(0x3F) << ESR_ELx_EC_SHIFT)
 #define ESR_ELx_EC(esr)		(((esr) & ESR_ELx_EC_MASK) >> ESR_ELx_EC_SHIFT)
+
 /*
  * PSR bits
  */
@@ -185,6 +186,9 @@
 #define PSR_C_BIT	0x20000000
 #define PSR_Z_BIT	0x40000000
 #define PSR_N_BIT	0x80000000
+
+/* Syscall vector location in AArch64 */
+#define SYSCALL_VECTOR_OFFSET	0x400
 
 /*
  * Instructions for modifying PSTATE fields.

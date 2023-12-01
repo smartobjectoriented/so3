@@ -81,7 +81,7 @@ __start:
   @ For future conversion to physical which is not required in this case.
   mov   r8, #0
 
-#else /* !CONFIG_SO3VIRT */
+#else /* CONFIG_SO3VIRT */
 
   safe_svcmode_maskall r9
 
@@ -105,7 +105,7 @@ cont:
   add	r1, r1, r8
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
 
-#endif
+#endif /* !CONFIG_SO3VIRT */
 
   @ Prepare to clear bss and zero fp
   ldr	r6, =__bss_start

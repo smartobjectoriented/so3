@@ -25,9 +25,9 @@
 	#address-cells = <1>;
 	#size-cells = <1>;
 
-	memory@0 {
+	memory {
 		device_type = "memory";
-		reg = <0x00000000 0x20000000>; /* 512 MB */
+		reg = <0x01000000 0x20000000>; /* 512 MB */
 	};
 
 	/* GIC interrupt controller */
@@ -36,7 +36,8 @@
 		interrupt-controller;
 		#interrupt-cells = <3>;
 		
-		reg = <0xff841000 0x1000 0xff842000 0x1000>;
+		reg = <0xff841000 0x1000 
+			   0xff842000 0x1000>;
 		status = "ok";
 	};
 	

@@ -44,10 +44,13 @@ int do_presetup_adjust_variables(void *arg)
 {
 	struct DOMCALL_presetup_adjust_variables_args *args = arg;
 
-	/* Normally, avz_start_info virt address is retrieved from r12 at guest bootstrap (head.S)
+	/* Normally, avz_shared virt address is retrieved from r12 at guest bootstrap (head.S)
 	 * We need to readjust this address after migration.
 	 */
 	avz_shared = args->avz_shared;
+
+	/* Re-adjust the meminfo descriptor */
+	mem_info.phys_base = avz_shared->dom_phys_offset;
 
 	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
 
