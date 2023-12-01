@@ -1,0 +1,52 @@
+# Ignore all generated files :
+*.[oa]
+*.cmd
+*.tmp*
+*.log
+*.ko
+*.mk
+*.builtin
+*.dtb
+*.su
+*.itb
+
+**/doxy/**
+**/generated/**
+**/optee_os/out/**
+
+**/build
+
+#vmlinux*
+uImage*
+domains*
+modules.order
+vmlinux.*dom*
+**/include/config/**
+
+# QEMU downloaded by build.sh script
+qemu
+
+# Backup files
+*~
+
+# Hidden files
+.*
+
+# Eclipse stuff
+*.launch
+
+agency/rootfs/build/**
+agency/rootfs/host/**
+agency/rootfs/images/**
+agency/rootfs/target/**
+
+
+# except the followings:
+!.gitignore #Don't ignore the ignore file ;-)
+!*.tmpl #TaMPLate files for the man documentation
+!buildroot/**
+!buildroot/docs/manual/*.mk
+!agency/rootfs/*.mk
+!agency/rootfs/package/**
+!agency/rootfs/board/**/*.d
+
