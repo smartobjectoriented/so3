@@ -29,14 +29,14 @@ COPY /lvgl_base /so3/usr/lib/lvgl/
 
 WORKDIR so3
 
-RUN     find / -name thumb | xargs rm -r; \
-        patch -p1 < ci/so3_ci.patch; \
-        cd u-boot; make virt64_defconfig; make -j8; cd ..; \
-        cd so3; make virt64_defconfig; make -j8; cd ..; \
+RUN find / -name thumb | xargs rm -r; \
+    patch -p1 < ci/so3_ci.patch; \
+    cd u-boot; make virt64_defconfig; make -j8; cd ..; \
+    cd so3; make virt64_defconfig; make -j8; cd ..; \
 	cp usr/lib/lvgl/demos/lv_demos.h usr/src; \
 	cp usr/lib/lvgl/demos/stress/* usr/src/stress ; \
 	sed -i '4s/^/#/' usr/lib/lvgl/CMakeLists.txt; \
-        cd usr; ./build.sh
+    cd usr; ./build.sh
 
 # Stage 2
 
