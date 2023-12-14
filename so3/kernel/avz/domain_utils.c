@@ -79,7 +79,7 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 				*(((char *) &val)+i) = *ptr++;
 
 			avz_dt_paddr = fdt64_to_cpu(val);
-			lprintk("## avz_dt_Paddr: %lx\n", avz_dt_paddr);
+
 			found = true;
 		}
 		nodeoffset = next_node;
