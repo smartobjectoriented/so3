@@ -42,14 +42,14 @@
  * @param agency_fdt_paddr
  * @return
  */
-u64 __get_avz_fdt_paddr(void *agency_fdt_paddr) {
+addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 	int nodeoffset, next_node;
 	int depth, ret;
-	u64 avz_dt_paddr;
+	addr_t avz_dt_paddr;
 	const char *propstring;
 	bool found = false;
 	volatile char *ptr;
-	addr_t val;
+	u64 val;
 	const fdt64_t *fdt_val;
 	int i;
 
@@ -79,7 +79,7 @@ u64 __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 				*(((char *) &val)+i) = *ptr++;
 
 			avz_dt_paddr = fdt64_to_cpu(val);
-
+			lprintk("## avz_dt_Paddr: %lx\n", avz_dt_paddr);
 			found = true;
 		}
 		nodeoffset = next_node;
