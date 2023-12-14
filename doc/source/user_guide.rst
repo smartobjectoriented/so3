@@ -211,6 +211,8 @@ SO3 works with the following plaforms: ``virt32``, ``virt64``, ``rpi4``, ``rpi4_
 +----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
 |                            |                    | virt64_defconfig     |        | X      |      |         |     |    |    |             | X      | 27.09.23   |
 +----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
+| virt32_avz.its             | virt32.dts         | virt32_pv_defconfig  | X      |        |      |         | X   | X  |    |             | X      | 13.12.23   |
++----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
 | rpi4.its                   | rpi4.dts           | rpi4_defconfig       |        |        | X    |         |     |    |    |             | X      | 30.11.23   |
 +----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
 | rpi4_64_avz_so3_pv.its     | rpi4_64_avz_pv.dts | rpi4_64_pv_defconfig |        |        |      | X       | X   | X  |    |             | X      | 27.09.23   |
@@ -224,7 +226,6 @@ SO3 works with the following plaforms: ``virt32``, ``virt64``, ``rpi4``, ``rpi4_
 | (soo) virt64.its           | virt64_avz_pv      | virt64_pv_defconfig  |        | X      |      |         |     | X  |    | X           |        | 07.10.23   |
 +----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
 | (soo) rpi4_64.its          | rpi4_64_avz_pv     | virt64_pv_defconfig  |        |        |      | X       | X   | X  |    | X           |        | 08.10.23   |
-|                            |                    |                      |        |        |      |         |     |    |    |             |        |            |
 +----------------------------+--------------------+----------------------+--------+--------+------+---------+-----+----+----+-------------+--------+------------+
 
 
@@ -262,29 +263,7 @@ at the root dir as follows:
    which is deployed in the unique partition of the SD-card.
    
    The next section shows how you should deploy with the MMC configuration.
-
-Using a *mmc* configuration
-===========================
-
-If you intend to use the *vexpress_mmc_defconfig* configuration for example, you
-will need to deploy the user apps manually (the ``deploy.sh`` script will be
-extended very soon). The deployment can be achieved as follows (from the root dir):
-
-.. code-block:: bash
-
-   cd filesystem
-   ./mount.sh 1 vexpress
-   sudo cp -r ../usr/build/deploy/* .
-   ./umount.sh
-
-The ``1`` refers to the partition #1.
-
-.. warning::
-
-   Do not forget that ``deploy.sh -b`` will erase the whole partition
-   of the SD-card. You then need to re-deploy the user apps.
    
-
 
 Installation and run with SO3 docker
 ************************************
@@ -294,11 +273,11 @@ The ``Dockerfile`` is located at the root directory and two scripts
 ``drun`` and ``drunit`` (for interactive mode) are available to start
 the execution.
 
-For example, building of a container named ``so3/vexpress`` can achieved like this:
+For example, building of a container named ``so3/virt32`` can achieved like this:
 
 .. code-block::bash
 
-	docker build -t so3/vexpress .
+	docker build -t so3/virt32 .
 
 The, starting the execution of the container:
 

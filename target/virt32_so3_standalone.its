@@ -14,10 +14,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
- */
+*/
 
 /dts-v1/;
-
+	
 / {
 	description = "Kernel and rootfs components for virt32 environment";
 
@@ -33,7 +33,7 @@
 			load = <0x41008000>;
 			entry = <0x41008000>;
 		};
-                
+	
 		fdt {
 			description = "Flattened Device Tree blob";
 			data = /incbin/("../so3/dts/virt32.dtb");
@@ -44,26 +44,27 @@
 
 		};	
 
-        ramfs {
-        	description = "SO3 environment minimal rootfs";
-            data = /incbin/("../rootfs/rootfs.fat");
-            type = "ramdisk";
-            arch = "arm";
-            os = "linux";
-            compression = "none";
-            load = <0x44c00000>;
-        };
+		ramfs {
+			description = "SO3 environment minimal rootfs";
+			data = /incbin/("../rootfs/rootfs.fat");
+			type = "ramdisk";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <0x44c00000>;
+		};
 
 
-    };
+	};
+	
 	configurations {
 		default = "so3_ramfs";
-                
+	
 		so3_ramfs {
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-                        ramdisk = "ramfs"; 
+			ramdisk = "ramfs"; 
 		};
 	};
 };
