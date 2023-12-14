@@ -25,7 +25,7 @@ RUN cd /; \
     rm -rf /so3/usr/lib/lvgl/*
 
 # Import the local LVGL library
-COPY lvgl /so3/usr/lib/lvgl/
+COPY $GITHUB_WORKSPACE/lvgl /so3/usr/lib/lvgl/
 
 WORKDIR so3
 
