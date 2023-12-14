@@ -63,7 +63,7 @@
 			description = "SO3 kernel image including device tree";
 			kernel = "so3";
 			fdt = "fdt";
-                        ramdisk = "ramfs"; 
+            ramdisk = "ramfs"; 
 		};
 	};
 };
