@@ -1,5 +1,6 @@
 # Stage 1
 
+ARG SO3_BRANCH=main
 FROM alpine:latest as stage1
 
 # AArch32
@@ -20,8 +21,8 @@ RUN apk update; \
 
 
 RUN cd /; \
-    wget https://github.com/smartobjectoriented/so3/archive/refs/heads/main.zip; \
-    unzip main.zip; mv so3-* so3; \
+    wget https://github.com/smartobjectoriented/so3/archive/refs/heads/${SO3_BRANCH}.zip; \
+    unzip ${SO3_BRANCH}.zip; mv so3-* so3; \
     rm -rf /so3/usr/lib/lvgl/*
 
 # Import the local LVGL library
