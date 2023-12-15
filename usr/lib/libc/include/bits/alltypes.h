@@ -11,6 +11,7 @@ typedef __builtin_va_list __isoc_va_list;
 typedef struct _IO_FILE FILE;
 
 typedef unsigned _Addr uintptr_t;
+typedef _Addr intptr_t;
 
 typedef signed char     int8_t;
 typedef short           int16_t;
