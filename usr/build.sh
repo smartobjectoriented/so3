@@ -105,7 +105,7 @@ mkdir -p build/deploy/
 # SO3 shell
 install_directory_root usr/out
 
-#install_file_elf
+install_file_elf
 
 
 
