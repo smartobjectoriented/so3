@@ -10,7 +10,12 @@ function usage {
 }
 
 function install_file_elf {
-  [ -f $1 ] && echo "Installing $1" && mv build/src/*.elf build/deploy && mv build/src/**/*.elf build/deploy
+  if [ -f $1 ] ; then 
+    echo "Installing $1" 
+    for subfolder_app in $(find build/src -type f -iname "*.elf"); do
+      mv "$subfolder_app" build/deploy
+    done
+  fi
 }
 
 function install_file_root {
