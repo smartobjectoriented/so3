@@ -11,8 +11,8 @@ function usage {
 
 function install_file_elf {
   if [ -f $1 ] ; then 
-    echo "Installing $1"  && mv build/src/*.elf build/deploy  
-    for subfolder_app in $(find build/src -type f -iwholename "**/*.elf"); do
+    echo "Installing $1" 
+    for subfolder_app in $(find build/src -type f -iname "*.elf"); do
       mv "$subfolder_app" build/deploy
     done
   fi
@@ -105,7 +105,7 @@ mkdir -p build/deploy/
 # SO3 shell
 install_directory_root usr/out
 
-install_file_elf
+#install_file_elf
 
 
 
