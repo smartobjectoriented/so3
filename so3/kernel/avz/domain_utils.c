@@ -61,7 +61,7 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr) {
 
 		ret = fdt_property_read_string(agency_fdt_paddr, nodeoffset, "type", &propstring);
 
-		/* Process the type "avz" to get the AVZ device tree */
+		/* Process the type "avz" to get the AVZ device tree. This node comes from SO3 (AVZ) ITS but is merged in the linux DTS afterwards */
 		if ((ret != -1) && !strcmp(propstring, "avz_dt")) {
 
 			/* According to U-boot, the <load> and <entry> properties are both on 64-bit even for aarch32 configuration. */
