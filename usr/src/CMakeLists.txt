@@ -7,6 +7,7 @@ add_executable(ping.elf ping.c)
 
 add_subdirectory(widgets)
 add_subdirectory(stress)
+add_subdirectory(prof_test)
 
 target_link_libraries(sh.elf c)
 target_link_libraries(ls.elf c)
