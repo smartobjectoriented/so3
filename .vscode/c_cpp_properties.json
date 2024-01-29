@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "SYE_Lab_so3",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/so3/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/opt/toolchains/arm-linux-gnueabihf_11.3.1/bin/arm-linux-gnueabihf-gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}
