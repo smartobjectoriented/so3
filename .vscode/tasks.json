@@ -1,0 +1,41 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build (make)",
+            "type": "shell",
+            "command": "make ${input:buildTarget}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "QEMU-SO3",
+            "type": "shell",
+            "command": "./st -S",
+            "isBackground": true
+        },
+        {
+            "label": "QEMU-USR",
+            "type": "shell",
+            "command": "./st",
+            "isBackground": true
+        }
+    ],
+    "inputs": [
+        {
+            "id": "buildTarget",
+            "type": "pickString",
+            "description": "Pick the target to build",
+            "options": [
+                "so3",
+                "usr",
+                "all"
+            ],
+            "default": "all"
+        }
+    ]
+}

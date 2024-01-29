@@ -1,0 +1,56 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "QEMU Debug SO3",
+            "type": "cppdbg",
+            "request": "launch",
+            "miDebuggerPath": "gdb-multiarch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/so3/so3",
+            "MIMode": "gdb",
+            "preLaunchTask": "QEMU-SO3",
+            "cwd": ".",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "QEMU Debug USR",
+            "type": "cppdbg",
+            "request": "launch",
+            "miDebuggerPath": "gdb-multiarch",
+            "miDebuggerServerAddress": "localhost:1234",
+            "program": "${workspaceFolder}/usr/build/deploy/${input:debugFileName}.elf",
+            "MIMode": "gdb",
+            "preLaunchTask": "QEMU-USR",
+            "cwd": ".",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "debugFileName",
+            "type": "pickString",
+            "description": "Pick the program to debug",
+            "options": [
+                "sh",
+                "prof_test",
+            ],
+            "default": "sh"
+        }
+    ]
+}
