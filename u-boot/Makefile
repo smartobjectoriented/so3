@@ -279,7 +279,7 @@ endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 rpi4 bbb))
 ARCH = arm
-CROSS_COMPILE = arm-none-eabi-
+CROSS_COMPILE = arm-linux-gnueabihf-
 endif
 
 KCONFIG_CONFIG	?= .config
