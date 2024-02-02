@@ -1,0 +1,122 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Polymorphic OS Configuration
+#
+# CONFIG_ARCH_ARM32 is not set
+CONFIG_ARCH_ARM64=y
+CONFIG_SO3VIRT=y
+CONFIG_ARCH="arm64"
+CONFIG_CROSS_COMPILE="aarch64-none-linux-gnu-"
+# CONFIG_ARM_TRUSTZONE is not set
+CONFIG_KERNEL_VADDR=0xffff800010000000
+CONFIG_RAM_BASE=0x41000000
+CONFIG_RAM_SIZE=0x3f000000
+
+#
+# Platform
+#
+CONFIG_VIRT64=y
+# CONFIG_RPI4_64 is not set
+# CONFIG_VA_BITS_39 is not set
+CONFIG_VA_BITS_48=y
+CONFIG_THREAD_ENV=y
+
+#
+# Kernel & CPU features
+#
+# CONFIG_SMP is not set
+CONFIG_NR_CPUS=1
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+
+#
+# Drivers
+#
+CONFIG_UART=y
+CONFIG_IO_MAPPING_BASE=0xffff900000000000
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+# CONFIG_NS16550 is not set
+# CONFIG_PL011_UART is not set
+CONFIG_UART_LL_PADDR=0x09000000
+CONFIG_SOO_SERIAL=y
+# CONFIG_MMC is not set
+# CONFIG_RAMDEV is not set
+# CONFIG_ARM_TIMER is not set
+CONFIG_SOO_TIMER=y
+# CONFIG_GIC is not set
+CONFIG_SOO_IRQ=y
+# CONFIG_PL111_CLCD is not set
+# CONFIG_SOO_FB is not set
+# CONFIG_PL050_KMI is not set
+# CONFIG_SOO_INPUT is not set
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_SAMPLE is not set
+
+#
+# Filesystems
+#
+CONFIG_ROOTFS_NONE=y
+# CONFIG_ROOTFS_MMC is not set
+# CONFIG_ROOTFS_RAMDEV is not set
+
+#
+# IPC
+#
+# CONFIG_IPC_SIGNAL is not set
+# CONFIG_IPC_PIPE is not set
+CONFIG_HEAP_SIZE=8
+# CONFIG_RTOS is not set
+# CONFIG_AVZ is not set
+CONFIG_SOO=y
+CONFIG_MMU=y
+# CONFIG_DEBUG_PRINTK is not set
+
+#
+# SOO Mobile Entity - Smart Object Oriented subsystem
+#
+# CONFIG_SOO_REFSO3 is not set
+# CONFIG_SOO_BLIND is not set
+# CONFIG_SOO_OUTDOOR is not set
+# CONFIG_SOO_AGENCY is not set
+# CONFIG_SOO_NET is not set
+# CONFIG_SOO_LEDCTRL is not set
+# CONFIG_SOO_CHAT is not set
+# CONFIG_SOO_WAGOLED is not set
+# CONFIG_SOO_IUOC is not set
+CONFIG_SOO_SWITCH_KNX=y
+# CONFIG_SOO_SWITCH_ENOCEAN is not set
+
+#
+# SOO Mobile Entity frontend drivers
+#
+# CONFIG_VDUMMY_FRONTEND is not set
+CONFIG_VUART_FRONTEND=y
+# CONFIG_VFB_FRONTEND is not set
+# CONFIG_VINPUT_FRONTEND is not set
+# CONFIG_VDOGA12V6NM_FRONTEND is not set
+# CONFIG_VWEATHER_FRONTEND is not set
+# CONFIG_VUIHANDLER_FRONTEND is not set
+# CONFIG_VNET_FRONTEND is not set
+
+#
+# vnet frontend
+#
+# CONFIG_VSENSELED_FRONTEND is not set
+# CONFIG_VSENSEJ_FRONTEND is not set
+# CONFIG_VENOCEAN_FRONTEND is not set
+# CONFIG_VWAGOLED_FRONTEND is not set
+# CONFIG_VIUOC_FRONTEND is not set
+CONFIG_VKNX_FRONTEND=y

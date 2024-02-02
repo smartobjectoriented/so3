@@ -1,0 +1,109 @@
+#
+# Automatically generated file; DO NOT EDIT.
+# SO3 Configuration
+#
+CONFIG_ARCH_ARM32=y
+# CONFIG_ARCH_ARM64 is not set
+CONFIG_ARCH="arm32"
+CONFIG_CROSS_COMPILE="arm-none-linux-gnueabihf-"
+
+#
+# Platform
+#
+# CONFIG_VEXPRESS is not set
+# CONFIG_RPI4 is not set
+CONFIG_SO3VIRT=y
+# end of Platform
+
+CONFIG_THREAD_ENV=y
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+# end of SO3 Scheduling configuration
+
+#
+# Drivers
+#
+CONFIG_UART=y
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+# CONFIG_DW_APB_UART is not set
+CONFIG_SO3VIRT_SERIAL=y
+# CONFIG_MMC is not set
+# CONFIG_RAMDEV is not set
+# CONFIG_ARM_TIMER is not set
+# CONFIG_GIC is not set
+CONFIG_VIRQ=y
+# CONFIG_SO3VIRT_FB is not set
+# CONFIG_SO3VIRT_INPUT is not set
+# end of Drivers
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_SAMPLE is not set
+# end of SO3 Applications
+
+CONFIG_KERNEL_VIRT_ADDR=0xc0000000
+
+#
+# Filesystems
+#
+CONFIG_ROOTFS_NONE=y
+# CONFIG_ROOTFS_MMC is not set
+# CONFIG_ROOTFS_RAMDEV is not set
+# end of Filesystems
+
+#
+# IPC
+#
+# CONFIG_IPC_SIGNAL is not set
+# CONFIG_IPC_PIPE is not set
+# end of IPC
+
+#
+# SOO Mobile Entity - Smart Object Oriented subsystem
+#
+# CONFIG_SOO_REFSO3 is not set
+CONFIG_SOO_BLIND=y
+# CONFIG_SOO_OUTDOOR is not set
+# CONFIG_SOO_AGENCY is not set
+# CONFIG_SOO_NET is not set
+# CONFIG_SOO_LEDCTRL is not set
+# CONFIG_SOO_WAGOLED is not set
+# CONFIG_SOO_SWITCH is not set
+
+#
+# SOO Mobile Entity frontend drivers
+#
+# CONFIG_VDUMMY_FRONTEND is not set
+CONFIG_VUART_FRONTEND=y
+# CONFIG_VFB_FRONTEND is not set
+# CONFIG_VINPUT_FRONTEND is not set
+# CONFIG_VDOGA12V6NM_FRONTEND is not set
+# CONFIG_VWEATHER_FRONTEND is not set
+# CONFIG_VUIHANDLER_FRONTEND is not set
+# CONFIG_VNET_FRONTEND is not set
+
+#
+# vnet frontend
+#
+# end of vnet frontend
+
+# CONFIG_VSENSELED_FRONTEND is not set
+# CONFIG_VSENSEJ_FRONTEND is not set
+# CONFIG_VENOCEAN_FRONTEND is not set
+# CONFIG_VWAGOLED_FRONTEND is not set
+CONFIG_VKNX_FRONTEND=y
+# end of SOO Mobile Entity frontend drivers
+# end of SOO Mobile Entity - Smart Object Oriented subsystem
+
+# CONFIG_RTOS is not set
+CONFIG_MMU=y
+# CONFIG_DEBUG_PRINTK is not set

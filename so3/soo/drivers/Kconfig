@@ -10,6 +10,12 @@ config VDUMMY_FRONTEND
 config VUART_FRONTEND
 	bool "vuart serial driver"
 
+config VDOGA12V6NM_FRONTEND
+	bool "vDoga12v6nm frontend for the DOGA 12V 6Nm blind motor"
+
+config VWEATHER_FRONTEND
+	bool "vWeather frontend for the SOO.outdoor weather station"
+
 config VUIHANDLER_FRONTEND
 	bool "vuihandler UI manager driver"
 
@@ -18,6 +24,18 @@ config VSENSELED_FRONTEND
 
 config VSENSEJ_FRONTEND
     bool "vsensej joystick Sense HAT frontend"
+
+config VENOCEAN_FRONTEND
+    bool "En0cean frontend"
+
+config VWAGOLED_FRONTEND
+    bool "Wagoled frontend"
+    
+config VIUOC_FRONTEND
+    bool "iuoc frontend"
+
+config VKNX_FRONTEND
+    bool "KNX frontend"
 
 endmenu
 

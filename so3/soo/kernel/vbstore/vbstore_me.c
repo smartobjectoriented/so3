@@ -217,6 +217,12 @@ void remove_vbstore_entries(void) {
 
 	vbus_rm(VBT_NIL, rootname, entry);
 
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vleds,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: Removing vLEDS from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vleds");
+	}
+
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Removing vUIHandler from vbstore...\n", __func__);
@@ -227,6 +233,18 @@ void remove_vbstore_entries(void) {
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vuart from vbstore...\n", __func__);
 		vbstore_dev_remove(ME_domID(), "vuart");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vweather,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing vweather from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vweather");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdoga12v6nm,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing vdoga12v6nm from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vdoga12v6nm");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
@@ -246,6 +264,30 @@ void remove_vbstore_entries(void) {
 		DBG("%s: removing vsensej from vbstore...\n", __func__);
 		vbstore_dev_remove(ME_domID(), "vsensej");
 	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vwagoled,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing vwagoled from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vwagoled");
+	}
+	
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "viuoc,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing viuoc from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "viuoc");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "venocean,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing venocean from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "venocean");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vknx,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing vknx from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vknx");
+	}
 }
 
 /*
@@ -262,6 +304,12 @@ void vbstore_devices_populate(void) {
 		vbstore_dev_init(ME_domID(), "vdummy", false, "vdummy,frontend");
 	}
 
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vleds,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: Init vLEDS...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vleds", false, "vleds,frontend");
+	}
+
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Init vUIHandler...\n", __func__);
@@ -274,6 +322,18 @@ void vbstore_devices_populate(void) {
 		vbstore_dev_init(ME_domID(), "vuart", false, "vuart,frontend");
 	}
 
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vweather,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vweather...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vweather", false, "vweather,frontend");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdoga12v6nm,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vdoga12v6nm...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vdoga12v6nm", false, "vdoga12v6nm,frontend");
+	}
+
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsenseled,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsenseled...\n", __func__);
@@ -284,6 +344,30 @@ void vbstore_devices_populate(void) {
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsensej...\n", __func__);
 		vbstore_dev_init(ME_domID(), "vsensej", false, "vsensej,frontend");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vwagoled,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init wagoled...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vwagoled", false, "vwagoled,frontend");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "venocean,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init venocean...\n", __func__);
+		vbstore_dev_init(ME_domID(), "venocean", false, "venocean,frontend");
+	} 
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vknx,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vknx...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vknx", false, "vknx,frontend");
+	} 
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "viuoc,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init viuoc...\n", __func__);
+		vbstore_dev_init(ME_domID(), "viuoc", false, "viuoc,frontend");
 	}
 
 }

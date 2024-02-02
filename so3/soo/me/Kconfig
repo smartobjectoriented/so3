@@ -8,6 +8,64 @@ choice
 		help
 			The SO3 ME is a reference mobile entity which is used for debugging and testing purposes.
 			It helps in the test & debug of interactions between the Agency and the ME for example.
+
+	config SOO_BLIND
+		bool "SOO.blind Mobile Entity"
+		help
+		   	SOO.blind is devoted to the handling of a "standard" blind which provides
+		   	the user with features such as putting the blinds up or down, but the ME
+		   	can also perform synergies with SOO.outdoor for example to decide how
+		   	to manipulate the blinds, according to the weather condition.
+		
+	config SOO_OUTDOOR
+		bool "SOO.outdoor Mobile Entity"
+		help
+			SOO.outdoor is able to collect data from any weather station. This ME
+		 	can be used in conjunction with other MEs which can use this kind of data.
+	
+	config SOO_AGENCY
+		bool "SOO.agency Mobile Entity"
+		help
+			SOO.agency enables the upgrade of agency image within a smart object. The ME
+			has an embedded of the new version of agency. All smart objects can be updated.
+			
+	config SOO_NET
+		bool "SOO.net Mobile Entity"
+		help
+ 			SOO.net can transport networking data packet from a SOO.net smart object to any          
+            		other smart objects. The ME can then collect data packet to forward them to the network. 
+
+	config SOO_LEDCTRL
+		bool "SOO.ledctrl Mobile Entity"
+		help
+			SOO.ledctrl is the ME running in SOO.ledctrl smart object which is 
+			a Raspberry Pi 4 enhanced with the Sense HAT extension. This ME
+			basically uses the led matric and joystick. It is mainly used
+			for demonstration purposes.
+			
+	config SOO_CHAT
+		bool "SOO.chat Mobile Entity"
+		help
+			Test text
+                select VUIHANDLER_FRONTEND
+
+
+	config SOO_WAGOLED
+		bool "SOO.wagoled Mobile Entity"
+		help
+			TODO
+			
+	config SOO_IUOC
+		bool "SOO.iuoc Mobile Entity"
+		help
+			SOO.iuoc me is able to activate any OC in IUOC that can be accessed from IUOC
+
+	config SOO_SWITCH_KNX
+		bool "SOO.switch Mobile Entity using KNX" 
+		help
+			SOO.switch is a ME capable of ...
+	
+	config SOO_SWITCH_ENOCEAN
+		bool "SOO.switch Mobile Entity using enocean"
 		
 endchoice
-

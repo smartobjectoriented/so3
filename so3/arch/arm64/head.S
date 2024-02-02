@@ -567,7 +567,7 @@ __secondary_data:
   .quad secondary_start_kernel
 
 .LC_virt_secondary_entry:
-  .quad __secondary_kernel_main
+  .quad secondary_start_kernel
 
 #endif /* CONFIG_SMP */
 

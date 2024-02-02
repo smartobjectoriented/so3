@@ -1,0 +1,1 @@
+ obj-y += vweather.o

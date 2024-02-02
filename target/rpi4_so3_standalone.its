@@ -30,8 +30,8 @@
 			arch = "arm";
 			os = "linux";
 			compression = "none";
-			load = <0x01008000>;
-			entry = <0x01008000>;
+			load = <0x00008000>;
+			entry = <0x00008000>;
 		};
 		
 		fdt {

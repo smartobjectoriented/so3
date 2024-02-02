@@ -95,6 +95,35 @@
 				status = "disabled";
 			};
 
+			vdoga12v6nm {
+				compatible = "vdoga12v6nm,frontend";
+				status = "disabled";
+			};
+
+			vweather {
+				compatible = "vweather,frontend";
+				status = "disabled";
+			};
+
+			vwagoled {
+				compatible = "vwagoled,frontend";
+				status = "disabled";
+			};
+
+			venocean {
+				compatible = "venocean,frontend";
+				status = "disabled";
+			};
+
+			viuoc {
+				compatible = "viuoc,frontend";
+				status = "disabled";
+			};
+
+			vknx {
+				compatible = "vknx,frontend";
+				status = "disabled";
+			};
 		};
 
 	};

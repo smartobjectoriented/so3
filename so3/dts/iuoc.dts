@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2023 A.Gabriel Catel Torres <arzur.cateltorres@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+#include "soo.dtsi"
+
+&ME {
+	/* 16 MB is enough */
+	domain-size =  <0x1000000>;
+	
+	/* SPID on 64-bit encoding */
+	spid = /bits/ 64 <0x0030000000000003>;
+
+	/* SPAD capabilities on 64-bit encoding */
+	spadcaps = /bits/ 64 <0x0000000000000000>;
+		
+	/* Name of this ME */
+	me_name = "SOO.iuoc";
+		
+	/* Short description */
+	me_shortdesc =
+			
+"SOO.iuoc is used to establish a communication between SOO cluster and IUOC";
+
+	frontends {
+		
+		/* Enabling the console */
+		vuart {
+			status = "ok";
+		};
+
+		viuoc {
+			status = "ok";
+		};
+
+	};
+	
+};

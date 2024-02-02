@@ -1,0 +1,49 @@
+/*
+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2020 David Truan <david.truan@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+#include "soo.dtsi"
+
+&ME {
+	/* 64 MB is required since an agency image will be embedded into the ME. */
+	domain-size = <0x4000000>;
+	
+	/* SPID on 128-bit encoding */
+	spid = /bits/ 64 <0x0030000000000001>;
+		
+	/* Name of this ME */
+	me_name = "SOO.agency";
+		
+	/* Short description */
+	me_shortdesc =
+			
+"This ME is used to propagate an upgrade of the agency. The ME will visit all smart objects \
+and perform an upgrade when necessary.";
+
+	frontends {
+	
+		/* Enabling the console */
+		vuart {
+			status = "ok";
+		};
+	};
+	
+};
+	
