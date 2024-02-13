@@ -70,6 +70,31 @@ LVGL's check_perf workflow uses the Dockerfile.lvgl found at the root of this re
 #. Imports the stress project into SO3's userspace and builds the userspace
 #. Sets up the image so it exposes the port 1234 when ran and executes "./st"
 
+Custom subroutine call profiling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+LVGL's check_perf workflow relies on a custom implementation of the *_mcount* function implemented in SO3's libc. This function is called at the start of each function found in a source file when this source file is built with GCC's "-p" (profiling) flag. The custom implementation modifies the stack to insert another function (*_mcount_exit*) as return function of the profiled function (the one that called *_mcount*). Both *_mcount* and *_mcount_exit* call a C function that timestamps their execution with the return address of the profiled function. This allows a custom script to analyse the executable file to find the function that was timestamped and calculate its execution time. This approach allows some code to be profiled automatically without the need to explicitely call timestamping functions from within the code.
+
+Subroutine calls sequence diagram
+
+.. image:: img/SubroutineCallProfilingSequence.png
+
+On profiled subroutine calls, _mcount is called right after the prolog of the callee function but not at the end of it, preventing its use for actual execution time calculations. _mcount is thus modified to override the return address of the callee function and have it return to _mcount_exit before going back to caller
+
+Subroutine calls stack diagram
+
+.. image:: img/ClassicSubroutineCallStack.png
+
+This diagram shows the stack's evolution during a classic subroutine call (with Aarch64)
+
+.. image:: img/OverridenSubroutineCallStack1.png
+
+.. image:: img/OverridenSubroutineCallStack1.png
+
+.. image:: img/OverridenSubroutineCallStack1.png
+
+Those diagrams show the way the stack is shifted and filled by _mcount to insert _mcount_exit as the parent of the callee function
+
 Performance report [WIP]
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
