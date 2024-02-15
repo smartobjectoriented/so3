@@ -1,7 +1,7 @@
 #! /bin/bash
 
-if [ $# -lt 1 -o $# -gt 2 ]; then
-	echo "Usage: $0 <logFile> [elfFile]"
+if [ $# -lt 1 -o $# -gt 3 ]; then
+	echo "Usage: $0 <logFile> [elfFile] [disassembly_symbol]"
 	exit 1
 fi
 
@@ -123,6 +123,9 @@ disassembly=false
 
 #echo "DBG pwd|user: $(pwd)|$USER"
 
+if [ $# -eq 3 ]; then disassembly="$objdump --disassemble=$3 $elf_file"
+else disassembly="$objdump -d $elf_file"; fi
+
 while read line; do
 
 	# Ignore lines preceding disassembly
@@ -143,7 +146,6 @@ while read line; do
 			fn_name="$caller_fn/$callee_fn"
 			#echo "DBG curr_addr, fn_name: $curr_addr, $fn_name"
 			fn_names+=("$fn_name")
-			#echo "DBG fn_names: ${fn_names[@]}"
 			fn_idx=$((fn_idx + 1))
 		fi
 
@@ -153,8 +155,8 @@ while read line; do
 			#echo "DBG line -> callee_fn: $line ->$callee_fn"
 		fi
 	fi
-done < <($objdump -d $elf_file)
-echo "DBG fn_names: ${fn_names[@]}"
+done < <($disassembly)
+#echo "DBG fn_names: ${fn_names[@]}"
 
 echo "Function name (Function tag) | Elapsed Time (s)"
 for idx in ${!fn_tags[@]}; do
