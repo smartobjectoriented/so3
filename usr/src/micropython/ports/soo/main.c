@@ -56,8 +56,7 @@ int main(int argc, char **argv) {
     else if ((fd = open(argv[1], O_RDONLY)) > 0) {
         close(fd);
         pyexec_file(argv[1]);
-    }
-    else {
+    } else {
         printf("Error: %s does not exist\n", argv[1]);
     }
     #endif
