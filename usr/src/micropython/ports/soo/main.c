@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "py/builtin.h"
 #include "py/compile.h"
@@ -33,7 +35,7 @@ static char heap[MICROPY_HEAP_SIZE];
 #endif
 
 int main(int argc, char **argv) {
-    int stack_dummy;
+    int stack_dummy, fd;
     stack_top = (char *)&stack_dummy;
 
     #if MICROPY_ENABLE_GC
@@ -50,7 +52,13 @@ int main(int argc, char **argv) {
         }
     }
     #else
-    pyexec_friendly_repl();
+    if (argc < 2) pyexec_friendly_repl();
+    else if ((fd = open(argv[1], O_RDONLY)) > 0) {
+        close(fd);
+        pyexec_file(argv[1]);
+    } else {
+        printf("Error: %s does not exist\n", argv[1]);
+    }
     #endif
     // do_str("print('hello world!', list(x+1 for x in range(10)), end='eol\\n')", MP_PARSE_SINGLE_INPUT);
     // do_str("for i in range(10):\r\n  print(i)", MP_PARSE_FILE_INPUT);
@@ -72,10 +80,6 @@ void gc_collect(void) {
     gc_dump_info(&mp_plat_print);
 }
 #endif
-
-mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
-    mp_raise_OSError(MP_ENOENT);
-}
 
 mp_import_stat_t mp_import_stat(const char *path) {
     return MP_IMPORT_STAT_NO_EXIST;
