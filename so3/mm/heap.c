@@ -527,6 +527,8 @@ void free(void *ptr)
 		kernel_panic();
 	}
 
+	BUG_ON(ptr == NULL);
+
 	/* Reset the chunk signature */
 	chunk->sig = 0x0;
 
