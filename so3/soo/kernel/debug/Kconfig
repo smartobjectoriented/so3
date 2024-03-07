@@ -1,7 +1,0 @@
-menuconfig VIRTSHARE_DEBUG
-	default n
-	bool "Virtshare debugging tools"
-
-config GPIO_DEBUG
-	bool "Low-level GPIO access for debugging purposes"
-

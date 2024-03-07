@@ -1,4 +1,0 @@
-
- 
-obj-y += lprintk.o
-
