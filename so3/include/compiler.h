@@ -23,6 +23,7 @@
 
 /* Type for `void *' pointers. */
 typedef unsigned long int uintptr_t;
+typedef long int intptr_t;
 
 #define barrier()     __asm__ __volatile__("": : :"memory")
 

@@ -8,6 +8,7 @@ obj-y += head.o exception.o traps.o
 obj-y += fault.o backtrace.o 
 obj-y += backtrace.o backtrace_asm.o
 obj-y += cache_v8.o cache.o context.o
+obj-y += semihosting.o semicall.o
 
 obj-$(CONFIG_AVZ) += hypercalls.o domain.o migration.o
 
