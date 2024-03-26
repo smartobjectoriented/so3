@@ -1,8 +1,8 @@
 
 
 QEMU for SO3 environment
-(c) 2013 HEIG-VD, REDS Institute
-################################
+(c) 2013-2024 HEIG-VD, REDS Institute
+#####################################
 
 Pre-requisite
 =============
@@ -14,7 +14,7 @@ sudo apt-get install libsdl1.2-dev
 Build
 =====
 
-Launch ./build.sh to fetch QEMU 8.0.0 and to apply the path for framebuffer and input support.
+Launch ./fetch.sh to fetch QEMU 8.0.0 and to apply the path for framebuffer and input support.
 
 QEMU Configuration and compilation
 ==================================
