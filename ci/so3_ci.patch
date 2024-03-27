@@ -1,13 +1,13 @@
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/build.conf so3_ci/build.conf
---- so3/build.conf	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/build.conf	2024-03-18 09:39:59.023430824 +0100
+--- so3/build.conf	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/build.conf	2024-03-27 09:39:46.507398136 +0100
 @@ -1,2 +1,2 @@
 -PLATFORM := virt32
 +PLATFORM := virt64
  
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/deploy.sh so3_ci/deploy.sh
---- so3/deploy.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/deploy.sh	2024-03-18 09:39:59.023430824 +0100
+--- so3/deploy.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/deploy.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -76,11 +76,11 @@
      
  # Check if the rootfs has been redeployed (in partition #1 currently). In this case, the contents must be preserved.
@@ -44,8 +44,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
          cd ..
      fi
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/filesystem/create_img.sh so3_ci/filesystem/create_img.sh
---- so3/filesystem/create_img.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/filesystem/create_img.sh	2024-03-18 09:39:59.023430824 +0100
+--- so3/filesystem/create_img.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/filesystem/create_img.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -14,7 +14,7 @@
      echo Creating sdcard.img.$1 ... 
      dd_size=256M
@@ -79,8 +79,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  fi
  
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/filesystem/mount.sh so3_ci/filesystem/mount.sh
---- so3/filesystem/mount.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/filesystem/mount.sh	2024-03-18 09:39:59.023430824 +0100
+--- so3/filesystem/mount.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/filesystem/mount.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -10,18 +10,18 @@
      PLATFORM=$2
  fi
@@ -112,8 +112,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 +    mount /dev/"${devname}"$1 fs
  fi
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/filesystem/umount.sh so3_ci/filesystem/umount.sh
---- so3/filesystem/umount.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/filesystem/umount.sh	2024-03-18 09:39:59.023430824 +0100
+--- so3/filesystem/umount.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/filesystem/umount.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -12,11 +12,11 @@
  
  sleep 1
@@ -129,8 +129,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 +    losetup -D
  fi
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/rootfs/deploy.sh so3_ci/rootfs/deploy.sh
---- so3/rootfs/deploy.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/rootfs/deploy.sh	2024-03-18 09:39:59.023430824 +0100
+--- so3/rootfs/deploy.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/rootfs/deploy.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -15,8 +15,8 @@
  ./mount.sh
  cd ../filesystem
@@ -143,8 +143,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  # Sometimes, syncing between RAM and FS takes some time
  sleep 1
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/rootfs/mount.sh so3_ci/rootfs/mount.sh
---- so3/rootfs/mount.sh	2024-03-18 09:39:18.924544369 +0100
-+++ so3_ci/rootfs/mount.sh	2024-03-18 09:39:59.027430700 +0100
+--- so3/rootfs/mount.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/rootfs/mount.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -5,6 +5,6 @@
  # mount the rootfs
  mkdir -p fs
@@ -155,8 +155,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -sudo mount ${DEVLOOP}p1 fs
 +mount ${DEVLOOP}p1 fs
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/rootfs/umount.sh so3_ci/rootfs/umount.sh
---- so3/rootfs/umount.sh	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/rootfs/umount.sh	2024-03-18 09:39:59.027430700 +0100
+--- so3/rootfs/umount.sh	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/rootfs/umount.sh	2024-03-27 09:39:46.507398136 +0100
 @@ -1,7 +1,7 @@
  #!/bin/bash
   
@@ -169,8 +169,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  
  
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/so3/arch/arm32/context.S so3_ci/so3/arch/arm32/context.S
---- so3/so3/arch/arm32/context.S	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/so3/arch/arm32/context.S	2024-03-18 09:39:59.027430700 +0100
+--- so3/so3/arch/arm32/context.S	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/so3/arch/arm32/context.S	2024-03-27 09:39:46.507398136 +0100
 @@ -280,7 +280,7 @@
  	.equ welcome_len, . - .LC_welcome
  
@@ -181,8 +181,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  .LCnoshell:
  	.string "so3: No init proc(shell) found ...\n"
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/so3/arch/arm64/context.S so3_ci/so3/arch/arm64/context.S
---- so3/so3/arch/arm64/context.S	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/so3/arch/arm64/context.S	2024-03-18 09:39:59.031430576 +0100
+--- so3/so3/arch/arm64/context.S	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/so3/arch/arm64/context.S	2024-03-27 09:39:46.507398136 +0100
 @@ -323,7 +323,7 @@
  	.equ welcome_len, . - .LC_welcome
  
@@ -193,8 +193,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  .LCnoshell:
  	.string "so3: No init proc(shell) found ...\n"
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/so3/configs/virt64_defconfig so3_ci/so3/configs/virt64_defconfig
---- so3/so3/configs/virt64_defconfig	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/so3/configs/virt64_defconfig	2024-03-18 09:39:59.031430576 +0100
+--- so3/so3/configs/virt64_defconfig	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/so3/configs/virt64_defconfig	2024-03-27 09:39:46.507398136 +0100
 @@ -6,7 +6,7 @@
  CONFIG_ARCH_ARM64=y
  # CONFIG_SO3VIRT is not set
@@ -226,8 +226,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  #
  # SO3 Applications
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/so3/devices/fb/pl111.c so3_ci/so3/devices/fb/pl111.c
---- so3/so3/devices/fb/pl111.c	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/so3/devices/fb/pl111.c	2024-03-18 09:39:59.035430452 +0100
+--- so3/so3/devices/fb/pl111.c	2024-03-27 12:48:46.438663915 +0100
++++ so3_ci/so3/devices/fb/pl111.c	2024-03-27 09:39:46.507398136 +0100
 @@ -97,7 +97,9 @@
  #define LCDBPP    (5 <<  1) /* 5: 24bpp, 6: 16bpp565 */
  #define LCDEN     (1 <<  0) /* enable display */
@@ -291,40 +291,9 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  	/* Register the framebuffer so it can be accessed from user space. */
  	devclass_register(dev, &pl111_cdev);
  
-diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/so3/kernel/process.c so3_ci/so3/kernel/process.c
---- so3/so3/kernel/process.c	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/so3/kernel/process.c	2024-03-18 09:39:59.035430452 +0100
-@@ -861,10 +861,27 @@
- 	pcb_t *pcb;
- 	unsigned i;
- 
-+	register int reg0 asm("r0");
-+	register int reg1 asm("r1");
-+
- 	pcb = current()->pcb;
- 
- 	/* Never finish the root process */
- 	if (pcb->parent == NULL) {
-+#ifdef CONFIG_ARCH_ARM32
-+		reg0 = 0x18;    /* SYSEXIT */
-+		reg1 = 0x20026; /* ADP_Stopped_ApplicationExit */
-+
-+		asm("svc 0x00123456");  // make semihosting call
-+#else
-+		reg0 = 0x18;    /* SYSEXIT */
-+		reg1 = 0x20026;
-+
-+		__asm__("hlt 0xf000");  // make semihosting call
-+
-+
-+#endif
-+
- 		printk("<kernel> %s: cannot finish the root process ...\n", __func__);
- 		kernel_panic();
- 	}
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/st so3_ci/st
---- so3/st	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/st	2024-03-18 09:39:59.035430452 +0100
+--- so3/st	2024-03-27 12:48:46.442663932 +0100
++++ so3_ci/st	2024-03-27 09:39:46.511398152 +0100
 @@ -9,6 +9,18 @@
  QEMU_MAC_ADDR=`printf 'DE:AD:BE:EF:%02X:%02X\n' $(($RANDOM % 255)) $((N_QEMU_INSTANCES))`
  GDB_PORT=$(($GDB_PORT_BASE + $N_QEMU_INSTANCES))
@@ -381,8 +350,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 +cp ${CHECKPERF}.txt /host
   
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/u-boot/configs/virt64_defconfig so3_ci/u-boot/configs/virt64_defconfig
---- so3/u-boot/configs/virt64_defconfig	2024-03-18 09:39:18.960544850 +0100
-+++ so3_ci/u-boot/configs/virt64_defconfig	2024-03-18 09:39:59.035430452 +0100
+--- so3/u-boot/configs/virt64_defconfig	2024-03-27 12:48:46.470664052 +0100
++++ so3_ci/u-boot/configs/virt64_defconfig	2024-03-27 09:39:46.511398152 +0100
 @@ -4,7 +4,7 @@
  #
  
@@ -411,8 +380,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  # CONFIG_AUTOBOOT_USE_MENUKEY is not set
  # CONFIG_USE_BOOTARGS is not set
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/u-boot/Makefile so3_ci/u-boot/Makefile
---- so3/u-boot/Makefile	2024-03-18 09:39:18.928544422 +0100
-+++ so3_ci/u-boot/Makefile	2024-03-18 09:39:59.035430452 +0100
+--- so3/u-boot/Makefile	2024-03-27 12:48:46.442663932 +0100
++++ so3_ci/u-boot/Makefile	2024-03-27 09:39:46.511398152 +0100
 @@ -274,7 +274,7 @@
  
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64 rpi4_64 cm4_64))
@@ -424,7 +393,7 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 rpi4 bbb))
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/u-boot/Makefile.orig so3_ci/u-boot/Makefile.orig
 --- so3/u-boot/Makefile.orig	1970-01-01 01:00:00.000000000 +0100
-+++ so3_ci/u-boot/Makefile.orig	2024-03-18 09:39:59.039430328 +0100
++++ so3_ci/u-boot/Makefile.orig	2024-03-27 09:39:46.515398167 +0100
 @@ -0,0 +1,2497 @@
 +# SPDX-License-Identifier: GPL-2.0+
 +
@@ -2924,8 +2893,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 +# information in a variable so we can use it in if_changed and friends.
 +.PHONY: $(PHONY)
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/usr/aarch64_toolchain.cmake so3_ci/usr/aarch64_toolchain.cmake
---- so3/usr/aarch64_toolchain.cmake	2024-03-18 09:39:18.980545118 +0100
-+++ so3_ci/usr/aarch64_toolchain.cmake	2024-03-18 09:39:59.039430328 +0100
+--- so3/usr/aarch64_toolchain.cmake	2024-03-27 12:48:46.486664121 +0100
++++ so3_ci/usr/aarch64_toolchain.cmake	2024-03-27 09:39:46.515398167 +0100
 @@ -17,13 +17,13 @@
  set(CMAKE_INSTALL_SO_NO_EXE 0)
  
@@ -2945,8 +2914,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
 -set(CMAKE_LINKER "aarch64-none-linux-gnu-ld")
 +set(CMAKE_LINKER "aarch64-none-elf-ld")
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/usr/deploy.sh so3_ci/usr/deploy.sh
---- so3/usr/deploy.sh	2024-03-18 09:39:18.980545118 +0100
-+++ so3_ci/usr/deploy.sh	2024-03-18 09:39:59.039430328 +0100
+--- so3/usr/deploy.sh	2024-03-27 12:48:46.486664121 +0100
++++ so3_ci/usr/deploy.sh	2024-03-27 09:39:46.515398167 +0100
 @@ -17,7 +17,7 @@
  
  cd ../rootfs
@@ -2958,8 +2927,8 @@ diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s'
  ./umount.sh  ${PLATFORM}
  
 diff -x config -x scripts -x '*.o' -x '.*' -x so3_ci.patch -x generated -x '*.s' -x 'sdcard*' -Naru so3/usr/src/CMakeLists.txt so3_ci/usr/src/CMakeLists.txt
---- so3/usr/src/CMakeLists.txt	2024-03-18 09:39:18.984545172 +0100
-+++ so3_ci/usr/src/CMakeLists.txt	2024-03-18 09:39:59.039430328 +0100
+--- so3/usr/src/CMakeLists.txt	2024-03-27 12:48:46.498664172 +0100
++++ so3_ci/usr/src/CMakeLists.txt	2024-03-27 09:39:46.515398167 +0100
 @@ -1,22 +1,22 @@
  
 -add_executable(sh.elf sh.c)
