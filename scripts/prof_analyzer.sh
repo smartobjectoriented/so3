@@ -102,7 +102,7 @@ if [ $# -lt 2 ]; then #No ELF file given, simply display tags and execution time
 fi
 
 elf_file=$2
-objdump=/opt/toolchains/aarch64-none-linux-gnu_11.3/bin/aarch64-none-linux-gnu-objdump #For now, the profiling feature is only expected to work on arm64 platforms
+objdump=/usr/bin/aarch64-none-elf-objdump #For now, the profiling feature is only expected to work on arm64 platforms
 
 if ! [ -r "$elf_file" ]; then
 	echo "Error: file $elf_file doesn't exist or can't be read"
