@@ -27,7 +27,7 @@ RUN cd /; \
     rm -rf /so3/usr/lib/lvgl/*
 
 # Import the local LVGL library
-COPY lvgl_base /so3/usr/lib/lvgl/
+COPY lvgl /so3/usr/lib/lvgl/
 
 WORKDIR so3
 
@@ -35,8 +35,7 @@ RUN find / -name thumb | xargs rm -r; \
     patch -p1 < ci/so3_ci.patch; \
     cd u-boot; make virt64_defconfig; make -j8; cd ..; \
     cd so3; make virt64_defconfig; make -j8; cd ..; \
-	cp usr/lib/lvgl/demos/lv_demos.h usr/src; \
-	cp usr/lib/lvgl/demos/stress/* usr/src/stress ; \
+    cp usr/lib/lvgl/tests/perf/* usr/src/prof_test
 	sed -i '4s/^/#/' usr/lib/lvgl/CMakeLists.txt; \
     cd usr; ./build.sh
 
