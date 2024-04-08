@@ -36,7 +36,7 @@ RUN find / -name thumb | xargs rm -r; \
     cd u-boot; make virt64_defconfig; make -j8; cd ..; \
     cd so3; make virt64_defconfig; make -j8; cd ..; \
     cp usr/lib/lvgl/tests/perf/* usr/src/prof_test \
-	sed -i '4s/^/#/' usr/lib/lvgl/CMakeLists.txt; \
+    sed -i '4s/^/#/' usr/lib/lvgl/CMakeLists.txt; \
     cd usr; ./build.sh
 
 # Stage 2
