@@ -82,7 +82,7 @@ while read log_line; do
 				exec_times[$prev_idx]=${exec_times[$curr_idx]}
 				exec_times[$curr_idx]=$exec_swap
 
-				$((curr_idx--))
+				((curr_idx--))
 			else
 				break
 			fi
