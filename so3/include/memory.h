@@ -93,6 +93,7 @@ extern volatile addr_t pfn_start;
 
 void put_ME_slot(unsigned int ME_slotID);
 int get_ME_free_slot(unsigned int size, ME_state_t ME_state);
+int prepare_ME_slot(int slotID, unsigned int size, ME_state_t ME_state);
 
 #endif /* CONFIG_AVZ */
 

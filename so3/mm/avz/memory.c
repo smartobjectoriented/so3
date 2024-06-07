@@ -178,6 +178,43 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 	return slotID;
 }
 
+int prepare_ME_slot(int slotID, unsigned int size, ME_state_t ME_state) {
+	unsigned int order, addr;
+	unsigned int bits_NR;
+
+	/* memslot[slotID] is available */
+
+	bits_NR = DIV_ROUND_UP(size, ME_MEMCHUNK_SIZE);
+
+	order = get_power_from_size(bits_NR);
+
+	addr = allocate_memslot(order);
+
+	if (!addr)
+		return -1;  /* No available memory */
+
+	memslot[slotID].base_paddr = addr;
+	memslot[slotID].size = (1 << order) * ME_MEMCHUNK_SIZE;  /* Readjust size */
+	memslot[slotID].busy = true;
+
+#ifdef DEBUG
+	printk("get_ME_slot param %d\n", size);
+	printk("get_ME_slot bits_NR %d\n", bits_NR);
+	printk("get_ME_slot slotID %d\n", slotID);
+	printk("get_ME_slot start %08x\n", (unsigned int) memslot[slotID].base_paddr);
+	printk("get_ME_slot size %d\n", memslot[slotID].size);
+#endif
+
+	/* Create a domain context including the ME descriptor before the ME gets injected. */
+
+	domains[slotID] = domain_create(slotID, ME_CPU);
+
+	/* Initialize the ME descriptor */
+	set_ME_state(slotID, ME_state);
+
+	return slotID;
+}
+
 /*
  * Release a slot
  */
