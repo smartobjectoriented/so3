@@ -69,6 +69,8 @@ void inject_me(soo_hyp_t *op)
 
 	flags = local_irq_save();
 
+	slotID = *(int *)op->p_val1;
+
 #ifdef CONFIG_ARCH_ARM64
 
 	/* First, we do a copy of the ME ITB into the avz heap to get independent from Linux mapping (either
@@ -98,10 +100,14 @@ void inject_me(soo_hyp_t *op)
 		BUG();
 	}
 
-	/* Find a slotID to store this ME. */
-	slotID = get_ME_free_slot(dom_size, ME_state_booting);
-	if (slotID == -1)
-		goto out;
+	if (slotID == -1) {
+		/* Find a slotID to store this ME. */
+		slotID = get_ME_free_slot(dom_size, ME_state_booting);
+		if (slotID == -1)
+			goto out;
+	} else {
+		prepare_ME_slot(slotID, dom_size, ME_state_booting);
+	}
 
 	domME = domains[slotID];
 
