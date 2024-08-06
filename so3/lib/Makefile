@@ -8,3 +8,5 @@ lib-y += vsprintf.o printk.o
 lib-y += strtod.o
 lib-y += list_sort.o
 
+lib-$(CONFIG_SOO) += logs.o
+
