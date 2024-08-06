@@ -46,7 +46,7 @@ static int log_write(char *str, int len) {
 /*
  * Generates logs messages. It is similar to 'printk', but:
  *   1. Prefixes '[ME:<ME_ID>] to the message
- *   2. Sends message though vUART
+ *   2. Sends message through vUART
  *
  *   Only available in ME mode (when SO3 is used as a ME)
  */
