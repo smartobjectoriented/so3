@@ -48,7 +48,7 @@ static int log_write(char *str, int len) {
  *   1. Prefixes '[ME:<ME_ID>] to the message
  *   2. Sends message though vUART
  *
- *   Only available in virtual mode (when SO3 is used as a ME)
+ *   Only available in ME mode (when SO3 is used as a ME)
  */
 void logs(const char *fmt, ...)
 {
