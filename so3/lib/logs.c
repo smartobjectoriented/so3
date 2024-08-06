@@ -44,11 +44,11 @@ static int log_write(char *str, int len) {
 }
 
 /*
- * Generates logs messages. It is similar 'printk', but:
- *   1. Add '[ME:<ME_ID>]' prefix
- *   2. Send message though vUART
+ * Generates logs messages. It is similar to 'printk', but:
+ *   1. Prefixes '[ME:<ME_ID>] to the message
+ *   2. Sends message though vUART
  *
- *   Only available in virtual mode
+ *   Only available in virtual mode (when SO3 is used as a ME)
  */
 void logs(const char *fmt, ...)
 {
