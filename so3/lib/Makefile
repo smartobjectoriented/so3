@@ -8,5 +8,5 @@ lib-y += vsprintf.o printk.o
 lib-y += strtod.o
 lib-y += list_sort.o
 
-lib-$(SO3VIRT) += logs.o
+lib-$(CONFIG_SO3VIRT) += logs.o
 
