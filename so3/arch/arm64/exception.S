@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -109,7 +109,7 @@ ENTRY(__vectors)
 	.align 7
 
 	mov		x0, lr
-	b 	trap_handle_error
+	b 		trap_handle_error
 
 	// Current EL with SP0 / IRQ
 	.align 7
@@ -320,7 +320,7 @@ ENTRY(pre_ret_to_el1)
 
 	wfi
 
-	ldr 	x0, cpu_entrypoint
+	ldr 		x0, cpu_entrypoint
 	msr		elr_el2, x0
 
 	// Set the CPU in EL1 mode to proceed with
@@ -373,7 +373,7 @@ el12_sync_handler:
 	mrs		x0, elr_el2
 	str		x0, [sp, #OFFSET_PC]
 
- 	mov 	x0, sp
+ 	mov 		x0, sp
 	bl		trap_handle
 
 	str		x0, [sp, #OFFSET_X0]
@@ -462,53 +462,26 @@ ENTRY(pre_ret_to_user)
 	// Get a reference to our domain descriptor
 	curdom	x10, x11
 
-#ifdef CONFIG_ARM64VT
-
-	ldr		x2, [sp, #OFFSET_PC]  // Entry point of the guest
-	msr		elr_el2, x2
+#
+	ldr	x2, [sp, #OFFSET_PC]  // Entry point of the guest
+	msr	elr_el2, x2
 
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 
-	mov		x2, #PSR_MODE_EL1t
-	msr		spsr_el2, x2
+	mov	x2, #PSR_MODE_EL1t
+	msr	spsr_el2, x2
 
-	ldr		x0, [sp, #OFFSET_X21] // Device tree (fdt_addr)
+	ldr	x0, [sp, #OFFSET_X21] // Device tree (fdt_addr)
 
 	// According to boot protocol
-	mov		x1, #0
-	mov		x2, #0
-	mov		x3, #0
+	mov	x1, #0
+	mov	x2, #0
+	mov	x3, #0
 
 	// Ready to jump into the agency domain...
 
 	eret
-
-#else /* CONFIG_ARM64VT */
-
-	ldr		x11, [x10, #OFFSET_AVZ_SHARED]
-	str		xzr, [x11, #OFFSET_HYPERVISOR_CALLBACK]
-
-	current_cpu 	x11
-
-	// Switch to the guest stack
-	ldr 	x0, .LChypervisor_stack
-	mov		x12, sp
-	str		x12, [x0, x11, lsl #3]
-
-	// Setting pseudo_usr_mode
-	ldr 	x0, .LCpseudo_usr_mode
-	mov		x1, #1
-	str		x1, [x0, x11, lsl #3]
-
-	ldr		x2, [sp, #OFFSET_PC]  // Entry point of the guest
-	ldr		x21, [sp, #OFFSET_X21] // Device tree (fdt_addr)
-	ldr		x22, [sp, #OFFSET_X22] // Address of start_info
-
-	// Ready to jump into the Linux domain...
-	blr		x2
-
-#endif /* !CONFIG_ARM64VT */
 
 	/*
 	 * Mitigate Straight-line Speculation.
@@ -521,169 +494,6 @@ ENTRY(pre_ret_to_user)
 
 __crash:
 	b __crash
-
-#ifndef CONFIG_ARM64VT
-
-.align  5
-avz_el01_1_irq_handler:
-
-	kernel_entry
-
-	mrs		x0, spsr_el1
-	str		x0, [sp, #OFFSET_PSTATE]
-
-	mrs		x0, sp_el0
-	str		x0, [sp, #OFFSET_SP]
-
-	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_PC]
-
-	// Now process the IRQ differentiating execution according to the source (dom/hyp)
-	// for managing the stack correctly
-
-	current_cpu	x10
-
-	ldr		x0, .LCpseudo_usr_mode
-	ldr		x1, [x0, x10, lsl #3]
-	cmp		x1, #0  				// svc ?
-
-	b.eq	svc_path
-
-	mov		x1, #0 					// setting svc
-	str		x1, [x0, x10, lsl #3]
-
-	mov		x1, sp
-	ldr 	x0, .LChypervisor_stack // Get the running hypervisor SVC stack
-	ldr		x0, [x0, x10, lsl #3]
-
-	mov		sp, x0
-
-	curdom	x0, x2
-	str		x1, [x0, #OFFSET_G_SP]
-
-	// Make sure r0 refers to the base of the stack frame
-	mov		x0, sp
-
-	str		lr, [sp, #-16]!
-    bl 		irq_handle
-	ldr		lr, [sp], #16
-
-	curdom	x10, x11
-	ldr		x11, [x10, #OFFSET_AVZ_SHARED]
-
-	// If the softirq handling leads to trigger an interrupt in the guest,
-	// it will be processed by do_evtchn_do_upcall. The way how to
-	// process an interrupt with potentially IRQs off is under the
-	// responsibility of the guest
-
-	// are some IRQs pending?
-	ldrb	w12, [x11, #OFFSET_EVTCHN_UPCALL_PENDING]
-	tst		w12, #0xff
-
-	b.eq	restore
-
-upcall_path:
-
-	current_cpu x11
-
-	curdom  x10, x12
-	ldr		x12, [x10, #OFFSET_AVZ_SHARED]
-	ldr		lr, [x12, #OFFSET_HYPERVISOR_CALLBACK]
-
-	cmp		lr, #0
-	beq		restore
-
-	ldr		x0, .LChypervisor_stack   	// running L1 hypervisor stack
-	mov		x12, sp
-	str		x12, [x0, x11, lsl #3]
-
-	// Get guest stack
-	ldr		x12, [x10, #OFFSET_G_SP]
-	mov		sp, x12
-
-	// setting pseudo_usr_mode / x0, x1 re-assigned right after
-	ldr 	x0, .LCpseudo_usr_mode
-	mov		x1, #1
-	str		x1, [x0, x11, lsl #3]
-
-	// x0 contains a reference to the stack pointer
-	mov		x0, sp
-
-	// Go up to the guest for evtchn processing
-	br		lr
-
-restore:
-
-	current_cpu x11
-
-	// Setting pseudo_usr_mode / x0, x1 re-assigned right after
-	ldr 	x0, .LCpseudo_usr_mode
-	mov		x1, #1
-	str		x1, [x0, x11, lsl #3]
-
-	// Restore saved registers
-
-	ldr		x0, .LChypervisor_stack   	// running SVC hypervisor stack
-	mov		x10, sp
-	str		x10, [x0, x11, lsl #3]
-
-	curdom	x10, x11
-
-	// Get guest stack
-	ldr		x11, [x10, #OFFSET_G_SP]
-	mov		sp, x11
-
-out_irq:
-
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
-	ldr		x0, [sp, #OFFSET_SP]
-	msr		sp_el0, x0
-
-	ldr		x0, [sp, #OFFSET_PC]
-	msr		elr_el1, x0
-
-  	kernel_exit
-
-	eret
-
-
-/*
- * The following function is used to restore the migrated domain.
- * Indeed, the receiver environment has not saved anything on its stack regarding
- * a context switch. We can not pursue on right-after-context-switch in the schedule function!
- * But we do not start from boot either. So, we have an appropriate restore glue code to perform
- * an upcall in the newly migrated ME. A first timer IRQ has been set in domain_migration_restore() to
- * avoid a problem in the guest when testing for upcall pending.
- *
- *
- */
-ENTRY(after_migrate_to_user)
-
-	b upcall_path
-
-// Hypervisor stack is used for the *current* (running) vcpu svc stack address
-svc_path:
-
-	mov		x0, sp
-
-	// The stack must stay 16-byte aligned
-
-	str		lr, [sp, #-16]!
-    bl 		irq_handle
-	ldr		lr, [sp], #16
-
-    b 		out_irq
-
-pseudo_usr_mode:
-	.space CONFIG_NR_CPUS * 8
-
-.LCpseudo_usr_mode:
-	.quad	pseudo_usr_mode
-
-
-#endif /* !CONFIG_ARM64VT */
 
 hypervisor_stack:
 	.space CONFIG_NR_CPUS * 8
@@ -708,20 +518,10 @@ hypervisor_stack:
 
 el01_sync_handler:
 
-// If the syscall interrupt occurs with the SO3-on-avz configuration,
-// the stack frame is built in AVZ (interrupt vector at this level).
-// Hence, the SO3 domain (guest) will just need to preserve the
-// return address and make the local processing.
-
-#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
-
-	// x0 contains the reference to the stack frame at the entry
-	// of the syscall
-
-	// Preserve the return address from avz call
-	str		lr, [sp, #-8]!
-
-#else
+	// If the syscall interrupt occurs with the SO3-on-avz configuration,
+	// the stack frame is built in AVZ (interrupt vector at this level).
+	// Hence, the SO3 domain (guest) will just need to preserve the
+	// return address and make the local processing.
 
 	kernel_entry
 
@@ -737,7 +537,7 @@ el01_sync_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-#endif
+
 
     bl 		trap_handle
 
@@ -751,14 +551,6 @@ __ret_from_fork:
 #endif /* CONFIG_IPC_SIGNAL */
 
 
-#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
-
-	// Back to avz
-	ldr		lr, [sp], #8
-	ret
-
-#else
-
 	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
@@ -771,8 +563,6 @@ __ret_from_fork:
 	kernel_exit
 
 	eret
-
-#endif
 
 .align  5
 el0_irq_handler:
@@ -841,31 +631,7 @@ ret_from_fork:
 
 	str		xzr, [sp, #OFFSET_X0]
 
-// With the SO3-on-avz configuration, the creation of new process remains
-// identical as other configurations, and prepare the stack frame to
-// be correctly processed along the upcall path, even if, for such a configuration,
-// the guest does not handle the stack frame (see the sync interrupt handling below).
-// Therefore, and only for this case, we need to handle that.
-
-#if defined(CONFIG_SO3VIRT) && defined(CONFIG_SOO)
-
-	ldr		x0, [sp, #OFFSET_PC]
-	msr		elr_el1, x0
-
-	ldr 	x0, [sp, #OFFSET_SP]
-	msr		sp_el0, x0
-
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
-	kernel_exit
-
-	eret
-
-#else
 	b		__ret_from_fork
-#endif
-
 
 // IRQs are off
 // ARM EABI: the syscall nr is stored in x8
@@ -943,79 +709,7 @@ __no_sigreturn:
 #endif
 #endif
 
-#ifdef CONFIG_SO3VIRT
-
-.align 5
-/*
- * Hypercall trampoline has the following arguments:
- * - x0: hypercall number
- * - x1: first arg (-> r0)
- * - x2: second arg
- * - x3: third arg
- * - x4: fourth arg
- * - x5: work register
- * - x7: hypecall number (ABI)
- *
- * - x8 will contain 0 if no pending evtchn, 1 otherwise
- * - x9 will contain the PSTATE at the hypercall entry and exit
- */
-ENTRY(hypercall_trampoline)
-
-    // Stack alignment must stay on 16 bytes.
-    sub     sp, sp, #12*8
-
-    stp 	x1, x2, [sp, #16 * 0]
-    stp 	x3, x4, [sp, #16 * 1]
-    stp		x5, x6, [sp, #16 * 2]
-    stp		x7, x8, [sp, #16 * 3]
-    stp		x9, x10, [sp, #16 * 4]
-    stp		x11, lr, [sp, #16 * 5]
-
-    mov 	x7, x0
-    mov 	x0, x1
-    mov 	x1, x2
-    mov 	x2, x3
-    mov 	x3, x4
-    mov 	x4, x5
-
-    ldr 	x5, =HYPERVISOR_hypercall_addr
-	ldr		x5, [x5]
-
-    blr		x5
-
-	cmp 	x8, #0
-	b.eq	out_upcall
-
-	kernel_entry
-
-	// Update PSTATE accordingly
-	str		x9, [sp, #OFFSET_PSTATE]
-
-	// Set x0 to sp
-	mov		x0, sp
-	bl 		irq_handle
-	kernel_exit
-
-	// Restore original PSTATE
-	msr		daif, x9
-
-out_upcall:
-
-    ldp 	x1, x2, [sp, #16 * 0]
-    ldp 	x3, x4, [sp, #16 * 1]
-    ldp		x5, x6, [sp, #16 * 2]
-    ldp		x7, x8, [sp, #16 * 3]
-    ldp		x9, x10, [sp, #16 * 4]
-    ldp		x11, lr, [sp, #16 * 5]
-
-    add     sp, sp, #12*8
-
-    ret
-
-#endif /* CONFIG_SO3VIRT */
-
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
-
 
 // We may reach this point only during along the upcall
 // path of a hypercall return.

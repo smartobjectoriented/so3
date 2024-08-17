@@ -34,18 +34,18 @@
  * Describes how domains are mapped in physical memory
  */
 typedef struct {
-	addr_t base_paddr;  /* Kernel physical start address */
-	size_t size;
+	addr_t base_paddr;  /* Guest physical start address */
+        addr_t base_vaddr; /* Guest virtual start address */
+
+        size_t size;
 
 	unsigned int busy; /* Indicate if a memslot is available or not */
 
 	addr_t fdt_paddr; /* Device Tree */
 	addr_t entry_addr;
 
-#ifdef CONFIG_ARM64VT
 	/* Intermediate physical address (address of the virtual RAM as exposed to the guest) */
 	unsigned long ipa_addr;
-#endif
 
 } memslot_entry_t;
 

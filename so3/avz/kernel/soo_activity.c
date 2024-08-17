@@ -17,7 +17,7 @@
  *
  */
 
-#if 0
+#if 1
 #define DEBUG
 #endif
 
@@ -80,7 +80,7 @@ void shutdown_ME(unsigned int ME_slotID)
 
 	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
 
-	memset((void *) __lva(memslot[ME_slotID].base_paddr), 0, memslot[ME_slotID].size);
+	memset((void *) __xva(ME_slotID, memslot[ME_slotID].base_paddr), 0, memslot[ME_slotID].size);
 
 	set_current_domain(__current_domain);
 	mmu_switch_kernel((void *) current_pgtable_paddr);
@@ -410,14 +410,19 @@ void do_soo_hypercall(soo_hyp_t *args) {
 	/* Get argument from guest */
 	memcpy(&op, args, sizeof(soo_hyp_t));
 
-	/*
+	/* Re-map to our virtual address space */
+	op.addr = ipa_to_va(MEMSLOT_AGENCY, op.addr);
+	op.p_val1 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val1);
+	op.p_val2 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val2);
+
+        /*
 	 * Execute the hypercall
 	 * The usage of args and returns depend on the hypercall itself.
 	 * This has to be aligned with the guest which performs the hypercall.
 	 */
 
 	switch (op.cmd) {
-	case AVZ_MIG_PRE_PROPAGATE:
+        case AVZ_MIG_PRE_PROPAGATE:
 		soo_pre_propagate(*((unsigned int *) op.p_val1), op.p_val2);
 		break;
 
@@ -526,12 +531,12 @@ void do_soo_hypercall(soo_hyp_t *args) {
 		printk("%s: Unrecognized hypercall: %d\n", __func__, op.cmd);
 		BUG();
 		break;
-	}
+        }
 
-	/* If all OK, copy updated structure to guest */
-	memcpy(args, &op, sizeof(soo_hyp_t));
+        /* If all OK, copy updated structure to guest */
+	//memcpy(args, &op, sizeof(soo_hyp_t));
 
-	flush_dcache_all();
+	//flush_dcache_all();
 }
 
 void soo_activity_init(void) {

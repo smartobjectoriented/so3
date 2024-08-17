@@ -207,21 +207,8 @@ void context_switch(struct domain *prev, struct domain *next)
 	if (!is_idle_domain(current_domain)) {
 
 		local_irq_disable();  /* Again, if the guest re-enables the IRQ */
-
-#ifdef CONFIG_ARCH_ARM32
-		/* Save the VFP context */
-		vfp_save_state(prev);
-#endif
 	}
-
-	if (!is_idle_domain(next)) {
-
-#ifdef CONFIG_ARCH_ARM32
-		/* Restore the VFP context of the next guest */
-		vfp_restore_state(next);
-#endif
-	}
-
+	
 	switch_mm_domain(next);
 
 	/* Clear running flag /after/ writing context to memory. */

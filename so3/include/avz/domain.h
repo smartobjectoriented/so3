@@ -25,10 +25,6 @@
 
 #include <asm/mmu.h>
 
-#ifdef CONFIG_ARCH_ARM32
-#include <asm/vfp.h>
-#endif
-
 /* We keep the STACK_SIZE to 8192 in order to have a similar stack_size as guest OS in SVC mode */
 #define DOMAIN_STACK_SIZE  (PAGE_SIZE << 1)
 
@@ -91,9 +87,6 @@ struct domain
 	addr_t	event_callback;
 	addr_t	domcall;
 
-#ifdef CONFIG_ARCH_ARM32
-	struct vfp_state vfp;
-#endif
 	avz_shared_t *avz_shared;     /* shared data area between AVZ and the domain */
 
 	unsigned int max_pages;    /* maximum value for tot_pages */
@@ -149,11 +142,8 @@ void arch_setup_domain_frame(struct domain *d, cpu_regs_t *domain_frame, addr_t 
 /*
  * setup_page_table_guestOS() is setting up the 1st-level and 2nd-level page tables within the domain.
  */
-#ifdef CONFIG_ARM64VT
+
 void __setup_dom_pgtable(struct domain *d, addr_t ipa_start, unsigned long map_size);
-#else
-void __setup_dom_pgtable(struct domain *d, addr_t v_start, unsigned long map_size, addr_t p_start);
-#endif
 
 /*
  * Arch-specifics.

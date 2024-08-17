@@ -73,7 +73,11 @@ struct task_slice flip_do_schedule(void)
 		sd->current_dom = (sd->current_dom + 1) % MAX_DOMAINS;
 		ret.d = domains_runnable[sd->current_dom];
 
-		loopmax--;
+		/* Currently, a domain is attached to a dedicated CPU */
+		if ((ret.d != NULL) && (ret.d->processor != smp_processor_id()))
+                        ret.d = NULL;
+
+                loopmax--;
 	} while ((ret.d == NULL) && loopmax);
 
 	if (ret.d == NULL)

@@ -112,7 +112,7 @@ void read_migration_structures(soo_hyp_t *op) {
 	build_domain_migration_info(ME_slotID, domME, &dom_info);
 
 	/* Copy structures to buffer */
-	memcpy((void *) op->vaddr, &dom_info, sizeof(dom_info));
+	memcpy((void *) op->addr, &dom_info, sizeof(dom_info));
 
 	/* Update op->avz_sharedze with valid data size */
 	*((unsigned int *) op->p_val2) = sizeof(dom_info);
@@ -201,7 +201,7 @@ static void restore_domain_migration_info(unsigned int ME_slotID, struct domain 
 void write_migration_structures(soo_hyp_t *op) {
 
 	/* Get the migration info structures */
-	memcpy(&dom_info, (void *) op->vaddr, sizeof(dom_info));
+	memcpy(&dom_info, (void *) op->addr, sizeof(dom_info));
 }
 
 /**
@@ -536,7 +536,7 @@ void migration_init(soo_hyp_t *op) {
 	}
 
 	/* Used for future restore operation */
-	vaddr_start_ME  = (unsigned long) __lva(memslot[slotID].base_paddr);
+	vaddr_start_ME  = (unsigned long) __xva(slotID, memslot[slotID].base_paddr);
 
 	DBG("ME base physical address: %lx\n", memslot[slotID].base_paddr);
 	DBG("Agency virtual address of the ME: %lx\n", vaddr_start_ME);

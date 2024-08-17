@@ -16,6 +16,10 @@
  *
  */
 
+#if 1
+#define DEBUG
+#endif
+
 #include <heap.h>
 #include <memory.h>
 #include <crc.h>
@@ -47,45 +51,24 @@
  *
  * @param op  (op->vaddr is the ITB buffer, op->p_val1 will contain the slodID in return (-1 if no space), op->p_val2 is the ITB buffer size_
  */
+
 void inject_me(soo_hyp_t *op)
 {
 	int slotID;
 	size_t fdt_size;
 	void *fdt_vaddr;
 	int dom_size;
-	struct domain *domME, *__current;
-	addr_t current_pgtable_paddr;
-	unsigned long flags;
-	void *itb_vaddr;
-#ifdef CONFIG_ARCH_ARM64
-	uint32_t itb_size;
-#endif
+        struct domain *domME, *__current;
+        unsigned long flags;
+        void *itb_vaddr;
 
-#ifdef CONFIG_ARCH_ARM32
-	int section_nr;
-#endif
-
-	DBG("%s: Preparing ME injection, source image = %lx\n", __func__, op->vaddr);
+	DBG("%s: Preparing ME injection, source image = %lx\n", __func__, op->addr);
 
 	flags = local_irq_save();
 
-	slotID = *(int *)op->p_val1;
+	itb_vaddr = (void *) op->addr;
 
-#ifdef CONFIG_ARCH_ARM64
-
-	/* First, we do a copy of the ME ITB into the avz heap to get independent from Linux mapping (either
-	 * in the user space, or in the vmalloc'd area).
-	 */
-	itb_size = *((uint32_t *) op->p_val2);
-
-	itb_vaddr = malloc(itb_size);
-	BUG_ON(!itb_vaddr);
-
-	/* op->vaddr: vaddr of itb */
-	memcpy(itb_vaddr, (void *) op->vaddr, itb_size);
-#else
-	itb_vaddr = (void  *) op->vaddr;
-#endif
+	DBG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
 
 	/* Retrieve the domain size of this ME through its device tree. */
 	fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr, &fdt_size);
@@ -100,14 +83,10 @@ void inject_me(soo_hyp_t *op)
 		BUG();
 	}
 
-	if (slotID == -1) {
-		/* Find a slotID to store this ME. */
-		slotID = get_ME_free_slot(dom_size, ME_state_booting);
-		if (slotID == -1)
-			goto out;
-	} else {
-		prepare_ME_slot(slotID, dom_size, ME_state_booting);
-	}
+	/* Find a slotID to store this ME. */
+	slotID = get_ME_free_slot(dom_size, ME_state_booting);
+	if (slotID == -1)
+		goto out;
 
 	domME = domains[slotID];
 
@@ -119,38 +98,28 @@ void inject_me(soo_hyp_t *op)
 
 	__current = current_domain;
 
-	mmu_get_current_pgtable(&current_pgtable_paddr);
+	//mmu_get_current_pgtable(&current_pgtable_paddr);
 
-#ifdef CONFIG_ARCH_ARM32
-	/* Get the visibility on the domain image stored in the agency user space area */
-	for (section_nr = 0x0; section_nr < 0xc00; section_nr++)
-		((uint32_t *) __sys_root_pgtable)[section_nr] = ((uint32_t *) __lva(current_pgtable_paddr & TTBR0_BASE_ADDR_MASK))[section_nr];
-
-	flush_dcache_all();
-#endif /* CONFIG_ARCH_ARM32 */
-
-	mmu_switch((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
+	//mmu_switch((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
 
 	/* Clear the RAM allocated to this ME */
-	memset((void *) __lva(memslot[slotID].base_paddr), 0, memslot[slotID].size);
+	memset((void *) __xva(slotID, memslot[slotID].base_paddr), 0, memslot[slotID].size);
 
 	loadME(slotID, itb_vaddr);
 
 	if (construct_ME(domains[slotID]) != 0)
 		panic("Could not set up ME guest OS\n");
 
+#if 0
 	/* Switch back to the agency address space */
 	set_current_domain(__current);
 
 	mmu_switch((void *) current_pgtable_paddr);
+#endif
 
 out:
 	/* Prepare to return the slotID to the caller. */
 	*((unsigned int *) op->p_val1) = slotID;
-
-#ifdef CONFIG_ARCH_ARM64
-	free(itb_vaddr);
-#endif /* CONFIG_ARCH_ARM64 */
-
+ 
 	local_irq_restore(flags);
 }

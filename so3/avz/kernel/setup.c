@@ -148,11 +148,6 @@ void avz_start(void)
 
 	smp_init();
 
-#ifdef CONFIG_ARCH_ARM32
-	/* Enabling VFP module on this CPU */
-	vfp_enable();
-#endif
-
 	printk("Now, unpausing the agency domain and doing its bootstrap...\n");
 
 	domain_unpause_by_systemcontroller(agency);

@@ -375,6 +375,8 @@ all:  $(BIN) dtbs
 
 objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
 
+objs-$(CONFIG_AVZ) += avz
+
 ifeq ($(CONFIG_AVZ),)
 
 objs-$(CONFIG_SOO) += soo

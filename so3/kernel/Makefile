@@ -23,8 +23,6 @@ obj-y += bitmap.o
 obj-y += softirq.o
 obj-y += spinlock.o
 
-obj-$(CONFIG_AVZ) += avz/
-
 obj-$(CONFIG_MMU) += process.o ptrace.o
 
 EXTRA_CFLAGS += -I$(srctree)/include/net

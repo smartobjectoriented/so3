@@ -117,21 +117,21 @@ extern addr_t cpu_entrypoint;
 
 /**
  * This is the entry point for all exceptions currently managed by SO3.
+ * 
+ * Regarding the SOO hypercalls, all addresses got from arguments
+ * *must* be physical addresses.
  *
  * @param regs	Pointer to the stack frame
  */
 typedef void(*vector_fn_t)(cpu_regs_t *);
 
 int trap_handle(cpu_regs_t *regs) {
-#ifdef CONFIG_ARM64VT
+
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
-#else
-	unsigned long esr = read_sysreg(esr_el1);
-#endif
 
 #if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
-	vector_fn_t vector_fn = (vector_fn_t) (ME_VOFFSET + L_TEXT_OFFSET + PAGE_SIZE + SYSCALL_VECTOR_OFFSET);
+	vector_fn_t vector_fn = (vector_fn_t) (memslot[current_domain->avz_shared->domID].ipa_addr + L_TEXT_OFFSET + PAGE_SIZE + SYSCALL_VECTOR_OFFSET);
 #endif
 
 	switch (ESR_ELx_EC(esr)) {
@@ -159,48 +159,60 @@ int trap_handle(cpu_regs_t *regs) {
 
 		return 0;
 
-#ifdef CONFIG_ARM64VT
 	case ESR_ELx_EC_HVC64:
 		hvc_code = regs->x0;
+		if (hvc_code != 1)
+                        printk("## hvc %x\n", hvc_code);
+                switch (hvc_code) {
 
-		switch (hvc_code) {
-
-		/* PSCI hypercalls */
+                /* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
-			return PSCI_VERSION(1, 1);
+                        return PSCI_VERSION(1, 1);
 
-		case PSCI_0_2_FN64_CPU_ON:
-			printk("Power on CPU #%d...\n", regs->x1 & 3);
+                case PSCI_0_2_FN64_CPU_ON:
+                        printk("Power on CPU #%d...\n", regs->x1 & 3);
 
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);
 
 			return PSCI_RET_SUCCESS;
 
-		/* AVZ Hypercalls */
+		case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
+		case PSCI_1_0_FN_PSCI_FEATURES:
+                        return PSCI_RET_SUCCESS;
+
+                /* AVZ Hypercalls */
 		case __HYPERVISOR_console_io:
 			printk("%c", regs->x1);
 			return ESUCCESS;
 
 		case __HYPERVISOR_domctl:
 
-			do_domctl((domctl_t *) ipa_to_lva(memslot[MEMSLOT_AGENCY], regs->x1));
+			do_domctl((domctl_t *) ipa_to_va(MEMSLOT_AGENCY, regs->x1));
 			flush_dcache_all();
 
 			return ESUCCESS;
 
 		case __HYPERVISOR_event_channel_op:
 
-			do_event_channel_op(regs->x1, (void *) ipa_to_lva(memslot[MEMSLOT_AGENCY], regs->x2));
+			do_event_channel_op(regs->x1, (void *) ipa_to_va(MEMSLOT_AGENCY, regs->x2));
 			flush_dcache_all();
 
 			return ESUCCESS;
 
-		default:
-			return ESUCCESS;
-		}
-		break;
-#endif /* CONFIG_ARM64VT */
+                case __HYPERVISOR_soo_hypercall:
+
+			/* Propagate the SOO hypercall to the dedicated routines. */
+
+                        do_soo_hypercall((soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, regs->x1));
+                        flush_dcache_all();
+
+                        return ESUCCESS;
+
+                default:
+			return EFAULT;
+                }
+                break;
 
 #if 0
 	case ESR_ELx_EC_DABT_LOW:

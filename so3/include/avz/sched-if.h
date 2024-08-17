@@ -19,8 +19,6 @@
 #ifndef __SCHED_IF_H__
 #define __SCHED_IF_H__
 
-#include <percpu.h>
-
 struct schedule_data {
     spinlock_t    schedule_lock;  /* spinlock protecting curr        */
     struct timer  s_timer;        /* scheduling timer                */

@@ -114,7 +114,7 @@ void secondary_start_kernel(void)
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
-#if defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
+#if defined(CONFIG_AVZ) 
 
 #ifdef CONFIG_SOO
 	if (cpu == AGENCY_RT_CPU) {
@@ -139,16 +139,18 @@ void secondary_start_kernel(void)
 		default:
 			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 		}
-
-#else
-		pre_ret_to_el1();
 #endif
 
 #ifdef CONFIG_SOO
 	}
+	
+	/* If no spin table is used, CPU #1 */
+	if (cpu == AGENCY_RT_CPU)
+        	pre_ret_to_el1();
+
 #endif /* CONFIG_SOO */
 
-#endif /* CONFIG_AVZ+ARM64VT */
+#endif /* CONFIG_AVZ */
 
 	secondary_timer_init();
 
@@ -219,7 +221,7 @@ void cpu_up(unsigned int cpu)
 
 	while (!booted[cpu]) ;
 
-	printk("%s finished waiting...\n", __func__);
+	printk("%s CPU %d finished waiting...\n", __func__, smp_processor_id());
 
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;

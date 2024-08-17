@@ -13,5 +13,6 @@
 #include <avz/domctl.h>
 
 void do_domctl(domctl_t *args);
+void do_soo_hypercall(soo_hyp_t *args);
 
 #endif /* HYPERCALL_H */

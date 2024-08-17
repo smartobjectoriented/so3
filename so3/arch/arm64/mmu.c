@@ -807,7 +807,7 @@ void duplicate_pgtable_entry(u64 *from, u64 *to, int level, u64 vaddr, pcb_t *pc
 
 				memset(__to, 0, PAGE_SIZE);
 
-				to[i] = (from[i] & ~mask) | (__pa(__to) & mask);
+				to[i] = (from[i] & ~mask) | ((addr_t) __pa(__to) & mask);
 
 				switch(level) {
 				case 0:

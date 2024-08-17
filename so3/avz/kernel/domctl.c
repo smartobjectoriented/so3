@@ -64,12 +64,10 @@ void do_domctl(domctl_t *args)
 
 		break;
 
-#ifdef CONFIG_ARM64VT
 	case DOMCTL_get_AVZ_shared:
 		args->u.avz_shared_paddr =
 			memslot[(current_domain->avz_shared->domID == DOMID_AGENCY) ? 1 : current_domain->avz_shared->domID].ipa_addr + memslot[MEMSLOT_AGENCY].size;
 		break;
-#endif /* CONFIG_ARM64VT */
 
 	}
 

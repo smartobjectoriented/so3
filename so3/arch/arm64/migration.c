@@ -54,6 +54,7 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 	uint64_t *l0pte, *l1pte, *l2pte, *l3pte;
 	int l0, l1, l2, l3;
 
+#if 0 /* Disabled for ARM64VT*/
 	/* Locate the system ME (L0) page table */
 	me->avz_shared->pagetable_paddr = pfn_to_phys(phys_to_pfn(me->avz_shared->pagetable_paddr) + pfn_offset);
 
@@ -109,4 +110,5 @@ void fix_kernel_boot_page_table_ME(unsigned int ME_slotID)
 
 	/* Fixup the hypervisor */
 	*l0pte_offset(pgtable_ME, CONFIG_KERNEL_VADDR) = *l0pte_offset(__sys_root_pgtable, CONFIG_KERNEL_VADDR);
+#endif
 }

@@ -201,7 +201,7 @@ static void domain_schedule(void)
 	ASSERT(next->runstate != RUNSTATE_running);
 	domain_runstate_change(next, RUNSTATE_running);
 
-	ASSERT(!next->is_running);
+        ASSERT(!next->is_running);
 	next->is_running = 1;
 
 #if 0
@@ -221,10 +221,15 @@ static struct task_slice agency_schedule(void)
 {
 	struct task_slice ts;
 
-	ts.d = domains[0];
-	ts.time = 0;
+	/* No domain must be scheduled on CPU #1 since it is fully handled by Linux */
+	if (smp_processor_id() == AGENCY_CPU) 
+		ts.d = domains[0];
+	else
+                ts.d = idle_domain[smp_processor_id()];
 
-	return ts;
+        ts.time = 0;
+
+        return ts;
 }
 
 static void agency_wake(struct domain *d) {

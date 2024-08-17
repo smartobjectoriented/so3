@@ -337,8 +337,7 @@ void rtdm_register_dc_event_callback(dc_event_t dc_event, dc_event_fn_t *callbac
  */
 typedef struct migrate_op {
 	int		cmd;
-	unsigned long	vaddr;
-	unsigned long	paddr;
+	unsigned long	addr;
 	void		*p_val1;
 	void		*p_val2;
 } soo_hyp_t;

@@ -82,36 +82,42 @@ typedef struct page page_t;
 extern page_t *frame_table;
 extern volatile addr_t pfn_start;
 
+/* TODO: Redefine __lva() which is used only in EL2 (hypervisor) mode */
+
 #ifdef CONFIG_AVZ
 
 /*
  * We add two functions for retrieving virt and phys address relative to
- * Linux offset according to the memory map (used to access guest mem)
+ * the hypervisor or guest offset.
  */
-#define __lpa(vaddr) ((vaddr) - AGENCY_VOFFSET + memslot[MEMSLOT_AGENCY].base_paddr)
-#define __lva(paddr) ((paddr) - memslot[MEMSLOT_AGENCY].base_paddr + AGENCY_VOFFSET)
+
+#define __xpa(x, vaddr) (addr_t) (((addr_t) vaddr) - memslot[x].base_vaddr + memslot[x].base_paddr)
+#define __xva(x, paddr) (addr_t) (((addr_t) paddr) - memslot[x].base_paddr + memslot[x].base_vaddr)
+
+#define __pa(vaddr)	(__xpa(MEMSLOT_AVZ, vaddr))
+#define __va(paddr) 	(__xva(MEMSLOT_AVZ, paddr))
+
+#define ipa_offset(x)		(memslot[x].ipa_addr - memslot[x].base_paddr)
+
+#define virt_to_ipa(x, va)	(phys_to_ipa(memslot, __pa(va)))
+#define phys_to_ipa(x, pa) 	(((addr_t) pa) + ipa_offset(x))
+
+#define ipa_to_pa(x, ipa)	(((addr_t) ipa) - ipa_offset(x))
+#define ipa_to_va(x, ipa)	(__xva(x, ipa_to_pa(x, ipa)))
 
 void put_ME_slot(unsigned int ME_slotID);
 int get_ME_free_slot(unsigned int size, ME_state_t ME_state);
-int prepare_ME_slot(int slotID, unsigned int size, ME_state_t ME_state);
 
-#endif /* CONFIG_AVZ */
+#else /* CONFIG_AVZ */
+
+#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + mem_info.phys_base)
+#define __va(paddr) (((addr_t) paddr) - mem_info.phys_base + CONFIG_KERNEL_VADDR)
+
+#endif /* !CONFIG_AVZ */
 
 #define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
 #define phys_to_pfn(phys) (((addr_t) phys) >> PAGE_SHIFT)
 #define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t) virt)))
-
-#define ipa_offset(memslot)		(memslot.ipa_addr - memslot.base_paddr)
-
-#define virt_to_ipa(memslot, va)	(phys_to_ipa(memslot, __pa(va)))
-#define phys_to_ipa(memslot, pa) 	(((addr_t) pa) + ipa_offset(memslot))
-
-#define ipa_to_phys(memslot, ipa)	(((addr_t) ipa) - ipa_offset(memslot))
-
-#define ipa_to_lva(memslot, ipa)	(__lva(ipa_to_phys(memslot, ipa)))
-
-#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + mem_info.phys_base)
-#define __va(paddr) (((addr_t) paddr) - mem_info.phys_base + CONFIG_KERNEL_VADDR)
 
 #define page_to_pfn(page) ((addr_t) ((addr_t) (page - frame_table) + pfn_start))
 #define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])

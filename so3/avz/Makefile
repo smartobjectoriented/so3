@@ -1,0 +1,3 @@
+
+obj-y += kernel/ mm/
+

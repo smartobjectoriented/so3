@@ -55,23 +55,15 @@ __pre_head:
 
 __start:
 
-#ifndef CONFIG_SO3VIRT
 	// Preserve the fdt addr (device tree) which is stored in x0 by U-boot
-	mov		x9, x0
-#else
-	// From AVZ, the device tree address is stored in x21
-	mov		x9, x21
-#endif
+	mov	x9, x0
 
 	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
 
-#ifndef CONFIG_SO3VIRT
 	// CPU configuration
-	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
-
-#endif /* !CONFIG_SO3VIRT */
+	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
 	/* Clear the BSS */
 
@@ -90,33 +82,26 @@ __start:
 
   	// Initialize stack pointers for current mode (normal case if no MMU is used)
   	adrp	x0, __stack_top
-  	mov		sp, x0
+  	mov	sp, x0
 
-    // Up to here, a stack should be initialized
+       // Up to here, a stack should be initialized
 
-#ifdef CONFIG_SO3VIRT
-  	ldr	x10, =avz_shared
-  	str x22, [x10]
-#endif /* CONFIG_SO3VIRT */
 
 	/* Basic low-level initialization */
 #ifdef CONFIG_AVZ
 	mov 	x0, x9
 
-	bl 		__get_avz_fdt_paddr
+	bl 	__get_avz_fdt_paddr
 	// x0 now contains the right paddr of the AVZ device tree
 #else
-	mov x0, x9 // FDT paddr
+	mov 	x0, x9 // FDT paddr
 #endif
 
-	bl early_memory_init
+	bl 	early_memory_init
 
-#ifdef CONFIG_SO3VIRT
-	bl	avz_setup
-#endif /* CONFIG_SO3VIRT */
 
-    // Set up the MMU
-    b setup_mmu
+    	// Set up the MMU
+    	b 	setup_mmu
 
 __kernel_main:
 
@@ -269,9 +254,7 @@ setup_mmu:
   	adrp x0, temp_stack
   	mov	sp, x0
 
-#ifndef CONFIG_SO3VIRT
   	bl 	mmu_configure
-#endif
 
   	// Readjust the stack
   	ldr	x0, =__stack_top
@@ -315,7 +298,7 @@ el2_setup:
 	 * kernel is intended to run at EL2.
 	 */
 	mrs	x2, id_aa64mmfr1_el1
-	ubfx x2, x2, #ID_AA64MMFR1_VHE_SHIFT, #4
+	ubfx	x2, x2, #ID_AA64MMFR1_VHE_SHIFT, #4
 
 	/* Hyp configuration. */
 	ldr x0, =HCR_HOST_NVHE_FLAGS
@@ -534,8 +517,6 @@ ENTRY(secondary_startup)
 	// Initialize the vector table
 	// The vector table address is the virtual address
 
-#ifndef CONFIG_SO3VIRT
-
 	// Initialize the vector table
 	adrp x0, __vectors
 
@@ -545,10 +526,9 @@ ENTRY(secondary_startup)
 	msr vbar_el1, x0
 #endif /* !CONFIG_ARM64VT */
 
-#endif /* !CONFIG_SO3VIRT */
 
   	// Store the virtual address which will be used to continue
-    // execution after the MMU enabled.
+    	// execution after the MMU enabled.
   	ldr		x19, .LC_virt_secondary_entry
 
   	blr		x19

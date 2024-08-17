@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -42,7 +42,7 @@ int construct_ME(struct domain *d) {
 
 	slotID = d->avz_shared->domID;
 
-	printk("***************************** Loading Mobile Entity (ME) *****************************\n");
+	printk("***************************** Loading SO3 Guest Container *****************************\n");
 
 	if (memslot[slotID].size == 0)
 		panic("No ME image supplied\n");
@@ -65,11 +65,7 @@ int construct_ME(struct domain *d) {
 
 	clear_bit(_VPF_down, &d->pause_flags);
 
-#ifdef CONFIG_ARM64VT
 	__setup_dom_pgtable(d, memslot[slotID].base_paddr, memslot[slotID].size);
-#else
-	__setup_dom_pgtable(d, ME_VOFFSET, memslot[slotID].size, memslot[slotID].base_paddr);
-#endif
 
 	d->avz_shared->dom_phys_offset = alloc_spfn << PAGE_SHIFT;
 	d->avz_shared->hypercall_vaddr = (unsigned long) hypercall_entry;
@@ -84,7 +80,9 @@ int construct_ME(struct domain *d) {
 
 	/* Create the first thread associated to this domain. */
 
-	new_thread(d, ME_VOFFSET + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, ME_VOFFSET + memslot[slotID].size);
+        new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET,
+                   d->avz_shared->fdt_paddr,
+                   memslot[slotID].ipa_addr + memslot[slotID].size);
 
 	return 0;
 }

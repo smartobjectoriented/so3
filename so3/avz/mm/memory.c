@@ -16,7 +16,7 @@
  *
  */
 
-#if 0
+#if 1
 #define DEBUG
 #endif
 
@@ -27,6 +27,8 @@
 #include <heap.h>
 #include <bitmap.h>
 #include <string.h>
+
+#include <asm/mmu.h>
 
 #include <avz/sched.h>
 
@@ -67,37 +69,23 @@ unsigned int get_power_from_size(unsigned int bits_NR) {
  *
  * Returns the physical start address or 0 if no slot available.
  */
-unsigned int allocate_memslot(unsigned int order) {
+static unsigned int allocate_memslot(unsigned int order) {
 	int pos;
 
 	pos = bitmap_find_free_region((unsigned long *) &memchunk_bitmap, ME_MEMCHUNK_NR, order);
 	if (pos < 0)
 		return 0;
 
-#ifdef DEBUG
-	printk("allocate_memslot param %d\n", order);
-	printk("allocate_memslot pos %d\n", pos);
-	printk("allocate_memslot memslot1start %08x\n", (unsigned int) memslot[1].base_paddr);
-	printk("allocate_memslot memslot1size %d\n", memslot[1].size);
-	printk("allocate_memslot pos*MEMCHUNK_SIZE %d\n", pos*ME_MEMCHUNK_SIZE);
-#endif
-
 	return memslot[1].base_paddr + memslot[1].size + pos*ME_MEMCHUNK_SIZE;
 }
 
-void release_memslot(unsigned int addr, unsigned int order) {
+static void release_memslot(unsigned int addr, unsigned int order) {
 	int pos;
 
 	pos = addr - memslot[1].base_paddr - memslot[1].size;
 	pos /= ME_MEMCHUNK_SIZE;
 
-#ifdef DEBUG
-	printk("release_memslot addr %08x\n", addr);
-	printk("release_memslot order %d\n", order);
-	printk("release_memslot pos %d\n", pos);
-#endif
-
-	bitmap_release_region((unsigned long *) &memchunk_bitmap, pos, order);
+        bitmap_release_region((unsigned long *) &memchunk_bitmap, pos, order);
 }
 
 /*
@@ -117,12 +105,7 @@ void switch_mm_domain(struct domain *d) {
 
 	set_current_domain(d);
 
-#ifdef CONFIG_ARM64VT
-	__mmu_switch_kernel((void *) d->avz_shared->pagetable_paddr, true);
-#else
-	mmu_switch_kernel((void *) d->avz_shared->pagetable_paddr);
-#endif
-
+        __mmu_switch_kernel((void *) d->avz_shared->pagetable_paddr, true);
 }
 
 /**
@@ -156,57 +139,17 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 	if (!addr)
 		return -1;  /* No available memory */
 
-	memslot[slotID].base_paddr = addr;
-	memslot[slotID].size = (1 << order) * ME_MEMCHUNK_SIZE;  /* Readjust size */
+	/* Determine the phys/virt start addresses of the guest */
+        memslot[slotID].base_paddr = addr;
+        memslot[slotID].base_vaddr = (ME_BASE + (slotID - 1)) << ME_ID_SHIFT;
+
+        memslot[slotID].size = (1 << order) * ME_MEMCHUNK_SIZE;  /* Readjust size */
 	memslot[slotID].busy = true;
 
-#ifdef DEBUG
-	printk("get_ME_slot param %d\n", size);
-	printk("get_ME_slot bits_NR %d\n", bits_NR);
-	printk("get_ME_slot slotID %d\n", slotID);
-	printk("get_ME_slot start %08x\n", (unsigned int) memslot[slotID].base_paddr);
-	printk("get_ME_slot size %d\n", memslot[slotID].size);
-#endif
+	/* Map the L2 virtual address space of ME #(slotID-1) to the physical RAM */
+        create_mapping(NULL, memslot[slotID].base_vaddr, memslot[slotID].base_paddr, memslot[slotID].size, false);
 
 	/* Create a domain context including the ME descriptor before the ME gets injected. */
-
-	domains[slotID] = domain_create(slotID, ME_CPU);
-
-	/* Initialize the ME descriptor */
-	set_ME_state(slotID, ME_state);
-
-	return slotID;
-}
-
-int prepare_ME_slot(int slotID, unsigned int size, ME_state_t ME_state) {
-	unsigned int order, addr;
-	unsigned int bits_NR;
-
-	/* memslot[slotID] is available */
-
-	bits_NR = DIV_ROUND_UP(size, ME_MEMCHUNK_SIZE);
-
-	order = get_power_from_size(bits_NR);
-
-	addr = allocate_memslot(order);
-
-	if (!addr)
-		return -1;  /* No available memory */
-
-	memslot[slotID].base_paddr = addr;
-	memslot[slotID].size = (1 << order) * ME_MEMCHUNK_SIZE;  /* Readjust size */
-	memslot[slotID].busy = true;
-
-#ifdef DEBUG
-	printk("get_ME_slot param %d\n", size);
-	printk("get_ME_slot bits_NR %d\n", bits_NR);
-	printk("get_ME_slot slotID %d\n", slotID);
-	printk("get_ME_slot start %08x\n", (unsigned int) memslot[slotID].base_paddr);
-	printk("get_ME_slot size %d\n", memslot[slotID].size);
-#endif
-
-	/* Create a domain context including the ME descriptor before the ME gets injected. */
-
 	domains[slotID] = domain_create(slotID, ME_CPU);
 
 	/* Initialize the ME descriptor */
@@ -223,11 +166,9 @@ void put_ME_slot(unsigned int slotID) {
 	/* Release the allocated memchunks */
 	release_memslot(memslot[slotID].base_paddr, get_power_from_size(DIV_ROUND_UP(memslot[slotID].size, ME_MEMCHUNK_SIZE)));
 
-	memslot[slotID].busy = false;
+        release_mapping(NULL, memslot[slotID].base_vaddr, memslot[slotID].size);
 
-#ifdef DEBUG
-  printk("put_ME_slot param %d\n", slotID);
-#endif
+        memslot[slotID].busy = false;
 }
 
 void dump_page(unsigned int pfn) {
@@ -242,7 +183,7 @@ void dump_page(unsigned int pfn) {
 	for (i = 0; i < PAGE_SIZE; i += 16) {
 		printk(" [%x]: ", i);
 		for (j = 0; j < 16; j++) {
-			printk("%02x ", *((unsigned char *) __lva(addr)));
+			printk("%02x ", *((unsigned char *) __xva(MEMSLOT_AVZ, addr)));
 			addr++;
 		}
 		printk("\n");

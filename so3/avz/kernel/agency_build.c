@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -39,16 +39,12 @@ int construct_agency(struct domain *d) {
 	unsigned long domain_stack;
 	extern addr_t *hypervisor_stack;
 	static addr_t *__hyp_stack = (unsigned long *) &hypervisor_stack;
-
-#ifndef CONFIG_ARM64VT
-	static addr_t *__pseudo_usr_mode = (unsigned long *) &pseudo_usr_mode;
 #endif
 
-#endif
+	printk("***************************** Loading Guest Domain *****************************\n");
 
-	printk("***************************** Loading Agency Domain *****************************\n");
-
-	/* The agency is always in slot 1 */
+	/* Map the agency slot to the physical memory */
+        create_mapping(NULL, memslot[MEMSLOT_AGENCY].base_vaddr, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size, false);
 
 	/* Now the slot is busy. */
 	memslot[MEMSLOT_AGENCY].busy = true;
@@ -80,11 +76,7 @@ int construct_agency(struct domain *d) {
 
 #endif /* CONFIG_SOO */
 
-#ifdef CONFIG_ARM64VT
 	__setup_dom_pgtable(d, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size);
-#else
-	__setup_dom_pgtable(d, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].size, memslot[MEMSLOT_AGENCY].base_paddr);
-#endif
 
 	/* Propagate the virtual address of the shared info page for this domain */
 
@@ -108,11 +100,6 @@ int construct_agency(struct domain *d) {
 	/* Store the stack address for further needs in hypercalls/interrupt context */
 	__hyp_stack[AGENCY_RT_CPU] = domain_stack;
 
-#ifndef CONFIG_ARM64VT
-	/* We set the realtime domain in pseudo-usr mode since the primary domain will start it, not us. */
-	__pseudo_usr_mode[AGENCY_RT_CPU] = 1;
-#endif
-
 	/* Domain related information */
 	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
 	domains[DOMID_AGENCY_RT]->avz_shared->hypercall_vaddr = d->avz_shared->hypercall_vaddr;
@@ -130,14 +117,10 @@ int construct_agency(struct domain *d) {
 	 * The initial stack of the domain is put at the top of the domain memory area.
 	 */
 
-#ifdef CONFIG_ARM64VT
 	new_thread(d, memslot[MEMSLOT_AGENCY].entry_addr,
-		   phys_to_ipa(memslot[MEMSLOT_AGENCY], d->avz_shared->fdt_paddr),
+		   phys_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr),
 		   memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size);
 
-#else
-	new_thread(d, memslot[MEMSLOT_AGENCY].entry_addr, d->avz_shared->fdt_paddr, AGENCY_VOFFSET + memslot[MEMSLOT_AGENCY].size);
-#endif
 
 	return 0;
 }
