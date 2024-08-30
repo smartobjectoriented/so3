@@ -18,19 +18,17 @@ Using Micropython in the emulated environment
 
 .. note::
 
-   Micropython currently works only for the virt64 platform
+   Micropython currently works only for the virt64 and rpi4_64 platforms
    
-Micropython is built along with the rest of the user-space applications. The "usr/build.sh" script 
-contains command lines to execute the Makefile found in the "usr/src/micropython/ports/soo" folder
-and export the resulting "firmware.elf" executable in the "deploy" folder where all the other 
-executables are sent. The executable is renamed "uPython.elf" at the same time for the sake of clarity
+Micropython is built along with the rest of the user-space applications. To build the interpreter, got to the 'usr/CMakeLists.txt' file and enable the micropython compilation by modifying the line "option(MICROPYTHON "Support for micro-python apps" OFF)" from "OFF" to "ON". This will create the 'firmware.elf' application. At deploy this file is renamed "uPython.elf" for the sake of clarity
    
 Once inside SO3, MicroPython can be launched like any other program::
 
    so3% uPython
 
-Launching the program will open an interactive interpreter from which code may be tested. 
-There is currently no way to execute a python script
+Launching the program without any argument will open an interactive interpreter from which code may be tested. Exit it by pressing Ctrl+D
+
+A script file may be given as an argument to be executed
 
 Available `Micropython libraries <https://docs.micropython.org/en/latest/library/index.html#>`_ (modules):
 
