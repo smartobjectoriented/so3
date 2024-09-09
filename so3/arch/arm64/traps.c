@@ -19,6 +19,7 @@
 #include <common.h>
 #include <psci.h>
 #include <errno.h>
+#include <smp.h>
 
 #ifdef CONFIG_AVZ
 #include <avz/sched.h>
@@ -36,7 +37,7 @@
 
 #include <asm/processor.h>
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 const char entry_error_messages[19][32] =
 {
@@ -102,7 +103,7 @@ void show_invalid_entry_message(u32 type, u64 esr, u64 address)
 }
 
 void trap_handle_error(addr_t lr) {
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	unsigned long esr = read_sysreg(esr_el2);
 #else
 	unsigned long esr = read_sysreg(esr_el1);
@@ -111,7 +112,7 @@ void trap_handle_error(addr_t lr) {
 	show_invalid_entry_message(ESR_ELx_EC(esr), esr, lr);
 }
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_SMP
 extern addr_t cpu_entrypoint;
 #endif
 
@@ -161,10 +162,10 @@ int trap_handle(cpu_regs_t *regs) {
 
 	case ESR_ELx_EC_HVC64:
 		hvc_code = regs->x0;
-		if (hvc_code != 1)
-                        printk("## hvc %x\n", hvc_code);
+
                 switch (hvc_code) {
 
+#ifdef CONFIG_SMP
                 /* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
                         return PSCI_VERSION(1, 1);
@@ -180,7 +181,9 @@ int trap_handle(cpu_regs_t *regs) {
 		case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
 		case PSCI_1_0_FN_PSCI_FEATURES:
                         return PSCI_RET_SUCCESS;
+#endif /* CONFIG_SMP */
 
+#ifdef CONFIG_AVZ
                 /* AVZ Hypercalls */
 		case __HYPERVISOR_console_io:
 			printk("%c", regs->x1);
@@ -203,11 +206,11 @@ int trap_handle(cpu_regs_t *regs) {
                 case __HYPERVISOR_soo_hypercall:
 
 			/* Propagate the SOO hypercall to the dedicated routines. */
-
                         do_soo_hypercall((soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, regs->x1));
                         flush_dcache_all();
 
                         return ESUCCESS;
+#endif /* CONFIG_AVZ */
 
                 default:
 			return EFAULT;

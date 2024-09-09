@@ -410,10 +410,11 @@ void do_soo_hypercall(soo_hyp_t *args) {
 	/* Get argument from guest */
 	memcpy(&op, args, sizeof(soo_hyp_t));
 
-	/* Re-map to our virtual address space */
+        /* Re-map to our virtual address space */
 	op.addr = ipa_to_va(MEMSLOT_AGENCY, op.addr);
-	op.p_val1 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val1);
-	op.p_val2 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val2);
+
+        op.p_val1 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val1);
+        op.p_val2 = (soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, op.p_val2);
 
         /*
 	 * Execute the hypercall

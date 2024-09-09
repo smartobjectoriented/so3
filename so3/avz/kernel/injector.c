@@ -57,18 +57,18 @@ void inject_me(soo_hyp_t *op)
 	int slotID;
 	size_t fdt_size;
 	void *fdt_vaddr;
-	int dom_size;
         struct domain *domME, *__current;
         unsigned long flags;
         void *itb_vaddr;
+        mem_info_t guest_mem_info;
 
-	DBG("%s: Preparing ME injection, source image = %lx\n", __func__, op->addr);
+        DBG("%s: Preparing ME injection, source image = %lx\n", __func__, op->addr);
 
 	flags = local_irq_save();
 
 	itb_vaddr = (void *) op->addr;
 
-	DBG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
+        DBG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
 
 	/* Retrieve the domain size of this ME through its device tree. */
 	fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr, &fdt_size);
@@ -77,15 +77,11 @@ void inject_me(soo_hyp_t *op)
 		BUG();
 	}
 
-	dom_size = fdt_getprop_u32_default(fdt_vaddr, "/ME", "domain-size", 0);
-	if (dom_size < 0) {
-		printk("### %s: wrong domain-size prop/value.\n", __func__);
-		BUG();
-	}
+        get_mem_info(fdt_vaddr, &guest_mem_info);
 
-	/* Find a slotID to store this ME. */
-	slotID = get_ME_free_slot(dom_size, ME_state_booting);
-	if (slotID == -1)
+        /* Find a slotID to store this ME. */
+        slotID = get_ME_free_slot(guest_mem_info.size, ME_state_booting);
+        if (slotID == -1)
 		goto out;
 
 	domME = domains[slotID];

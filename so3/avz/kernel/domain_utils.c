@@ -140,8 +140,6 @@ void loadAgency(void)
 		/* Process the type "avz" to get the AVZ device tree */
 		if ((ret != -1) && !strcmp(propstring, "avz_dt")) {
 
-			/* According to U-boot, the <load> and <entry> properties are both on 64-bit even for aarch32 configuration. */
-
 			ret = fdt_property_read_u64(fdt_vaddr, nodeoffset, "load", (u64 *) &avz_dt_addr);
 			if (ret == -1) {
 				lprintk("!! Missing load-addr in the avz_dt node !!\n");
@@ -271,6 +269,7 @@ void loadAgency(void)
  */
 void loadME(unsigned int slotID, void *itb) {
 	void *ME_vaddr;
+	uint32_t dom_addr, entry_addr, fdt_paddr;
 	size_t ME_size, size, fdt_size, initrd_size;
 	void *fdt_vaddr, *initrd_vaddr;
 	void *dest_ME_vaddr;
@@ -292,6 +291,21 @@ void loadME(unsigned int slotID, void *itb) {
 
 		if ((ret != -1) && !strcmp(propstring, "guest")) {
 
+			 
+			ret = fdt_property_read_u32(itb, nodeoffset, "load", &dom_addr);
+			if (ret == -1) {
+				lprintk("!! Missing load-addr in the agency node !!\n");
+				BUG();
+			}
+			lprintk("ITB: Domain load addr = 0x%lx\n", dom_addr);
+
+			ret = fdt_property_read_u32(itb, nodeoffset, "entry", &entry_addr);
+			if (ret == -1) {
+				lprintk("!! Missing entry in the agency node !!\n");
+				BUG();
+			}
+			lprintk("ITB: Domain entry addr = 0x%lx\n", entry_addr);
+
 			/* Get the pointer to the OS binary image from the ITB we got from the user space. */
 			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &ME_vaddr, &ME_size);
 			if (ret) {
@@ -300,6 +314,7 @@ void loadME(unsigned int slotID, void *itb) {
 			} else
 				break;
 		}
+
 		nodeoffset = next_node;
 	}
 
@@ -314,7 +329,14 @@ void loadME(unsigned int slotID, void *itb) {
 	while (nodeoffset >= 0) {
 		next_node = fdt_next_node(itb, nodeoffset, &depth);
 		ret = fdt_property_read_string(itb, nodeoffset, "type", &propstring);
+
 		if ((ret != -1) && !strcmp(propstring, "flat_dt")) {
+
+			ret = fdt_property_read_u32(itb, nodeoffset, "load", &fdt_paddr);
+			if (ret == -1) {
+				lprintk("!! Missing load-addr in the agency node !!\n");
+				BUG();
+			}
 
 			/* Get the associated device tree. */
 			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &fdt_vaddr, &fdt_size);
@@ -324,6 +346,7 @@ void loadME(unsigned int slotID, void *itb) {
 			} else
 				break;
 		}
+
 		nodeoffset = next_node;
 	}
 
@@ -334,10 +357,11 @@ void loadME(unsigned int slotID, void *itb) {
 
 	/* Retrieve the guest memory information */
         get_mem_info(fdt_vaddr, &guest_mem_info);
-
+     
+	/* From the DTS here, we consider the physical address as the IPA base address. */
         memslot[slotID].ipa_addr = guest_mem_info.phys_base;
 
-	/* Look for a possible node of ramdisk type in the fit image */
+        /* Look for a possible node of ramdisk type in the fit image */
 	nodeoffset = 0;
 	depth = 0;
 	while (nodeoffset >= 0) {
@@ -345,7 +369,13 @@ void loadME(unsigned int slotID, void *itb) {
 		ret = fdt_property_read_string(itb, nodeoffset, "type", &propstring);
 		if ((ret != -1) && !strcmp(propstring, "ramdisk")) {
 
-			/* Get the associated device tree. */
+			ret = fdt_property_read_u32(itb, nodeoffset, "load", &initrd_start);
+			if (ret == -1) {
+				lprintk("!! Missing load-addr in the agency node !!\n");
+				BUG();
+			}
+
+			/* Get the associated initrd ramfs */
 			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &initrd_vaddr, &initrd_size);
 			if (ret) {
 				lprintk("!! The properties in the ramdisk node does not look good !!\n");
@@ -353,27 +383,23 @@ void loadME(unsigned int slotID, void *itb) {
 			} else
 				break;
 		}
-		nodeoffset = next_node;
+
+                nodeoffset = next_node;
 	}
 
 	dest_ME_vaddr = (void *) memslot[slotID].base_vaddr;
 
-        printk("######### dest_ME_vaddr: %lx\n", dest_ME_vaddr);
         dest_ME_vaddr += L_TEXT_OFFSET;
 
         /* Move the kernel binary within the domain slotID. */
 	memcpy(dest_ME_vaddr, ME_vaddr, ME_size);
 
-	/* Put the FDT device tree close to the top of memory allocated to the domain.
-	 * Since there is the initial domain stack at the top, we put the FDT one page (PAGE_SIZE) lower.
-	 */
-	memslot[slotID].fdt_paddr = memslot[slotID].base_paddr + memslot[slotID].size - PAGE_SIZE;
+        memslot[slotID].fdt_paddr = ipa_to_pa(slotID, fdt_paddr);
 
-	memcpy((void *) __xva(slotID, memslot[slotID].fdt_paddr), fdt_vaddr, fdt_size);
+        memcpy((void *) __xva(slotID, memslot[slotID].fdt_paddr), fdt_vaddr, fdt_size);
 
-	/* We put then the initrd (if any) right under the device tree. */
-
-	if (ret == 0) {
+	/* <ret> still has the result of the ramdisk presence (see above). */
+        if (ret == 0) {
 		/* Expand the device tree */
 		fdt_open_into((void *) __xva(slotID, memslot[slotID].fdt_paddr), 
 			(void *) __xva(slotID, memslot[slotID].fdt_paddr), fdt_size+128);
@@ -381,9 +407,7 @@ void loadME(unsigned int slotID, void *itb) {
 		/* find or create "/chosen" node. */
 		nodeoffset = fdt_find_or_add_subnode((void *) __xva(slotID, memslot[slotID].fdt_paddr), 0, "chosen");
 		BUG_ON(nodeoffset < 0);
-
-		initrd_start = memslot[slotID].fdt_paddr - initrd_size;
-		initrd_start = ALIGN_DOWN(initrd_start, PAGE_SIZE);
+          
 		initrd_end = initrd_start + initrd_size;
 
 		ret = fdt_setprop_u64((void *) __xva(slotID, memslot[slotID].fdt_paddr), nodeoffset, "linux,initrd-start", (uint32_t) initrd_start);
@@ -392,8 +416,8 @@ void loadME(unsigned int slotID, void *itb) {
 		ret = fdt_setprop_u64((void *) __xva(slotID, memslot[slotID].fdt_paddr), nodeoffset, "linux,initrd-end", (uint32_t) initrd_end);
 		BUG_ON(ret != 0);
 
-		memcpy((void *) __xva(slotID, initrd_start), initrd_vaddr, initrd_size);
-	}
+		memcpy((void *) ipa_to_va(slotID, initrd_start), initrd_vaddr, initrd_size);
+        }
 }
 
 

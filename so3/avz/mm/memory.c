@@ -141,7 +141,7 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 
 	/* Determine the phys/virt start addresses of the guest */
         memslot[slotID].base_paddr = addr;
-        memslot[slotID].base_vaddr = (ME_BASE + (slotID - 1)) << ME_ID_SHIFT;
+        memslot[slotID].base_vaddr = ME_BASE + ((addr_t) (slotID - 1) << ME_ID_SHIFT);
 
         memslot[slotID].size = (1 << order) * ME_MEMCHUNK_SIZE;  /* Readjust size */
 	memslot[slotID].busy = true;
