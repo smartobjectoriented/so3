@@ -204,7 +204,7 @@ static void domain_schedule(void)
         ASSERT(!next->is_running);
 	next->is_running = 1;
 
-#if 0
+#if 1
 	printk("### running on cpu: %d prev: %d next: %d\n", smp_processor_id(), prev->avz_shared->domID, next->avz_shared->domID);
 #endif
 

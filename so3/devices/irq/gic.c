@@ -265,6 +265,57 @@ static void gic_enable_maint_irq(bool enable)
 	iowrite32(&gic->gich->hcr, hcr);
 }
 
+#if 0
+static int gic_inject_irq(u16 irq_id, u16 sender) {
+        unsigned int n;
+        int free_lr = -1;
+        u32 elsr;
+        u64 lr;
+
+        arm_read_sysreg(ICH_ELSR_EL2, elsr);
+        for (n = 0; n < gic_num_lr; n++) {
+                if ((elsr >> n) & 1) {
+                        /* Entry is invalid, candidate for injection */
+                        if (free_lr == -1)
+                                free_lr = n;
+                        continue;
+                }
+
+                /*
+                 * Entry is in use, check that it doesn't match the one we want
+                 * to inject.
+                 */
+                lr = gicv3_read_lr(n);
+
+                /*
+                 * A strict phys->virt id mapping is used for SPIs, so this test
+                 * should be sufficient.
+                 */
+                if ((u32) lr == irq_id)
+                        return -EEXIST;
+        }
+
+        if (free_lr == -1)
+                /* All list registers are in use */
+                return -EBUSY;
+
+        lr = irq_id;
+        /* Only group 1 interrupts */
+        lr |= ICH_LR_GROUP_BIT;
+        lr |= ICH_LR_PENDING;
+        if (!is_sgi(irq_id)) {
+                lr |= ICH_LR_HW_BIT;
+                lr |= (u64) irq_id << ICH_LR_PHYS_ID_SHIFT;
+        }
+        /* GICv3 doesn't support the injection of the calling CPU ID */
+
+        gicv3_write_lr(free_lr, lr);
+
+        return 0;
+}
+#endif
+
+#if 1
 static int gic_inject_irq(u16 irq_id)
 {
 	unsigned int n;
@@ -292,17 +343,26 @@ static int gic_inject_irq(u16 irq_id)
 	if (first_free == -1)
 		return -EBUSY;
 
+        lr = (irq_id & 0x3FF); // Set the IRQ ID in the LR
+
+	iowrite32(&gic->gich->lrbase[0], lr);
+#if 0
 	/* Inject group 0 interrupt (seen as IRQ by the guest) */
-	lr = irq_id;
-	lr |= GICH_LR_PENDING_BIT;
+        lr = irq_id;
+        lr |= GICH_LR_PENDING_BIT;
 
-	lr |= GICH_LR_HW_BIT;
-	lr |= (u32)irq_id << GICH_LR_PHYS_ID_SHIFT;
+        if (is_sgi(irq_id)) {
+                lr |= (smp_processor_id() & 0x7) << GICH_LR_CPUID_SHIFT;
+        } else {
+                lr |= GICH_LR_HW_BIT;
+                lr |= (u32) irq_id << GICH_LR_PHYS_ID_SHIFT;
+        }
 
-	gic_write_lr(first_free, lr);
-
-	return 0;
+        gic_write_lr(first_free, lr);
+#endif
+        return 0;
 }
+#endif
 
 void gic_inject_pending(void)
 {
@@ -339,9 +399,9 @@ void gic_inject_pending(void)
 void gic_set_pending(u16 irq_id)
 {
 	unsigned int new_tail;
-
-	if (gic_inject_irq(irq_id) != -EBUSY)
-		return;
+      
+        if (gic_inject_irq(irq_id) != -EBUSY)
+                return;
 
 	spin_lock(&pending_irqs.lock);
 
@@ -427,18 +487,27 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
 	do {
 		irqstat = ioread32(&gic->gicc->iar);
 		irq_nr = irqstat & GICC_IAR_INT_ID_MASK;
+#ifndef CONFIG_AVZ
+	if (smp_processor_id() == 3)
+                printk("## YOUPIE\n");
+#endif
 
-		if (irq_nr > 1021)
-			break;
+        if (irq_nr > 1021)
+                break;
 
-		if (irq_nr < 16)
-			/* At this level, IPI are used to trigger a guest because
-			 * an event has been raised. So, the domain will check for
-			 * this event along the return path.
-			 */
+        if (irq_nr < 16) {
+                /* At this level, IPI are used to trigger a guest because
+                 * an event has been raised. So, the domain will check for
+                 * this event along the return path.
+                 */
+			
+#ifdef CONFIG_AVZ
+			if (irq_nr == 4)
+                                gic_set_pending(irq_nr);
+#endif
 
-			gic_eoi_irq(irq_nr, false);
-		else {
+                        gic_eoi_irq(irq_nr, false);
+		} else {
 
 #ifdef CONFIG_ARM64VT
 			if (irq_nr == arm_timer->irq_def.irqnr) {
@@ -525,6 +594,13 @@ void gic_set_type(unsigned int irq, unsigned int type)
 
 }
 
+/**
+ * @brief We always consider using a GICv2. Initialize GICv2
+ * 
+ * @param dev 		FDT device reference
+ * @param fdt_offset 	Offset in the DTS
+ * @return int 
+ */
 static int gic_init(dev_t *dev, int fdt_offset) {
 	const struct fdt_property *prop;
 	int prop_len;
@@ -535,7 +611,6 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 #ifdef CONFIG_ARM64VT
 	u32 vtr, vmcr;
 #endif
-
 	gic = (gic_t *) malloc(sizeof(gic_t));
 	BUG_ON(!gic);
 
@@ -560,7 +635,7 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 #endif
 
 #ifdef CONFIG_ARM64VT
-	gic->gich = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
+        gic->gich = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
 
 	spin_lock_init(&pending_irqs.lock);
 
@@ -611,15 +686,14 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 		vmcr |= GICH_VMCR_EOImode;
 
 	iowrite32(&gic->gich->vmcr, vmcr);
-
 	iowrite32(&gic->gich->hcr, GICH_HCR_EN);
 
-	/*
-	 * Clear pending virtual IRQs in case anything is left from previous
-	 * use. Physically pending IRQs will be forwarded to Linux once we
-	 * enable interrupts for the hypervisor, except for SGIs, see below.
-	 */
-	gic_clear_pending_irqs();
+        /*
+         * Clear pending virtual IRQs in case anything is left from previous
+         * use. Physically pending IRQs will be forwarded to Linux once we
+         * enable interrupts for the hypervisor, except for SGIs, see below.
+         */
+        gic_clear_pending_irqs();
 
 #endif
 

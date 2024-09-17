@@ -166,15 +166,6 @@ ENTRY(hypercall_entry)
 
 	current_cpu x10
 
-#ifndef CONFIG_ARM64VT
-
-	// Check if we are coming from avz or the guest
-	ldr		x8, .LCpseudo_usr_mode
-
-	ldr		x9, [x8, x10, lsl #3]
-	cmp		x9, #0
-#endif
-
 	b.eq	__do_hypercall_from_avz
 
 	// readjust stack for future restore
@@ -183,12 +174,6 @@ ENTRY(hypercall_entry)
 	str		x8, [sp, #OFFSET_SP]
 
 	str		lr, [sp, #OFFSET_LR]
-
-#ifndef CONFIG_ARM64VT
-	ldr		x8, .LCpseudo_usr_mode
-	mov		x9, #0
-	str		x9, [x8, x10, lsl #3]
-#endif
 
 	mov		x8, sp
 	ldr 	x9, .LChypervisor_stack   // Get the running hypervisor EL1 stack

@@ -252,6 +252,10 @@ struct gich_regs {
 void gicc_init(void);
 void gic_raise_softirq(int cpu, unsigned int irq);
 
+#define is_sgi(irqn)			((u32)(irqn) < 16)
+#define is_ppi(irqn)			((irqn) > 15 && (irqn) < 32)
+#define is_spi(irqn)			((irqn) > 31 && (irqn) < 1020)
+
 #endif
 
 

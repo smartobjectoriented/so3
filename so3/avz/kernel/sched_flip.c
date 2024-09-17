@@ -28,7 +28,8 @@
 #include <avz/sched.h>
 #include <avz/sched-if.h>
 #include <avz/debug.h>
-#include <avz/domctl.h>
+
+#include <avz/uapi/domctl.h>
 
 DEFINE_SPINLOCK(schedflip_lock);
 

@@ -155,14 +155,14 @@ ENTRY(__mmu_switch_vttbr)
 	dsb   	sy
 
 	// Ensure synchronization with previous code changes
-    isb
+    	isb
 
 	/* Switch the vttbr to map the correct guest */
 	msr   	vttbr_el2, x0
-    isb
+    	isb
 
 	tlbi 	alle2
-	dsb		nsh
+	dsb	nsh
 
 	ret
 

@@ -23,8 +23,8 @@
 
 ipamap_t ipamap[] = {
 	{
-		.ipa_addr = 0x8000000,
-		.phys_addr = 0x8000000,
+		.ipa_addr = 0x08000000,
+		.phys_addr = 0x08000000,
 		.size = 0x3000000,
 	},
 };

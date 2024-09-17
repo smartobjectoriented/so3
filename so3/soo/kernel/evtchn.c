@@ -22,7 +22,6 @@
 #define DEBUG
 #endif
 
-#include <types.h>
 #include <bitops.h>
 
 #include <device/irq.h>
@@ -200,53 +199,86 @@ static int bind_evtchn_to_virq(unsigned int evtchn)
 
 void unbind_domain_evtchn(unsigned int domID, unsigned int evtchn)
 {
-	struct evtchn_bind_interdomain bind_interdomain;
+	struct evtchn_bind_interdomain *bind_interdomain;
 
-	bind_interdomain.remote_dom = domID;
-	bind_interdomain.local_evtchn = evtchn;
+	bind_interdomain = malloc(sizeof(struct evtchn_bind_interdomain));
+	BUG_ON(!bind_interdomain);
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_unbind_domain, (long) &bind_interdomain, 0, 0);
+	bind_interdomain->remote_dom = domID;
+	bind_interdomain->local_evtchn = evtchn;
 
-	evtchn_info.valid[evtchn] = false;
+	__asm_flush_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+	avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_unbind_domain, __pa(bind_interdomain), 0, 0);
+        __asm_invalidate_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+
+        evtchn_info.valid[evtchn] = false;
+
+	free(bind_interdomain);
 }
 
 static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain, unsigned int remote_evtchn)
 {
-	struct evtchn_bind_interdomain bind_interdomain;
+	struct evtchn_bind_interdomain *bind_interdomain;
+	int irq;
 
-	bind_interdomain.remote_dom  = remote_domain;
-	bind_interdomain.remote_evtchn = remote_evtchn;
+	bind_interdomain = malloc(sizeof(struct evtchn_bind_interdomain));
+	BUG_ON(!bind_interdomain);
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_interdomain, (long) &bind_interdomain, 0, 0);
+	bind_interdomain->remote_dom = remote_domain;
+	bind_interdomain->remote_evtchn = remote_evtchn;
 
-	return bind_evtchn_to_virq(bind_interdomain.local_evtchn);
+        __asm_flush_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_interdomain, __pa(bind_interdomain), 0, 0);
+	__asm_invalidate_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+
+	irq = bind_evtchn_to_virq(bind_interdomain->local_evtchn);
+
+	free(bind_interdomain);
+
+	return irq;
 }
 
 int bind_existing_interdomain_evtchn(unsigned local_evtchn, unsigned int remote_domain, unsigned int remote_evtchn)
 {
-	struct evtchn_bind_interdomain bind_interdomain;
+	struct evtchn_bind_interdomain *bind_interdomain;
+	int irq;
 
-	bind_interdomain.local_evtchn = local_evtchn;
-	bind_interdomain.remote_dom  = remote_domain;
-	bind_interdomain.remote_evtchn = remote_evtchn;
+	bind_interdomain = malloc(sizeof(struct evtchn_bind_interdomain));
+	BUG_ON(!bind_interdomain);
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_existing_interdomain, (long) &bind_interdomain, 0, 0);
+	bind_interdomain->local_evtchn = local_evtchn;
+	bind_interdomain->remote_dom  = remote_domain;
+	bind_interdomain->remote_evtchn = remote_evtchn;
 
-	return bind_evtchn_to_virq(bind_interdomain.local_evtchn);
+        __asm_flush_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_existing_interdomain, __pa(bind_interdomain), 0, 0);
+	__asm_invalidate_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+
+	irq = bind_evtchn_to_virq(bind_interdomain->local_evtchn);
+
+	free(bind_interdomain);
+
+	return irq;
 }
 
 void bind_virq(unsigned int virq)
 {
-	evtchn_bind_virq_t bind_virq;
+	evtchn_bind_virq_t *bind_virq;
 	int evtchn;
 	unsigned long flags;
 
-	flags = spin_lock_irqsave(&irq_mapping_update_lock);
+        bind_virq = malloc(sizeof(evtchn_bind_virq_t));
+        BUG_ON(!bind_virq);
 
-	bind_virq.virq = virq;
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_virq, (long) &bind_virq, 0, 0);
+        flags = spin_lock_irqsave(&irq_mapping_update_lock);
 
-	evtchn = bind_virq.evtchn;
+	bind_virq->virq = virq;
+
+        __asm_flush_dcache_range((addr_t) bind_virq, sizeof(evtchn_bind_virq_t));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_virq, __pa(bind_virq), 0, 0);
+        __asm_invalidate_dcache_range((addr_t) bind_virq, sizeof(evtchn_bind_virq_t));
+
+        evtchn = bind_virq->evtchn;
 
 	evtchn_info.evtchn_to_irq[evtchn] = virq;
 	evtchn_info.irq_to_evtchn[virq] = evtchn;
@@ -256,23 +288,33 @@ void bind_virq(unsigned int virq)
 
 	virq_bindcount[virq]++;
 
-	spin_unlock_irqrestore(&irq_mapping_update_lock, flags);
+        free(bind_virq);
+
+        spin_unlock_irqrestore(&irq_mapping_update_lock, flags);
 }
 
 static void unbind_from_irq(unsigned int irq)
 {
-	evtchn_close_t op;
+	evtchn_close_t *op;
 	int evtchn = evtchn_from_irq(irq);
 
 	spin_lock(&irq_mapping_update_lock);
 
+	op = malloc(sizeof(evtchn_close_t));
+	BUG_ON(!op);
+
 	if (--virq_bindcount[irq] == 0) {
-		op.evtchn = evtchn;
-		hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_close, (long) &op, 0, 0);
+		op->evtchn = evtchn;
+
+                __asm_flush_dcache_range((addr_t) op, sizeof(evtchn_close_t));
+                avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_close, __pa(op), 0, 0);
+                __asm_invalidate_dcache_range((addr_t) op, sizeof(evtchn_close_t));
 
 		evtchn_info.evtchn_to_irq[evtchn] = -1;
 		evtchn_info.valid[evtchn] = false;
 	}
+
+	free(op);
 
 	spin_unlock(&irq_mapping_update_lock);
 }

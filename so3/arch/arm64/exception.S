@@ -207,7 +207,7 @@ ENTRY(__vectors)
 	.align 7
 
 	mov		x0, lr
-	b 	trap_handle_error
+	b 		trap_handle_error
 
 	// Lower EL using AArch32 / IRQ
 	.align 7
@@ -273,9 +273,9 @@ ENTRY(pre_ret_to_el1_with_spin)
 	wfe
  	ldr x0, [x1]
 
-    cbz x0, 1b
+    	cbz x0, 1b
 
-    // Branch to the given address
+    	// Branch to the given address
 	msr		elr_el2, x0
 
 	// Set the CPU in EL1 mode to proceed with
@@ -419,7 +419,7 @@ el1_2_12_irq_handler:
 	// The stack must stay 16-byte aligned
 
 	str		lr, [sp, #-16]!
-    bl 		irq_handle
+    	bl 		irq_handle
 	ldr		lr, [sp], #16
 
 #ifdef CONFIG_ARM64VT
@@ -462,14 +462,14 @@ ENTRY(pre_ret_to_user)
 	// Get a reference to our domain descriptor
 	curdom	x10, x11
 
-#
 	ldr	x2, [sp, #OFFSET_PC]  // Entry point of the guest
 	msr	elr_el2, x2
 
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 
-	mov	x2, #PSR_MODE_EL1t
+	mov	x2, #(PSR_MODE_EL1t | PSR_F_BIT	| PSR_I_BIT | PSR_A_BIT | PSR_D_BIT)
+
 	msr	spsr_el2, x2
 
 	ldr	x0, [sp, #OFFSET_X21] // Device tree (fdt_addr)
@@ -479,7 +479,7 @@ ENTRY(pre_ret_to_user)
 	mov	x2, #0
 	mov	x3, #0
 
-	// Ready to jump into the agency domain...
+	// Ready to jump into the domain...
 
 	eret
 
@@ -539,7 +539,7 @@ el01_sync_handler:
 
 
 
-    bl 		trap_handle
+   	bl 		trap_handle
 
 __ret_from_fork:
 
@@ -554,7 +554,7 @@ __ret_from_fork:
 	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
-	ldr 	x0, [sp, #OFFSET_SP]
+	ldr 		x0, [sp, #OFFSET_SP]
 	msr		sp_el0, x0
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
@@ -581,12 +581,12 @@ el0_irq_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-    bl 		irq_handle
+   	 bl 		irq_handle
 
 	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0
 
-	ldr 	x0, [sp, #OFFSET_SP]
+	ldr 		x0, [sp, #OFFSET_SP]
 	msr		sp_el0, x0
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
@@ -613,7 +613,7 @@ el1_irq_handler:
 
 	// The stack must stay 16-byte aligned
 
-    bl 		irq_handle
+   	bl 		irq_handle
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el1, x0
@@ -708,8 +708,15 @@ __no_sigreturn:
 	ldmfd 	sp!, {r0-r4}
 #endif
 #endif
-
+ 
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+
+.align 5
+
+ENTRY(avz_hypercall)
+
+	hvc #0
+	ret
 
 // We may reach this point only during along the upcall
 // path of a hypercall return.

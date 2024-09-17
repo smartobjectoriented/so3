@@ -26,7 +26,7 @@
 #include <avz/hypercall.h>
 #include <avz/event.h>
 
-#include <avz/domctl.h>
+#include <avz/uapi/domctl.h>
 
 #include <asm/cacheflush.h>
 #include <asm/setup.h>
@@ -130,32 +130,26 @@ int trap_handle(cpu_regs_t *regs) {
 
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
-
-#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
-	vector_fn_t vector_fn = (vector_fn_t) (memslot[current_domain->avz_shared->domID].ipa_addr + L_TEXT_OFFSET + PAGE_SIZE + SYSCALL_VECTOR_OFFSET);
+ 
+ #if defined(CONFIG_AVZ) && defined (CONFIG_SOO)
+        unsigned int memslotID = ((current_domain->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : current_domain->avz_shared->domID);
 #endif
 
-	switch (ESR_ELx_EC(esr)) {
+        switch (ESR_ELx_EC(esr)) {
 
 	/* SVC used for syscalls */
 	case ESR_ELx_EC_SVC64:
 
 #ifdef CONFIG_AVZ
-
-#ifdef CONFIG_SOO
-		/* Jump to the guest vector */
-
-		vector_fn(regs);
-		return 0;
-#else
+		/* No syscall can be issued fron the hypervisor. */
 		BUG();
-#endif
 
 #else /* CONFIG_AVZ */
 
 		local_irq_enable();
 		regs->x0 = syscall_handle(regs->x0, regs->x1, regs->x2, regs->x3);
 		local_irq_disable();
+
 #endif /* !CONFIG_AVZ */
 
 		return 0;
@@ -189,27 +183,30 @@ int trap_handle(cpu_regs_t *regs) {
 			printk("%c", regs->x1);
 			return ESUCCESS;
 
+#ifdef CONFIG_SOO
 		case __HYPERVISOR_domctl:
 
-			do_domctl((domctl_t *) ipa_to_va(MEMSLOT_AGENCY, regs->x1));
-			flush_dcache_all();
+                        do_domctl((domctl_t *) ipa_to_va(memslotID, regs->x1));
+                        flush_dcache_all();
 
 			return ESUCCESS;
 
 		case __HYPERVISOR_event_channel_op:
 
-			do_event_channel_op(regs->x1, (void *) ipa_to_va(MEMSLOT_AGENCY, regs->x2));
-			flush_dcache_all();
+                        do_event_channel_op(regs->x1, (void *) ipa_to_va(memslotID, regs->x2));
+                        flush_dcache_all();
 
 			return ESUCCESS;
 
                 case __HYPERVISOR_soo_hypercall:
 
 			/* Propagate the SOO hypercall to the dedicated routines. */
-                        do_soo_hypercall((soo_hyp_t *) ipa_to_va(MEMSLOT_AGENCY, regs->x1));
+                        do_soo_hypercall((soo_hyp_t *) ipa_to_va(memslotID, regs->x1));
                         flush_dcache_all();
 
                         return ESUCCESS;
+#endif /* CONFIG_SOO */
+
 #endif /* CONFIG_AVZ */
 
                 default:
@@ -261,7 +258,7 @@ int trap_handle(cpu_regs_t *regs) {
 		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
 		trap_handle_error(regs->lr);
 		kernel_panic();
-	}
+        }
 
-	return -1;
+        return -1;
 }

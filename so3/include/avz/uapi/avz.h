@@ -65,7 +65,7 @@
 /* Realtime agency subdomain */
 #define DOMID_AGENCY_RT	1
 
-extern int hypercall_trampoline(int hcall, long a0, long a2, long a3, long a4);
+extern int avz_hypercall(int hcall, long a0, long a2, long a3, long a4);
 
 /*
  * 128 event channels per domain

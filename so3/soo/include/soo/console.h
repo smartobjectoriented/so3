@@ -32,7 +32,7 @@ void avzcons_tx(void);
 
 void init_console(void);
 
-extern void (*__printch)(char c);
+void avz_printch(char c);
 
 void lprintk(char *format, ...);
 void lprintk_buffer(void *buffer, uint32_t n);

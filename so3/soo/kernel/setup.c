@@ -38,11 +38,10 @@
 
 #include <avz/uapi/avz.h>
 
-extern volatile uint32_t *HYPERVISOR_hypercall_addr;
+avz_shared_t *avz_shared;
 
-int do_presetup_adjust_variables(void *arg)
-{
-	struct DOMCALL_presetup_adjust_variables_args *args = arg;
+int do_presetup_adjust_variables(void *arg) {
+        struct DOMCALL_presetup_adjust_variables_args *args = arg;
 
 	/* Normally, avz_shared virt address is retrieved from r12 at guest bootstrap (head.S)
 	 * We need to readjust this address after migration.
@@ -51,10 +50,6 @@ int do_presetup_adjust_variables(void *arg)
 
 	/* Re-adjust the meminfo descriptor */
 	mem_info.phys_base = avz_shared->dom_phys_offset;
-
-	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
-
-	__printch = avz_shared->printch;
 
 	/* Adjust timer information */
 	postmig_adjust_timer();
@@ -91,25 +86,16 @@ int do_sync_domain_interactions(void *arg)
  */
 void avz_setup(void) {
 
-	__printch = avz_shared->printch;
+        avz_get_shared();
 
-	/* Immediately prepare for hypercall processing */
-	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
+        lprintk("SOO Virtualizer (avz) shared page:\n\n");
 
-	lprintk("SOO Virtualizer (avz) shared page:\n\n");
-
-	lprintk("- Virtual address of printch() function: %lx\n", __printch);
-	lprintk("- Hypercall addr: %lx\n", (addr_t) HYPERVISOR_hypercall_addr);
 	lprintk("- Dom phys offset: %lx\n\n", (addr_t) mem_info.phys_base);
 
-	__ht_set = (ht_set_t) avz_shared->logbool_ht_set_addr;
-
 	avz_shared->domcall_vaddr = (unsigned long) domcall;
-	avz_shared->vectors_vaddr = (unsigned long) avz_vector_callback;
 
 	virq_init();
 }
-
 
 void post_init_setup(void) {
 

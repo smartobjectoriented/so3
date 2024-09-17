@@ -137,36 +137,35 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 	dc_event_args.domID = domID;
 	dc_event_args.dc_event = dc_event;
 
-	soo_hypercall(AVZ_DC_SET, NULL, NULL, &dc_event_args, NULL);
+	soo_hypercall(AVZ_DC_SET, NULL, &dc_event_args, NULL);
 	while (dc_event_args.state == -EBUSY) {
 		schedule();
 
-		soo_hypercall(AVZ_DC_SET, NULL, NULL, &dc_event_args, NULL);
+		soo_hypercall(AVZ_DC_SET, NULL, &dc_event_args, NULL);
 	}
 }
 
 /*
- * SOO Migration hypercall
+ * AVZ hypercall
  *
  * Mandatory arguments:
  * - cmd: hypercall
- * - vaddr: a virtual address used within the hypervisor
- * - paddr: a physical address used within the hypervisor
+ * - vaddr: a virtual address used to pass something to the hypervisor
  * - p_val1: a (virtual) address to a first value
  * - p_val2: a (virtual) address to a second value
  */
 
-void soo_hypercall(int cmd, void *vaddr, void *paddr, void *p_val1, void *p_val2)
+void soo_hypercall(int cmd, void *addr, void *p_val1, void *p_val2)
 {
 	soo_hyp_t soo_hyp;
 
 	soo_hyp.cmd = cmd;
-	soo_hyp.vaddr = (unsigned long) vaddr;
-	soo_hyp.paddr = (unsigned long) paddr;
+	soo_hyp.addr = (unsigned long) addr;
+	
 	soo_hyp.p_val1 = p_val1;
 	soo_hyp.p_val2 = p_val2;
 
-	hypercall_trampoline(__HYPERVISOR_soo_hypercall, (long) &soo_hyp, 0, 0, 0);
+	avz_hypercall(__HYPERVISOR_soo_hypercall, (long) &soo_hyp, 0, 0, 0);
 }
 
 /*
@@ -358,7 +357,7 @@ void agency_ctl(agency_ctl_args_t *agency_ctl_args)
 {
 	agency_ctl_args->slotID = ME_domID();
 
-	soo_hypercall(AVZ_AGENCY_CTL, NULL, NULL, agency_ctl_args, NULL);
+	soo_hypercall(AVZ_AGENCY_CTL, NULL, agency_ctl_args, NULL);
 }
 
 ME_desc_t *get_ME_desc(void)

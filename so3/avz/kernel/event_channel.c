@@ -344,11 +344,7 @@ static void evtchn_set_pending(struct domain *d, int evtchn) {
 
 	smp_mb();
 
-#ifndef CONFIG_ARM64VT
-	/* Because the return path is different than with full VT support */
-	if (smp_processor_id() != d->processor)
-#endif
-		smp_trigger_event(d->processor);
+	smp_trigger_event(d->processor);
 }
 
 void send_guest_virq(struct domain *d, int virq) {

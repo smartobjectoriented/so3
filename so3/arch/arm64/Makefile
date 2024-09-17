@@ -22,7 +22,5 @@ obj-$(CONFIG_ARM64VT) += #smmu.o
 
 obj-y += lib/
 
-obj-$(CONFIG_SO3VIRT) += setup.o
-
 obj-y += $(TARGET)/
  

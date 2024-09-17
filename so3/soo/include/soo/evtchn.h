@@ -19,7 +19,11 @@
 #ifndef EVTCHN_H
 #define EVTCHN_H
 
+#include <heap.h>
+#include <memory.h>
+
 #include <asm/processor.h>
+#include <asm/cacheflush.h>
 
 #include <device/irq.h>
 
@@ -52,11 +56,20 @@ static inline void clear_evtchn(u32 evtchn) {
 	smp_mb();
 
 }
-static inline void notify_remote_via_evtchn(uint32_t evtchn) {
-	evtchn_send_t op;
-	op.evtchn = evtchn;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_send, (long) &op, 0, 0);
+static inline void notify_remote_via_evtchn(uint32_t evtchn) {
+	evtchn_send_t *op;
+
+	op = malloc(sizeof(evtchn_send_t));
+	BUG_ON(!op);
+
+	op->evtchn = evtchn;
+
+        __asm_flush_dcache_range((addr_t) op, sizeof(evtchn_send_t));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_send, __pa(op), 0, 0);
+        __asm_invalidate_dcache_range((addr_t) op, sizeof(evtchn_send_t));
+
+        free(op);
 }
 
 /* Entry point for notifications into Linux subsystems. */

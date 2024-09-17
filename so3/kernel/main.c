@@ -38,6 +38,10 @@
 
 #include <device/driver.h>
 
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+#include <soo/avz.h>
+#endif /* CONFIG_SOO */
+
 boot_stage_t boot_stage = BOOT_STAGE_INIT;
 
 /**
@@ -103,7 +107,11 @@ void kernel_start(void) {
 	/* Memory manager subsystem initialization */
 	memory_init();
 
-	devices_init();
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
+        avz_setup();
+#endif /* CONFIG_SOO */
+
+        devices_init();
 
 	/* At this point of time, we are able to use the standard printk() */
 

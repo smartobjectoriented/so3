@@ -290,7 +290,6 @@ void loadME(unsigned int slotID, void *itb) {
 		ret = fdt_property_read_string(itb, nodeoffset, "type", &propstring);
 
 		if ((ret != -1) && !strcmp(propstring, "guest")) {
-
 			 
 			ret = fdt_property_read_u32(itb, nodeoffset, "load", &dom_addr);
 			if (ret == -1) {

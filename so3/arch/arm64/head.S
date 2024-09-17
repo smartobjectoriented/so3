@@ -57,7 +57,7 @@ __start:
 
 	// Preserve the fdt addr (device tree) which is stored in x0 by U-boot
 	mov	x9, x0
-
+ 
 	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
@@ -105,8 +105,6 @@ __start:
 
 __kernel_main:
 
-#if !defined(CONFIG_SOO) || defined(CONFIG_AVZ)
-
 	// Enable the interrupt
 	adrp x0, __vectors  // Virtual address as required
 
@@ -116,9 +114,6 @@ __kernel_main:
 	msr vbar_el1, x0
 #endif /* !CONFIG_ARM64VT */ 	 
 
-#endif /* !CONFIG_SOO */
-	
-#ifndef CONFIG_SO3VIRT
 
 	// Store the device tree paddr
 	adr x8, .LCfdt_addr_temp
@@ -126,8 +121,6 @@ __kernel_main:
 
 	ldr	x0, =__fdt_addr
 	str	x9, [x0]
-
-#endif /* CONFIG_SO3VIRT */
 
 	// C main entry point
 #ifdef CONFIG_AVZ
@@ -154,7 +147,7 @@ __mmu_setup:
 		// The code to configure tcr_el2
 		// is borrowed from jailhouse hypervisor
 	
-		mrs		x1, tcr_el2
+		mrs	x1, tcr_el2
 	
 		/*
 		 * set TCR.(I)PS to the highest supported ID_AA64MMFR0_EL1.PARange value
@@ -166,7 +159,7 @@ __mmu_setup:
 		ubfx    x2, x2, #ID_AA64MMFR0_PARANGE_SHIFT, #3
 		bfi     x1, x2, #TCR_PS_SHIFT, #3
 
-		msr		tcr_el2, x1
+		msr	tcr_el2, x1
 
 		/*
 		 * The state of the TLBs is unknown before turning on the MMU.
@@ -187,49 +180,49 @@ __mmu_setup:
 		ret
 
 setup_mmu:
-		// Use a temporary stack
-		adrp	x0, temp_stack
-		mov		sp, x0
+	// Use a temporary stack
+	adrp	x0, temp_stack
+	mov	sp, x0
+	mov	x0, x9 // fdt addr
 
-		mov		x0, x9 // fdt addr
+	bl 	mmu_configure
 
-		bl 		mmu_configure
+	// Readjust the stack
+	ldr	x0, =__stack_top
+	mov	sp, x0
 
-		// Readjust the stack
-		ldr		x0, =__stack_top
-		mov		sp, x0
+	// Keep executing in the kernel space
 
-		// Keep executing in the kernel space
+	// Store the virtual address which will be used to continue
+	// the execution after the MMU enabled.
+	ldr	x0, .LCvirt_entry
 
-		// Store the virtual address which will be used to continue
-		// the execution after the MMU enabled.
-		ldr		x0, .LCvirt_entry
-
-		blr		x0
+	blr	x0
 
 el2_setup:
 
-		/* Populate ID registers. */
-		mrs	x0, midr_el1
-		mrs	x1, mpidr_el1
-		msr	vpidr_el2, x0
-		msr	vmpidr_el2, x1
+#ifdef CONFIG_AVZ
+	/* Populate ID registers. */
+	mrs	x0, midr_el1
+	mrs	x1, mpidr_el1
+	msr	vpidr_el2, x0
+	msr	vmpidr_el2, x1
 
-		msr	sctlr_el1, xzr
+	msr	sctlr_el1, xzr
 
-		/* Hyp configuration. */
-	    and x1, x1, #3
+	/* Hyp configuration. */
+   	and 	x1, x1, #3
 
 #ifdef CONFIG_SOO
-		cmp x1, #AGENCY_RT_CPU
-		bgt ME
+	cmp 	x1, #AGENCY_RT_CPU
+	bgt 	guest
 #endif /* CONFIG_SOO */
 
 agency:
-	ldr x0, =HCR_AGENCY_FLAGS
+	ldr 	x0, =HCR_AGENCY_FLAGS
 	b	99f
-ME:
-	ldr x0, =HCR_ME_FLAGS
+guest:
+	ldr 	x0, =HCR_ME_FLAGS
 99:
 
 	msr	hcr_el2, x0
@@ -237,13 +230,13 @@ ME:
 
 	msr	cntvoff_el2, xzr		// Clear virtual offset
 
-    /*
-     * Ensure that any exceptions encountered at EL2
-     * are handled using the EL2 stack pointer, rather
-     * than SP_EL0.
-    */
-    msr spsel, #1
-
+    	/*
+     	* Ensure that any exceptions encountered at EL2
+     	* are handled using the EL2 stack pointer, rather
+     	* than SP_EL0.
+    	*/
+	msr spsel, #1
+#endif
 	ret
 
 #else /* CONFIG_ARM64VT */
@@ -301,9 +294,9 @@ el2_setup:
 	ubfx	x2, x2, #ID_AA64MMFR1_VHE_SHIFT, #4
 
 	/* Hyp configuration. */
-	ldr x0, =HCR_HOST_NVHE_FLAGS
+	ldr 	x0, =HCR_HOST_NVHE_FLAGS
 	cbz	x2, set_hcr
-	ldr x0, =HCR_HOST_VHE_FLAGS
+	ldr 	x0, =HCR_HOST_VHE_FLAGS
 
 set_hcr:
 	msr	hcr_el2, x0
@@ -422,7 +415,7 @@ install_el2_stub:
 	msr_s	SYS_ZCR_EL2, x1			// length for EL1.
 
 	/* Hypervisor stub */
-7:	adrp x0, __hyp_stub_vectors
+7:	adrp 	x0, __hyp_stub_vectors
 	msr	vbar_el2, x0
 
 	/* spsr */
@@ -485,8 +478,8 @@ ENTRY(secondary_startup)
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0
 
-    // Up to here, a stack should be initialized
-    adr 	x4, __secondary_data
+   	// Up to here, a stack should be initialized
+    	adr 	x4, __secondary_data
 
 	ldr		x5, [x4]
 	ldr		x19, [x4, #8]

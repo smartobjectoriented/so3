@@ -30,11 +30,11 @@
 #include <device/irq.h>
 
 #include <avz/event.h>
-#include <avz/domctl.h>
 #include <avz/domain.h>
 #include <avz/sched.h>
-#include <avz/domctl.h>
 #include <avz/debug.h>
+
+#include <avz/uapi/domctl.h>
 
 static DEFINE_SPINLOCK(domctl_lock);
 
@@ -65,11 +65,13 @@ void do_domctl(domctl_t *args)
 		break;
 
 	case DOMCTL_get_AVZ_shared:
-		args->u.avz_shared_paddr =
-			memslot[(current_domain->avz_shared->domID == DOMID_AGENCY) ? 1 : current_domain->avz_shared->domID].ipa_addr + memslot[MEMSLOT_AGENCY].size;
-		break;
-
-	}
+                if (current_domain->avz_shared->domID == DOMID_AGENCY) 
+                        args->u.avz_shared_paddr = memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size;
+                else
+                        args->u.avz_shared_paddr =
+                            memslot[current_domain->avz_shared->domID].ipa_addr + memslot[current_domain->avz_shared->domID].size;
+                break;
+        }
 
 	spin_unlock(&domctl_lock);
 }

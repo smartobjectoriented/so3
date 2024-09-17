@@ -10,7 +10,7 @@
 #ifndef HYPERCALL_H
 #define HYPERCALL_H
 
-#include <avz/domctl.h>
+#include <avz/uapi/domctl.h>
 
 void do_domctl(domctl_t *args);
 void do_soo_hypercall(soo_hyp_t *args);

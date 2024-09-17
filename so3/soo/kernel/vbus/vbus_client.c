@@ -23,6 +23,7 @@
 
 #include <types.h>
 #include <string.h>
+#include <heap.h>
 
 #include <soo/gnttab.h>
 #include <soo/grant_table.h>
@@ -30,6 +31,8 @@
 #include <soo/avz.h>
 #include <soo/console.h>
 #include <soo/vbus.h>
+
+#include <asm/cacheflush.h>
 
 #include <avz/uapi/event_channel.h>
 
@@ -129,18 +132,21 @@ int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_pfn)
  */
 void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *evtchn)
 {
-	struct evtchn_alloc_unbound alloc_unbound;
+        struct evtchn_alloc_unbound *alloc_unbound;
 
-	alloc_unbound.dom = DOMID_SELF;
+        alloc_unbound = malloc(sizeof(struct evtchn_alloc_unbound));
+        BUG_ON(!alloc_unbound);
 
-	if (dev->realtime)
-		alloc_unbound.remote_dom = DOMID_AGENCY_RT;
-	else
-		alloc_unbound.remote_dom = dev->otherend_id;
+        alloc_unbound->dom = DOMID_SELF;
+        alloc_unbound->remote_dom = dev->otherend_id;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_alloc_unbound, (long) &alloc_unbound, 0, 0);
+        __asm_flush_dcache_range((addr_t) alloc_unbound, sizeof(struct evtchn_alloc_unbound));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_alloc_unbound, __pa(alloc_unbound), 0, 0);
+        __asm_invalidate_dcache_range((addr_t) alloc_unbound, sizeof(struct evtchn_alloc_unbound));
 
-	*evtchn = alloc_unbound.evtchn;
+        *evtchn = alloc_unbound->evtchn;
+
+        free(alloc_unbound);
 }
 
 
@@ -151,15 +157,22 @@ void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *evtchn)
  */
 void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_evtchn, uint32_t *evtchn)
 {
-	struct evtchn_bind_interdomain bind_interdomain;
+	struct evtchn_bind_interdomain *bind_interdomain;
 
-	bind_interdomain.remote_dom = dev->otherend_id;
-	bind_interdomain.remote_evtchn = remote_evtchn;
+	bind_interdomain = malloc(sizeof(struct evtchn_bind_interdomain));
+	BUG_ON(!bind_interdomain);
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_interdomain, (long) &bind_interdomain, 0, 0);
+	bind_interdomain->remote_dom = dev->otherend_id;
+	bind_interdomain->remote_evtchn = remote_evtchn;
 
-	*evtchn = bind_interdomain.local_evtchn;
+        __asm_flush_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_interdomain, __pa(bind_interdomain), 0, 0);
+        __asm_invalidate_dcache_range((addr_t) bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+
+        *evtchn = bind_interdomain->local_evtchn;
 	DBG("%s: got local evtchn: %d for remote evtchn: %d\n", __func__, *evtchn, remote_evtchn);
+
+	free(bind_interdomain);
 }
 
 /**
@@ -167,11 +180,17 @@ void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_evtchn, uint32_t 
  */
 void vbus_free_evtchn(struct vbus_device *dev, uint32_t evtchn)
 {
-	struct evtchn_close close;
+        struct evtchn_close *close;
 
-	close.evtchn = evtchn;
+        close = malloc(sizeof(struct evtchn_close));
+        BUG_ON(!close);
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_close, (long) &close, 0, 0);
+        close->evtchn = evtchn;
+
+        __asm_flush_dcache_range((addr_t) close, sizeof(struct evtchn_bind_interdomain));
+        avz_hypercall(__HYPERVISOR_event_channel_op, EVTCHNOP_close, __pa(close), 0, 0);
+
+        free(close);
 }
 
 /**

@@ -40,7 +40,7 @@ void lprintk(char *format, ...) {
 	BUG_ON(strlen(buf) > CONSOLEIO_BUFFER_SIZE);
 
 	for (i = 0; i < strlen(buf); i++)
-		__printch(buf[i]);
+		avz_printch(buf[i]);
 
 	local_irq_restore(flags);
 

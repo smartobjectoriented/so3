@@ -502,7 +502,7 @@ typedef struct soo_domcall_arg {
 extern struct semaphore usr_feedback;
 extern struct semaphore injection_sem;
 
-void soo_hypercall(int cmd, void *vaddr, void *paddr, void *p_val1, void *p_val2);
+void soo_hypercall(int cmd, void *vaddr, void *p_val1, void *p_val2);
 
 void cb_pre_propagate(soo_domcall_arg_t *args);
 

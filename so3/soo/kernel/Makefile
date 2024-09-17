@@ -4,6 +4,7 @@
 #
 
 obj-y 	+= setup.o
+obj-y   += hypervisor.o
 obj-y	+= domcall.o
 obj-y	+= evtchn.o
 obj-y	+= gnttab.o

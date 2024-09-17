@@ -70,7 +70,7 @@ int construct_ME(struct domain *d) {
 	d->avz_shared->dom_phys_offset = alloc_spfn << PAGE_SHIFT;
 	d->avz_shared->hypercall_vaddr = (unsigned long) hypercall_entry;
 	d->avz_shared->logbool_ht_set_addr = (unsigned long) ht_set;
-	d->avz_shared->fdt_paddr = memslot[slotID].fdt_paddr;
+	d->avz_shared->fdt_paddr = phys_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
 	d->avz_shared->hypervisor_vaddr = CONFIG_KERNEL_VADDR;
 
@@ -80,9 +80,7 @@ int construct_ME(struct domain *d) {
 
 	/* Create the first thread associated to this domain. */
 
-        new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET,
-                   d->avz_shared->fdt_paddr,
-                   memslot[slotID].ipa_addr + memslot[slotID].size);
+        new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + memslot[slotID].size);
 
 	return 0;
 }
