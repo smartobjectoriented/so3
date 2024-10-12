@@ -10,7 +10,7 @@ obj-y += backtrace.o backtrace_asm.o
 obj-y += cache_v8.o cache.o context.o
 obj-y += semihosting.o semicall.o
 
-obj-$(CONFIG_AVZ) += hypercalls.o domain.o migration.o
+obj-$(CONFIG_AVZ) += hypercalls.o domain.o migration.o mmio.o
 
 obj-y += smccc-call.o
 

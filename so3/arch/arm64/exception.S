@@ -29,16 +29,7 @@
 
 #include <avz/domain.h>
 
-#ifdef CONFIG_ARM64VT
-
 .global cpu_entrypoint
-
-#else /* CONFIG_ARM64VT */
-
-.extern do_upcall
-.globl  pseudo_usr_mode
-
-#endif /* !ARM64VT */
 
 .globl	hypervisor_stack
 .global upcall_path
@@ -139,17 +130,9 @@ ENTRY(__vectors)
 	.align 7
 
 #ifdef CONFIG_AVZ
-
-#ifdef CONFIG_ARM64VT
 	b 		el1_2_12_irq_handler
-#else
-	b 		avz_el01_1_irq_handler
-#endif /* CONFIG_ARM64VT */
-
 #else /* CONFIG_AVZ */
-
 	b 		el1_irq_handler
-
 #endif /* !CONFIG_AVZ */
 
 	// Current EL with SPx / FIQ
@@ -171,22 +154,17 @@ ENTRY(__vectors)
 
 	// This vector is concerned with the syscall interrupt.
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	b 		el12_sync_handler
-#else /* CONFIG_ARM64VT */
+#else  
 	b 		el01_sync_handler
-#endif /* !CONFIG_ARM64VT */
+#endif  
 
 	// Lower EL using AArch64 / IRQ
 	.align 7
+
 #ifdef CONFIG_AVZ
-
-#ifdef CONFIG_ARM64VT
 	b 		el1_2_12_irq_handler
-#else /* CONFIG_ARM64VT */
-	b 		avz_el01_1_irq_handler
-#endif /* !CONFIG_ARM64VT */
-
 #else /* CONFIG_AVZ */
 	b 		el0_irq_handler
 #endif /* !CONFIG_AVZ */
@@ -313,7 +291,7 @@ ENTRY(pre_ret_to_el1_with_spin)
 	nop
 #endif /* CONFIG_CPU_SPIN_TABLE */
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 #ifdef CONFIG_CPU_PSCI
 ENTRY(pre_ret_to_el1)
@@ -376,7 +354,7 @@ el12_sync_handler:
  	mov 		x0, sp
 	bl		trap_handle
 
-	str		x0, [sp, #OFFSET_X0]
+	//str		x0, [sp, #OFFSET_X0]
 
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el2, x0
@@ -396,7 +374,6 @@ el1_2_12_irq_handler:
 
 	kernel_entry
 
-#ifdef CONFIG_ARM64VT
 	mrs		x0, elr_el2
 	str		x0, [sp, #OFFSET_PC]
 
@@ -405,13 +382,6 @@ el1_2_12_irq_handler:
 
 	mrs		x0, sp_el1
 	str		x0, [sp, #OFFSET_SP]
-#else
-	mrs		x0, elr_el1
-	str		x0, [sp, #OFFSET_PC]
-
-	mrs		x0, spsr_el1
-	str		x0, [sp, #OFFSET_PSTATE]
-#endif
 
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
@@ -422,7 +392,6 @@ el1_2_12_irq_handler:
     	bl 		irq_handle
 	ldr		lr, [sp], #16
 
-#ifdef CONFIG_ARM64VT
 	ldr		x0, [sp, #OFFSET_PSTATE]
 	msr		spsr_el2, x0
 
@@ -431,13 +400,6 @@ el1_2_12_irq_handler:
 
 	ldr		x0, [sp, #OFFSET_SP]
 	msr		sp_el1, x0
-#else
-	ldr		x0, [sp, #OFFSET_PSTATE]
-	msr		spsr_el1, x0
-
-	ldr		x0, [sp, #OFFSET_PC]
-	msr		elr_el1, x0
-#endif
 
   	kernel_exit
 
@@ -445,10 +407,6 @@ el1_2_12_irq_handler:
 
 cpu_entrypoint:
 	.quad 0x0
-
-#endif /* CONFIG_ARM64VT */
-
-#ifdef CONFIG_AVZ
 
 /*
  * This function is called at bootstrap and
@@ -468,7 +426,7 @@ ENTRY(pre_ret_to_user)
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 
-	mov	x2, #(PSR_MODE_EL1t | PSR_F_BIT	| PSR_I_BIT | PSR_A_BIT | PSR_D_BIT)
+	mov	x2, #(PSR_MODE_EL1h | PSR_F_BIT	| PSR_I_BIT | PSR_A_BIT | PSR_D_BIT)
 
 	msr	spsr_el2, x2
 
@@ -537,8 +495,6 @@ el01_sync_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-
-
    	bl 		trap_handle
 
 __ret_from_fork:
@@ -581,7 +537,7 @@ el0_irq_handler:
 	// Make sure r0 refers to the base of the stack frame
 	mov		x0, sp
 
-   	 bl 		irq_handle
+   	bl 		irq_handle
 
 	ldr		x0, [sp, #OFFSET_PC]
 	msr		elr_el1, x0

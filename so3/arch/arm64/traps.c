@@ -20,6 +20,7 @@
 #include <psci.h>
 #include <errno.h>
 #include <smp.h>
+#include <mmio.h>
 
 #ifdef CONFIG_AVZ
 #include <avz/sched.h>
@@ -117,6 +118,23 @@ extern addr_t cpu_entrypoint;
 #endif
 
 /**
+ * @brief Handling the dabt condition
+ * 
+ * @param regs 
+ * @param esr 
+ * @return int 
+ */
+int dabt_handle(cpu_regs_t *regs, unsigned long esr) {
+
+#ifdef CONFIG_AVZ
+        return mmio_dabt_decode(regs, esr);
+#else
+        return -1;
+#endif
+
+}
+
+/**
  * This is the entry point for all exceptions currently managed by SO3.
  * 
  * Regarding the SOO hypercalls, all addresses got from arguments
@@ -126,18 +144,28 @@ extern addr_t cpu_entrypoint;
  */
 typedef void(*vector_fn_t)(cpu_regs_t *);
 
-int trap_handle(cpu_regs_t *regs) {
+void trap_handle(cpu_regs_t *regs) {
 
+#ifdef CONFIG_AVZ
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
  
- #if defined(CONFIG_AVZ) && defined (CONFIG_SOO)
+#ifdef CONFIG_SOO
         unsigned int memslotID = ((current_domain->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : current_domain->avz_shared->domID);
-#endif
+#endif /* CONFIG_SOO */
+
+#else
+	unsigned long esr = read_sysreg(esr_el1);
+#endif /* CONFIG_AVZ */
 
         switch (ESR_ELx_EC(esr)) {
 
-	/* SVC used for syscalls */
+	case ESR_ELx_EC_DABT_LOW:
+
+                dabt_handle(regs, esr);
+                break;
+
+        /* SVC used for syscalls */
 	case ESR_ELx_EC_SVC64:
 
 #ifdef CONFIG_AVZ
@@ -152,8 +180,9 @@ int trap_handle(cpu_regs_t *regs) {
 
 #endif /* !CONFIG_AVZ */
 
-		return 0;
+                break;
 
+#ifdef CONFIG_AVZ
 	case ESR_ELx_EC_HVC64:
 		hvc_code = regs->x0;
 
@@ -162,7 +191,8 @@ int trap_handle(cpu_regs_t *regs) {
 #ifdef CONFIG_SMP
                 /* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
-                        return PSCI_VERSION(1, 1);
+			regs->x0 = PSCI_VERSION(1, 1);
+			break;
 
                 case PSCI_0_2_FN64_CPU_ON:
                         printk("Power on CPU #%d...\n", regs->x1 & 3);
@@ -170,18 +200,19 @@ int trap_handle(cpu_regs_t *regs) {
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);
 
-			return PSCI_RET_SUCCESS;
+                        regs->x0 = PSCI_RET_SUCCESS;
+                        break;
 
-		case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
+                case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
 		case PSCI_1_0_FN_PSCI_FEATURES:
-                        return PSCI_RET_SUCCESS;
+                        regs->x0 = PSCI_RET_SUCCESS;
+                        break;
 #endif /* CONFIG_SMP */
 
-#ifdef CONFIG_AVZ
                 /* AVZ Hypercalls */
 		case __HYPERVISOR_console_io:
 			printk("%c", regs->x1);
-			return ESUCCESS;
+                        break;
 
 #ifdef CONFIG_SOO
 		case __HYPERVISOR_domctl:
@@ -189,14 +220,14 @@ int trap_handle(cpu_regs_t *regs) {
                         do_domctl((domctl_t *) ipa_to_va(memslotID, regs->x1));
                         flush_dcache_all();
 
-			return ESUCCESS;
+                        break;
 
-		case __HYPERVISOR_event_channel_op:
+                case __HYPERVISOR_event_channel_op:
 
                         do_event_channel_op(regs->x1, (void *) ipa_to_va(memslotID, regs->x2));
                         flush_dcache_all();
 
-			return ESUCCESS;
+                        break;
 
                 case __HYPERVISOR_soo_hypercall:
 
@@ -204,15 +235,12 @@ int trap_handle(cpu_regs_t *regs) {
                         do_soo_hypercall((soo_hyp_t *) ipa_to_va(memslotID, regs->x1));
                         flush_dcache_all();
 
-                        return ESUCCESS;
+                        break;
 #endif /* CONFIG_SOO */
 
-#endif /* CONFIG_AVZ */
-
-                default:
-			return EFAULT;
                 }
                 break;
+#endif /* CONFIG_AVZ */
 
 #if 0
 	case ESR_ELx_EC_DABT_LOW:
@@ -259,6 +287,4 @@ int trap_handle(cpu_regs_t *regs) {
 		trap_handle_error(regs->lr);
 		kernel_panic();
         }
-
-        return -1;
 }

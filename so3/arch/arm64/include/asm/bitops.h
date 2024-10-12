@@ -28,6 +28,14 @@
 #define __L16(_x) (((_x) & 0x0000ff00) ? ( 8 + __L8( (_x)>> 8)) : __L8( _x))
 #define LOG_2(_x) (((_x) & 0xffff0000) ? (16 + __L16((_x)>>16)) : __L16(_x))
 
+/* create 64-bit mask with all bits in [last:first] set */
+#define BIT_MASK(last, first) \
+	((0xffffffffffffffffULL >> (64 - ((last) + 1 - (first)))) << (first))
+
+/* extract the field value at [last:first] from an input of up to 64 bits */
+#define GET_FIELD(value, last, first) \
+	(((value) & BIT_MASK((last), (first))) >> (first))
+	
 #ifndef __ASSEMBLY__
 
 #define smp_mb__before_clear_bit()	mb()

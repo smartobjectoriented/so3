@@ -494,11 +494,6 @@ typedef enum {
 	S2
 } mmu_stage_t;
 
-#define mrs(spr)		({ u64 rval; asm volatile(\
-				"mrs %0," #spr :"=r"(rval)); rval; })
-
-#define msr(spr, val)		asm volatile("msr " #spr ", %0" ::"r"(val));
-
 /* VA to PA Address Translation */
 
 #define VA2PA_STAGE1		"s1"

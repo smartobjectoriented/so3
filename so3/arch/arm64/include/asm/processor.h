@@ -161,6 +161,15 @@
 #define ESR_ELx_EC_MASK		(UL(0x3F) << ESR_ELx_EC_SHIFT)
 #define ESR_ELx_EC(esr)		(((esr) & ESR_ELx_EC_MASK) >> ESR_ELx_EC_SHIFT)
 
+/* exception level in SPSR_ELx */
+#define SPSR_EL(spsr)		(((spsr) & 0xc) >> 2)
+/* instruction length */
+#define ESR_IL(esr)		GET_FIELD((esr), 25, 25)
+/* Instruction specific syndrome */
+#define ESR_ISS(esr)		GET_FIELD((esr), 24, 0)
+ 
+
+
 /*
  * PSR bits
  */
@@ -943,8 +952,7 @@
 
 #else
 
-static inline int cpu_mode(void)
-{
+    static inline int cpu_mode(void) {
 	uint32_t el;
 
 	asm volatile(
@@ -1024,6 +1032,27 @@ static inline int cpu_mode(void)
 	asm volatile(__msr_s(r, "%x0") : : "rZ" (__val));		\
 } while (0)
 
+#define mrs(__spr)                                                                                                                                   \
+        ({                                                                                                                                           \
+                u64 __v;                                                                                                                             \
+                asm volatile("mrs %0," stringify(__spr) : "=r"(__v));                                                                                \
+                __v;                                                                                                                                 \
+        })
+
+#define msr(__spr, __v)                                                                                                                              \
+        do {                                                                                                                                         \
+                asm volatile("msr " stringify(__spr) ", %0" : : "r"(__v));                                                                           \
+        } while (0)
+
+#define msr_sync(__spr, __v)                                                                                                                         \
+        do {                                                                                                                                         \
+                asm volatile("msr " stringify(__spr) ", %0\n\t"                                                                                      \
+                                                     "dsb sy\n\t"                                                                                    \
+                                                     "isb\n\t"                                                                                       \
+                             :                                                                                                                       \
+                             : "r"(__v));                                                                                                            \
+        } while (0)
+
 /*
  * Modify bits in a sysreg. Bits in the clear mask are zeroed, then bits in the
  * set mask are set. Other bits are left as-is.
@@ -1034,6 +1063,12 @@ static inline int cpu_mode(void)
 	if (__scs_new != __scs_val)					\
 		write_sysreg(__scs_new, sysreg);			\
 } while (0)
+
+enum trap_return {
+        TRAP_HANDLED = 1,
+        TRAP_UNHANDLED = 0,
+        TRAP_FORBIDDEN = -1,
+};
 
 /*
  * PMR values used to mask/unmask interrupts.
@@ -1053,8 +1088,11 @@ static inline int cpu_mode(void)
 #define GIC_PRIO_IRQOFF			(GIC_PRIO_IRQON & ~0x80)
 #define GIC_PRIO_PSR_I_SET		(1 << 4)
 
-typedef struct cpu_regs {
-	u64 x0;
+/* The structure is packed since we may refer as a linear space
+ * addressed by index
+ */
+typedef struct __attribute__((packed, aligned(8))) cpu_regs {
+        u64 x0;
 	u64 x1;
 	u64 x2;
 	u64 x3;
@@ -1206,7 +1244,7 @@ void pre_ret_to_el1_with_spin(addr_t release_addr);
 struct tcb;
 void __switch_to(struct tcb *prev, struct tcb *next);
 
-int trap_handle(cpu_regs_t *regs);
+void trap_handle(cpu_regs_t *regs);
 
 void cpu_do_idle(void);
 

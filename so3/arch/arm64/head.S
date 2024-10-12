@@ -142,42 +142,42 @@ __kernel_main:
 
 .align 2
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 __mmu_setup:
-		// The code to configure tcr_el2
-		// is borrowed from jailhouse hypervisor
+	// The code to configure tcr_el2
+	// is borrowed from jailhouse hypervisor
 	
-		mrs	x1, tcr_el2
+	mrs	x1, tcr_el2
 	
-		/*
-		 * set TCR.(I)PS to the highest supported ID_AA64MMFR0_EL1.PARange value
-		 */
+	/*
+	 * set TCR.(I)PS to the highest supported ID_AA64MMFR0_EL1.PARange value
+	 */
 
-		mrs     x2, id_aa64mmfr0_el1
+	mrs     x2, id_aa64mmfr0_el1
 
-		/* Narrow PARange to fit the PS field in TCR_ELx */
-		ubfx    x2, x2, #ID_AA64MMFR0_PARANGE_SHIFT, #3
-		bfi     x1, x2, #TCR_PS_SHIFT, #3
+	/* Narrow PARange to fit the PS field in TCR_ELx */
+	ubfx    x2, x2, #ID_AA64MMFR0_PARANGE_SHIFT, #3
+	bfi     x1, x2, #TCR_PS_SHIFT, #3
 
-		msr	tcr_el2, x1
+	msr	tcr_el2, x1
 
-		/*
-		 * The state of the TLBs is unknown before turning on the MMU.
-		 * Flush them to avoid stale one.
-		 */
-		tlbi  alle2                  /* Flush hypervisor TLBs */
-		dsb   nsh
+	/*
+	 * The state of the TLBs is unknown before turning on the MMU.
+	 * Flush them to avoid stale one.
+	 */
+	tlbi  	alle2                  /* Flush hypervisor TLBs */
+	dsb   	nsh
 
-		msr   ttbr0_el2, x0
-		isb
+	msr   	ttbr0_el2, x0
+	isb
 
-		ldr	x0, =(SCTLR_I_BIT | SCTLR_C_BIT | SCTLR_M_BIT | SCTLR_EL2_RES1)
+	ldr   	x0, =(SCTLR_I_BIT | SCTLR_C_BIT | SCTLR_M_BIT | SCTLR_EL2_RES1)
 
-		dsb   sy                     /* Flush PTE writes and finish reads */
-		msr   sctlr_el2, x0          /* now paging is enabled */
-		isb                          /* Now, flush the icache */
+	dsb   	sy                     /* Flush PTE writes and finish reads */
+	msr   	sctlr_el2, x0          /* now paging is enabled */
+	isb                          /* Now, flush the icache */
 
-		ret
+	ret
 
 setup_mmu:
 	// Use a temporary stack
@@ -200,15 +200,13 @@ setup_mmu:
 	blr	x0
 
 el2_setup:
+	msr	sctlr_el1, xzr	
 
-#ifdef CONFIG_AVZ
 	/* Populate ID registers. */
 	mrs	x0, midr_el1
 	mrs	x1, mpidr_el1
 	msr	vpidr_el2, x0
 	msr	vmpidr_el2, x1
-
-	msr	sctlr_el1, xzr
 
 	/* Hyp configuration. */
    	and 	x1, x1, #3
@@ -236,10 +234,10 @@ guest:
      	* than SP_EL0.
     	*/
 	msr spsel, #1
-#endif
+
 	ret
 
-#else /* CONFIG_ARM64VT */
+#else /* CONFIG_AVZ */
 
 setup_mmu:
 
@@ -282,7 +280,7 @@ el2_setup:
 	isb
 	ret
 
-1:	ldr x0, =(SCTLR_EL2_RES1 | ENDIAN_SET_EL2)
+1:	ldr 	x0, =(SCTLR_EL2_RES1 | ENDIAN_SET_EL2)
 	msr	sctlr_el2, x0
 
 	/*
@@ -419,7 +417,7 @@ install_el2_stub:
 	msr	vbar_el2, x0
 
 	/* spsr */
-	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT | PSR_MODE_EL1h)
+	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT | PSR_MODE_EL1t)
 	msr	spsr_el2, x0
 	msr	elr_el2, lr
 	mov	w0, #BOOT_CPU_MODE_EL2		// This CPU booted in EL2
@@ -441,23 +439,16 @@ __secondary_kernel_main:
 	// Enable the interrupt
 	adrp x0, __vectors  // Virtual address as required
 
-#ifdef CONFIG_ARM64VT
-	msr vbar_el2, x0
-#else
-	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */
-
-#endif /* !CONFIG_SOO */
-
-	// C main entry point
-
 #ifdef CONFIG_AVZ
+	msr 	vbar_el2, x0
 
-  	ldr		x19, .LC_secondary_final_start_kernel
-  	blr		x19
-
+  	ldr	x19, .LC_secondary_final_start_kernel
+  	blr	x19
 #else
+	msr 	vbar_el1, x0
 	b 	kernel_start
+#endif /* !CONFIG_AVZ */
+
 #endif
 
 	nop
@@ -513,11 +504,11 @@ ENTRY(secondary_startup)
 	// Initialize the vector table
 	adrp x0, __vectors
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	msr vbar_el2, x0
 #else
 	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */
+#endif /* !CONFIG_AVZ */
 
 
   	// Store the virtual address which will be used to continue

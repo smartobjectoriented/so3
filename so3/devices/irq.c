@@ -25,6 +25,8 @@
 
 #include <device/irq.h>
 
+#define DEBUG
+
 static irqdesc_t irqdesc[NR_IRQS];
 volatile bool __in_interrupt = false;
 

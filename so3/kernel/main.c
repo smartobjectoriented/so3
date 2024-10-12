@@ -107,13 +107,13 @@ void kernel_start(void) {
 	/* Memory manager subsystem initialization */
 	memory_init();
 
+        devices_init();
+
 #if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
         avz_setup();
 #endif /* CONFIG_SOO */
 
-        devices_init();
-
-	/* At this point of time, we are able to use the standard printk() */
+        /* At this point of time, we are able to use the standard printk() */
 
 	timer_init();
 

@@ -14,7 +14,7 @@
 #ifndef __ARM_SMCCC_H
 #define __ARM_SMCCC_H
 
-#include <const.h>
+#include <linkage.h>
 
 /*
  * This file provides common defines for ARM SMC Calling Convention as
