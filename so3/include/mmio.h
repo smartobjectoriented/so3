@@ -48,5 +48,6 @@ struct mmio_access {
 };
 
 int mmio_dabt_decode(cpu_regs_t *regs, unsigned long esr);
+void mmio_perform_access(void *base, struct mmio_access *mmio);
 
 #endif /* MMIO_H */

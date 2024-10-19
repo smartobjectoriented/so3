@@ -61,10 +61,13 @@ __start:
 	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
-
+	
+	// If SO3 is running as guest on top of AVZ, it must not setup EL2 mode
+	// TODO: enable trap of EL2 inst. to avoid this test.
+#if defined(CONFIG_AVZ) || !defined(CONFIG_SOO)
 	// CPU configuration
 	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
-
+#endif
 	/* Clear the BSS */
 
 	adrp	x0, __bss_start
@@ -72,7 +75,7 @@ __start:
 1:
 	strb	wzr, [x0], #1
 
-	cmp		x0, x1
+	cmp	x0, x1
 	b.cc	1b
 
 	// Enable FP/ASIMD

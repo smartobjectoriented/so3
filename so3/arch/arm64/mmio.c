@@ -20,9 +20,52 @@
 #include <mmio.h>
 #include <types.h>
 
+#include <device/arch/vgic.h>
+
+#include <asm/io.h>
+
 /*
  * These definitions are heavly borrowed from jailhouse hypervisor
  */
+
+void mmio_perform_access(void *base, struct mmio_access *mmio) {
+        void *addr = base + mmio->address;
+    
+        if (mmio->is_write)
+                switch (mmio->size) {
+                case 1:
+                        iowrite8(addr, mmio->value);
+                        break;
+                case 2:
+                        iowrite16(addr, mmio->value);
+                        break;
+                case 4:
+                        iowrite32(addr, mmio->value);
+                        break;
+#if BITS_PER_LONG == 64
+                case 8:
+                        iowrite64(addr, mmio->value);
+                        break;
+#endif
+                }
+        else
+                switch (mmio->size) {
+                case 1:
+                        mmio->value = ioread8(addr);
+                        break;
+                case 2:
+                        mmio->value = ioread16(addr);
+                        break;
+                case 4:
+                        mmio->value = ioread32(addr);
+                        break;
+#if BITS_PER_LONG == 64
+                case 8:
+                        mmio->value = ioread64(addr);
+                        break;
+#endif
+                }
+}
 
 /**
  * Dispatch MMIO access of a CPU.
@@ -31,22 +74,15 @@
  * 		may have been modified on return.
  *
  * @return MMIO_HANDLED on success, MMIO_UNHANDLED if no region is registered
- * for the access address and size, or MMIO_ERROR if an access error was
- * detected.
+ *         for the access address and size, or MMIO_ERROR if an access error was detected.
  *
- * @see mmio_region_register
- * @see mmio_region_unregister
  */
 enum mmio_result mmio_handle_access(struct mmio_access *mmio)
 {
+	/* Currently, only GIC access is handled via a data abort exception */
+        mmio->address -= (addr_t) gic->gicd_paddr;
 
-	if (mmio->is_write) 
-		printk("## addr mmio: %lx value: %lx\n", mmio->address, mmio->value);
-	else
-                mmio->value = 0x26262626;
-
-        return MMIO_HANDLED;
-
+        return gic_handle_dist_access(mmio);
 }
 
 /* AARCH64_TODO: we can use SXTB, SXTH, SXTW */

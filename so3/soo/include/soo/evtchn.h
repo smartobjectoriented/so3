@@ -73,7 +73,7 @@ static inline void notify_remote_via_evtchn(uint32_t evtchn) {
 }
 
 /* Entry point for notifications into Linux subsystems. */
-void evtchn_do_upcall(cpu_regs_t *regs);
+irq_return_t evtchn_do_upcall(int irq_nr, void *data);
 
 /*
  * LOW-LEVEL DEFINITIONS

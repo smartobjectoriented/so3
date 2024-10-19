@@ -54,8 +54,6 @@ static inline int test_bit(int nr, const volatile unsigned long *addr)
         return 1UL & (addr[BITOP_WORD(nr)] >> (nr & (BITS_PER_LONG-1)));
 }
 
-
-
 /*
  * These functions are the basis of our bit ops.
  *
@@ -68,7 +66,7 @@ static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	*p |= mask;
 	local_irq_restore(flags);
 }
@@ -80,7 +78,7 @@ static inline void ____atomic_clear_bit(unsigned int bit, volatile unsigned long
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	*p &= ~mask;
 	local_irq_restore(flags);
 }
@@ -92,7 +90,7 @@ static inline void ____atomic_change_bit(unsigned int bit, volatile unsigned lon
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	*p ^= mask;
 	local_irq_restore(flags);
 }
@@ -106,7 +104,7 @@ ____atomic_test_and_set_bit(unsigned int bit, volatile unsigned long *p)
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	res = *p;
 	*p = res | mask;
 	local_irq_restore(flags);
@@ -123,7 +121,7 @@ ____atomic_test_and_clear_bit(unsigned int bit, volatile unsigned long *p)
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	res = *p;
 	*p = res & ~mask;
 	local_irq_restore(flags);
@@ -140,7 +138,7 @@ ____atomic_test_and_change_bit(unsigned int bit, volatile unsigned long *p)
 
 	p += bit >> 5;
 
-	local_irq_save(flags);
+	flags = local_irq_save();
 	res = *p;
 	*p = res ^ mask;
 	local_irq_restore(flags);
@@ -207,6 +205,22 @@ extern int _test_and_change_bit_le(int nr, volatile unsigned long * p);
 #define test_and_set_bit(nr,p)		ATOMIC_BITOP_LE(test_and_set_bit,nr,p)
 #define test_and_clear_bit(nr,p)	ATOMIC_BITOP_LE(test_and_clear_bit,nr,p)
 #define test_and_change_bit(nr,p)	ATOMIC_BITOP_LE(test_and_change_bit,nr,p)
+
+/* Count leading zeroes */
+static inline unsigned long clz(unsigned long word) {
+        unsigned long val;
+
+        asm volatile("clz %0, %1" : "=r"(val) : "r"(word));
+        return val;
+}
+
+/* Returns the position of the least significant 1, MSB=31, LSB=0*/
+static inline unsigned long ffsl(unsigned long word) {
+        if (!word)
+                return 0;
+        asm volatile("rbit %0, %0" : "+r"(word));
+        return clz(word);
+}
 
 #endif /*__ASSEMBLY__ */
 

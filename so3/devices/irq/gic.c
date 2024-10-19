@@ -64,22 +64,7 @@
 #include <asm/io.h>
 #include <asm/virt.h>
 
-typedef struct {
-        /* Distributor */
-        struct gicd_regs *gicd;
-
-        /* CPU interface */
-        struct gicc_regs *gicc;
-
-#ifdef CONFIG_ARM64VT
-        /* Hypervisor related */
-        struct gich_regs *gich;
-
-        unsigned int gic_num_lr;
-#endif
-} gic_t;
-
-static gic_t *gic;
+gic_t *gic;
 
 DEFINE_PER_CPU(spinlock_t, intc_lock);
 
@@ -103,11 +88,21 @@ struct pending_irqs {
 struct pending_irqs pending_irqs;
 
 static u32 gic_read_lr(unsigned int n) {
-        return ioread32(&gic->gich->lrbase[n]);
 }
 
-static void gic_write_lr(unsigned int n, u32 value) {
-        iowrite32(&gic->gich->lrbase[n], value);
+ void gic_write_lr(unsigned int n, u32 value) {
+        iowrite32(&gic->gich->lr[n], value);
+}
+
+void display_lr(unsigned int n) {
+        u32 lr = gic_read_lr(n);
+
+        printk("LR state: \n");
+        printk("  - virq: %x\n", lr & GICH_LR_VIRT_ID_MASK);
+        printk("  - prio: %x\n", (lr >> GICH_LR_PRIORITY_SHIFT) & GICH_LR_PRIORITY_MASK);
+        printk("  - pending: %x\n", lr & GICH_LR_PENDING_BIT);
+        printk("  - active: %x\n", lr & GICH_LR_ACTIVE_BIT);
+        printk("  - hw: %x\n", lr & GICH_LR_HW_BIT);
 }
 
 #endif /* CONFIG_ARM64VT */
@@ -212,36 +207,6 @@ int irq_set_affinity(unsigned int irq, int cpu) {
         return 0;
 }
 
-void gicc_init(void) {
-        unsigned int cpu = smp_processor_id();
-        u32 bypass = 0;
-        int i;
-
-        spin_lock_init(&per_cpu(intc_lock, cpu));
-
-        /*
-         * Deal with the banked PPI and SGI interrupts - disable all
-         * PPI interrupts, ensure all SGI interrupts are enabled.
-         */
-        iowrite32(&gic->gicd->icenabler, GICD_INT_EN_CLR_PPI);
-        iowrite32(&gic->gicd->isenabler, GICD_INT_EN_SET_SGI);
-
-        /* Priority for all SGI and PPI interrupts is the highest (value 0) */
-        for (i = 0; i < 32; i += 4)
-                iowrite32(&gic->gicd->ipriorityr[i / 4], 0);
-
-        /* Allow all priorities */
-        iowrite32(&gic->gicc->pmr, GICC_INT_PRI_THRESHOLD);
-
-        /*
-         * Preserve bypass disable bits to be written back later
-         */
-        bypass = ioread32(&gic->gicc->ctlr);
-        bypass &= GICC_DIS_BYPASS_MASK;
-
-        iowrite32(&gic->gicc->ctlr, bypass | GICC_ENABLE | GIC_CPU_EOI);
-}
-
 #ifdef CONFIG_ARM64VT
 
 static void gic_enable_maint_irq(bool enable) {
@@ -261,7 +226,8 @@ static int gic_inject_irq(u16 irq_id) {
         int first_free = -1;
         u32 lr;
         unsigned long elsr[2];
-         
+        uint64_t hcr_el2;
+
         elsr[0] = ioread32(&gic->gich->elsr0);
         elsr[1] = ioread32(&gic->gich->elsr1);
 
@@ -292,8 +258,10 @@ static int gic_inject_irq(u16 irq_id) {
                 lr |= GICH_LR_HW_BIT;
                 lr |= (u32) irq_id << GICH_LR_PHYS_ID_SHIFT;
         }
-
+  
         gic_write_lr(first_free, lr);
+		 
+        display_lr(first_free);
 
         return 0;
 }
@@ -331,9 +299,10 @@ void gic_inject_pending(void) {
 
 void gic_set_pending(u16 irq_id) {
         unsigned int new_tail;
+        u32 val;
 
         if (gic_inject_irq(irq_id) != -EBUSY)
-                return;
+	        return;
 
         spin_lock(&pending_irqs.lock);
 
@@ -367,8 +336,120 @@ void gic_set_pending(u16 irq_id) {
         gic_enable_maint_irq(true);
 }
 
+static void gic_clear_pending_irqs(void) {
+        unsigned int n;
+
+        /* Clear list registers. */
+        for (n = 0; n < gic->gic_num_lr; n++)
+                gic_write_lr(n, 0);
+
+        /* Clear active priority bits. */
+        iowrite32(&gic->gich->apr, 0);
+        
+}
+
 #endif /* CONFIG_ARM64VT */
 
+#ifdef CONFIG_AVZ
+void gich_init(void) {
+        u32 gicc_ctlr, gicc_pmr;
+        u32 vtr, vmcr;
+        int n;
+
+        gicc_ctlr = ioread32(&gic->gicc->ctlr);
+        gicc_pmr = ioread32(&gic->gicc->pmr);
+
+        iowrite32(&gic->gich->vmcr, 0);
+
+        vtr = ioread32(&gic->gich->vtr);
+      
+        /* Reveals to be 4 for virt64 board */
+        gic->gic_num_lr = (vtr & 0x3f) + 1;
+        
+        /* VMCR only contains 5 bits of priority */
+        vmcr = (gicc_pmr >> GICV_PMR_PRIORITY_SHIFT) << GICH_VMCR_PRIMASK_SHIFT;
+
+        /*
+         * All virtual interrupts are group 0 in this driver since the GICV
+         * layout seen by the guest corresponds to GICC without security
+         * extensions:
+         *
+         * - A read from GICV_IAR doesn't acknowledge group 1 interrupts
+         *   (GICV_AIAR does it, but the guest never attempts to accesses it)
+         * - A write to GICV_CTLR.GRP0EN corresponds to the GICC_CTLR.GRP1EN bit
+         *   Since the guest's driver thinks that it is accessing a GIC with
+         *   security extensions, a write to GPR1EN will enable group 0
+         *   interrupts.
+         * - Group 0 interrupts are presented as virtual IRQs (FIQEn = 0)
+         */
+
+        if (gicc_ctlr & GICC_CTLR_GRPEN1)
+                vmcr |= GICH_VMCR_ENABLE_GRP0_MASK;
+        if (gicc_ctlr & GICC_CTLR_EOImode)
+                vmcr |= GICH_VMCR_EOI_MODE_MASK;
+
+        iowrite32(&gic->gich->vmcr, vmcr);
+
+        pending_irqs.head = 0;
+        pending_irqs.tail = 0;
+
+        /*
+         * Clear pending virtual IRQs in case anything is left from previous
+         * use. Physically pending IRQs will be forwarded to Linux once we
+         * enable interrupts for the hypervisor, except for SGIs, see below.
+         */
+
+        gic_clear_pending_irqs();
+
+        iowrite32(&gic->gich->hcr, GICH_HCR_EN);
+
+        /*
+         * Forward any pending physical SGIs to the virtual queue.
+         * We will convert them into self-inject SGIs, ignoring the original
+         * source. But Linux doesn't care about that anyway.
+         */
+        for (n = 0; n < 16; n++) {
+                if (ioread8(((u8 *) &gic->gicd->cpendsgirn) + n)) {
+                        iowrite8(((u8 *) &gic->gicd->cpendsgirn) + n, 0xff);
+                        gic_set_pending(n);
+                }
+        }
+}
+#endif /* CONFIG_AVZ */
+
+void gicc_init(void) {
+        unsigned int cpu = smp_processor_id();
+        u32 bypass = 0;
+        int i;
+
+        spin_lock_init(&per_cpu(intc_lock, cpu));
+
+        /*
+         * Deal with the banked PPI and SGI interrupts - disable all
+         * PPI interrupts, ensure all SGI interrupts are enabled.
+         */
+        iowrite32(&gic->gicd->icenabler, GICD_INT_EN_CLR_PPI);
+        iowrite32(&gic->gicd->isenabler, GICD_INT_EN_SET_SGI);
+
+        /* Priority for all SGI and PPI interrupts is the highest (value 0) */
+        for (i = 0; i < 32; i += 4)
+                iowrite32(&gic->gicd->ipriorityr[i / 4], 0);
+
+        /* Allow all priorities */
+        iowrite32(&gic->gicc->pmr, GICC_INT_PRI_THRESHOLD);
+
+        /*
+         * Preserve bypass disable bits to be written back later
+         */
+        bypass = ioread32(&gic->gicc->ctlr);
+        bypass &= GICC_DIS_BYPASS_MASK;
+
+        iowrite32(&gic->gicc->ctlr, bypass | GICC_ENABLE | GIC_CPU_EOI);
+
+#ifdef CONFIG_AVZ
+        gich_init();
+#endif
+}
 static void gic_eoi_irq(u32 irq_id, bool deactivate) {
         /*
          * The GIC doesn't seem to care about the CPUID value written to EOIR,
@@ -425,6 +506,7 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
                         break;
 			 
 #ifdef CONFIG_AVZ
+#if 0
 if (smp_processor_id() == 3) {
         printk("## irq: %d\n", irq_nr);
         
@@ -436,6 +518,8 @@ if (smp_processor_id() == 3) {
  
 }
 #endif
+#endif
+
 if (irq_nr < 16) {
 #ifdef CONFIG_AVZ
                         /* At this level, IPI are used to trigger a guest because
@@ -462,21 +546,6 @@ if (irq_nr < 16) {
 
         } while (true);
 }
-
-#ifdef CONFIG_AVZ
-
-static void gic_clear_pending_irqs(void) {
-        unsigned int n;
-
-        /* Clear list registers. */
-        for (n = 0; n < gic->gic_num_lr; n++)
-                gic_write_lr(n, 0);
-
-        /* Clear active priority bits. */
-        iowrite32(&gic->gich->apr, 0);
-}
-
-#endif /* CONFIG_AVZ */
 
 void smp_cross_call(long cpu_mask, unsigned int irq) {
         unsigned long flags;
@@ -529,13 +598,9 @@ void gic_set_type(unsigned int irq, unsigned int type) {
 static int gic_init(dev_t *dev, int fdt_offset) {
         const struct fdt_property *prop;
         int prop_len;
-        u32 gicc_ctlr, gicc_pmr;
         u32 gicd_isacter;
         unsigned int n;
 
-#ifdef CONFIG_AVZ
-        u32 vtr, vmcr;
-#endif
         gic = (gic_t *) malloc(sizeof(gic_t));
         BUG_ON(!gic);
 
@@ -553,14 +618,19 @@ static int gic_init(dev_t *dev, int fdt_offset) {
         /* Mapping the two mem area of GIC (distributor & CPU interface) */
 #ifdef CONFIG_ARCH_ARM32
         gic->gicd = (struct gicd_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+        gic->gicd_paddr = (void *) fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
+
         gic->gicc = (struct gicc_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[2]), fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
 #else
         gic->gicd = (struct gicd_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+        gic->gicd_paddr = (void *) fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
+
         gic->gicc = (struct gicc_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[2]), fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
 #endif
 
 #ifdef CONFIG_AVZ
-        gic->gich = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
+
+        gic->gich = (struct gich_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
 
         spin_lock_init(&pending_irqs.lock);
 
@@ -570,89 +640,13 @@ static int gic_init(dev_t *dev, int fdt_offset) {
         /* Ensure all IPIs and the maintenance PPI are enabled */
         iowrite32(&gic->gicd->isenabler, 0x0000ffff & ~(1 << IRQ_ARCH_ARM_MAINT));
 
-        iowrite32(&gic->gich->vmcr, 0);
-
-        pending_irqs.head = 0;
-        pending_irqs.tail = 0;
-
-        gic_clear_pending_irqs();
-
 #endif
-        /* Deactivate all active PPIs */
-	 
-	#ifndef CONFIG_AVZ
-        gicc_ctlr = ioread32(&gic->gicd->icenabler);
-        printk("### RETRIEVED: %lx\n", gicc_ctlr);
-	while(1)
-                ;
-		#endif
- 
 
         iowrite32(&gic->gicd->icenabler, 0xffff0000);
-
-        gicc_ctlr = ioread32(&gic->gicc->ctlr);
-        gicc_pmr = ioread32(&gic->gicc->pmr);
-
-#ifdef CONFIG_AVZ
-
-        vtr = ioread32(&gic->gich->vtr);
-
-	/* Reveals to be 4 for virt64 board */
-        gic->gic_num_lr = (vtr & 0x3f) + 1;
-         
-        /* VMCR only contains 5 bits of priority */
-        vmcr = (gicc_pmr >> GICV_PMR_PRIORITY_SHIFT) << GICH_VMCR_PRIMASK_SHIFT;
-
-        /*
-         * All virtual interrupts are group 0 in this driver since the GICV
-         * layout seen by the guest corresponds to GICC without security
-         * extensions:
-	 * 
-         * - A read from GICV_IAR doesn't acknowledge group 1 interrupts
-         *   (GICV_AIAR does it, but the guest never attempts to accesses it)
-         * - A write to GICV_CTLR.GRP0EN corresponds to the GICC_CTLR.GRP1EN bit
-         *   Since the guest's driver thinks that it is accessing a GIC with
-         *   security extensions, a write to GPR1EN will enable group 0
-         *   interrupts.
-         * - Group 0 interrupts are presented as virtual IRQs (FIQEn = 0)
-         */
-
-        if (gicc_ctlr & GICC_CTLR_GRPEN1)
-                vmcr |= GICH_VMCR_ENABLE_GRP0_MASK;
-        if (gicc_ctlr & GICC_CTLR_EOImode)
-                vmcr |= GICH_VMCR_EOI_MODE_MASK;
-
-        iowrite32(&gic->gich->vmcr, vmcr);
-
-        iowrite32(&gic->gich->hcr, GICH_HCR_EN);
-
-        /*
-         * Clear pending virtual IRQs in case anything is left from previous
-         * use. Physically pending IRQs will be forwarded to Linux once we
-         * enable interrupts for the hypervisor, except for SGIs, see below.
-         */
-        gic_clear_pending_irqs();
-
-#endif
 
         /* Deactivate all active SGIs */
         gicd_isacter = ioread32(&gic->gicd->isactiver);
         iowrite32(&gic->gicd->isactiver, gicd_isacter & 0xffff);
-
-#ifdef CONFIG_AVZ
-        /*
-         * Forward any pending physical SGIs to the virtual queue.
-         * We will convert them into self-inject SGIs, ignoring the original
-         * source. But Linux doesn't care about that anyway.
-         */
-        for (n = 0; n < 16; n++) {
-                if (ioread8(((u8 *) &gic->gicd->cpendsgirn) + n)) {
-                        iowrite8(((u8 *) &gic->gicd->cpendsgirn) + n, 0xff);
-                        gic_set_pending(n);
-                }
-        }
-
-#else /* CONFIG_ARM64VT */
 
         /* Initialize distributor and CPU interface of GIC.
          * See Linux implementation as reference: http://lxr.free-electrons.com/source/arch/arm/common/gic.c?v=3.2
@@ -701,8 +695,6 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 
         /* Enable CPU interface */
         iowrite32(&gic->gicc->ctlr, GICC_ENABLE);
-
-#endif /* !CONFIG_ARM64VT */
 
         irq_ops.enable = gic_enable;
         irq_ops.disable = gic_disable;

@@ -36,8 +36,9 @@
 /*
  * construct_ME sets up a new Mobile Entity.
  */
+
 int construct_ME(struct domain *d) {
-	unsigned int slotID;
+        unsigned int slotID;
 	unsigned long alloc_spfn;
 
 	slotID = d->avz_shared->domID;
@@ -79,9 +80,7 @@ int construct_ME(struct domain *d) {
 	d->avz_shared->printch = printch;
 
 	/* Create the first thread associated to this domain. */
-
         new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + memslot[slotID].size);
 
 	return 0;
 }
-

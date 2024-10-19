@@ -192,7 +192,7 @@ void trap_handle(cpu_regs_t *regs) {
                 /* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
 			regs->x0 = PSCI_VERSION(1, 1);
-			break;
+                        break;
 
                 case PSCI_0_2_FN64_CPU_ON:
                         printk("Power on CPU #%d...\n", regs->x1 & 3);

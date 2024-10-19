@@ -51,7 +51,7 @@ CONFIG_SOO_SERIAL=y
 CONFIG_RAMDEV=y
 CONFIG_SOO_TIMER=y
 CONFIG_GIC=y
-CONFIG_SOO_IRQ=y
+# CONFIG_SOO_IRQ is not set
 # CONFIG_PL111_CLCD is not set
 # CONFIG_QEMU_RAMFB is not set
 # CONFIG_SOO_FB is not set
@@ -61,8 +61,8 @@ CONFIG_SOO_INPUT=y
 #
 # SO3 Applications
 #
-CONFIG_APP_SAMPLE=n
-
+# CONFIG_APP_SAMPLE is not set
+CONFIG_APP_REFSO3=y
 
 #
 # Filesystems
@@ -87,7 +87,6 @@ CONFIG_MMU=y
 #
 # SOO Mobile Entity - Smart Object Oriented subsystem
 #
-CONFIG_SOO_REFSO3=y
 
 #
 # SOO Mobile Entity frontend drivers
