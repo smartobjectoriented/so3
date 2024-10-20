@@ -29,7 +29,7 @@ void timer_interrupt(bool periodic) {
 
 	if (periodic) {
 
-		/* Now check for ticking the non-realtime domains which need periodic ticks. */
+		/* Now check for ticking the guest containers which need periodic ticks. */
 		for (i = 2; i < MAX_DOMAINS; i++) {
 			/*
 			 * We have to check if the domain exists and its VCPU has been created. If not,
@@ -37,17 +37,14 @@ void timer_interrupt(bool periodic) {
 			 */
 			if ((domains[i] != NULL) && !domains[i]->is_dying) {
 				if ((domains[i]->runstate == RUNSTATE_running) || (domains[i]->runstate == RUNSTATE_runnable)) {
-					if (domains[i]->need_periodic_timer)
-
+					if (domains[i]->need_periodic_timer) 
+						
 						/* Forward to the guest */
 						send_timer_event(domains[i]);
 				}
 			}
 		}
 	}
-
-	 /* Raise a softirq on the CPU which is processing the interrupt. */
-	raise_softirq(TIMER_SOFTIRQ);
 }
 
 extern void send_guest_virq(struct domain *d, int virq);

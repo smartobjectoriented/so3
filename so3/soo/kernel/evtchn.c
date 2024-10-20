@@ -23,6 +23,7 @@
 #endif
 
 #include <bitops.h>
+#include <smp.h>
 
 #include <device/irq.h>
 
@@ -86,9 +87,8 @@ void dump_evtchn_pending(void) {
  * -> For VIRQ_TIMER_IRQ, avoid change the bind_virq_to_irqhandler.....
  *
  */
-void evtchn_do_upcall(cpu_regs_t *regs)
-{
-	unsigned int evtchn;
+irq_return_t evtchn_do_upcall(int irq_nr, void *data) {
+        unsigned int evtchn;
 	int l1, irq;
 
 	int loopmax = 0;
@@ -102,15 +102,7 @@ void evtchn_do_upcall(cpu_regs_t *regs)
 	 */
 
 	if (in_upcall_progress)
-		return ;
-
-	/* Check if the (local) IRQs are off. In this case, pending events are not processed at this time,
-	 * but will be once the local IRQs will be re-enabled (either by the GIC loop or an active assert
-	 * of the IRQ line).
-	 */
-
-	if (irqs_disabled_flags(regs))
-		return ;
+		return IRQ_COMPLETED;
 
 	in_upcall_progress = true;
 
@@ -155,6 +147,8 @@ retry:
 		goto retry;
 
 	in_upcall_progress = false;
+
+        return IRQ_COMPLETED;
 }
 
 static int find_unbound_irq(void)
@@ -418,4 +412,7 @@ void virq_init(void)
 
 	/* Now reserve the pre-defined VIRQ used by AVZ */
 	virq_bindcount[VIRQ_TIMER]++;
+
+	/* Bind the CHECK_EVENT softirq to do_upcall processing */
+        irq_bind(IPI_EVENT_CHECK, evtchn_do_upcall, NULL, NULL);
 }

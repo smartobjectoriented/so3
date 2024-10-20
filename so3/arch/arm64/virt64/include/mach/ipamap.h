@@ -37,7 +37,9 @@ ipamap_t linux_ipamap[] = {
 ipamap_t guest_ipamap[] = {
    
     {
-	/* Only mapping the CPU interface to the vGIC CPU interface */
+	/* Only mapping the CPU interface to the vGIC CPU interface.
+	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
+	 */
         .ipa_addr = 0x08010000,
         .phys_addr = 0x08040000,
         .size = 0x10000,

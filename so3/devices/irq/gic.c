@@ -64,6 +64,10 @@
 #include <asm/io.h>
 #include <asm/virt.h>
 
+#ifdef CONFIG_AVZ
+#include <avz/sched.h>
+#endif
+
 gic_t *gic;
 
 DEFINE_PER_CPU(spinlock_t, intc_lock);
@@ -88,9 +92,10 @@ struct pending_irqs {
 struct pending_irqs pending_irqs;
 
 static u32 gic_read_lr(unsigned int n) {
+        return ioread32(&gic->gich->lr[n]);
 }
 
- void gic_write_lr(unsigned int n, u32 value) {
+void gic_write_lr(unsigned int n, u32 value) {
         iowrite32(&gic->gich->lr[n], value);
 }
 
@@ -226,7 +231,6 @@ static int gic_inject_irq(u16 irq_id) {
         int first_free = -1;
         u32 lr;
         unsigned long elsr[2];
-        uint64_t hcr_el2;
 
         elsr[0] = ioread32(&gic->gich->elsr0);
         elsr[1] = ioread32(&gic->gich->elsr1);
@@ -261,8 +265,6 @@ static int gic_inject_irq(u16 irq_id) {
   
         gic_write_lr(first_free, lr);
 		 
-        display_lr(first_free);
-
         return 0;
 }
 
@@ -299,7 +301,6 @@ void gic_inject_pending(void) {
 
 void gic_set_pending(u16 irq_id) {
         unsigned int new_tail;
-        u32 val;
 
         if (gic_inject_irq(irq_id) != -EBUSY)
 	        return;
@@ -487,45 +488,21 @@ static void gic_disable(unsigned int irq) {
  * valid range for an IRQ (30-1020 inclusive).
  *
  */
-
 static void gic_handle(cpu_regs_t *cpu_regs) {
         int irq_nr;
         int irqstat;
-        u64 hcr;
 
         do {
                 irqstat = ioread32(&gic->gicc->iar);
                 irq_nr = irqstat & GICC_IAR_INT_ID_MASK;
 
-#ifndef CONFIG_AVZ
-                printk("## guest irq: %d\n", irq_nr);
-		while(1);
-#endif
-
                 if (irq_nr > 1021)
                         break;
-			 
-#ifdef CONFIG_AVZ
-#if 0
-if (smp_processor_id() == 3) {
-        printk("## irq: %d\n", irq_nr);
-        
-        gic_set_pending(irq_nr);
- 
-        hcr = mrs(hcr_el2);
-        hcr |= HCR_VI_MASK;
-        msr(hcr_el2, hcr);
- 
-}
-#endif
-#endif
 
-if (irq_nr < 16) {
+		if (irq_nr < 16) {
 #ifdef CONFIG_AVZ
-                        /* At this level, IPI are used to trigger a guest because
-                         * an event has been raised. So, the domain will check for
-                         * this event along the return path.
-                         */	
+			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending)
+                                gic_set_pending(irq_nr);
 #else
                         irq_process(irq_nr);
 #endif
@@ -534,7 +511,6 @@ if (irq_nr < 16) {
 
 #ifdef CONFIG_AVZ
                         if (irq_nr == IRQ_ARCH_ARM_MAINT) {
-                                printk("#### MAINT\n");
                                 gic_inject_pending();
                                 gic_eoi_irq(irq_nr, true);
                                 continue;
@@ -656,7 +632,7 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 
         /* Disable distributor */
         iowrite32(&gic->gicd->ctlr, ioread32(((void *) &gic->gicd->ctlr) + INTC_CPU_CTRL_REG0) & ~INTC_DISABLE);
-
+ 
         /* All interrupts level triggered, active high by default */
         for (n = 32; n < NR_IRQS; n++)
                 gic_set_type(n, IRQ_TYPE_LEVEL_HIGH);

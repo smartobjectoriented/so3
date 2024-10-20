@@ -171,7 +171,11 @@ void secondary_start_kernel(void)
 
 	printk("%s: entering idle loop...\n", __func__);
 
+	/* On CPU running containers, the timer IRQ is catched by
+	 * the hypervisor and forwarded to guests as virtual IRQ
+	 */
 	periodic_timer_start();
+
 
 #ifdef CONFIG_AVZ
 	/* Prepare an idle domain and starts the idle loop */
