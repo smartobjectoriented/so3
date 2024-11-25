@@ -27,18 +27,14 @@ RUN rm gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz
 ENV PATH="$PATH:/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu/bin"
 
 
+# Get current so3 so we can build qemu
 RUN wget https://github.com/smartobjectoriented/so3/archive/refs/heads/main.zip
-
 RUN unzip main.zip
 RUN rm main.zip
-RUN mv so3-* so3
-
-
-RUN cd /so3/qemu && ls -la && ./fetch.sh &&  ./configure --target-list=arm-softmmu,aarch64-softmmu --disable-attr --disable-werror --disable-docs
-RUN mv /so3/qemu /qemu
-
-ENV PATH="$PATH:/qemu/build"
-
-RUN rm -rf /so3
+RUN mv so3-* generated
+RUN cd /generated/qemu && ./fetch.sh &&  ./configure --target-list=arm-softmmu,aarch64-softmmu --disable-attr --disable-werror --disable-docs
+ENV PATH="$PATH:/generated/qemu/build"
+# Remove everything except qemu
+RUN cd /generated && rm -rf !(qemu)
 
 WORKDIR so3
