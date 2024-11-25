@@ -20,7 +20,7 @@ jobs:
         # In case we want to build other images we can add them here
         include:
           - dockerfile: ./docker/Dockerfile.env
-            image: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}-env
+            image: ghcr.io/${{ env.REPOSITORY }}-env
     permissions:
       contents: read
       packages: write
