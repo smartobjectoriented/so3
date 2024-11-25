@@ -7,7 +7,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPOSITORY: ${{ github.repository }}
 
 jobs:
   build-image:
@@ -20,7 +19,7 @@ jobs:
         # In case we want to build other images we can add them here
         include:
           - dockerfile: ./docker/Dockerfile.env
-            image: ghcr.io/${{ env.REPOSITORY }}-env
+            image: ghcr.io/smartobjectoriented/so3/so3-env
     permissions:
       contents: read
       packages: write
