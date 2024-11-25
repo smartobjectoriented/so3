@@ -12,7 +12,7 @@ env:
 jobs:
   build-image:
     # Only run if the push hits main
-    if: endsWith(github.ref, 'main') == false
+    if: endsWith(github.ref, 'main') == true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
