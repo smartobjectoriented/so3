@@ -50,9 +50,11 @@ void parse_token(char *str) {
 		strcpy(tokens[i++], next_token);
 }
 
+/**
+ * Remove 0 before command
+ */
 void trim(char* buffer, int n){
 	int i;
-
 	char* new_buff = calloc(80, sizeof(char));
 	for(i = 0; i < n; i++){
 		if(buffer[i] != 0){
@@ -64,10 +66,17 @@ void trim(char* buffer, int n){
 	free(new_buff);
 }
 
+
+/**
+ * Detect if its a escape sequence
+ */
 int is_escape_sequence(const char* str) {
     return str[0] == '\x1b' && str[1] == '[';
 }
 
+/**
+ * Escape arrow key sequence to avoid interpret them
+ */
 void escape_arrow_key(char* buffer, int size){
 	int i,j;
 	char* new_buff = calloc(size, sizeof(char));
@@ -83,7 +92,10 @@ void escape_arrow_key(char* buffer, int size){
 	free(new_buff);
 }
 
-char* get_user_input(char* buffer, int buf_size) {
+/**
+ * More secure way and escaped way to get user input
+ */
+void get_user_input(char* buffer, int buf_size) {
     if (buffer == NULL || buf_size <= 0) {
         return NULL;
     }
