@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU General Public License for more details.printf("Ciao\n");
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
@@ -28,12 +28,14 @@
 #include <syscall.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #define TOKEN_NR	10
 #define ARGS_MAX	16
 
 char tokens[TOKEN_NR][80];
 char prompt[] = "so3% ";
+char file_buff[500];
 
 void parse_token(char *str) {
 	int i = 0;
@@ -53,10 +55,10 @@ void parse_token(char *str) {
  * Process the command with the different tokens
  */
 void process_cmd(void) {
-	int i, pid_child, background, arg_pos, arg_pos2;
+	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_readen;
 	char *argv[ARGS_MAX], *argv2[ARGS_MAX];
 	char filename[30];
-	int pid, sig, pid_child2;
+	int pid, sig, pid_child2,fd;
 	int pipe_on = 0;
 	int pipe_fd[2];
 
@@ -133,6 +135,7 @@ void process_cmd(void) {
 	arg_pos = 0;
 	arg_pos2 = 0;
 	background = 0;
+	redirection = 0;
 	while (!background && tokens[arg_pos][0] != 0) {
 		/* Check for & */
 		if (!strcmp(tokens[arg_pos], "&"))
@@ -141,11 +144,17 @@ void process_cmd(void) {
 			if (!strcmp(tokens[arg_pos], "|")) {
 				pipe_on = 1;
 				argv[arg_pos] = NULL;
-			} else {
+			}else if(!strcmp(tokens[arg_pos], ">")){
+				redirection = 1;
+				argv[arg_pos] = NULL;
+			}else {
 				if (pipe_on) {
 					argv2[arg_pos2] = tokens[arg_pos];
 					arg_pos2++;
-				} else
+				}else if(redirection)
+				{ 
+					argv2[0] = tokens[arg_pos];
+				}else
 					argv[arg_pos] = tokens[arg_pos];
 			}
 			arg_pos++;
@@ -194,7 +203,35 @@ void process_cmd(void) {
 				}
 			}
 
-		} else {
+		}else if(redirection){
+			fd = open(argv2[0], O_WRONLY | O_CREAT);
+			if(fd < 0){
+				printf("Error opening/creating output file...\n");
+				return;
+			}
+
+			pipe(pipe_fd);
+			pid_child2 = fork();
+			if(!pid_child2){
+				close(pipe_fd[0]);
+				dup2(pipe_fd[1], STDOUT_FILENO);
+				strcpy(filename, argv[0]);
+				strcat(filename, ".elf");
+
+				if (execv(filename, argv) == -1) {
+					printf("%s: exec failed.\n", argv[0]);
+					exit(-1);
+				}
+
+			}else{
+				close(pipe_fd[1]);
+				while((byte_readen = read(pipe_fd[0], file_buff, 500)) > 0){
+					write(fd, file_buff, byte_readen);
+				}
+				close(fd);
+			}
+
+		}else {
 			strcpy(filename, tokens[0]);
 			argv[0] = tokens[0];
 
@@ -258,7 +295,6 @@ void main(int argc, char *argv[])
 		/* Check if there is at least one token to be processed */
 		if (tokens[0][0] != 0)
 			process_cmd();
-
-
+			
 	}
 }
