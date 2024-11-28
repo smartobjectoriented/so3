@@ -53,11 +53,11 @@ void parse_token(char *str) {
 /**
  * Remove 0 before command
  */
-void trim(char* buffer, int n){
+void trim(char* buffer, int n) {
 	int i;
 	char* new_buff = calloc(80, sizeof(char));
-	for(i = 0; i < n; i++){
-		if(buffer[i] != 0){
+	for (i = 0; i < n; i++) {
+		if (buffer[i] != 0){
 			break;
 		}
 	}
@@ -77,14 +77,14 @@ int is_escape_sequence(const char* str) {
 /**
  * Escape arrow key sequence to avoid interpret them
  */
-void escape_arrow_key(char* buffer, int size){
+void escape_arrow_key(char* buffer, int size) {
 	int i,j;
 	char* new_buff = calloc(size, sizeof(char));
 	i = j = 0;
-	while (i < size){
-		if(is_escape_sequence(&buffer[i])){
+	while (i < size) {
+		if (is_escape_sequence(&buffer[i])) {
 			i += 3;
-		}else{
+		} else {
 			new_buff[j++] = buffer[i++];
 		}
 	}
@@ -99,7 +99,9 @@ void get_user_input(char* buffer, int buf_size) {
     if (buffer == NULL || buf_size <= 0) {
         return NULL;
     }
+
 	memset(buffer,0,buf_size);
+	
     if (fgets(buffer, buf_size, stdin) != NULL) {
 		escape_arrow_key(buffer,buf_size);
 		trim(buffer, buf_size);
@@ -315,14 +317,8 @@ void main(int argc, char *argv[])
 		printf("%s", prompt);
 		fflush(stdout);
 
-		//gets(user_input);
-
 		get_user_input(user_input, 80);
-/*
-		for(i = 0; i < 10; i++){
-			printf("%d\n", user_input[i]);
-		}
-*/
+
 		if (strcmp(user_input, ""))
 			parse_token(user_input);
 
