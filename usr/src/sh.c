@@ -10,7 +10,7 @@
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.printf("Ciao\n");
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
@@ -144,7 +144,7 @@ void process_cmd(void) {
 			if (!strcmp(tokens[arg_pos], "|")) {
 				pipe_on = 1;
 				argv[arg_pos] = NULL;
-			}else if(!strcmp(tokens[arg_pos], ">")){
+			}else if (!strcmp(tokens[arg_pos], ">")){
 				redirection = 1;
 				argv[arg_pos] = NULL;
 			}else {
@@ -203,16 +203,16 @@ void process_cmd(void) {
 				}
 			}
 
-		}else if(redirection){
+		}else if (redirection){
 			fd = open(argv2[0], O_WRONLY | O_CREAT);
-			if(fd < 0){
+			if (fd < 0){
 				printf("Error opening/creating output file...\n");
 				return;
 			}
 
 			pipe(pipe_fd);
 			pid_child2 = fork();
-			if(!pid_child2){
+			if (!pid_child2){
 				close(pipe_fd[0]);
 				dup2(pipe_fd[1], STDOUT_FILENO);
 				strcpy(filename, argv[0]);
@@ -223,9 +223,9 @@ void process_cmd(void) {
 					exit(-1);
 				}
 
-			}else{
+			}else {
 				close(pipe_fd[1]);
-				while((byte_readen = read(pipe_fd[0], file_buff, 500)) > 0){
+				while ((byte_readen = read(pipe_fd[0], file_buff, 500)) > 0){
 					write(fd, file_buff, byte_readen);
 				}
 				close(fd);
