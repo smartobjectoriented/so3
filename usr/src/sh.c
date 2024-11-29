@@ -57,7 +57,7 @@ void trim(char* buffer, int n) {
 	int i;
 	char* new_buff = calloc(80, sizeof(char));
 	for (i = 0; i < n; i++) {
-		if (buffer[i] != 0){
+		if (buffer[i] != 0) {
 			break;
 		}
 	}
