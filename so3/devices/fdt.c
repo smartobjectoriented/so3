@@ -47,7 +47,7 @@ static void init_dev_info(dev_t *dev) {
 
 	/* Clear out whole structure */
 
-	memset(dev, 0, sizeof(dev));
+	memset(dev, 0, sizeof(*dev));
 
 	dev->status = STATUS_UNKNOWN;
 	dev->offset_dts = -1;
