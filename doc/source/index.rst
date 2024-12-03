@@ -65,7 +65,6 @@ and perform a merge request as soon as your development gets stable enough. A re
 will be merged in the master branch. 
 
 
-
 Discussion forum
 ================
 
