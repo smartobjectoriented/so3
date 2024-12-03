@@ -43,7 +43,7 @@ agency/rootfs/target/**
 
 # except the followings:
 !.gitignore #Don't ignore the ignore file ;-)
-!.github
+!.github 
 !*.tmpl #TaMPLate files for the man documentation
 !buildroot/**
 !buildroot/docs/manual/*.mk
