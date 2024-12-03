@@ -1,0 +1,15 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 8 # Indentations are 8 characters wide
+TabWidth: 8 # Tabs are 8 characters wide
+UseTab: ForIndentation # Use tabs for indentation only
+IndentCaseLabels: false # Align `case` labels with `switch` for clarity
+BreakBeforeBraces: Linux # Define brace placement rules for different contexts
+ColumnLimit: 80 # 80-character line limit
+PointerAlignment: Right # Align pointers next to the variable or function name
+AllowShortIfStatementsOnASingleLine: false # Prohibit single-line `if` statements
+SpacesInParentheses: false # No spaces inside parentheses
+SpacesInAngles: false # No spaces inside angle brackets
+SpaceAfterCStyleCast: false # Add space after C-style cast
+
+SpaceBeforeParens: ControlStatements # Add space after control statement
