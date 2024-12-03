@@ -55,10 +55,10 @@ void parse_token(char *str) {
  * Process the command with the different tokens
  */
 void process_cmd(void) {
-	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_readen;
+	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_read;
 	char *argv[ARGS_MAX], *argv2[ARGS_MAX];
 	char filename[30];
-	int pid, sig, pid_child2,fd;
+	int pid, sig, pid_child2, fd;
 	int pipe_on = 0;
 	int pipe_fd[2];
 
