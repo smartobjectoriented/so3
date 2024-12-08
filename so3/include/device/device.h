@@ -35,7 +35,6 @@
 #define DEV_CLASS_MOUSE   	"mouse"
 #define DEV_CLASS_KEYBOARD 	"keyboard"
 
-#define INITCALLS_LEVELS 2
 
 /* Device status. */
 typedef enum {
@@ -81,7 +80,11 @@ struct devclass {
 /*
  * Core drivers are initialized before postcore drivers.
  */
-enum inicalls_levels { CORE, POSTCORE };
+enum inicalls_levels {
+	CORE,
+	POSTCORE,
+	INITCALLS_LEVELS
+};
 
 static inline void dev_set_drvdata(dev_t *dev, void *data)
 {
