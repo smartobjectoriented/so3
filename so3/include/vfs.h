@@ -140,6 +140,13 @@ struct fd {
 	void *priv;
 };
 
+typedef enum {
+
+	FS_FAT,
+	FS_DEV,
+	MAX_FS_REGISTERED,
+} filesystems_t;
+
 /* Syscall accessible from userspace */
 
 int do_open(const char *filename, int flags);
