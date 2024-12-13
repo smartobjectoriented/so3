@@ -34,6 +34,7 @@
 #include <console.h>
 
 #include <fat/fat.h>
+#include <devfs/devfs.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
  * Every process has its own file descriptor table. A local file descriptor (belonging to a process) must be linked to a global file descriptor
@@ -487,13 +488,27 @@ int do_open(const char *filename, int flags)
 
 	mutex_lock(&vfs_lock);
 
-	/* FIXME: Should find the mounted point regarding the path */
-	fops = registered_fs_ops[0];
+	/*
+	 * Check if the entry is a /dev entry and associates the right fops.
+	 */
+	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
+		fops = devclass_get_fops(filename + DEV_PREFIX_LEN, &type);
+		if (!fops) {
+			mutex_unlock(&vfs_lock);
+			return -1;
+		}
+	} else if (!strcmp("dev", filename) || !strcmp("/dev", filename)) {
+		fops = registered_fs_ops[FS_DEV];
+	} else {
+		/* FIXME: Should find the mounted point regarding the path */
+		fops = registered_fs_ops[FS_FAT];
+	}
 
-	if (flags & O_DIRECTORY)
+	if (flags & O_DIRECTORY) {
 		type = VFS_TYPE_DIR;
-	else
+	} else {
 		type = VFS_TYPE_FILE;
+	}
 
 	/* vfs_open is already clean fops and open_fds */
 	fd = vfs_open(filename, fops, type);
@@ -514,21 +529,6 @@ int do_open(const char *filename, int flags)
 	if (fops->open && fops->open(gfd, filename)) {
 		ret = -1;
 		goto open_failed;
-	}
-
-	/*
-	 * Check if the entry is a /dev entry and associates the right fops.
-	 */
-
-	if (!strncmp(DEV_PREFIX, filename, DEV_PREFIX_LEN)) {
-
-		fops = devclass_get_fops(filename + DEV_PREFIX_LEN, &type);
-		if (!fops) {
-			mutex_unlock(&vfs_lock);
-			return -1;
-		}
-
-		open_fds[gfd]->fops = fops;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -885,6 +885,9 @@ void vfs_init(void)
 		registered_fs_ops[0]->mount("");
 	}
 #endif
+	if (!registered_fs_ops[FS_DEV]) {
+		registered_fs_ops[FS_DEV] = register_devfs();
+	}
 	mutex_init(&vfs_lock);
 
 	vfs_gfd_init();
