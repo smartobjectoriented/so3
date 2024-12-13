@@ -52,8 +52,6 @@
 #define O_TMPFILE 020040000
 #define O_NDELAY O_NONBLOCK
 
-#define MAX_FS_REGISTERED          4
-#define MAX_DEV_CLASS_REGISTERED   4
 #define MAX_FDS                  128
 
 #define FILENAME_MAX 100
