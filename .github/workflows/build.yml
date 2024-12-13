@@ -28,13 +28,3 @@ jobs:
       - name: Build
         run: |
           docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make virt64_defconfig && make -j"
-
-  build-usr:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Build 
-        run: |
-          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd usr && build.sh"
