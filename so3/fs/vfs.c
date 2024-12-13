@@ -725,19 +725,19 @@ int do_stat(const char *path, struct stat *st)
 	mutex_lock(&vfs_lock);
 
 	/* FIXME Find the correct mount point with the path */
-	if (!registered_fs_ops[0]) {
+	if (!registered_fs_ops[FS_FAT]) {
 		set_errno(ENOENT);
 		mutex_unlock(&vfs_lock);
 		return -1;
 	}
 
-	if (!registered_fs_ops[0]->stat) {
+	if (!registered_fs_ops[FS_FAT]->stat) {
 		set_errno(ENOENT);
 		mutex_unlock(&vfs_lock);
 		return -1;
 	}
 
-	ret = registered_fs_ops[0]->stat(path, st);
+	ret = registered_fs_ops[FS_FAT]->stat(path, st);
 
 	mutex_unlock(&vfs_lock);
 
@@ -878,11 +878,11 @@ void vfs_init(void)
 {
 #ifdef CONFIG_FS_FAT
 	/* FIXME: Handle multiple mounting points  */
-	if (!registered_fs_ops[0]) {
-		registered_fs_ops[0] = register_fat();
+	if (!registered_fs_ops[FS_FAT]) {
+		registered_fs_ops[FS_FAT] = register_fat();
 
 		/* FIXME Mount root */
-		registered_fs_ops[0]->mount("");
+		registered_fs_ops[FS_FAT]->mount("");
 	}
 #endif
 	if (!registered_fs_ops[FS_DEV]) {
