@@ -51,3 +51,15 @@ agency/rootfs/target/**
 !agency/rootfs/package/**
 !agency/rootfs/board/**/*.d
 
+*asm-offsets.s
+so3/so3
+so3/so3.bin
+usr/lib/libc/include/asm
+rootfs/rootfs.fat
+filesystem/sdcard.img.virt32
+so3/scripts/basic/fixdep
+so3/scripts/dtc/dtc
+so3/scripts/kconfig/conf
+so3/scripts/kconfig/lex.zconf.c
+so3/scripts/kconfig/zconf.hash.c
+so3/scripts/kconfig/zconf.tab.c
