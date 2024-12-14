@@ -37,4 +37,4 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd usr && ./build.sh"
+          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd usr && ./build.sh"
