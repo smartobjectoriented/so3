@@ -17,9 +17,10 @@
  *
  */
 
-#include "device/device.h"
-#include "heap.h"
-#include "string.h"
+#include <device/device.h>
+#include <devfs/devfs.h>
+#include <heap.h>
+#include <string.h>
 #include <errno.h>
 #include <dirent.h>
 #include <vfs.h>
