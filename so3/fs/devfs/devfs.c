@@ -1,5 +1,4 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2024-2025 André Costa <andre_miguel_costa@hotmail.com>
  * 
  * This program is free software; you can redistribute it and/or modify
