@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef DEVFS_H_
-#define DEVFS_H_
+#ifndef DEVFS_H
+#define DEVFS_H
 
 #include <vfs.h>
 
