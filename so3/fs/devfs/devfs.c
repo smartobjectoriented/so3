@@ -62,7 +62,7 @@ struct dirent *devfs_readdir(int fd)
 {
 	struct dirent *dent;
 	devfs_data *priv = (devfs_data *)vfs_get_priv(fd);
-	int is_single_entry;
+	bool is_single_entry;
 
 	dent = &priv->dent;
 
