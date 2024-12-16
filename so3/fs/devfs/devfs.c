@@ -65,7 +65,7 @@ struct dirent *devfs_readdir(int fd)
 
 	dent = &priv->dent;
 
-	// Whenever we are done with a certain devclass entry this pointer is null
+	/* Whenever we are done with a certain devclass entry this pointer is null */
 	if (!priv->current_devclass) {
 		priv->current_devclass =
 			devclass_get_by_index(priv->current_devclass_index);
@@ -80,8 +80,9 @@ struct dirent *devfs_readdir(int fd)
 	is_single_entry = priv->current_devclass->id_start ==
 			  priv->current_devclass->id_end;
 
-	// Special case is when there's only one entry,
-	// we don't actually need to specify the id after the name
+	/* Special case is when there's only one entry,
+	 * we don't actually need to specify the id after the name
+	 */
 	if (is_single_entry) {
 		snprintf(dent->d_name, sizeof(dent->d_name), "%s",
 			 priv->current_devclass->class);
@@ -91,17 +92,17 @@ struct dirent *devfs_readdir(int fd)
 			 priv->current_devclass_entry_id);
 	}
 
-	// For now we only support char devices inside /dev
+	/* For now we only support char devices inside /dev */
 	dent->d_type = DT_CHR;
 
 	// check if this was the last entry id
 	if (is_single_entry ||
 	    priv->current_devclass_entry_id == priv->current_devclass->id_end) {
 		priv->current_devclass_index++;
-		// We are done with this devclass, make it NULL
+		/* We are done with this devclass, make it NULL */
 		priv->current_devclass = NULL;
 	} else {
-		// else keep the same devclass
+		/* else keep the same devclass */
 		priv->current_devclass_entry_id++;
 	}
 	return dent;
