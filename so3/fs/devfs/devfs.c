@@ -25,13 +25,6 @@
 #include <dirent.h>
 #include <vfs.h>
 
-typedef struct {
-	int current_devclass_index;
-	int current_devclass_entry_id;
-	struct dirent dent;
-	struct devclass *current_devclass;
-} devfs_data;
-
 /*
  * devfs handles the opening and reading of the /dev directory
  * We can open it and read the registered devices

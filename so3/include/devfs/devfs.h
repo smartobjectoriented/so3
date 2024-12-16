@@ -22,6 +22,13 @@
 
 #include <vfs.h>
 
+typedef struct {
+	int current_devclass_index;
+	int current_devclass_entry_id;
+	struct dirent dent;
+	struct devclass *current_devclass;
+} devfs_data;
+
 struct file_operations *register_devfs(void);
 
 #endif
