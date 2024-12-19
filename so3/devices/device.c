@@ -114,6 +114,7 @@ void parse_dtb(void *fdt_addr) {
 	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
 	dev_t *dev;
 	int i, level;
+	int ret;
 	int offset, new_off;
 	bool found;
 
@@ -151,9 +152,10 @@ void parse_dtb(void *fdt_addr) {
 
 						if (dev->status == STATUS_INIT_PENDING) {
 
-							driver_entries[level][i].init(dev, new_off);
-							dev->status = STATUS_INITIALIZED;
+							ret = driver_entries[level][i].init(dev, new_off);
+							BUG_ON(ret);
 
+							dev->status = STATUS_INITIALIZED;
 							list_add_tail(&dev->list, &devices);
 						}
 						break;
