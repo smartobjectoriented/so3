@@ -58,6 +58,7 @@ int main(int argc, char **argv) {
 
 		/* Regular entry */
 		case DT_REG:
+		case DT_CHR:
 			printf("%s\n", p_entry->d_name);
 			break;
 

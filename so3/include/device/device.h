@@ -107,6 +107,7 @@ static inline void *devclass_get_priv(struct devclass *dev) {
 void devclass_register(dev_t *dev, struct devclass *devclass);
 struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type);
 
+struct devclass *devclass_get_by_index(size_t index);
 struct devclass *devclass_by_filename(const char *filename);
 struct devclass *devclass_by_fd(int fd);
 int devclass_fd_to_id(int fd);
