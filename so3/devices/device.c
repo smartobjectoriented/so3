@@ -154,8 +154,8 @@ void parse_dtb(void *fdt_addr) {
 
 							ret = driver_entries[level][i].init(dev, new_off);
 							BUG_ON(ret);
-							dev->status = STATUS_INITIALIZED;
 
+							dev->status = STATUS_INITIALIZED;
 							list_add_tail(&dev->list, &devices);
 						}
 						break;
