@@ -188,6 +188,22 @@ void devclass_register(dev_t *dev, struct devclass *devclass)
 	list_add(&devclass->list, &registered_dev);
 }
 
+/* Gets the indexth registered devclass or NULL if index is too big */
+struct devclass *devclass_get_by_index(size_t index)
+{
+	struct devclass *cur_dev;
+	size_t i;
+
+	i = 0;
+	list_for_each_entry(cur_dev, &registered_dev, list) {
+		if (i == index) {
+			return cur_dev;
+		}
+		++i;
+	}
+	return NULL;
+}
+
 /*
  * Get the cdev of a registered device using the given filename. The vfs_type
  * is also set to the proper value.

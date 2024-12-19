@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2024-2025 André Costa <andre_miguel_costa@hotmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,20 +17,18 @@
  *
  */
 
-#include <types.h>
+#ifndef DEVFS_H
+#define DEVFS_H
 
-#ifndef DIRENT_H_
-#define DIRENT_H_
+#include <vfs.h>
 
-typedef uint64_t	ino_t;
-typedef uint32_t	off_t;
+typedef struct {
+	int current_devclass_index;
+	int current_devclass_entry_id;
+	struct dirent dent;
+	struct devclass *current_devclass;
+} devfs_data;
 
-struct dirent {
-	ino_t d_ino;
-	off_t d_off;
-	unsigned short d_reclen;
-	unsigned char d_type;
-	char d_name[256];
-};
+struct file_operations *register_devfs(void);
 
-#endif /* DIRENT_H_ */
+#endif
