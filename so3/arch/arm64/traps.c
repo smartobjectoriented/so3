@@ -123,6 +123,10 @@ extern addr_t cpu_entrypoint;
 typedef void(*vector_fn_t)(cpu_regs_t *);
 
 int trap_handle(cpu_regs_t *regs) {
+#ifndef CONFIG_AVZ
+	syscall_args_t sys_args;
+#endif
+
 #ifdef CONFIG_ARM64VT
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
@@ -152,8 +156,15 @@ int trap_handle(cpu_regs_t *regs) {
 
 #else /* CONFIG_AVZ */
 
+		sys_args.args[0] = regs->x0;
+		sys_args.args[1] = regs->x1;
+		sys_args.args[2] = regs->x2;
+		sys_args.args[3] = regs->x3;
+		sys_args.args[4] = regs->x4;
+		sys_args.args[5] = regs->x5;
+
 		local_irq_enable();
-		regs->x0 = syscall_handle(regs->x0, regs->x1, regs->x2, regs->x3);
+		regs->x0 = syscall_handle(&sys_args);
 		local_irq_disable();
 #endif /* !CONFIG_AVZ */
 

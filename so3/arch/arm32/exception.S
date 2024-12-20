@@ -292,9 +292,11 @@ syscall_interrupt:
 	ldmfd 	sp!, {r0-r4}
 #endif
 
-	cpsie   i 			@ Re-enable interrupts
-    bl 		syscall_handle
-    cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
+	mov	r0, sp
+
+	cpsie	i 			@ Re-enable interrupts
+	bl	syscall_handle
+	cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
 
 	@ Check if sigreturn has been called. In this case, we
 	@ clean the stack frame which has been used to manage the user handler.
