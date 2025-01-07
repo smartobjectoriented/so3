@@ -32,8 +32,7 @@ int do_postsetup_adjust_variables(void *arg);
 int do_sync_domain_interactions(void *arg);
 int do_sync_directcomm(void *arg);
 
-void avz_vector_callback(void);
-
 void avz_get_shared(void);
+void avz_gnttab(gnttab_op_t *op);
 
 #endif /* __HYPERVISOR_H__ */

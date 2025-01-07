@@ -18,7 +18,7 @@
 #ifndef MEMSLOT_H
 #define MEMSLOT_H
 
-#include <avz/uapi/soo.h>
+#include <soo/uapi/soo.h>
 
 /* Number of possible MEs in the local SOO */
 #define MEMSLOT_BASE	  2
@@ -27,6 +27,8 @@
 /* Basic memslots. */
 #define MEMSLOT_AVZ	  0
 #define MEMSLOT_AGENCY	  1
+
+#define DOM_TO_MEMSLOT(domid) (((domid == DOMID_AGENCY) || (domid == DOMID_AGENCY_RT)) ? MEMSLOT_AGENCY : domid)
 
 /*
  * Memslot management

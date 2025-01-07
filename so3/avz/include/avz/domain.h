@@ -20,7 +20,7 @@
 #define DOMAIN_H
 
 #ifndef __ASSEMBLY__
-#include <avz/uapi/soo.h>
+#include <soo/uapi/soo.h>
 #endif
 
 #include <asm/mmu.h>
@@ -46,8 +46,16 @@
 
 #include <spinlock.h>
 #include <timer.h>
+#include <list.h>
 
 #include <avz/uapi/avz.h>
+
+#define NR_GRANT_PFN	32
+
+typedef struct {
+        addr_t pfn;
+        bool free;
+} grant_pfn_t;
 
 struct evtchn
 {
@@ -82,12 +90,15 @@ struct domain
 
 	/* Fields related to the underlying CPU */
 	cpu_regs_t cpu_regs;
-	addr_t   g_sp; 	/* G-stack */
 
 	addr_t	event_callback;
 	addr_t	domcall;
 
 	avz_shared_t *avz_shared;     /* shared data area between AVZ and the domain */
+
+	/* Physical and virtual address of the page table used when the domain is bootstraping */
+	addr_t pagetable_paddr;
+	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
 
 	unsigned int max_pages;    /* maximum value for tot_pages */
 
@@ -101,7 +112,13 @@ struct domain
 	/* Domain is paused by controller software? */
 	bool is_paused_by_controller;
 
-	int processor;
+	/* Grant table */
+        struct list_head gnttab;
+
+	/* IPA reserved page frame numbers for granted pages */
+        grant_pfn_t grant_pfn[NR_GRANT_PFN];
+
+        int processor;
 
 	bool need_periodic_timer;
 	struct timer oneshot_timer;
@@ -119,7 +136,6 @@ struct domain
 	unsigned long domain_stack;
 };
 
-
 #define USE_NORMAL_PGTABLE	0
 #define USE_SYSTEM_PGTABLE	1
 
@@ -129,11 +145,11 @@ extern struct domain *domains[MAX_DOMAINS];
 extern int construct_agency(struct domain *d);
 extern int construct_ME(struct domain *d);
 
+void do_domctl(domctl_t *args);
+
 extern void new_thread(struct domain *d, unsigned long start_pc, unsigned long r2_arg, unsigned long start_stack);
 void *setup_dom_stack(struct domain *d);
-
-extern void domain_call(struct domain *target_dom, int cmd, void *arg);
-
+ 
 void machine_halt(void);
 
 void arch_domain_create(struct domain *d, int cpu_id);
@@ -160,11 +176,7 @@ void free_vcpu_struct(struct vcpu *v);
 void vcpu_destroy(struct vcpu *v);
 
 void arch_domain_destroy(struct domain *d);
-
-int domain_relinquish_resources(struct domain *d);
-
-void dump_pageframe_info(struct domain *d);
-
+ 
 void arch_dump_vcpu_info(struct vcpu *v);
 
 void arch_dump_domain_info(struct domain *d);

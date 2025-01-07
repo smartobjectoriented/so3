@@ -99,8 +99,8 @@ extern volatile addr_t pfn_start;
 
 #define ipa_offset(x)		(memslot[x].ipa_addr - memslot[x].base_paddr)
 
-#define virt_to_ipa(x, va)	(phys_to_ipa(memslot, __pa(va)))
-#define phys_to_ipa(x, pa) 	(((addr_t) pa) + ipa_offset(x))
+#define va_to_ipa(x, va)	(phys_to_ipa(memslot, __pa(va)))
+#define pa_to_ipa(x, pa) 	(((addr_t) pa) + ipa_offset(x))
 
 #define ipa_to_pa(x, ipa)	(((addr_t) ipa) - ipa_offset(x))
 #define ipa_to_va(x, ipa)	(__xva(x, ipa_to_pa(x, ipa)))
@@ -193,10 +193,6 @@ static inline int get_order_from_bytes(addr_t size)
 }
 
 void clear_bss(void);
-
-#ifdef CONFIG_SOO
-void readjust_io_map(long pfn_offset);
-#endif /* CONFIG_SOO */
 
 #endif /* __ASSEMBLY__ */
 

@@ -32,7 +32,7 @@
 
 #include <avz/console.h>
 #include <avz/keyhandler.h>
-#include <avz/event.h>
+#include <avz/evtchn.h>
 
 #include <asm/io.h>
 
@@ -62,34 +62,24 @@ static void sercon_puts(const char *s)
 {
 	serial_puts(s);
 }
-
-/* (DRE) Perform hypercall to process char addressed to the keyhandler mechanism */
-void process_char(char ch) {
-	handle_keypress(ch);
-}
-
-void do_console_io(int cmd, int count, char *buffer)
+ 
+void do_console_io(console_t *console)
 {
-	char kbuf;
+	switch (console->cmd) {
+		case CONSOLE_IO_KEYHANDLER:
+                        handle_keypress(console->u.c);
+                        break;
 
-	switch (cmd) {
-
-	case CONSOLEIO_process_char:
-		memcpy(&kbuf, buffer, sizeof(char));
-
-		process_char(kbuf);
-		break;
-
-	case CONSOLEIO_write_string:
-
-		printk("%s", buffer);
-		break;
-
-	default:
-		BUG();
+                case CONSOLE_IO_PRINTCH:
+                        printch(console->u.c);
+                        break;
+		
+		case CONSOLE_IO_PRINTSTR:
+                        sercon_puts(console->u.str);
+                        break;
+			
 	}
 }
-
 
 /*
  * *****************************************************

@@ -52,25 +52,21 @@ struct domain_migration_info
 
 	/* Fields related to the CPU state */
 	cpu_regs_t cpu_regs;
-	addr_t   g_sp; 	/* G-stack */
 
-#ifdef CONFIG_ARCH_ARM32
-	struct vfp_state vfp;
-#endif
 };
 
 void mig_restore_domain_migration_info(unsigned int ME_slotID, struct domain *me);
 void after_migrate_to_user(void);
 
-void migration_init(soo_hyp_t *op);
-void migration_final(soo_hyp_t *op);
+void migration_init(avz_hyp_t *args);
+void migration_final(avz_hyp_t *args);
 
-void read_migration_structures(soo_hyp_t *op);
-void write_migration_structures(soo_hyp_t *op);
+void read_migration_structures(avz_hyp_t *args);
+void write_migration_structures(avz_hyp_t *args);
 
 void restore_migrated_domain(unsigned int ME_slotID);
 void restore_injected_domain(unsigned int ME_slotID);
 
-void inject_me(soo_hyp_t *op);
+void inject_me(avz_hyp_t *args);
 
 #endif /* __MIGRATION_H__ */

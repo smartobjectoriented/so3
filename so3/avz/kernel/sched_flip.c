@@ -29,8 +29,6 @@
 #include <avz/sched-if.h>
 #include <avz/debug.h>
 
-#include <avz/uapi/domctl.h>
-
 DEFINE_SPINLOCK(schedflip_lock);
 
 extern spinlock_t softirq_pending_lock;

@@ -669,7 +669,7 @@ __no_sigreturn:
 
 .align 5
 
-ENTRY(avz_hypercall)
+ENTRY(__avz_hypercall)
 
 	hvc #0
 	ret

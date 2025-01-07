@@ -72,10 +72,10 @@ const char *get_me_name(void) {
  * Get the SPID related to this ME.
  * (mandatory)
  *
- * @param what  Either "spid" or "spad"
+ * @param what  Either "spid"
  * @return SPID on 64-bit encoding
  */
-u64 get_spid_spad(char *what) {
+u64 get_spid(void) {
 	u64 val;
 	int node;
 
@@ -86,17 +86,13 @@ u64 get_spid_spad(char *what) {
 		BUG();
 	}
 
-	node = fdt_property_read_u64(__fdt_addr, node, what, &val);
+	node = fdt_property_read_u64(__fdt_addr, node, "spid", &val);
 	if (node < 0) {
-		printk("%s: node \"%s\" not found\n", __func__, what);
+		printk("%s: node \"%s\" not found\n", __func__, "spid");
 		BUG();
 	}
 
 	return val;
-}
-
-u64 get_spid(void) {
-	return get_spid_spad("spid");
 }
 
 /**
@@ -104,18 +100,16 @@ u64 get_spid(void) {
  */
 void vbstore_ME_ID_populate(void) {
 	const char *name, *shortdesc;
-	u64 spid, spadcaps;
-	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
+        u64 spid;
+        char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
-	/* Set all ME ID related information */
+        /* Set all ME ID related information */
 
 	/* Set the SPID of this ME */
-	spid = get_spid_spad("spid");
-	spadcaps = get_spid_spad("spadcaps");
-
+	spid = get_spid();
+	 
 	avz_shared->dom_desc.u.ME.spid = spid;
-	avz_shared->dom_desc.u.ME.spad.spadcaps = spadcaps;
-
+ 
 	/* Set the name */
 	name = get_me_name();
 
@@ -131,10 +125,6 @@ void vbstore_ME_ID_populate(void) {
 	sprintf(entry, "%llx", spid);
 
 	vbus_write(VBT_NIL, rootname, "spid", entry);
-
-	sprintf(entry, "%llx", spadcaps);
-
-	vbus_write(VBT_NIL, rootname, "spadcaps", entry);
 
 	vbus_write(VBT_NIL, rootname, "name", name);
 	vbus_write(VBT_NIL, rootname, "shortdesc", shortdesc);

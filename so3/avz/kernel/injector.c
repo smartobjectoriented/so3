@@ -28,7 +28,8 @@
 #include <avz/domain.h>
 #include <avz/sched.h>
 #include <avz/injector.h>
-#include <avz/uapi/soo.h>
+
+#include <soo/uapi/soo.h>
 
 #include <asm/cacheflush.h>
 
@@ -52,7 +53,7 @@
  * @param op  (op->vaddr is the ITB buffer, op->p_val1 will contain the slodID in return (-1 if no space), op->p_val2 is the ITB buffer size_
  */
 
-void inject_me(soo_hyp_t *op)
+void inject_me(avz_hyp_t *args)
 {
 	int slotID;
 	size_t fdt_size;
@@ -62,11 +63,12 @@ void inject_me(soo_hyp_t *op)
         void *itb_vaddr;
         mem_info_t guest_mem_info;
 
-        DBG("%s: Preparing ME injection, source image = %lx\n", __func__, op->addr);
+        DBG("%s: Preparing ME injection, source image vaddr = %lx\n", __func__, 
+		ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_me_args.itb_paddr));
 
 	flags = local_irq_save();
 
-	itb_vaddr = (void *) op->addr;
+	itb_vaddr = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_me_args.itb_paddr);
 
         DBG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
 
@@ -94,10 +96,6 @@ void inject_me(soo_hyp_t *op)
 
 	__current = current_domain;
 
-	//mmu_get_current_pgtable(&current_pgtable_paddr);
-
-	//mmu_switch((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
-
 	/* Clear the RAM allocated to this ME */
 	memset((void *) __xva(slotID, memslot[slotID].base_paddr), 0, memslot[slotID].size);
 
@@ -106,16 +104,9 @@ void inject_me(soo_hyp_t *op)
 	if (construct_ME(domains[slotID]) != 0)
 		panic("Could not set up ME guest OS\n");
 
-#if 0
-	/* Switch back to the agency address space */
-	set_current_domain(__current);
-
-	mmu_switch((void *) current_pgtable_paddr);
-#endif
-
 out:
 	/* Prepare to return the slotID to the caller. */
-	*((unsigned int *) op->p_val1) = slotID;
+	args->u.avz_inject_me_args.slotID = slotID;
  
 	local_irq_restore(flags);
 }

@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
- * Copyright (C) 2016-2019 Baptiste Delporte <bonel@bonel.net>
+ * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -38,9 +37,11 @@
 #include <avz/sched.h>
 #include <avz/sched-if.h>
 #include <avz/debug.h>
-#include <avz/logbool.h>
+#include <avz/gnttab.h>
 
 #include <avz/uapi/avz.h>
+
+static DEFINE_SPINLOCK(domctl_lock);
 
 /*
  * We don't care of the IDLE domain here...
@@ -55,7 +56,7 @@ struct domain *agency;
  * Creation of new domain context associated to the agency or a Mobile Entity.
  *
  * @domid is the domain number
- * @partial tells if the domain creation remains partial, without the creation of the vcpu structure which may intervene in a second step
+ * @cpu_id the CPU on which this domain is allowed to run
  */
 struct domain *domain_create(domid_t domid, int cpu_id)
 {
@@ -66,12 +67,25 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 
 	memset(d, 0, sizeof(struct domain));
 
+	/*
+	 * Allocate the shared memory page which is shared between the hypervisor
+	 * and the domain.
+	 */
 	d->avz_shared = memalign(PAGE_SIZE, PAGE_SIZE);
-	BUG_ON(!d);
+	BUG_ON(!d->avz_shared);
 
 	memset(d->avz_shared, 0, PAGE_SIZE);
 
-	d->avz_shared->domID = domid;
+	/*
+	 * Grant table and grant pages
+	 * Each domain has pre-defined number of pages used to share data
+	 * between domains, especially between the Linux domain and the SO3 containers.
+	 * 
+	 */
+
+        gnttab_init(d);
+
+        d->avz_shared->domID = domid;
 
 	if (!is_idle_domain(d)) {
 		d->is_paused_by_controller = 1;
@@ -79,10 +93,6 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 
 		evtchn_init(d);
 	}
-
-	/* Create a logbool hashtable associated to this domain */
-	d->avz_shared->logbool_ht = ht_create(LOGBOOL_HT_SIZE);
-	BUG_ON(!d->avz_shared->logbool_ht);
 
 	arch_domain_create(d, cpu_id);
 
@@ -132,9 +142,6 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 static void complete_domain_destroy(struct domain *d)
 {
 	sched_destroy_domain(d);
-
-	/* Free the logbool hashtable associated to this domain */
-	ht_destroy((logbool_hashtable_t *) d->avz_shared->logbool_ht);
 
 	/* Restore allocated memory for this domain */
 
@@ -307,42 +314,40 @@ void machine_restart(unsigned int delay_millisecs)
 	while (1);
 }
 
-/*
- * dommain_call
- *    Run a domain routine from hypervisor
- *    @target_dom is the domain which routine is executed
- *    @current_mapped is the domain which page table is currently loaded.
- *    @current_mapped_mode indicates if we consider the swapper pgdir or the normal page table (see switch_mm() for complete description)
- */
-void domain_call(struct domain *target_dom, int cmd, void *arg)
+void do_domctl(domctl_t *args)
 {
-	struct domain *__current;
-	addr_t prev;
+        struct domain *d;
 
-	/* IRQs are always disabled during a domcall */
-	BUG_ON(local_irq_is_enabled());
+        spin_lock(&domctl_lock);
 
-	/* Switch the current domain to the target so that preserving the page table during
-	 * subsequent memory context switch will not affect the original one.
-	 */
+	d = domains[args->domain];
 
-	__current = current_domain;
+	switch (args->cmd)
+	{
+	case DOMCTL_pauseME:
 
-	/* Preserve the current pgtable address on the AGENCY CPU
-	 * since we are about to move to the ME memory context.
-	 */
-	mmu_get_current_pgtable(&prev);
+		domain_pause_by_systemcontroller(d);
+		break;
 
-	switch_mm_domain(target_dom);
+	case DOMCTL_unpauseME:
+		
+		/* We need to map the granted page to a valid IPA address. */
+                d->avz_shared->vbstore_grant_ref = args->u.vbstore_grant_ref;
+           
+                DBG("%s: unpausing ME\n", __func__);
 
-	BUG_ON(!target_dom->avz_shared->domcall_vaddr);
+                domain_unpause_by_systemcontroller(d);
+		break;
 
-	/* Perform the domcall execution */
-	((domcall_t) target_dom->avz_shared->domcall_vaddr)(cmd, arg);
+	case DOMCTL_get_AVZ_shared:
+                if (current_domain->avz_shared->domID == DOMID_AGENCY) 
+                        args->u.avz_shared_paddr = memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size;
+                else
+                        args->u.avz_shared_paddr =
+                            memslot[current_domain->avz_shared->domID].ipa_addr + memslot[current_domain->avz_shared->domID].size;
+                break;
+        }
 
-	set_current_domain(__current);
-
-	/* Switch back to the same page table (and potential attributes) as at the entry */
-	mmu_switch_kernel((void *) prev);
-
+	spin_unlock(&domctl_lock);
 }
+

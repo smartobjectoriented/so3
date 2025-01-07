@@ -24,7 +24,7 @@
 #include <memory.h>
 
 #ifdef CONFIG_AVZ
-#include <avz/event.h>
+#include <avz/evtchn.h>
 #include <avz/domain.h>
 #endif
 
@@ -118,9 +118,9 @@ void secondary_start_kernel(void)
 
 #ifdef CONFIG_SOO
 	if (cpu == AGENCY_RT_CPU) {
-		__mmu_switch_kernel((void *) current_domain->avz_shared->pagetable_paddr, true);
+		__mmu_switch_kernel((void *) current_domain->pagetable_paddr, true);
 #else
-		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->avz_shared->pagetable_paddr, true);
+		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
 #endif /* CONFIG_SOO */
 
 		booted[cpu] = 1;

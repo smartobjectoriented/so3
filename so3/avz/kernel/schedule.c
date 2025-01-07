@@ -24,7 +24,7 @@
 
 #include <device/irq.h>
 
-#include <avz/event.h>
+#include <avz/evtchn.h>
 #include <avz/sched.h>
 #include <avz/sched-if.h>
 #include <avz/domain.h>

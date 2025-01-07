@@ -39,8 +39,7 @@
 #include <soo/soo.h>
 #include <soo/evtchn.h>
 #include <soo/avz.h>
-#include <soo/debug/logbool.h>
-
+ 
 #define PRINTF_BUFFER_SIZE 4096
 
 struct vbs_handle {
@@ -907,10 +906,10 @@ void vbus_vbstore_init(void)
 
 	dev.otherend_id = 0;
 	DBG("%s: binding a local event channel to the remote evtchn %d in Agency (intf: %lx) ...\n", __func__, __intf->revtchn, __intf);
+     
+        vbus_bind_evtchn(&dev, __intf->revtchn, &evtchn);
 
-	vbus_bind_evtchn(&dev, __intf->revtchn, &evtchn);
-
-	/* This is our local event channel */
+        /* This is our local event channel */
 	__intf->levtchn = evtchn;
 
 	DBG("Local vbstore_evtchn is %d (remote is %d)\n", __intf->levtchn, __intf->revtchn);
@@ -948,15 +947,4 @@ void vbus_vbstore_init(void)
 	DBG("vbs_init OK!\n");
 }
 
-void postmig_vbstore_setup(struct DOMCALL_sync_domain_interactions_args *args) {
-	DBG("__vbstore_levtchn=%d\n", __vbstore_levtchn);
-
-	/* Re-assign the levtchn in the intf shared page (seen by the agency too) */
-	__intf->levtchn = __vbstore_levtchn;
-
-	DBG("__intf->levtchn=%d\n", __intf->levtchn);
-
-	/* And pass the levtchn to avz for re-binding the existing event channel. */
-	args->vbstore_levtchn = __vbstore_levtchn;
-}
-
+ 

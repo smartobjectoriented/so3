@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@soo.tech>
- *
+ * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -16,12 +15,17 @@
  *
  */
 
-#include <soo/debug/logbool.h>
+#ifndef SOO_H
+#define SOO_H
 
-ht_set_t __ht_set;
+/* Device tree features */
+#define ME_FEAT_ROOT		"/me_features"
 
-void ht_set(logbool_hashtable_t *hashtable, char *key, logbool_t value) {
+void soo_activity_init(void);
+void shutdown_ME(unsigned int ME_slotID);
 
-	/* Trampoline function for AVZ logbool hashtable support. */
-	__ht_set(hashtable, key, value);
-}
+ME_state_t get_ME_state(uint32_t ME_slotID);
+void set_ME_state(uint32_t slotID, ME_state_t state);
+
+
+#endif /* SOO_H */

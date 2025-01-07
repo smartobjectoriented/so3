@@ -221,13 +221,13 @@ void loadAgency(void)
 			BUG_ON(!initrd_end);
 
 			base = fdt64_to_cpu(((const fdt64_t *) initrd_start->data)[0]);
-			base = phys_to_ipa(MEMSLOT_AGENCY, base);
+			base = pa_to_ipa(MEMSLOT_AGENCY, base);
 			lprintk("IPA Layout: initrd start at 0x%lx\n", base);
 
 			fdt_setprop_u64(fdt_vaddr, nodeoffset, "linux,initrd-start", base);
 
 			base = fdt64_to_cpu(((const fdt64_t *) initrd_end->data)[0]);
-			base = phys_to_ipa(MEMSLOT_AGENCY, base);
+			base = pa_to_ipa(MEMSLOT_AGENCY, base);
 			lprintk("IPA Layout: initrd end at 0x%lx\n", base);
 
 			fdt_setprop_u64(fdt_vaddr, nodeoffset, "linux,initrd-end", base);

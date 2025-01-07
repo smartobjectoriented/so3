@@ -34,53 +34,10 @@
 #include <soo/console.h>
 #include <soo/gnttab.h>
 
-#include <soo/debug/logbool.h>
-
 #include <avz/uapi/avz.h>
 
 avz_shared_t *avz_shared;
-
-int do_presetup_adjust_variables(void *arg) {
-        struct DOMCALL_presetup_adjust_variables_args *args = arg;
-
-	/* Normally, avz_shared virt address is retrieved from r12 at guest bootstrap (head.S)
-	 * We need to readjust this address after migration.
-	 */
-	avz_shared = args->avz_shared;
-
-	/* Re-adjust the meminfo descriptor */
-	mem_info.phys_base = avz_shared->dom_phys_offset;
-
-	/* Adjust timer information */
-	postmig_adjust_timer();
-
-	return 0;
-}
-
-int do_postsetup_adjust_variables(void *arg)
-{
-	struct DOMCALL_postsetup_adjust_variables_args *args = arg;
-
-	/* Updating pfns where used. */
-	readjust_io_map(args->pfn_offset);
-
-	return 0;
-}
-
-int do_sync_domain_interactions(void *arg)
-{
-	struct DOMCALL_sync_domain_interactions_args *args = arg;
-
-	io_unmap((addr_t) __intf);
-
-	__intf = (struct vbstore_domain_interface *) io_map(args->vbstore_pfn << PAGE_SHIFT, PAGE_SIZE);
-	BUG_ON(!__intf);
-
-	postmig_vbstore_setup(args);
-
-	return 0;
-}
-
+ 
 /**
  * This function is called at early bootstrap stage along head.S.
  */
@@ -91,29 +48,24 @@ void avz_setup(void) {
         lprintk("SOO Virtualizer (avz) shared page:\n\n");
 
 	lprintk("- Dom phys offset: %lx\n\n", (addr_t) mem_info.phys_base);
-
-	avz_shared->domcall_vaddr = (unsigned long) domcall;
-
+	
 	virq_init();
 }
 
 void post_init_setup(void) {
 
-	printk("VBstore shared page with agency at pfn 0x%x\n", avz_shared->vbstore_pfn);
+	printk("VBstore shared page grant reference %d\n", avz_shared->vbstore_grant_ref);
 
-	__intf = (struct vbstore_domain_interface *) io_map(avz_shared->vbstore_pfn << PAGE_SHIFT, PAGE_SIZE);
-	BUG_ON(!__intf);
+        gnttab_map(DOMID_AGENCY, avz_shared->vbstore_grant_ref, (void **) &__intf);
 
-	printk("SOO Mobile Entity booting ...\n");
+        printk("SOO Mobile Entity booting ...\n");
 
-	soo_guest_activity_init();
+        soo_guest_activity_init();
 
 	callbacks_init();
 
 	/* Initialize the Vbus subsystem */
 	vbus_init();
-
-	gnttab_init();
 
 	/*
 	 * Now, the ME requests to be paused by setting its state to ME_state_preparing. As a consequence,

@@ -165,7 +165,7 @@ static void vdummy_reconfiguring(struct vbus_device *vdev) {
 	/* The shared page already exists */
 	/* Re-init */
 
-	gnttab_end_foreign_access_ref(vdummy_priv->vdummy.ring_ref);
+	gnttab_end_foreign_access(vdummy_priv->vdummy.ring_ref);
 
 	DBG("Frontend: Setup ring\n");
 

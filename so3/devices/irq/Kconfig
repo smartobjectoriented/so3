@@ -3,8 +3,4 @@
 config GIC
 	bool "Generic IRQ Controller"
 	
-config SOO_IRQ
-	bool "SOO Virtualized IRQ controller device"
-	depends on SOO && !AVZ
-
-
+ 

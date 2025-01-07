@@ -33,10 +33,6 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#ifdef CONFIG_SO3VIRT
-#include <avz/uapi/avz.h>
-#endif
-
 void *__current_pgtable = NULL;
 
 void *current_pgtable(void) {
@@ -509,12 +505,6 @@ void *new_root_pgtable(void) {
 
 void copy_root_pgtable(void *dst, void *src) {
 	memcpy(dst, src, TTB_L0_SIZE);
-
-#ifdef CONFIG_SO3VIRT
-	*l0pte_offset(dst, avz_shared->hypervisor_vaddr) =
-		*l0pte_offset(avz_shared->pagetable_vaddr, avz_shared->hypervisor_vaddr);
-#endif /* CONFIG_SO3VIRT */
-
 }
 
 /**

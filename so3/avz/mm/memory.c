@@ -30,6 +30,8 @@
 
 #include <asm/mmu.h>
 
+#include <avz/soo.h>
+
 #include <avz/sched.h>
 
 #define ME_MEMCHUNK_SIZE	2 * 1024 * 1024
@@ -99,13 +101,13 @@ void switch_mm_domain(struct domain *d) {
 
 	mmu_get_current_pgtable(&current_pgtable_paddr);
 
-	if (current_pgtable_paddr == d->avz_shared->pagetable_paddr)
+	if (current_pgtable_paddr == d->pagetable_paddr)
 	/* Check if the current page table is identical to the next one. */
 		return ;
 
 	set_current_domain(d);
 
-        __mmu_switch_kernel((void *) d->avz_shared->pagetable_paddr, true);
+        __mmu_switch_kernel((void *) d->pagetable_paddr, true);
 }
 
 /**

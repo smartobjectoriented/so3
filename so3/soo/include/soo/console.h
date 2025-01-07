@@ -33,6 +33,7 @@ void avzcons_tx(void);
 void init_console(void);
 
 void avz_printch(char c);
+void avz_printstr(char *str);
 
 void lprintk(char *format, ...);
 void lprintk_buffer(void *buffer, uint32_t n);

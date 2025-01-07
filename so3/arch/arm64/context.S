@@ -235,7 +235,7 @@ __thread_prologue_user:
 
 	msr sp_el0, x21
 
-	mov	x0, #PSR_MODE_EL0t
+	mov x0, #PSR_MODE_EL0t
 
 	msr spsr_el1, x0
 

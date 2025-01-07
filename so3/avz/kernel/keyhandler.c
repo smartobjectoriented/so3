@@ -25,7 +25,7 @@
 #include <avz/keyhandler.h>
 #include <avz/sched.h>
 #include <avz/domain.h>
-#include <avz/event.h>
+#include <avz/evtchn.h>
 
 #include <asm/backtrace.h>
 #include <asm/processor.h>

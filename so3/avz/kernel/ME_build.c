@@ -31,7 +31,6 @@
 #include <asm/setup.h>
 #include <asm/cacheflush.h>
 
-#include <avz/logbool.h>
 
 /*
  * construct_ME sets up a new Mobile Entity.
@@ -69,11 +68,7 @@ int construct_ME(struct domain *d) {
 	__setup_dom_pgtable(d, memslot[slotID].base_paddr, memslot[slotID].size);
 
 	d->avz_shared->dom_phys_offset = alloc_spfn << PAGE_SHIFT;
-	d->avz_shared->hypercall_vaddr = (unsigned long) hypercall_entry;
-	d->avz_shared->logbool_ht_set_addr = (unsigned long) ht_set;
-	d->avz_shared->fdt_paddr = phys_to_ipa(slotID, memslot[slotID].fdt_paddr);
-
-	d->avz_shared->hypervisor_vaddr = CONFIG_KERNEL_VADDR;
+	d->avz_shared->fdt_paddr = pa_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
 	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 

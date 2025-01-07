@@ -488,7 +488,7 @@ static void gic_disable(unsigned int irq) {
  * valid range for an IRQ (30-1020 inclusive).
  *
  */
-static void gic_handle(cpu_regs_t *cpu_regs) {
+static void gic_handle(void *data) {
         int irq_nr;
         int irqstat;
 
@@ -504,7 +504,9 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
 			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending)
                                 gic_set_pending(irq_nr);
 #else
-                        irq_process(irq_nr);
+                        /* Forward the IRQ processing to another logical IRQ chip */
+                        irq_to_desc(irq_nr)->irq_ops->handle_high(irq_nr);
+
 #endif
                         gic_eoi_irq(irq_nr, false);
                 } else {
@@ -516,7 +518,7 @@ static void gic_handle(cpu_regs_t *cpu_regs) {
                                 continue;
                         }
 #endif
-                        irq_process(irq_nr);
+                        irq_to_desc(irq_nr)->irq_ops->handle_high(irq_nr);
                         gic_eoi_irq(irq_nr, false);
                 }
 
@@ -676,7 +678,7 @@ static int gic_init(dev_t *dev, int fdt_offset) {
         irq_ops.disable = gic_disable;
         irq_ops.mask = gic_mask;
         irq_ops.unmask = gic_unmask;
-        irq_ops.handle = gic_handle;
+        irq_ops.handle_low = gic_handle;
 
         return 0;
 }

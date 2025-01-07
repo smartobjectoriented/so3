@@ -36,8 +36,6 @@
 #include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/debug.h>
-#include <soo/debug/dbgvar.h>
-#include <soo/debug/logbool.h>
 #include <soo/evtchn.h>
 
 #include <me/refso3.h>
@@ -54,10 +52,7 @@
  *
  */
 void *app_thread_main(void *args) {
-
-	/* The ME can cooperate with the others. */
-	spad_enable_cooperate();
-
+ 
 	sh_refso3->cur_letter = 'A';
 
 	while (1) {

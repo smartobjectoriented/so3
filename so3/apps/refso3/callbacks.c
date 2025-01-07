@@ -40,47 +40,7 @@ static LIST_HEAD(known_soo_list);
 
 /* Reference to the shared content helpful during synergy with other MEs */
 sh_refso3_t *sh_refso3;
-
-/**
- * PRE-ACTIVATE
- *
- * Should receive local information through args
- */
-void cb_pre_activate(soo_domcall_arg_t *args) {
-
-	DBG(">> ME %d: cb_pre_activate...\n", ME_domID());
-
-#if 0 /* To be implemented... */
-	logmsg("[soo:me:SOO.refSO3] ME %d: cb_pre_activate..\n", ME_domID());
-#endif
-
-}
-
-/**
- * PRE-PROPAGATE
- *
- * The callback is executed in first stage to give a chance to a resident ME to stay or disappear, for example.
- */
-void cb_pre_propagate(soo_domcall_arg_t *args) {
-
-	pre_propagate_args_t *pre_propagate_args = (pre_propagate_args_t *) &args->u.pre_propagate_args;
-
-	DBG(">> ME %d: cb_pre_propagate...\n", ME_domID());
-
-	pre_propagate_args->propagate_status = PROPAGATE_STATUS_YES;
-}
-
-/**
- * Kill domcall - if another ME tries to kill us.
- */
-void cb_kill_me(soo_domcall_arg_t *args) {
-
-	DBG(">> ME %d: cb_kill_me...\n", ME_domID());
-
-	/* Do we accept to be killed? yes... */
-	set_ME_state(ME_state_killed);
-}
-
+ 
 /**
  * PRE_SUSPEND
  *
@@ -90,57 +50,7 @@ void cb_kill_me(soo_domcall_arg_t *args) {
 void cb_pre_suspend(soo_domcall_arg_t *args) {
 	DBG(">> ME %d: cb_pre_suspend...\n", ME_domID());
 }
-
-/**
- * COOPERATE
- *
- * This callback is executed when an arriving ME (initiator) decides to cooperate with a residing ME (target).
- */
-void cb_cooperate(soo_domcall_arg_t *args) {
-	cooperate_args_t *cooperate_args = (cooperate_args_t *) &args->u.cooperate_args;
-	agency_ctl_args_t agency_ctl_args;
-        
-	lprintk("[soo:me:SOO.refSO3] ME %d: cb_cooperate...\n", ME_domID());
-
-	switch (cooperate_args->role) {
-	case COOPERATE_INITIATOR:
-
-		if (cooperate_args->alone)
-			return ;
-
-		/* Collaboration ... */
-
-		agency_ctl_args.u.cooperate_args.pfn = phys_to_pfn(virt_to_phys_pt((addr_t) sh_refso3));
-		agency_ctl_args.u.cooperate_args.slotID = ME_domID(); /* Will be copied in initiator_cooperate_args */
-
-		/* This pattern enables the cooperation with the target ME */
-
-		agency_ctl_args.cmd = AG_COOPERATE;
-		agency_ctl_args.slotID = cooperate_args->u.target_coop.slotID;
-
-		/* Perform the cooperate in the target ME */
-		args->__agency_ctl(&agency_ctl_args);
-#if 0
-		set_ME_state(ME_state_killed);
-#endif
-		break;
-
-	case COOPERATE_TARGET:
-		DBG("Cooperate: Target %d\n", ME_domID());
-#if 1
-		/* Destroy us */
-		set_ME_state(ME_state_terminated);
-#endif
-
-		break;
-
-	default:
-		lprintk("Cooperate: Bad role %d\n", cooperate_args->role);
-		BUG();
-	}
-
-}
-
+ 
 /**
  * PRE_RESUME
  *
@@ -189,9 +99,6 @@ void callbacks_init(void) {
 
 	/* Initialize the shared content page used to exchange information between other MEs */
 	memset(sh_refso3, 0, PAGE_SIZE);
-
-	/* Set the SPAD capabilities (currently not used) */
-	memset(&get_ME_desc()->spad, 0, sizeof(spad_t));
 
 }
 

@@ -37,6 +37,8 @@ void arch_setup_domain_frame(struct domain *d, struct cpu_regs *domain_frame, ad
 	domain_frame->sp = start_stack;
 	domain_frame->pc = start_pc;
 
+	printk("## start_pc = %x\n", start_pc);
+
 	d->cpu_regs.sp = (unsigned long) domain_frame;
 	d->cpu_regs.lr = (unsigned long) pre_ret_to_user;
 }
@@ -53,6 +55,7 @@ void arch_setup_domain_frame(struct domain *d, struct cpu_regs *domain_frame, ad
 void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map_size) {
 	addr_t *new_pt;
         int slotID;
+        int i;
 
         ASSERT(d);
 
@@ -72,8 +75,8 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	printk("   Intermediate phys address    : 0x%lx\n", memslot[slotID].ipa_addr);
         printk("   Stage-2 vttbr 		: (va) 0x%lx - (pa) 0x%lx\n", new_pt, __pa(new_pt));
 
-        d->avz_shared->pagetable_vaddr = (addr_t) new_pt;
-	d->avz_shared->pagetable_paddr = __pa(new_pt);
+        d->pagetable_vaddr = (addr_t) new_pt;
+	d->pagetable_paddr = __pa(new_pt);
 
 	/* Prepare the IPA -> PA translation for this domain */
 	__create_mapping(new_pt, memslot[slotID].ipa_addr, paddr_start, map_size, false, S2);
@@ -100,11 +103,17 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		 */
 		d->avz_shared->subdomain_shared_paddr = memslot[slotID].ipa_addr + map_size + PAGE_SIZE;
 	}
+
+	/* Initialize the grant pfn (ipa address) area */
+	for (i = 0; i < NR_GRANT_PFN; i++) {
+                d->grant_pfn[i].pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + i;
+		d->grant_pfn[i].free = true;
+        }
 }
 
 void arch_domain_create(struct domain *d, int cpu_id) {
 
 	if (is_idle_domain(d))
-		d->avz_shared->pagetable_paddr = __pa(__sys_root_pgtable);
+		d->pagetable_paddr = __pa(__sys_root_pgtable);
 }
 

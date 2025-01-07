@@ -80,10 +80,8 @@ int construct_agency(struct domain *d) {
 
 	/* Propagate the virtual address of the shared info page for this domain */
 
-	d->avz_shared->hypercall_vaddr = (unsigned long) hypercall_entry;
 	d->avz_shared->fdt_paddr = memslot[MEMSLOT_AGENCY].fdt_paddr;
-	d->avz_shared->hypervisor_vaddr = CONFIG_KERNEL_VADDR;
-
+ 
 	printk("AVZ Hypervisor vaddr: 0x%lx\n", CONFIG_KERNEL_VADDR);
 	printk("Agency FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
@@ -102,12 +100,9 @@ int construct_agency(struct domain *d) {
 
 	/* Domain related information */
 	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
-	domains[DOMID_AGENCY_RT]->avz_shared->hypercall_vaddr = d->avz_shared->hypercall_vaddr;
 	domains[DOMID_AGENCY_RT]->avz_shared->fdt_paddr = d->avz_shared->fdt_paddr;
 	domains[DOMID_AGENCY_RT]->avz_shared->dom_phys_offset = d->avz_shared->dom_phys_offset;
-	domains[DOMID_AGENCY_RT]->avz_shared->pagetable_paddr = d->avz_shared->pagetable_paddr;
-	domains[DOMID_AGENCY_RT]->avz_shared->logbool_ht_set_addr = d->avz_shared->logbool_ht_set_addr;
-	domains[DOMID_AGENCY_RT]->avz_shared->hypervisor_vaddr = d->avz_shared->hypervisor_vaddr;
+	domains[DOMID_AGENCY_RT]->pagetable_paddr = d->pagetable_paddr;
 	domains[DOMID_AGENCY_RT]->avz_shared->printch = d->avz_shared->printch;
 
 #endif /* CONFIG_SOO */
@@ -118,7 +113,7 @@ int construct_agency(struct domain *d) {
 	 */
 
 	new_thread(d, memslot[MEMSLOT_AGENCY].entry_addr,
-		   phys_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr),
+		   pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr),
 		   memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size);
 
 

@@ -45,13 +45,7 @@ int main(void)
 #ifdef CONFIG_AVZ
 
 	DEFINE(OFFSET_AVZ_SHARED, offsetof(struct domain, avz_shared));
-
 	DEFINE(OFFSET_EVTCHN_UPCALL_PENDING, offsetof(struct avz_shared, evtchn_upcall_pending));
-
-	DEFINE(OFFSET_HYPERVISOR_CALLBACK,  offsetof(struct avz_shared, vectors_vaddr));
-	DEFINE(OFFSET_DOMCALL_CALLBACK, offsetof(struct avz_shared, domcall_vaddr));
-
-	DEFINE(OFFSET_G_SP,		 offsetof(struct domain, g_sp));
 
 	DEFINE(OFFSET_CPU_REGS,		offsetof(struct domain, cpu_regs));
 #endif

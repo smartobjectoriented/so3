@@ -35,8 +35,7 @@
 #include <soo/vbstore.h>
 #include <soo/soo.h>
 #include <soo/console.h>
-#include <soo/debug/logbool.h>
-
+ 
 /*
  * Used to keep track of the target domain for a certain (outgoing) dc_event.
  * Value -1 means no dc_event in progress.
@@ -130,44 +129,23 @@ void tell_dc_stable(int dc_event)  {
  */
 void set_dc_event(domid_t domID, dc_event_t dc_event)
 {
-	soo_hyp_dc_event_t dc_event_args;
+	avz_hyp_t args;
 
 	DBG("%s(%d, %d)\n", __func__, domID, dc_event);
 
-	dc_event_args.domID = domID;
-	dc_event_args.dc_event = dc_event;
+   	args.cmd = AVZ_DC_EVENT_SET;
+        args.u.avz_dc_event_args.domID = domID;
+        args.u.avz_dc_event_args.dc_event = dc_event;
 
-	soo_hypercall(AVZ_DC_SET, NULL, &dc_event_args, NULL);
-	while (dc_event_args.state == -EBUSY) {
+        avz_hypercall(&args);
+
+	while (args.u.avz_dc_event_args.state == -EBUSY) {
 		schedule();
 
-		soo_hypercall(AVZ_DC_SET, NULL, &dc_event_args, NULL);
+		avz_hypercall(&args);
 	}
 }
-
-/*
- * AVZ hypercall
- *
- * Mandatory arguments:
- * - cmd: hypercall
- * - vaddr: a virtual address used to pass something to the hypervisor
- * - p_val1: a (virtual) address to a first value
- * - p_val2: a (virtual) address to a second value
- */
-
-void soo_hypercall(int cmd, void *addr, void *p_val1, void *p_val2)
-{
-	soo_hyp_t soo_hyp;
-
-	soo_hyp.cmd = cmd;
-	soo_hyp.addr = (unsigned long) addr;
-	
-	soo_hyp.p_val1 = p_val1;
-	soo_hyp.p_val2 = p_val2;
-
-	avz_hypercall(__HYPERVISOR_soo_hypercall, (long) &soo_hyp, 0, 0, 0);
-}
-
+ 
 /*
  * Set the pfn offset after migration
  */
@@ -225,17 +203,12 @@ void perform_task(dc_event_t dc_event)
 
 			/* Remove vbstore entries related to this ME */
 			DBG("Removing vbstore entries ...\n");
-			remove_vbstore_entries();
+                        remove_vbstore_entries();
+                }
 
-			/* Remove grant table entries */
-			DBG("Removing grant references ...\n");
-			gnttab_remove(true);
-		}
-
-		break;
+                break;
 
 	case DC_RESUME:
-
 		DBG("resuming vbstore...\n");
 
 		/* Giving a chance to perform actions before resuming devices */
@@ -245,15 +218,10 @@ void perform_task(dc_event_t dc_event)
 		DBG("Now resuming vbstore...\n");
 		vbs_resume();
 
-		/* After a migration, re-init watch for device/<domID> */
-		if (get_ME_state() == ME_state_migrating)
-			postmig_setup();
-
 		DBG("vbstore resumed.\n");
 		break;
 
 	case DC_SUSPEND:
-
 		DBG("Suspending vbstore...\n");
 
 		vbs_suspend();
@@ -284,8 +252,7 @@ void perform_task(dc_event_t dc_event)
 
 
 /*
- * do_soo_activity() may be called from the hypervisor as a DOMCALL, but not necessary.
- * The function may also be called as a deferred work during the ME kernel execution.
+ * This function is called as a deferred work during the container kernel execution.
  */
 void do_soo_activity(void *arg)
 {
@@ -304,60 +271,14 @@ void do_soo_activity(void *arg)
 
 		cb_pre_resume(arg);
 		break;
-
-	case CB_PRE_ACTIVATE: /* DOMCALL */
-
-		/* Allow to pass local information of this SOO to this ME
-		 * and to decide what to do next...
-		 */
-		cb_pre_activate(arg);
-		break;
-
-	case CB_PRE_PROPAGATE: /* DOMCALL */
-
-		cb_pre_propagate(arg);
-		break;
-
-	case CB_KILL_ME: /* Kill domcall */
-
-		/* If the ME agrees to be killed (immediately being shutdown, it has to change its state to killed) */
-		cb_kill_me(arg);
-		break;
-
-	case CB_COOPERATE: /* Both DOMCALL and called by perform_cooperate() */
-
-		/*
-		 * Enable possible exchange of data between MEs
-		 * and make further actions
-		 */
-
-		cb_cooperate(arg);
-		break;
-
+ 
 	case CB_POST_ACTIVATE: /* Called by perform_post_activate() */
 
 		DBG("Post_activate callback for ME %d\n", ME_domID());
 
 		cb_post_activate(args);
 		break;
-
-	case CB_DUMP_BACKTRACE: /* DOMCALL */
-
-		dump_sched();
-		break;
 	}
-
-}
-
-/*
- * Agency ctl operations
- */
-
-void agency_ctl(agency_ctl_args_t *agency_ctl_args)
-{
-	agency_ctl_args->slotID = ME_domID();
-
-	soo_hypercall(AVZ_AGENCY_CTL, NULL, agency_ctl_args, NULL);
 }
 
 ME_desc_t *get_ME_desc(void)

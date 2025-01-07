@@ -22,6 +22,20 @@
 
 #include <types.h>
 
+#include <soo/uapi/soo.h>
+
+int get_ME_state(void);
+void set_ME_state(ME_state_t state);
+
+int32_t get_ME_free_slot(uint32_t size);
+
+bool get_ME_id(uint32_t slotID, ME_id_t *ME_id);
+
+void get_ME_id_array(ME_id_t *ME_id_array);
+char *xml_prepare_id_array(ME_id_t *ME_id_array);
+
+ME_desc_t *get_ME_desc(void);
+
 /* ME ID management */
 const char *get_me_shortdesc(void);
 const char *get_me_name(void);

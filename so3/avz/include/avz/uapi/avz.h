@@ -16,23 +16,14 @@
  *
  */
 
-#ifndef AVZ_H
-#define AVZ_H
+#ifndef UAPI_AVZ_H
+#define UAPI_AVZ_H
 
-#include <avz/uapi/soo.h>
+#ifdef CONFIG_SOO
+#include <soo/uapi/soo.h>
+#endif
 
 #include <asm/atomic.h>
-
-/*
- * AVZ HYPERCALLS
- */
-
-#define __HYPERVISOR_event_channel_op      0
-#define __HYPERVISOR_console_io            1
-#define __HYPERVISOR_physdev_op            2
-#define __HYPERVISOR_sched_op              3
-#define __HYPERVISOR_domctl                4
-#define __HYPERVISOR_soo_hypercall         5
 
 /*
  * VIRTUAL INTERRUPTS
@@ -40,7 +31,7 @@
  * Virtual interrupts that a guest OS may receive from the hypervisor.
  *
  */
-#define	NR_VIRQS	8
+#define NR_VIRQS	256
 
 #define VIRQ_TIMER      0  /* System timer tick virtualized interrupt */
 #define VIRQ_TIMER_RT   1  /* Timer tick issued from the oneshot timer (for RT agency and MEs */
@@ -65,12 +56,24 @@
 /* Realtime agency subdomain */
 #define DOMID_AGENCY_RT	1
 
-extern int avz_hypercall(int hcall, long a0, long a2, long a3, long a4);
+#define DOMID_INVALID (0x7FF4U)
+
+/* Assembly low-level code to raise up hypercall */
+extern long __avz_hypercall(int vector, long avz_hyp_args);
+
+/* Generic function to raise up hypercall */
+void avz_hypercall(avz_hyp_t *avz_hyp);
 
 /*
  * 128 event channels per domain
  */
 #define NR_EVTCHN 128
+
+#ifndef DOMID_T
+#define DOMID_T
+typedef uint16_t domid_t;
+typedef unsigned long addr_t;
+#endif
 
 /*
  * Shared info page, shared between AVZ and the domain.
@@ -82,36 +85,15 @@ struct avz_shared {
 	/* Domain related information */
 	unsigned long nr_pages;     /* Total pages allocated to this domain.  */
 
-	/* Hypercall vector addr for direct branching without syscall */
-	addr_t hypercall_vaddr;
-
-	/* Interrupt routine in the domain */
-	addr_t vectors_vaddr;
-
-	/* Domcall routine in the domain */
-	addr_t domcall_vaddr;
-
 	addr_t fdt_paddr;
 
 	/* Low-level print function mainly for debugging purpose */
 	void (*printch)(char c);
 
-	/* VBstore pfn */
-	unsigned long vbstore_pfn;
+	/* VBstore shared page grant reference */
+        grant_ref_t vbstore_grant_ref;
 
-	unsigned long dom_phys_offset;
-
-	/* Physical and virtual address of the page table used when the domain is bootstraping */
-	addr_t pagetable_paddr;
-	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
-
-	/* Address of the logbool ht_set function which can be used in the domain. */
-	unsigned long logbool_ht_set_addr;
-
-	/* We inform the domain about the hypervisor memory region so that the
-	 * domain can re-map correctly.
-	 */
-	addr_t hypervisor_vaddr;
+        unsigned long dom_phys_offset;
 
 	/* Other fields related to domain life */
 
@@ -137,9 +119,6 @@ struct avz_shared {
 
 	struct avz_shared *subdomain_shared;
 
-	/* Reference to the logbool hashtable (one per each domain) */
-	void *logbool_ht;
-
 	/* Used to store a signature for consistency checking, for example after a migration/restoration */
 	char signature[4];
 };
@@ -148,52 +127,9 @@ typedef struct avz_shared avz_shared_t;
 
 extern avz_shared_t *avz_shared;
 
-/*
- * DOMCALLs
- */
-typedef void (*domcall_t)(int cmd, void *arg);
+#define AVZ_HYPERCALL_TRAP	0x2605
 
-#define DOMCALL_sync_vbstore               	1
-#define DOMCALL_post_migration_sync_ctrl    	2
-#define DOMCALL_sync_domain_interactions    	3
-#define DOMCALL_presetup_adjust_variables   	4
-#define DOMCALL_postsetup_adjust_variables  	5
-#define DOMCALL_fix_other_page_tables		6
-#define DOMCALL_sync_directcomm			7
-#define DOMCALL_soo				8
+void do_avz_hypercall(avz_hyp_t *args);
 
-struct DOMCALL_presetup_adjust_variables_args {
-	avz_shared_t *avz_shared; /* IN */
-};
-
-struct DOMCALL_postsetup_adjust_variables_args {
-	long pfn_offset;
-};
-
-struct DOMCALL_fix_page_tables_args {
-	long pfn_offset; /* Offset with which to fix the page table entries */
-	unsigned int min_pfn, nr_pages;   /* min_pfn is the physical start address of the target RAM, nr_pages the number of pages */
-};
-
-struct DOMCALL_directcomm_args {
-	unsigned int directcomm_evtchn;
-};
-
-struct DOMCALL_sync_vbstore_args {
-	unsigned int vbstore_pfn;  /* OUT */
-	unsigned int vbstore_revtchn; /* Agency side */
-};
-
-struct DOMCALL_sync_domain_interactions_args {
-	unsigned int vbstore_pfn; 	/* IN */
-	unsigned int vbstore_levtchn;
-};
-
-void postmig_adjust_timer(void);
-
-#ifndef CONFIG_AVZ
-#define ME_domID() (avz_shared->domID)
-#endif
-
-#endif /* AVZ_H */
+#endif /* UAPI_AVZ_H */
 

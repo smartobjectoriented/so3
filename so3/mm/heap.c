@@ -59,9 +59,11 @@ void heap_init(void)
 	quick_list->size = HEAP_SIZE - sizeof(mem_chunk_t);
 	quick_list->padding_bytes = 0;
 
-	printk("SO3: allocating a kernel heap of %d bytes at address %p.\n", quick_list->size, quick_list);
+        boot_stage = BOOT_STAGE_HEAP_READY;
+	
+        printk("SO3: allocating a kernel heap of %d bytes at address %p.\n", quick_list->size, quick_list);
 
-	DBG("[list_init] List initialized. sizeof(mem_chunk_t) = %d bytes, sizeof(int) = %d bytes\n", sizeof(mem_chunk_t), sizeof(int));
+        DBG("[list_init] List initialized. sizeof(mem_chunk_t) = %d bytes, sizeof(int) = %d bytes\n", sizeof(mem_chunk_t), sizeof(int));
 }
 
 uint32_t heap_size(void) {

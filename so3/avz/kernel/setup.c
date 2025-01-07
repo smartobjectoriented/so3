@@ -28,7 +28,7 @@
 #include <avz/domain.h>
 #include <avz/memslot.h>
 #include <avz/keyhandler.h>
-#include <avz/event.h>
+#include <avz/evtchn.h>
 
 #include <device/device.h>
 

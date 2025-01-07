@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Baptiste Delporte <bonel@bonel.net>
+ * Copyright (C) 2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,23 +16,33 @@
  *
  */
 
-#ifndef PACKCHK_H
-#define PACKCHK_H
+#ifndef GNTTAB_H
+#define GNTTAB_H
 
-#ifdef __KERNEL__
-#include <linux/types.h>
-#endif /* __KERNEL__ */
+#include <list.h>
 
-#include <soo/debug/packcommon.h>
+#include <soo/uapi/soo.h>
 
-typedef struct {
-	int (*recv_success)(void *buffer, size_t size);
-	int (*recv_failure)(void *buffer, size_t size);
-} packchk_callbacks_t;
+struct gnttab {
 
-void packchk_register(packchk_callbacks_t *callbacks, size_t size);
-void packchk_enable_multi(void);
-void packchk_send_next_packet(void);
-void packchk_process_received_packet(void *data, size_t size);
+        struct list_head list;  /* List of grant pages */
 
-#endif /* PACKCHK_H */
+        domid_t origin_domid; /* Domain which provides the grant */
+        domid_t target_domid; /* Target domain (granted to) */
+
+        /* (Real) physical frame number to be granted */
+        addr_t pfn;
+
+        /* Unique ref ID used by the domain which refers to this page */
+        grant_ref_t ref;
+        
+};
+typedef struct gnttab gnttab_t;
+
+void gnttab_init(struct domain *d);
+void do_gnttab(gnttab_op_t *args);
+
+#endif /* GNTTAB_H */
+
+
+

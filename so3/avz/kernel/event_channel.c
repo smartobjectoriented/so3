@@ -20,14 +20,12 @@
 #include <errno.h>
 #include <spinlock.h>
 
-#include <avz/event.h>
+#include <avz/evtchn.h>
 #include <avz/sched.h>
 #include <avz/sched-if.h>
 #include <avz/debug.h>
 #include <avz/keyhandler.h>
-
 #include <avz/uapi/avz.h>
-#include <avz/uapi/event_channel.h>
 
 #include <device/irq.h>
 
@@ -116,10 +114,10 @@ static void evtchn_bind_interdomain(evtchn_bind_interdomain_t *bind) {
 
 	lchn = &ld->evtchn[levtchn];
 	rchn = &rd->evtchn[revtchn];
+  
+        valid = ((rchn->state == ECS_INTERDOMAIN) && (rchn->interdomain.remote_dom == NULL));
 
-	valid = ((rchn->state == ECS_INTERDOMAIN) && (rchn->interdomain.remote_dom == NULL));
-
-	if (!valid && ((rchn->state != ECS_UNBOUND) || (rchn->unbound.remote_domid != ld->avz_shared->domID)))
+        if (!valid && ((rchn->state != ECS_UNBOUND) || (rchn->unbound.remote_domid != ld->avz_shared->domID)))
 		ERROR_EXIT_DOM(-EINVAL, rd);
 
 	lchn->interdomain.remote_dom = rd;
@@ -376,126 +374,40 @@ out:
 	spin_unlock_irqrestore(&d->virq_lock, flags);
 }
 
-static void evtchn_status(evtchn_status_t *status) {
-	struct domain *d = domains[status->dom];
-	int evtchn = status->evtchn;
-	struct evtchn *chn;
+void do_event_channel_op(avz_hyp_t *args) {
 
-	spin_lock(&d->event_lock);
+        switch (args->u.avz_evtchn.evtchn_op.cmd) {
 
-	chn = &d->evtchn[evtchn];
+	case EVTCHNOP_alloc_unbound: 
+                evtchn_alloc_unbound(&args->u.avz_evtchn.evtchn_op.u.alloc_unbound);
+                break;
+	
 
-	switch (chn->state) {
-	case ECS_FREE:
-	case ECS_RESERVED:
-		status->status = EVTCHNSTAT_closed;
+	case EVTCHNOP_bind_interdomain: 
+		evtchn_bind_interdomain(&args->u.avz_evtchn.evtchn_op.u.bind_interdomain);
 		break;
+	
 
-	case ECS_UNBOUND:
-		status->status = EVTCHNSTAT_unbound;
-		status->u.unbound.dom = chn->unbound.remote_domid;
-		break;
-
-	case ECS_INTERDOMAIN:
-		status->status = EVTCHNSTAT_interdomain;
-		status->u.interdomain.dom = chn->interdomain.remote_dom->avz_shared->domID;
-		status->u.interdomain.evtchn = chn->interdomain.remote_evtchn;
-		break;
-
-	case ECS_VIRQ:
-		status->status = EVTCHNSTAT_virq;
-		status->u.virq = chn->virq;
-		break;
-
-	default:
-		BUG();
-	}
-
-	spin_unlock(&d->event_lock);
-}
-
-void do_event_channel_op(int cmd, void *args) {
-	struct evtchn_alloc_unbound alloc_unbound;
-
-	switch (cmd) {
-	case EVTCHNOP_alloc_unbound: {
-
-		memcpy(&alloc_unbound, args, sizeof(struct evtchn_alloc_unbound));
-
-		evtchn_alloc_unbound(&alloc_unbound);
-		memcpy(args, &alloc_unbound, sizeof(struct evtchn_alloc_unbound));
-		break;
-	}
-
-	case EVTCHNOP_bind_interdomain: {
-
-		struct evtchn_bind_interdomain bind_interdomain;
-
-		memcpy(&bind_interdomain, args, sizeof(struct evtchn_bind_interdomain));
-
-		 evtchn_bind_interdomain(&bind_interdomain);
-		memcpy(args, &bind_interdomain, sizeof(struct evtchn_bind_interdomain));
-		break;
-	}
-
-	case EVTCHNOP_bind_existing_interdomain: {
-
-		struct evtchn_bind_interdomain bind_interdomain;
-
-		memcpy(&bind_interdomain, args, sizeof(struct evtchn_bind_interdomain));
-
+	case EVTCHNOP_bind_existing_interdomain: 
 		evtchn_bind_existing_interdomain(current_domain,
-				domains[bind_interdomain.remote_dom],
-				bind_interdomain.local_evtchn,
-				bind_interdomain.remote_evtchn);
+				domains[args->u.avz_evtchn.evtchn_op.u.bind_interdomain.remote_dom],
+				args->u.avz_evtchn.evtchn_op.u.bind_interdomain.local_evtchn,
+				args->u.avz_evtchn.evtchn_op.u.bind_interdomain.remote_evtchn);
+                break;
 
-		memcpy(args, &bind_interdomain, sizeof(struct evtchn_bind_interdomain));
+        case EVTCHNOP_bind_virq: 
+		evtchn_bind_virq(&args->u.avz_evtchn.evtchn_op.u.bind_virq);
 		break;
-	}
 
-	case EVTCHNOP_bind_virq: {
-
-		struct evtchn_bind_virq bind_virq;
-
-		memcpy(&bind_virq, args, sizeof(struct evtchn_bind_virq));
-
-		evtchn_bind_virq(&bind_virq);
-		memcpy(args, &bind_virq, sizeof(struct evtchn_bind_virq));
+	case EVTCHNOP_close: 
+		evtchn_close(&args->u.avz_evtchn.evtchn_op.u.close);
+                break;
+		
+	case EVTCHNOP_send: 
+		evtchn_send(current_domain, args->u.avz_evtchn.evtchn_op.u.send.evtchn);
 		break;
-	}
-
-	case EVTCHNOP_close: {
-
-		struct evtchn_close close;
-
-		memcpy(&close, args, sizeof(struct evtchn_close));
-
-		evtchn_close(&close);
-		break;
-	}
-
-	case EVTCHNOP_send: {
-
-		struct evtchn_send send;
-
-		memcpy(&send, args, sizeof(struct evtchn_send));
-
-		evtchn_send(current_domain, send.evtchn);
-		break;
-	}
-
-	case EVTCHNOP_status: {
-
-		struct evtchn_status status;
-
-		memcpy(&status, args, sizeof(struct evtchn_status));
-
-		evtchn_status(&status);
-		memcpy(args, &status, sizeof(struct evtchn_status));
-		break;
-	}
-
-	default:
+	
+        default:
 		BUG();
 		break;
 	}

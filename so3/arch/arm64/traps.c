@@ -23,18 +23,20 @@
 #include <mmio.h>
 
 #ifdef CONFIG_AVZ
-#include <avz/sched.h>
-#include <avz/hypercall.h>
-#include <avz/event.h>
 
-#include <avz/uapi/domctl.h>
+#include <avz/sched.h>
+#include <avz/domain.h>
 
 #include <asm/cacheflush.h>
 #include <asm/setup.h>
 
-#else
+#ifdef CONFIG_SOO
+#include <soo/uapi/soo.h>
+#endif /* CONFIG_SOO */
+
+#else /* CONFIG_AVZ */
 #include <syscall.h>
-#endif
+#endif /* !CONFIG_AVZ */
 
 #include <asm/processor.h>
 
@@ -195,7 +197,7 @@ void trap_handle(cpu_regs_t *regs) {
                         break;
 
                 case PSCI_0_2_FN64_CPU_ON:
-                        printk("Power on CPU #%d...\n", regs->x1 & 3);
+                        printk("Power on CPU #%d starting at %x...\n", regs->x1 & 3, regs->x2);
 
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);
@@ -209,39 +211,13 @@ void trap_handle(cpu_regs_t *regs) {
                         break;
 #endif /* CONFIG_SMP */
 
-                /* AVZ Hypercalls */
-		case __HYPERVISOR_console_io:
-			printk("%c", regs->x1);
+                case AVZ_HYPERCALL_TRAP:
+                        do_avz_hypercall((avz_hyp_t *) ipa_to_va(memslotID, regs->x1));
                         break;
-
-#ifdef CONFIG_SOO
-		case __HYPERVISOR_domctl:
-
-                        do_domctl((domctl_t *) ipa_to_va(memslotID, regs->x1));
-                        flush_dcache_all();
-
-                        break;
-
-                case __HYPERVISOR_event_channel_op:
-
-                        do_event_channel_op(regs->x1, (void *) ipa_to_va(memslotID, regs->x2));
-                        flush_dcache_all();
-
-                        break;
-
-                case __HYPERVISOR_soo_hypercall:
-
-			/* Propagate the SOO hypercall to the dedicated routines. */
-                        do_soo_hypercall((soo_hyp_t *) ipa_to_va(memslotID, regs->x1));
-                        flush_dcache_all();
-
-                        break;
-#endif /* CONFIG_SOO */
-
                 }
                 break;
 #endif /* CONFIG_AVZ */
-
+               
 #if 0
 	case ESR_ELx_EC_DABT_LOW:
 		break;

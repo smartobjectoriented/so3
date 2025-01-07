@@ -36,9 +36,7 @@
 #include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/debug.h>
-#include <soo/debug/dbgvar.h>
-#include <soo/debug/logbool.h>
-
+ 
 #define SYNC_BACKFRONT_COMPLETE		0
 #define SYNC_BACKFRONT_SUSPEND		1
 #define SYNC_BACKFRONT_RESUME		2
@@ -565,16 +563,4 @@ void vbus_init(void)
 	DBG("%s: local event channel bound to directcomm towards non-RT Agency : %d\n", __func__, dc_evtchn);
 
 	DBG("vbus_init OK!\n");
-}
-
-/*
- * DOMCALL_sync_directcomm
- */
-int do_sync_directcomm(void *arg)
-{
-	struct DOMCALL_directcomm_args *args = arg;
-
-	args->directcomm_evtchn = dc_evtchn;
-
-	return 0;
 }

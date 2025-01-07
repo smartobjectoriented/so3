@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-#if 0
+#if 1
 #define DEBUG
 #endif
 
@@ -34,25 +34,13 @@
 #include <avz/memslot.h>
 #include <avz/migration.h>
 #include <avz/domain.h>
-
-#include <avz/uapi/event_channel.h>
-#include <avz/uapi/soo.h>
+#include <avz/debug.h>
+#include <avz/soo.h>
 
 #include <libfdt/image.h>
-
 #include <libfdt/libfdt.h>
 
-#include <avz/uapi/soo.h>
 #include <avz/uapi/avz.h>
-
-#include <avz/debug.h>
-#include <avz/logbool.h>
-
-/* PFN offset on the target platform */
-volatile long pfn_offset = 0;
-
-/* Start of ME RAM in virtual address space of idle domain (extern) */
-unsigned long vaddr_start_ME = 0;
 
 /*
  * Structures to store domain infos. Must be here and not locally in function,
@@ -94,7 +82,6 @@ static void build_domain_migration_info(unsigned int ME_slotID, struct domain *m
 	/* Arch & address space */
 
 	mig_info->cpu_regs = me->cpu_regs;
-	mig_info->g_sp = me->g_sp;
 
 #ifdef CONFIG_ARCH_ARM32
 	mig_info->vfp = me->vfp;
@@ -104,18 +91,19 @@ static void build_domain_migration_info(unsigned int ME_slotID, struct domain *m
 /**
  * Read the migration info structures.
  */
-void read_migration_structures(soo_hyp_t *op) {
-	unsigned int ME_slotID = *((unsigned int *) op->p_val1);
-	struct domain *domME = domains[ME_slotID];
+void read_migration_structures(avz_hyp_t *args) {
+        unsigned int ME_slotID = args->u.avz_migstruct_read_args.slotID;
+        struct domain *domME = domains[ME_slotID];
 
 	/* Gather all the info we need into structures */
 	build_domain_migration_info(ME_slotID, domME, &dom_info);
 
 	/* Copy structures to buffer */
-	memcpy((void *) op->addr, &dom_info, sizeof(dom_info));
+	memcpy((void *) ipa_to_va(MEMSLOT_AGENCY,
+		args->u.avz_migstruct_read_args.migstruct_paddr), &dom_info, sizeof(dom_info));
 
-	/* Update op->avz_sharedze with valid data size */
-	*((unsigned int *) op->p_val2) = sizeof(dom_info);
+	/* Update op->avz_shared with valid data size */
+	args->u.avz_migstruct_read_args.size = sizeof(dom_info);
 }
 
 /*------------------------------------------------------------------------------
@@ -130,20 +118,14 @@ restore_vcpu_migration_info
 static void restore_domain_migration_info(unsigned int ME_slotID, struct domain *me, struct domain_migration_info *mig_info)
 {
 	int i;
-	void *logbool_ht;
-
+	
 	DBG("%s\n", __func__);
-
-	/* For the time being, the logbool hashtable is re-initialized in the migrating ME. */
-	logbool_ht = me->avz_shared->logbool_ht;
 
 	*(me->avz_shared) = mig_info->avz_shared;
 
 	/* Check that our signature is valid so that the image transfer should be good. */
 	if (strcmp(me->avz_shared->signature, SOO_ME_SIGNATURE))
 		panic("%s: Cannot find the correct signature in the shared page (" SOO_ME_SIGNATURE ")...\n", __func__);
-
-	me->avz_shared->logbool_ht = logbool_ht;
 
 	/* Update the domID of course */
 	me->avz_shared->domID = ME_slotID;
@@ -169,10 +151,6 @@ static void restore_domain_migration_info(unsigned int ME_slotID, struct domain 
 	/* start pfn can differ from the initiator according to the physical memory layout */
 	me->avz_shared->dom_phys_offset = memslot[ME_slotID].base_paddr;
 
-	pfn_offset = phys_to_pfn(me->avz_shared->dom_phys_offset) - phys_to_pfn(mig_info->avz_shared.dom_phys_offset);
-
-	me->avz_shared->hypercall_vaddr = (unsigned long) hypercall_entry;
-
 	me->avz_shared->printch = printch;
 	me->pause_count = mig_info->pause_count;
 	me->need_periodic_timer = mig_info->need_periodic_timer;
@@ -187,29 +165,25 @@ static void restore_domain_migration_info(unsigned int ME_slotID, struct domain 
 
 	/* Fields related to CPU */
 	me->cpu_regs = mig_info->cpu_regs;
-	me->g_sp = mig_info->g_sp;
-
-#ifdef CONFIG_ARCH_ARM32
-	me->vfp = mig_info->vfp;
-#endif
 }
 
 
 /**
  * Write the migration info structures.
  */
-void write_migration_structures(soo_hyp_t *op) {
+void write_migration_structures(avz_hyp_t *args) {
 
 	/* Get the migration info structures */
-	memcpy(&dom_info, (void *) op->addr, sizeof(dom_info));
+	memcpy(&dom_info, (void *) ipa_to_va(MEMSLOT_AGENCY, 
+		args->u.avz_migstruct_write_args.migstruct_paddr), sizeof(dom_info));
 }
 
 /**
  * Initiate the last stage of the migration process of a ME, so called "migration finalization".
  */
-void migration_final(soo_hyp_t *op) {
-	unsigned int slotID = *((unsigned int *) op->p_val1);
-	struct domain *me = domains[slotID];
+void migration_final(avz_hyp_t *args) {
+        unsigned int slotID = args->u.avz_mig_final_args.slotID;
+        struct domain *me = domains[slotID];
 
 	DBG("ME state: %d\n", get_ME_state(slotID));
 
@@ -232,41 +206,14 @@ void migration_final(soo_hyp_t *op) {
 		DBG("ME state preparing\n");
 
 		flush_dcache_all();
-
-		DBG("Calling cooperate()...\n");
-
-		soo_cooperate(me->avz_shared->domID);
 		break;
 
 	default:
-		printk("Agency: %s:%d Invalid state at this point (%d)\n", __func__, __LINE__, get_ME_state(slotID));
+		printk("avz: %s:%d Invalid state at this point (%d)\n", __func__, __LINE__, get_ME_state(slotID));
 		BUG();
 
 		break;
 	}
-}
-
-/*------------------------------------------------------------------------------
- fix_page_tables_ME
- Fix all page tables in ME (swapper_pg_dir + all processes)
- We pass the current domain as argument as we need it to make the DOMCALLs.
- ------------------------------------------------------------------------------*/
-static void fix_other_page_tables_ME(unsigned int ME_slotID)
-{
-	struct domain *me = domains[ME_slotID];
-	struct DOMCALL_fix_page_tables_args fix_pt_args;
-
-	fix_pt_args.pfn_offset = pfn_offset;
-
-	fix_pt_args.min_pfn =  me->avz_shared->dom_phys_offset >> PAGE_SHIFT;
-	fix_pt_args.nr_pages = me->avz_shared->nr_pages;
-
-	DBG("DOMCALL_fix_other_page_tables called in ME with pfn_offset=%ld (%lx)\n", fix_pt_args.pfn_offset, fix_pt_args.pfn_offset);
-
-	domain_call(me, DOMCALL_fix_other_page_tables, &fix_pt_args);
-
-	/* Flush all cache */
-	flush_dcache_all();
 }
 
 /*------------------------------------------------------------------------------
@@ -276,10 +223,9 @@ static void fix_other_page_tables_ME(unsigned int ME_slotID)
 static void rebind_directcomm(unsigned int ME_slotID)
 {
 	struct domain *me = domains[ME_slotID];
-	struct DOMCALL_directcomm_args agency_directcomm_args, ME_directcomm_args;
-
+	 
 	DBG("Rebinding directcomm...\n");
-
+#if 0
 	/* Get the directcomm evtchn from agency */
 
 	memset(&agency_directcomm_args, 0, sizeof(struct DOMCALL_directcomm_args));
@@ -299,7 +245,7 @@ static void rebind_directcomm(unsigned int ME_slotID)
 	DBG("[soo:avz] %s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__, agency_directcomm_args.directcomm_evtchn, ME_directcomm_args.directcomm_evtchn);
 
 	evtchn_bind_existing_interdomain(me, agency, ME_directcomm_args.directcomm_evtchn, agency_directcomm_args.directcomm_evtchn);
-
+#endif
 }
 
 /*------------------------------------------------------------------------------
@@ -313,6 +259,7 @@ static void rebind_directcomm(unsigned int ME_slotID)
 static void sync_domain_interactions(unsigned int ME_slotID)
 {
 	struct domain *me = domains[ME_slotID];
+#if 0
 	struct DOMCALL_sync_vbstore_args xs_args;
 	struct DOMCALL_sync_domain_interactions_args sync_args;
 
@@ -339,34 +286,7 @@ static void sync_domain_interactions(unsigned int ME_slotID)
 	evtchn_bind_existing_interdomain(me, agency, sync_args.vbstore_levtchn, xs_args.vbstore_revtchn);
 
 	rebind_directcomm(ME_slotID);
-}
-
-/*------------------------------------------------------------------------------
- adjust_variables_in_ME
- Adjust variables such as start_info in ME
- ------------------------------------------------------------------------------*/
-static void presetup_adjust_variables_in_ME(unsigned int ME_slotID, avz_shared_t *avz_shared)
-{
-	struct domain *me = domains[ME_slotID];
-	struct DOMCALL_presetup_adjust_variables_args adjust_variables;
-
-	adjust_variables.avz_shared = avz_shared;
-
-	domain_call(me, DOMCALL_presetup_adjust_variables, &adjust_variables);
-}
-
-/*------------------------------------------------------------------------------
- adjust_variables_in_ME
- Adjust variables such as start_info in ME
- ------------------------------------------------------------------------------*/
-static void postsetup_adjust_variables_in_ME(unsigned int ME_slotID)
-{
-	struct domain *me = domains[ME_slotID];
-	struct DOMCALL_postsetup_adjust_variables_args adjust_variables;
-
-	adjust_variables.pfn_offset = pfn_offset;
-
-	domain_call(me, DOMCALL_postsetup_adjust_variables, &adjust_variables);
+#endif
 }
 
 void restore_migrated_domain(unsigned int ME_slotID) {
@@ -395,25 +315,7 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 	mmu_get_current_pgtable(&current_pgtable_paddr);
 
 	/* Switch to idle domain address space which has a full mapping of the RAM */
-	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->avz_shared->pagetable_paddr);
-
-	/* Fix the ME kernel page table for domcalls to work */
-	fix_kernel_boot_page_table_ME(ME_slotID);
-
-	DBG0("DOMCALL_presetup_adjust_variables_in_ME\n");
-
-	/* Adjust variables in ME such as avz_shared */
-	presetup_adjust_variables_in_ME(ME_slotID, me->avz_shared);
-
-	/* Fix all page tables in the ME (all processes) via a domcall */
-	DBG("%s: fix other page tables in the ME...\n", __func__);
-	fix_other_page_tables_ME(ME_slotID);
-
-	DBG0("DOMCALL_postsetup_adjust_variables_in_ME\n");
-
-	/* Adjust variables in the ME such as re-adjusting pfns */
-	postsetup_adjust_variables_in_ME(ME_slotID);
-
+	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->pagetable_paddr);
 	/*
 	 * Perform synchronization work like memory mappings & vbstore event channel restoration.
 	 *
@@ -428,11 +330,6 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 
 	ASSERT(smp_processor_id() == 0);
 
-	/* Proceed with the SOO post-migration callbacks according to patent */
-
-	/* Pre-activate */
-	soo_pre_activate(ME_slotID);
-
 	/*
 	 * We check if the ME has been killed during the pre_activate callback.
 	 * If yes, we do not pursue our re-activation process.
@@ -446,26 +343,7 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 	}
 
 	ASSERT(smp_processor_id() == 0);
-
-	/*
-	 * Cooperate.
-	 * We look for residing MEs which are ready to collaborate.
-	 */
-
-	soo_cooperate(ME_slotID);
-
-	/*
-	 * We check if the ME has been killed or set to the dormant state during the cooperate
-	 * callback. If yes, we do not pursue our re-activation process.
-	 */
-	if ((domains[ME_slotID] == NULL) || (get_ME_state(ME_slotID) == ME_state_dead) || (get_ME_state(ME_slotID) == ME_state_dormant)) {
-
-		set_current_domain(agency);
-		mmu_switch_kernel((void *) current_pgtable_paddr);
-
-		return ;
-	}
-
+ 
 	/* Resume ... */
 
 	/* All sync-ed! Kick the ME alive! */
@@ -484,11 +362,11 @@ void restore_migrated_domain(unsigned int ME_slotID) {
 /**
  * Initiate the migration process of a ME.
  */
-void migration_init(soo_hyp_t *op) {
-	unsigned int slotID = *((unsigned int *) op->p_val1);
-	struct domain *domME = domains[slotID];
+void migration_init(avz_hyp_t *args) {
+        unsigned int slotID = args->u.avz_mig_init_args.slotID;
+        struct domain *domME = domains[slotID];
 
-	DBG("Initializing migration of ME slotID=%d\n", slotID);
+        DBG("Initializing migration of ME slotID=%d\n", slotID);
 
 	switch (get_ME_state(slotID)) {
 
@@ -499,9 +377,7 @@ void migration_init(soo_hyp_t *op) {
 		domain_pause_by_systemcontroller(domME);
 
 		DBG0("ME paused OK\n");
-		DBG("Being migrated: preparing to copy in ME_slotID %d: ME @ paddr 0x%08x (mapped @ vaddr 0x%08x in eventhypervisor)\n",
-			slotID, (unsigned int) memslot[slotID].base_paddr, (unsigned int) vaddr_start_ME);
-
+		
 		break;
 
 	case ME_state_booting:
@@ -534,11 +410,5 @@ void migration_init(soo_hyp_t *op) {
 		printk("Agency: %s:%d Invalid state at this point (%d)\n", __func__, __LINE__, get_ME_state(slotID));
 		BUG();
 	}
-
-	/* Used for future restore operation */
-	vaddr_start_ME  = (unsigned long) __xva(slotID, memslot[slotID].base_paddr);
-
-	DBG("ME base physical address: %lx\n", memslot[slotID].base_paddr);
-	DBG("Agency virtual address of the ME: %lx\n", vaddr_start_ME);
 }
 
