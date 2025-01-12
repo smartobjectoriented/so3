@@ -36,7 +36,7 @@
 
 #include <avz/uapi/avz.h>
 
-avz_shared_t *avz_shared;
+volatile avz_shared_t *avz_shared;
  
 /**
  * This function is called at early bootstrap stage along head.S.

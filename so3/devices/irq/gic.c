@@ -337,7 +337,7 @@ void gic_set_pending(u16 irq_id) {
         gic_enable_maint_irq(true);
 }
 
-static void gic_clear_pending_irqs(void) {
+void gic_clear_pending_irqs(void) {
         unsigned int n;
 
         /* Clear list registers. */
@@ -501,8 +501,9 @@ static void gic_handle(void *data) {
 
 		if (irq_nr < 16) {
 #ifdef CONFIG_AVZ
-			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending)
+			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending) 
                                 gic_set_pending(irq_nr);
+                        
 #else
                         /* Forward the IRQ processing to another logical IRQ chip */
                         irq_to_desc(irq_nr)->irq_ops->handle_high(irq_nr);

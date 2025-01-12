@@ -32,7 +32,6 @@
 #include <soo/uapi/soo.h>
 
 #include <avz/evtchn.h>
-#include <avz/migration.h>
 #include <avz/memslot.h>
 #include <avz/keyhandler.h>
 #include <avz/domain.h>
@@ -59,8 +58,6 @@ void set_ME_state(unsigned int ME_slotID, ME_state_t state) {
 void shutdown_ME(unsigned int ME_slotID)
 {
 	struct domain *dom;
-	struct domain *__current_domain;
-	addr_t current_pgtable_paddr;
 
 	dom = domains[ME_slotID];
 
@@ -70,20 +67,12 @@ void shutdown_ME(unsigned int ME_slotID)
 
 	vcpu_pause(dom);
 
-	DBG("Destroy evtchn if necessary - state: %d\n", get_ME_state(ME_slotID));
-	evtchn_destroy(dom);
+        DBG("Destroy evtchn if necessary - state: %d\n", get_ME_state(ME_slotID));
+        evtchn_destroy(dom);
 
-	DBG("Switching address space ...\n");
+	DBG("Wiping domain area...\n");
 
-	__current_domain = current_domain;
-	mmu_get_current_pgtable(&current_pgtable_paddr);
-
-	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->pagetable_paddr);
-
-	memset((void *) __xva(ME_slotID, memslot[ME_slotID].base_paddr), 0, memslot[ME_slotID].size);
-
-	set_current_domain(__current_domain);
-	mmu_switch_kernel((void *) current_pgtable_paddr);
+	memset((void *) memslot[ME_slotID].base_vaddr, 0, memslot[ME_slotID].size);
 
 	DBG("Destroying domain structure ...\n");
 
@@ -96,7 +85,6 @@ void shutdown_ME(unsigned int ME_slotID)
 
 	/* Reset the slot availability */
 	put_ME_slot(ME_slotID);
-
 }
 
 /*
@@ -109,7 +97,6 @@ void check_killed_ME(void) {
 
 		if (memslot[i].busy && (get_ME_state(i) == ME_state_killed))
 			shutdown_ME(i);
-
 	}
 }
 
@@ -132,6 +119,12 @@ void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc) {
 		memcpy(dom_desc, &domains[slotID]->avz_shared->dom_desc, sizeof(dom_desc_t));
 
 }
+
+void migration_init(avz_hyp_t *args);
+void migration_final(avz_hyp_t *args);
+void read_ME_snapshot(avz_hyp_t *args);
+void write_ME_snapshot(avz_hyp_t *args);
+void inject_me(avz_hyp_t *args);
 
 /**
  * SOO hypercall processing.
@@ -185,12 +178,12 @@ void do_avz_hypercall(avz_hyp_t *args) {
                 get_dom_desc(args->u.avz_dom_desc_args.slotID, &args->u.avz_dom_desc_args.dom_desc);
                 break;
 
-	case AVZ_MIG_READ_MIGRATION_STRUCT:
-		read_migration_structures(args);
+	case AVZ_ME_READ_SNAPSHOT:
+		read_ME_snapshot(args);
 		break;
 
-	case AVZ_MIG_WRITE_MIGRATION_STRUCT:
-		write_migration_structures(args);
+	case AVZ_ME_WRITE_SNAPSHOT:
+		write_ME_snapshot(args);
 		break;
 
 	case AVZ_INJECT_ME:

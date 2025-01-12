@@ -300,13 +300,21 @@ typedef struct __attribute__((packed)) {
         /* CPU interface */
         struct gicc_regs *gicc;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
         /* Hypervisor related */
         struct gich_regs *gich;
 
         unsigned int gic_num_lr;
-#endif
+#endif /* CONFIG_AVZ */
+
 } gic_t;
+
+#ifdef CONFIG_AVZ
+
+void gic_set_pending(u16 irq_id);
+void gic_clear_pending_irqs(void);
+
+#endif /* CONFIG_AVZ */
 
 extern gic_t *gic;
 

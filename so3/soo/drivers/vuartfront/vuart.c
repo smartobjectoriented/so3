@@ -75,6 +75,7 @@ void vuart_write(char *buffer, int count) {
 	vuart_request_t *ring_req;
 	vuart_priv_t *vuart_priv;
 
+
 	if (!vdev_console)
 		return ;
 

@@ -87,9 +87,6 @@ struct avz_shared {
 
 	addr_t fdt_paddr;
 
-	/* Low-level print function mainly for debugging purpose */
-	void (*printch)(char c);
-
 	/* VBstore shared page grant reference */
         grant_ref_t vbstore_grant_ref;
 
@@ -125,7 +122,7 @@ struct avz_shared {
 
 typedef struct avz_shared avz_shared_t;
 
-extern avz_shared_t *avz_shared;
+extern volatile avz_shared_t *avz_shared;
 
 #define AVZ_HYPERCALL_TRAP	0x2605
 

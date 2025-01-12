@@ -251,8 +251,8 @@ typedef struct {
 
 	ME_state_t	state;
 
-	unsigned int	size; /* Size of the ME */
-	unsigned int	pfn;
+	unsigned int	size; /* Size of the ME with the struct dom_context size */
+        unsigned int    pfn;
 
 } ME_desc_t;
 
@@ -320,7 +320,6 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
 #define AGENCY_IOCTL_FORCE_TERMINATE		_IOW('S', 5, agency_ioctl_args_t)
 #define AGENCY_IOCTL_INJECT_ME			_IOWR('S', 6, agency_ioctl_args_t)
 #define AGENCY_IOCTL_GET_ME_ID			_IOWR('S', 7, agency_ioctl_args_t)
-#define AGENCY_IOCTL_GET_ME_SNAPSHOT		_IOWR('S', 10, agency_ioctl_args_t)
 #define AGENCY_IOCTL_GET_ME_ID_ARRAY		_IOR('S', 11, agency_ioctl_args_t)
 #define AGENCY_IOCTL_BLACKLIST_SOO		_IOW('S', 12, agency_ioctl_args_t)
 
@@ -407,8 +406,8 @@ typedef struct {
 /* AVZ hypercalls devoted to SOO */
 #define AVZ_MIG_INIT			2
 #define AVZ_GET_ME_FREE_SLOT		4
-#define AVZ_MIG_READ_MIGRATION_STRUCT	6
-#define AVZ_MIG_WRITE_MIGRATION_STRUCT	7
+#define AVZ_ME_READ_SNAPSHOT   	        6
+#define AVZ_ME_WRITE_SNAPSHOT  	        7
 #define AVZ_MIG_FINAL			8
 #define AVZ_INJECT_ME			9
 #define AVZ_KILL_ME			10
@@ -463,17 +462,13 @@ typedef struct {
         int slotID;
 } avz_mig_init_t;
 
-/* AVZ_MIG_WRITE_MIGRATION_STRUCT */
+/* AVZ_READ_SNAPSHOT */
+/* AVZ_WRITE_SNAPSHOT */
 typedef struct {
-        void *migstruct_paddr;
-} avz_migstruct_write_t;
-
-/* AVZ_MIG_READ_MIGRATION_STRUCT */
-typedef struct {
-	void *migstruct_paddr;
+	void *snapshot_paddr;
 	uint32_t slotID;
         int size;
-} avz_migstruct_read_t;
+} avz_snapshot_t;
 
 /* AVZ_MIG_FINAL */
 typedef struct {
@@ -513,8 +508,7 @@ typedef struct {
                 avz_dom_desc_t avz_dom_desc_args;
                 avz_free_slot_t avz_free_slot_args;
                 avz_mig_init_t avz_mig_init_args;
-                avz_migstruct_write_t avz_migstruct_write_args;
-                avz_migstruct_read_t avz_migstruct_read_args;
+                avz_snapshot_t avz_snapshot_args;
                 avz_mig_final_t avz_mig_final_args;
                 avz_kill_me_t avz_kill_me_args;
                 avz_console_io_t avz_console_io_args;

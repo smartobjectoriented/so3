@@ -26,12 +26,15 @@
 #include <timer.h>
 #include <memory.h>
 
+#include <asm/processor.h>
+
 #include <device/irq.h>
 
 #include <avz/vcpu.h>
 #include <avz/domain.h>
 
 #include <avz/uapi/avz.h>
+
 
 /*
  * Voluntarily yield the CPU.
@@ -131,6 +134,9 @@ void vcpu_unpause(struct domain *d);
 void domain_unpause(struct domain *d);
 void domain_pause_by_systemcontroller(struct domain *d);
 void domain_unpause_by_systemcontroller(struct domain *d);
+
+void vcpu_save_context(struct domain *d);
+void vcpu_restore_context(struct domain *d);
 
 struct task_slice flip_do_schedule(void);
 

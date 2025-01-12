@@ -429,7 +429,7 @@ void schedule(void) {
 	next = next_thread();
 
 #ifdef CONFIG_SCHED_FREQ_PREEMPTION
-	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
+        set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
 
 	/* prev may be NULL at the very beginning (current is set to NULL at init). */

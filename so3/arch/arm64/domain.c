@@ -39,8 +39,8 @@ void arch_setup_domain_frame(struct domain *d, struct cpu_regs *domain_frame, ad
 
 	printk("## start_pc = %x\n", start_pc);
 
-	d->cpu_regs.sp = (unsigned long) domain_frame;
-	d->cpu_regs.lr = (unsigned long) pre_ret_to_user;
+	d->vcpu.regs.sp = (unsigned long) domain_frame;
+	d->vcpu.regs.lr = (unsigned long) pre_ret_to_user;
 }
 
 

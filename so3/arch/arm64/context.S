@@ -146,6 +146,9 @@ ENTRY(__mmu_switch_ttbr1)
 	isb
 
 	msr    ttbr1_el1, x0
+	
+	tlbi	alle1
+
 	isb
 
 	ret
@@ -161,9 +164,11 @@ ENTRY(__mmu_switch_vttbr)
 	msr   	vttbr_el2, x0
     	isb
 
-	tlbi 	alle2
-	dsb	nsh
+	tlbi 	vmalls12e1is
+	tlbi	alle2
 
+	dsb	nsh
+	
 	ret
 
 ENTRY(cpu_do_idle)

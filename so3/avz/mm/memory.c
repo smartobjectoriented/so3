@@ -98,14 +98,14 @@ static void release_memslot(unsigned int addr, unsigned int order) {
  */
 void switch_mm_domain(struct domain *d) {
 	addr_t current_pgtable_paddr;
+       
+        mmu_get_current_pgtable(&current_pgtable_paddr);
 
-	mmu_get_current_pgtable(&current_pgtable_paddr);
-
-	if (current_pgtable_paddr == d->pagetable_paddr)
+        if (current_pgtable_paddr == d->pagetable_paddr)
 	/* Check if the current page table is identical to the next one. */
 		return ;
 
-	set_current_domain(d);
+        set_current_domain(d);
 
         __mmu_switch_kernel((void *) d->pagetable_paddr, true);
 }
@@ -142,6 +142,7 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 		return -1;  /* No available memory */
 
 	/* Determine the phys/virt start addresses of the guest */
+        printk("## addr = %lx\n", addr);
         memslot[slotID].base_paddr = addr;
         memslot[slotID].base_vaddr = ME_BASE + ((addr_t) (slotID - 1) << ME_ID_SHIFT);
 
@@ -165,10 +166,10 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
  */
 void put_ME_slot(unsigned int slotID) {
 
+	release_mapping(NULL, memslot[slotID].base_vaddr, memslot[slotID].size);
+
 	/* Release the allocated memchunks */
 	release_memslot(memslot[slotID].base_paddr, get_power_from_size(DIV_ROUND_UP(memslot[slotID].size, ME_MEMCHUNK_SIZE)));
-
-        release_mapping(NULL, memslot[slotID].base_vaddr, memslot[slotID].size);
 
         memslot[slotID].busy = false;
 }

@@ -423,6 +423,15 @@ ENTRY(pre_ret_to_user)
 	ldr	x2, [sp, #OFFSET_PC]  // Entry point of the guest
 	msr	elr_el2, x2
 
+	/* 
+	 * The MMU must be disabled so that the guest can keep its initial 
+	 * ake sure CPU EL1 has MMU disabled
+	*/
+
+	mrs	x2, sctlr_el1
+	bic	x2, x2, #SCTLR_ELx_M
+	msr	sctlr_el1, x2
+
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 

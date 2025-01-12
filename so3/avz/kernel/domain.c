@@ -143,9 +143,12 @@ static void complete_domain_destroy(struct domain *d)
 {
 	sched_destroy_domain(d);
 
-	/* Restore allocated memory for this domain */
+	/* Remove the root page table */
+        reset_root_pgtable((void *) d->pagetable_vaddr, true);
 
-	free((void *) d->avz_shared);
+        /* Restore allocated memory for this domain */
+
+        free((void *) d->avz_shared);
 	free((void *) d->domain_stack);
 
 	free(d);
@@ -207,6 +210,13 @@ void domain_unpause_by_systemcontroller(struct domain *d)
 		domain_unpause(d);
 }
 
+/**
+ * @brief Perform a context switch between domains. It is equivalent
+ * 	  to say that we switch the VM.
+ * 
+ * @param prev 
+ * @param next 
+ */
 void context_switch(struct domain *prev, struct domain *next)
 {
 	local_irq_disable();
@@ -216,7 +226,11 @@ void context_switch(struct domain *prev, struct domain *next)
 		local_irq_disable();  /* Again, if the guest re-enables the IRQ */
 	}
 	
+	vcpu_save_context(prev);
+
 	switch_mm_domain(next);
+	
+	vcpu_restore_context(next);
 
 	/* Clear running flag /after/ writing context to memory. */
 	smp_mb();

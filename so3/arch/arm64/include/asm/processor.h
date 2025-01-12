@@ -167,8 +167,6 @@
 #define ESR_IL(esr)		GET_FIELD((esr), 25, 25)
 /* Instruction specific syndrome */
 #define ESR_ISS(esr)		GET_FIELD((esr), 24, 0)
- 
-
 
 /*
  * PSR bits
@@ -952,7 +950,7 @@
 
 #else
 
-    static inline int cpu_mode(void) {
+static inline int cpu_mode(void) {
 	uint32_t el;
 
 	asm volatile(
@@ -1128,6 +1126,16 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 	u64 pstate;
 } cpu_regs_t;
 
+#ifdef CONFIG_AVZ
+
+/* Fields related to the underlying CPU */
+typedef struct vcpu {
+	cpu_regs_t regs;		/* All CPU registers */
+        uint16_t cpu_ctrl_state;	/* CPU control state register */
+} vcpu_t;
+
+#endif /* CONFIG_AVZ */
+
 static inline int smp_processor_id(void) {
 	int cpu;
 
@@ -1229,7 +1237,6 @@ typedef struct cpu_sys_regs {
 
 void cpu_on(unsigned long cpuid, addr_t entry_point);
 
-struct vcpu_guest_context;
 struct domain;
 
 void __switch_domain_to(struct domain *prev, struct domain *next);

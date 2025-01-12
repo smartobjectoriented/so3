@@ -45,6 +45,7 @@ void timer_interrupt(bool periodic) {
 			}
 		}
 	}
+        raise_softirq(TIMER_SOFTIRQ);
 }
 
 extern void send_guest_virq(struct domain *d, int virq);

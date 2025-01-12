@@ -62,7 +62,6 @@ void dc_stable(int dc_event)
 	atomic_set(&dc_incoming_domID[dc_event], -1);
 }
 
-
 /*
  * Sends a ping event to a remote domain in order to get synchronized.
  * Various types of event (dc_event) can be sent.

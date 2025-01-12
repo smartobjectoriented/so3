@@ -47,7 +47,7 @@ int main(void)
 	DEFINE(OFFSET_AVZ_SHARED, offsetof(struct domain, avz_shared));
 	DEFINE(OFFSET_EVTCHN_UPCALL_PENDING, offsetof(struct avz_shared, evtchn_upcall_pending));
 
-	DEFINE(OFFSET_CPU_REGS,		offsetof(struct domain, cpu_regs));
+	DEFINE(OFFSET_CPU_REGS,		offsetof(struct domain, vcpu.regs));
 #endif
 
 	BLANK();

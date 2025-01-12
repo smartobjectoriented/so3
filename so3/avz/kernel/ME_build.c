@@ -31,7 +31,6 @@
 #include <asm/setup.h>
 #include <asm/cacheflush.h>
 
-
 /*
  * construct_ME sets up a new Mobile Entity.
  */
@@ -71,8 +70,6 @@ int construct_ME(struct domain *d) {
 	d->avz_shared->fdt_paddr = pa_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
 	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
-
-	d->avz_shared->printch = printch;
 
 	/* Create the first thread associated to this domain. */
         new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + memslot[slotID].size);

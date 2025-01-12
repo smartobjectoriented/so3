@@ -87,10 +87,6 @@ int construct_agency(struct domain *d) {
 
 	printk("Shared AVZ page is located at: %lx\n", d->avz_shared);
 
-	/* HW details on the CPU: processor ID, cache ID and ARM architecture version */
-
-	d->avz_shared->printch = printch;
-
 #ifdef CONFIG_SOO
 	/* Set up a new domain stack for the RT domain */
 	domain_stack = (unsigned long) setup_dom_stack(domains[DOMID_AGENCY_RT]);
@@ -103,7 +99,6 @@ int construct_agency(struct domain *d) {
 	domains[DOMID_AGENCY_RT]->avz_shared->fdt_paddr = d->avz_shared->fdt_paddr;
 	domains[DOMID_AGENCY_RT]->avz_shared->dom_phys_offset = d->avz_shared->dom_phys_offset;
 	domains[DOMID_AGENCY_RT]->pagetable_paddr = d->pagetable_paddr;
-	domains[DOMID_AGENCY_RT]->avz_shared->printch = d->avz_shared->printch;
 
 #endif /* CONFIG_SOO */
 

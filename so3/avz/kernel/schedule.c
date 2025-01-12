@@ -24,6 +24,8 @@
 
 #include <device/irq.h>
 
+#include <device/arch/gic.h>
+
 #include <avz/evtchn.h>
 #include <avz/sched.h>
 #include <avz/sched-if.h>
@@ -79,6 +81,33 @@ void vcpu_wake(struct domain *d)
 	if (!__already_locked)
 		spin_unlock(&d->sched->sched_data.schedule_lock);
 
+}
+
+/**
+ * @brief Save the CPU-related parameters which are specific to the domain
+ * 
+ * @param d 
+ */
+void vcpu_save_context(struct domain *d) {
+	d->vcpu.cpu_ctrl_state = read_sysreg(sctlr_el1);
+}
+
+/**
+ * @brief Restore the CPU-related parameters which are specific to the domain
+ * 
+ * @param d 
+ */
+void vcpu_restore_context(struct domain *d) {
+
+	/* Restore the CPU control register state */
+        write_sysreg(d->vcpu.cpu_ctrl_state, sctlr_el1);
+
+	gic_clear_pending_irqs();
+	
+	/* Check for pending vIRQs for this domain */
+        if (current_domain->avz_shared->evtchn_upcall_pending)
+                gic_set_pending(IPI_EVENT_CHECK);
+        
 }
 
 void sched_destroy_domain(struct domain *d)
@@ -164,9 +193,9 @@ static void domain_schedule(void)
 	struct schedule_data *sd;
 	struct task_slice     next_slice;
 
-	ASSERT(local_irq_is_disabled());
+        ASSERT(local_irq_is_disabled());
 
-	ASSERT(prev->runstate == RUNSTATE_running);
+        ASSERT(prev->runstate == RUNSTATE_running);
 
 	/* To avoid that another CPU manipulates scheduler data structures */
 	/* Maybe the lock is already acquired from do_sleep() for example */
@@ -183,7 +212,7 @@ static void domain_schedule(void)
 	next = next_slice.d;
 
 #ifdef CONFIG_SOO
-	if (next_slice.time > 0ull)
+	if (next_slice.time > 0ull) 
 		set_timer(&next->sched->sched_data.s_timer, NOW() + MILLISECS(next_slice.time));
 #endif /* CONFIG_SOO */
 
@@ -204,7 +233,7 @@ static void domain_schedule(void)
         ASSERT(!next->is_running);
 	next->is_running = 1;
 
-#if 1
+#if 0
 	printk("### running on cpu: %d prev: %d next: %d\n", smp_processor_id(), prev->avz_shared->domID, next->avz_shared->domID);
 #endif
 

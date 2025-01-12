@@ -78,9 +78,8 @@ struct evtchn
 
 };
 
-struct domain
-{
-	/* The spinlocks are placed here to have a 8-byte alignement
+struct domain {
+        /* The spinlocks are placed here to have a 8-byte alignement
 	 * required by ldaxr instruction.
 	 */
 
@@ -88,8 +87,7 @@ struct domain
 	spinlock_t event_lock;
 	spinlock_t virq_lock;
 
-	/* Fields related to the underlying CPU */
-	cpu_regs_t cpu_regs;
+	vcpu_t vcpu;
 
 	addr_t	event_callback;
 	addr_t	domcall;
@@ -145,6 +143,8 @@ extern struct domain *domains[MAX_DOMAINS];
 extern int construct_agency(struct domain *d);
 extern int construct_ME(struct domain *d);
 
+ME_state_t get_ME_state(unsigned int ME_slotID);
+
 void do_domctl(domctl_t *args);
 
 extern void new_thread(struct domain *d, unsigned long start_pc, unsigned long r2_arg, unsigned long start_stack);
@@ -161,9 +161,7 @@ void arch_setup_domain_frame(struct domain *d, cpu_regs_t *domain_frame, addr_t 
 
 void __setup_dom_pgtable(struct domain *d, addr_t ipa_start, unsigned long map_size);
 
-/*
- * Arch-specifics.
- */
+void domain_unpause_by_systemcontroller(struct domain *d);
 
 /* Allocate/free a domain structure. */
 struct domain *alloc_domain_struct(void);
