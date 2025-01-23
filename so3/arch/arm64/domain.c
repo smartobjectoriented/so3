@@ -18,6 +18,7 @@
 
 #include <sizes.h>
 #include <types.h>
+#include <heap.h>
 
 #include <avz/sched.h>
 #include <avz/memslot.h>
@@ -29,20 +30,49 @@
 #include <mach/ipamap.h>
 #endif
 
-void arch_setup_domain_frame(struct domain *d, struct cpu_regs *domain_frame, addr_t fdt_addr, addr_t start_stack, addr_t start_pc) {
+/**
+ * @brief Initialize the content of the EL2 stack associated to this domain.
+ *
+ * @param d 
+ * @param domain_frame 
+ * @param fdt_addr 
+ * @param start_stack 
+ * @param start_pc 
+ */
+void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr, addr_t entry_addr) {
+	void *dom_stack;
+        struct cpu_regs *frame;
 
-	domain_frame->x21 = fdt_addr;
-	domain_frame->x22 = (unsigned long) d->avz_shared;
+        /* The stack must be aligned at STACK_SIZE bytes so that it is
+	 * possible to retrieve the cpu_info structure at the bottom
+	 * of the stack with a simple operation on the current stack pointer value.
+	 */
+	dom_stack = memalign(DOMAIN_STACK_SIZE, DOMAIN_STACK_SIZE);
+	BUG_ON(!dom_stack);
 
-	domain_frame->sp = start_stack;
-	domain_frame->pc = start_pc;
+	/* Keep the reference for fu16ture removal */
+        d->domain_stack = dom_stack;
 
-	printk("## start_pc = %x\n", start_pc);
+        /* Reserve the frame which will be restored later */
+	frame = dom_stack + DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
 
-	d->vcpu.regs.sp = (unsigned long) domain_frame;
+	/* Device tree */
+	frame->x0 = fdt_paddr;
+
+	/* According to boot protocol */
+        frame->x1 = 0;
+        frame->x2 = 0;
+        frame->x3 = 0;
+
+        // domain_frame->sp = start_stack;
+        frame->lr = entry_addr;
+
+        /* As we will be resumed from the schedule function, we need to update the
+	 * vital registers from the VCPU regs.
+	 */
+	d->vcpu.regs.sp = (unsigned long) frame;
 	d->vcpu.regs.lr = (unsigned long) pre_ret_to_user;
 }
-
 
 /**
  * Setup the stage 2 translation page table to translate Intermediate Physical address (IPA) to to PA addresses.

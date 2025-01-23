@@ -35,12 +35,6 @@
 
 int construct_agency(struct domain *d) {
 
-#ifdef CONFIG_SOO
-	unsigned long domain_stack;
-	extern addr_t *hypervisor_stack;
-	static addr_t *__hyp_stack = (unsigned long *) &hypervisor_stack;
-#endif
-
 	printk("***************************** Loading Guest Domain *****************************\n");
 
 	/* Map the agency slot to the physical memory */
@@ -88,11 +82,6 @@ int construct_agency(struct domain *d) {
 	printk("Shared AVZ page is located at: %lx\n", d->avz_shared);
 
 #ifdef CONFIG_SOO
-	/* Set up a new domain stack for the RT domain */
-	domain_stack = (unsigned long) setup_dom_stack(domains[DOMID_AGENCY_RT]);
-
-	/* Store the stack address for further needs in hypercalls/interrupt context */
-	__hyp_stack[AGENCY_RT_CPU] = domain_stack;
 
 	/* Domain related information */
 	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
@@ -101,17 +90,9 @@ int construct_agency(struct domain *d) {
 	domains[DOMID_AGENCY_RT]->pagetable_paddr = d->pagetable_paddr;
 
 #endif /* CONFIG_SOO */
-
-	/*
-	 * Create the first thread associated to this domain.
-	 * The initial stack of the domain is put at the top of the domain memory area.
-	 */
-
-	new_thread(d, memslot[MEMSLOT_AGENCY].entry_addr,
-		   pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr),
-		   memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size);
-
-
+ 
+	initialize_hyp_dom_stack(d, pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr), memslot[MEMSLOT_AGENCY].entry_addr);
+ 
 	return 0;
 }
 

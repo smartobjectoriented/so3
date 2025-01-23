@@ -213,6 +213,9 @@ void postmig_setup(void) {
 	 * on property changes.
 	 */
 
+	/* Re-setup the shared page with VBstore */
+	gnttab_map(DOMID_AGENCY, avz_shared->vbstore_grant_ref, (void **) &__intf);
+	
 	DBG0("Waiting for vbstore dev to be populated\n");
 
 	sprintf(root_name, "%s/%d", initial_rootname, ME_domID());

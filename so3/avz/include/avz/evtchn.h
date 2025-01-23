@@ -42,4 +42,6 @@ void do_event_channel_op(avz_hyp_t *args);
 
 void event_channel_init(void);
 
+void evtchn_bind_existing_interdomain(struct domain *ld, struct domain *remote, int levtchn, int revtchn);
+
 #endif /* EVTCHN_H */

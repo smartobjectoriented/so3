@@ -71,8 +71,7 @@ int construct_ME(struct domain *d) {
 
 	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
-	/* Create the first thread associated to this domain. */
-        new_thread(d, memslot[slotID].ipa_addr + L_TEXT_OFFSET, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + memslot[slotID].size);
+        initialize_hyp_dom_stack(d, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + L_TEXT_OFFSET);
 
 	return 0;
 }

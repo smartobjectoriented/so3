@@ -145,7 +145,7 @@ void do_gnttab(gnttab_op_t *args)
 		/* Create a new entry in the list of gnttab page */
                 
                 paddr = ipa_to_pa(DOM_TO_MEMSLOT(d->avz_shared->domID), pfn_to_phys(args->pfn));
-                printk("#### GRANT paddr: %x\n", paddr);
+              
                 gnttab = new_gnttab_entry(d, args->domid, phys_to_pfn(paddr));
 
                 args->ref = gnttab->ref;

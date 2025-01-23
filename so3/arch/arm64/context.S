@@ -52,45 +52,45 @@
 #ifdef CONFIG_AVZ
 
 // Switch from a domain to another
-// Requires to re-configure the vbar_el1 vector table address
 ENTRY(__switch_domain_to)
-	mov		x10, #(OFFSET_CPU_REGS + OFFSET_X19)
+	mov	x10, #(OFFSET_CPU_REGS + OFFSET_X19)
 	b	____switch_to
 #endif /* CONFIG_AVZ */
 
 ENTRY(__switch_to)
-	mov		x10, #(OFFSET_TCB_CPU_REGS + OFFSET_X19)
+	mov	x10, #(OFFSET_TCB_CPU_REGS + OFFSET_X19)
 
 ____switch_to:
 	cbz 	x0, load_ctx
-	add		x8, x0, x10
+	add	x8, x0, x10
+
 
 save_ctx:
 
-	stp		x19, x20, [x8], #16		// store callee-saved registers
-	stp		x21, x22, [x8], #16
-	stp		x23, x24, [x8], #16
-	stp		x25, x26, [x8], #16
-	stp		x27, x28, [x8], #16
-	stp		x29, lr, [x8], #16
+	stp	x19, x20, [x8], #16		// store callee-saved registers
+	stp	x21, x22, [x8], #16
+	stp	x23, x24, [x8], #16
+	stp	x25, x26, [x8], #16
+	stp	x27, x28, [x8], #16
+	stp	x29, lr, [x8], #16
 
-	mov		x9, sp
-	str		x9, [x8]
+	mov	x9, sp
+	str	x9, [x8]
 
 load_ctx:
 
 	// Prepare to retrieve the regs from the stack
-	add		x8, x1, x10
+	add	x8, x1, x10
 
-	ldp		x19, x20, [x8], #16		// restore callee-saved registers
-	ldp		x21, x22, [x8], #16
-	ldp		x23, x24, [x8], #16
-	ldp		x25, x26, [x8], #16
-	ldp		x27, x28, [x8], #16
-	ldp		x29, lr, [x8], #16
+	ldp	x19, x20, [x8], #16		// restore callee-saved registers
+	ldp	x21, x22, [x8], #16
+	ldp	x23, x24, [x8], #16
+	ldp	x25, x26, [x8], #16
+	ldp	x27, x28, [x8], #16
+	ldp	x29, lr, [x8], #16
 
-	ldr		x9, [x8]
-	mov		sp, x9
+	ldr	x9, [x8]
+	mov	sp, x9
 
 	ret
 
@@ -120,18 +120,12 @@ ENTRY(__mmu_switch_ttbr0)
 	// Ensure synchronization with previous code changes
     isb
 #ifdef CONFIG_AVZ
-
-#ifdef CONFIG_ARM64VT
-	msr ttbr0_el2, x0
-#else
-	msr	ttbr1_el1, x0
-#endif /* !CONFIG_ARM64VT */
-
+	msr 	ttbr0_el2, x0
 #else /* !CONFIG_AVZ */
-	msr   ttbr0_el1, x0
+	msr   	ttbr0_el1, x0
 #endif
 
-    isb
+   	isb
 
 	ret
 
@@ -145,7 +139,7 @@ ENTRY(__mmu_switch_ttbr1)
 	// Ensure synchronization with previous code changes
 	isb
 
-	msr    ttbr1_el1, x0
+	msr	ttbr1_el1, x0
 	
 	tlbi	alle1
 
@@ -188,7 +182,7 @@ __get_syscall_stack_arg:
 
 #if 0
 	ldr	r1, .LCcurrent
-	ldr r1, [r1]
+	ldr 	r1, [r1]
 
 	// Get the user stack pointer at the entry of the interrupt vector
 	ldr	r1, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
@@ -196,11 +190,11 @@ __get_syscall_stack_arg:
 	// The syscall stub uses r7, r10 and r11. These are NO scratch register
 	// and are preserved on the stack before the exception.
 	// Therefore, we have to skip 12 bytes.
-	add r1, r1, #12
+	add 	r1, r1, #12
 
-	ldr r0, [r1, r0, lsl #2]
+	ldr 	r0, [r1, r0, lsl #2]
 
-	mov pc, lr
+	mov 	pc, lr
 #endif
 	ret
 
@@ -211,8 +205,8 @@ __get_syscall_stack_arg:
 
 __get_syscall_args_ext:
 
-	str		x8, [x0]
-	str		x9, [x1]
+	str	x8, [x0]
+	str	x9, [x1]
 
 	ret
 
@@ -222,8 +216,8 @@ __get_syscall_args_ext:
 __thread_prologue_kernel:
 
 	// Prepare to jump into C code
-	mov x0, x19		// tcb->th_fn
-	mov x1, x20		// tcb->th_arg
+	mov 	x0,	x19		// tcb->th_fn
+	mov	x1,	x20		// tcb->th_arg
 
 	enable_irq
 
@@ -236,35 +230,35 @@ __thread_prologue_kernel:
 
 __thread_prologue_user:
 
-  	msr elr_el1, x19
+  	msr 	elr_el1, x19
 
-	msr sp_el0, x21
+	msr 	sp_el0, x21
 
-	mov x0, #PSR_MODE_EL0t
+	mov 	x0, #PSR_MODE_EL0t
 
-	msr spsr_el1, x0
+	msr 	spsr_el1, x0
 
 	// Prepare to jump into C code
-	mov x0, x20
+	mov 	x0, x20
 
 #if 0
-	at s1e0r, x19
+	at 	s1e0r, x19
  	isb
- 	mrs x0, par_el1
+ 	mrs 	x0, par_el1
 #endif
 
 	eret
 #if 0
 	// Prepare to jump into C code
-	mov r0, r4 // tcb->th_fn
-	mov r1, r5 // tcb->th_arg
+	mov 	r0, r4 // tcb->th_fn
+	mov 	r1, r5 // tcb->th_arg
 
 
 #ifdef CONFIG_MMU
 	// Check if the thread must stopped because of ptrace/tracee
-	stmfd sp!, {r0, r1}
+	stmfd 	sp!, {r0, r1}
 	bl	__check_ptrace_traceme
-	ldmfd sp!, {r0, r1}
+	ldmfd	sp!, {r0, r1}
 #endif
 
 	// IRQ enabling - must be done in SVC mode of course ;-)
@@ -273,13 +267,13 @@ __thread_prologue_user:
 	cpsie   i
 
  	// Switch into user mode
- 	mrs  r4, cpsr
+ 	mrs 	r4, cpsr
 	bic	r4, r4, #PSR_MODE_MASK
 	orr	r4, r4, #PSR_USR_MODE
- 	msr	 cpsr, r4
+ 	msr	cpsr, r4
 
 	// User stack initialisation
-	mov  sp, r6
+	mov  	sp, r6
 
 	bl	thread_prologue
 #endif
@@ -294,27 +288,27 @@ __save_context:
 	// it refers to this stack and not the one issue from the copy
 	// as during fork().
 
-	sub		x1, x1, #S_FRAME_SIZE
+	sub	x1, x1, #S_FRAME_SIZE
 
 	// Prepare to configure sp during the context switch.
-	str		x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
+	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
 
 	// Prepare the lr to branch to ret_from_fork
-	ldr		x1, .LCret_from_fork
-	str		x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
+	ldr	x1, .LCret_from_fork
+	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
 
 	// Preserve x8 which contains the syscall number (used to compare against SIG_RETURN)
-	str		x8, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_X8)]
+	str	x8, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_X8)]
 
 	// The other registers are not important.
 
 	ret
 
 .LCret_from_fork:
-	.quad ret_from_fork
+	.quad 	ret_from_fork
 
 .LCcurrent:
-	.quad current_thread
+	.quad 	current_thread
 
 // This section contains all data and code which will be
 // mapped in the user space as initial process to be executed.
@@ -345,12 +339,12 @@ ENTRY(__root_proc)
 	// write(stdout, buf, len)
 
 	mov	x0, #STDOUT
-	adr x1, .LC_welcome
-	mov x2, welcome_len
-	mov x8, #SYSCALL_WRITE
+	adr 	x1, .LC_welcome
+	mov 	x2, welcome_len
+	mov 	x8, #SYSCALL_WRITE
 
 	// No errno
-	mov x9, xzr
+	mov 	x9, xzr
 
 	// Invoke the syscall - kernel side
 	svc	0
@@ -360,26 +354,26 @@ ENTRY(__root_proc)
 	adr	x0, .LC_exec
 
 	// No args
-	mov x1, xzr
-	mov x2, xzr
+	mov 	x1, xzr
+	mov 	x2, xzr
 
 	// No errno
-	mov x9, xzr
+	mov 	x9, xzr
 
 	mov	x8, #SYSCALL_EXECVE
 
-	svc 0
+	svc 	0
 
 	// If we are here, exec() has failed...
 
 	mov	x0, #STDOUT
-	adr x1, .LCnoshell
-	mov x2, noshell_len
-	mov x8, #SYSCALL_WRITE
+	adr 	x1, .LCnoshell
+	mov 	x2, noshell_len
+	mov 	x8, #SYSCALL_WRITE
 
 	// No errno
-	mov x9, xzr
+	mov 	x9, xzr
 
-	svc 0
+	svc 	0
 
-	b kernel_panic
+	b 	kernel_panic

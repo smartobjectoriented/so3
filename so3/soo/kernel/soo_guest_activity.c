@@ -16,7 +16,7 @@
  *
  */
 
-#if 0
+#if 1
 #define DEBUG
 #endif
 
@@ -48,8 +48,6 @@ atomic_t dc_outgoing_domID[DC_EVENT_MAX];
 atomic_t dc_incoming_domID[DC_EVENT_MAX];
 
 static struct completion dc_stable_lock[DC_EVENT_MAX];
-
-long __pfn_offset = 0;
 
 void dc_stable(int dc_event)
 {
@@ -85,8 +83,8 @@ void do_sync_dom(int domID, dc_event_t dc_event)
 
 	set_dc_event(domID, dc_event);
 
-	DBG("%s: notifying via evtchn %d...\n", __func__, dc_evtchn);
-	notify_remote_via_evtchn(dc_evtchn);
+	DBG("%s: notifying via evtchn %d...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 
 	/* Wait for the response from the outgoing domain */
 	DBG("%s: waiting for completion on dc_event %d...\n", __func__, dc_event);
@@ -118,7 +116,7 @@ void tell_dc_stable(int dc_event)  {
 
 	atomic_set(&dc_incoming_domID[dc_event], -1);
 
-	notify_remote_via_evtchn(dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 }
 
 
@@ -146,19 +144,6 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 }
  
 /*
- * Set the pfn offset after migration
- */
-void set_pfn_offset(long pfn_offset)
-{
-	__pfn_offset = pfn_offset;
-}
-
-long get_pfn_offset(void)
-{
-	return __pfn_offset;
-}
-
-/*
  * Get the state of a ME.
  */
 int get_ME_state(void)
@@ -177,6 +162,7 @@ void set_ME_state(ME_state_t state)
 	avz_shared->dom_desc.u.ME.state = state;
 }
 
+void postmig_setup(void);
 void perform_task(dc_event_t dc_event)
 {
 	soo_domcall_arg_t args;
@@ -216,6 +202,10 @@ void perform_task(dc_event_t dc_event)
 
 		DBG("Now resuming vbstore...\n");
 		vbs_resume();
+	 
+		/* After a migration, re-init watch for device/<domID> */
+		if (get_ME_state() == ME_state_migrating)
+			postmig_setup();
 
 		DBG("vbstore resumed.\n");
 		break;
@@ -223,14 +213,15 @@ void perform_task(dc_event_t dc_event)
 	case DC_SUSPEND:
 		DBG("Suspending vbstore...\n");
 
-		vbs_suspend();
+                vbs_suspend();
 		DBG("vbstore suspended.\n");
+
 		break;
 
 	case DC_PRE_SUSPEND:
 		DBG("Pre-suspending...\n");
 
-		/* Giving a chance to perform actions before resuming devices */
+		/* Giving a chance to perform actions before suspending devices */
 		args.cmd = CB_PRE_SUSPEND;
 		do_soo_activity(&args);
 		break;

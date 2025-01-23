@@ -196,16 +196,6 @@ struct domctl {
 };
 typedef struct domctl domctl_t;
 
-/* Container management */
-
-/* This structure is used as the first field of the ME buffer frame header */
-typedef struct {
-
-	uint32_t ME_size;
-	uint32_t size_mig_structure;
-
-} ME_info_transfer_t;
-
 /*
  * ME states:
  * - ME_state_booting:		ME is currently booting...
@@ -252,8 +242,10 @@ typedef struct {
 	ME_state_t	state;
 
 	unsigned int	size; /* Size of the ME with the struct dom_context size */
-        unsigned int    pfn;
+        unsigned int    dc_evtchn;
 
+        /* Callback function called during at the restoring of domain */
+        void (*__resume_fn)(void);
 } ME_desc_t;
 
 /* ME ID related information */
@@ -273,9 +265,6 @@ typedef struct {
 	char name[ME_NAME_SIZE];
 	char shortdesc[ME_SHORTDESC_SIZE];
 } ME_id_t;
-
-/* Fixed size for the header of the ME buffer frame (max.) */
-#define ME_EXTRA_BUFFER_SIZE (1024 * 1024)
 
 struct work_struct;
 struct semaphore;
@@ -337,6 +326,9 @@ typedef struct {
 
 	uint64_t agencyUID; /* Agency UID */
 
+        /* Event channels used for directcomm channel between agency and agency-RT or ME */
+        unsigned int dc_evtchn[MAX_DOMAINS];
+        
 } agency_desc_t;
 
 /*
@@ -468,6 +460,9 @@ typedef struct {
 	void *snapshot_paddr;
 	uint32_t slotID;
         int size;
+
+        /* When resuming... */
+        grant_ref_t vbstore_grant_ref;
 } avz_snapshot_t;
 
 /* AVZ_MIG_FINAL */

@@ -31,6 +31,10 @@
 
 #include <asm/cacheflush.h>
 
+#if 1
+#define DEBUG
+#endif
+
 #define ERROR_EXIT(_errno)                                          \
 		do {                                                            \
 			printk("EVTCHNOP failure: error %d\n",                     \
@@ -137,8 +141,8 @@ static void evtchn_bind_interdomain(evtchn_bind_interdomain_t *bind) {
 }
 
 /*
- * Special routine called directly from hypervisor during post-migration sync to bind two event channels that we know exist and should now be connected!
- * as well as from guest kernel in case of ME IMEC setup. In this latter case, event channels have been previously allocated with a remote_domid equal to local_domid.
+ * Special routine called directly from hypervisor during resuming to bind two event channels that we know exist and should now be connected!
+ * as    
  *
  */
 void evtchn_bind_existing_interdomain(struct domain *ld, struct domain *remote, int levtchn, int revtchn) {

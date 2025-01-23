@@ -116,7 +116,7 @@ struct avz_shared {
 
 	struct avz_shared *subdomain_shared;
 
-	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+        /* Used to store a signature for consistency checking, for example after a migration/restoration */
 	char signature[4];
 };
 

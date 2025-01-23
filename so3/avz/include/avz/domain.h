@@ -131,7 +131,8 @@ struct domain {
 	unsigned long pause_flags;
 	atomic_t pause_count;
 
-	unsigned long domain_stack;
+	/* Hypervisor stack for this domain */
+	void *domain_stack;
 };
 
 #define USE_NORMAL_PGTABLE	0
@@ -147,13 +148,13 @@ ME_state_t get_ME_state(unsigned int ME_slotID);
 
 void do_domctl(domctl_t *args);
 
-extern void new_thread(struct domain *d, unsigned long start_pc, unsigned long r2_arg, unsigned long start_stack);
 void *setup_dom_stack(struct domain *d);
  
 void machine_halt(void);
 
 void arch_domain_create(struct domain *d, int cpu_id);
-void arch_setup_domain_frame(struct domain *d, cpu_regs_t *domain_frame, addr_t fdt_addr, addr_t start_stack, addr_t start_pc);
+
+void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr, addr_t entry_addr);
 
 /*
  * setup_page_table_guestOS() is setting up the 1st-level and 2nd-level page tables within the domain.

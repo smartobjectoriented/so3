@@ -102,25 +102,24 @@ __start:
 
 	bl 	early_memory_init
 
-
     	// Set up the MMU
     	b 	setup_mmu
 
 __kernel_main:
 
 	// Enable the interrupt
-	adrp x0, __vectors  // Virtual address as required
+	adrp 	x0, __vectors  // Virtual address as required
 
-#ifdef CONFIG_ARM64VT
-	msr vbar_el2, x0
+#ifdef CONFIG_AVZ
+	msr 	vbar_el2, x0
 #else
-	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */ 	 
+	msr 	vbar_el1, x0
+#endif /* !CONFIG_AVZ */ 	 
 
 
 	// Store the device tree paddr
-	adr x8, .LCfdt_addr_temp
-	ldr x9, [x8]
+	adr 	x8, .LCfdt_addr_temp
+	ldr 	x9, [x8]
 
 	ldr	x0, =__fdt_addr
 	str	x9, [x0]
@@ -431,7 +430,7 @@ install_el2_stub:
 	nop
 	nop
 
-#endif /* !CONFIG_ARM64VT */
+#endif /* !CONFIG_AVZ */
 
 #ifdef CONFIG_SMP
 

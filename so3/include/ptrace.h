@@ -216,6 +216,6 @@ struct user;
 
 void update_cpu_regs(void);
 void retrieve_cpu_regs(struct user *uregs, struct pcb *pcb);
-
+void __dump_regs(void *regs);
 
 #endif

@@ -479,29 +479,6 @@ void schedule(void) {
 	local_irq_restore(flags);
 }
 
-/*
- * Can be used for debugging purposes.
- *
- */
-void __dump_regs(unsigned long regs) {
-	unsigned long *cpuregs = (unsigned long *) regs;
-
-	lprintk("r4: %x ", *cpuregs);
-	lprintk("r5: %x ", *(cpuregs+1));
-	lprintk("r6: %x ", *(cpuregs+2));
-	lprintk("r7: %x ", *(cpuregs+3));
-	lprintk("r8: %x ", *(cpuregs+4));
-	lprintk("r9: %x ", *(cpuregs+5));
-	lprintk("r10: %x ", *(cpuregs+6));
-	lprintk("fp: %x ", *(cpuregs+7));
-	lprintk("ip: %x ", *(cpuregs+8));
-	lprintk("sp: %x ", *(cpuregs+9));
-	lprintk("lr: %x ", *(cpuregs+10));
-	lprintk("pc: %x ", *(cpuregs+11));
-	lprintk("psr: %x ", *(cpuregs+12));
-	lprintk("\n");
-}
-
 static inline void raise_schedule(void *__dummy) {
 	raise_softirq(SCHEDULE_SOFTIRQ);
 }

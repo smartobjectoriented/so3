@@ -246,48 +246,6 @@ void context_switch(struct domain *prev, struct domain *next)
 
 }
 
-/*
- * Initialize the domain stack used by the hypervisor.
- * This is the H-stack and contains a reference to the domain as the bottom (base) of the stack.
- */
-void *setup_dom_stack(struct domain *d) {
-	void *domain_stack;
-
-	/* The stack must be aligned at STACK_SIZE bytes so that it is
-	 * possible to retrieve the cpu_info structure at the bottom
-	 * of the stack with a simple operation on the current stack pointer value.
-	 */
-	domain_stack = memalign(DOMAIN_STACK_SIZE, DOMAIN_STACK_SIZE);
-	BUG_ON(!domain_stack);
-
-	d->domain_stack = (unsigned long) domain_stack;
-
-	/* Put the address of the domain descriptor at the base of this stack */
-	*((addr_t *) domain_stack) = (addr_t) d;
-
-	/* Reserve the frame which will be restored later */
-	domain_stack += DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
-
-	/* Returns the reference to the H-stack frame of this domain */
-
-	return domain_stack;
-}
-
-/*
- * Set up the first thread of a domain.
- */
-void new_thread(struct domain *d, addr_t start_pc, addr_t fdt_addr, addr_t start_stack)
-{
-	cpu_regs_t *domain_frame;
-
-	domain_frame = (cpu_regs_t *) setup_dom_stack(d);
-
-	if (domain_frame == NULL)
-	  panic("Could not set up a new domain stack.n");
-
-	arch_setup_domain_frame(d, domain_frame, fdt_addr, start_stack, start_pc);
-}
-
 static void continue_cpu_idle_loop(void)
 {
 	while (1) {
@@ -345,7 +303,6 @@ void do_domctl(domctl_t *args)
 
 	case DOMCTL_unpauseME:
 		
-		/* We need to map the granted page to a valid IPA address. */
                 d->avz_shared->vbstore_grant_ref = args->u.vbstore_grant_ref;
            
                 DBG("%s: unpausing ME\n", __func__);

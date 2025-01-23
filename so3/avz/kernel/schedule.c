@@ -85,12 +85,16 @@ void vcpu_wake(struct domain *d)
 
 /**
  * @brief Save the CPU-related parameters which are specific to the domain
- * 
+ * 	  The TTBRx registers are updated during memory context switch.
  * @param d 
  */
 void vcpu_save_context(struct domain *d) {
-	d->vcpu.cpu_ctrl_state = read_sysreg(sctlr_el1);
+	u64 sctlr_el1;
+   
+	d->vcpu.sctlr_el1 = read_sysreg(sctlr_el1);
+	d->vcpu.vbar_el1 = read_sysreg(vbar_el1);
 }
+
 
 /**
  * @brief Restore the CPU-related parameters which are specific to the domain
@@ -100,7 +104,8 @@ void vcpu_save_context(struct domain *d) {
 void vcpu_restore_context(struct domain *d) {
 
 	/* Restore the CPU control register state */
-        write_sysreg(d->vcpu.cpu_ctrl_state, sctlr_el1);
+        write_sysreg(d->vcpu.sctlr_el1, sctlr_el1);
+	write_sysreg(d->vcpu.vbar_el1, vbar_el1);
 
 	gic_clear_pending_irqs();
 	

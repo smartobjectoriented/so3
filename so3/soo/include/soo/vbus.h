@@ -166,8 +166,6 @@ void frontend_for_each(void *data, int (*fn)(struct vbus_device *, void *));
 
 int vbus_dev_remove(struct vbus_device *dev);
 
-extern unsigned int dc_evtchn;
-
 void add_new_dev(struct vbus_device *dev);
 extern int vbus_dev_probe(struct vbus_device *dev);
 

@@ -50,6 +50,9 @@ struct dom_context
 	/* IRQ-safe virq_lock protects against delivering VIRQ to stale evtchn. */
 	u16 virq_to_evtchn[NR_VIRQS];
 
+	/* Stack frame of this domain */
+	struct cpu_regs stack_frame;
+
 	/* Fields related to the CPU state */
         vcpu_t vcpu;
 };

@@ -24,11 +24,13 @@
 #include <memory.h>
 #include <crc.h>
 #include <softirq.h>
+#include <ptrace.h>
 
 #include <avz/memslot.h>
 #include <avz/domain.h>
 #include <avz/sched.h>
 #include <avz/injector.h>
+#include <avz/evtchn.h>
 
 #include <soo/uapi/soo.h>
 
@@ -44,9 +46,8 @@
  */
 static struct dom_context domain_context = {0};
 
-
 /**
- *  Inject a ME within a SOO device. This is the only possibility to load a ME within a Smart Object.
+ * @brief  Inject a SO3 container (capsule) as guest domain.
  *
  *  At the entry of this function, the ME ITB could have been allocated in the user space (via the injector application)
  *  or in the vmalloc'd area of the Linux kernel in case of a BT transfer from the tablet (using vuihandler).
@@ -57,10 +58,9 @@ static struct dom_context domain_context = {0};
  *  If the ITB should become larger, it is still possible to compress (and enhance AVZ with a uncompressor invoked
  *  at loading time). Wouldn't be still not enough, a temporary fixmap mapping combined with get_free_pages should be envisaged
  *  to have the ME ITB accessible from the AVZ user space area.
- *
- * @param op  (op->vaddr is the ITB buffer, op->p_val1 will contain the slodID in return (-1 if no space), op->p_val2 is the ITB buffer size_
+ * 
+ * @param args args received from the guest
  */
-
 void inject_me(avz_hyp_t *args)
 {
 	int slotID;
@@ -99,9 +99,6 @@ void inject_me(avz_hyp_t *args)
 	/* Set the size of this ME in its own descriptor with the dom_context size */
 	domME->avz_shared->dom_desc.u.ME.size = memslot[slotID].size + sizeof(struct dom_context);
 
-	/* Now set the pfn base of this ME; this will be useful for the Agency Core subsystem */
-	domME->avz_shared->dom_desc.u.ME.pfn = phys_to_pfn(memslot[slotID].base_paddr);
-
 	__current = current_domain;
 
 	/* Clear the RAM allocated to this ME */
@@ -128,14 +125,14 @@ build_vcpu_migration_info
 ------------------------------------------------------------------------------*/
 static void build_domain_context(unsigned int ME_slotID, struct domain *me, struct dom_context *domctxt)
 {
-
-	/* Event channel info */
-	memcpy(domctxt->evtchn, me->evtchn, sizeof(me->evtchn));
+        /* Event channel info */
+        memcpy(domctxt->evtchn, me->evtchn, sizeof(me->evtchn));
 
 	/* Get the start_info structure */
 	domctxt->avz_shared = *(me->avz_shared);
-
-	/* Update the state for the ME instance which will migrate. The resident ME keeps its current state. */
+	strcpy(domctxt->avz_shared.signature, SOO_ME_SIGNATURE);
+	
+	/* Update the state for the ME instance which will migrate. */
 	domctxt->avz_shared.dom_desc.u.ME.state = ME_state_migrating;
 
 	domctxt->pause_count = me->pause_count;
@@ -150,8 +147,19 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
 	/* VIRQ mapping */
 	memcpy(domctxt->virq_to_evtchn, me->virq_to_evtchn, sizeof((me->virq_to_evtchn)));
 
-	/* Arch & address space */
-	domctxt->vcpu.regs = me->vcpu.regs;
+	/* 
+	 * CPU regs context along the exception path in the hypervisor
+	 * right before the context switch. During the context switch,
+	 * By far not all registers are preserved.
+	 */
+        domctxt->vcpu = me->vcpu;
+
+	/* Store the stack frame of this domain */
+	memcpy(&domctxt->stack_frame, 
+		(void *) (me->domain_stack + DOMAIN_STACK_SIZE - sizeof(struct cpu_regs)),
+		sizeof(struct cpu_regs));
+
+        __dump_regs(&domctxt->vcpu.regs);
 }
 
 /**
@@ -223,12 +231,6 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 		if (me->evtchn[i].state == ECS_INTERDOMAIN)
 			me->evtchn[i].interdomain.remote_dom = NULL;
 
-	/* Update the pfn of the ME in its host Smart Object */
-	me->avz_shared->dom_desc.u.ME.pfn = phys_to_pfn(memslot[ME_slotID].base_paddr);
-
-	/* start pfn can differ from the initiator according to the physical memory layout */
-	me->avz_shared->dom_phys_offset = memslot[ME_slotID].base_paddr;
-
 	me->pause_count = domctxt->pause_count;
 	me->need_periodic_timer = domctxt->need_periodic_timer;
 
@@ -242,79 +244,76 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 
 	/* Fields related to CPU */
 	me->vcpu = domctxt->vcpu;
+
+        __dump_regs(&me->vcpu.regs);
 }
 
 void sync_domain_interactions(unsigned int ME_slotID);
-void restore_migrated_domain(unsigned int ME_slotID) {
-        struct domain *me = NULL;
-	addr_t current_pgtable_paddr;
-
-	DBG("Restoring migrated domain on ME_slotID: %d\n", ME_slotID);
-
-	me = domains[ME_slotID];
-
-	restore_domain_context(ME_slotID, me, &domain_context);
-
-	/* Init post-migration execution of ME */
-
-	/* Stack pointer (r13) should remain unchanged since on the receiver side we did not make any push on the SVC stack */
-	me->vcpu.regs.sp = (unsigned long) setup_dom_stack(me);
-
-#ifndef CONFIG_ARM64VT
-	/* Setting the (future) value of PC in r14 (LR). See code switch_to in entry-armv.S */
-	me->vcpu.regs.lr = (unsigned long) (void *) after_migrate_to_user;
-#endif
-
-	/* Issue a timer interrupt (first timer IRQ) avoiding some problems during the forced upcall in after_migrate_to_user */
-	send_timer_event(me);
-
-	mmu_get_current_pgtable(&current_pgtable_paddr);
-
-	/* Switch to idle domain address space which has a full mapping of the RAM */
-	mmu_switch_kernel((void *) idle_domain[smp_processor_id()]->pagetable_paddr);
-	/*
-	 * Perform synchronization work like memory mappings & vbstore event channel restoration.
-	 *
-	 * Create the memory mappings in the ME that are normally done at boot
-	 * time. We pass the current domain needed by the domcalls to correctly
-	 * switch between address spaces */
-
-	DBG("%s: syncing domain interactions in agency...\n", __func__);
-	sync_domain_interactions(ME_slotID);
-
-	/* We've done as much initialisation as we could here. */
-
-	ASSERT(smp_processor_id() == 0);
-
-	/*
-	 * We check if the ME has been killed during the pre_activate callback.
-	 * If yes, we do not pursue our re-activation process.
-	 */
-	if (get_ME_state(ME_slotID) == ME_state_dead) {
-
-		set_current_domain(agency);
-		mmu_switch_kernel((void *) current_pgtable_paddr);
-
-		return ;
-	}
-
-	ASSERT(smp_processor_id() == 0);
- 
-	/* Resume ... */
-
-	/* All sync-ed! Kick the ME alive! */
-
-	ASSERT(smp_processor_id() == 0);
-
-	DBG("%s: Now, resuming ME slotID %d...\n", __func__, ME_slotID);
-
-	domain_unpause_by_systemcontroller(me);
-
-	set_current_domain(agency);
-	mmu_switch((void *) current_pgtable_paddr);
-}
+void resume_to_guest(void);
 
 void write_ME_snapshot(avz_hyp_t *args) {
+        uint32_t snapshot_size;
+        void *snapshot_buffer;
+        uint32_t slotID;
+        struct domain *domME;
+        struct dom_context *domctxt;
+	void *dom_stack;
+        struct cpu_regs *frame;
+
+        slotID = args->u.avz_snapshot_args.slotID;
+	
+        snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
+        snapshot_size = *((uint32_t *) snapshot_buffer);
+
+        printk("## snapshot size: %d\n", snapshot_size);
+
+        domME = domains[slotID];
+        domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
+
+        restore_domain_context(args->u.avz_snapshot_args.slotID, domME, domctxt);
+
+	domME->avz_shared->vbstore_grant_ref = args->u.avz_snapshot_args.vbstore_grant_ref;
+
+	/* Copy the ME content */
+	memcpy((void *) __xva(slotID, memslot[slotID].base_paddr), snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context),
+		memslot[slotID].size - sizeof(uint32_t) - sizeof(struct dom_context));
+	 
+        /* Issue a timer interrupt (first timer IRQ) avoiding some problems during the forced upcall in after_migrate_to_user */
+	send_timer_event(domME);
+
+	/* Create a stack devoted to this restored domain */
+
+	dom_stack = memalign(DOMAIN_STACK_SIZE, DOMAIN_STACK_SIZE);
+	BUG_ON(!dom_stack);
+
+	/* Keep the reference for fu16ture removal */
+        domME->domain_stack = dom_stack;
+
+        /* Reserve the frame which will be restored later */
+	frame = dom_stack + DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
+
+	/* Restore the EL2 frame */
+        memcpy(frame, &domctxt->stack_frame, sizeof(struct cpu_regs));
+
+        /* As we will be resumed from the schedule function, we need to update the
+         * vital registers from the VCPU regs.
+         */
+        domME->vcpu.regs.sp = (unsigned long) frame;
+	domME->vcpu.regs.lr = (unsigned long) resume_to_guest;
 
 
+/* TODO: signal behavuiour ...*/
+	
+	DBG("[soo:avz] %s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__, 
+		agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID], 
+		domME->avz_shared->dom_desc.u.ME.dc_evtchn);
+
+	evtchn_bind_existing_interdomain(domME, 
+			agency, 
+			domME->avz_shared->dom_desc.u.ME.dc_evtchn,
+			agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID]);
+					
+	DBG("%s: Now, resuming ME slotID %d...\n", __func__, slotID);
+
+	domain_unpause_by_systemcontroller(domME);
 }

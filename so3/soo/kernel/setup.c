@@ -38,12 +38,19 @@
 
 volatile avz_shared_t *avz_shared;
  
+ void resume_fn(void) {
+
+	while (1);
+ }
+
 /**
  * This function is called at early bootstrap stage along head.S.
  */
 void avz_setup(void) {
 
         avz_get_shared();
+
+        avz_shared->dom_desc.u.ME.__resume_fn = resume_fn;
 
         lprintk("SOO Virtualizer (avz) shared page:\n\n");
 

@@ -67,7 +67,7 @@ void migration_final(avz_hyp_t *args) {
 
 		flush_dcache_all();
 
-		restore_migrated_domain(slotID);
+		//restore_migrated_domain(slotID);
 		break;
 
 	case ME_state_preparing:
@@ -84,67 +84,10 @@ void migration_final(avz_hyp_t *args) {
 	}
 }
 
-/*------------------------------------------------------------------------------
- sync_directcomm
- This function updates the directcomm event channel in both domains
- ------------------------------------------------------------------------------*/
-static void rebind_directcomm(unsigned int ME_slotID)
-{
-	struct domain *me = domains[ME_slotID];
-	 
-	DBG("Rebinding directcomm...\n");
-#if 0
-	/* Get the directcomm evtchn from agency */
-
-	memset(&agency_directcomm_args, 0, sizeof(struct DOMCALL_directcomm_args));
-
-	/* Pass the (remote) domID in directcomm_evtchn */
-	agency_directcomm_args.directcomm_evtchn = ME_slotID;
-
-	domain_call(agency, DOMCALL_sync_directcomm, &agency_directcomm_args);
-
-	memset(&ME_directcomm_args, 0, sizeof(struct DOMCALL_directcomm_args));
-
-	/* Pass the domID in directcomm_evtchn */
-	ME_directcomm_args.directcomm_evtchn = 0;
-
-	domain_call(me, DOMCALL_sync_directcomm, &ME_directcomm_args);
-
-	DBG("[soo:avz] %s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__, agency_directcomm_args.directcomm_evtchn, ME_directcomm_args.directcomm_evtchn);
-
-	evtchn_bind_existing_interdomain(me, agency, ME_directcomm_args.directcomm_evtchn, agency_directcomm_args.directcomm_evtchn);
-#endif
-}
-
-/*------------------------------------------------------------------------------
- sync_domain_interactions
- - Create the mmory mappings in ME which are normally done at boot time
-   This is done using DOMCALLs. We first have to retrieve info from agency
-   using DOMCALLs as well.
-   We pass the current domain as argument as we need it to make the DOMCALLs.
- - Performs the rebinding of vbstore event channel
- ------------------------------------------------------------------------------*/
 void sync_domain_interactions(unsigned int ME_slotID)
 {
 	struct domain *me = domains[ME_slotID];
 #if 0
-	struct DOMCALL_sync_vbstore_args xs_args;
-	struct DOMCALL_sync_domain_interactions_args sync_args;
-
-	memset(&xs_args, 0, sizeof(struct DOMCALL_sync_vbstore_args));
-
-	/* Retrieve ME vbstore info from the agency */
-
-	/* Pass the ME_domID in vbstore_remote_ME_evtchn field */
-	xs_args.vbstore_revtchn = me->avz_shared->domID;
-
-	domain_call(agency, DOMCALL_sync_vbstore, &xs_args);
-
-	/* Create the mappings in ME */
-	sync_args.vbstore_pfn = xs_args.vbstore_pfn;
-
-	domain_call(me, DOMCALL_sync_domain_interactions, &sync_args);
-
 	/*
 	 * Rebinding the event channel used to access vbstore in agency
 	 */
@@ -173,7 +116,6 @@ void migration_init(avz_hyp_t *args) {
 	case ME_state_suspended:
 		DBG("ME state suspended\n");
 
-		/* Initiator's side: the ME must be suspended during the migration */
 		domain_pause_by_systemcontroller(domME);
 
 		DBG0("ME paused OK\n");
@@ -190,9 +132,6 @@ void migration_init(avz_hyp_t *args) {
 		/* Set the size of this ME in its own descriptor */
 		domME->avz_shared->dom_desc.u.ME.size = memslot[slotID].size;
 
-		/* Now set the pfn base of this ME; this will be useful for the Agency Core subsystem */
-		domME->avz_shared->dom_desc.u.ME.pfn = phys_to_pfn(memslot[slotID].base_paddr);
-
 		break;
 
 	case ME_state_migrating:
@@ -202,8 +141,7 @@ void migration_init(avz_hyp_t *args) {
 
 		/* Pre-init the basic information related to the ME */
 		domME->avz_shared->dom_desc.u.ME.size = memslot[slotID].size;
-		domME->avz_shared->dom_desc.u.ME.pfn = phys_to_pfn(memslot[slotID].base_paddr);
-
+	
 		break;
 
 	default:

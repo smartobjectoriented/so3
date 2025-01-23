@@ -1130,8 +1130,11 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 
 /* Fields related to the underlying CPU */
 typedef struct vcpu {
-	cpu_regs_t regs;		/* All CPU registers */
-        uint16_t cpu_ctrl_state;	/* CPU control state register */
+	cpu_regs_t regs;	/* All CPU registers */
+
+	/* System registers */
+        u64 sctlr_el1;
+        u64 vbar_el1;
 } vcpu_t;
 
 #endif /* CONFIG_AVZ */
