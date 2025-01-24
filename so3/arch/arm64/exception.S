@@ -21,6 +21,7 @@
 #include <generated/autoconf.h>
 
 #include <asm-offsets.h>
+#include <thread.h>
 #include <syscall.h>
 
 #include <asm/processor.h>
@@ -37,6 +38,8 @@
 
 .globl ret_from_fork
 .global __call_sig_handler
+
+.extern current_thread
 .extern __sync_serror
 .extern do_exit
 .extern __check_ptrace_syscall
@@ -165,7 +168,7 @@ ENTRY(__vectors)
 #ifdef CONFIG_AVZ
 	b 	el1_2_12_irq_handler
 #else /* CONFIG_AVZ */
-	b 	el0_irq_handler
+	b 	el01_irq_handler
 #endif /* !CONFIG_AVZ */
 
 	// Lower EL using AArch64 / FIQ
@@ -203,42 +206,7 @@ ENTRY(__vectors)
 
 	mov	x0, lr
 	b 	trap_handle_error
-
-__prepare_sig_handler:
-#if 0
-	str	sp, [sp, #(OFFSET_SP-S_FRAME_SIZE)]	// save sp
-
-	// Build a new stack frame based on the current
-	sub	sp, sp, #S_STACK_FRAME_SIZE
-
-	// Make sure the spsr is with Thumb de-activated to perform normal execution of the handler
-
-	mov	r1, #PSR_USR_MODE		// Ensure the handler will run in user mode (situation where
-						// the current frame inherits from code running in SVC).
-
-	str	r1, [sp, #OFFSET_PSR]		// Save the updated SPSR
-
-	// Set the argument (signum, handler) to r0 & r1
-	ldr	r1, [r0, #OFFSET_SYS_SIGNUM]
-	str	r1, [sp, #OFFSET_R0]
-
-	ldr 	r0, [r0, #OFFSET_SYS_SA]
-	ldr	r1, [r0, #OFFSET_SA_HANDLER]
-	str	r1, [sp, #OFFSET_R1]
-
-	ldr	r1, [r0, #OFFSET_SA_RESTORER]
-	str	r1, [sp, #OFFSET_PC]		// Set the handler to the PC
-
-	/* Set the current sp_usr to have a valid stack in the user space */
-
-	ldr 	r0, .LCcurrent
-	ldr	r0, [r0]
-	ldr 	r0, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-	str	r0, [sp, #OFFSET_SP_USR]
-
-	mov	pc, lr				// Back to the caller
-#endif
-	ret
+ 
 
 #ifdef CONFIG_CPU_SPIN_TABLE
 
@@ -352,6 +320,7 @@ el12_sync_handler:
 
  	mov 	x0, sp
 	bl	trap_handle
+
 
 	ldr	x0, [sp, #OFFSET_PSTATE]
 	msr	spsr_el2, x0
@@ -491,8 +460,42 @@ hypervisor_stack:
 
 #endif /* CONFIG_AVZ */
 
+__prepare_sig_handler:
+
+	/* Preserve the SP_EL1 in the new stack frame used by 
+	 * the signal handler
+	 */
+
+	// Build a new stack frame based on the current
+	sub	sp, sp, #S_FRAME_SIZE
+
+	mov	x2, #PSR_MODE_EL0t
+	bic	x2, x2, #PSR_I_BIT
+	str	x2, [sp, #OFFSET_PSTATE]
+	
+	ldr	x1, [x0, #OFFSET_SYS_SIGNUM]
+	str	x1, [sp, #OFFSET_X0]
+	
+	ldr	x1, [x0, #OFFSET_SYS_SA]
+	ldr	x2, [x1, #OFFSET_SA_HANDLER]
+	str	x2, [sp, #OFFSET_X1]
+
+	// Set the handler to the PC
+	ldr	x2, [x1, #OFFSET_SA_RESTORER]
+	str	x2, [sp, #OFFSET_PC]
+
+	ldr 	x0, .LCcurrent
+ 
+	ldr	x0, [x0]
+	ldr 	x0, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+	str	x0, [sp, #OFFSET_SP_USR]
+
+	ret
+
+// x0 will be altered
 .macro check_pending_signal
-	// Is there any pending signals for this process?
+
+	//The return value will be the __sigaction_t pointer or 0 (NULL) if no signal pending
 	bl	sig_check
 
 	cmp	x0, #0
@@ -504,79 +507,109 @@ hypervisor_stack:
 
 .endm
 
-el01_sync_handler:
+// Exit macro at the end of an exception routine 
+// It restores the sp_el0 as well.
+.macro prepare_to_exit_to_el0
+	ldr	x0, [sp, #OFFSET_PC]
+	msr	elr_el1, x0
 
-	// If the syscall interrupt occurs with the SO3-on-avz configuration,
-	// the stack frame is built in AVZ (interrupt vector at this level).
-	// Hence, the SO3 domain (guest) will just need to preserve the
-	// return address and make the local processing.
+	ldr 	x0, [sp, #OFFSET_SP_USR]
+	msr	sp_el0, x0
+
+	ldr	x0, [sp, #OFFSET_PSTATE]
+	msr	spsr_el1, x0
+.endm
+
+// Update the user SP in the stack and keep a reference in the TCB as well.
+// This reference is used in case of a user signal handler
+.macro update_sp_usr
+	mrs	x1, sp_el0
+	str	x1, [sp, #OFFSET_SP_USR]
+	
+	ldr 	x0, .LCcurrent
+	ldr	x0, [x0]
+	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+.endm
+
+/* Syscalls */
+el01_sync_handler:
 
 	kernel_entry
 
 	mrs	x0, elr_el1
 	str	x0, [sp, #OFFSET_PC]
 
-	mrs	x0, sp_el0
-	str	x0, [sp, #OFFSET_SP]
+	mrs	x1, sp_el0
+	str	x1, [sp, #OFFSET_SP_USR]
+
+	cmp 	x8, #SYSCALL_SIGRETURN
+	beq	__after_push_sp_usr
+
+	ldr 	x0, .LCcurrent
+	ldr	x0, [x0]
+	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+
+__after_push_sp_usr:
 
 	mrs	x0, spsr_el1
 	str	x0, [sp, #OFFSET_PSTATE]
 
-	// Make sure r0 refers to the base of the stack frame
+	// Make sure x0 refers to the base of the stack frame
 	mov	x0, sp
 
    	bl 	trap_handle
 
+	// Check if sigreturn has been called. In this case, we
+	// clean the stack frame which has been used to manage the user handler.
+	cmp	x8, #SYSCALL_SIGRETURN
+	bne	__ret_from_fork
+	
+	// Reset the stack frame by removing the one issued from sigreturn
+	add	sp, sp, #S_FRAME_SIZE
+
+ 
 __ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
-
 	// Is there any pending signals for this process?
 	check_pending_signal
-
 #endif /* CONFIG_IPC_SIGNAL */
 
-
-	ldr	x0, [sp, #OFFSET_PC]
-	msr	elr_el1, x0
-
-	ldr 	x0, [sp, #OFFSET_SP]
-	msr	sp_el0, x0
-
-	ldr	x0, [sp, #OFFSET_PSTATE]
-	msr	spsr_el1, x0
+	prepare_to_exit_to_el0
 
 	kernel_exit
 
 	eret
 
 .align  5
-el0_irq_handler:
+el01_irq_handler:
 
 	kernel_entry
 
 	mrs	x0, elr_el1
 	str	x0, [sp, #OFFSET_PC]
 
-	mrs	x0, sp_el0
-	str	x0, [sp, #OFFSET_SP]
-
 	mrs	x0, spsr_el1
 	str	x0, [sp, #OFFSET_PSTATE]
+	
+	mrs	x1, sp_el0
+	str	x1, [sp, #OFFSET_SP_USR]
+	
+	ldr 	x0, .LCcurrent
+	ldr	x0, [x0]
+	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
 
 	// Make sure r0 refers to the base of the stack frame
 	mov	x0, sp
 
    	bl 	irq_handle
 
-	ldr	x0, [sp, #OFFSET_PC]
-	msr	elr_el1, x0
+#ifdef CONFIG_IPC_SIGNAL
+	// Is there any pending signals for this process?
+	check_pending_signal
+#endif /* CONFIG_IPC_SIGNAL */
 
-	ldr 	x0, [sp, #OFFSET_SP]
-	msr	sp_el0, x0
-
-	ldr	x0, [sp, #OFFSET_PSTATE]
-	msr	spsr_el1, x0
+	prepare_to_exit_to_el0
 
 	kernel_exit
 
@@ -601,11 +634,15 @@ el1_irq_handler:
 
    	bl 	irq_handle
 
-	ldr	x0, [sp, #OFFSET_PSTATE]
-	msr	spsr_el1, x0
+#ifdef CONFIG_IPC_SIGNAL
+	// Is there any pending signals for this process?
+	check_pending_signal
+#endif /* CONFIG_IPC_SIGNAL */
 
-	ldr	x0, [sp, #OFFSET_PC]
-	msr	elr_el1, x0
+	// In case of signal handler must run, we keep
+	// the same exit scheme as the execption coming from EL0
+	// This ensure to have a valid user SP in case.
+	prepare_to_exit_to_el0
 
   	kernel_exit
 
@@ -619,72 +656,7 @@ ret_from_fork:
 
 	b	__ret_from_fork
 
-// IRQs are off
-// ARM EABI: the syscall nr is stored in x8
-.align  5
-syscall_interrupt:
-
-#if 0 /* Still to be ported in ARM64 */
-
-	// At the exception entry, the stack must be 8-byte aligned.
-	// If it is not the case (gcc might not respect the AAPCS convention for optimization purposes),
-	// sp will be adjusted. The original sp is preserved and will be correctly restored at the exit.
-
-	tst	sp, #0x7	// 8-bytes aligned
-	strne	sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE - 4)]	// save sp
-	subne	sp, sp, #4
-	streq	sp, [sp, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]	// save sp
-
-	// Alignment guard
-	tst	sp, #0x7		// 8-bytes aligned
-	bne	__stack_alignment_fault
-
-	// Build the stack frame to store registers
-
-	sub	sp, sp, #SVC_STACK_FRAME_SIZE
-
-	str	lr, [sp, #OFFSET_LR]	// save lr in lr
-	str	lr, [sp, #OFFSET_PC]	// save lr in pc
-
-	stmia 	sp, {r0-r12}  	// Store registers
-
-    	mrs 	lr, spsr        		// Get spsr
-	str	lr, [sp, #OFFSET_PSR]	// Store spsr
-
-	// Saving user mode registers (sp_usr, lr_usr)
-	add	lr, sp, #OFFSET_SP_USR
-	stmia	lr, {sp, lr}^
-
-	ldr	r0, [sp, #OFFSET_SP_USR]
-	ldr 	r1, .LCcurrent
-	ldr 	r1, [r1]
-
-	str 	r0, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-
-	// Restore r0-r2
-	ldmia	sp, {r0-r2}
-
-#ifdef CONFIG_MMU
-	// Give a chance to a ptrace tracer to monitor us (before the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-
-	cpsie   i 			// Re-enable interrupts
-    	bl 	syscall_handle
-    	cpsid	i			// Re-disable interrupts to be safe in regs manipulation
-
-	// Check if sigreturn has been called. In this case, we
-	// clean the stack frame which has been used to manage the user handler.
-	cmp	r7, #SYSCALL_SIGRETURN
-	bne	__no_sigreturn
-
-	// Reset the stack frame by removing the one issued from sigreturn
-	add	sp, sp, #SVC_STACK_FRAME_SIZE
-#endif
-
-__no_sigreturn:
+ 
 
 #if 0
 #ifdef CONFIG_MMU
@@ -695,6 +667,11 @@ __no_sigreturn:
 #endif
 #endif
  
+
+.LCcurrent:
+	.quad current_thread
+
+
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 
 .align 5

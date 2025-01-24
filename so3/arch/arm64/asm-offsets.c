@@ -95,8 +95,19 @@ int main(void)
 	DEFINE(ARM_SMCCC_QUIRK_STATE_OFFS,	offsetof(struct arm_smccc_quirk, state));
 
 	BLANK();
+ 
+	DEFINE(OFFSET_TCB_CPU_REGS, 		offsetof(tcb_t, cpu_regs));
+	DEFINE(OFFSET_SP_USR,			offsetof(cpu_regs_t, sp_usr));
 
-	DEFINE(OFFSET_TCB_CPU_REGS, 	offsetof(tcb_t, cpu_regs));
+	BLANK();
+
+	DEFINE(OFFSET_SYS_SIGNUM,		offsetof(__sigaction_t, signum));
+	DEFINE(OFFSET_SYS_SA,			offsetof(__sigaction_t, sa));
+
+	BLANK();
+
+	DEFINE(OFFSET_SA_HANDLER,		offsetof(sigaction_t, sa_handler));
+	DEFINE(OFFSET_SA_RESTORER,		offsetof(sigaction_t, sa_restorer));
 
 	return 0;
 }

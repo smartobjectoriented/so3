@@ -73,7 +73,7 @@ long syscall_handle(unsigned long r0, unsigned long r1, unsigned long r2, unsign
 
 	set_errno_addr(__errno_addr);
 
-	switch (syscall_no) {
+        switch (syscall_no) {
 
 #ifdef CONFIG_MMU
 		case SYSCALL_GETPID:
@@ -311,7 +311,7 @@ long syscall_handle(unsigned long r0, unsigned long r1, unsigned long r2, unsign
 		default:
 			printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
 			break;
-	}
+                }
 
 #warning do_softirq?
 

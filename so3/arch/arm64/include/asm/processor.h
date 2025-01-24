@@ -872,7 +872,7 @@
 
 /* The stack must be 16-byte aligned */
 
-#define S_FRAME_SIZE	(8 * 34)
+#define S_FRAME_SIZE	(8 * 36)
 
 #ifdef __ASSEMBLY__
 
@@ -1124,6 +1124,10 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 	u64 sp;
 	u64 pc;
 	u64 pstate;
+
+	/* <sp_usr> is used to keep track of the sp at the higher EL - used for signal-like handler */
+        u64 sp_usr;
+        u64 padding;
 } cpu_regs_t;
 
 #ifdef CONFIG_AVZ

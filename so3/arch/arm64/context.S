@@ -64,10 +64,9 @@ ____switch_to:
 	cbz 	x0, load_ctx
 	add	x8, x0, x10
 
-
 save_ctx:
-
-	stp	x19, x20, [x8], #16		// store callee-saved registers
+	// store callee-saved registers
+	stp	x19, x20, [x8], #16		 
 	stp	x21, x22, [x8], #16
 	stp	x23, x24, [x8], #16
 	stp	x25, x26, [x8], #16
@@ -82,7 +81,8 @@ load_ctx:
 	// Prepare to retrieve the regs from the stack
 	add	x8, x1, x10
 
-	ldp	x19, x20, [x8], #16		// restore callee-saved registers
+	// restore callee-saved registers
+	ldp	x19, x20, [x8], #16		
 	ldp	x21, x22, [x8], #16
 	ldp	x23, x24, [x8], #16
 	ldp	x25, x26, [x8], #16
@@ -249,33 +249,12 @@ __thread_prologue_user:
 
 	eret
 #if 0
-	// Prepare to jump into C code
-	mov 	r0, r4 // tcb->th_fn
-	mov 	r1, r5 // tcb->th_arg
-
-
 #ifdef CONFIG_MMU
 	// Check if the thread must stopped because of ptrace/tracee
 	stmfd 	sp!, {r0, r1}
 	bl	__check_ptrace_traceme
 	ldmfd	sp!, {r0, r1}
 #endif
-
-	// IRQ enabling - must be done in SVC mode of course ;-)
-	// We should take care about protecting against signal receipt:
-	// since the stack is not initialized yet, the signal processing should be kept disabled.
-	cpsie   i
-
- 	// Switch into user mode
- 	mrs 	r4, cpsr
-	bic	r4, r4, #PSR_MODE_MASK
-	orr	r4, r4, #PSR_USR_MODE
- 	msr	cpsr, r4
-
-	// User stack initialisation
-	mov  	sp, r6
-
-	bl	thread_prologue
 #endif
 
 // Store the current registers into a cpu_regs structure passed in r0 (as first argument)
@@ -290,7 +269,7 @@ __save_context:
 
 	sub	x1, x1, #S_FRAME_SIZE
 
-	// Prepare to configure sp during the context switch.
+	// Prepare to configure sp during the context switch
 	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
 
 	// Prepare the lr to branch to ret_from_fork
