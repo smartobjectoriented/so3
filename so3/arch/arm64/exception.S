@@ -132,9 +132,9 @@ ENTRY(__vectors)
 	.align 7
 
 #ifdef CONFIG_AVZ
-	b 	el1_2_12_irq_handler
+	b 	el12_2_irq_handler
 #else /* CONFIG_AVZ */
-	b 	el1_irq_handler
+	b 	el01_1_irq_handler
 #endif /* !CONFIG_AVZ */
 
 	// Current EL with SPx / FIQ
@@ -166,9 +166,9 @@ ENTRY(__vectors)
 	.align 7
 
 #ifdef CONFIG_AVZ
-	b 	el1_2_12_irq_handler
+	b 	el12_2_irq_handler
 #else /* CONFIG_AVZ */
-	b 	el01_irq_handler
+	b 	el01_1_irq_handler
 #endif /* !CONFIG_AVZ */
 
 	// Lower EL using AArch64 / FIQ
@@ -304,68 +304,61 @@ ENTRY(pre_ret_to_el1)
 
 #endif /* CONFIG_CPU_PSCI */
 
+// Enter macro to jump into EL1 from EL0 *or* from EL1
+.macro prepare_to_enter_to_el2
+	mrs	x0, elr_el2
+	str	x0, [sp, #OFFSET_PC]
+
+	mrs	x0, sp_el1
+	str	x0, [sp, #OFFSET_SP_USR]
+
+	mrs	x0, spsr_el2
+	str	x0, [sp, #OFFSET_PSTATE]
+.endm
+
+
+// Exit macro at the end of an exception routine 
+// It restores the sp_el0 as well.
+.macro prepare_to_exit_to_el1
+	ldr	x0, [sp, #OFFSET_PC]
+	msr	elr_el2, x0
+
+	ldr 	x0, [sp, #OFFSET_SP_USR]
+	msr	sp_el1, x0
+
+	ldr	x0, [sp, #OFFSET_PSTATE]
+	msr	spsr_el2, x0
+.endm
+
 .align 5
 el12_sync_handler:
 
 	kernel_entry
 
-	mrs	x0, spsr_el2
-	str	x0, [sp, #OFFSET_PSTATE]
-
-	mrs	x0, sp_el1
-	str	x0, [sp, #OFFSET_SP]
-
-	mrs	x0, elr_el2
-	str	x0, [sp, #OFFSET_PC]
+	prepare_to_enter_to_el2
 
  	mov 	x0, sp
 	bl	trap_handle
 
-
-	ldr	x0, [sp, #OFFSET_PSTATE]
-	msr	spsr_el2, x0
-
-	ldr	x0, [sp, #OFFSET_SP]
-	msr	sp_el1, x0
-
-	ldr	x0, [sp, #OFFSET_PC]
-	msr	elr_el2, x0
+	prepare_to_exit_to_el1
 
 	kernel_exit
 
 	eret
 
+
 .align  5
-el1_2_12_irq_handler:
+el12_2_irq_handler:
 
 	kernel_entry
 
-	mrs	x0, elr_el2
-	str	x0, [sp, #OFFSET_PC]
-
-	mrs	x0, spsr_el2
-	str	x0, [sp, #OFFSET_PSTATE]
-
-	mrs	x0, sp_el1
-	str	x0, [sp, #OFFSET_SP]
+	prepare_to_enter_to_el2
 
 	// Make sure r0 refers to the base of the stack frame
 	mov	x0, sp
-
-	// The stack must stay 16-byte aligned
-
-	str	lr, [sp, #-16]!
     	bl 	irq_handle
-	ldr	lr, [sp], #16
 
-	ldr	x0, [sp, #OFFSET_PSTATE]
-	msr	spsr_el2, x0
-
-	ldr	x0, [sp, #OFFSET_PC]
-	msr	elr_el2, x0
-
-	ldr	x0, [sp, #OFFSET_SP]
-	msr	sp_el1, x0
+	prepare_to_exit_to_el1
 
   	kernel_exit
 
@@ -466,6 +459,9 @@ __prepare_sig_handler:
 	 * the signal handler
 	 */
 
+	ldr	x2, [sp, #OFFSET_SP_USR]
+	str	x2, [sp, #(OFFSET_SP_USR - S_FRAME_SIZE)]
+
 	// Build a new stack frame based on the current
 	sub	sp, sp, #S_FRAME_SIZE
 
@@ -484,12 +480,6 @@ __prepare_sig_handler:
 	ldr	x2, [x1, #OFFSET_SA_RESTORER]
 	str	x2, [sp, #OFFSET_PC]
 
-	ldr 	x0, .LCcurrent
- 
-	ldr	x0, [x0]
-	ldr 	x0, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-	str	x0, [sp, #OFFSET_SP_USR]
-
 	ret
 
 // x0 will be altered
@@ -507,6 +497,19 @@ __prepare_sig_handler:
 
 .endm
 
+// Enter macro to jump into EL1 from EL0 *or* from EL1
+.macro prepare_to_enter_to_el1
+	mrs	x0, elr_el1
+	str	x0, [sp, #OFFSET_PC]
+
+	mrs	x0, sp_el0
+	str	x0, [sp, #OFFSET_SP_USR]
+
+	mrs	x0, spsr_el1
+	str	x0, [sp, #OFFSET_PSTATE]
+.endm
+
+
 // Exit macro at the end of an exception routine 
 // It restores the sp_el0 as well.
 .macro prepare_to_exit_to_el0
@@ -520,43 +523,16 @@ __prepare_sig_handler:
 	msr	spsr_el1, x0
 .endm
 
-// Update the user SP in the stack and keep a reference in the TCB as well.
-// This reference is used in case of a user signal handler
-.macro update_sp_usr
-	mrs	x1, sp_el0
-	str	x1, [sp, #OFFSET_SP_USR]
-	
-	ldr 	x0, .LCcurrent
-	ldr	x0, [x0]
-	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-.endm
 
 /* Syscalls */
 el01_sync_handler:
 
 	kernel_entry
 
-	mrs	x0, elr_el1
-	str	x0, [sp, #OFFSET_PC]
-
-	mrs	x1, sp_el0
-	str	x1, [sp, #OFFSET_SP_USR]
-
-	cmp 	x8, #SYSCALL_SIGRETURN
-	beq	__after_push_sp_usr
-
-	ldr 	x0, .LCcurrent
-	ldr	x0, [x0]
-	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-
-__after_push_sp_usr:
-
-	mrs	x0, spsr_el1
-	str	x0, [sp, #OFFSET_PSTATE]
+	prepare_to_enter_to_el1
 
 	// Make sure x0 refers to the base of the stack frame
 	mov	x0, sp
-
    	bl 	trap_handle
 
 	// Check if sigreturn has been called. In this case, we
@@ -582,22 +558,11 @@ __ret_from_fork:
 	eret
 
 .align  5
-el01_irq_handler:
+el01_1_irq_handler:
 
 	kernel_entry
 
-	mrs	x0, elr_el1
-	str	x0, [sp, #OFFSET_PC]
-
-	mrs	x0, spsr_el1
-	str	x0, [sp, #OFFSET_PSTATE]
-	
-	mrs	x1, sp_el0
-	str	x1, [sp, #OFFSET_SP_USR]
-	
-	ldr 	x0, .LCcurrent
-	ldr	x0, [x0]
-	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
+	prepare_to_enter_to_el1
 
 	// Make sure r0 refers to the base of the stack frame
 	mov	x0, sp
@@ -615,48 +580,11 @@ el01_irq_handler:
 
 	eret
 
-
-.align  5
-el1_irq_handler:
-
-	kernel_entry
-
-	mrs	x0, elr_el1
-	str	x0, [sp, #OFFSET_PC]
-
-	mrs	x0, spsr_el1
-	str	x0, [sp, #OFFSET_PSTATE]
-
-	// Make sure r0 refers to the base of the stack frame
-	mov	x0, sp
-
-	// The stack must stay 16-byte aligned
-
-   	bl 	irq_handle
-
-#ifdef CONFIG_IPC_SIGNAL
-	// Is there any pending signals for this process?
-	check_pending_signal
-#endif /* CONFIG_IPC_SIGNAL */
-
-	// In case of signal handler must run, we keep
-	// the same exit scheme as the execption coming from EL0
-	// This ensure to have a valid user SP in case.
-	prepare_to_exit_to_el0
-
-  	kernel_exit
-
-	eret
-
-
 // Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
-
 	str	xzr, [sp, #OFFSET_X0]
-
 	b	__ret_from_fork
 
- 
 
 #if 0
 #ifdef CONFIG_MMU
@@ -667,10 +595,6 @@ ret_from_fork:
 #endif
 #endif
  
-
-.LCcurrent:
-	.quad current_thread
-
 
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 

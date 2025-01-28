@@ -57,6 +57,8 @@ ENTRY(__switch_domain_to)
 	b	____switch_to
 #endif /* CONFIG_AVZ */
 
+// We preserve the registers which are not save on the stack but
+// are necessary to keep this running context.
 ENTRY(__switch_to)
 	mov	x10, #(OFFSET_TCB_CPU_REGS + OFFSET_X19)
 
