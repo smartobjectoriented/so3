@@ -19,9 +19,9 @@
  */
 
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 
-#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
