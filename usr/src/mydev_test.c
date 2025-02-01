@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <assert.h>
 
-int main(void)
-{
+int main(void) {
+
 	char write_buffer[20];
 	char read_buffer[20];
 
@@ -18,4 +18,5 @@ int main(void)
 
 	printf("Wrote: %s - Read %s\n", write_buffer, read_buffer);
 	assert(!strcmp(write_buffer, read_buffer));
+	return 0;
 }
