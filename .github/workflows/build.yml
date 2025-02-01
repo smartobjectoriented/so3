@@ -31,10 +31,18 @@ jobs:
 
   build-usr:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        CMAKE_TOOLCHAIN_FILE: ['../aarch64_toolchain.cmake', 
+                               '../arm_toolchain.cmake']
+        BUILD_TYPE: ["Debug", "Release"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Build
         run: |
-          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd usr && ./build.sh"
+          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "
+          mkdir usr/build && cd usr/build && cmake -Wall -Werror -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE= ${{matrix.CMAKE_TOOLCHAIN_FILE } .. &&
+          make -j{nproc}"
