@@ -17,7 +17,7 @@ jobs:
 
       - name: Build 
         run: |
-          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make virt32_defconfig && make -j"
+          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make virt32_defconfig && make -j`nproc`"
 
   build-virt64:
     runs-on: ubuntu-latest
@@ -27,7 +27,7 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make virt64_defconfig && make -j"
+          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make virt64_defconfig && make -j`nproc`"
 
   build-usr:
     runs-on: ubuntu-latest
