@@ -29,8 +29,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CMAKE_TOOLCHAIN_FILE: ['/so3/usr/aarch64_toolchain.cmake', 
-                               '/so3/usr/arm_toolchain.cmake']
+        CMAKE_TOOLCHAIN_FILE: ['aarch64_toolchain.cmake', 
+                               'arm_toolchain.cmake']
         BUILD_TYPE: ["Debug", "Release"]
     steps:
       - name: Checkout repository
@@ -38,4 +38,4 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "mkdir usr/build && cd usr/build && cmake --no-warn-unused-cli -DCMAKE_C_FLAGS='-Wall -Werror -Wno-dev' -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE=${{matrix.CMAKE_TOOLCHAIN_FILE }} .. && make -j`nproc`"
+          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "mkdir usr/build && cd usr/build && cmake --no-warn-unused-cli -DCMAKE_C_FLAGS='-Werror' -Wno-dev -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE=../${{matrix.CMAKE_TOOLCHAIN_FILE }} .. && make -j`nproc`"
