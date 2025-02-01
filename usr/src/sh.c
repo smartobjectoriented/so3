@@ -97,24 +97,20 @@ void escape_arrow_key(char *buffer, int size) {
  * More secure way and escaped way to get user input
  */
 void get_user_input(char *buffer, int buf_size) {
-    if (buffer == NULL || buf_size <= 0) {
-        return NULL;
-    }
+	if (buffer == NULL || buf_size <= 0) {
+		return;
+	}
 
-	memset(buffer,0,buf_size);
-	
-    if (fgets(buffer, buf_size, stdin) != NULL) {
-		escape_arrow_key(buffer,buf_size);
+	memset(buffer, 0, buf_size);
+
+	if (fgets(buffer, buf_size, stdin) != NULL) {
+		escape_arrow_key(buffer, buf_size);
 		trim(buffer, buf_size);
-        size_t len = strlen(buffer);
-        if (len > 0 && buffer[len - 1] == '\n') {
-            buffer[len - 1] = '\0';
-        }
-		
-        return buffer;
-    }
-
-    return NULL;
+		size_t len = strlen(buffer);
+		if (len > 0 && buffer[len - 1] == '\n') {
+			buffer[len - 1] = '\0';
+		}
+	}
 }
 
 /*
