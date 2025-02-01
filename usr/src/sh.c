@@ -333,8 +333,7 @@ void sigint_sh_handler(int sig) {
 /*
  * Main entry point of the shell application.
  */
-void main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	char user_input[80];
 	int i;
 	struct sigaction sa;
