@@ -43,6 +43,4 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "
-          mkdir usr/build && cd usr/build && cmake -Wall -Werror -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE= ${{matrix.CMAKE_TOOLCHAIN_FILE }} .. &&
-          make -j{nproc}"
+          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "mkdir usr/build && cd usr/build && cmake -Wall -Werror -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE= ${{matrix.CMAKE_TOOLCHAIN_FILE }} .. && make -j`nproc`"
