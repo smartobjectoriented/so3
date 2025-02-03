@@ -430,7 +430,7 @@ static int count = 0;
             count++;
             if (count == 5)
             	for (i = 0; i < 5; i++)
-            		printf("## Elapsed time: %lld microseconds.\n", tv_end[i].tv_usec - tv_start[i].tv_usec);
+            		LV_LOG_INFO("## Elapsed time: %lld microseconds.\n", tv_end[i].tv_usec - tv_start[i].tv_usec);
 
 
             state = -2;
