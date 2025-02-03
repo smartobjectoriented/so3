@@ -20,8 +20,8 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <syscall.h>
 
+#include <syscall.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
