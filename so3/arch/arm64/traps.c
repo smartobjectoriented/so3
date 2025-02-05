@@ -146,7 +146,7 @@ int dabt_handle(cpu_regs_t *regs, unsigned long esr) {
  */
 typedef void(*vector_fn_t)(cpu_regs_t *);
 
-int trap_handle(cpu_regs_t *regs) {
+void trap_handle(cpu_regs_t *regs) {
 #ifndef CONFIG_AVZ
 	syscall_args_t sys_args;
 #endif
