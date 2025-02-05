@@ -62,7 +62,10 @@
 
 #include <asm/arm_timer.h>
 #include <asm/io.h>
+
+#ifdef CONFIG_ARM64
 #include <asm/virt.h>
+#endif /* CONFIG_ARM64 */
 
 #ifdef CONFIG_AVZ
 #include <avz/sched.h>
