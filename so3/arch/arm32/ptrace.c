@@ -24,7 +24,7 @@
  * Can be used for debugging purposes.
  *
  */
-void __dump_regs(unsigned long regs) {
+void __dump_regs(void *regs) {
 	unsigned long *cpuregs = (unsigned long *) regs;
 
 	printk("r4: %x ", *cpuregs);
