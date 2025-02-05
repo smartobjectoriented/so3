@@ -17,7 +17,7 @@
  *
  */
 
-#if 1
+#if 0
 #define DEBUG
 #endif
 
@@ -37,6 +37,8 @@
 #include <avz/domain.h>
 #include <avz/sched.h>
 #include <avz/debug.h>
+#include <avz/console.h>
+#include <avz/capsule.h>
 
 /**
  * Return the state of the ME corresponding to the ME_slotID.
@@ -87,19 +89,6 @@ void shutdown_ME(unsigned int ME_slotID)
 	put_ME_slot(ME_slotID);
 }
 
-/*
- * Check if some ME need to be killed.
- */
-void check_killed_ME(void) {
-	int i;
-
-	for (i = MEMSLOT_BASE; i < MEMSLOT_NR; i++) {
-
-		if (memslot[i].busy && (get_ME_state(i) == ME_state_killed))
-			shutdown_ME(i);
-	}
-}
-
 /**
  * Return the descriptor of a domain (agency or ME).
  * A size of 0 means there is no ME in the slot.
@@ -119,12 +108,6 @@ void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc) {
 		memcpy(dom_desc, &domains[slotID]->avz_shared->dom_desc, sizeof(dom_desc_t));
 
 }
-
-void migration_init(avz_hyp_t *args);
-void migration_final(avz_hyp_t *args);
-void read_ME_snapshot(avz_hyp_t *args);
-void write_ME_snapshot(avz_hyp_t *args);
-void inject_me(avz_hyp_t *args);
 
 /**
  * SOO hypercall processing.
@@ -153,26 +136,6 @@ void do_avz_hypercall(avz_hyp_t *args) {
 	case AVZ_GRANT_TABLE_OP:
                 do_gnttab(&args->u.avz_gnttab_args.gnttab_op);
 		break;
-
-        case AVZ_MIG_INIT:
-                migration_init(args);
-		break;
-
-	case AVZ_MIG_FINAL:
-		migration_final(args);
-		break;
-
-	/* The following hypercall is used during receive operation */
-	case AVZ_GET_ME_FREE_SLOT:
-	
-		/*
-		 * Try to get an available slot for a ME with this size.
-		 * It will return -1 if no slot is available.
-		 */
-		 
-		args->u.avz_free_slot_args.slotID = get_ME_free_slot(args->u.avz_free_slot_args.size, ME_state_migrating);;
-		break;
-	
 
 	case AVZ_GET_DOM_DESC:
                 get_dom_desc(args->u.avz_dom_desc_args.slotID, &args->u.avz_dom_desc_args.dom_desc);

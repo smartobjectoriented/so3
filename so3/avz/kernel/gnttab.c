@@ -68,7 +68,7 @@ gnttab_t *pick_granted_entry(grant_ref_t ref, domid_t origin_domid) {
         gnttab_t *cur;
 
         list_for_each_entry(cur, &domains[origin_domid]->gnttab, list) {
-                printk("## scanning ref %d  domid %d\n", cur->ref, cur->origin_domid);
+                
                 if ((cur->ref == ref) && (cur->origin_domid == origin_domid) && 
                     (cur->target_domid == current_domain->avz_shared->domID))
                         return cur;  /* Found! */
@@ -96,11 +96,27 @@ gnttab_t *new_gnttab_entry(struct domain *d, domid_t target_domid, addr_t pfn) {
 
 	/* Determine the ref number for this entry */
         gnttab->ref = get_ref_max(&d->gnttab) + 1;
-
+ 
         list_add_tail(&gnttab->list, &d->gnttab);
 
         return gnttab;
 }
+
+void revoke_gnttab_entry(struct domain *d, grant_ref_t ref) {
+        gnttab_t *cur;
+        
+        list_for_each_entry(cur, &d->gnttab, list) {
+                
+                if (cur->ref == ref) {
+                        list_del(&cur->list);
+                        free(cur);
+                        return;
+                }
+        }
+
+        /* In case of resuming, the list of gnttab is empty. */
+}
+
 
 /**
  * @brief Find a free grant pfn 
@@ -121,6 +137,41 @@ addr_t allocate_grant_pfn(struct domain *d) {
         BUG();
 
         return 0; /* Make gcc happy :-) */
+}
+
+/**
+ * @brief Map the grant page associated to vbstore in the IPA domain of the ME
+ *
+ * @param target_domid the ME which needs the vbstore pfn
+ * @param pfn 
+ * @return 
+ */
+addr_t map_vbstore_pfn(int target_domid, int pfn) {
+        gnttab_t *cur;
+        addr_t grant_paddr;
+        struct domain *d;
+
+        d = domains[target_domid];
+        
+        list_for_each_entry(cur, &agency->gnttab, list) {
+    
+                if (cur->target_domid == target_domid) {
+
+                        /* Here, we get an IPA address corresponding to the grant page */
+                        if (pfn == 0)
+                                grant_paddr = pfn_to_phys(allocate_grant_pfn(d));
+                        else
+                                grant_paddr = pfn_to_phys(pfn);
+
+                        __create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(cur->pfn), PAGE_SIZE, true, S2);
+
+                        return phys_to_pfn(grant_paddr);
+                }
+        }
+
+        BUG();
+
+        return 0;
 }
 
 /**
@@ -152,6 +203,10 @@ void do_gnttab(gnttab_op_t *args)
 
                 break;
         
+        case GNTTAB_revoke_page:
+                revoke_gnttab_entry(d, args->ref);
+                break;
+
         case GNTTAB_map_page:
 
                 /* Retrieve the original granted page */
@@ -167,10 +222,6 @@ void do_gnttab(gnttab_op_t *args)
                 __create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(gnttab->pfn), PAGE_SIZE, true, S2);
 
                 break;
-
-        case GNTTAB_revoke_page:
-                /* to be completed */
-		break;
 
           case GNTTAB_unmap_page:
                 /* to be completed */

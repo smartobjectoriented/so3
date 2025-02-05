@@ -41,6 +41,7 @@ typedef struct gnttab gnttab_t;
 
 void gnttab_init(struct domain *d);
 void do_gnttab(gnttab_op_t *args);
+addr_t map_vbstore_pfn(int target_domid, int pfn);
 
 #endif /* GNTTAB_H */
 

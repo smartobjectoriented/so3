@@ -19,11 +19,15 @@
 #ifndef UAPI_AVZ_H
 #define UAPI_AVZ_H
 
+#ifndef __ASSEMBLY__
+
 #ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
 #endif
 
 #include <asm/atomic.h>
+
+#endif /* __ASSEMBLY__ */
 
 /*
  * VIRTUAL INTERRUPTS
@@ -58,6 +62,11 @@
 
 #define DOMID_INVALID (0x7FF4U)
 
+#define AVZ_HYPERCALL_TRAP	0x2605
+#define AVZ_HYPERCALL_SIGRETURN 0x2606
+
+#ifndef __ASSEMBLY__
+
 /* Assembly low-level code to raise up hypercall */
 extern long __avz_hypercall(int vector, long avz_hyp_args);
 
@@ -74,7 +83,7 @@ void avz_hypercall(avz_hyp_t *avz_hyp);
 typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
-
+ 
 /*
  * Shared info page, shared between AVZ and the domain.
  */
@@ -87,12 +96,7 @@ struct avz_shared {
 
 	addr_t fdt_paddr;
 
-	/* VBstore shared page grant reference */
-        grant_ref_t vbstore_grant_ref;
-
-        unsigned long dom_phys_offset;
-
-	/* Other fields related to domain life */
+        /* Other fields related to domain life */
 
 	unsigned long domain_stack;
 	uint8_t evtchn_upcall_pending;
@@ -108,6 +112,12 @@ struct avz_shared {
 
 	atomic_t dc_event;
 
+	/* This field is used when taking a snapshot of us. It will be
+	 * useful to restore later. Some timer deadlines are based on it and
+	 * will need to be updated accordingly.
+	 */
+        u64 current_s_time;
+
 	/* Agency or ME descriptor */
 	dom_desc_t dom_desc;
 
@@ -122,11 +132,12 @@ struct avz_shared {
 
 typedef struct avz_shared avz_shared_t;
 
-extern volatile avz_shared_t *avz_shared;
-
-#define AVZ_HYPERCALL_TRAP	0x2605
+extern volatile avz_shared_t *__avz_shared;
 
 void do_avz_hypercall(avz_hyp_t *args);
+void __sigreturn(void);
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* UAPI_AVZ_H */
 

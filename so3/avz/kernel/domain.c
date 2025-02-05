@@ -303,8 +303,6 @@ void do_domctl(domctl_t *args)
 
 	case DOMCTL_unpauseME:
 		
-                d->avz_shared->vbstore_grant_ref = args->u.vbstore_grant_ref;
-           
                 DBG("%s: unpausing ME\n", __func__);
 
                 domain_unpause_by_systemcontroller(d);
@@ -312,9 +310,9 @@ void do_domctl(domctl_t *args)
 
 	case DOMCTL_get_AVZ_shared:
                 if (current_domain->avz_shared->domID == DOMID_AGENCY) 
-                        args->u.avz_shared_paddr = memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size;
+                        args->avz_shared_paddr = memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size;
                 else
-                        args->u.avz_shared_paddr =
+                        args->avz_shared_paddr =
                             memslot[current_domain->avz_shared->domID].ipa_addr + memslot[current_domain->avz_shared->domID].size;
                 break;
         }

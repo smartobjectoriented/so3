@@ -11,7 +11,6 @@ obj-y += keyhandler.o
 obj-y += timer.o
 obj-y += sched_flip.o 
 obj-y += schedule.o
-obj-y += migration.o
 obj-y += soo_activity.o
 obj-y += gnttab.o
 

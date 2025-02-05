@@ -66,7 +66,6 @@ int construct_ME(struct domain *d) {
 
 	__setup_dom_pgtable(d, memslot[slotID].base_paddr, memslot[slotID].size);
 
-	d->avz_shared->dom_phys_offset = alloc_spfn << PAGE_SHIFT;
 	d->avz_shared->fdt_paddr = pa_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
 	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);

@@ -106,7 +106,7 @@ extern volatile addr_t pfn_start;
 #define ipa_to_va(x, ipa)	(__xva(x, ipa_to_pa(x, ipa)))
 
 void put_ME_slot(unsigned int ME_slotID);
-int get_ME_free_slot(unsigned int size, ME_state_t ME_state);
+int get_ME_free_slot(unsigned int size);
 
 #else /* CONFIG_AVZ */
 

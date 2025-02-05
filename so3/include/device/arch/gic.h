@@ -286,8 +286,9 @@ struct __attribute__((packed)) gich_regs {
 
 void gicc_init(void);
 void gic_raise_softirq(int cpu, unsigned int irq);
+void gic_hw_reset(void);
 
-#define is_sgi(irqn)			((u32)(irqn) < 16)
+#define is_sgi(irqn) ((u32) (irqn) < 16)
 #define is_ppi(irqn)			((irqn) > 15 && (irqn) < 32)
 #define is_spi(irqn)			((irqn) > 31 && (irqn) < 1020)
 

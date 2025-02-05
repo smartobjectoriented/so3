@@ -54,11 +54,9 @@ u64 clocksource_read(void) {
 	return arch_counter_get_cntvct();
 }
 
-/* Called after a migration. */
-void postmig_adjust_timer(void) {
-
+void clocksource_timer_reset(void) {
+	clocksource_timer.rate = arch_timer_get_cntfrq();
 	clocksource_timer.cycle_last = clocksource_timer.read();
-
 }
 
 /*
@@ -71,8 +69,8 @@ static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
 	clocksource_timer.read = clocksource_read;
 	clocksource_timer.rate = arch_timer_get_cntfrq();
 	clocksource_timer.mask = CLOCKSOURCE_MASK(56);
-
-	return 0;
+	 
+        return 0;
 }
 
 void periodic_timer_start(void) {

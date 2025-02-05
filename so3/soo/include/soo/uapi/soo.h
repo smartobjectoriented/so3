@@ -188,33 +188,28 @@ typedef struct evtchn_op evtchn_op_t;
 struct domctl {
     uint32_t cmd;
     domid_t  domain;
-    
-    union {
-       grant_ref_t vbstore_grant_ref;
-       addr_t avz_shared_paddr;
-    } u;
+    addr_t avz_shared_paddr;    
 };
 typedef struct domctl domctl_t;
 
 /*
  * ME states:
  * - ME_state_booting:		ME is currently booting...
- * - ME_state_preparing:	ME is being paused during the boot process, in the case of an injection, before the frontend initialization
  * - ME_state_living:		ME is full-functional and activated (all frontend devices are consistent)
  * - ME_state_suspended:	ME is suspended before migrating. This state is maintained for the resident ME instance
- * - ME_state_migrating:	ME just arrived in SOO
- * - ME_state_dormant:		ME is resident, but not living (running) - all frontends are closed/shutdown
- * - ME_state_killed:		ME has been killed before to be resumed
+ * - ME_state_hibernate:	ME is in a state of hibernate snapshot
+ * - ME_state_resuming:         ME ready to perform resuming (after recovering)
+ * - ME_state_awakened:         ME is just being awakened
  * - ME_state_terminated:	ME has been terminated (by a force_terminate)
  * - ME_state_dead:		ME does not exist
  */
 typedef enum {
 	ME_state_booting,
-	ME_state_preparing,
 	ME_state_living,
 	ME_state_suspended,
-	ME_state_migrating,
-	ME_state_dormant,
+	ME_state_hibernate,
+	ME_state_resuming,
+        ME_state_awakened,
 	ME_state_killed,
 	ME_state_terminated,
 	ME_state_dead
@@ -228,25 +223,6 @@ typedef enum {
 	ME_SLOT_FREE,
 	ME_SLOT_BUSY
 } ME_slotState_t;
-
-/*
- * ME descriptor
- *
- * WARNING !! Be careful when modifying this structure. It *MUST* be aligned with
- * the same structure used in the ME.
- */
-typedef struct {
-	unsigned int	slotID;
-        uint64_t        spid;
-
-	ME_state_t	state;
-
-	unsigned int	size; /* Size of the ME with the struct dom_context size */
-        unsigned int    dc_evtchn;
-
-        /* Callback function called during at the restoring of domain */
-        void (*__resume_fn)(void);
-} ME_desc_t;
 
 /* ME ID related information */
 #define ME_NAME_SIZE				40
@@ -315,6 +291,28 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
 #define SOO_NAME_SIZE				16
 
 /*
+ * ME descriptor
+ *
+ * WARNING !! Be careful when modifying this structure. It *MUST* be aligned with
+ * the same structure used in the ME.
+ */
+typedef struct {
+	unsigned int	slotID;
+        uint64_t        spid;
+
+	ME_state_t	state;
+
+	unsigned int	size; /* Size of the ME with the struct dom_context size */
+        unsigned int    dc_evtchn;
+
+        unsigned int    vbstore_revtchn, vbstore_levtchn;
+        addr_t          vbstore_pfn;
+
+        void (*resume_fn)(void);
+
+} ME_desc_t;
+
+/*
  * Agency descriptor
  */
 typedef struct {
@@ -329,6 +327,12 @@ typedef struct {
         /* Event channels used for directcomm channel between agency and agency-RT or ME */
         unsigned int dc_evtchn[MAX_DOMAINS];
         
+        /* Event channels used by vbstore */
+        unsigned int vbstore_evtchn[MAX_DOMAINS];
+
+        /* Local agency event channel for vbstore */
+        uint32_t vbstore_levtchn;
+
 } agency_desc_t;
 
 /*
@@ -396,11 +400,8 @@ typedef struct {
  */
 
 /* AVZ hypercalls devoted to SOO */
-#define AVZ_MIG_INIT			2
-#define AVZ_GET_ME_FREE_SLOT		4
 #define AVZ_ME_READ_SNAPSHOT   	        6
 #define AVZ_ME_WRITE_SNAPSHOT  	        7
-#define AVZ_MIG_FINAL			8
 #define AVZ_INJECT_ME			9
 #define AVZ_KILL_ME			10
 #define AVZ_DC_EVENT_SET		11
@@ -460,9 +461,6 @@ typedef struct {
 	void *snapshot_paddr;
 	uint32_t slotID;
         int size;
-
-        /* When resuming... */
-        grant_ref_t vbstore_grant_ref;
 } avz_snapshot_t;
 
 /* AVZ_MIG_FINAL */

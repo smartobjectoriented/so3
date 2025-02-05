@@ -27,10 +27,13 @@
 
 #include <device/irq.h>
 
+#include <avz/avz.h>
+
 #include <soo/hypervisor.h>
 #include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/vbstore.h>
+
 
 extern unsigned int type_from_irq(int irq);
 

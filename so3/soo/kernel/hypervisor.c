@@ -40,9 +40,9 @@ void avz_get_shared(void) {
 
         avz_hypercall(&args);
 
-        BUG_ON(!args.u.avz_domctl_args.domctl.u.avz_shared_paddr);
+        BUG_ON(!args.u.avz_domctl_args.domctl.avz_shared_paddr);
 
-        avz_shared = (avz_shared_t *) io_map(args.u.avz_domctl_args.domctl.u.avz_shared_paddr, PAGE_SIZE);
+        avz_shared = (avz_shared_t *) io_map(args.u.avz_domctl_args.domctl.avz_shared_paddr, PAGE_SIZE);
 	BUG_ON(!avz_shared);
 }
 
@@ -115,4 +115,8 @@ void avz_hypercall(avz_hyp_t *avz_hyp)
 
         if (boot_stage > BOOT_STAGE_HEAP_READY)
                 free(__avz_hyp);
+}
+
+void avz_sig_terminate(void) {
+        __avz_hypercall(AVZ_HYPERCALL_SIGRETURN, 0);
 }

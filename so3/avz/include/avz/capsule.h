@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,25 +17,13 @@
  *
  */
 
-#ifndef _HYPERVISOR_H_
-#define _HYPERVISOR_H_
+#ifndef AVZ_CAPSULE_H
+#define AVZ_CAPSULE_H
 
-#include <soo/avz.h>
-#include <soo/physdev.h>
+#include <soo/uapi/soo.h>
 
-void domcall(int cmd, void *arg);
+void inject_me(avz_hyp_t *args);
+void read_ME_snapshot(avz_hyp_t *args);
+void write_ME_snapshot(avz_hyp_t *args);
 
-void spad_enable_cooperate(void);
-void spad_disable_cooperate(void);
-
-int do_presetup_adjust_variables(void *arg);
-int do_postsetup_adjust_variables(void *arg);
-int do_sync_domain_interactions(void *arg);
-int do_sync_directcomm(void *arg);
-
-void avz_get_shared(void);
-void avz_gnttab(gnttab_op_t *op);
-
-void avz_sig_terminate(void);
-
-#endif /* __HYPERVISOR_H__ */
+#endif /* AVZ_CAPSULE_H */

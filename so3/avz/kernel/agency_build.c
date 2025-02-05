@@ -56,15 +56,13 @@ int construct_agency(struct domain *d) {
 	ASSERT(d);
 
 	d->avz_shared->nr_pages = memslot[MEMSLOT_AGENCY].size >> PAGE_SHIFT;
-	d->avz_shared->dom_phys_offset =  memslot[MEMSLOT_AGENCY].base_paddr;
-
+ 
 	clear_bit(_VPF_down, &d->pause_flags);
 
 #ifdef CONFIG_SOO
 
 	/*
-	 * Keep a reference in the primary agency domain to its sub-domain.
-	 * Indeed, there is only one shared page mapped in the guest.
+	 * The RT domain has its own shared page.
 	 */
 	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
 
@@ -86,7 +84,6 @@ int construct_agency(struct domain *d) {
 	/* Domain related information */
 	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
 	domains[DOMID_AGENCY_RT]->avz_shared->fdt_paddr = d->avz_shared->fdt_paddr;
-	domains[DOMID_AGENCY_RT]->avz_shared->dom_phys_offset = d->avz_shared->dom_phys_offset;
 	domains[DOMID_AGENCY_RT]->pagetable_paddr = d->pagetable_paddr;
 
 #endif /* CONFIG_SOO */

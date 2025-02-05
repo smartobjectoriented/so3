@@ -1136,10 +1136,17 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 typedef struct vcpu {
 	cpu_regs_t regs;	/* All CPU registers */
 
-	/* System registers */
+	/* System registers at EL1 */
         u64 sctlr_el1;
         u64 vbar_el1;
+        u64 ttbr0_el1;
+        u64 ttbr1_el1;
+        u64 tcr_el1;
+        u64 mair_el1;
+
 } vcpu_t;
+
+void resume_to_guest(void);
 
 #endif /* CONFIG_AVZ */
 

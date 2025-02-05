@@ -50,7 +50,13 @@ struct dom_context
 	/* IRQ-safe virq_lock protects against delivering VIRQ to stale evtchn. */
 	u16 virq_to_evtchn[NR_VIRQS];
 
-	/* Stack frame of this domain */
+	/* IPA physical address */
+        addr_t ipa_addr;
+
+        /* IPA reserved page frame numbers for granted pages */
+        grant_pfn_t grant_pfn[NR_GRANT_PFN];
+
+        /* Stack frame of this domain */
 	struct cpu_regs stack_frame;
 
 	/* Fields related to the CPU state */

@@ -18,8 +18,6 @@
 #ifndef MEMSLOT_H
 #define MEMSLOT_H
 
-#include <soo/uapi/soo.h>
-
 /* Number of possible MEs in the local SOO */
 #define MEMSLOT_BASE	  2
 #define MEMSLOT_NR	  (MEMSLOT_BASE + MAX_ME_DOMAINS)

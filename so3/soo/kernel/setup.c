@@ -22,6 +22,8 @@
 #include <initcall.h>
 #include <syscall.h>
 #include <banner.h>
+#include <timer.h>
+#include <softirq.h>
 
 #include <asm/cacheflush.h>
 #include <asm/mmu.h>
@@ -34,13 +36,36 @@
 #include <soo/console.h>
 #include <soo/gnttab.h>
 
+#include <device/arch/gic.h>
+
 #include <avz/uapi/avz.h>
 
 volatile avz_shared_t *avz_shared;
  
- void resume_fn(void) {
+ /**
+  * @brief Signal-like handler called from AVZ during the recovering operation
+  * 
+  */
+ static void resume_fn(void) {
+	u64 time_offset;
 
-	while (1);
+	/* Init the local GIC */
+	gic_hw_reset();
+
+	/* Init the timer too */
+        clocksource_timer_reset();
+
+        /* Now, we need to update the list of all existing timers since our
+	 * host clock will be different. We stored the current system time when saving,
+	 * so we compute the offset according to the current time.
+	 */
+        time_offset = NOW() - avz_shared->current_s_time;
+        apply_timer_offset(time_offset);
+
+        raise_softirq(SCHEDULE_SOFTIRQ);
+
+        /* We finished with the signal handler processing */
+        avz_sig_terminate();
  }
 
 /**
@@ -50,7 +75,7 @@ void avz_setup(void) {
 
         avz_get_shared();
 
-        avz_shared->dom_desc.u.ME.__resume_fn = resume_fn;
+        avz_shared->dom_desc.u.ME.resume_fn = resume_fn;
 
         lprintk("SOO Virtualizer (avz) shared page:\n\n");
 
@@ -61,9 +86,10 @@ void avz_setup(void) {
 
 void post_init_setup(void) {
 
-	printk("VBstore shared page grant reference %d\n", avz_shared->vbstore_grant_ref);
+	printk("Mapping VBstore shared page pfn %d\n", avz_shared->dom_desc.u.ME.vbstore_pfn);
 
-        gnttab_map(DOMID_AGENCY, avz_shared->vbstore_grant_ref, (void **) &__intf);
+   	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
+        BUG_ON(!__intf);
 
         printk("SOO Mobile Entity booting ...\n");
 
@@ -73,32 +99,6 @@ void post_init_setup(void) {
 
 	/* Initialize the Vbus subsystem */
 	vbus_init();
-
-	/*
-	 * Now, the ME requests to be paused by setting its state to ME_state_preparing. As a consequence,
-	 * the agency will pause it.
-	 * The state is moving from ME_state_booting to ME_state_preparing.
-	 */
-	set_ME_state(ME_state_preparing);
-
-	/*
-	 * There are two scenarios.
-	 * 1. Classical injection scheme: Wait for the agency to perform the pause+unpause. It should set the ME
-	 *    state to ME_state_booting to allow the ME to continue.
-	 * 2. ME that has migrated on a Smart Object: The ME state is ME_state_migrating, so it is different from
-	 *    ME_state_preparing.
-	 */
-
-	while (1) {
-		schedule();
-
-		if (get_ME_state() != ME_state_preparing) {
-			DBG("ME state changed: %d, continuing...\n", get_ME_state());
-			break;
-		}
-	}
-
-	BUG_ON(get_ME_state() != ME_state_booting);
 
 	/* Write the entries related to the ME ID in vbstore */
 	vbstore_ME_ID_populate();

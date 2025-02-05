@@ -214,6 +214,10 @@ void trap_handle(cpu_regs_t *regs) {
                 case AVZ_HYPERCALL_TRAP:
                         do_avz_hypercall((avz_hyp_t *) ipa_to_va(memslotID, regs->x1));
                         break;
+        
+                case AVZ_HYPERCALL_SIGRETURN:
+                        __sigreturn();
+                        break;
                 }
                 break;
 #endif /* CONFIG_AVZ */

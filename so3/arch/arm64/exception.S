@@ -28,11 +28,11 @@
 
 #ifdef CONFIG_AVZ
 
+#include <avz/uapi/avz.h>
+
 #include <avz/domain.h>
 
 .global cpu_entrypoint
-
-.globl	hypervisor_stack
 
 #endif /* CONFIG_AVZ */
 
@@ -334,14 +334,22 @@ ENTRY(pre_ret_to_el1)
 el12_sync_handler:
 
 	kernel_entry
-
 	prepare_to_enter_to_el2
 
  	mov 	x0, sp
 	bl	trap_handle
 
-	prepare_to_exit_to_el1
+	ldr	x0, [sp, #OFFSET_X0]
+	ldr	x1, =AVZ_HYPERCALL_SIGRETURN
 
+	cmp	x0, x1
+	bne	__nosigreturn
+
+	// Reset the stack frame by removing the one issued from sigreturn
+	add	sp, sp, #S_FRAME_SIZE
+
+__nosigreturn:
+	prepare_to_exit_to_el1
 	kernel_exit
 
 	eret
@@ -351,7 +359,6 @@ el12_sync_handler:
 el12_2_irq_handler:
 
 	kernel_entry
-
 	prepare_to_enter_to_el2
 
 	// Make sure r0 refers to the base of the stack frame
@@ -359,7 +366,6 @@ el12_2_irq_handler:
     	bl 	irq_handle
 
 	prepare_to_exit_to_el1
-
   	kernel_exit
 
 	eret
@@ -367,6 +373,25 @@ el12_2_irq_handler:
 cpu_entrypoint:
 	.quad 0x0
 
+__prepare_to_sig_el1_handler:
+
+	/* Preserve the SP_EL2 in the new stack frame used by 
+	 * the signal handler.
+	 */
+
+	ldr	x0, [sp, #OFFSET_SP_USR]
+	str	x0, [sp, #(OFFSET_SP_USR - S_FRAME_SIZE)]
+
+	ldr	x0, [sp, #OFFSET_PSTATE]
+	str	x0, [sp, #(OFFSET_PSTATE - S_FRAME_SIZE)]
+
+	// Build a new stack frame based on the current
+	sub	sp, sp, #S_FRAME_SIZE
+	
+	// Set the handler to the PC
+	str	x21, [sp, #OFFSET_PC]
+
+	ret
 
 /*
  * This glue code will be called to prepare a resuming
@@ -374,13 +399,15 @@ cpu_entrypoint:
  */
 ENTRY(resume_to_guest)
 
+	bl 	__prepare_to_sig_el1_handler
+
 	ldr	x0, [sp, #OFFSET_PSTATE]
 	msr	spsr_el2, x0
 
 	ldr	x0, [sp, #OFFSET_PC]
 	msr	elr_el2, x0
 
-	ldr	x0, [sp, #OFFSET_SP]
+	ldr	x0, [sp, #OFFSET_SP_USR]
 	msr	sp_el1, x0
 
   	kernel_exit
@@ -444,12 +471,6 @@ ENTRY(pre_ret_to_user)
 
 999:
 	b 999b
-
-hypervisor_stack:
-	.space CONFIG_NR_CPUS * 8
-
-.LChypervisor_stack:
-	.quad	hypervisor_stack
 
 #endif /* CONFIG_AVZ */
 
@@ -528,7 +549,6 @@ __prepare_sig_handler:
 el01_sync_handler:
 
 	kernel_entry
-
 	prepare_to_enter_to_el1
 
 	// Make sure x0 refers to the base of the stack frame
@@ -552,7 +572,6 @@ __ret_from_fork:
 #endif /* CONFIG_IPC_SIGNAL */
 
 	prepare_to_exit_to_el0
-
 	kernel_exit
 
 	eret
@@ -561,12 +580,10 @@ __ret_from_fork:
 el01_1_irq_handler:
 
 	kernel_entry
-
 	prepare_to_enter_to_el1
 
 	// Make sure r0 refers to the base of the stack frame
 	mov	x0, sp
-
    	bl 	irq_handle
 
 #ifdef CONFIG_IPC_SIGNAL
@@ -575,7 +592,6 @@ el01_1_irq_handler:
 #endif /* CONFIG_IPC_SIGNAL */
 
 	prepare_to_exit_to_el0
-
 	kernel_exit
 
 	eret

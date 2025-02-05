@@ -21,7 +21,6 @@
 #include <softirq.h>
 
 #include <avz/domain.h>
-#include <avz/vcpu.h>
 #include <avz/sched.h>
 
 void timer_interrupt(bool periodic) {

@@ -30,11 +30,21 @@
 
 #include <device/irq.h>
 
-#include <avz/vcpu.h>
 #include <avz/domain.h>
 
 #include <avz/uapi/avz.h>
 
+/* VCPU is currently running on a physical CPU. */
+#define RUNSTATE_running  0
+
+/* VCPU is runnable, but not currently scheduled on any physical CPU. */
+#define RUNSTATE_runnable 1
+
+/* VCPU is blocked (a.k.a. idle). It is therefore not runnable. */
+#define RUNSTATE_blocked  2
+
+/* VCPU is offline, not blocked and not runnable */
+#define RUNSTATE_offline  3
 
 /*
  * Voluntarily yield the CPU.

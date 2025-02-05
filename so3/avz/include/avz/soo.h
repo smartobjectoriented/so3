@@ -18,6 +18,8 @@
 #ifndef SOO_H
 #define SOO_H
 
+#include <soo/uapi/soo.h>
+
 /* Device tree features */
 #define ME_FEAT_ROOT		"/me_features"
 

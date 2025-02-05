@@ -23,10 +23,12 @@
 
 #include <device/fdt.h>
 
-#include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/debug.h>
 #include <soo/vbus.h>
+
+#include <avz/avz.h>
+
 
 /* ME ID related information management */
 

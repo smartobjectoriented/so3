@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2024-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,60 +26,6 @@
 #include <asm/bitops.h>
 
 DEFINE_SPINLOCK(dist_lock);
-
-/*
- * Most of the GIC distributor writes only reconfigure the IRQs corresponding to
- * the bits of the written value, by using separate `set' and `clear' registers.
- * Such registers can be handled by setting the `is_poke' boolean, which allows
- * to simply restrict the mmio->value with the cell configuration mask.
- * Others, such as the priority registers, will need to be read and written back
- * with a restricted value, by using the distributor lock.
- */
-static enum mmio_result restrict_bitmask_access(struct mmio_access *mmio, unsigned int reg_index, unsigned int bits_per_irq, bool is_poke) {
-        unsigned int irq;
-        unsigned long access_mask = 0;
-        /*
-         * In order to avoid division, the number of bits per irq is limited
-         * to powers of 2 for the moment.
-         */
-        unsigned long irqs_per_reg = 32 >> ffsl(bits_per_irq);
-        unsigned long irq_bits = (1 << bits_per_irq) - 1;
-
-        for (irq = 0; irq < irqs_per_reg; irq++)
-                 access_mask |= irq_bits << (irq * bits_per_irq);
-
-        if (!mmio->is_write) {
-                /* Restrict the read value */
-                mmio_perform_access(gic->gicd, mmio);
-                mmio->value &= access_mask;
-                return MMIO_HANDLED;
-        }
-
-        if (!is_poke) {
-                /*
-                 * Modify the existing value of this register by first reading
-                 * it into mmio->value
-                 * Relies on a spinlock since we need two mmio accesses.
-                 */
-                unsigned long access_val = mmio->value;
-
-                spin_lock(&dist_lock);
-
-                mmio->is_write = false;
-                mmio_perform_access(gic->gicd, mmio);
-                mmio->is_write = true;
-
-                mmio->value &= ~access_mask;
-                mmio->value |= access_val & access_mask;
-                mmio_perform_access(gic->gicd, mmio);
-
-                spin_unlock(&dist_lock);
-        } else {
-                mmio->value &= access_mask;
-                mmio_perform_access(gic->gicd, mmio);
-        }
-        return MMIO_HANDLED;
-}
 
 static enum mmio_result gicv2_handle_dist_access(struct mmio_access *mmio) {
         unsigned long val = mmio->value;

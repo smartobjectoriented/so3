@@ -16,7 +16,7 @@
  *
  */
 
-#if 1
+#if 0
 #define DEBUG
 #endif
 
@@ -196,15 +196,17 @@ void perform_task(dc_event_t dc_event)
 	case DC_RESUME:
 		DBG("resuming vbstore...\n");
 
-		/* Giving a chance to perform actions before resuming devices */
-		args.cmd = CB_PRE_RESUME;
+                BUG_ON((get_ME_state() != ME_state_resuming) && (get_ME_state() != ME_state_awakened));
+
+                /* Giving a chance to perform actions before resuming devices */
+                args.cmd = CB_PRE_RESUME;
 		do_soo_activity(&args);
 
 		DBG("Now resuming vbstore...\n");
 		vbs_resume();
 	 
-		/* After a migration, re-init watch for device/<domID> */
-		if (get_ME_state() == ME_state_migrating)
+		/* During a resuming after an awakened snapshot, re-init watch for device/<domID> */
+		if (get_ME_state() == ME_state_awakened)
 			postmig_setup();
 
 		DBG("vbstore resumed.\n");

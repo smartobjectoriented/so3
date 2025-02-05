@@ -75,19 +75,12 @@ void gnttab_map(domid_t domid, grant_ref_t grant_ref, void **vaddr) {
 
 void gnttab_end_foreign_access(grant_ref_t ref)
 {
+        gnttab_op_t gnttab_op;
 
+        gnttab_op.cmd = GNTTAB_revoke_page;
+        gnttab_op.ref = ref;
+
+        avz_gnttab(&gnttab_op);
 }
 
-/*
- * Update the grant table for the post-migrated domain.
- * Update the watches as well.
- */
-void postmig_gnttab_update(void) {
-
-	//gnttab_remove(false);
-
-	/* At the moment, perform a full rebuild of grant table */
-	//sgnttab_init();
-
-}
-
+ 

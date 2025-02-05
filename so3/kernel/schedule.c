@@ -439,6 +439,8 @@ void schedule(void) {
 	if (next && (next != prev)) {
 
 		DBG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n", next->tid, next->name, ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
+		if (prev)
+			DBG("Previous was threadID: %d name: %s PID: %d\n", prev->tid, prev->name);
 
 		/*
 		 * The current threads (here prev) can be in different states, not only running; it may be in *waiting* or *zombie*

@@ -270,17 +270,14 @@ void loadAgency(void)
 void loadME(unsigned int slotID, void *itb) {
 	void *ME_vaddr;
 	uint32_t dom_addr, entry_addr, fdt_paddr;
-	size_t ME_size, size, fdt_size, initrd_size;
+	size_t ME_size, fdt_size, initrd_size;
 	void *fdt_vaddr, *initrd_vaddr;
 	void *dest_ME_vaddr;
 	uint32_t initrd_start, initrd_end;
 	int nodeoffset, next_node, depth = 0;
 	int ret;
 	const char *propstring;
-	uint8_t tmp[16];
-	addr_t base;
 	mem_info_t guest_mem_info;
-	int len;
 
 	/* Look for a node of ME type in the fit image */
 	nodeoffset = 0;

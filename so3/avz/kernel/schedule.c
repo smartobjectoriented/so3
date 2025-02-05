@@ -89,10 +89,12 @@ void vcpu_wake(struct domain *d)
  * @param d 
  */
 void vcpu_save_context(struct domain *d) {
-	u64 sctlr_el1;
-   
 	d->vcpu.sctlr_el1 = read_sysreg(sctlr_el1);
 	d->vcpu.vbar_el1 = read_sysreg(vbar_el1);
+        d->vcpu.ttbr0_el1 = read_sysreg(ttbr0_el1);
+	d->vcpu.ttbr1_el1 = read_sysreg(ttbr1_el1);
+	d->vcpu.tcr_el1 = read_sysreg(tcr_el1);
+        d->vcpu.mair_el1 = read_sysreg(mair_el1);
 }
 
 
@@ -106,6 +108,10 @@ void vcpu_restore_context(struct domain *d) {
 	/* Restore the CPU control register state */
         write_sysreg(d->vcpu.sctlr_el1, sctlr_el1);
 	write_sysreg(d->vcpu.vbar_el1, vbar_el1);
+	write_sysreg(d->vcpu.ttbr0_el1, ttbr0_el1);
+	write_sysreg(d->vcpu.ttbr1_el1, ttbr1_el1);
+	write_sysreg(d->vcpu.tcr_el1, tcr_el1);
+	write_sysreg(d->vcpu.mair_el1, mair_el1);
 
 	gic_clear_pending_irqs();
 	
@@ -238,9 +244,9 @@ static void domain_schedule(void)
         ASSERT(!next->is_running);
 	next->is_running = 1;
 
-#if 0
+#if 0 /* debug */
 	printk("### running on cpu: %d prev: %d next: %d\n", smp_processor_id(), prev->avz_shared->domID, next->avz_shared->domID);
-#endif
+#endif /* 0 */
 
 	/* We do not unlock the schedulder_lock until everything has been processed */
 

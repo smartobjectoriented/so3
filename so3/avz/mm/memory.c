@@ -16,7 +16,7 @@
  *
  */
 
-#if 1
+#if 0
 #define DEBUG
 #endif
 
@@ -117,7 +117,7 @@ void switch_mm_domain(struct domain *d) {
  * @param ME_state	Initial state of the ME
  * @return		-1 if no slot is available or <slotID> if a slot is available.
  */
-int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
+int get_ME_free_slot(unsigned int size) {
 	unsigned int order, addr;
 	int slotID;
 	unsigned int bits_NR;
@@ -142,7 +142,7 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 		return -1;  /* No available memory */
 
 	/* Determine the phys/virt start addresses of the guest */
-        printk("## addr = %lx\n", addr);
+     
         memslot[slotID].base_paddr = addr;
         memslot[slotID].base_vaddr = ME_BASE + ((addr_t) (slotID - 1) << ME_ID_SHIFT);
 
@@ -154,9 +154,6 @@ int get_ME_free_slot(unsigned int size, ME_state_t ME_state) {
 
 	/* Create a domain context including the ME descriptor before the ME gets injected. */
 	domains[slotID] = domain_create(slotID, ME_CPU);
-
-	/* Initialize the ME descriptor */
-	set_ME_state(slotID, ME_state);
 
 	return slotID;
 }

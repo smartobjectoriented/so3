@@ -110,10 +110,10 @@ struct domain {
 	/* Domain is paused by controller software? */
 	bool is_paused_by_controller;
 
-	/* Grant table */
+	/* Grant table to store the pages granted by this domain to the other */
         struct list_head gnttab;
 
-	/* IPA reserved page frame numbers for granted pages */
+	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
         grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
         int processor;

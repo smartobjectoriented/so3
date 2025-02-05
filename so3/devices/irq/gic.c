@@ -501,7 +501,7 @@ static void gic_handle(void *data) {
 
 		if (irq_nr < 16) {
 #ifdef CONFIG_AVZ
-			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending) 
+                        if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending)
                                 gic_set_pending(irq_nr);
                         
 #else
@@ -568,58 +568,12 @@ void gic_set_type(unsigned int irq, unsigned int type) {
 }
 
 /**
- * @brief We always consider using a GICv2. Initialize GICv2
- *
- * @param dev 		FDT device reference
- * @param fdt_offset 	Offset in the DTS
- * @return int
+ * @brief Reset the GIC - for instance after resuming
+ * 
  */
-static int gic_init(dev_t *dev, int fdt_offset) {
-        const struct fdt_property *prop;
-        int prop_len;
-        u32 gicd_isacter;
+ void gic_hw_reset(void) {
         unsigned int n;
-
-        gic = (gic_t *) malloc(sizeof(gic_t));
-        BUG_ON(!gic);
-
-        DBG("%s\n", __FUNCTION__);
-
-        prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
-        BUG_ON(!prop);
-
-#if defined(CONFIG_AVZ) 
-        BUG_ON(prop_len != 6 * sizeof(unsigned long));
-#else
-        BUG_ON(prop_len != 4 * sizeof(unsigned long));
-#endif
-
-        /* Mapping the two mem area of GIC (distributor & CPU interface) */
-#ifdef CONFIG_ARCH_ARM32
-        gic->gicd = (struct gicd_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
-        gic->gicd_paddr = (void *) fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
-
-        gic->gicc = (struct gicc_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[2]), fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
-#else
-        gic->gicd = (struct gicd_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
-        gic->gicd_paddr = (void *) fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
-
-        gic->gicc = (struct gicc_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[2]), fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
-#endif
-
-#ifdef CONFIG_AVZ
-
-        gic->gich = (struct gich_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
-
-        spin_lock_init(&pending_irqs.lock);
-
-        /* Disable PPIs, except for the maintenance interrupt. */
-        iowrite32(&gic->gicd->isenabler, 0xffff0000 & ~(1 << IRQ_ARCH_ARM_MAINT));
-
-        /* Ensure all IPIs and the maintenance PPI are enabled */
-        iowrite32(&gic->gicd->isenabler, 0x0000ffff & ~(1 << IRQ_ARCH_ARM_MAINT));
-
-#endif
+        u32 gicd_isacter;
 
         iowrite32(&gic->gicd->icenabler, 0xffff0000);
 
@@ -674,6 +628,62 @@ static int gic_init(dev_t *dev, int fdt_offset) {
 
         /* Enable CPU interface */
         iowrite32(&gic->gicc->ctlr, GICC_ENABLE);
+
+ }
+
+/**
+ * @brief We always consider using a GICv2. Initialize GICv2
+ *
+ * @param dev 		FDT device reference
+ * @param fdt_offset 	Offset in the DTS
+ * @return int
+ */
+static int gic_init(dev_t *dev, int fdt_offset) {
+        const struct fdt_property *prop;
+        int prop_len;
+
+        gic = (gic_t *) malloc(sizeof(gic_t));
+        BUG_ON(!gic);
+
+        DBG("%s\n", __FUNCTION__);
+
+        prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
+        BUG_ON(!prop);
+
+#if defined(CONFIG_AVZ) 
+        BUG_ON(prop_len != 6 * sizeof(unsigned long));
+#else
+        BUG_ON(prop_len != 4 * sizeof(unsigned long));
+#endif
+
+        /* Mapping the two mem area of GIC (distributor & CPU interface) */
+#ifdef CONFIG_ARCH_ARM32
+        gic->gicd = (struct gicd_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+        gic->gicd_paddr = (void *) fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
+
+        gic->gicc = (struct gicc_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[2]), fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
+#else
+        gic->gicd = (struct gicd_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+        gic->gicd_paddr = (void *) fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
+
+        gic->gicc = (struct gicc_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[2]), fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
+#endif
+
+#ifdef CONFIG_AVZ
+
+        gic->gich = (struct gich_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]), fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
+
+        spin_lock_init(&pending_irqs.lock);
+
+        /* Disable PPIs, except for the maintenance interrupt. */
+        iowrite32(&gic->gicd->isenabler, 0xffff0000 & ~(1 << IRQ_ARCH_ARM_MAINT));
+
+        /* Ensure all IPIs and the maintenance PPI are enabled */
+        iowrite32(&gic->gicd->isenabler, 0x0000ffff & ~(1 << IRQ_ARCH_ARM_MAINT));
+
+#endif
+
+        gic_hw_reset();
 
         irq_ops.enable = gic_enable;
         irq_ops.disable = gic_disable;
