@@ -31,7 +31,6 @@
 #include <soo/vbstore_me.h>
 
 #include <soo/debug.h>
-#include <soo/debug/logbool.h>
 
 static void vbs_me_rmdir(const char *dir, const char *node) {
 	vbus_rm(VBT_NIL, dir, node);

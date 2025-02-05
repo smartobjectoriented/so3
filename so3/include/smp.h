@@ -20,7 +20,7 @@ void psci_smp_boot_secondary(unsigned int cpu);
  * Initial data for bringing up a secondary CPU.
  */
 struct secondary_data {
-	unsigned long pgdir;
+	addr_t pgdir;
 	void *stack;
 };
 

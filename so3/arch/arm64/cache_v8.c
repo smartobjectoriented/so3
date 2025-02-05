@@ -51,7 +51,7 @@ void mmu_setup(void *pgtable)
 #error "Wrong VA_BITS configuration."
 #endif
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	asm volatile("msr tcr_el2, %0" : : "r" (tcr) : "memory");
 
 	/* Prepare the stage-2 configuration */
@@ -77,7 +77,7 @@ void mmu_setup(void *pgtable)
 	/* Enable the mmu and set the sctlr & ttbr register correctly. */
 	__mmu_setup(pgtable);
 
-#else /* !CONFIG_ARM64VT */
+#else /* !CONFIG_AVZ */
 
 	attr = MAIR_EL1_SET;
 

@@ -19,16 +19,21 @@
 #ifndef EVTCHN_H
 #define EVTCHN_H
 
+#include <heap.h>
+#include <memory.h>
+
 #include <asm/processor.h>
+#include <asm/cacheflush.h>
 
 #include <device/irq.h>
+
+#include <avz/avz.h>
 
 #include <soo/hypervisor.h>
 #include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/vbstore.h>
 
-#include <avz/uapi/event_channel.h>
 
 extern unsigned int type_from_irq(int irq);
 
@@ -39,12 +44,6 @@ enum {
 	IRQT_UNBOUND, IRQT_PIRQ, IRQT_VIRQ, IRQT_IPI, IRQT_EVTCHN
 };
 
-/* Inline Functions */
-/* Constructor for packed IRQ information. */
-static inline u32 mk_irq_info(u32 type, u32 index, u32 evtchn) {
-	return ((type << 24) | (index << 16) | evtchn);
-}
-
 static inline void clear_evtchn(u32 evtchn) {
 
 	avz_shared->evtchn_pending[evtchn] = false;
@@ -52,15 +51,21 @@ static inline void clear_evtchn(u32 evtchn) {
 	smp_mb();
 
 }
-static inline void notify_remote_via_evtchn(uint32_t evtchn) {
-	evtchn_send_t op;
-	op.evtchn = evtchn;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_send, (long) &op, 0, 0);
+static inline void notify_remote_via_evtchn(uint32_t evtchn)
+{
+        avz_hyp_t args;
+
+        args.cmd = AVZ_EVENT_CHANNEL_OP;
+        
+        args.u.avz_evtchn.evtchn_op.cmd = EVTCHNOP_send;
+        args.u.avz_evtchn.evtchn_op.u.send.evtchn = evtchn;
+
+        avz_hypercall(&args);
 }
 
 /* Entry point for notifications into Linux subsystems. */
-void evtchn_do_upcall(cpu_regs_t *regs);
+void evtchn_do_upcall(void *data);
 
 /*
  * LOW-LEVEL DEFINITIONS
@@ -79,7 +84,6 @@ extern int bind_interdomain_evtchn_to_irqhandler(unsigned int remote_domain, uns
 extern void bind_virq_to_irqhandler(unsigned int virq, irq_handler_t handler, irq_handler_t thread_fn, void *data);
 
 extern int bind_existing_interdomain_evtchn(unsigned int local_channel, unsigned int remote_domain, unsigned int remote_evtchn);
-
 
 /*
  * Common unbind function for all event sources. Takes IRQ to unbind from.

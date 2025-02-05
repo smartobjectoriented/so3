@@ -55,7 +55,7 @@
 typedef unsigned long size_t;
 typedef int ssize_t;
 
-typedef signed int ptrdiff_t;
+typedef signed long ptrdiff_t;
 
 typedef unsigned int wchar_t;
 

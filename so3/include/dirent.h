@@ -16,6 +16,8 @@
  *
  */
 
+#include <types.h>
+
 #ifndef DIRENT_H_
 #define DIRENT_H_
 

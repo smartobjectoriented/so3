@@ -29,6 +29,7 @@
 
 #define USER_SPACE_VADDR	UL(0x1000)
 
+#ifdef CONFIG_VA_BITS_48
 #define RAMDEV_VADDR		UL(0xffffa00000000000)
 
 /* Fixmap page used for temporary mapping */
@@ -37,8 +38,20 @@
 /* The user space can be up to bits [47:0] and uses ttbr0_el1
  * as main L0 page table.
  */
-
 #define USER_STACK_TOP_VADDR	UL(0x0001000000000000)
+#elif CONFIG_VA_BITS_39
+#define RAMDEV_VADDR		UL(0xffffffd000000000)
+
+/* Fixmap page used for temporary mapping */
+#define FIXMAP_MAPPING		UL(0xffffffd800000000)
+
+/* The user space can be up to bits [38:0] and uses ttbr0_el1
+ * as main L0 page table.
+ */
+#define USER_STACK_TOP_VADDR	UL(0x0000008000000000)
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 #define	SZ_256G		(256UL * SZ_1G)
 
@@ -47,31 +60,22 @@
 #define PAGE_SIZE       (1 << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
+
+/* Start of the container memory base */
+#define ME_BASE 		UL(0x0000200000000000)
+#define ME_ID_SHIFT 		32
 
 #ifdef CONFIG_VA_BITS_48
 #define AGENCY_VOFFSET		UL(0x0000110000000000)
-#define ME_VOFFSET		UL(0x0000200100000000)
+ 
 #elif CONFIG_VA_BITS_39
 #define AGENCY_VOFFSET		UL(0xffffffc010000000)
-#define ME_VOFFSET	  	UL(0xffffffc000000000)
 #else
 #error "Wrong VA_BITS configuration."
 #endif
 
-#else /* CONFIG_ARM64VT */
-
-#ifdef CONFIG_VA_BITS_48
-#define AGENCY_VOFFSET	UL(0xffff800010000000)
-#define ME_VOFFSET	UL(0xffff800010000000)
-#elif CONFIG_VA_BITS_39
-#define AGENCY_VOFFSET	UL(0xffffffc010000000)
-#define ME_VOFFSET  	UL(0xffffffc000000000)
-#else
-#error "Wrong VA_BITS configuration."
-#endif
-
-#endif /* !CONFIG_ARM64VT */
+#endif /* CONFIG_AVZ */
 
 /* Order of size which makes sense in block mapping */
 #define BLOCK_256G_OFFSET	(SZ_256G - 1)
@@ -466,10 +470,18 @@ enum dcache_option {
 
 #define pte_index_to_vaddr(i0, i1, i2, i3) ((i0 << TTB_I0_SHIFT) | i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT) | (i3 << TTB_I3_SHIFT))
 
+#ifdef CONFIG_VA_BITS_48
 #define l0pte_offset(pgtable, addr)     ((u64 *) ((u64 *) pgtable + l0pte_index(addr)))
 #define l1pte_offset(l0pte, addr)	((u64 *) (__va(*l0pte & TTB_L0_TABLE_ADDR_MASK)) + l1pte_index(addr))
 #define l2pte_offset(l1pte, addr)	((u64 *) (__va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + l2pte_index(addr))
 #define l3pte_offset(l2pte, addr)	((u64 *) (__va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l3pte_index(addr))
+#elif CONFIG_VA_BITS_39
+#define l1pte_offset(pgtable, addr)     ((u64 *) ((u64 *) pgtable + l1pte_index(addr)))
+#define l2pte_offset(l1pte, addr)	((u64 *) (__va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + l2pte_index(addr))
+#define l3pte_offset(l2pte, addr)	((u64 *) (__va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l3pte_index(addr))
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 #define l1pte_first(l0pte)		((u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK))
 #define l2pte_first(l1pte)		((u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK))
@@ -502,11 +514,6 @@ typedef enum {
 	S1,
 	S2
 } mmu_stage_t;
-
-#define mrs(spr)		({ u64 rval; asm volatile(\
-				"mrs %0," #spr :"=r"(rval)); rval; })
-
-#define msr(spr, val)		asm volatile("msr " #spr ", %0" ::"r"(val));
 
 /* VA to PA Address Translation */
 

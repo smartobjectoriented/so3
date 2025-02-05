@@ -67,9 +67,9 @@ __sigaction_t *sig_check(void) {
 				current()->pcb->__sa[i].signum = i;
 
 				current()->pcb->sigset_map.sigmap[(i-1) / (8*sizeof(long))] &= ~(1UL << (i-1) % (8*sizeof(long)));
-
-				return  &current()->pcb->__sa[i];
-			}
+                             
+                                return &current()->pcb->__sa[i];
+                        }
 		}
 	}
 

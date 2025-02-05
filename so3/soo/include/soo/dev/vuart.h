@@ -21,8 +21,8 @@
 #define VUART_H
 
 #include <soo/ring.h>
-#include <soo/grant_table.h>
 #include <soo/vdevfront.h>
+#include <soo/gnttab.h>
 
 #define VUART_NAME	"vuart"
 #define VUART_PREFIX	"[" VUART_NAME "] "
@@ -45,7 +45,6 @@ typedef struct {
 	unsigned int irq;
 
 	grant_ref_t ring_ref;
-	grant_handle_t handle;
 	uint32_t evtchn;
 
 } vuart_t;

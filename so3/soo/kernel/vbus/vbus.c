@@ -36,9 +36,7 @@
 #include <soo/soo.h>
 #include <soo/console.h>
 #include <soo/debug.h>
-#include <soo/debug/dbgvar.h>
-#include <soo/debug/logbool.h>
-
+ 
 #define SYNC_BACKFRONT_COMPLETE		0
 #define SYNC_BACKFRONT_SUSPEND		1
 #define SYNC_BACKFRONT_RESUME		2
@@ -47,7 +45,6 @@
 #define VBUS_TIMEOUT	120
 
 /* Event channels used for directcomm channel between agency and ME */
-unsigned int dc_evtchn;
 spinlock_t dc_lock;
 
 /* List of device drivers */
@@ -543,7 +540,7 @@ void vbus_init(void)
 
 	sprintf(buf, "soo/directcomm/%d", ME_domID());
 
-	res = vbus_scanf(vbt, buf, "event-channel", "%d", &dc_evtchn);
+	res = vbus_scanf(vbt, buf, "event-channel", "%d", &avz_shared->dom_desc.u.ME.dc_evtchn);
 
 	if (res != 1) {
 		printk("%s: reading soo/directcomm failed. Error code: %d\n", __func__, res);
@@ -553,28 +550,20 @@ void vbus_init(void)
 	vbus_transaction_end(vbt);
 
 	/* Binding the irqhandler to the eventchannel */
-	DBG("%s: setting up the direct comm event channel (%d) ...\n", __func__, dc_evtchn);
-	res = bind_interdomain_evtchn_to_irqhandler(DOMID_AGENCY, dc_evtchn, directcomm_isr, directcomm_isr_thread, NULL);
+	DBG("%s: setting up the direct comm event channel (%d) ...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
+	res = bind_interdomain_evtchn_to_irqhandler(DOMID_AGENCY, 
+						avz_shared->dom_desc.u.ME.dc_evtchn, 
+						directcomm_isr, 
+						directcomm_isr_thread, 
+						NULL);
 
 	if (res <= 0) {
 		printk("Error: bind_evtchn_to_irqhandler failed");
 		BUG();
 	}
 
-	dc_evtchn = evtchn_from_irq(res);
-	DBG("%s: local event channel bound to directcomm towards non-RT Agency : %d\n", __func__, dc_evtchn);
+	avz_shared->dom_desc.u.ME.dc_evtchn = evtchn_from_irq(res);
+	DBG("%s: local event channel bound to directcomm towards non-RT Agency : %d\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
 
 	DBG("vbus_init OK!\n");
-}
-
-/*
- * DOMCALL_sync_directcomm
- */
-int do_sync_directcomm(void *arg)
-{
-	struct DOMCALL_directcomm_args *args = arg;
-
-	args->directcomm_evtchn = dc_evtchn;
-
-	return 0;
 }

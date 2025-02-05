@@ -27,7 +27,6 @@ extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 
 void lprintk(char *format, ...) {
 	char buf[CONSOLEIO_BUFFER_SIZE];
-	int i;
 	va_list va;
 	uint32_t flags;
 
@@ -39,11 +38,9 @@ void lprintk(char *format, ...) {
 
 	BUG_ON(strlen(buf) > CONSOLEIO_BUFFER_SIZE);
 
-	for (i = 0; i < strlen(buf); i++)
-		__printch(buf[i]);
+        avz_printstr(buf);
 
 	local_irq_restore(flags);
-
 }
 
 /**

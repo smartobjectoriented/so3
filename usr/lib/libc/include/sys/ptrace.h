@@ -1,7 +1,6 @@
 #ifndef _SYS_PTRACE_H
 #define _SYS_PTRACE_H
 
-
 #include <stdint.h>
 
 /* Type of the REQUEST argument to `ptrace.'  */

@@ -5,6 +5,7 @@ config NS16550
 config PL011_UART
 	bool "PL011 UART serial interface"
 	depends on VIRT32 || VIRT64
+	depends on !SOO_SERIAL
 
 config BCM283x_MU_UART
 	bool "BCM283x mini-UART"

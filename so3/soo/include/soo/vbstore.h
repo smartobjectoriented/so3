@@ -82,7 +82,7 @@ struct vbstore_domain_interface {
 	volatile VBSTORE_RING_IDX req_cons, req_prod, req_pvt;
 	volatile VBSTORE_RING_IDX rsp_cons, rsp_prod, rsp_pvt;
 
-	uint32_t levtchn, revtchn;
+        domid_t domid;
 };
 typedef volatile struct vbstore_domain_interface vbstore_intf_t;
 

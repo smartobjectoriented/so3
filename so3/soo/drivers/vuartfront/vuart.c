@@ -75,6 +75,7 @@ void vuart_write(char *buffer, int count) {
 	vuart_request_t *ring_req;
 	vuart_priv_t *vuart_priv;
 
+
 	if (!vdev_console)
 		return ;
 
@@ -190,7 +191,7 @@ void vuart_reconfiguring(struct vbus_device *vdev) {
 	/* The shared page already exists */
 	/* Re-init */
 
-	gnttab_end_foreign_access_ref(vuart_priv->vuart.ring_ref);
+	gnttab_end_foreign_access(vuart_priv->vuart.ring_ref);
 
 	DBG("Frontend: Setup ring\n");
 

@@ -19,7 +19,7 @@
 #ifndef ME_COMMON_H
 #define ME_COMMON_H
 
-#include <avz/uapi/soo.h>
+#include <soo/uapi/soo.h>
 
 typedef struct {
 	uint64_t uid;

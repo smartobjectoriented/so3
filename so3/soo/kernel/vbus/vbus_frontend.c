@@ -27,13 +27,12 @@
 
 #include <soo/hypervisor.h>
 #include <soo/vbus.h>
-#include <soo/soo.h>
-#include <soo/gnttab.h>
 #include <soo/vbstore.h>
 #include <soo/vbstore_me.h>
-
 #include <soo/debug.h>
 #include <soo/console.h>
+
+#include <avz/avz.h>
 
 /* List of frontend */
 struct list_head frontends;
@@ -212,8 +211,8 @@ void postmig_setup(void) {
 	 * First, we need to take care about local watches on vbstore entries to be ready
 	 * on property changes.
 	 */
-
-	DBG0("Waiting for vbstore dev to be populated\n");
+ 
+        DBG0("Waiting for vbstore dev to be populated\n");
 
 	sprintf(root_name, "%s/%d", initial_rootname, ME_domID());
 	DBG("vbus_frontend: %s ... for domID: %d\n", root_name, ME_domID());
@@ -223,18 +222,10 @@ void postmig_setup(void) {
 	/* Walk through all devices and readjust watches */
 	frontend_for_each(NULL, remove_dev_watches);
 
-	DBG0("Updating gnttab...\n");
-
-	/* Update gnttab for this slot */
-	postmig_gnttab_update();
-
-	/* Re-create the vbstore entries for devices.
-	 * During the creation of vbstore entries on the agency side - and after migration - only the existing entries will be updated
-	 * Otherwise, the frontend will staid suspended.
-	 */
-
 	/* Write the entries related to the ME ID in vbstore */
 	vbstore_ME_ID_populate();
+
+	/* Re-create the vbstore entries for devices */
 
 	DBG0("Re-creating all vbstore entries & watches for all required (frontend) devices...\n");
 	vbstore_devices_populate();

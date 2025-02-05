@@ -1,0 +1,29 @@
+
+/*
+ * Copyright (C) 2016-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifndef AVZ_CAPSULE_H
+#define AVZ_CAPSULE_H
+
+#include <soo/uapi/soo.h>
+
+void inject_me(avz_hyp_t *args);
+void read_ME_snapshot(avz_hyp_t *args);
+void write_ME_snapshot(avz_hyp_t *args);
+
+#endif /* AVZ_CAPSULE_H */

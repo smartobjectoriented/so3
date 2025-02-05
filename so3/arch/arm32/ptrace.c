@@ -20,6 +20,29 @@
 #include <user.h>
 #include <process.h>
 
+/*
+ * Can be used for debugging purposes.
+ *
+ */
+void __dump_regs(void *regs) {
+	unsigned long *cpuregs = (unsigned long *) regs;
+
+	printk("r4: %x ", *cpuregs);
+	printk("r5: %x ", *(cpuregs+1));
+	printk("r6: %x ", *(cpuregs+2));
+	printk("r7: %x ", *(cpuregs+3));
+	printk("r8: %x ", *(cpuregs+4));
+	printk("r9: %x ", *(cpuregs+5));
+	printk("r10: %x ", *(cpuregs+6));
+	printk("fp: %x ", *(cpuregs+7));
+	printk("ip: %x ", *(cpuregs+8));
+	printk("sp: %x ", *(cpuregs+9));
+	printk("lr: %x ", *(cpuregs+10));
+	printk("pc: %x ", *(cpuregs+11));
+	printk("psr: %x ", *(cpuregs+12));
+	printk("\n");
+}
+
 /**
  * Update the CPU registers of the TCB belonging
  * to the current thread.

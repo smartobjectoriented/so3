@@ -56,6 +56,19 @@ typedef struct {
 
 typedef irq_return_t(*irq_handler_t)(int irq, void *data);
 
+/* IRQ controller */
+typedef struct  {
+
+    void (*enable)(unsigned int irq);
+    void (*disable)(unsigned int irq);
+    void (*mask)(unsigned int irq);
+    void (*unmask)(unsigned int irq);
+
+    void (*handle_low)(void *data);
+    void (*handle_high)(unsigned int irq);
+
+} irq_ops_t;
+
 typedef struct irqdesc {
 	irq_handler_t action;
 
@@ -64,8 +77,11 @@ typedef struct irqdesc {
 	atomic_t deferred_pending;
 	bool thread_active;
 
-	/* Private data */
-	void *data;
+	/* Specific IRQ chip (phys/virt) */
+        irq_ops_t *irq_ops;
+
+        /* Private data */
+        void *data;
 
 	/* Multi-processing scenarios */
 	spinlock_t lock;
@@ -77,21 +93,9 @@ extern volatile bool __in_interrupt;
 extern int arch_irq_init(void);
 extern void setup_arch(void);
 
-/* IRQ controller */
-typedef struct  {
-
-    void (*enable)(unsigned int irq);
-    void (*disable)(unsigned int irq);
-    void (*mask)(unsigned int irq);
-    void (*unmask)(unsigned int irq);
-
-    void (*handle)(cpu_regs_t *regs);
-
-} irq_ops_t;
-
 extern irq_ops_t irq_ops;
 
-int irq_process(uint32_t irq);
+void irq_process(uint32_t irq);
 
 void irq_init(void);
 
@@ -102,6 +106,8 @@ void irq_unmask(int irq);
 
 void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, void *data);
 void irq_unbind(int irq);
+
+void irq_set_irq_ops(int irq, irq_ops_t *irq_ops);
 
 void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def);
 
