@@ -335,10 +335,6 @@ void __create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t 
 	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L0_SIZE));
 }
 
-void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
-	__create_mapping(pgtable, virt_base, phys_base, size, nocache, S1);
-}
-
 #elif CONFIG_VA_BITS_39
 
 /**
@@ -351,7 +347,7 @@ void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t si
  * @param size
  * @param nocache	true for I/O access typically
  */
-void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+static void __create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache, mmu_stage_t stage) {
 	addr_t addr, end, length, next, phys;
 	u64 *l1pte;
 
@@ -376,6 +372,10 @@ void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t 
 
 			set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 
+			/* Set AP[1] bit 6 to 1 to make R/W/Executable the pages in user space */
+			if ((addr != phys) && user_space_vaddr(addr))
+				*l1pte |= PTE_BLOCK_AP1;
+
 			DBG("Allocating a 1 GB block at l1pte: %p content: %lx\n", l1pte, *l1pte);
 
 			flush_pte_entry(addr, l1pte);
@@ -384,7 +384,7 @@ void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t 
 			addr += SZ_1G;
 
 		} else {
-			alloc_init_l2(l1pgtable, addr, next, phys, nocache);
+			alloc_init_l2(l1pgtable, addr, next, phys, nocache, stage);
 			phys += next - addr;
 			addr = next;
 		}
@@ -397,6 +397,10 @@ void create_mapping(void *l1pgtable, addr_t virt_base, addr_t phys_base, size_t 
 #else
 #error "Wrong VA_BITS configuration."
 #endif
+
+void create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache) {
+	__create_mapping(pgtable, virt_base, phys_base, size, nocache, S1);
+}
 
 static bool empty_table(void *pgtable) {
 	int i;
@@ -412,7 +416,10 @@ static bool empty_table(void *pgtable) {
 }
 
 void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
-	uint64_t *l0pte, *l1pte, *l2pte, *l3pte;
+#ifdef CONFIG_VA_BITS_48
+	uint64_t *l0pte;
+#endif
+	uint64_t *l1pte, *l2pte, *l3pte;
 	size_t free_size = 0;
 
 	/* If pgtable is NULL, we consider the system page table */
@@ -423,14 +430,24 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 	size = ALIGN_UP(size + (vaddr & ~PAGE_MASK), PAGE_SIZE);
 
 	while (free_size < size) {
-              
-                l0pte = l0pte_offset(pgtable, vaddr);
-                if (!*l0pte)
+
+#ifdef CONFIG_VA_BITS_48
+		l0pte = l0pte_offset(pgtable, vaddr);
+		if (!*l0pte)
 			/* Already free */
 			return ;
 
-                l1pte = l1pte_offset(l0pte, vaddr);
-                BUG_ON(!*l1pte);
+		l1pte = l1pte_offset(l0pte, vaddr);
+#elif CONFIG_VA_BITS_39
+		l1pte = l1pte_offset(pgtable, vaddr);
+		if (!*l1pte)
+			/* Already free */
+			return ;
+#else
+#error "Wrong VA_BITS configuration."
+#endif
+		BUG_ON(!*l1pte);
+
 
 		if (pte_type(l1pte) == PTE_TYPE_BLOCK) {
                         
@@ -440,8 +457,10 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 			free_size += SZ_1G;
 			vaddr += SZ_1G;
 
+#ifdef CONFIG_VA_BITS_48
 			if (empty_table(l0pte))
 				free(l0pte);
+#endif
 		} else {
 
 			BUG_ON(pte_type(l1pte) != PTE_TYPE_TABLE);
@@ -513,58 +532,76 @@ void copy_root_pgtable(void *dst, void *src) {
 }
 
 /**
+ * Reset a page table so that it has no child associated with it.
+ * We do not consider any shared pages/page tables.
+ *
+ * @param pgtable Page table of any level to reset.
+ * @param level   Level of the page table.
+ */
+static void __reset_pgtable(u64 *pgtable, int level)
+{
+	int i;
+	u64 *pte;
+	u64 *child_pgtable;
+	size_t entries, table_addr_mask;
+
+	switch (level) {
+	case 2:
+		entries = TTB_L2_ENTRIES;
+		table_addr_mask = TTB_L2_TABLE_ADDR_MASK;
+		break;
+	case 1:
+		entries = TTB_L1_ENTRIES;
+		table_addr_mask = TTB_L1_TABLE_ADDR_MASK;
+		break;
+	case 0:
+		entries = TTB_L0_ENTRIES;
+		table_addr_mask = TTB_L0_TABLE_ADDR_MASK;
+		break;
+
+	default:
+		BUG();
+		break;
+	}
+
+
+	for (i = 0; i < entries; i++) {
+		pte = pgtable + i;
+
+		if (*pte && (pte_type(pte) == PTE_TYPE_TABLE)) {
+			child_pgtable = (u64 *) __va(*pte & table_addr_mask);
+
+			if (level < 2) {
+				__reset_pgtable(child_pgtable, level + 1);
+			}
+
+			free(child_pgtable);
+			*pte = 0;
+		}
+	}
+
+	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + entries));
+}
+
+/**
  * Free a root page table and its associated Lx page tables used for the user space area.
  * We do not consider any shared pages/page tables.
  *
  * @param pgtable
- * @param remove  false if the root page table is used for subsequent allocations
+ * @param remove  true if we keep the root page table for subsequent allocations
  */
 void reset_root_pgtable(void *pgtable, bool remove) {
-	int i;
-	u64 *pgtable_l1, *pgtable_l2, *pgtable_l3;
-	u64 *l0pte, *l1pte, *l2pte;
 
-	for (i = 0; i < TTB_L0_ENTRIES; i++) {
-
-		l0pte = (u64 *) pgtable + i;
-
-		/* Check if a L2 page table is used */
-		if (*l0pte) {
-			pgtable_l1 = (u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK);
-
-			for (i = 0; i < TTB_L1_ENTRIES; i++) {
-
-				l1pte = pgtable_l1 + i;
-
-				if (*l1pte && (pte_type(l1pte) == PTE_TYPE_TABLE)) {
-					pgtable_l2 = (u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK);
-
-					for (i = 0; i < TTB_L2_ENTRIES; i++) {
-						l2pte = pgtable_l2 + i;
-
-						if (*l2pte && (pte_type(l2pte) == PTE_TYPE_TABLE)) {
-							pgtable_l3 = (u64 *) __va(*l2pte & TTB_L2_TABLE_ADDR_MASK);
-
-							free(pgtable_l3);
-							*l2pte = 0;
-						}
-					}
-
-					free(pgtable_l2);
-					*l1pte = 0;
-				}
-			}
-
-			free(pgtable_l1);
-			*l0pte = 0;
-		}
-	}
+#ifdef CONFIG_VA_BITS_48
+	__reset_pgtable((u64 *)pgtable, 0);
+#elif CONFIG_VA_BITS_39
+	__reset_pgtable((u64 *)pgtable, 1);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 	if (remove)
 		free(pgtable);
-
-	mmu_page_table_flush((addr_t) pgtable, (addr_t) (pgtable + TTB_L1_ENTRIES));
-
 }
 
 /*
@@ -623,8 +660,17 @@ void mmu_configure(addr_t fdt_addr) {
 			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)], DCACHE_WRITEALLOC);
 		}
 #elif CONFIG_VA_BITS_39
-		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = mem_info.phys_base & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l2pgtable & TTB_L1_TABLE_ADDR_MASK;
+		set_pte_table(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+
+		/* Set up a 128 MB linear mapping to progress with the bootstrap code
+		 * until the memory manager re-configure the memory mapping with
+		 * a better granularity.
+		 */
+		for (i = 0; i < 64; i++) {
+			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)] = (mem_info.phys_base + i*SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
+			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i*SZ_2M)], DCACHE_WRITEALLOC);
+		}
 #else
 #error "Wrong VA_BITS configuration."
 #endif
@@ -634,7 +680,7 @@ void mmu_configure(addr_t fdt_addr) {
 		__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
 #elif CONFIG_VA_BITS_39
-		__sys_root_pgtable[l1pte_index(UART_BASE)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
+		__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
 #else
 #error "Wrong VA_BITS configuration."
@@ -859,8 +905,13 @@ void duplicate_pgtable_entry(u64 *from, u64 *to, int level, u64 vaddr, pcb_t *pc
 void duplicate_user_space(pcb_t *from, pcb_t *to) {
 
 	/* Walk through the L0 pgtable and copy the entries */
-
+#ifdef CONFIG_VA_BITS_48
 	duplicate_pgtable_entry((u64 *) from->pgtable, (u64 *) to->pgtable, 0, 0, to);
+#elif CONFIG_VA_BITS_39
+	duplicate_pgtable_entry((u64 *) from->pgtable, (u64 *) to->pgtable, 1, 0, to);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 }
 
 #ifdef CONFIG_RAMDEV
@@ -886,11 +937,15 @@ void ramdev_create_mapping(void *root_pgtable, addr_t ramdev_start, addr_t ramde
  * @return	physical addr corresponding to vaddr
  */
 addr_t virt_to_phys_pt(addr_t vaddr) {
-	addr_t *l0pte, *l1pte, *l2pte, *l3pte;
+#ifdef CONFIG_VA_BITS_48
+	addr_t *l0pte;
+#endif
+	addr_t *l1pte, *l2pte, *l3pte;
 	uint32_t offset;
 
 	offset = vaddr & ~PAGE_MASK;
 
+#ifdef CONFIG_VA_BITS_48
 	if (user_space_vaddr(vaddr))
 		l0pte = l0pte_offset(current_pgtable(), vaddr);
 	else
@@ -900,6 +955,15 @@ addr_t virt_to_phys_pt(addr_t vaddr) {
 
 	l1pte = l1pte_offset(l0pte, vaddr);
 	BUG_ON(!*l1pte);
+#elif CONFIG_VA_BITS_39
+	if (user_space_vaddr(vaddr))
+		l1pte = l1pte_offset((u64*)current_pgtable(), vaddr);
+	else
+		l1pte = l1pte_offset(__sys_root_pgtable, vaddr);
+	BUG_ON(!*l1pte);
+#else
+#error "Wrong VA_BITS configuration."
+#endif
 
 	if (pte_type(l1pte) == PTE_TYPE_BLOCK)
 		return (*l1pte & TTB_L1_BLOCK_ADDR_MASK) | offset;

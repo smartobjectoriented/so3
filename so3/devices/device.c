@@ -114,6 +114,7 @@ void parse_dtb(void *fdt_addr) {
 	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
 	dev_t *dev;
 	int i, level;
+	int ret;
 	int offset, new_off;
 	bool found;
 
@@ -151,9 +152,10 @@ void parse_dtb(void *fdt_addr) {
 
 						if (dev->status == STATUS_INIT_PENDING) {
 
-							driver_entries[level][i].init(dev, new_off);
-							dev->status = STATUS_INITIALIZED;
+							ret = driver_entries[level][i].init(dev, new_off);
+							BUG_ON(ret);
 
+							dev->status = STATUS_INITIALIZED;
 							list_add_tail(&dev->list, &devices);
 						}
 						break;
@@ -184,6 +186,22 @@ void devclass_register(dev_t *dev, struct devclass *devclass)
 	INIT_LIST_HEAD(&devclass->list);
 
 	list_add(&devclass->list, &registered_dev);
+}
+
+/* Gets the indexth registered devclass or NULL if index is too big */
+struct devclass *devclass_get_by_index(size_t index)
+{
+	struct devclass *cur_dev;
+	size_t i;
+
+	i = 0;
+	list_for_each_entry(cur_dev, &registered_dev, list) {
+		if (i == index) {
+			return cur_dev;
+		}
+		++i;
+	}
+	return NULL;
 }
 
 /*

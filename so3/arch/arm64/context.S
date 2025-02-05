@@ -33,7 +33,6 @@
 
 .globl __get_syscall_args_ext
 .globl __get_syscall_arg
-.globl __get_syscall_stack_arg
 
 .global __mmu_switch
 .global __exec
@@ -172,32 +171,6 @@ ENTRY(cpu_do_idle)
 	dsb	  sy			// WFI may enter a low-power mode
 	wfi
 
-	ret
-
-// Get the arguments of the syscall which are stored on the stack
-// (greather than 4 args (r0-r3))
-// r0 contains the number of args (0 = first argument on the stack,
-// hence the fifth argument of the syscall, 1 = second arg. on the stack,
-// hence the sixth arg., etc.
-// Returns the value in r0 (according to the EABI)
-__get_syscall_stack_arg:
-
-#if 0
-	ldr	r1, .LCcurrent
-	ldr 	r1, [r1]
-
-	// Get the user stack pointer at the entry of the interrupt vector
-	ldr	r1, [r1, #(OFFSET_TCB_CPU_REGS + OFFSET_SP_USR)]
-
-	// The syscall stub uses r7, r10 and r11. These are NO scratch register
-	// and are preserved on the stack before the exception.
-	// Therefore, we have to skip 12 bytes.
-	add 	r1, r1, #12
-
-	ldr 	r0, [r1, r0, lsl #2]
-
-	mov 	pc, lr
-#endif
 	ret
 
 // Get the additional arguments linked to the syscall.

@@ -91,7 +91,11 @@
 #include <errno.h>
 #include <types.h>
 
-long syscall_handle(unsigned long, unsigned long, unsigned long, unsigned long);
+typedef struct {
+	unsigned long args[6];
+} syscall_args_t;
+
+long syscall_handle(syscall_args_t *);
 
 void set_errno(uint32_t val);
 #endif /* __ASSEMBLY__ */

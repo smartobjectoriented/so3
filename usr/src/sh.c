@@ -21,19 +21,21 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <errno.h>
+#include <syscall.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <syscall.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #define TOKEN_NR	10
 #define ARGS_MAX	16
 
 char tokens[TOKEN_NR][80];
 char prompt[] = "so3% ";
+char file_buff[500];
 
 void parse_token(char *str) {
 	int i = 0;
@@ -49,14 +51,76 @@ void parse_token(char *str) {
 		strcpy(tokens[i++], next_token);
 }
 
+/**
+ * Remove 0 before command
+ */
+void trim(char *buffer, int n) {
+	int i;
+	char *new_buff = calloc(80, sizeof(char));
+	for (i = 0; i < n; i++) {
+		if (buffer[i] != 0) {
+			break;
+		}
+	}
+	memcpy(new_buff, buffer + i,n - i);
+	memcpy(buffer,new_buff, n);
+	free(new_buff);
+}
+
+
+/**
+ * Detect if its a escape sequence
+ */
+int is_escape_sequence(const char *str) {
+    return str[0] == '\x1b' && str[1] == '[';
+}
+
+/**
+ * Escape arrow key sequence to avoid interpret them
+ */
+void escape_arrow_key(char *buffer, int size) {
+	int i,j;
+	char *new_buff = calloc(size, sizeof(char));
+	i = j = 0;
+	while (i < size) {
+		if (is_escape_sequence(&buffer[i])) {
+			i += 3;
+		} else {
+			new_buff[j++] = buffer[i++];
+		}
+	}
+	memcpy(buffer, new_buff,size);
+	free(new_buff);
+}
+
+/**
+ * More secure way and escaped way to get user input
+ */
+void get_user_input(char *buffer, int buf_size) {
+	if (buffer == NULL || buf_size <= 0) {
+		return;
+	}
+
+	memset(buffer, 0, buf_size);
+
+	if (fgets(buffer, buf_size, stdin) != NULL) {
+		escape_arrow_key(buffer, buf_size);
+		trim(buffer, buf_size);
+		size_t len = strlen(buffer);
+		if (len > 0 && buffer[len - 1] == '\n') {
+			buffer[len - 1] = '\0';
+		}
+	}
+}
+
 /*
  * Process the command with the different tokens
  */
 void process_cmd(void) {
-	int i, pid_child, background, arg_pos, arg_pos2;
+	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_read;
 	char *argv[ARGS_MAX], *argv2[ARGS_MAX];
 	char filename[30];
-	int pid, sig, pid_child2;
+	int pid, sig, pid_child2, fd;
 	int pipe_on = 0;
 	int pipe_fd[2];
 
@@ -85,7 +149,7 @@ void process_cmd(void) {
 	if (!strcmp(tokens[0], "setenv")) {
 		/* second arg present ? */
 		if (tokens[1][0] != 0) {
-			/* third arg present ? */
+			/* third arg present gets(user_input);? */
 			if (tokens[2][0] != 0) {
 				/* Set the env. var. (always overwrite) */
 				setenv(tokens[1], tokens[2], 1);
@@ -133,6 +197,7 @@ void process_cmd(void) {
 	arg_pos = 0;
 	arg_pos2 = 0;
 	background = 0;
+	redirection = 0;
 	while (!background && tokens[arg_pos][0] != 0) {
 		/* Check for & */
 		if (!strcmp(tokens[arg_pos], "&"))
@@ -141,10 +206,15 @@ void process_cmd(void) {
 			if (!strcmp(tokens[arg_pos], "|")) {
 				pipe_on = 1;
 				argv[arg_pos] = NULL;
+			} else if (!strcmp(tokens[arg_pos], ">")) {
+				redirection = 1;
+				argv[arg_pos] = NULL;
 			} else {
 				if (pipe_on) {
 					argv2[arg_pos2] = tokens[arg_pos];
 					arg_pos2++;
+				} else if (redirection) { 
+					argv2[0] = tokens[arg_pos];
 				} else
 					argv[arg_pos] = tokens[arg_pos];
 			}
@@ -179,8 +249,7 @@ void process_cmd(void) {
 					exit(-1);
 				}
 
-			}
-			else {
+			} else {
 				close(pipe_fd[1]);
 
 				dup2(pipe_fd[0], STDIN_FILENO);
@@ -192,6 +261,35 @@ void process_cmd(void) {
 					printf("%s: exec failed.\n", argv2[0]);
 					exit(-1);
 				}
+			}
+
+		} else if (redirection) {
+			fd = open(argv2[0], O_WRONLY | O_CREAT);
+			if (fd < 0) {
+				printf("Error opening/creating output file...\n");
+				return;
+			}
+
+			pipe(pipe_fd);
+			pid_child2 = fork();
+			if (!pid_child2) {
+				close(pipe_fd[0]);
+				dup2(pipe_fd[1], STDOUT_FILENO);
+				strcpy(filename, argv[0]);
+				strcat(filename, ".elf");
+
+				if (execv(filename, argv) == -1) {
+					printf("%s: exec failed.\n", argv[0]);
+					exit(-1);
+				}
+
+			} else {
+				close(pipe_fd[1]);
+				while ((byte_read = read(pipe_fd[0], file_buff,
+							 500)) > 0) {
+					write(fd, file_buff, byte_read);
+				}
+				close(fd);
 			}
 
 		} else {
@@ -231,8 +329,8 @@ void sigint_sh_handler(int sig) {
 /*d
  * Main entry point of the shell application.
  */
-void main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+
 	char user_input[80];
 	int i;
 	struct sigaction sa;
@@ -250,7 +348,7 @@ void main(int argc, char *argv[])
 		printf("%s", prompt);
 		fflush(stdout);
 
-		gets(user_input);
+		get_user_input(user_input, 80);
 
 		if (strcmp(user_input, ""))
 			parse_token(user_input);
@@ -258,7 +356,6 @@ void main(int argc, char *argv[])
 		/* Check if there is at least one token to be processed */
 		if (tokens[0][0] != 0)
 			process_cmd();
-
-
+			
 	}
 }

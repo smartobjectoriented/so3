@@ -43,7 +43,9 @@
 #include <asm/mmu.h>
 #include <asm/process.h>
 #include <asm/processor.h>
+#ifndef CONFIG_ARCH_ARM32
 #include <asm/semihosting.h>
+#endif
 
 static char *proc_state_strings[5] = {
     [PROC_STATE_NEW] = "NEW",         [PROC_STATE_READY] = "READY",
