@@ -20,7 +20,7 @@
 #define VDUMMY_H
 
 #include <soo/ring.h>
-#include <soo/grant_table.h>
+#include <soo/gnttab.h>
 #include <soo/vdevfront.h>
 
 #define VDUMMY_PACKET_SIZE	32
@@ -53,7 +53,7 @@ typedef struct {
 	unsigned int irq;
 
 	grant_ref_t ring_ref;
-	grant_handle_t handle;
+	
 	uint32_t evtchn;
 
 } vdummy_t;

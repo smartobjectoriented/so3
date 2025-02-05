@@ -70,9 +70,9 @@ void heap_init(void)
 	quick_list->size = HEAP_SIZE - sizeof(mem_chunk_t);
 	quick_list->padding_bytes = 0;
 
-	DBG("SO3: allocating a kernel heap of %d bytes.\n", quick_list->size);
+        DBG("SO3: allocating a kernel heap of %d bytes.\n", quick_list->size);
 
-	DBG("[list_init] List initialized. sizeof(mem_chunk_t) = %d bytes, sizeof(int) = %d bytes\n", sizeof(mem_chunk_t), sizeof(int));
+        DBG("[list_init] List initialized. sizeof(mem_chunk_t) = %d bytes, sizeof(int) = %d bytes\n", sizeof(mem_chunk_t), sizeof(int));
 }
 
 /*

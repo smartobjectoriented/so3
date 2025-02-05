@@ -205,12 +205,12 @@ static inline __req_t *__name##_get_ring_request(__name##_back_ring_t *__name##_
     (&((_r)->sring->ring[((_idx) & (RING_SIZE(_r) - 1))].rsp))
 
 #define RING_PUSH_REQUESTS(_r) do {                                     \
-    smp_mb(); /* back sees requests /before/ updated producer index */     \
+    smp_wmb(); /* back sees requests /before/ updated producer index */     \
     (_r)->sring->req_prod = (_r)->req_prod_pvt;                         \
 } while (0)
 
 #define RING_PUSH_RESPONSES(_r) do {                                    \
-    smp_mb(); /* front sees responses /before/ updated producer index */   \
+		smp_wmb(); /* front sees responses /before/ updated producer index */   \
     (_r)->sring->rsp_prod = (_r)->rsp_prod_pvt;                         \
 } while (0)
 
@@ -219,6 +219,5 @@ static inline __req_t *__name##_get_ring_request(__name##_back_ring_t *__name##_
 
 #define RING_RESP_FULL(_r)                                                   \
     (RING_FREE_RESPONSES(_r) == 0)
-
 
 #endif /* __RING_H__ */

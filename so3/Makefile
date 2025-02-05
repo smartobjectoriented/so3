@@ -302,13 +302,9 @@ OBJDUMP		= $(CROSS_COMPILE)objdump
 
 gccincdir := $(shell $(CC) -print-file-name=include)
 
-SO3INCLUDE    := -I.include  -I.  \
-                  $(if $(KBUILD_SRC), -I./include) \
-                  -include include/generated/autoconf.h
-
 KBUILD_CPPFLAGS := -D__KERNEL__ -D__SO3__
 
-KBUILD_CPPFLAGS += -I$(saved-output)include -I$(srctree)/include -I$(srctree)/include/net
+KBUILD_CPPFLAGS += -I$(saved-output)include -I$(srctree)/include -I$(srctree)/include/net -I$(srctree)/avz/include
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
@@ -343,7 +339,7 @@ export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
 export CPP AR NM STRIP OBJCOPY OBJDUMP
 export TARGET
 
-export KBUILD_CPPFLAGS NOSTDINC_FLAGS SO3INCLUDE OBJCOPYFLAGS LDFLAGS
+export KBUILD_CPPFLAGS NOSTDINC_FLAGS OBJCOPYFLAGS LDFLAGS
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
 export KBUILD_ARFLAGS
 
@@ -374,6 +370,8 @@ include $(srctree)/scripts/Makefile.build
 all:  $(BIN) dtbs 
 
 objs-y		:= arch/$(SRCARCH) kernel mm fs ipc devices apps net
+
+objs-$(CONFIG_AVZ) += avz
 
 ifeq ($(CONFIG_AVZ),)
 
@@ -407,6 +405,7 @@ KBUILD_CFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/
 KBUILD_AFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/
 
 ifdef CONFIG_SOO
+KBUILD_CPPFLAGS += -Isoo/include
 KBUILD_CFLAGS_KERNEL += -Isoo/include
 KBUILD_AFLAGS_KERNEL += -Isoo/include
 endif

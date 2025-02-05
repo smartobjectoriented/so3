@@ -26,7 +26,7 @@
 #include <types.h>
 #include <printk.h>
 #include <string.h>
-
+ 
 #endif /* __ASSEMBLY__ */
 
 #ifdef CONFIG_AVZ
@@ -51,8 +51,6 @@
 extern addr_t __end[];
 
 #ifdef CONFIG_AVZ
-
-#include <avz/console.h>
 
 /*
  * Pseudo-usr mode allows the hypervisor to switch back to the right stack (G-stach/H-stack) depending on whether
@@ -150,7 +148,7 @@ do {                                                            \
      do { if ( unlikely(!(p)) ) assert_failed(#p); } while (0)
 
 typedef enum {
-	BOOT_STAGE_INIT, BOOT_STAGE_IRQ_INIT, BOOT_STAGE_SCHED, BOOT_STAGE_IRQ_ENABLE, BOOT_STAGE_COMPLETED
+	BOOT_STAGE_INIT, BOOT_STAGE_HEAP_READY, BOOT_STAGE_IRQ_INIT, BOOT_STAGE_SCHED, BOOT_STAGE_IRQ_ENABLE, BOOT_STAGE_COMPLETED
 } boot_stage_t;
 extern boot_stage_t boot_stage;
 

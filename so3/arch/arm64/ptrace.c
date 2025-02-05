@@ -20,6 +20,22 @@
 #include <user.h>
 #include <process.h>
 
+/*
+ * Can be used for debugging purposes.
+ *
+ */
+void __dump_regs(void *regs) {
+	unsigned long *cpuregs = (unsigned long *) regs;
+        int i;
+
+        printk("---------- CPU regs ----------\n");
+
+        for (i = 0; i <= 30; i++)
+                printk("x%d =  %x\n", i, *(cpuregs+i));
+                
+	printk("\n");
+}
+
 /**
  * Update the CPU registers of the TCB belonging
  * to the current thread.

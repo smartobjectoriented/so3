@@ -24,7 +24,7 @@
 #include <memory.h>
 
 #ifdef CONFIG_AVZ
-#include <avz/event.h>
+#include <avz/evtchn.h>
 #include <avz/domain.h>
 #endif
 
@@ -114,13 +114,13 @@ void secondary_start_kernel(void)
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
-#if defined(CONFIG_AVZ) && defined(CONFIG_ARM64VT)
+#if defined(CONFIG_AVZ) 
 
 #ifdef CONFIG_SOO
 	if (cpu == AGENCY_RT_CPU) {
-		__mmu_switch_kernel((void *) current_domain->avz_shared->pagetable_paddr, true);
+		__mmu_switch_kernel((void *) current_domain->pagetable_paddr, true);
 #else
-		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->avz_shared->pagetable_paddr, true);
+		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
 #endif /* CONFIG_SOO */
 
 		booted[cpu] = 1;
@@ -139,16 +139,18 @@ void secondary_start_kernel(void)
 		default:
 			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 		}
-
-#else
-		pre_ret_to_el1();
 #endif
 
 #ifdef CONFIG_SOO
 	}
+	
+	/* If no spin table is used, CPU #1 */
+	if (cpu == AGENCY_RT_CPU)
+        	pre_ret_to_el1();
+
 #endif /* CONFIG_SOO */
 
-#endif /* CONFIG_AVZ+ARM64VT */
+#endif /* CONFIG_AVZ */
 
 	secondary_timer_init();
 
@@ -169,7 +171,11 @@ void secondary_start_kernel(void)
 
 	printk("%s: entering idle loop...\n", __func__);
 
+	/* On CPU running containers, the timer IRQ is catched by
+	 * the hypervisor and forwarded to guests as virtual IRQ
+	 */
 	periodic_timer_start();
+
 
 #ifdef CONFIG_AVZ
 	/* Prepare an idle domain and starts the idle loop */
@@ -219,7 +225,7 @@ void cpu_up(unsigned int cpu)
 
 	while (!booted[cpu]) ;
 
-	printk("%s finished waiting...\n", __func__);
+	printk("%s CPU %d finished waiting...\n", __func__, smp_processor_id());
 
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;

@@ -26,7 +26,6 @@
 
 #include <soo/hypervisor.h>
 #include <soo/avz.h>
-#include <soo/grant_table.h>
 #include <soo/dev/vbus.h>
 #include <soo/vbstore.h>
 
@@ -167,8 +166,6 @@ void frontend_for_each(void *data, int (*fn)(struct vbus_device *, void *));
 
 int vbus_dev_remove(struct vbus_device *dev);
 
-extern unsigned int dc_evtchn;
-
 void add_new_dev(struct vbus_device *dev);
 extern int vbus_dev_probe(struct vbus_device *dev);
 
@@ -208,10 +205,8 @@ void vbus_watch_path(struct vbus_device *dev, char *path, struct vbus_watch *wat
 void vbus_watch_pathfmt(struct vbus_device *dev, struct vbus_watch *watch, void (*callback)(struct vbus_watch *), const char *pathfmt, ...)
 	__attribute__ ((format (printf, 4, 5)));
 
-int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_mfn);
-int vbus_map_ring_valloc(struct vbus_device *dev, int gnt_ref, void **vaddr);
-int vbus_map_ring(struct vbus_device *dev, int gnt_ref, grant_handle_t *handle, void *vaddr);
-
+int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_pfn);
+ 
 void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *port);
 void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_port, uint32_t *port);
 void vbus_free_evtchn(struct vbus_device *dev, uint32_t port);
@@ -246,15 +241,12 @@ void vbstore_trigger_dev_probe(void);
 
 int vbstore_uart_remove(unsigned int domID);
 
-void postmig_setup(void);
 int gnttab_remove(bool with_vbus);
 
 void device_shutdown(void);
 void remove_devices(void);
 
 void vbus_init(void);
-
-void postmig_vbstore_setup(struct DOMCALL_sync_domain_interactions_args *args);
 
 #ifdef DEBUG
 #undef DBG

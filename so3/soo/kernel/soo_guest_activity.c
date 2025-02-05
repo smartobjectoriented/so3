@@ -35,8 +35,7 @@
 #include <soo/vbstore.h>
 #include <soo/soo.h>
 #include <soo/console.h>
-#include <soo/debug/logbool.h>
-
+ 
 /*
  * Used to keep track of the target domain for a certain (outgoing) dc_event.
  * Value -1 means no dc_event in progress.
@@ -50,8 +49,6 @@ atomic_t dc_incoming_domID[DC_EVENT_MAX];
 
 static struct completion dc_stable_lock[DC_EVENT_MAX];
 
-long __pfn_offset = 0;
-
 void dc_stable(int dc_event)
 {
 	/* It may happen that the thread which performs the down did not have time to perform the call and is not suspended.
@@ -62,7 +59,6 @@ void dc_stable(int dc_event)
 
 	atomic_set(&dc_incoming_domID[dc_event], -1);
 }
-
 
 /*
  * Sends a ping event to a remote domain in order to get synchronized.
@@ -87,8 +83,8 @@ void do_sync_dom(int domID, dc_event_t dc_event)
 
 	set_dc_event(domID, dc_event);
 
-	DBG("%s: notifying via evtchn %d...\n", __func__, dc_evtchn);
-	notify_remote_via_evtchn(dc_evtchn);
+	DBG("%s: notifying via evtchn %d...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 
 	/* Wait for the response from the outgoing domain */
 	DBG("%s: waiting for completion on dc_event %d...\n", __func__, dc_event);
@@ -120,7 +116,7 @@ void tell_dc_stable(int dc_event)  {
 
 	atomic_set(&dc_incoming_domID[dc_event], -1);
 
-	notify_remote_via_evtchn(dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 }
 
 
@@ -130,58 +126,23 @@ void tell_dc_stable(int dc_event)  {
  */
 void set_dc_event(domid_t domID, dc_event_t dc_event)
 {
-	soo_hyp_dc_event_t dc_event_args;
+	avz_hyp_t args;
 
 	DBG("%s(%d, %d)\n", __func__, domID, dc_event);
 
-	dc_event_args.domID = domID;
-	dc_event_args.dc_event = dc_event;
+   	args.cmd = AVZ_DC_EVENT_SET;
+        args.u.avz_dc_event_args.domID = domID;
+        args.u.avz_dc_event_args.dc_event = dc_event;
 
-	soo_hypercall(AVZ_DC_SET, NULL, NULL, &dc_event_args, NULL);
-	while (dc_event_args.state == -EBUSY) {
+        avz_hypercall(&args);
+
+	while (args.u.avz_dc_event_args.state == -EBUSY) {
 		schedule();
 
-		soo_hypercall(AVZ_DC_SET, NULL, NULL, &dc_event_args, NULL);
+		avz_hypercall(&args);
 	}
 }
-
-/*
- * SOO Migration hypercall
- *
- * Mandatory arguments:
- * - cmd: hypercall
- * - vaddr: a virtual address used within the hypervisor
- * - paddr: a physical address used within the hypervisor
- * - p_val1: a (virtual) address to a first value
- * - p_val2: a (virtual) address to a second value
- */
-
-void soo_hypercall(int cmd, void *vaddr, void *paddr, void *p_val1, void *p_val2)
-{
-	soo_hyp_t soo_hyp;
-
-	soo_hyp.cmd = cmd;
-	soo_hyp.vaddr = (unsigned long) vaddr;
-	soo_hyp.paddr = (unsigned long) paddr;
-	soo_hyp.p_val1 = p_val1;
-	soo_hyp.p_val2 = p_val2;
-
-	hypercall_trampoline(__HYPERVISOR_soo_hypercall, (long) &soo_hyp, 0, 0, 0);
-}
-
-/*
- * Set the pfn offset after migration
- */
-void set_pfn_offset(long pfn_offset)
-{
-	__pfn_offset = pfn_offset;
-}
-
-long get_pfn_offset(void)
-{
-	return __pfn_offset;
-}
-
+ 
 /*
  * Get the state of a ME.
  */
@@ -201,6 +162,7 @@ void set_ME_state(ME_state_t state)
 	avz_shared->dom_desc.u.ME.state = state;
 }
 
+void postmig_setup(void);
 void perform_task(dc_event_t dc_event)
 {
 	soo_domcall_arg_t args;
@@ -226,45 +188,42 @@ void perform_task(dc_event_t dc_event)
 
 			/* Remove vbstore entries related to this ME */
 			DBG("Removing vbstore entries ...\n");
-			remove_vbstore_entries();
+                        remove_vbstore_entries();
+                }
 
-			/* Remove grant table entries */
-			DBG("Removing grant references ...\n");
-			gnttab_remove(true);
-		}
-
-		break;
+                break;
 
 	case DC_RESUME:
-
 		DBG("resuming vbstore...\n");
 
-		/* Giving a chance to perform actions before resuming devices */
-		args.cmd = CB_PRE_RESUME;
+                BUG_ON((get_ME_state() != ME_state_resuming) && (get_ME_state() != ME_state_awakened));
+
+                /* Giving a chance to perform actions before resuming devices */
+                args.cmd = CB_PRE_RESUME;
 		do_soo_activity(&args);
 
 		DBG("Now resuming vbstore...\n");
 		vbs_resume();
-
-		/* After a migration, re-init watch for device/<domID> */
-		if (get_ME_state() == ME_state_migrating)
+	 
+		/* During a resuming after an awakened snapshot, re-init watch for device/<domID> */
+		if (get_ME_state() == ME_state_awakened)
 			postmig_setup();
 
 		DBG("vbstore resumed.\n");
 		break;
 
 	case DC_SUSPEND:
-
 		DBG("Suspending vbstore...\n");
 
-		vbs_suspend();
+                vbs_suspend();
 		DBG("vbstore suspended.\n");
+
 		break;
 
 	case DC_PRE_SUSPEND:
 		DBG("Pre-suspending...\n");
 
-		/* Giving a chance to perform actions before resuming devices */
+		/* Giving a chance to perform actions before suspending devices */
 		args.cmd = CB_PRE_SUSPEND;
 		do_soo_activity(&args);
 		break;
@@ -285,8 +244,7 @@ void perform_task(dc_event_t dc_event)
 
 
 /*
- * do_soo_activity() may be called from the hypervisor as a DOMCALL, but not necessary.
- * The function may also be called as a deferred work during the ME kernel execution.
+ * This function is called as a deferred work during the container kernel execution.
  */
 void do_soo_activity(void *arg)
 {
@@ -305,60 +263,14 @@ void do_soo_activity(void *arg)
 
 		cb_pre_resume(arg);
 		break;
-
-	case CB_PRE_ACTIVATE: /* DOMCALL */
-
-		/* Allow to pass local information of this SOO to this ME
-		 * and to decide what to do next...
-		 */
-		cb_pre_activate(arg);
-		break;
-
-	case CB_PRE_PROPAGATE: /* DOMCALL */
-
-		cb_pre_propagate(arg);
-		break;
-
-	case CB_KILL_ME: /* Kill domcall */
-
-		/* If the ME agrees to be killed (immediately being shutdown, it has to change its state to killed) */
-		cb_kill_me(arg);
-		break;
-
-	case CB_COOPERATE: /* Both DOMCALL and called by perform_cooperate() */
-
-		/*
-		 * Enable possible exchange of data between MEs
-		 * and make further actions
-		 */
-
-		cb_cooperate(arg);
-		break;
-
+ 
 	case CB_POST_ACTIVATE: /* Called by perform_post_activate() */
 
 		DBG("Post_activate callback for ME %d\n", ME_domID());
 
 		cb_post_activate(args);
 		break;
-
-	case CB_DUMP_BACKTRACE: /* DOMCALL */
-
-		dump_sched();
-		break;
 	}
-
-}
-
-/*
- * Agency ctl operations
- */
-
-void agency_ctl(agency_ctl_args_t *agency_ctl_args)
-{
-	agency_ctl_args->slotID = ME_domID();
-
-	soo_hypercall(AVZ_AGENCY_CTL, NULL, NULL, agency_ctl_args, NULL);
 }
 
 ME_desc_t *get_ME_desc(void)

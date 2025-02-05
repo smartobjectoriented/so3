@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+/ {
+	model = "SO3 virt64 machine";
+	compatible = "arm,virt64";
+	
+	#address-cells = <2>;
+	#size-cells = <2>;
+	
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,virt64";
+	};
+	
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x41000000 0x0 0x4000000>; /* 64 MB */
+	};
+
+	soo-serial {
+		compatible = "soo-serial";
+		status = "ok";
+	};
+
+	/* SO3 virtual timer managed by AVZ */
+
+	soo-timer {
+		compatible = "soo-timer,periodic-timer";
+		status = "ok";
+	};
+
+	/* Free-running clocksource */
+	clocksource-timer {
+		compatible = "soo-timer,clocksource-timer";
+		status = "ok";
+	};
+
+	oneshot-timer {
+		compatible = "soo-timer,oneshot-timer";
+		status = "ok";
+	};
+
+	/* GIC interrupt controller */
+	gic: interrupt-controller@0x08000000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+
+		/* GIC dist, cpu, hyp */
+		reg = <0x0 0x08000000 0x0 0x10000
+		       0x0 0x08010000 0x0 0x10000>;
+
+		status = "ok";
+	};
+	
+	mydev {
+		compatible = "arm,mydev";
+		status = "ok";
+	};
+
+	ME {
+   		/* SPID on 64-bit encoding */
+        	spid = /bits/ 64 <0x0030000000000003>;
+
+		 /* Name of this ME */
+		me_name = "SOO.refso3";
+
+		/* Short description */
+		me_shortdesc =
+
+		"This is the standard reference ME that can be used as template or simply to \
+		perform various tests. This variant includes a rootfs with some user space \
+		applications.";
+
+        frontends {
+
+			/* Enabling vdummy for testing purposes */
+            vdummy {
+				compatible = "vdummy,frontend";
+				status = "disabled";
+			};
+
+            /* Enabling the console */
+            vuart {
+				compatible = "vuart,frontend";
+				status = "ok";
+			};
+
+
+        };
+	};
+
+
+};

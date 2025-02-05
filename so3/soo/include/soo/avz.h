@@ -20,3 +20,5 @@
 
 #define ME_domID() (avz_shared->domID)
 
+void avz_setup(void);
+ 

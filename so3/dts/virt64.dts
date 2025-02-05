@@ -35,10 +35,6 @@
 		reg = <0x0 0x41000000 0x0 0x20000000>; /* 512 MB */
 	};
 
-	agency {
-		domain-size = <0x10000000>;
-	};
-
 	/* GIC interrupt controller */
 	gic:interrupt-controller@0x08000000 {
 		compatible = "intc,gic";

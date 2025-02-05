@@ -60,31 +60,22 @@
 #define PAGE_SIZE       (1 << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
+
+/* Start of the container memory base */
+#define ME_BASE 		UL(0x0000200000000000)
+#define ME_ID_SHIFT 		32
 
 #ifdef CONFIG_VA_BITS_48
 #define AGENCY_VOFFSET		UL(0x0000110000000000)
-#define ME_VOFFSET		UL(0x0000200100000000)
+ 
 #elif CONFIG_VA_BITS_39
 #define AGENCY_VOFFSET		UL(0xffffffc010000000)
-#define ME_VOFFSET	  	UL(0xffffffc000000000)
 #else
 #error "Wrong VA_BITS configuration."
 #endif
 
-#else /* CONFIG_ARM64VT */
-
-#ifdef CONFIG_VA_BITS_48
-#define AGENCY_VOFFSET	UL(0xffff800010000000)
-#define ME_VOFFSET	UL(0xffff800010000000)
-#elif CONFIG_VA_BITS_39
-#define AGENCY_VOFFSET	UL(0xffffffc010000000)
-#define ME_VOFFSET  	UL(0xffffffc000000000)
-#else
-#error "Wrong VA_BITS configuration."
-#endif
-
-#endif /* !CONFIG_ARM64VT */
+#endif /* CONFIG_AVZ */
 
 /* Order of size which makes sense in block mapping */
 #define BLOCK_256G_OFFSET	(SZ_256G - 1)
@@ -523,11 +514,6 @@ typedef enum {
 	S1,
 	S2
 } mmu_stage_t;
-
-#define mrs(spr)		({ u64 rval; asm volatile(\
-				"mrs %0," #spr :"=r"(rval)); rval; })
-
-#define msr(spr, val)		asm volatile("msr " #spr ", %0" ::"r"(val));
 
 /* VA to PA Address Translation */
 

@@ -155,23 +155,22 @@ struct gicc_regs {
 
 };
 
-struct gich_regs {
-	volatile uint32_t hcr;		/* 0x000 */
-	volatile uint32_t vtr;  	/* 0x004 */
-	volatile uint32_t vmcr; 	/* 0x008 */
-	volatile uint32_t _res0;	/* 0x00c */
-	volatile uint32_t misr;		/* 0x010 */
-	volatile uint32_t _res1[3];	/* 0x14-0x1c */
-	volatile uint32_t eisr0;	/* 0x020 */
-	volatile uint32_t eisr1;	/* 0x024 */
-	volatile uint32_t _res2[2];	/* 0x28-0x2c */
-	volatile uint32_t elsr0;	/* 0x030 */
-	volatile uint32_t elsr1;	/* 0x034 */
-	volatile uint32_t _res3[45];	/* 0x38-0xec */
-	volatile uint32_t apr;		/* 0x0f0 */
-	volatile uint32_t _res4[3];	/* 0xf4-0xfc */
-	volatile uint32_t lrbase[63];	/* 0x100 (lr0) - ox1f8 */
-	volatile uint32_t lr63;		/* 0x1fc */
+struct __attribute__((packed)) gich_regs {
+    volatile uint32_t hcr;      /* 0x000: Hypervisor Control Register */
+    volatile uint32_t vtr;      /* 0x004: Virtualization Control Register */
+    volatile uint32_t vmcr;     /* 0x008: Virtual Machine Control Register */
+    volatile uint32_t _res0;    /* 0x00c: Reserved */
+    volatile uint32_t misr;     /* 0x010: Maintenance Interrupt Status Register */
+    volatile uint32_t _res1[3]; /* 0x014-0x01c: Reserved */
+    volatile uint32_t eisr0;    /* 0x020: Empty List Status Register 0 */
+    volatile uint32_t eisr1;    /* 0x024: Empty List Status Register 1 */
+    volatile uint32_t _res2[2]; /* 0x028-0x02c: Reserved */
+    volatile uint32_t elsr0;    /* 0x030: Empty List Register 0 */
+    volatile uint32_t elsr1;    /* 0x034: Empty List Register 1 */
+    volatile uint32_t _res3[46];/* 0x038-0x0ec: Reserved */
+    volatile uint32_t apr;      /* 0x0f0: Active Priorities Register */
+    volatile uint32_t _res4[3]; /* 0x0f4-0x0fc: Reserved */
+    volatile uint32_t lr[64];   /* 0x100: List Registers 0-63 (0x100 to 0x1FC) */
 };
 
 #endif /* __ASSEMBLY__ */
@@ -200,6 +199,25 @@ struct gich_regs {
 					(GICD_INT_DEF_PRI << 16) |\
 					(GICD_INT_DEF_PRI << 8) |\
 					GICD_INT_DEF_PRI)
+#define GICD_CTLR			0x0000
+#define GICD_CTLR_ARE_NS		(1 << 4)
+#define GICD_TYPER			0x0004
+#define GICD_IIDR			0x0008
+#define GICD_IGROUPR			0x0080
+#define GICD_ISENABLER			0x0100
+#define GICD_ICENABLER			0x0180
+#define GICD_ISPENDR			0x0200
+#define GICD_ICPENDR			0x0280
+#define GICD_ISACTIVER			0x0300
+#define GICD_ICACTIVER			0x0380
+#define GICD_IPRIORITYR			0x0400
+#define GICD_ITARGETSR			0x0800
+#define GICD_ICFGR			0x0c00
+#define GICD_NSACR			0x0e00
+#define GICD_SGIR			0x0f00
+#define GICD_CPENDSGIR			0x0f10
+#define GICD_SPENDSGIR			0x0f20
+#define GICD_IROUTER			0x6000
 
 #define GICC_SIZE		0x2000
 #define GICH_SIZE		0x2000
@@ -214,12 +232,28 @@ struct gich_regs {
 
 #define GICC_PMR_DEFAULT	0xf0
 
-#define GICV_PMR_SHIFT		3
-#define GICH_VMCR_PMR_SHIFT	27
-#define GICH_VMCR_EN0		(1 << 0)
-#define GICH_VMCR_EN1		(1 << 1)
-#define GICH_VMCR_ACKCtl	(1 << 2)
-#define GICH_VMCR_EOImode	(1 << 9)
+#define GICH_VMCR_ENABLE_GRP0_SHIFT	0
+#define GICH_VMCR_ENABLE_GRP0_MASK	(1 << GICH_VMCR_ENABLE_GRP0_SHIFT)
+#define GICH_VMCR_ENABLE_GRP1_SHIFT	1
+#define GICH_VMCR_ENABLE_GRP1_MASK	(1 << GICH_VMCR_ENABLE_GRP1_SHIFT)
+#define GICH_VMCR_ACK_CTL_SHIFT		2
+#define GICH_VMCR_ACK_CTL_MASK		(1 << GICH_VMCR_ACK_CTL_SHIFT)
+#define GICH_VMCR_FIQ_EN_SHIFT		3
+#define GICH_VMCR_FIQ_EN_MASK		(1 << GICH_VMCR_FIQ_EN_SHIFT)
+#define GICH_VMCR_CBPR_SHIFT		4
+#define GICH_VMCR_CBPR_MASK		(1 << GICH_VMCR_CBPR_SHIFT)
+#define GICH_VMCR_EOI_MODE_SHIFT	9
+#define GICH_VMCR_EOI_MODE_MASK		(1 << GICH_VMCR_EOI_MODE_SHIFT)
+
+#define GICH_VMCR_PRIMASK_SHIFT		27
+#define GICH_VMCR_PRIMASK_MASK		(0x1f << GICH_VMCR_PRIMASK_SHIFT)
+#define GICH_VMCR_BINPOINT_SHIFT	21
+#define GICH_VMCR_BINPOINT_MASK		(0x7 << GICH_VMCR_BINPOINT_SHIFT)
+#define GICH_VMCR_ALIAS_BINPOINT_SHIFT	18
+#define GICH_VMCR_ALIAS_BINPOINT_MASK	(0x7 << GICH_VMCR_ALIAS_BINPOINT_SHIFT)
+
+#define GICV_PMR_PRIORITY_SHIFT 3
+#define GICV_PMR_PRIORITY_MASK (0x1f << GICV_PMR_PRIORITY_SHIFT)
 
 #define GICH_HCR_EN		(1 << 0)
 #define GICH_HCR_UIE		(1 << 1)
@@ -236,6 +270,7 @@ struct gich_regs {
 #define GICH_LR_ACTIVE_BIT	(1 << 29)
 #define GICH_LR_PENDING_BIT	(1 << 28)
 #define GICH_LR_PRIORITY_SHIFT	23
+#define GICH_LR_PRIORITY_MASK 	0x1f
 #define GICH_LR_SGI_EOI_BIT	(1 << 19)
 #define GICH_LR_CPUID_SHIFT	10
 #define GICH_LR_PHYS_ID_SHIFT	10
@@ -251,7 +286,37 @@ struct gich_regs {
 
 void gicc_init(void);
 void gic_raise_softirq(int cpu, unsigned int irq);
+void gic_hw_reset(void);
+
+#define is_sgi(irqn) ((u32) (irqn) < 16)
+#define is_ppi(irqn)			((irqn) > 15 && (irqn) < 32)
+#define is_spi(irqn)			((irqn) > 31 && (irqn) < 1020)
+
+typedef struct __attribute__((packed)) {
+        /* Distributor */
+        struct gicd_regs *gicd;
+
+        void *gicd_paddr;
+
+        /* CPU interface */
+        struct gicc_regs *gicc;
+
+#ifdef CONFIG_AVZ
+        /* Hypervisor related */
+        struct gich_regs *gich;
+
+        unsigned int gic_num_lr;
+#endif /* CONFIG_AVZ */
+
+} gic_t;
+
+#ifdef CONFIG_AVZ
+
+void gic_set_pending(u16 irq_id);
+void gic_clear_pending_irqs(void);
+
+#endif /* CONFIG_AVZ */
+
+extern gic_t *gic;
 
 #endif
-
-

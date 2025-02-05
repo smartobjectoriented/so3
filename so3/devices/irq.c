@@ -25,9 +25,12 @@
 
 #include <device/irq.h>
 
+#define DEBUG
+
 static irqdesc_t irqdesc[NR_IRQS];
 volatile bool __in_interrupt = false;
 
+/* By default IRQ chip operations */
 irq_ops_t irq_ops;
 
 irqdesc_t *irq_to_desc(uint32_t irq) {
@@ -75,13 +78,13 @@ void *__irq_deferred_fn(void *args) {
 /*
  * Process interrupt with top & bottom halves processing.
  */
-int irq_process(uint32_t irq) {
+void irq_process(uint32_t irq) {
 	int ret;
 	char th_name[THREAD_NAME_LEN];
 	int *args;
 
 	if (boot_stage < BOOT_STAGE_IRQ_INIT)
-		return IRQ_COMPLETED; /* Ignore it */
+		return ; /* Ignore it */
 
 	/* Immediate (top half) processing */
 
@@ -112,8 +115,16 @@ int irq_process(uint32_t irq) {
 			kernel_thread(__irq_deferred_fn, th_name, args, 0);
 		}
 	}
+}
 
-	return ret;
+/**
+ * @brief Attach a specific IRQ chip to a specific IRQ
+ * 
+ * @param irq 
+ * @param irq_ops 
+ */
+void irq_set_irq_ops(int irq, irq_ops_t *irq_ops) {
+        irqdesc[irq].irq_ops = irq_ops;
 }
 
 /*
@@ -129,7 +140,7 @@ void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, voi
 	irqdesc[irq].irq_deferred_fn = irq_deferred_fn;
 	irqdesc[irq].data = data;
 
-	irq_ops.enable(irq);
+	irqdesc[irq].irq_ops->enable(irq);	
 }
 
 void irq_unbind(int irq) {
@@ -140,25 +151,26 @@ void irq_unbind(int irq) {
 }
 
 void irq_mask(int irq) {
-
-	irq_ops.mask(irq);
+	if (irq_to_desc(irq)->irq_ops->mask)
+		irq_to_desc(irq)->irq_ops->mask(irq);
 }
 
 void irq_unmask(int irq) {
-
-	irq_ops.unmask(irq);
+	if (irq_to_desc(irq)->irq_ops->unmask)
+		irq_to_desc(irq)->irq_ops->unmask(irq);
 }
 
 void irq_enable(int irq) {
-
-	irq_ops.enable(irq);
-	irq_ops.unmask(irq);
+	if (irq_to_desc(irq)->irq_ops->enable)
+		irq_to_desc(irq)->irq_ops->enable(irq);
+        irq_unmask(irq);
 }
 
 void irq_disable(int irq) {
-
-	irq_ops.mask(irq);
-	irq_ops.disable(irq);
+	
+	irq_mask(irq);
+	if (irq_to_desc(irq)->irq_ops->disable)
+		irq_to_desc(irq)->irq_ops->disable(irq);
 }
 
 void irq_handle(cpu_regs_t *regs) {
@@ -169,7 +181,7 @@ void irq_handle(cpu_regs_t *regs) {
 
 	__in_interrupt = true;
 
-	irq_ops.handle(regs);
+	irq_ops.handle_low(regs);
 
 	/* Out of this interrupt routine, IRQs must be enabled otherwise the thread
 	 * will block all interrupts.
@@ -198,15 +210,19 @@ void irq_init(void) {
 
 	memset(&irq_ops, 0, sizeof(irq_ops_t));
 
-	for (i = 0; i < NR_IRQS; i++) {
-		irqdesc[i].action = NULL;
+        irq_ops.handle_high = irq_process;
+
+        for (i = 0; i < NR_IRQS; i++) {
+                irqdesc[i].action = NULL;
 		irqdesc[i].irq_deferred_fn = NULL;
 
-		atomic_set(&irqdesc[i].deferred_pending, 0);
+                irqdesc[i].irq_ops = &irq_ops;
+              
+                atomic_set(&irqdesc[i].deferred_pending, 0);
 
 		irqdesc[i].thread_active = false;
-	}
+        }
 
-	/* Initialize the softirq subsystem */
+        /* Initialize the softirq subsystem */
 	softirq_init();
 }

@@ -23,15 +23,15 @@
 
 #include <types.h>
 #include <string.h>
+#include <heap.h>
 
 #include <soo/gnttab.h>
-#include <soo/grant_table.h>
 #include <soo/hypervisor.h>
 #include <soo/avz.h>
 #include <soo/console.h>
 #include <soo/vbus.h>
 
-#include <avz/uapi/event_channel.h>
+#include <asm/cacheflush.h>
 
 const char *vbus_strstate(enum vbus_state state)
 {
@@ -112,13 +112,13 @@ void vbus_watch_pathfmt(struct vbus_device *dev, struct vbus_watch *watch, void 
  * @dev: vbus device
  * @ring_mfn: mfn of ring to grant
 
- * Grant access to the given @ring_mfn to the peer of the given device.  Return
+ * Grant access to the given @rinfg_mfn to the peer of the given device.  Return
  * 0 on success, or -errno on error.  On error, the device will switch to
  * VbusStateClosing, and the error will be saved in the store.
  */
 int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_pfn)
 {
-	return gnttab_grant_foreign_access(dev->otherend_id, ring_pfn, 0);
+	return gnttab_grant_foreign_access(dev->otherend_id, ring_pfn);
 }
 
 /**
@@ -129,18 +129,17 @@ int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_pfn)
  */
 void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *evtchn)
 {
-	struct evtchn_alloc_unbound alloc_unbound;
+        avz_hyp_t args;
 
-	alloc_unbound.dom = DOMID_SELF;
+        args.cmd = AVZ_EVENT_CHANNEL_OP;
 
-	if (dev->realtime)
-		alloc_unbound.remote_dom = DOMID_AGENCY_RT;
-	else
-		alloc_unbound.remote_dom = dev->otherend_id;
+        args.u.avz_evtchn.evtchn_op.cmd = EVTCHNOP_alloc_unbound;
+        args.u.avz_evtchn.evtchn_op.u.alloc_unbound.dom = DOMID_SELF;
+        args.u.avz_evtchn.evtchn_op.u.alloc_unbound.remote_dom = dev->otherend_id;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_alloc_unbound, (long) &alloc_unbound, 0, 0);
+        avz_hypercall(&args);
 
-	*evtchn = alloc_unbound.evtchn;
+        *evtchn = args.u.avz_evtchn.evtchn_op.u.alloc_unbound.evtchn;
 }
 
 
@@ -151,15 +150,19 @@ void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *evtchn)
  */
 void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_evtchn, uint32_t *evtchn)
 {
-	struct evtchn_bind_interdomain bind_interdomain;
+        avz_hyp_t args;
 
-	bind_interdomain.remote_dom = dev->otherend_id;
-	bind_interdomain.remote_evtchn = remote_evtchn;
+        args.cmd = AVZ_EVENT_CHANNEL_OP;
+        args.u.avz_evtchn.evtchn_op.cmd = EVTCHNOP_bind_interdomain;
+        
+	args.u.avz_evtchn.evtchn_op.u.bind_interdomain.remote_dom = dev->otherend_id;
+	args.u.avz_evtchn.evtchn_op.u.bind_interdomain.remote_evtchn = remote_evtchn;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_bind_interdomain, (long) &bind_interdomain, 0, 0);
+        avz_hypercall(&args);
+	
+        *evtchn = args.u.avz_evtchn.evtchn_op.u.bind_interdomain.local_evtchn;
 
-	*evtchn = bind_interdomain.local_evtchn;
-	DBG("%s: got local evtchn: %d for remote evtchn: %d\n", __func__, *evtchn, remote_evtchn);
+   	DBG("%s: got local evtchn: %d for remote evtchn: %d\n", __func__, *evtchn, remote_evtchn);
 }
 
 /**
@@ -167,11 +170,14 @@ void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_evtchn, uint32_t 
  */
 void vbus_free_evtchn(struct vbus_device *dev, uint32_t evtchn)
 {
-	struct evtchn_close close;
+        avz_hyp_t args;
 
-	close.evtchn = evtchn;
+        args.cmd = AVZ_EVENT_CHANNEL_OP;
 
-	hypercall_trampoline(__HYPERVISOR_event_channel_op, EVTCHNOP_close, (long) &close, 0, 0);
+        args.u.avz_evtchn.evtchn_op.cmd = EVTCHNOP_close;
+        args.u.avz_evtchn.evtchn_op.u.close.evtchn = evtchn;
+        
+	avz_hypercall(&args);
 }
 
 /**

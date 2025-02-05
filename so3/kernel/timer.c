@@ -190,6 +190,25 @@ static inline void timer_unlock(struct timer *timer) {
 	spin_unlock(&per_cpu(timers, timer->cpu).lock);
 }
 
+/**
+ * @brief Apply an offset to all pending timer. Typically used when the local host time changed after
+ *        hybernating for example.
+ * 
+ * @param offset 
+ */
+void apply_timer_offset(u64 offset) {
+	struct timer *curr;
+	struct timers *ts;
+
+        ts = &this_cpu(timers);
+
+        curr = ts->list;
+	while (curr != NULL) {
+		curr->expires += offset;
+		curr = curr->list_next;
+	}
+}
+
 /*
  * Stop a timer, i.e. remove from the timer list.
  */

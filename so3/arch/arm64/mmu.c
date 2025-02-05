@@ -33,10 +33,6 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#ifdef CONFIG_SO3VIRT
-#include <avz/uapi/avz.h>
-#endif
-
 void *__current_pgtable = NULL;
 
 void *current_pgtable(void) {
@@ -426,7 +422,7 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 	uint64_t *l1pte, *l2pte, *l3pte;
 	size_t free_size = 0;
 
-	/* If l1pgtable is NULL, we consider the system page table */
+	/* If pgtable is NULL, we consider the system page table */
 	if (pgtable == NULL)
 		pgtable = __sys_root_pgtable;
 
@@ -434,6 +430,7 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 	size = ALIGN_UP(size + (vaddr & ~PAGE_MASK), PAGE_SIZE);
 
 	while (free_size < size) {
+
 #ifdef CONFIG_VA_BITS_48
 		l0pte = l0pte_offset(pgtable, vaddr);
 		if (!*l0pte)
@@ -451,36 +448,41 @@ void release_mapping(void *pgtable, addr_t vaddr, size_t size) {
 #endif
 		BUG_ON(!*l1pte);
 
-		if (pte_type(l1pte) == PTE_TYPE_BLOCK) {
-			*l1pte = 0;
-			flush_pte_entry(vaddr, l1pte);
 
-			free_size += BLOCK_1G_OFFSET;
-			vaddr += BLOCK_1G_OFFSET;
+		if (pte_type(l1pte) == PTE_TYPE_BLOCK) {
+                        
+                        *l1pte = 0;
+                        flush_pte_entry(vaddr, l1pte);
+
+			free_size += SZ_1G;
+			vaddr += SZ_1G;
 
 #ifdef CONFIG_VA_BITS_48
 			if (empty_table(l0pte))
 				free(l0pte);
 #endif
 		} else {
+
 			BUG_ON(pte_type(l1pte) != PTE_TYPE_TABLE);
-			l2pte = l2pte_offset(l1pte, vaddr);
-			BUG_ON(!*l2pte);
 
-			if (pte_type(l2pte) == PTE_TYPE_BLOCK) {
-				*l2pte = 0;
-				flush_pte_entry(vaddr, l2pte);
+                        l2pte = l2pte_offset(l1pte, vaddr);
+                        BUG_ON(!*l2pte);
 
-				free_size += BLOCK_2M_OFFSET;
-				vaddr += BLOCK_2M_OFFSET;
+                        if (pte_type(l2pte) == PTE_TYPE_BLOCK) {
+                               
+                                *l2pte = 0;
+                                flush_pte_entry(vaddr, l2pte);
 
-				if (empty_table(l1pte))
+                                free_size += SZ_2M;
+                                vaddr += SZ_2M;
+
+                                if (empty_table(l1pte))
 					free(l1pte);
 			} else {
 				BUG_ON(pte_type(l2pte) != PTE_TYPE_TABLE);
 				l3pte = l3pte_offset(l2pte, vaddr);
 				BUG_ON(!*l3pte);
-
+				
 				*l3pte = 0;
 				flush_pte_entry(vaddr, l3pte);
 
@@ -527,12 +529,6 @@ void *new_root_pgtable(void) {
 
 void copy_root_pgtable(void *dst, void *src) {
 	memcpy(dst, src, TTB_L0_SIZE);
-
-#ifdef CONFIG_SO3VIRT
-	*l0pte_offset(dst, avz_shared->hypervisor_vaddr) =
-		*l0pte_offset(avz_shared->pagetable_vaddr, avz_shared->hypervisor_vaddr);
-#endif /* CONFIG_SO3VIRT */
-
 }
 
 /**
@@ -708,10 +704,6 @@ void mmu_configure(addr_t fdt_addr) {
  */
 void __mmu_switch_kernel(void *pgtable_paddr, bool vttbr) {
 
-#ifdef CONFIG_SO3VIRT
-	avz_shared->pagetable_paddr = (addr_t) pgtable_paddr;
-#endif
-
 	flush_dcache_all();
 
 #ifdef CONFIG_AVZ
@@ -758,6 +750,9 @@ void dump_pgtable(void *l0pgtable) {
 
 	lprintk("           ***** Page table dump *****\n");
 
+	if (__l0pgtable == NULL)
+		__l0pgtable = __sys_root_pgtable;
+	
 	for (i = 0; i < TTB_L0_ENTRIES; i++) {
 		l0pte = __l0pgtable + i;
 		if ((i != 0xe0) && *l0pte) {
@@ -852,7 +847,7 @@ void duplicate_pgtable_entry(u64 *from, u64 *to, int level, u64 vaddr, pcb_t *pc
 
 				memset(__to, 0, PAGE_SIZE);
 
-				to[i] = (from[i] & ~mask) | (__pa(__to) & mask);
+				to[i] = (from[i] & ~mask) | ((addr_t) __pa(__to) & mask);
 
 				switch(level) {
 				case 0:

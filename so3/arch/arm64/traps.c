@@ -19,24 +19,28 @@
 #include <common.h>
 #include <psci.h>
 #include <errno.h>
+#include <smp.h>
+#include <mmio.h>
 
 #ifdef CONFIG_AVZ
-#include <avz/sched.h>
-#include <avz/hypercall.h>
-#include <avz/event.h>
 
-#include <avz/domctl.h>
+#include <avz/sched.h>
+#include <avz/domain.h>
 
 #include <asm/cacheflush.h>
 #include <asm/setup.h>
 
-#else
+#ifdef CONFIG_SOO
+#include <soo/uapi/soo.h>
+#endif /* CONFIG_SOO */
+
+#else /* CONFIG_AVZ */
 #include <syscall.h>
-#endif
+#endif /* !CONFIG_AVZ */
 
 #include <asm/processor.h>
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 const char entry_error_messages[19][32] =
 {
@@ -102,7 +106,7 @@ void show_invalid_entry_message(u32 type, u64 esr, u64 address)
 }
 
 void trap_handle_error(addr_t lr) {
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	unsigned long esr = read_sysreg(esr_el2);
 #else
 	unsigned long esr = read_sysreg(esr_el1);
@@ -111,48 +115,68 @@ void trap_handle_error(addr_t lr) {
 	show_invalid_entry_message(ESR_ELx_EC(esr), esr, lr);
 }
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_SMP
 extern addr_t cpu_entrypoint;
 #endif
 
 /**
+ * @brief Handling the dabt condition
+ * 
+ * @param regs 
+ * @param esr 
+ * @return int 
+ */
+int dabt_handle(cpu_regs_t *regs, unsigned long esr) {
+
+#ifdef CONFIG_AVZ
+        return mmio_dabt_decode(regs, esr);
+#else
+        return -1;
+#endif
+
+}
+
+/**
  * This is the entry point for all exceptions currently managed by SO3.
+ * 
+ * Regarding the SOO hypercalls, all addresses got from arguments
+ * *must* be physical addresses.
  *
  * @param regs	Pointer to the stack frame
  */
 typedef void(*vector_fn_t)(cpu_regs_t *);
 
-int trap_handle(cpu_regs_t *regs) {
+void trap_handle(cpu_regs_t *regs) {
 #ifndef CONFIG_AVZ
 	syscall_args_t sys_args;
 #endif
 
 #ifdef CONFIG_ARM64VT
+
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
+ 
+#ifdef CONFIG_SOO
+        unsigned int memslotID = ((current_domain->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : current_domain->avz_shared->domID);
+#endif /* CONFIG_SOO */
+
 #else
 	unsigned long esr = read_sysreg(esr_el1);
-#endif
+#endif /* CONFIG_ARM64VT */
 
-#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
-	vector_fn_t vector_fn = (vector_fn_t) (ME_VOFFSET + L_TEXT_OFFSET + PAGE_SIZE + SYSCALL_VECTOR_OFFSET);
-#endif
+        switch (ESR_ELx_EC(esr)) {
 
-	switch (ESR_ELx_EC(esr)) {
+	case ESR_ELx_EC_DABT_LOW:
 
-	/* SVC used for syscalls */
+                dabt_handle(regs, esr);
+                break;
+
+        /* SVC used for syscalls */
 	case ESR_ELx_EC_SVC64:
 
 #ifdef CONFIG_AVZ
-
-#ifdef CONFIG_SOO
-		/* Jump to the guest vector */
-
-		vector_fn(regs);
-		return 0;
-#else
+		/* No syscall can be issued fron the hypervisor. */
 		BUG();
-#endif
 
 #else /* CONFIG_AVZ */
 
@@ -166,53 +190,49 @@ int trap_handle(cpu_regs_t *regs) {
 		local_irq_enable();
 		regs->x0 = syscall_handle(&sys_args);
 		local_irq_disable();
+
 #endif /* !CONFIG_AVZ */
 
-		return 0;
+                break;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	case ESR_ELx_EC_HVC64:
 		hvc_code = regs->x0;
 
-		switch (hvc_code) {
+                switch (hvc_code) {
 
-		/* PSCI hypercalls */
+#ifdef CONFIG_SMP
+                /* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
-			return PSCI_VERSION(1, 1);
+			regs->x0 = PSCI_VERSION(1, 1);
+                        break;
 
-		case PSCI_0_2_FN64_CPU_ON:
-			printk("Power on CPU #%d...\n", regs->x1 & 3);
+                case PSCI_0_2_FN64_CPU_ON:
+                        printk("Power on CPU #%d starting at %x...\n", regs->x1 & 3, regs->x2);
 
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);
 
-			return PSCI_RET_SUCCESS;
+                        regs->x0 = PSCI_RET_SUCCESS;
+                        break;
 
-		/* AVZ Hypercalls */
-		case __HYPERVISOR_console_io:
-			printk("%c", regs->x1);
-			return ESUCCESS;
+                case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
+		case PSCI_1_0_FN_PSCI_FEATURES:
+                        regs->x0 = PSCI_RET_SUCCESS;
+                        break;
+#endif /* CONFIG_SMP */
 
-		case __HYPERVISOR_domctl:
-
-			do_domctl((domctl_t *) ipa_to_lva(memslot[MEMSLOT_AGENCY], regs->x1));
-			flush_dcache_all();
-
-			return ESUCCESS;
-
-		case __HYPERVISOR_event_channel_op:
-
-			do_event_channel_op(regs->x1, (void *) ipa_to_lva(memslot[MEMSLOT_AGENCY], regs->x2));
-			flush_dcache_all();
-
-			return ESUCCESS;
-
-		default:
-			return ESUCCESS;
-		}
-		break;
-#endif /* CONFIG_ARM64VT */
-
+                case AVZ_HYPERCALL_TRAP:
+                        do_avz_hypercall((avz_hyp_t *) ipa_to_va(memslotID, regs->x1));
+                        break;
+        
+                case AVZ_HYPERCALL_SIGRETURN:
+                        __sigreturn();
+                        break;
+                }
+                break;
+#endif /* CONFIG_AVZ */
+               
 #if 0
 	case ESR_ELx_EC_DABT_LOW:
 		break;
@@ -257,7 +277,5 @@ int trap_handle(cpu_regs_t *regs) {
 		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
 		trap_handle_error(regs->lr);
 		kernel_panic();
-	}
-
-	return -1;
+        }
 }

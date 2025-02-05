@@ -21,6 +21,10 @@
 
 #include <asm/processor.h>
 
+#ifndef __ASSEMBLY__
+#include <types.h>
+#endif
+
 /*
  * The arm64 hcall implementation uses x0 to specify the hcall
  * number. A value less than HVC_STUB_HCALL_NR indicates a special
@@ -85,49 +89,92 @@
 #define CPTR_EL2_RES1	0x000032ff /* known RES1 bits in CPTR_EL2 */
 #define CPTR_EL2_DEFAULT	CPTR_EL2_RES1
 
-/* Hyp Configuration Register (HCR) bits */
-#define HCR_FWB		(UL(1) << 46)
-#define HCR_API		(UL(1) << 41)
-#define HCR_APK		(UL(1) << 40)
-#define HCR_TEA		(UL(1) << 37)
-#define HCR_TERR	(UL(1) << 36)
-#define HCR_TLOR	(UL(1) << 35)
-#define HCR_E2H		(UL(1) << 34)
-#define HCR_ID		(UL(1) << 33)
-#define HCR_CD		(UL(1) << 32)
-#define HCR_RW_SHIFT	31
-#define HCR_RW		(UL(1) << HCR_RW_SHIFT)
-#define HCR_TRVM	(UL(1) << 30)
-#define HCR_HCD		(UL(1) << 29)
-#define HCR_TDZ		(UL(1) << 28)
-#define HCR_TGE		(UL(1) << 27)
-#define HCR_TVM		(UL(1) << 26)
-#define HCR_TTLB	(UL(1) << 25)
-#define HCR_TPU		(UL(1) << 24)
-#define HCR_TPC		(UL(1) << 23)
-#define HCR_TSW		(UL(1) << 22)
-#define HCR_TAC		(UL(1) << 21)
-#define HCR_TIDCP	(UL(1) << 20)
-#define HCR_TSC		(UL(1) << 19)
-#define HCR_TID3	(UL(1) << 18)
-#define HCR_TID2	(UL(1) << 17)
-#define HCR_TID1	(UL(1) << 16)
-#define HCR_TID0	(UL(1) << 15)
-#define HCR_TWE		(UL(1) << 14)
-#define HCR_TWI		(UL(1) << 13)
-#define HCR_DC		(UL(1) << 12)
-#define HCR_BSU		(3 << 10)
-#define HCR_BSU_IS	(UL(1) << 10)
-#define HCR_FB		(UL(1) << 9)
-#define HCR_VSE		(UL(1) << 8)
-#define HCR_VI		(UL(1) << 7)
-#define HCR_VF		(UL(1) << 6)
-#define HCR_AMO		(UL(1) << 5)
-#define HCR_IMO		(UL(1) << 4)
-#define HCR_FMO		(UL(1) << 3)
-#define HCR_PTW		(UL(1) << 2)
-#define HCR_SWIO	(UL(1) << 1)
-#define HCR_VM		(UL(1) << 0)
+//* HCR_EL2 */
+#define HCR_INITVAL				0x000000000
+#define HCR_FWB_MASK				_AC(0x400000000000, UL)
+#define HCR_FWB_SHIFT				46
+#define HCR_API_MASK				_AC(0x20000000000, UL)
+#define HCR_API_SHIFT				41
+#define HCR_APK_MASK				_AC(0x10000000000, UL)
+#define HCR_APK_SHIFT				40
+#define HCR_TEA_MASK				_AC(0x2000000000, UL)
+#define HCR_TEA_SHIFT				37
+#define HCR_TERR_MASK				_AC(0x1000000000, UL)
+#define HCR_TERR_SHIFT				36
+#define HCR_TLOR_MASK				_AC(0x800000000, UL)
+#define HCR_TLOR_SHIFT				35
+#define HCR_E2H_MASK				_AC(0x400000000, UL)
+#define HCR_E2H_SHIFT				34
+#define HCR_ID_MASK				_AC(0x200000000, UL)
+#define HCR_ID_SHIFT				33
+#define HCR_CD_MASK				_AC(0x100000000, UL)
+#define HCR_CD_SHIFT				32
+#define HCR_RW_MASK				0x080000000
+#define HCR_RW_SHIFT				31
+#define HCR_TRVM_MASK				0x040000000
+#define HCR_TRVM_SHIFT				30
+#define HCR_HCD_MASK				0x020000000
+#define HCR_HCD_SHIFT				29
+#define HCR_TDZ_MASK				0x010000000
+#define HCR_TDZ_SHIFT				28
+#define HCR_TGE_MASK				0x008000000
+#define HCR_TGE_SHIFT				27
+#define HCR_TVM_MASK				0x004000000
+#define HCR_TVM_SHIFT				26
+#define HCR_TTLB_MASK				0x002000000
+#define HCR_TTLB_SHIFT				25
+#define HCR_TPU_MASK				0x001000000
+#define HCR_TPU_SHIFT				24
+#define HCR_TPC_MASK				0x000800000
+#define HCR_TPC_SHIFT				23
+#define HCR_TSW_MASK				0x000400000
+#define HCR_TSW_SHIFT				22
+#define HCR_TACR_MASK				0x000200000
+#define HCR_TACR_SHIFT				21
+#define HCR_TIDCP_MASK				0x000100000
+#define HCR_TIDCP_SHIFT				20
+#define HCR_TSC_MASK				0x000080000
+#define HCR_TSC_SHIFT				19
+#define HCR_TID3_MASK				0x000040000
+#define HCR_TID3_SHIFT				18
+#define HCR_TID2_MASK				0x000020000
+#define HCR_TID2_SHIFT				17
+#define HCR_TID1_MASK				0x000010000
+#define HCR_TID1_SHIFT				16
+#define HCR_TID0_MASK				0x000008000
+#define HCR_TID0_SHIFT				15
+#define HCR_TWE_MASK				0x000004000
+#define HCR_TWE_SHIFT				14
+#define HCR_TWI_MASK				0x000002000
+#define HCR_TWI_SHIFT				13
+#define HCR_DC_MASK				0x000001000
+#define HCR_DC_SHIFT				12
+#define HCR_BSU_MASK				0x000000C00
+#define HCR_BSU_SHIFT				10
+#define HCR_FB_MASK				0x000000200
+#define HCR_FB_SHIFT				9
+#define HCR_VSE_MASK				0x000000100
+#define HCR_VSE_SHIFT				8
+#define HCR_VI_MASK				0x000000080
+#define HCR_VI_SHIFT				7
+#define HCR_VF_MASK				0x000000040
+#define HCR_VF_SHIFT				6
+#define HCR_AMO_MASK				0x000000020
+#define HCR_AMO_SHIFT				5
+#define HCR_IMO_MASK				0x000000010
+#define HCR_IMO_SHIFT				4
+#define HCR_FMO_MASK				0x000000008
+#define HCR_FMO_SHIFT				3
+#define HCR_PTW_MASK				0x000000004
+#define HCR_PTW_SHIFT				2
+#define HCR_SWIO_MASK				0x000000002
+#define HCR_SWIO_SHIFT				1
+#define HCR_VM_MASK				0x000000001
+#define HCR_VM_SHIFT				0
+#define HCR_DEFAULT_BITS			(HCR_AMO_MASK | \
+						 HCR_IMO_MASK | \
+						 HCR_FMO_MASK | \
+						 HCR_VM_MASK)
 
 /*
  * The bits we set in HCR:
@@ -147,69 +194,19 @@
  * FMO:		Override CPSR.F and enable signaling with VF
  * SWIO:	Turn set/way invalidates into set/way clean+invalidate
  */
-#define HCR_AGENCY_FLAGS (HCR_VM | HCR_API | HCR_APK | HCR_RW)
+#define HCR_AGENCY_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_RW_MASK)
 
-#define HCR_ME_FLAGS (HCR_VM | HCR_API | HCR_APK \
-		| HCR_AMO | HCR_RW \
-		| HCR_FMO | HCR_IMO)
+#define HCR_ME_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK \
+		| HCR_AMO_MASK | HCR_RW_MASK \
+		| HCR_FMO_MASK | HCR_IMO_MASK)
 
 #define HCR_GUEST_FLAGS (HCR_TSC | HCR_TSW | HCR_TWE | HCR_TWI | HCR_VM | \
 			 HCR_TVM | HCR_BSU_IS | HCR_FB | HCR_TAC | \
 			 HCR_AMO | HCR_SWIO | HCR_TIDCP | HCR_RW | HCR_TLOR | \
 			 HCR_FMO | HCR_IMO)
 
-#define HCR_VIRT_EXCP_MASK (HCR_VSE | HCR_VI | HCR_VF)
-#define HCR_HOST_NVHE_FLAGS (HCR_RW | HCR_API | HCR_APK)
-#define HCR_HOST_VHE_FLAGS (HCR_RW | HCR_TGE | HCR_E2H)
-
-
-#ifndef __ASSEMBLY__
-
-#include <asm/ptrace.h>
-#include <asm/sections.h>
-#include <asm/sysreg.h>
-#include <asm/cpufeature.h>
-
-/*
- * __boot_cpu_mode records what mode CPUs were booted in.
- * A correctly-implemented bootloader must start all CPUs in the same mode:
- * In this case, both 32bit halves of __boot_cpu_mode will contain the
- * same value (either 0 if booted in EL1, BOOT_CPU_MODE_EL2 if booted in EL2).
- *
- * Should the bootloader fail to do this, the two values will be different.
- * This allows the kernel to flag an error when the secondaries have come up.
- */
-extern u32 __boot_cpu_mode[2];
-
-void __hyp_set_vectors(phys_addr_t phys_vector_base);
-void __hyp_reset_vectors(void);
-
-/* Reports the availability of HYP mode */
-static inline bool is_hyp_mode_available(void)
-{
-	return (__boot_cpu_mode[0] == BOOT_CPU_MODE_EL2 &&
-		__boot_cpu_mode[1] == BOOT_CPU_MODE_EL2);
-}
-
-/* Check if the bootloader has booted CPUs in different modes */
-static inline bool is_hyp_mode_mismatched(void)
-{
-	return __boot_cpu_mode[0] != __boot_cpu_mode[1];
-}
-
-static inline bool is_kernel_in_hyp_mode(void)
-{
-	return read_sysreg(CurrentEL) == CurrentEL_EL2;
-}
-
-static inline bool has_vhe(void)
-{
-	if (cpus_have_const_cap(ARM64_HAS_VIRT_HOST_EXTN))
-		return true;
-
-	return false;
-}
-
-#endif /* __ASSEMBLY__ */
+#define HCR_VIRT_EXCP_MASK (HCR_VSE_MASK | HCR_VI_MASK | HCR_VF_MASK)
+#define HCR_HOST_NVHE_FLAGS (HCR_RW_MASK | HCR_API_MASK | HCR_APK_MASK)
+#define HCR_HOST_VHE_FLAGS (HCR_RW_MASK | HCR_TGE_MASK | HCR_E2H_MASK)
 
 #endif /* ! VIRT_H */

@@ -39,8 +39,7 @@
 #include <soo/soo.h>
 #include <soo/evtchn.h>
 #include <soo/avz.h>
-#include <soo/debug/logbool.h>
-
+ 
 #define PRINTF_BUFFER_SIZE 4096
 
 struct vbs_handle {
@@ -76,9 +75,6 @@ struct vbs_handle {
 	spinlock_t msg_list_lock;
 };
 static struct vbs_handle vbs_state;
-
-/* Used to keep the levtchn during migration */
-static unsigned int __vbstore_levtchn;
 
 /* List of registered watches, and a lock to protect it. */
 static LIST_HEAD(watches);
@@ -240,7 +236,7 @@ static void *vbs_talkv(struct vbus_transaction t, vbus_msg_type_t type, const ms
 
 	smp_mb();
 
-	notify_remote_via_evtchn(__intf->levtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.vbstore_levtchn);
 
 	/* Now we are waiting for the answer from vbstore */
 	DBG("Now, we wait for the reply / msg ID: %d (0x%lx)\n", msg.id, &msg.list);
@@ -896,7 +892,6 @@ void vbus_vbstore_init(void)
 {
 	tcb_t *task;
 	struct vbus_device dev;
-	uint32_t evtchn;
 	int vbus_irq;
 
 	/*
@@ -906,20 +901,13 @@ void vbus_vbstore_init(void)
 	/* dev temporary used to set up event channel used by vbstore. */
 
 	dev.otherend_id = 0;
-	DBG("%s: binding a local event channel to the remote evtchn %d in Agency (intf: %lx) ...\n", __func__, __intf->revtchn, __intf);
-
-	vbus_bind_evtchn(&dev, __intf->revtchn, &evtchn);
-
-	/* This is our local event channel */
-	__intf->levtchn = evtchn;
-
-	DBG("Local vbstore_evtchn is %d (remote is %d)\n", __intf->levtchn, __intf->revtchn);
-
-	/*
-	 * Save the (local) levtchn event channel used to communicate with vbstore.
-	 * This evtchn will be rebound after migration with the new agency.
-	 */
-	__vbstore_levtchn = __intf->levtchn;
+	DBG("%s: binding a local event channel to the remote evtchn %d in Agency (intf: %lx) ...\n", __func__, 
+		avz_shared->dom_desc.u.ME.vbstore_revtchn, __intf);
+     
+        vbus_bind_evtchn(&dev, avz_shared->dom_desc.u.ME.vbstore_revtchn,
+			(uint32_t *) &avz_shared->dom_desc.u.ME.vbstore_levtchn);
+    
+	DBG("Local vbstore_evtchn is %d (remote is %d)\n", avz_shared->dom_desc.u.ME.vbstore_levtchn, avz_shared->dom_desc.u.ME.vbstore_revtchn);
 
 	INIT_LIST_HEAD(&vbs_state.reply_list);
 
@@ -935,7 +923,7 @@ void vbus_vbstore_init(void)
 	init_completion(&vbs_state.watch_wait);
 
 	/* Initialize the shared memory rings to talk to vbstore */
-	vbus_irq = bind_evtchn_to_irq_handler(__intf->levtchn, vbus_vbstore_isr, NULL, NULL);
+	vbus_irq = bind_evtchn_to_irq_handler(avz_shared->dom_desc.u.ME.vbstore_levtchn, vbus_vbstore_isr, NULL, NULL);
 	if (vbus_irq < 0) {
 		printk("VBus request irq failed %i\n", vbus_irq);
 		BUG();
@@ -948,15 +936,4 @@ void vbus_vbstore_init(void)
 	DBG("vbs_init OK!\n");
 }
 
-void postmig_vbstore_setup(struct DOMCALL_sync_domain_interactions_args *args) {
-	DBG("__vbstore_levtchn=%d\n", __vbstore_levtchn);
-
-	/* Re-assign the levtchn in the intf shared page (seen by the agency too) */
-	__intf->levtchn = __vbstore_levtchn;
-
-	DBG("__intf->levtchn=%d\n", __intf->levtchn);
-
-	/* And pass the levtchn to avz for re-binding the existing event channel. */
-	args->vbstore_levtchn = __vbstore_levtchn;
-}
-
+ 

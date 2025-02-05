@@ -55,24 +55,19 @@ __pre_head:
 
 __start:
 
-#ifndef CONFIG_SO3VIRT
 	// Preserve the fdt addr (device tree) which is stored in x0 by U-boot
-	mov		x9, x0
-#else
-	// From AVZ, the device tree address is stored in x21
-	mov		x9, x21
-#endif
-
+	mov	x9, x0
+ 
 	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
-
-#ifndef CONFIG_SO3VIRT
+	
+	// If SO3 is running as guest on top of AVZ, it must not setup EL2 mode
+	// TODO: enable trap of EL2 inst. to avoid this test.
+#if defined(CONFIG_AVZ) || !defined(CONFIG_SOO)
 	// CPU configuration
-	bl		el2_setup			// Drop to EL1, w0=cpu_boot_mode
-
-#endif /* !CONFIG_SO3VIRT */
-
+	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
+#endif
 	/* Clear the BSS */
 
 	adrp	x0, __bss_start
@@ -80,7 +75,7 @@ __start:
 1:
 	strb	wzr, [x0], #1
 
-	cmp		x0, x1
+	cmp	x0, x1
 	b.cc	1b
 
 	// Enable FP/ASIMD
@@ -90,59 +85,44 @@ __start:
 
   	// Initialize stack pointers for current mode (normal case if no MMU is used)
   	adrp	x0, __stack_top
-  	mov		sp, x0
+  	mov	sp, x0
 
-    // Up to here, a stack should be initialized
+       // Up to here, a stack should be initialized
 
-#ifdef CONFIG_SO3VIRT
-  	ldr	x10, =avz_shared
-  	str x22, [x10]
-#endif /* CONFIG_SO3VIRT */
 
 	/* Basic low-level initialization */
 #ifdef CONFIG_AVZ
 	mov 	x0, x9
 
-	bl 		__get_avz_fdt_paddr
+	bl 	__get_avz_fdt_paddr
 	// x0 now contains the right paddr of the AVZ device tree
 #else
-	mov x0, x9 // FDT paddr
+	mov 	x0, x9 // FDT paddr
 #endif
 
-	bl early_memory_init
+	bl 	early_memory_init
 
-#ifdef CONFIG_SO3VIRT
-	bl	avz_setup
-#endif /* CONFIG_SO3VIRT */
-
-    // Set up the MMU
-    b setup_mmu
+    	// Set up the MMU
+    	b 	setup_mmu
 
 __kernel_main:
 
-#if !defined(CONFIG_SOO) || defined(CONFIG_AVZ)
-
 	// Enable the interrupt
-	adrp x0, __vectors  // Virtual address as required
+	adrp 	x0, __vectors  // Virtual address as required
 
-#ifdef CONFIG_ARM64VT
-	msr vbar_el2, x0
+#ifdef CONFIG_AVZ
+	msr 	vbar_el2, x0
 #else
-	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */ 	 
+	msr 	vbar_el1, x0
+#endif /* !CONFIG_AVZ */ 	 
 
-#endif /* !CONFIG_SOO */
-	
-#ifndef CONFIG_SO3VIRT
 
 	// Store the device tree paddr
-	adr x8, .LCfdt_addr_temp
-	ldr x9, [x8]
+	adr 	x8, .LCfdt_addr_temp
+	ldr 	x9, [x8]
 
 	ldr	x0, =__fdt_addr
 	str	x9, [x0]
-
-#endif /* CONFIG_SO3VIRT */
 
 	// C main entry point
 #ifdef CONFIG_AVZ
@@ -164,87 +144,85 @@ __kernel_main:
 
 .align 2
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 __mmu_setup:
-		// The code to configure tcr_el2
-		// is borrowed from jailhouse hypervisor
+	// The code to configure tcr_el2
+	// is borrowed from jailhouse hypervisor
 	
-		mrs		x1, tcr_el2
+	mrs	x1, tcr_el2
 	
-		/*
-		 * set TCR.(I)PS to the highest supported ID_AA64MMFR0_EL1.PARange value
-		 */
+	/*
+	 * set TCR.(I)PS to the highest supported ID_AA64MMFR0_EL1.PARange value
+	 */
 
-		mrs     x2, id_aa64mmfr0_el1
+	mrs     x2, id_aa64mmfr0_el1
 
-		/* Narrow PARange to fit the PS field in TCR_ELx */
-		ubfx    x2, x2, #ID_AA64MMFR0_PARANGE_SHIFT, #3
-		bfi     x1, x2, #TCR_PS_SHIFT, #3
+	/* Narrow PARange to fit the PS field in TCR_ELx */
+	ubfx    x2, x2, #ID_AA64MMFR0_PARANGE_SHIFT, #3
+	bfi     x1, x2, #TCR_PS_SHIFT, #3
 
-		msr		tcr_el2, x1
+	msr	tcr_el2, x1
 
-		/*
-		 * The state of the TLBs is unknown before turning on the MMU.
-		 * Flush them to avoid stale one.
-		 */
-		tlbi  alle2                  /* Flush hypervisor TLBs */
-		dsb   nsh
+	/*
+	 * The state of the TLBs is unknown before turning on the MMU.
+	 * Flush them to avoid stale one.
+	 */
+	tlbi  	alle2                  /* Flush hypervisor TLBs */
+	dsb   	nsh
 
-		msr   ttbr0_el2, x0
-		isb
+	msr   	ttbr0_el2, x0
+	isb
 
-		ldr	x0, =(SCTLR_I_BIT | SCTLR_C_BIT | SCTLR_M_BIT | SCTLR_EL2_RES1)
+	ldr   	x0, =(SCTLR_I_BIT | SCTLR_C_BIT | SCTLR_M_BIT | SCTLR_EL2_RES1)
 
-		dsb   sy                     /* Flush PTE writes and finish reads */
-		msr   sctlr_el2, x0          /* now paging is enabled */
-		isb                          /* Now, flush the icache */
+	dsb   	sy                     /* Flush PTE writes and finish reads */
+	msr   	sctlr_el2, x0          /* now paging is enabled */
+	isb                          /* Now, flush the icache */
 
-		ret
+	ret
 
 setup_mmu:
-		// Use a temporary stack
-		adrp	x0, temp_stack
-		mov		sp, x0
+	// Use a temporary stack
+	adrp	x0, temp_stack
+	mov	sp, x0
+	mov	x0, x9 // fdt addr
 
-		mov		x0, x9 // fdt addr
+	bl 	mmu_configure
 
-		bl 		mmu_configure
+	// Readjust the stack
+	ldr	x0, =__stack_top
+	mov	sp, x0
 
-		// Readjust the stack
-		ldr		x0, =__stack_top
-		mov		sp, x0
+	// Keep executing in the kernel space
 
-		// Keep executing in the kernel space
+	// Store the virtual address which will be used to continue
+	// the execution after the MMU enabled.
+	ldr	x0, .LCvirt_entry
 
-		// Store the virtual address which will be used to continue
-		// the execution after the MMU enabled.
-		ldr		x0, .LCvirt_entry
-
-		blr		x0
+	blr	x0
 
 el2_setup:
+	msr	sctlr_el1, xzr	
 
-		/* Populate ID registers. */
-		mrs	x0, midr_el1
-		mrs	x1, mpidr_el1
-		msr	vpidr_el2, x0
-		msr	vmpidr_el2, x1
+	/* Populate ID registers. */
+	mrs	x0, midr_el1
+	mrs	x1, mpidr_el1
+	msr	vpidr_el2, x0
+	msr	vmpidr_el2, x1
 
-		msr	sctlr_el1, xzr
-
-		/* Hyp configuration. */
-	    and x1, x1, #3
+	/* Hyp configuration. */
+   	and 	x1, x1, #3
 
 #ifdef CONFIG_SOO
-		cmp x1, #AGENCY_RT_CPU
-		bgt ME
+	cmp 	x1, #AGENCY_RT_CPU
+	bgt 	guest
 #endif /* CONFIG_SOO */
 
 agency:
-	ldr x0, =HCR_AGENCY_FLAGS
+	ldr 	x0, =HCR_AGENCY_FLAGS
 	b	99f
-ME:
-	ldr x0, =HCR_ME_FLAGS
+guest:
+	ldr 	x0, =HCR_ME_FLAGS
 99:
 
 	msr	hcr_el2, x0
@@ -252,16 +230,16 @@ ME:
 
 	msr	cntvoff_el2, xzr		// Clear virtual offset
 
-    /*
-     * Ensure that any exceptions encountered at EL2
-     * are handled using the EL2 stack pointer, rather
-     * than SP_EL0.
-    */
-    msr spsel, #1
+    	/*
+     	* Ensure that any exceptions encountered at EL2
+     	* are handled using the EL2 stack pointer, rather
+     	* than SP_EL0.
+    	*/
+	msr spsel, #1
 
 	ret
 
-#else /* CONFIG_ARM64VT */
+#else /* CONFIG_AVZ */
 
 setup_mmu:
 
@@ -269,9 +247,7 @@ setup_mmu:
   	adrp x0, temp_stack
   	mov	sp, x0
 
-#ifndef CONFIG_SO3VIRT
   	bl 	mmu_configure
-#endif
 
   	// Readjust the stack
   	ldr	x0, =__stack_top
@@ -306,7 +282,7 @@ el2_setup:
 	isb
 	ret
 
-1:	ldr x0, =(SCTLR_EL2_RES1 | ENDIAN_SET_EL2)
+1:	ldr 	x0, =(SCTLR_EL2_RES1 | ENDIAN_SET_EL2)
 	msr	sctlr_el2, x0
 
 	/*
@@ -315,12 +291,12 @@ el2_setup:
 	 * kernel is intended to run at EL2.
 	 */
 	mrs	x2, id_aa64mmfr1_el1
-	ubfx x2, x2, #ID_AA64MMFR1_VHE_SHIFT, #4
+	ubfx	x2, x2, #ID_AA64MMFR1_VHE_SHIFT, #4
 
 	/* Hyp configuration. */
-	ldr x0, =HCR_HOST_NVHE_FLAGS
+	ldr 	x0, =HCR_HOST_NVHE_FLAGS
 	cbz	x2, set_hcr
-	ldr x0, =HCR_HOST_VHE_FLAGS
+	ldr 	x0, =HCR_HOST_VHE_FLAGS
 
 set_hcr:
 	msr	hcr_el2, x0
@@ -439,11 +415,11 @@ install_el2_stub:
 	msr_s	SYS_ZCR_EL2, x1			// length for EL1.
 
 	/* Hypervisor stub */
-7:	adrp x0, __hyp_stub_vectors
+7:	adrp 	x0, __hyp_stub_vectors
 	msr	vbar_el2, x0
 
 	/* spsr */
-	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT | PSR_MODE_EL1h)
+	mov	x0, #(PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT | PSR_MODE_EL1t)
 	msr	spsr_el2, x0
 	msr	elr_el2, lr
 	mov	w0, #BOOT_CPU_MODE_EL2		// This CPU booted in EL2
@@ -454,7 +430,7 @@ install_el2_stub:
 	nop
 	nop
 
-#endif /* !CONFIG_ARM64VT */
+#endif /* !CONFIG_AVZ */
 
 #ifdef CONFIG_SMP
 
@@ -465,23 +441,16 @@ __secondary_kernel_main:
 	// Enable the interrupt
 	adrp x0, __vectors  // Virtual address as required
 
-#ifdef CONFIG_ARM64VT
-	msr vbar_el2, x0
-#else
-	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */
-
-#endif /* !CONFIG_SOO */
-
-	// C main entry point
-
 #ifdef CONFIG_AVZ
+	msr 	vbar_el2, x0
 
-  	ldr		x19, .LC_secondary_final_start_kernel
-  	blr		x19
-
+  	ldr	x19, .LC_secondary_final_start_kernel
+  	blr	x19
 #else
+	msr 	vbar_el1, x0
 	b 	kernel_start
+#endif /* !CONFIG_AVZ */
+
 #endif
 
 	nop
@@ -502,8 +471,8 @@ ENTRY(secondary_startup)
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0
 
-    // Up to here, a stack should be initialized
-    adr 	x4, __secondary_data
+   	// Up to here, a stack should be initialized
+    	adr 	x4, __secondary_data
 
 	ldr		x5, [x4]
 	ldr		x19, [x4, #8]
@@ -534,21 +503,18 @@ ENTRY(secondary_startup)
 	// Initialize the vector table
 	// The vector table address is the virtual address
 
-#ifndef CONFIG_SO3VIRT
-
 	// Initialize the vector table
 	adrp x0, __vectors
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	msr vbar_el2, x0
 #else
 	msr vbar_el1, x0
-#endif /* !CONFIG_ARM64VT */
+#endif /* !CONFIG_AVZ */
 
-#endif /* !CONFIG_SO3VIRT */
 
   	// Store the virtual address which will be used to continue
-    // execution after the MMU enabled.
+    	// execution after the MMU enabled.
   	ldr		x19, .LC_virt_secondary_entry
 
   	blr		x19
