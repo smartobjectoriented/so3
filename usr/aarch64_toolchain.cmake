@@ -21,8 +21,8 @@ set(CMAKE_C_COMPILER "aarch64-none-linux-gnu-gcc")
 set(CMAKE_C_LINK_EXECUTABLE "aarch64-none-linux-gnu-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 set(CMAKE_ASM_COMPILER "aarch64-none-linux-gnu-gcc")
 
-set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  -D__ARM64__  \
-        -g -ffreestanding -fno-common")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O0 -std=c99 -D_GNU_SOURCE -nostdlib -pipe \
+        -D__ARM64__ -g -ffreestanding -fno-common")
  
 set(CMAKE_ASM_FLAGS_DEBUG "-D__ASSEMBLY__")
 

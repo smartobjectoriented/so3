@@ -21,8 +21,8 @@ set(CMAKE_C_COMPILER "arm-none-eabi-gcc")
 set(CMAKE_C_LINK_EXECUTABLE "arm-none-eabi-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 set(CMAKE_ASM_COMPILER "arm-none-eabi-gcc")
 
-set(CMAKE_C_FLAGS "-Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib -O0 -pipe -Wall  -D__ARM__ -marm  \
-        -mno-thumb-interwork -g -ffreestanding -fno-common")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O0 -std=c99  -D_GNU_SOURCE -nostdlib \
+    -pipe -Wall  -D__ARM__ -marm -mno-thumb-interwork -g -ffreestanding -fno-common")
  
 set(CMAKE_ASM_FLAGS_DEBUG "-D__ARM__ -D__ASSEMBLY__")
 

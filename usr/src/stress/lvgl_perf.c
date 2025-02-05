@@ -45,13 +45,6 @@
 /* Screen resolution. */
 static uint32_t scr_hres, scr_vres, *fbp;
 
-/* File descriptor of the mouse and keyboard input device. */
-static int mfd;
-static int kfd;
-
-/* lvgl group for the keyboard. */
-static lv_group_t *keyboard_group;
-
 /* Used to measure the duration of execution */
 struct timeval tv_start, tv_end;
 static uint64_t delta;
@@ -216,8 +209,6 @@ int fb_init(void)
 
 int main(int argc, char **argv)
 {
-	pthread_t tick_thread;
-
 	printf("LVGL Performance test\n");
 
 	/* Initialization of lvgl. */

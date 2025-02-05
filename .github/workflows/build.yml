@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-so3:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        CONFIG: ['virt32_defconfig', 
+                 'virt64_defconfig']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build 
+        run: |
+          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make ${{ matrix.CONFIG }} virt32_defconfig && make -j`nproc`"
+
+  build-usr:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        CMAKE_TOOLCHAIN_FILE: ['aarch64_toolchain.cmake', 
+                               'arm_toolchain.cmake']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Build
+        run: |
+          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "mkdir usr/build && cd usr/build && cmake --no-warn-unused-cli -DCMAKE_C_FLAGS='-Werror' -Wno-dev -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=../${{matrix.CMAKE_TOOLCHAIN_FILE }} .. && make -j`nproc`"

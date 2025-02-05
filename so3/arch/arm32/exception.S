@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -220,9 +220,11 @@ __after_push_sp_usr:
 	ldmfd 	sp!, {r0-r4}
 #endif
 
-	cpsie   i 			@ Re-enable interrupts
-    	bl	syscall_handle
-    	cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
+	mov	r0, sp
+
+	cpsie	i 			@ Re-enable interrupts
+	bl	syscall_handle
+	cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
 
 	@ Check if sigreturn has been called. In this case, we
 	@ clean the stack frame which has been used to manage the user handler.

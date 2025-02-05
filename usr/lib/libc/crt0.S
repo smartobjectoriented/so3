@@ -48,20 +48,29 @@ __start:
 
 	nop
 
+#ifdef __ARM__
+
 /* -------------------------------------------------------------
  * System call stubs:
  * - r0-r3 are used to store arguments
+ * - Further argument are on stack and will be put to r4-r5 if needed.
  * - r7 is used to store the syscall number
  * -------------------------------------------------------------
  */
 
-#ifdef __ARM__
-
-.macro SYSCALLSTUB name, number
+.macro SYSCALLSTUB name, number, nargs
 	.globl	\name
 \name:
 
-  stmfd sp!, {r7, r10, ip}
+  stmfd sp!, {r4, r5, r7, r10, ip}
+
+/* Retrieve arguments 5 and 6 from the stack if needed */
+.ifge	\nargs - 5
+  ldr	r4, [sp, #20]
+.endif
+.ifge	\nargs - 6
+  ldr	r5, [sp, #24]
+.endif
 
   mov	r7, #\number
 
@@ -71,7 +80,7 @@ __start:
 
   swi	0
 
-  ldmfd sp!, {r7, r10, ip}
+  ldmfd sp!, {r4, r5, r7, r10, ip}
 
   mov pc, lr
 
@@ -79,7 +88,14 @@ __start:
 
 #else /* __ARM64__ */
 
-.macro SYSCALLSTUB name, number
+/* -------------------------------------------------------------
+ * System call stubs:
+ * - x0-x5 are used to store arguments
+ * - x8 is used to store the syscall number
+ * -------------------------------------------------------------
+ */
+
+.macro SYSCALLSTUB name, number, nargs
 	.globl	\name
 \name:
 
@@ -97,7 +113,7 @@ __start:
 
   svc	0
 
-  ldr 	x8, [sp]
+  ldr	x8, [sp]
   ldr	x9, [sp, #8]
   ldr	lr, [sp, #16]
 
@@ -112,62 +128,62 @@ __start:
 
 
 /* Syscalls stubs */
-SYSCALLSTUB sys_halt, 			syscallHalt
-SYSCALLSTUB sys_write,			syscallWrite
-SYSCALLSTUB sys_read, 			syscallRead
-SYSCALLSTUB sys_exit, 			syscallExit
-SYSCALLSTUB sys_execve,			syscallExecve
-SYSCALLSTUB sys_waitpid,		syscallWaitpid
-SYSCALLSTUB sys_pause, 			syscallPause
-SYSCALLSTUB sys_fork, 			syscallFork
-SYSCALLSTUB sys_readdir, 		syscallReaddir
-SYSCALLSTUB sys_chdir, 			syscallChdir
-SYSCALLSTUB sys_getcwd, 		syscallGetcwd
-SYSCALLSTUB sys_creat, 			syscallCreate
-SYSCALLSTUB sys_unlink, 		syscallUnlink
-SYSCALLSTUB sys_open, 			syscallOpen
-SYSCALLSTUB sys_close, 			syscallClose
-SYSCALLSTUB sys_thread_create, 	syscallThreadCreate
-SYSCALLSTUB sys_thread_join, 	syscallThreadJoin
-SYSCALLSTUB sys_thread_exit, 	syscallThreadExit
-SYSCALLSTUB sys_thread_yield,   syscallThreadYield
-SYSCALLSTUB sys_pipe, 			syscallPipe
-SYSCALLSTUB sys_ioctl,			syscallIoctl
-SYSCALLSTUB sys_fcntl,	 	    syscallFcntl
-SYSCALLSTUB sys_stat,	 		syscallStat
-SYSCALLSTUB sys_dup,	 		syscallDup
-SYSCALLSTUB sys_dup2,	 		syscallDup2
-SYSCALLSTUB sys_sched_setparam, syscallSchedSetParam
-SYSCALLSTUB sys_socket, 		syscallSocket
-SYSCALLSTUB sys_bind, 			syscallBind
-SYSCALLSTUB sys_listen, 		syscallListen
-SYSCALLSTUB sys_accept, 		syscallAccept
-SYSCALLSTUB sys_connect, 		syscallConnect
-SYSCALLSTUB sys_mmap, 			syscallMmap
-SYSCALLSTUB sys_ptrace,  		syscallPtrace
-SYSCALLSTUB sys_send,	 		syscallSend
-SYSCALLSTUB sys_recv, 			syscallRecv
-SYSCALLSTUB sys_recvfrom, 		syscallRecvfrom
-SYSCALLSTUB sys_setsockopt, 	syscallSetsockopt
-SYSCALLSTUB sys_sendto, 		syscallSendTo
-SYSCALLSTUB sys_getpid,			syscallGetpid
+SYSCALLSTUB sys_halt,			syscallHalt		0
+SYSCALLSTUB sys_write,			syscallWrite		3
+SYSCALLSTUB sys_read,			syscallRead		3
+SYSCALLSTUB sys_exit,			syscallExit		1
+SYSCALLSTUB sys_execve,			syscallExecve		3
+SYSCALLSTUB sys_waitpid,		syscallWaitpid		3
+SYSCALLSTUB sys_pause,			syscallPause		1
+SYSCALLSTUB sys_fork,			syscallFork		0
+SYSCALLSTUB sys_readdir,		syscallReaddir		3
+/* SYSCALLSTUB sys_chdir,			syscallChdir  */
+/* SYSCALLSTUB sys_getcwd,			syscallGetcwd */
+SYSCALLSTUB sys_creat,			syscallCreate		2
+SYSCALLSTUB sys_unlink,			syscallUnlink		1
+SYSCALLSTUB sys_open,			syscallOpen		3
+SYSCALLSTUB sys_close,			syscallClose		1
+SYSCALLSTUB sys_thread_create,		syscallThreadCreate	4
+SYSCALLSTUB sys_thread_join,		syscallThreadJoin	2
+SYSCALLSTUB sys_thread_exit,		syscallThreadExit	1
+SYSCALLSTUB sys_thread_yield,		syscallThreadYield	0
+SYSCALLSTUB sys_pipe,			syscallPipe		1
+SYSCALLSTUB sys_ioctl,			syscallIoctl		3
+SYSCALLSTUB sys_fcntl,			syscallFcntl		3
+SYSCALLSTUB sys_stat,			syscallStat		2
+SYSCALLSTUB sys_dup,			syscallDup		1
+SYSCALLSTUB sys_dup2,			syscallDup2		2
+SYSCALLSTUB sys_sched_setparam,		syscallSchedSetParam	2
+SYSCALLSTUB sys_socket,			syscallSocket		3
+SYSCALLSTUB sys_bind,			syscallBind		3
+SYSCALLSTUB sys_listen,			syscallListen		2
+SYSCALLSTUB sys_accept,			syscallAccept		3
+SYSCALLSTUB sys_connect,		syscallConnect		3
+SYSCALLSTUB sys_mmap,			syscallMmap		5
+SYSCALLSTUB sys_ptrace,			syscallPtrace		4
+SYSCALLSTUB sys_send,			syscallSend		4
+SYSCALLSTUB sys_recv,			syscallRecv		4
+SYSCALLSTUB sys_recvfrom,		syscallRecvfrom		6
+SYSCALLSTUB sys_setsockopt,		syscallSetsockopt	5
+SYSCALLSTUB sys_sendto,			syscallSendTo		6
+SYSCALLSTUB sys_getpid,			syscallGetpid		0
 
-SYSCALLSTUB sys_gettimeofday,	syscallGetTimeOfDay
-SYSCALLSTUB sys_settimeofday,	syscallSetTimeOfDay
-SYSCALLSTUB sys_clock_gettime,  syscallClockGetTime
+SYSCALLSTUB sys_gettimeofday,		syscallGetTimeOfDay	2
+SYSCALLSTUB sys_settimeofday,		syscallSetTimeOfDay	2
+SYSCALLSTUB sys_clock_gettime,		syscallClockGetTime	2
 
-SYSCALLSTUB sys_sbrk,			syscallSbrk
-SYSCALLSTUB sys_info,	    	syscallSysinfo
+SYSCALLSTUB sys_sbrk,			syscallSbrk		1
+SYSCALLSTUB sys_info,			syscallSysinfo		2
 
-SYSCALLSTUB sys_lseek,			syscallLseek
+SYSCALLSTUB sys_lseek,			syscallLseek		3
 
-SYSCALLSTUB sys_mutex_lock,	    syscallMutexLock
-SYSCALLSTUB sys_mutex_unlock,	syscallMutexUnlock
+SYSCALLSTUB sys_mutex_lock,		syscallMutexLock	1
+SYSCALLSTUB sys_mutex_unlock,		syscallMutexUnlock	1
 
-SYSCALLSTUB sys_sigaction,		syscallSigaction
-SYSCALLSTUB sys_kill,			syscallKill
-SYSCALLSTUB sys_sigreturn,		syscallSigreturn
+SYSCALLSTUB sys_sigaction,		syscallSigaction	3
+SYSCALLSTUB sys_kill,			syscallKill		2
+SYSCALLSTUB sys_sigreturn,		syscallSigreturn	0
 
-SYSCALLSTUB sys_nanosleep,		syscallNanosleep
+SYSCALLSTUB sys_nanosleep,		syscallNanosleep	2
 
 
