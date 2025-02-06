@@ -35,7 +35,8 @@
 #define PORT 5000
 
 char buff[1024];
-float send_burst(int s, int kB) {
+float send_burst(int s, int kB)
+{
 	int sent = 0, written, error = 0;
 	float rtt_ms = 0;
 	struct timeval start, end;
@@ -54,7 +55,8 @@ float send_burst(int s, int kB) {
 		}
 	}
 	gettimeofday(&end, NULL);
-	rtt_ms = end.tv_usec / 1000.0 + end.tv_sec * 1000 - (start.tv_usec / 1000.0 + start.tv_sec * 1000);
+	rtt_ms = end.tv_usec / 1000.0 + end.tv_sec * 1000 -
+		 (start.tv_usec / 1000.0 + start.tv_sec * 1000);
 
 	printf("%d kB in %Lf ms\n", kB, rtt_ms);
 	printf("%f mb/s\n", (kB * 8.0 / 1024) / (rtt_ms / 1000.0));
@@ -62,8 +64,8 @@ float send_burst(int s, int kB) {
 	return rtt_ms;
 }
 
-int main(int argc, char **argv) {
-
+int main(int argc, char **argv)
+{
 	int s = 0, read_len, max_kB = 1000, current_kB = 1, kB_increment = 10;
 	float rtt_ms = 0, max_rtt_ms = 60 * 1000;
 	struct sockaddr_in srv_addr;
@@ -81,10 +83,10 @@ int main(int argc, char **argv) {
 
 	s = socket(AF_INET, SOCK_STREAM, 0);
 
-	setsockopt(s, 0xfff, 0x1005, (const char*) &timeout,
-			sizeof(struct timeval));
-	setsockopt(s, 0xfff, 0x1006, (const char*) &timeout,
-			sizeof(struct timeval));
+	setsockopt(s, 0xfff, 0x1005, (const char *)&timeout,
+		   sizeof(struct timeval));
+	setsockopt(s, 0xfff, 0x1006, (const char *)&timeout,
+		   sizeof(struct timeval));
 
 	if (s < 0) {
 		printf("Impossible to obtain a socket file descriptor!!\n");
@@ -99,7 +101,7 @@ int main(int argc, char **argv) {
 		goto com_error;
 	}
 
-	if (connect(s, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) < 0) {
+	if (connect(s, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0) {
 		printf("\n Error : Connect Failed %d\n", errno);
 		goto com_error;
 	}
@@ -116,10 +118,12 @@ int main(int argc, char **argv) {
 
 	do {
 		rtt_ms = send_burst(s, current_kB);
-	} while (rtt_ms * kB_increment < max_rtt_ms && (current_kB *= kB_increment) <= max_kB);
+	} while (rtt_ms * kB_increment < max_rtt_ms &&
+		 (current_kB *= kB_increment) <= max_kB);
 
 	if (rtt_ms * kB_increment > max_rtt_ms)
-		printf("Aborted as next burst estimated rtt(%Lf ms) exeeded the max rtt of %Lf ms \n", rtt_ms, max_rtt_ms);
+		printf("Aborted as next burst estimated rtt(%Lf ms) exeeded the max rtt of %Lf ms \n",
+		       rtt_ms, max_rtt_ms);
 
 	close(s);
 
@@ -130,4 +134,3 @@ com_error:
 
 	return 1;
 }
-

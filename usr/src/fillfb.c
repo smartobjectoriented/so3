@@ -34,7 +34,6 @@
 #define IOCTL_FB_VRES 2
 #define IOCTL_FB_SIZE 3
 
-
 static uint32_t hres;
 
 void display_line(uint32_t *fbp, uint32_t start, uint32_t px)
@@ -53,11 +52,8 @@ int main(int argc, char **argv)
 {
 	int fd;
 	uint32_t i, px, vres, fb_size, *fbp;
-	uint32_t colors[] = {
-		create_px(0xff, 0, 0),
-		create_px(0, 0xff, 0),
-		create_px(0, 0, 0xff)
-	};
+	uint32_t colors[] = { create_px(0xff, 0, 0), create_px(0, 0xff, 0),
+			      create_px(0, 0, 0xff) };
 
 	/* Get file descriptor for /dev/fb0, i.e. the first fb device registered. */
 	fd = open("/dev/fb0", O_WRONLY);

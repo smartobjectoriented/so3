@@ -30,14 +30,15 @@
 #include <signal.h>
 #include <fcntl.h>
 
-#define TOKEN_NR	10
-#define ARGS_MAX	16
+#define TOKEN_NR 10
+#define ARGS_MAX 16
 
 char tokens[TOKEN_NR][80];
 char prompt[] = "so3% ";
 char file_buff[500];
 
-void parse_token(char *str) {
+void parse_token(char *str)
+{
 	int i = 0;
 	char *next_token;
 
@@ -54,7 +55,8 @@ void parse_token(char *str) {
 /**
  * Remove 0 before command
  */
-void trim(char *buffer, int n) {
+void trim(char *buffer, int n)
+{
 	int i;
 	char *new_buff = calloc(80, sizeof(char));
 	for (i = 0; i < n; i++) {
@@ -62,24 +64,25 @@ void trim(char *buffer, int n) {
 			break;
 		}
 	}
-	memcpy(new_buff, buffer + i,n - i);
-	memcpy(buffer,new_buff, n);
+	memcpy(new_buff, buffer + i, n - i);
+	memcpy(buffer, new_buff, n);
 	free(new_buff);
 }
-
 
 /**
  * Detect if its a escape sequence
  */
-int is_escape_sequence(const char *str) {
-    return str[0] == '\x1b' && str[1] == '[';
+int is_escape_sequence(const char *str)
+{
+	return str[0] == '\x1b' && str[1] == '[';
 }
 
 /**
  * Escape arrow key sequence to avoid interpret them
  */
-void escape_arrow_key(char *buffer, int size) {
-	int i,j;
+void escape_arrow_key(char *buffer, int size)
+{
+	int i, j;
 	char *new_buff = calloc(size, sizeof(char));
 	i = j = 0;
 	while (i < size) {
@@ -89,14 +92,15 @@ void escape_arrow_key(char *buffer, int size) {
 			new_buff[j++] = buffer[i++];
 		}
 	}
-	memcpy(buffer, new_buff,size);
+	memcpy(buffer, new_buff, size);
 	free(new_buff);
 }
 
 /**
  * More secure way and escaped way to get user input
  */
-void get_user_input(char *buffer, int buf_size) {
+void get_user_input(char *buffer, int buf_size)
+{
 	if (buffer == NULL || buf_size <= 0) {
 		return;
 	}
@@ -116,7 +120,8 @@ void get_user_input(char *buffer, int buf_size) {
 /*
  * Process the command with the different tokens
  */
-void process_cmd(void) {
+void process_cmd(void)
+{
 	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_read;
 	char *argv[ARGS_MAX], *argv2[ARGS_MAX];
 	char filename[30];
@@ -126,23 +131,23 @@ void process_cmd(void) {
 
 	if (!strcmp(tokens[0], "dumpsched")) {
 		sys_info(1, 0);
-		return ;
+		return;
 	}
 
 	if (!strcmp(tokens[0], "dumpproc")) {
 		sys_info(4, 0);
-		return ;
+		return;
 	}
 
 	if (!strcmp(tokens[0], "exit")) {
 		if (getpid() == 1) {
 			printf("The shell root process can not be terminated...\n");
-			return ;
+			return;
 		} else
 			exit(0);
 
 		/* If the shell is the root shell, there is a failure on exit() */
-		return ;
+		return;
 	}
 
 	/* setenv */
@@ -156,7 +161,7 @@ void process_cmd(void) {
 			} else
 				unsetenv(tokens[1]);
 		}
-		return ;
+		return;
 	}
 
 	/* env */
@@ -165,7 +170,7 @@ void process_cmd(void) {
 		for (i = 0; __environ[i] != NULL; i++)
 			printf("%s\n", __environ[i]);
 
-		return ;
+		return;
 	}
 
 	/* kill */
@@ -188,7 +193,7 @@ void process_cmd(void) {
 
 		kill(pid, sig);
 
-		return ;
+		return;
 	}
 
 	/* General case - prepare to launch the application */
@@ -213,7 +218,7 @@ void process_cmd(void) {
 				if (pipe_on) {
 					argv2[arg_pos2] = tokens[arg_pos];
 					arg_pos2++;
-				} else if (redirection) { 
+				} else if (redirection) {
 					argv2[0] = tokens[arg_pos];
 				} else
 					argv[arg_pos] = tokens[arg_pos];
@@ -232,7 +237,6 @@ void process_cmd(void) {
 	if (!pid_child) { /* Execution in the child */
 
 		if (pipe_on) {
-
 			pipe(pipe_fd);
 			pid_child2 = fork();
 
@@ -321,16 +325,16 @@ void process_cmd(void) {
 /*
  * Ignore the SIGINT signal, but we re-display the prompt to be elegant ;-)
  */
-void sigint_sh_handler(int sig) {
-
-        printf("%s", prompt);
-        fflush(stdout);
+void sigint_sh_handler(int sig)
+{
+	printf("%s", prompt);
+	fflush(stdout);
 }
 /*d
  * Main entry point of the shell application.
  */
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
 	char user_input[80];
 	int i;
 	struct sigaction sa;
@@ -356,6 +360,5 @@ int main(int argc, char *argv[]) {
 		/* Check if there is at least one token to be processed */
 		if (tokens[0][0] != 0)
 			process_cmd();
-			
 	}
 }

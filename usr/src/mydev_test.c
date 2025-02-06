@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <assert.h>
 
-int main(void) {
-
+int main(void)
+{
 	char write_buffer[20];
 	char read_buffer[20];
 

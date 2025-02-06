@@ -32,8 +32,8 @@
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 
-int main(int argc, char **argv) {
-
+int main(int argc, char **argv)
+{
 	int s, connfd, read_len;
 	struct sockaddr_in srv_addr, client_addr;
 	char buff[1024];
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	srv_addr.sin_port = htons(5000);
 
-	if (bind(s, (struct sockaddr*) &srv_addr, sizeof(srv_addr)) < 0) {
+	if (bind(s, (struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0) {
 		printf("Impossible to bind\n");
 		return -1;
 	}
@@ -86,7 +86,8 @@ int main(int argc, char **argv) {
 			goto end_client;
 		}
 
-		end_client: printf("End client\n");
+end_client:
+		printf("End client\n");
 
 		close(connfd);
 		usleep(1000);
@@ -94,4 +95,3 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
