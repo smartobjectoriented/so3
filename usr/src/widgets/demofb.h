@@ -37,21 +37,23 @@ int mouse_init(void);
 int keyboard_init(void);
 
 void create_ui(void);
-void *tick_routine (void *args);
+void *tick_routine(void *args);
 
 /* File system driver functions. */
 
 bool fs_ready_cb(struct _lv_fs_drv_t *drv);
 void *fs_open_cb(struct _lv_fs_drv_t *drv, const char *path, lv_fs_mode_t mode);
 lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p);
-lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br);
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence);
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf,
+		       uint32_t btr, uint32_t *br);
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos,
+		       lv_fs_whence_t whence);
 lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p);
 
 /* Mouse driver-related structures. */
 
 #define IOCTL_MOUSE_GET_STATE 0
-#define IOCTL_MOUSE_SET_RES   1
+#define IOCTL_MOUSE_SET_RES 1
 
 struct ps2_mouse {
 	uint16_t x, y;
