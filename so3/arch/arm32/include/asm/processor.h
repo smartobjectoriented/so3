@@ -237,41 +237,50 @@
 		asm volatile(STORE_CP64(0, name) : : "r"(_r)); \
 	} while (0)
 
+/* clang-format off */
+
 #ifdef __ASSEMBLY__
 
-.irp c, , eq, ne, cs, cc, mi, pl, vs, vc, hi, ls, ge, lt, gt, le, hs,
-	lo.macro ret\c,
-	reg
+.irp	c,,eq,ne,cs,cc,mi,pl,vs,vc,hi,ls,ge,lt,gt,le,hs,lo
+.macro	ret\c, reg
 
-		.ifeqs "\reg",
-	"lr" bx\c	\reg.else mov\c pc, \reg.endif
+.ifeqs	"\reg", "lr"
+	bx\c	\reg
+.else
+	mov\c	pc, \reg
+.endif
 
-					      .endm
-					      .endr
+.endm
+.endr
 
-					      .macro current_cpu reg mrc p15,
-	0, \reg, c0, c0, 5 @read Multiprocessor ID register reg and \reg, \reg,
-	#0x3 @mask on CPU ID
-		bits.endm
+.macro current_cpu reg
+	mrc p15, 0, \reg, c0, c0, 5 @ read Multiprocessor ID register reg
+	and \reg, \reg, #0x3 @ mask on CPU ID bits
+.endm
 
-			.macro disable_irq cpsid i
-			.endm
+.macro disable_irq
+	cpsid	i
+.endm
 
-			.macro enable_irq cpsie i
-			.endm
+.macro enable_irq
+	cpsie	i
+.endm
 
 /*
  * Build a return instruction for this processor type.
  */
-#define RETINSTR(instr, regs...) instr regs
+#define RETINSTR(instr, regs...)\
+        instr   regs
 
-#define LOADREGS(cond, base, reglist...) ldm##cond base, reglist
+#define LOADREGS(cond, base, reglist...)\
+        ldm##cond       base,reglist
 
-				scno.req r7 @syscall number tbl.req r8
-	@syscall table pointer
+scno    .req    r7              @ syscall number
+tbl     .req    r8              @ syscall table pointer
 
 #endif /* __ASSEMBLY__ */
 
+/* clang-format on */
 #ifndef __ASSEMBLY__
 
 #include <types.h>
@@ -400,7 +409,8 @@ static inline uint32_t local_save_flags(void)
 {
 	uint32_t flags;
 
-	asm volatile("mrs	%0, " IRQMASK_REG_NAME_R "	@ local_save_flags"
+	asm volatile("mrs	%0, " IRQMASK_REG_NAME_R
+		     "	@ local_save_flags"
 		     : "=r"(flags)
 		     :
 		     : "memory", "cc");
