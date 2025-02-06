@@ -661,8 +661,7 @@ static const BYTE DbcTbl[] = MKCVTBL(TBL_DC, FF_CODE_PAGE);
 /* Load/Store multi-byte word in the FAT structure                       */
 /*-----------------------------------------------------------------------*/
 
-static WORD
-ld_word(const BYTE *ptr) /*	 Load a 2-byte little-endian word */
+static WORD ld_word(const BYTE *ptr) /*	 Load a 2-byte little-endian word */
 {
 	WORD rv;
 

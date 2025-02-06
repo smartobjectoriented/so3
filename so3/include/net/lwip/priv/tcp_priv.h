@@ -160,7 +160,7 @@ err_t tcp_process_refused_data(struct tcp_pcb *pcb);
 
 #define TCP_MAXIDLE         \
 	TCP_KEEPCNT_DEFAULT \
-		*TCP_KEEPINTVL_DEFAULT /* Maximum KEEPALIVE probe time */
+	*TCP_KEEPINTVL_DEFAULT /* Maximum KEEPALIVE probe time */
 
 #define TCP_TCPLEN(seg) \
 	((seg)->len +   \

@@ -673,7 +673,7 @@ void load_process(elf_img_info_t *elf_img_info)
 			} while (section_base_name[l++] != '\0');
 			section_base_name[l] =
 				'\0'; // Terminate string correctly (replace second
-				// '.' if stopped by it)
+			// '.' if stopped by it)
 
 			/* Not all sections are supported */
 			section_supported = false;

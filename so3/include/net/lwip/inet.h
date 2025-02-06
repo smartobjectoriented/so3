@@ -83,8 +83,8 @@ struct in6_addr {
 
 /** This macro can be used to initialize a variable of type struct in6_addr
     to the IPv6 wildcard address. */
-#define IN6ADDR_ANY_INIT              \
-	{                             \
+#define IN6ADDR_ANY_INIT    \
+	{                   \
 		{{0,0,0,0}} \
 	}
 /** This macro can be used to initialize a variable of type struct in6_addr

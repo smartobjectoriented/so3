@@ -1170,9 +1170,10 @@ static inline int irqs_disabled_flags(cpu_regs_t *regs)
 
 static inline void local_irq_enable(void)
 {
-	asm volatile("msr	daifclr, #2		// arch_local_irq_enable\n"
-		     "nop" ::
-			     : "memory");
+	asm volatile(
+		"msr	daifclr, #2		// arch_local_irq_enable\n"
+		"nop" ::
+			: "memory");
 }
 
 static inline void local_irq_disable(void)
