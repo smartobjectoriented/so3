@@ -24,4 +24,3 @@ extern int *__root_proc(void *);
 extern addr_t __root_proc_start[], __root_proc_end[];
 
 #endif /* ASM_PROCESS_H */
-

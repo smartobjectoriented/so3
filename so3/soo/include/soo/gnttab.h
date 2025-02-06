@@ -28,7 +28,6 @@ int gnttab_resume(void);
 
 int gnttab_grant_foreign_access(domid_t domid, unsigned long frame);
 
- 
 /*
  * Eventually end access through the given grant reference, and once that
  * access has been ended, free the given page too.  Access will be ended
@@ -40,6 +39,5 @@ void gnttab_end_foreign_access(grant_ref_t ref);
 void gnttab_map(domid_t domid, grant_ref_t grant_ref, void **vaddr);
 
 void postmig_gnttab_update(void);
-
 
 #endif /* GNTTAB_H */

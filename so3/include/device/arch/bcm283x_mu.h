@@ -27,8 +27,8 @@
 
 #include <types.h>
 
-#define UART_THR	0x0
-#define UART_LSR	0x14
+#define UART_THR 0x0
+#define UART_LSR 0x14
 
 /* Bits and regs definitions (taken from U-boot) */
 typedef struct {
@@ -46,7 +46,7 @@ typedef struct {
 } bcm283x_mu_t;
 
 /* LSR register bits */
-#define UART_LSR_RX_READY  (1 << 0)
-#define UART_LSR_TX_READY  (1 << 5)
+#define UART_LSR_RX_READY (1 << 0)
+#define UART_LSR_TX_READY (1 << 5)
 
 #endif /* BCM28x_MU_H */

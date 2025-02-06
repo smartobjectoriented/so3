@@ -9,8 +9,8 @@
 
 #include <asm/processor.h>
 
-#define ARMV7_DCACHE_INVAL_RANGE	1
-#define ARMV7_DCACHE_CLEAN_INVAL_RANGE	2
+#define ARMV7_DCACHE_INVAL_RANGE 1
+#define ARMV7_DCACHE_CLEAN_INVAL_RANGE 2
 
 #define CONFIG_SYS_CACHELINE_SIZE 64
 
@@ -23,7 +23,7 @@ static u32 get_ccsidr(void)
 	u32 ccsidr;
 
 	/* Read current CP15 Cache Size ID Register */
-	asm volatile ("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
+	asm volatile("mrc p15, 1, %0, c0, c0, 0" : "=r"(ccsidr));
 
 	return ccsidr;
 }
@@ -36,7 +36,7 @@ static void v7_dcache_clean_inval_range(u32 start, u32 end, u32 line_len)
 	start &= ~(line_len - 1);
 	for (mva = start; mva < end; mva = mva + line_len) {
 		/* DCCIMVAC - Clean & Invalidate data cache by MVA to PoC */
-		asm volatile ("mcr p15, 0, %0, c7, c14, 1" : : "r" (mva));
+		asm volatile("mcr p15, 0, %0, c7, c14, 1" : : "r"(mva));
 	}
 }
 
@@ -51,7 +51,8 @@ int check_cache_range(unsigned long start, unsigned long end)
 		ok = 0;
 
 	if (!ok) {
-		lprintk("CACHE: Misaligned operation at range [%08lx, %08lx]\n", start, end);
+		lprintk("CACHE: Misaligned operation at range [%08lx, %08lx]\n",
+			start, end);
 		kernel_panic();
 	}
 
@@ -67,7 +68,7 @@ static void v7_dcache_inval_range(u32 start, u32 end, u32 line_len)
 
 	for (mva = start; mva < end; mva = mva + line_len) {
 		/* DCIMVAC - Invalidate data cache by MVA to PoC */
-		asm volatile ("mcr p15, 0, %0, c7, c6, 1" : : "r" (mva));
+		asm volatile("mcr p15, 0, %0, c7, c6, 1" : : "r"(mva));
 	}
 }
 
@@ -76,11 +77,13 @@ static void v7_dcache_maint_range(u32 start, u32 end, u32 range_op)
 	u32 line_len, ccsidr;
 
 	ccsidr = get_ccsidr();
-	line_len = ((ccsidr & CCSIDR_LINE_SIZE_MASK) >> CCSIDR_LINE_SIZE_OFFSET) + 2;
+	line_len =
+		((ccsidr & CCSIDR_LINE_SIZE_MASK) >> CCSIDR_LINE_SIZE_OFFSET) +
+		2;
 
 	/* Converting from words to bytes */
 	line_len += 2;
-	
+
 	/* converting from log2(linelen) to linelen */
 	line_len = 1 << line_len;
 
@@ -106,7 +109,7 @@ void __asm_invalidate_tlb_all(void)
 #endif
 
 	/* Invalidate entire data TLB */
-	asm volatile ("mcr p15, 0, %0, c8, c6, 0" : : "r" (0));
+	asm volatile("mcr p15, 0, %0, c8, c6, 0" : : "r"(0));
 
 #if 0 /* Not really necessary in our case. */
 	/* Invalidate entire instruction TLB */
@@ -179,13 +182,13 @@ void invalidate_icache_all(void)
 	 * Invalidate all instruction caches to PoU.
 	 * Also flushes branch target cache.
 	 */
-	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0));
+	asm volatile("mcr p15, 0, %0, c7, c5, 0" : : "r"(0));
 
 	/* Invalidate entire branch predictor array */
-	asm volatile ("mcr p15, 0, %0, c7, c5, 6" : : "r" (0));
+	asm volatile("mcr p15, 0, %0, c7, c5, 6" : : "r"(0));
 
 	/* Branch predictor invalidate all Inner Shareable */
-	asm volatile ("mcr p15, 0, %0, c7, c1, 6" : : "r" (0));
+	asm volatile("mcr p15, 0, %0, c7, c1, 6" : : "r"(0));
 
 	/* Full system DSB - make sure that the invalidation is complete */
 	dsb();
@@ -193,4 +196,3 @@ void invalidate_icache_all(void)
 	/* ISB - make sure the instruction stream sees it */
 	isb();
 }
-

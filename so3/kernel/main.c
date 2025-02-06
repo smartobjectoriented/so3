@@ -47,8 +47,8 @@ boot_stage_t boot_stage = BOOT_STAGE_INIT;
 /**
  * Initialization of initcalls which have to be done right before IRQs are enabled.
  */
-void pre_irq_init(void) {
-
+void pre_irq_init(void)
+{
 	pre_irq_init_t *pre_irq_init;
 	int i;
 
@@ -56,14 +56,13 @@ void pre_irq_init(void) {
 
 	for (i = 0; i < ll_entry_count(pre_irq_init_t, core); i++)
 		pre_irq_init[i]();
-
 }
 
 /**
  * Remaining initialization which can be performed with IRQs on and full scheduling.
  */
-void post_init(void) {
-
+void post_init(void)
+{
 	postinit_t *postinit;
 	int i;
 
@@ -73,8 +72,8 @@ void post_init(void) {
 		postinit[i]();
 }
 
-void *rest_init(void *dummy) {
-
+void *rest_init(void *dummy)
+{
 	post_init();
 
 	/* Start a first SO3 thread (main app thread) */
@@ -98,8 +97,8 @@ void *rest_init(void *dummy) {
 	return NULL;
 }
 
-void kernel_start(void) {
-
+void kernel_start(void)
+{
 	lprintk("%s", SO3_BANNER);
 
 	lprintk("\n\nNow bootstraping the kernel ...\n");
@@ -107,13 +106,13 @@ void kernel_start(void) {
 	/* Memory manager subsystem initialization */
 	memory_init();
 
-        devices_init();
+	devices_init();
 
 #if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
-        avz_setup();
+	avz_setup();
 #endif /* CONFIG_SOO */
 
-        /* At this point of time, we are able to use the standard printk() */
+	/* At this point of time, we are able to use the standard printk() */
 
 	timer_init();
 
@@ -145,5 +144,4 @@ void kernel_start(void) {
 	 */
 
 	schedule();
-
 }

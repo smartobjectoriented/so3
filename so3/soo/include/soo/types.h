@@ -22,7 +22,7 @@
 #if defined(__KERNEL__) && !defined(TYPES_H) && !defined(_LINUX_TYPES_H)
 typedef unsigned char bool;
 
-#define true 	1
-#define false 	0
+#define true 1
+#define false 0
 
 #endif /* __KERNEL__ && !TYPES_H && !_LINUX_TYPES_H */

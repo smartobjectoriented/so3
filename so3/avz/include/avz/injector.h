@@ -23,8 +23,7 @@
 
 #include <avz/uapi/avz.h>
 
-struct dom_context
-{
+struct dom_context {
 	/*
 	 *  Event channel struct information.
 	 */
@@ -51,20 +50,20 @@ struct dom_context
 	u16 virq_to_evtchn[NR_VIRQS];
 
 	/* IPA physical address */
-        addr_t ipa_addr;
+	addr_t ipa_addr;
 
-        /* IPA reserved page frame numbers for granted pages */
-        grant_pfn_t grant_pfn[NR_GRANT_PFN];
+	/* IPA reserved page frame numbers for granted pages */
+	grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
-        /* Stack frame of this domain */
+	/* Stack frame of this domain */
 	struct cpu_regs stack_frame;
 
 	/* Fields related to the CPU state */
-        vcpu_t vcpu;
+	vcpu_t vcpu;
 };
 
-
-void mig_restore_domain_migration_info(unsigned int ME_slotID, struct domain *me);
+void mig_restore_domain_migration_info(unsigned int ME_slotID,
+				       struct domain *me);
 void after_migrate_to_user(void);
 
 void migration_init(avz_hyp_t *args);
@@ -77,6 +76,5 @@ void restore_migrated_domain(unsigned int ME_slotID);
 void restore_injected_domain(unsigned int ME_slotID);
 
 void inject_me(avz_hyp_t *args);
-
 
 #endif /* INJECTOR_H */

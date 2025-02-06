@@ -22,40 +22,41 @@
 
 #define __aligned(x) __attribute__((aligned(x)))
 
-#define ll_entry_start(_type, _level) 				 	\
-({				      				 	\
-	extern unsigned long __initcall_##_type##_##_level;	 	\
-	_type *start = (_type *) &__initcall_##_type##_##_level; 	\
-	start;			      \
-})
+#define ll_entry_start(_type, _level)                                   \
+	({                                                              \
+		extern unsigned long __initcall_##_type##_##_level;     \
+		_type *start = (_type *)&__initcall_##_type##_##_level; \
+		start;                                                  \
+	})
 
 /*
  * Add a initcall entry (using _type) in the section according to its driver level (core, postcore, etc.).
  */
-#define ll_entry_declare(_type, _level, _init)				\
-	_type __initcall_##_type##_##_level##_##_init __aligned(4)	\
-			__attribute__((unused,				\
-			section(".initcall_"#_type"_"#_level)))
+#define ll_entry_declare(_type, _level, _init)                     \
+	_type __initcall_##_type##_##_level##_##_init __aligned(4) \
+		__attribute__((unused,                             \
+			       section(".initcall_" #_type "_" #_level)))
 
 /*
  * Get the number of initcalls of a specific driver (_level) section.
  */
-#define ll_entry_count(_type, _level)					\
-({									\
-	extern unsigned long __initcall_##_type##_##_level;		\
-	extern unsigned long __initcall_##_type##_##_level##_end;	\
-	_type *start = (_type *) &__initcall_##_type##_##_level;	\
-	_type *end = (_type *) &__initcall_##_type##_##_level##_end; 	\
-	unsigned int _ll_result = end - start;				\
-	_ll_result;							\
-})
-
+#define ll_entry_count(_type, _level)                                       \
+	({                                                                  \
+		extern unsigned long __initcall_##_type##_##_level;         \
+		extern unsigned long __initcall_##_type##_##_level##_end;   \
+		_type *start = (_type *)&__initcall_##_type##_##_level;     \
+		_type *end = (_type *)&__initcall_##_type##_##_level##_end; \
+		unsigned int _ll_result = end - start;                      \
+		_ll_result;                                                 \
+	})
 
 typedef void (*postinit_t)(void);
 typedef void (*pre_irq_init_t)(void);
 
-#define REGISTER_PRE_IRQ_INIT(_init) ll_entry_declare(pre_irq_init_t, core, _init) = _init;
-#define REGISTER_POSTINIT(_init) ll_entry_declare(postinit_t, core, _init) = _init;
+#define REGISTER_PRE_IRQ_INIT(_init) \
+	ll_entry_declare(pre_irq_init_t, core, _init) = _init;
+#define REGISTER_POSTINIT(_init) \
+	ll_entry_declare(postinit_t, core, _init) = _init;
 
 void pre_irq_init(void);
 

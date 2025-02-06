@@ -28,11 +28,10 @@
 #include <asm/processor.h>
 
 /** MMIO access result. */
-enum mmio_result {MMIO_ERROR = -1, MMIO_UNHANDLED, MMIO_HANDLED};
+enum mmio_result { MMIO_ERROR = -1, MMIO_UNHANDLED, MMIO_HANDLED };
 
 /** MMIO access description. */
 struct mmio_access {
-
 	/** Address to access, depending on the context, an absolute address or
 	 * relative offset to region start. */
 	unsigned long address;

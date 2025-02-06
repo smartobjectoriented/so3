@@ -49,10 +49,13 @@ int file_write_dep(const char *name)
 		else
 			fprintf(out, "\t%s\n", file->name);
 	}
-	fprintf(out, "\n%s: \\\n"
-		     "\t$(deps_config)\n\n", conf_get_autoconfig_name());
+	fprintf(out,
+		"\n%s: \\\n"
+		"\t$(deps_config)\n\n",
+		conf_get_autoconfig_name());
 
-	expr_list_for_each_sym(sym_env_list, e, sym) {
+	expr_list_for_each_sym(sym_env_list, e, sym)
+	{
 		struct property *prop;
 		const char *value;
 
@@ -73,7 +76,6 @@ int file_write_dep(const char *name)
 	rename("..config.tmp", name);
 	return 0;
 }
-
 
 /* Allocate initial growable string */
 struct gstr str_new(void)
@@ -112,7 +114,7 @@ void str_append(struct gstr *gs, const char *s)
 	if (s) {
 		l = strlen(gs->s) + strlen(s) + 1;
 		if (l > gs->len) {
-			gs->s   = realloc(gs->s, l);
+			gs->s = realloc(gs->s, l);
 			gs->len = l;
 		}
 		strcat(gs->s, s);
@@ -135,4 +137,3 @@ const char *str_get(struct gstr *gs)
 {
 	return gs->s;
 }
-

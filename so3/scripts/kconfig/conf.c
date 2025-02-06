@@ -120,8 +120,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
 	case S_STRING:
 		printf("%s\n", def);
 		return 1;
-	default:
-		;
+	default:;
 	}
 	printf("%s", line);
 	return 1;
@@ -151,7 +150,7 @@ static int conf_string(struct menu *menu)
 				break;
 			}
 		default:
-			line[strlen(line)-1] = 0;
+			line[strlen(line) - 1] = 0;
 			def = line;
 		}
 		if (def && sym_set_string_value(sym, def))
@@ -252,7 +251,8 @@ static int conf_choice(struct menu *menu)
 		case no:
 			return 1;
 		case mod:
-			printf("%*s%s\n", indent - 1, "", _(menu_get_prompt(menu)));
+			printf("%*s%s\n", indent - 1, "",
+			       _(menu_get_prompt(menu)));
 			return 0;
 		case yes:
 			break;
@@ -270,7 +270,8 @@ static int conf_choice(struct menu *menu)
 			if (!menu_is_visible(child))
 				continue;
 			if (!child->sym) {
-				printf("%*c %s\n", indent, '*', _(menu_get_prompt(child)));
+				printf("%*c %s\n", indent, '*',
+				       _(menu_get_prompt(child)));
 				continue;
 			}
 			cnt++;
@@ -323,7 +324,7 @@ static int conf_choice(struct menu *menu)
 			break;
 		}
 
-	conf_childs:
+conf_childs:
 		for (child = menu->list; child; child = child->next) {
 			if (!child->sym || !menu_is_visible(child))
 				continue;
@@ -372,12 +373,9 @@ static void conf(struct menu *menu)
 		case P_COMMENT:
 			prompt = menu_get_prompt(menu);
 			if (prompt)
-				printf("%*c\n%*c %s\n%*c\n",
-					indent, '*',
-					indent, '*', _(prompt),
-					indent, '*');
-		default:
-			;
+				printf("%*c\n%*c %s\n%*c\n", indent, '*',
+				       indent, '*', _(prompt), indent, '*');
+		default:;
 		}
 	}
 
@@ -422,14 +420,16 @@ static void check_conf(struct menu *menu)
 	sym = menu->sym;
 	if (sym && !sym_has_value(sym)) {
 		if (sym_is_changable(sym) ||
-		    (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)) {
+		    (sym_is_choice(sym) &&
+		     sym_get_tristate_value(sym) == yes)) {
 			if (input_mode == listnewconfig) {
 				if (sym->name && !sym_is_choice_value(sym)) {
 					printf("%s%s\n", CONFIG_, sym->name);
 				}
 			} else if (input_mode != oldnoconfig) {
 				if (!conf_cnt++)
-					printf(_("*\n* Restart config...\n*\n"));
+					printf(_(
+						"*\n* Restart config...\n*\n"));
 				rootEntry = menu_get_parent_menu(menu);
 				conf(rootEntry);
 			}
@@ -441,19 +441,19 @@ static void check_conf(struct menu *menu)
 }
 
 static struct option long_opts[] = {
-	{"oldaskconfig",    no_argument,       NULL, oldaskconfig},
-	{"oldconfig",       no_argument,       NULL, oldconfig},
-	{"silentoldconfig", no_argument,       NULL, silentoldconfig},
-	{"defconfig",       optional_argument, NULL, defconfig},
-	{"savedefconfig",   required_argument, NULL, savedefconfig},
-	{"allnoconfig",     no_argument,       NULL, allnoconfig},
-	{"allyesconfig",    no_argument,       NULL, allyesconfig},
-	{"allmodconfig",    no_argument,       NULL, allmodconfig},
-	{"alldefconfig",    no_argument,       NULL, alldefconfig},
-	{"randconfig",      no_argument,       NULL, randconfig},
-	{"listnewconfig",   no_argument,       NULL, listnewconfig},
-	{"oldnoconfig",     no_argument,       NULL, oldnoconfig},
-	{NULL, 0, NULL, 0}
+	{ "oldaskconfig", no_argument, NULL, oldaskconfig },
+	{ "oldconfig", no_argument, NULL, oldconfig },
+	{ "silentoldconfig", no_argument, NULL, silentoldconfig },
+	{ "defconfig", optional_argument, NULL, defconfig },
+	{ "savedefconfig", required_argument, NULL, savedefconfig },
+	{ "allnoconfig", no_argument, NULL, allnoconfig },
+	{ "allyesconfig", no_argument, NULL, allyesconfig },
+	{ "allmodconfig", no_argument, NULL, allmodconfig },
+	{ "alldefconfig", no_argument, NULL, alldefconfig },
+	{ "randconfig", no_argument, NULL, randconfig },
+	{ "listnewconfig", no_argument, NULL, listnewconfig },
+	{ "oldnoconfig", no_argument, NULL, oldnoconfig },
+	{ NULL, 0, NULL, 0 }
 };
 
 int main(int ac, char **av)
@@ -476,8 +476,7 @@ int main(int ac, char **av)
 		case savedefconfig:
 			defconfig_file = optarg;
 			break;
-		case randconfig:
-		{
+		case randconfig: {
 			struct timeval now;
 			unsigned int seed;
 
@@ -487,7 +486,8 @@ int main(int ac, char **av)
 			 */
 			gettimeofday(&now, NULL);
 
-			seed = (unsigned int)((now.tv_sec + 1) * (now.tv_usec + 1));
+			seed = (unsigned int)((now.tv_sec + 1) *
+					      (now.tv_usec + 1));
 			srand(seed);
 			break;
 		}
@@ -507,12 +507,14 @@ int main(int ac, char **av)
 	if (sync_kconfig) {
 		name = conf_get_configname();
 		if (stat(name, &tmpstat)) {
-			fprintf(stderr, _("***\n"
-				"*** Configuration file \"%s\" not found!\n"
-				"***\n"
-				"*** Please run some configurator (e.g. \"make oldconfig\" or\n"
-				"*** \"make menuconfig\" or \"make xconfig\").\n"
-				"***\n"), name);
+			fprintf(stderr,
+				_("***\n"
+				  "*** Configuration file \"%s\" not found!\n"
+				  "***\n"
+				  "*** Please run some configurator (e.g. \"make oldconfig\" or\n"
+				  "*** \"make menuconfig\" or \"make xconfig\").\n"
+				  "***\n"),
+				name);
 			exit(1);
 		}
 	}
@@ -523,8 +525,9 @@ int main(int ac, char **av)
 			defconfig_file = conf_get_default_confname();
 		if (conf_read(defconfig_file)) {
 			printf(_("***\n"
-				"*** Can't find default configuration \"%s\"!\n"
-				"***\n"), defconfig_file);
+				 "*** Can't find default configuration \"%s\"!\n"
+				 "***\n"),
+			       defconfig_file);
 			exit(1);
 		}
 		break;
@@ -547,12 +550,23 @@ int main(int ac, char **av)
 			break;
 		}
 		switch (input_mode) {
-		case allnoconfig:	name = "allno.config"; break;
-		case allyesconfig:	name = "allyes.config"; break;
-		case allmodconfig:	name = "allmod.config"; break;
-		case alldefconfig:	name = "alldef.config"; break;
-		case randconfig:	name = "allrandom.config"; break;
-		default: break;
+		case allnoconfig:
+			name = "allno.config";
+			break;
+		case allyesconfig:
+			name = "allyes.config";
+			break;
+		case allmodconfig:
+			name = "allmod.config";
+			break;
+		case alldefconfig:
+			name = "alldef.config";
+			break;
+		case randconfig:
+			name = "allrandom.config";
+			break;
+		default:
+			break;
 		}
 		if (!stat(name, &tmpstat))
 			conf_read_simple(name, S_DEF_USER);
@@ -609,9 +623,8 @@ int main(int ac, char **av)
 		do {
 			conf_cnt = 0;
 			check_conf(&rootmenu);
-		} while (conf_cnt &&
-			 (input_mode != listnewconfig &&
-			  input_mode != oldnoconfig));
+		} while (conf_cnt && (input_mode != listnewconfig &&
+				      input_mode != oldnoconfig));
 		break;
 	}
 
@@ -620,22 +633,26 @@ int main(int ac, char **av)
 		 * All other commands are only used to generate a config.
 		 */
 		if (conf_get_changed() && conf_write(NULL)) {
-			fprintf(stderr, _("\n*** Error during writing of the configuration.\n\n"));
+			fprintf(stderr,
+				_("\n*** Error during writing of the configuration.\n\n"));
 			exit(1);
 		}
 		if (conf_write_autoconf()) {
-			fprintf(stderr, _("\n*** Error during update of the configuration.\n\n"));
+			fprintf(stderr,
+				_("\n*** Error during update of the configuration.\n\n"));
 			return 1;
 		}
 	} else if (input_mode == savedefconfig) {
 		if (conf_write_defconfig(defconfig_file)) {
-			fprintf(stderr, _("n*** Error while saving defconfig to: %s\n\n"),
-			        defconfig_file);
+			fprintf(stderr,
+				_("n*** Error while saving defconfig to: %s\n\n"),
+				defconfig_file);
 			return 1;
 		}
 	} else if (input_mode != listnewconfig) {
 		if (conf_write(NULL)) {
-			fprintf(stderr, _("\n*** Error during writing of the configuration.\n\n"));
+			fprintf(stderr,
+				_("\n*** Error during writing of the configuration.\n\n"));
 			exit(1);
 		}
 	}
@@ -644,10 +661,9 @@ int main(int ac, char **av)
 /*
  * Helper function to facilitate fgets() by Jean Sacren.
  */
-void xfgets(str, size, in)
-	char *str;
-	int size;
-	FILE *in;
+void xfgets(str, size, in) char *str;
+int size;
+FILE *in;
 {
 	if (fgets(str, size, in) == NULL)
 		fprintf(stderr, "\nError in reading or end of file.\n");

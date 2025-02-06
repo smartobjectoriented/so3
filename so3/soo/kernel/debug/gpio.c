@@ -17,16 +17,17 @@
  *
  */
 
-
 #include <device/device.h>
 #include <device/driver.h>
 
 extern void sunxi_gpio_set(int pin, int value);
 
-void ll_gpio_set(int pin, int value) {
+void ll_gpio_set(int pin, int value)
+{
 	sunxi_gpio_set(pin, value);
 }
 
-void ll_gpio_init(void) {
+void ll_gpio_init(void)
+{
 	/* Nothing to do */
 }

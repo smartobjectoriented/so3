@@ -32,8 +32,8 @@
  */
 
 /* Open the dev directory */
-int devfs_open(int fd, const char *filename) {
-
+int devfs_open(int fd, const char *filename)
+{
 	devfs_data *priv;
 	priv = malloc(sizeof(devfs_data));
 	if (!priv) {
@@ -47,8 +47,8 @@ int devfs_open(int fd, const char *filename) {
 }
 
 /* Close the dev directory */
-int devfs_close(int fd) {
-
+int devfs_close(int fd)
+{
 	devfs_data *priv = (devfs_data *)vfs_get_priv(fd);
 	if (!priv) {
 		return 0;
@@ -57,8 +57,8 @@ int devfs_close(int fd) {
 	return 0;
 }
 
-struct dirent *devfs_readdir(int fd) {
-
+struct dirent *devfs_readdir(int fd)
+{
 	struct dirent *dent;
 	devfs_data *priv = (devfs_data *)vfs_get_priv(fd);
 	bool is_single_entry;
@@ -113,7 +113,7 @@ static struct file_operations devfs_ops = {
 	.readdir = devfs_readdir,
 };
 
-struct file_operations *register_devfs(void) {
-
+struct file_operations *register_devfs(void)
+{
 	return &devfs_ops;
 }

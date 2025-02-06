@@ -18,12 +18,12 @@
 
 #include <types.h>
 
-#define ioread8(p)      (*((volatile uint8_t *) (p)))
-#define ioread16(p)     (*((volatile uint16_t *) (p)))
-#define ioread32(p)     (*((volatile uint32_t *) (p)))
-#define ioread64(p)     (*((volatile uint64_t *) (p)))
+#define ioread8(p) (*((volatile uint8_t *)(p)))
+#define ioread16(p) (*((volatile uint16_t *)(p)))
+#define ioread32(p) (*((volatile uint32_t *)(p)))
+#define ioread64(p) (*((volatile uint64_t *)(p)))
 
-#define iowrite8(p,v)   (*((volatile uint8_t *) (p)) = v)
-#define iowrite16(p,v)  (*((volatile uint16_t *) (p)) = v)
-#define iowrite32(p,v)  (*((volatile uint32_t *) (p)) = v)
-#define iowrite64(p,v)  (*((volatile uint64_t *) (p)) = v)
+#define iowrite8(p, v) (*((volatile uint8_t *)(p)) = v)
+#define iowrite16(p, v) (*((volatile uint16_t *)(p)) = v)
+#define iowrite32(p, v) (*((volatile uint32_t *)(p)) = v)
+#define iowrite64(p, v) (*((volatile uint64_t *)(p)) = v)

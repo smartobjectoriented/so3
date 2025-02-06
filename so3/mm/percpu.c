@@ -27,32 +27,29 @@ extern char __per_cpu_start[], __per_cpu_data_end[], __per_cpu_end[];
 unsigned long __per_cpu_offset[CONFIG_NR_CPUS];
 
 #define INVALID_PERCPU_AREA (-(long)__per_cpu_start)
-#define PERCPU_ORDER (get_order_from_bytes(__per_cpu_data_end - __per_cpu_start))
+#define PERCPU_ORDER \
+	(get_order_from_bytes(__per_cpu_data_end - __per_cpu_start))
 
 void percpu_init_areas(void)
 {
-    unsigned int cpu;
+	unsigned int cpu;
 
-    for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++)
-        __per_cpu_offset[cpu] = INVALID_PERCPU_AREA;
+	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++)
+		__per_cpu_offset[cpu] = INVALID_PERCPU_AREA;
 }
 
 int init_percpu_area(unsigned int cpu)
 {
-    char *p;
+	char *p;
 
-    if (__per_cpu_offset[cpu] != INVALID_PERCPU_AREA)
-        BUG();
+	if (__per_cpu_offset[cpu] != INVALID_PERCPU_AREA)
+		BUG();
 
-    if ((p = memalign(PAGE_SIZE, PAGE_SIZE)) == NULL)
-        BUG();
+	if ((p = memalign(PAGE_SIZE, PAGE_SIZE)) == NULL)
+		BUG();
 
-    memset(p, 0, __per_cpu_data_end - __per_cpu_start);
-    __per_cpu_offset[cpu] = p - __per_cpu_start;
+	memset(p, 0, __per_cpu_data_end - __per_cpu_start);
+	__per_cpu_offset[cpu] = p - __per_cpu_start;
 
-    return 0;
+	return 0;
 }
-
-
-
-

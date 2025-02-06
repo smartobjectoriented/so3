@@ -27,8 +27,8 @@
  * @param id		unique ID which identifies the message
  * @param value		Message content
  */
-void xml_prepare_message(char *buffer, char *id, char *value) {
-
+void xml_prepare_message(char *buffer, char *id, char *value)
+{
 	char *__buffer;
 	node_t *messages, *msg;
 
@@ -48,7 +48,6 @@ void xml_prepare_message(char *buffer, char *id, char *value) {
 
 	roxml_release(RELEASE_LAST);
 	roxml_close(messages);
-
 }
 
 /**
@@ -58,30 +57,28 @@ void xml_prepare_message(char *buffer, char *id, char *value) {
  * @param id		The ID of this event
  * @param action	The action of this event message
  */
-void xml_parse_event(char *buffer, char *id, char *action) {
-
+void xml_parse_event(char *buffer, char *id, char *action)
+{
 	node_t *root, *xml;
 	node_t *events, *event, *__from, *__action;
 
 	root = roxml_load_buf(buffer);
-	xml =  roxml_get_chld(root, NULL,  0);
+	xml = roxml_get_chld(root, NULL, 0);
 
 	events = roxml_get_chld(root, "events", 0);
 	event = roxml_get_chld(events, "event", 0);
 	__from = roxml_get_attr(event, "from", 0);
 	__action = roxml_get_attr(event, "action", 0);
 
-
 	strcpy(id, roxml_get_content(__from, NULL, 0, NULL));
 	strcpy(action, roxml_get_content(__action, NULL, 0, NULL));
 
 	roxml_release(RELEASE_LAST);
 	roxml_close(root);
-
 }
 
-void xml_get_event_content(char *buffer, char *content) {
-
+void xml_get_event_content(char *buffer, char *content)
+{
 	node_t *root;
 	node_t *events, *event;
 
@@ -95,4 +92,3 @@ void xml_get_event_content(char *buffer, char *content) {
 	roxml_release(RELEASE_LAST);
 	roxml_close(root);
 }
-

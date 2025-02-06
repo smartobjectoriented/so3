@@ -34,9 +34,9 @@
 #endif /* __ASSEMBLY__ */
 
 /* PAGE_SHIFT determines the page size */
-#define PAGE_SHIFT	12
-#define PAGE_SIZE       (1 << PAGE_SHIFT)
-#define PAGE_MASK       (~(PAGE_SIZE-1))
+#define PAGE_SHIFT 12
+#define PAGE_SIZE (1 << PAGE_SHIFT)
+#define PAGE_MASK (~(PAGE_SIZE - 1))
 
 #ifndef __ASSEMBLY__
 
@@ -44,9 +44,9 @@ extern struct list_head io_maplist;
 
 /* Manage the io_maplist. The list is sorted by ascending vaddr. */
 typedef struct {
-	addr_t vaddr;	/* Virtual address of the mapped I/O range */
+	addr_t vaddr; /* Virtual address of the mapped I/O range */
 	addr_t paddr; /* Physical address of this mapping */
-	size_t size;	/* Size in bytes */
+	size_t size; /* Size in bytes */
 
 	struct list_head list;
 } io_map_t;
@@ -75,7 +75,6 @@ struct page {
 	 * the child will also have reference to the page.
 	 */
 	uint32_t refcount;
-
 };
 typedef struct page page_t;
 
@@ -91,35 +90,39 @@ extern volatile addr_t pfn_start;
  * the hypervisor or guest offset.
  */
 
-#define __xpa(x, vaddr) (addr_t) (((addr_t) vaddr) - memslot[x].base_vaddr + memslot[x].base_paddr)
-#define __xva(x, paddr) (addr_t) (((addr_t) paddr) - memslot[x].base_paddr + memslot[x].base_vaddr)
+#define __xpa(x, vaddr)                                    \
+	(addr_t)(((addr_t)vaddr) - memslot[x].base_vaddr + \
+		 memslot[x].base_paddr)
+#define __xva(x, paddr)                                    \
+	(addr_t)(((addr_t)paddr) - memslot[x].base_paddr + \
+		 memslot[x].base_vaddr)
 
-#define __pa(vaddr)	(__xpa(MEMSLOT_AVZ, vaddr))
-#define __va(paddr) 	(__xva(MEMSLOT_AVZ, paddr))
+#define __pa(vaddr) (__xpa(MEMSLOT_AVZ, vaddr))
+#define __va(paddr) (__xva(MEMSLOT_AVZ, paddr))
 
-#define ipa_offset(x)		(memslot[x].ipa_addr - memslot[x].base_paddr)
+#define ipa_offset(x) (memslot[x].ipa_addr - memslot[x].base_paddr)
 
-#define va_to_ipa(x, va)	(phys_to_ipa(memslot, __pa(va)))
-#define pa_to_ipa(x, pa) 	(((addr_t) pa) + ipa_offset(x))
+#define va_to_ipa(x, va) (phys_to_ipa(memslot, __pa(va)))
+#define pa_to_ipa(x, pa) (((addr_t)pa) + ipa_offset(x))
 
-#define ipa_to_pa(x, ipa)	(((addr_t) ipa) - ipa_offset(x))
-#define ipa_to_va(x, ipa)	(__xva(x, ipa_to_pa(x, ipa)))
+#define ipa_to_pa(x, ipa) (((addr_t)ipa) - ipa_offset(x))
+#define ipa_to_va(x, ipa) (__xva(x, ipa_to_pa(x, ipa)))
 
 void put_ME_slot(unsigned int ME_slotID);
 int get_ME_free_slot(unsigned int size);
 
 #else /* CONFIG_AVZ */
 
-#define __pa(vaddr) (((addr_t) vaddr) - CONFIG_KERNEL_VADDR + mem_info.phys_base)
-#define __va(paddr) (((addr_t) paddr) - mem_info.phys_base + CONFIG_KERNEL_VADDR)
+#define __pa(vaddr) (((addr_t)vaddr) - CONFIG_KERNEL_VADDR + mem_info.phys_base)
+#define __va(paddr) (((addr_t)paddr) - mem_info.phys_base + CONFIG_KERNEL_VADDR)
 
 #endif /* !CONFIG_AVZ */
 
 #define pfn_to_phys(pfn) ((pfn) << PAGE_SHIFT)
-#define phys_to_pfn(phys) (((addr_t) phys) >> PAGE_SHIFT)
-#define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t) virt)))
+#define phys_to_pfn(phys) (((addr_t)phys) >> PAGE_SHIFT)
+#define virt_to_pfn(virt) (phys_to_pfn(__va((addr_t)virt)))
 
-#define page_to_pfn(page) ((addr_t) ((addr_t) (page - frame_table) + pfn_start))
+#define page_to_pfn(page) ((addr_t)((addr_t)(page - frame_table) + pfn_start))
 #define pfn_to_page(pfn) (&frame_table[pfn - pfn_start])
 
 #define page_to_phys(page) (pfn_to_phys(page_to_pfn(page)))

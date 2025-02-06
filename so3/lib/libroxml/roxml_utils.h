@@ -31,7 +31,7 @@
 
 #endif
 
-#if(CONFIG_XML_THREAD_SAFE==0)
+#if (CONFIG_XML_THREAD_SAFE == 0)
 ROXML_STATIC_INLINE ROXML_INT unsigned long int roxml_thread_id(node_t *n)
 {
 	return 0;
@@ -68,7 +68,7 @@ ROXML_STATIC_INLINE ROXML_INT int roxml_lock_init(node_t *n)
 	xpath_tok_table_t *table = (xpath_tok_table_t *)n->priv;
 	table->lock = malloc(sizeof(struct mutex));
 
-	mutex_init((struct mutex *) table->lock);
+	mutex_init((struct mutex *)table->lock);
 
 	return 0;
 }
@@ -87,10 +87,10 @@ ROXML_STATIC_INLINE ROXML_INT int roxml_lock(node_t *n)
 	xpath_tok_table_t *table;
 	while (n->prnt)
 		n = n->prnt;
-	
+
 	table = (xpath_tok_table_t *)n->priv;
 
-	mutex_lock((struct mutex *) table->lock);
+	mutex_lock((struct mutex *)table->lock);
 
 	return 0;
 }
@@ -100,10 +100,10 @@ ROXML_STATIC_INLINE ROXML_INT int roxml_unlock(node_t *n)
 	xpath_tok_table_t *table;
 	while (n->prnt)
 		n = n->prnt;
-	
+
 	table = (xpath_tok_table_t *)n->priv;
 
-	mutex_unlock((struct mutex *) table->lock);
+	mutex_unlock((struct mutex *)table->lock);
 
 	return 0;
 }
@@ -123,10 +123,9 @@ ROXML_STATIC_INLINE ROXML_INT double roxml_strtonum(const char *str, char **end)
 	 * it must be considered a number and we floor it
 	 */
 	if (end && *end && **end == '.')
-		strtol(*(end+1), end, 0);
+		strtol(*(end + 1), end, 0);
 
 	return value;
-
 }
 #endif /* CONFIG_XML_FLOAT */
 

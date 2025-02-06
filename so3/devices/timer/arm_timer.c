@@ -34,14 +34,15 @@
 #include <avz/physdev.h>
 #endif
 
-static void next_event(u32 next) {
-
+static void next_event(u32 next)
+{
 	unsigned long ctrl;
 
 #ifdef CONFIG_ARM64VT
 	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
 #else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS,
+					ARCH_TIMER_REG_CTRL);
 #endif
 
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
@@ -51,23 +52,27 @@ static void next_event(u32 next) {
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_TVAL, next);
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
 #else
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_TVAL, next);
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_TVAL,
+				  next);
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL,
+				  ctrl);
 #endif
 }
 
-static irq_return_t timer_isr(int irq, void *dev) {
+static irq_return_t timer_isr(int irq, void *dev)
+{
 	unsigned long ctrl;
 	arm_timer_t *arm_timer;
 
-	arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dev);
+	arm_timer = (arm_timer_t *)dev_get_drvdata((dev_t *)dev);
 
 	/* Clear the interrupt */
 
 #ifdef CONFIG_ARM64VT
 	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
 #else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS,
+					ARCH_TIMER_REG_CTRL);
 #endif
 
 	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
@@ -76,7 +81,8 @@ static irq_return_t timer_isr(int irq, void *dev) {
 #ifdef CONFIG_ARM64VT
 		arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
 #else
-		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS,
+					  ARCH_TIMER_REG_CTRL, ctrl);
 #endif
 
 		/* Periodic timer */
@@ -94,8 +100,10 @@ static irq_return_t timer_isr(int irq, void *dev) {
 	return IRQ_COMPLETED;
 }
 
-void periodic_timer_start(void) {
-	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
+void periodic_timer_start(void)
+{
+	arm_timer_t *arm_timer =
+		(arm_timer_t *)dev_get_drvdata(periodic_timer.dev);
 
 	/* Start the periodic timer */
 	next_event(arm_timer->reload);
@@ -105,12 +113,15 @@ void periodic_timer_start(void) {
  * Read the clocksource timer value taking into account a time reference.
  *
  */
-u64 clocksource_read(void) {
+u64 clocksource_read(void)
+{
 	return arch_counter_get_cntvct();
 }
 
-void secondary_timer_init(void) {
-	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
+void secondary_timer_init(void)
+{
+	arm_timer_t *arm_timer =
+		(arm_timer_t *)dev_get_drvdata(periodic_timer.dev);
 
 #ifndef CONFIG_ARM64VT
 	unsigned long ctrl;
@@ -122,9 +133,11 @@ void secondary_timer_init(void) {
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
 
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS,
+					ARCH_TIMER_REG_CTRL);
 	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL,
+				  ctrl);
 #endif
 
 	/* Bind ISR into interrupt controller */
@@ -134,7 +147,8 @@ void secondary_timer_init(void) {
 /*
  * Initialize the periodic timer used by the kernel.
  */
-static int periodic_timer_init(dev_t *dev, int fdt_offset) {
+static int periodic_timer_init(dev_t *dev, int fdt_offset)
+{
 #ifndef CONFIG_ARM64VT
 	unsigned long ctrl;
 #endif
@@ -145,7 +159,7 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	/* Pins multiplexing skipped here for simplicity (done by bootloader) */
 	/* Clocks init skipped here for simplicity (done by bootloader) */
 
-	arm_timer = (arm_timer_t *) malloc(sizeof(arm_timer_t));
+	arm_timer = (arm_timer_t *)malloc(sizeof(arm_timer_t));
 	BUG_ON(!arm_timer);
 
 	fdt_interrupt_node(fdt_offset, &arm_timer->irq_def);
@@ -158,7 +172,8 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	periodic_timer.start = periodic_timer_start;
 	periodic_timer.period = NSECS / CONFIG_HZ;
 
-	arm_timer->reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
+	arm_timer->reload = (uint32_t)(periodic_timer.period /
+				       (NSECS / clocksource_timer.rate));
 
 	/* Shutdown the timer */
 
@@ -166,9 +181,11 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
 
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
+	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS,
+					ARCH_TIMER_REG_CTRL);
 	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL,
+				  ctrl);
 #endif
 
 	dev_set_drvdata(dev, arm_timer);
@@ -182,8 +199,8 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 /*
  * Initialize the clocksource timer for free-running timer (used for system time)
  */
-static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
-
+static int clocksource_timer_init(dev_t *dev, int fdt_offset)
+{
 	clocksource_timer.cycle_last = 0;
 
 	clocksource_timer.read = clocksource_read;
@@ -191,7 +208,9 @@ static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
 	clocksource_timer.mask = CLOCKSOURCE_MASK(56);
 
 	/* Compute the various parameters for this clocksource */
-	clocks_calc_mult_shift(&clocksource_timer.mult, &clocksource_timer.shift, clocksource_timer.rate, NSECS, 3600);
+	clocks_calc_mult_shift(&clocksource_timer.mult,
+			       &clocksource_timer.shift, clocksource_timer.rate,
+			       NSECS, 3600);
 
 	return 0;
 }
@@ -200,4 +219,3 @@ REGISTER_DRIVER_CORE("arm,clocksource-timer", clocksource_timer_init);
 
 /* Need the clocksource rate to initialize the periodic timer. */
 REGISTER_DRIVER_POSTCORE("arm,periodic-timer", periodic_timer_init);
-

@@ -41,10 +41,10 @@
  * Device status strings
  */
 static char *__dev_state_str[] = {
-		"unknown",
-		"disabled",
-		"init pending",
-		"initialized",
+	"unknown",
+	"disabled",
+	"init pending",
+	"initialized",
 };
 
 /*
@@ -61,19 +61,21 @@ static LIST_HEAD(devices);
  */
 static LIST_HEAD(registered_dev);
 
-char *dev_state_str(dev_status_t status) {
+char *dev_state_str(dev_status_t status)
+{
 	return __dev_state_str[status];
 }
 
 /*
  * Get a dev_t entry based on the compatible string
  */
-void *find_device(const char *compat) {
+void *find_device(const char *compat)
+{
 	dev_t *dev;
 
 	list_for_each_entry(dev, &devices, list)
 		if (!strcmp(dev->compatible, compat))
-			return dev;  /* So far, we take the first match. */
+			return dev; /* So far, we take the first match. */
 
 	return NULL;
 }
@@ -82,7 +84,8 @@ void *find_device(const char *compat) {
  * Check if a certain node has the property "status" and check for the availability.
  * Only "ok" means a valid device.
  */
-bool fdt_device_is_available(void *fdt_addr, int node_offset) {
+bool fdt_device_is_available(void *fdt_addr, int node_offset)
+{
 	const struct fdt_property *prop;
 	int prop_len;
 
@@ -96,7 +99,6 @@ bool fdt_device_is_available(void *fdt_addr, int node_offset) {
 			return false;
 		else if (!strcmp(prop->data, "ok"))
 			return true;
-
 	}
 	return false;
 }
@@ -109,7 +111,8 @@ bool fdt_device_is_available(void *fdt_addr, int node_offset) {
  * nodes at the same level. Managing further sub-node levels require to adapt kernel/fdt.c
  *
  */
-void parse_dtb(void *fdt_addr) {
+void parse_dtb(void *fdt_addr)
+{
 	unsigned int drivers_count[INITCALLS_LEVELS];
 	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
 	dev_t *dev;
@@ -124,39 +127,51 @@ void parse_dtb(void *fdt_addr) {
 	drivers_count[POSTCORE] = ll_entry_count(driver_initcall_t, postcore);
 	driver_entries[POSTCORE] = ll_entry_start(driver_initcall_t, postcore);
 
-	DBG("%s: # entries for core drivers : %d\n", __func__, drivers_count[CORE]);
-	DBG("%s: # entries for postcore drivers : %d\n", __func__, drivers_count[POSTCORE]);
+	DBG("%s: # entries for core drivers : %d\n", __func__,
+	    drivers_count[CORE]);
+	DBG("%s: # entries for postcore drivers : %d\n", __func__,
+	    drivers_count[POSTCORE]);
 	DBG("Now scanning the device tree to retrieve all devices...\n");
 
-	for (level = 0; level < INITCALLS_LEVELS; level++) { 
-		dev = (dev_t *) malloc(sizeof(dev_t));
+	for (level = 0; level < INITCALLS_LEVELS; level++) {
+		dev = (dev_t *)malloc(sizeof(dev_t));
 		ASSERT(dev != NULL);
 		memset(dev, 0, sizeof(dev_t));
 
 		found = false;
 		offset = 0;
 
-		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
-
+		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) !=
+		       -1) {
 			if (fdt_device_is_available(fdt_addr, new_off)) {
 				for (i = 0; i < drivers_count[level]; i++) {
-
-					if (!strcmp(dev->compatible, driver_entries[level][i].compatible)) {
-
+					if (!strcmp(dev->compatible,
+						    driver_entries[level][i]
+							    .compatible)) {
 						found = true;
 
-						DBG("Found compatible:    %s\n", driver_entries[level][i].compatible);
-						DBG("    Compatible:      %s\n", dev->compatible);
-						DBG("    Status:          %s\n", dev_state_str(dev->status));
-						DBG("    Initcall level:  %d\n", level);
+						DBG("Found compatible:    %s\n",
+						    driver_entries[level][i]
+							    .compatible);
+						DBG("    Compatible:      %s\n",
+						    dev->compatible);
+						DBG("    Status:          %s\n",
+						    dev_state_str(dev->status));
+						DBG("    Initcall level:  %d\n",
+						    level);
 
-						if (dev->status == STATUS_INIT_PENDING) {
-
-							ret = driver_entries[level][i].init(dev, new_off);
+						if (dev->status ==
+						    STATUS_INIT_PENDING) {
+							ret = driver_entries[level][i]
+								      .init(dev,
+									    new_off);
 							BUG_ON(ret);
 
-							dev->status = STATUS_INITIALIZED;
-							list_add_tail(&dev->list, &devices);
+							dev->status =
+								STATUS_INITIALIZED;
+							list_add_tail(
+								&dev->list,
+								&devices);
 						}
 						break;
 					}
@@ -167,7 +182,7 @@ void parse_dtb(void *fdt_addr) {
 
 			offset = new_off;
 
-			dev = (dev_t *) malloc(sizeof(dev_t));
+			dev = (dev_t *)malloc(sizeof(dev_t));
 			ASSERT(dev != NULL);
 			memset(dev, 0, sizeof(dev_t));
 
@@ -224,7 +239,7 @@ struct devclass *devclass_by_filename(const char *filename)
 	struct devclass *cur_dev;
 
 	/* Find the beginning of the device id string. */
-	dev_id_s = (char *) filename;
+	dev_id_s = (char *)filename;
 	while (*dev_id_s && !isdigit(*dev_id_s))
 		dev_id_s++;
 
@@ -238,7 +253,7 @@ struct devclass *devclass_by_filename(const char *filename)
 	 * TODO simple_strtox functions are deprecated.
 	 */
 	if (*dev_id_s)
-		dev_id = (uint32_t) simple_strtoul(dev_id_s, NULL, 10);
+		dev_id = (uint32_t)simple_strtoul(dev_id_s, NULL, 10);
 	else
 		dev_id = 0;
 
@@ -248,14 +263,14 @@ struct devclass *devclass_by_filename(const char *filename)
 	/* Loop through registered_dev. */
 
 	list_for_each_entry(cur_dev, &registered_dev, list) {
-
 		/*
 		 * We compare the lengths and use strncmp to compare only the
 		 * device class part of `filename'.
 		 */
-		if ((strlen(cur_dev->class) == dev_class_len) && !strncmp(filename, cur_dev->class, dev_class_len)) {
-
-			if ((dev_id >= cur_dev->id_start) && (dev_id <= cur_dev->id_end))
+		if ((strlen(cur_dev->class) == dev_class_len) &&
+		    !strncmp(filename, cur_dev->class, dev_class_len)) {
+			if ((dev_id >= cur_dev->id_start) &&
+			    (dev_id <= cur_dev->id_end))
 				return cur_dev;
 		}
 	}
@@ -269,26 +284,28 @@ struct devclass *devclass_by_filename(const char *filename)
  * Get the device id of a specific fd.
  * Returns by-default id 0 if no number is specified at the end of the class name.
  */
-int devclass_fd_to_id(int fd) {
+int devclass_fd_to_id(int fd)
+{
 	char *pos;
 	int val;
 
 	pos = vfs_get_filename(fd);
 
 	while (*pos) {
-	    if (isdigit(*pos)) {
-	        /* Found a number */
-	        val = simple_strtoul(pos, NULL, 10);
-	        return val;
-	    } else
-	        /* Otherwise, move on to the next character. */
-	        pos++;
+		if (isdigit(*pos)) {
+			/* Found a number */
+			val = simple_strtoul(pos, NULL, 10);
+			return val;
+		} else
+			/* Otherwise, move on to the next character. */
+			pos++;
 	}
 
 	return -1;
 }
 
-struct devclass *devclass_by_fd(int fd) {
+struct devclass *devclass_by_fd(int fd)
+{
 	return devclass_by_filename(vfs_get_filename(fd) + DEV_PREFIX_LEN);
 }
 
@@ -297,7 +314,8 @@ struct devclass *devclass_by_fd(int fd) {
  * is also set to the proper value.
  *
  */
-struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type)
+struct file_operations *devclass_get_fops(const char *filename,
+					  uint32_t *vfs_type)
 {
 	struct devclass *cdev;
 
@@ -313,8 +331,8 @@ struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_ty
 /*
  * Main device initialization function.
  */
-void devices_init(void) {
-
+void devices_init(void)
+{
 	/* Interrupt management subsystem initialization */
 	irq_init();
 

@@ -22,8 +22,8 @@
 /* ID for the different models */
 
 /* XML id and action length */
-#define ID_MAX_LENGTH		20
-#define ACTION_MAX_LENGTH	20
+#define ID_MAX_LENGTH 20
+#define ACTION_MAX_LENGTH 20
 
 /*
  * Prepare a XML message.
@@ -36,7 +36,6 @@ void xml_prepare_message(char *buffer, char *id, char *value);
  * Allocation of the buffers has to be done by the caller
  */
 void xml_parse_event(char *buffer, char *id, char *action);
-
 
 /**
  * Retrieve the content of an event 

@@ -38,12 +38,9 @@
 
 int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args);
 
-struct file_operations pl050_keyboard_fops = {
-	.ioctl = ioctl_keyboard
-};
+struct file_operations pl050_keyboard_fops = { .ioctl = ioctl_keyboard };
 
 /* Device info. */
-
 
 struct devclass pl050_keyboard_cdev = {
 	.class = DEV_CLASS_KEYBOARD,
@@ -51,16 +48,12 @@ struct devclass pl050_keyboard_cdev = {
 	.fops = &pl050_keyboard_fops,
 };
 
-struct ps2_key last_key = {
-	.value = 0,
-	.state = 0
-};
+struct ps2_key last_key = { .value = 0, .state = 0 };
 
 struct {
 	void *base;
 	irq_def_t irq_def;
 } pl050_keyboard;
-
 
 /*
  * Keyboard interrupt service routine.
@@ -76,7 +69,6 @@ irq_return_t pl050_int_keyboard(int irq, void *dummy)
 	i = 0;
 	DBG("---- Scan codes:\n");
 	while (status & KMIIR_RXINTR) {
-
 		/*
 		 * Read from the data register. We care only about the first 2
 		 * bytes but we must continue reading until there are none
@@ -106,7 +98,8 @@ int pl050_init_keyboard(dev_t *dev, int fdt_offset)
 	const struct fdt_property *prop;
 	int prop_len;
 
-	printk("%s: probing a keyboard driver (PL050/KMI0/PS2), please make sure such a device exists...\n", __func__);
+	printk("%s: probing a keyboard driver (PL050/KMI0/PS2), please make sure such a device exists...\n",
+	       __func__);
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
@@ -114,16 +107,21 @@ int pl050_init_keyboard(dev_t *dev, int fdt_offset)
 
 	/* Mapping the two mem area of GIC (distributor & CPU interface) */
 #ifdef CONFIG_ARCH_ARM32
-	pl050_keyboard.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	pl050_keyboard.base =
+		(void *)io_map(fdt32_to_cpu(((const fdt32_t *)prop->data)[0]),
+			       fdt32_to_cpu(((const fdt32_t *)prop->data)[1]));
 #else
-	pl050_keyboard.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	pl050_keyboard.base =
+		(void *)io_map(fdt64_to_cpu(((const fdt64_t *)prop->data)[0]),
+			       fdt64_to_cpu(((const fdt64_t *)prop->data)[1]));
 
 #endif
 	fdt_interrupt_node(fdt_offset, &pl050_keyboard.irq_def);
 
 	/* Register the input device so it can be accessed from user space. */
 	devclass_register(dev, &pl050_keyboard_cdev);
-	pl050_init(pl050_keyboard.base, &pl050_keyboard.irq_def, pl050_int_keyboard);
+	pl050_init(pl050_keyboard.base, &pl050_keyboard.irq_def,
+		   pl050_int_keyboard);
 
 	return 0;
 }
@@ -131,9 +129,8 @@ int pl050_init_keyboard(dev_t *dev, int fdt_offset)
 int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)
 {
 	switch (cmd) {
-
 	case GET_KEY:
-		*((struct ps2_key *) args) = last_key;
+		*((struct ps2_key *)args) = last_key;
 		/* Indicate we have read the key and don't need to read it again. */
 		last_key.value = 0;
 		break;

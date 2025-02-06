@@ -21,16 +21,16 @@
 #include "util.h"
 
 enum display_mode {
-	MODE_SHOW_VALUE,	/* show values for node properties */
-	MODE_LIST_PROPS,	/* list the properties for a node */
-	MODE_LIST_SUBNODES,	/* list the subnodes of a node */
+	MODE_SHOW_VALUE, /* show values for node properties */
+	MODE_LIST_PROPS, /* list the properties for a node */
+	MODE_LIST_SUBNODES, /* list the subnodes of a node */
 };
 
 /* Holds information which controls our output and options */
 struct display_info {
-	int type;		/* data type (s/i/u/x or 0 for default) */
-	int size;		/* data size (1/2/4) */
-	enum display_mode mode;	/* display mode that we are using */
+	int type; /* data type (s/i/u/x or 0 for default) */
+	int size; /* data size (1/2/4) */
+	enum display_mode mode; /* display mode that we are using */
 	const char *default_val; /* default value if node/property not found */
 };
 
@@ -64,7 +64,7 @@ static int show_data(struct display_info *disp, const char *data, int len)
 		return 0;
 
 	is_string = (disp->type) == 's' ||
-		(!disp->type && util_is_printable_string(data, len));
+		    (!disp->type && util_is_printable_string(data, len));
 	if (is_string) {
 		if (data[len - 1] != '\0') {
 			fprintf(stderr, "Unterminated string\n");
@@ -92,7 +92,8 @@ static int show_data(struct display_info *disp, const char *data, int len)
 		if (i)
 			printf(" ");
 		value = size == 4 ? fdt32_to_cpu(*(const uint32_t *)p) :
-			size == 2 ? (*p << 8) | p[1] : *p;
+			size == 2 ? (*p << 8) | p[1] :
+				    *p;
 		printf(fmt, value);
 	}
 	return 0;
@@ -124,7 +125,7 @@ static int list_properties(const void *blob, int node)
 	} while (1);
 }
 
-#define MAX_LEVEL	32		/* how deeply nested we will go */
+#define MAX_LEVEL 32 /* how deeply nested we will go */
 
 /**
  * List all subnodes in a node, one per line
@@ -135,11 +136,11 @@ static int list_properties(const void *blob, int node)
  */
 static int list_subnodes(const void *blob, int node)
 {
-	int nextoffset;		/* next node offset from libfdt */
-	uint32_t tag;		/* current tag */
-	int level = 0;		/* keep track of nesting level */
+	int nextoffset; /* next node offset from libfdt */
+	uint32_t tag; /* current tag */
+	int level = 0; /* keep track of nesting level */
 	const char *pathp;
-	int depth = 1;		/* the assumed depth of this node */
+	int depth = 1; /* the assumed depth of this node */
 
 	while (level >= 0) {
 		tag = fdt_next_tag(blob, node, &nextoffset);
@@ -150,7 +151,7 @@ static int list_subnodes(const void *blob, int node)
 				if (pathp == NULL)
 					pathp = "/* NULL pointer error */";
 				if (*pathp == '\0')
-					pathp = "/";	/* root is nameless */
+					pathp = "/"; /* root is nameless */
 				if (level == 1)
 					puts(pathp);
 			}
@@ -163,7 +164,7 @@ static int list_subnodes(const void *blob, int node)
 		case FDT_END_NODE:
 			level--;
 			if (level == 0)
-				level = -1;		/* exit the loop */
+				level = -1; /* exit the loop */
 			break;
 		case FDT_END:
 			return 1;
@@ -190,7 +191,7 @@ static int list_subnodes(const void *blob, int node)
  * @return 0 if ok, -ve on error
  */
 static int show_data_for_item(const void *blob, struct display_info *disp,
-		int node, const char *property)
+			      int node, const char *property)
 {
 	const void *value = NULL;
 	int len, err = 0;
@@ -275,9 +276,8 @@ static const char *usage_msg =
 	"\t-p\t\tList properties for each node\n"
 	"\t-l\t\tList subnodes for each node\n"
 	"\t-d\t\tDefault value to display when the property is "
-			"missing\n"
-	"\t-h\t\tPrint this help\n\n"
-	USAGE_TYPE_MSG;
+	"missing\n"
+	"\t-h\t\tPrint this help\n\n" USAGE_TYPE_MSG;
 
 static void usage(const char *msg)
 {
@@ -309,8 +309,7 @@ int main(int argc, char *argv[])
 			usage(NULL);
 
 		case 't':
-			if (utilfdt_decode_type(optarg, &disp.type,
-					&disp.size))
+			if (utilfdt_decode_type(optarg, &disp.type, &disp.size))
 				usage("Invalid type string");
 			break;
 

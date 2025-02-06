@@ -45,17 +45,17 @@ extern "C" {
 #endif
 
 /* 169.254.0.0 */
-#define AUTOIP_NET              0xA9FE0000
+#define AUTOIP_NET 0xA9FE0000
 /* 169.254.1.0 */
-#define AUTOIP_RANGE_START      (AUTOIP_NET | 0x0100)
+#define AUTOIP_RANGE_START (AUTOIP_NET | 0x0100)
 /* 169.254.254.255 */
-#define AUTOIP_RANGE_END        (AUTOIP_NET | 0xFEFF)
+#define AUTOIP_RANGE_END (AUTOIP_NET | 0xFEFF)
 
 /* AutoIP client states */
 typedef enum {
-  AUTOIP_STATE_OFF,
-  AUTOIP_STATE_CHECKING,
-  AUTOIP_STATE_BOUND
+	AUTOIP_STATE_OFF,
+	AUTOIP_STATE_CHECKING,
+	AUTOIP_STATE_BOUND
 } autoip_state_enum_t;
 
 #ifdef __cplusplus

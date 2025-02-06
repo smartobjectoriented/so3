@@ -4,7 +4,7 @@
 
 #include "lkc.h"
 
-#define P(name,type,arg)	type (*name ## _p) arg
+#define P(name, type, arg) type(*name##_p) arg
 #include "lkc_proto.h"
 #undef P
 
@@ -22,14 +22,14 @@ void kconfig_load(void)
 		}
 	}
 
-#define P(name,type,arg)			\
-{						\
-	name ## _p = dlsym(handle, #name);	\
-        if ((error = dlerror()))  {		\
-                fprintf(stderr, "%s\n", error);	\
-		exit(1);			\
-	}					\
-}
+#define P(name, type, arg)                              \
+	{                                               \
+		name##_p = dlsym(handle, #name);        \
+		if ((error = dlerror())) {              \
+			fprintf(stderr, "%s\n", error); \
+			exit(1);                        \
+		}                                       \
+	}
 #include "lkc_proto.h"
 #undef P
 }

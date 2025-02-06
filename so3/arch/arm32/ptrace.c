@@ -24,22 +24,23 @@
  * Can be used for debugging purposes.
  *
  */
-void __dump_regs(void *regs) {
-	unsigned long *cpuregs = (unsigned long *) regs;
+void __dump_regs(void *regs)
+{
+	unsigned long *cpuregs = (unsigned long *)regs;
 
 	printk("r4: %x ", *cpuregs);
-	printk("r5: %x ", *(cpuregs+1));
-	printk("r6: %x ", *(cpuregs+2));
-	printk("r7: %x ", *(cpuregs+3));
-	printk("r8: %x ", *(cpuregs+4));
-	printk("r9: %x ", *(cpuregs+5));
-	printk("r10: %x ", *(cpuregs+6));
-	printk("fp: %x ", *(cpuregs+7));
-	printk("ip: %x ", *(cpuregs+8));
-	printk("sp: %x ", *(cpuregs+9));
-	printk("lr: %x ", *(cpuregs+10));
-	printk("pc: %x ", *(cpuregs+11));
-	printk("psr: %x ", *(cpuregs+12));
+	printk("r5: %x ", *(cpuregs + 1));
+	printk("r6: %x ", *(cpuregs + 2));
+	printk("r7: %x ", *(cpuregs + 3));
+	printk("r8: %x ", *(cpuregs + 4));
+	printk("r9: %x ", *(cpuregs + 5));
+	printk("r10: %x ", *(cpuregs + 6));
+	printk("fp: %x ", *(cpuregs + 7));
+	printk("ip: %x ", *(cpuregs + 8));
+	printk("sp: %x ", *(cpuregs + 9));
+	printk("lr: %x ", *(cpuregs + 10));
+	printk("pc: %x ", *(cpuregs + 11));
+	printk("psr: %x ", *(cpuregs + 12));
 	printk("\n");
 }
 
@@ -47,7 +48,8 @@ void __dump_regs(void *regs) {
  * Update the CPU registers of the TCB belonging
  * to the current thread.
  */
-void update_cpu_regs(void) {
+void update_cpu_regs(void)
+{
 	register uint32_t __r0 asm("r0");
 	register uint32_t __r1 asm("r1");
 	register uint32_t __r2 asm("r2");
@@ -81,7 +83,6 @@ void update_cpu_regs(void) {
 	uint32_t r13 = __r13;
 	uint32_t r14 = __r14;
 
-
 	/* Finally update the tcb structure */
 	tcb_t *tcb = current();
 
@@ -102,8 +103,8 @@ void update_cpu_regs(void) {
 	tcb->cpu_regs.lr = r14;
 }
 
-void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb) {
-
+void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb)
+{
 	uregs->regs.uregs[0] = pcb->main_thread->cpu_regs.r0;
 	uregs->regs.uregs[1] = pcb->main_thread->cpu_regs.r1;
 	uregs->regs.uregs[2] = pcb->main_thread->cpu_regs.r2;
@@ -119,5 +120,4 @@ void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb) {
 	uregs->regs.uregs[12] = pcb->main_thread->cpu_regs.ip;
 	uregs->regs.uregs[13] = pcb->main_thread->cpu_regs.sp;
 	uregs->regs.uregs[14] = pcb->main_thread->cpu_regs.lr;
-
 }

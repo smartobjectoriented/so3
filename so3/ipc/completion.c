@@ -29,7 +29,8 @@
  * IRQs are disabled to maintain a coherent state, especially along the waiting path (no schedule are allowed).
  * This function can *not* be called from an interrupt context.
  */
-void wait_for_completion(completion_t *completion) {
+void wait_for_completion(completion_t *completion)
+{
 	queue_thread_t q_tcb;
 	unsigned long flags;
 
@@ -45,7 +46,6 @@ void wait_for_completion(completion_t *completion) {
 
 		while (!completion->count)
 			waiting();
-
 	}
 	completion->count--;
 
@@ -56,7 +56,8 @@ void wait_for_completion(completion_t *completion) {
  * Wake a thread waiting on a completion.
  * IRQs are disabled; this function can be safely called from an interrupt context.
  */
-void complete(completion_t *completion) {
+void complete(completion_t *completion)
+{
 	queue_thread_t *curr;
 	unsigned long flags;
 
@@ -65,7 +66,8 @@ void complete(completion_t *completion) {
 	completion->count++;
 
 	if (!list_empty(&completion->tcb_list)) {
-		curr = list_first_entry(&completion->tcb_list, queue_thread_t, list);
+		curr = list_first_entry(&completion->tcb_list, queue_thread_t,
+					list);
 		ready(curr->tcb);
 		list_del(&curr->list);
 	}
@@ -74,7 +76,6 @@ void complete(completion_t *completion) {
 	raise_softirq(SCHEDULE_SOFTIRQ);
 
 	local_irq_restore(flags);
-
 }
 
 /*
@@ -83,7 +84,8 @@ void complete(completion_t *completion) {
  * so that a next call to wait_for_completion() will suspend the thread on this completion.
  * IRQs are disabled; this function can be safely called from an interrupt context.
  */
-void complete_all(completion_t *completion) {
+void complete_all(completion_t *completion)
+{
 	queue_thread_t *curr, *tmp;
 	unsigned long flags;
 
@@ -100,11 +102,10 @@ void complete_all(completion_t *completion) {
 	raise_softirq(SCHEDULE_SOFTIRQ);
 
 	local_irq_restore(flags);
-
 }
 
-void init_completion(completion_t *completion) {
-
+void init_completion(completion_t *completion)
+{
 	memset(completion, 0, sizeof(completion_t));
 
 	INIT_LIST_HEAD(&completion->tcb_list);

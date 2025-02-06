@@ -55,34 +55,34 @@ bool srcfile_pop(void);
 void srcfile_add_search_path(const char *dirname);
 
 struct srcpos {
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
-    struct srcfile_state *file;
-    struct srcpos *next;
+	int first_line;
+	int first_column;
+	int last_line;
+	int last_column;
+	struct srcfile_state *file;
+	struct srcpos *next;
 };
 
 #define YYLTYPE struct srcpos
 
-#define YYLLOC_DEFAULT(Current, Rhs, N)						\
-	do {									\
-		if (N) {							\
-			(Current).first_line = YYRHSLOC(Rhs, 1).first_line;	\
-			(Current).first_column = YYRHSLOC(Rhs, 1).first_column;	\
-			(Current).last_line = YYRHSLOC(Rhs, N).last_line;	\
-			(Current).last_column  = YYRHSLOC (Rhs, N).last_column;	\
-			(Current).file = YYRHSLOC(Rhs, N).file;			\
-		} else {							\
-			(Current).first_line = (Current).last_line =		\
-				YYRHSLOC(Rhs, 0).last_line;			\
-			(Current).first_column = (Current).last_column =	\
-				YYRHSLOC(Rhs, 0).last_column;			\
-			(Current).file = YYRHSLOC (Rhs, 0).file;		\
-		}								\
-		(Current).next = NULL;						\
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                       \
+	do {                                                                  \
+		if (N) {                                                      \
+			(Current).first_line = YYRHSLOC(Rhs, 1).first_line;   \
+			(Current).first_column =                              \
+				YYRHSLOC(Rhs, 1).first_column;                \
+			(Current).last_line = YYRHSLOC(Rhs, N).last_line;     \
+			(Current).last_column = YYRHSLOC(Rhs, N).last_column; \
+			(Current).file = YYRHSLOC(Rhs, N).file;               \
+		} else {                                                      \
+			(Current).first_line = (Current).last_line =          \
+				YYRHSLOC(Rhs, 0).last_line;                   \
+			(Current).first_column = (Current).last_column =      \
+				YYRHSLOC(Rhs, 0).last_column;                 \
+			(Current).file = YYRHSLOC(Rhs, 0).file;               \
+		}                                                             \
+		(Current).next = NULL;                                        \
 	} while (0)
-
 
 extern void srcpos_update(struct srcpos *pos, const char *text, int len);
 extern struct srcpos *srcpos_copy(struct srcpos *pos);
@@ -92,9 +92,8 @@ extern char *srcpos_string(struct srcpos *pos);
 extern char *srcpos_string_first(struct srcpos *pos, int level);
 extern char *srcpos_string_last(struct srcpos *pos, int level);
 
-
 extern void PRINTF(3, 0) srcpos_verror(struct srcpos *pos, const char *prefix,
-					const char *fmt, va_list va);
+				       const char *fmt, va_list va);
 extern void PRINTF(3, 4) srcpos_error(struct srcpos *pos, const char *prefix,
 				      const char *fmt, ...);
 

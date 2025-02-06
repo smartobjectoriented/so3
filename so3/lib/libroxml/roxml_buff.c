@@ -19,7 +19,8 @@ ROXML_INT int roxml_read_buff(int pos, int size, char *buffer, node_t *node)
 	char *r1 = buffer;
 	char const *r2 = node->src.buf + pos;
 
-	while (size-- && (*r1++ = *r2++)) ;
+	while (size-- && (*r1++ = *r2++))
+		;
 
 	ret_len = r1 - buffer;
 
@@ -31,7 +32,8 @@ ROXML_INT void roxml_close_buff(node_t *n)
 	return;
 }
 
-ROXML_INT int roxml_parse_buff(roxml_load_ctx_t *context, roxml_parser_item_t *parser, char *buffer)
+ROXML_INT int roxml_parse_buff(roxml_load_ctx_t *context,
+			       roxml_parser_item_t *parser, char *buffer)
 {
 	int ret = 0;
 
@@ -52,7 +54,8 @@ ROXML_API node_t *roxml_load_buf(char *buffer)
 		return NULL;
 	}
 
-	current_node = roxml_create_node(0, buffer, ROXML_ELM_NODE | ROXML_BUFF);
+	current_node =
+		roxml_create_node(0, buffer, ROXML_ELM_NODE | ROXML_BUFF);
 
 	return roxml_load(current_node, NULL, buffer);
 }

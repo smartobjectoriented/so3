@@ -36,7 +36,8 @@ ROXML_API node_t *roxml_get_next_sibling(node_t *n)
 	if (n == ROXML_INVALID_DOC)
 		return ROXML_INVALID_DOC;
 
-	while (n->sibl && (n->sibl->type & ROXML_NODE_TYPES) != ROXML_ELM_NODE) {
+	while (n->sibl &&
+	       (n->sibl->type & ROXML_NODE_TYPES) != ROXML_ELM_NODE) {
 		n = n->sibl;
 	}
 	return n->sibl;

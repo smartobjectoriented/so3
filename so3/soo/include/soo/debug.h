@@ -27,22 +27,24 @@
 /*
  * force_print() is able to manage if the function is called from the kernel or the user space
 */
-#define DBG(fmt, ...) \
-	do { \
-		force_print("%s:%i > "fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+#define DBG(fmt, ...)                                               \
+	do {                                                        \
+		force_print("%s:%i > " fmt, __FUNCTION__, __LINE__, \
+			    ##__VA_ARGS__);                         \
 	} while (0)
 
 /* rtdm_printk() is broken for the time being. Use lprintk() instead.
  * One can safely switch back to rtdm_printk() once the issues are solved. */
-#define RTDBG(fmt, ...) \
-	do { \
-		force_print("%s:%i > "fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+#define RTDBG(fmt, ...)                                             \
+	do {                                                        \
+		force_print("%s:%i > " fmt, __FUNCTION__, __LINE__, \
+			    ##__VA_ARGS__);                         \
 	} while (0)
 
 #define DBG0(...) DBG("%s", ##__VA_ARGS__)
 
-#define DBG_BUFFER(buffer, ...) \
-	do { \
+#define DBG_BUFFER(buffer, ...)                        \
+	do {                                           \
 		lprintk_buffer(buffer, ##__VA_ARGS__); \
 	} while (0)
 

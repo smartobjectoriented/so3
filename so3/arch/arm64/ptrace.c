@@ -24,15 +24,16 @@
  * Can be used for debugging purposes.
  *
  */
-void __dump_regs(void *regs) {
-	unsigned long *cpuregs = (unsigned long *) regs;
-        int i;
+void __dump_regs(void *regs)
+{
+	unsigned long *cpuregs = (unsigned long *)regs;
+	int i;
 
-        printk("---------- CPU regs ----------\n");
+	printk("---------- CPU regs ----------\n");
 
-        for (i = 0; i <= 30; i++)
-                printk("x%d =  %x\n", i, *(cpuregs+i));
-                
+	for (i = 0; i <= 30; i++)
+		printk("x%d =  %x\n", i, *(cpuregs + i));
+
 	printk("\n");
 }
 
@@ -40,10 +41,10 @@ void __dump_regs(void *regs) {
  * Update the CPU registers of the TCB belonging
  * to the current thread.
  */
-void update_cpu_regs(void) {
-
+void update_cpu_regs(void)
+{
 }
 
-void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb) {
-
+void retrieve_cpu_regs(struct user *uregs, pcb_t *pcb)
+{
 }

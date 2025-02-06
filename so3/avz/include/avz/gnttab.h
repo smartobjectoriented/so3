@@ -24,18 +24,16 @@
 #include <soo/uapi/soo.h>
 
 struct gnttab {
+	struct list_head list; /* List of grant pages */
 
-        struct list_head list;  /* List of grant pages */
+	domid_t origin_domid; /* Domain which provides the grant */
+	domid_t target_domid; /* Target domain (granted to) */
 
-        domid_t origin_domid; /* Domain which provides the grant */
-        domid_t target_domid; /* Target domain (granted to) */
+	/* (Real) physical frame number to be granted */
+	addr_t pfn;
 
-        /* (Real) physical frame number to be granted */
-        addr_t pfn;
-
-        /* Unique ref ID used by the domain which refers to this page */
-        grant_ref_t ref;
-        
+	/* Unique ref ID used by the domain which refers to this page */
+	grant_ref_t ref;
 };
 typedef struct gnttab gnttab_t;
 
@@ -44,6 +42,3 @@ void do_gnttab(gnttab_op_t *args);
 addr_t map_vbstore_pfn(int target_domid, int pfn);
 
 #endif /* GNTTAB_H */
-
-
-

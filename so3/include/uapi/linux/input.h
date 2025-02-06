@@ -25,6 +25,3 @@ struct input_event {
 };
 
 #endif /* INPUT_H */
-
-
-

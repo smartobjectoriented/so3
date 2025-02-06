@@ -17,7 +17,6 @@
  *
  */
 
-
 #if 0
 #define DEBUG
 #endif
@@ -33,11 +32,11 @@
 #include <device/timer.h>
 #include <device/serial.h>
 
-#define TYPE_FILE	0
-#define TYPE_FOLDER	1
+#define TYPE_FILE 0
+#define TYPE_FOLDER 1
 
-#define MOUNT_LATER	0
-#define MOUNT_NOW	1
+#define MOUNT_LATER 0
+#define MOUNT_NOW 1
 
 /*
  * The epoch of FAT timestamp is 1980.
@@ -49,25 +48,24 @@
  * time:  5 - 10: min	(0 -  59)
  * time: 11 - 15: hour	(0 -  23)
  */
-#define SECS_PER_MIN	60
-#define SECS_PER_HOUR	(60 * 60)
-#define SECS_PER_DAY	(SECS_PER_HOUR * 24)
+#define SECS_PER_MIN 60
+#define SECS_PER_HOUR (60 * 60)
+#define SECS_PER_DAY (SECS_PER_HOUR * 24)
 /* days between 1.1.70 and 1.1.80 (2 leap days) */
-#define DAYS_DELTA	(365 * 10 + 2)
+#define DAYS_DELTA (365 * 10 + 2)
 /* 120 (2100 - 1980) isn't leap year */
-#define YEAR_2100	120
-#define IS_LEAP_YEAR(y)	(!((y) & 3) && (y) != YEAR_2100)
+#define YEAR_2100 120
+#define IS_LEAP_YEAR(y) (!((y) & 3) && (y) != YEAR_2100)
 
 /* Linear day numbers of the respective 1sts in non-leap years. */
 static time_t days_in_year[] = {
 	/* Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec */
-	0,   0,  31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334, 0, 0, 0,
+	0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0, 0, 0,
 };
-
 
 struct stream {
 	struct dirent entry;
-	DIR	dir_ctx;
+	DIR dir_ctx;
 };
 
 struct fat_entry {
@@ -120,7 +118,6 @@ static int open_fat_file(int fd, const char *path, struct fat_entry *ptrent)
 		return -rc;
 	}
 
-
 	return 0;
 }
 
@@ -134,7 +131,7 @@ static void last_delim_remove(char *path)
 		return;
 	}
 
-	while (path[len] == '/')  {
+	while (path[len] == '/') {
 		if (&path[len] == path) {
 			break;
 		}
@@ -145,26 +142,27 @@ static void last_delim_remove(char *path)
 }
 
 /* This function was in part taken from linux */
-static void time_fat_fat2so3(unsigned short date, unsigned short time, struct timespec *ts)
+static void time_fat_fat2so3(unsigned short date, unsigned short time,
+			     struct timespec *ts)
 {
 	time_t second, day, leap_day, month, year;
 
-	year  = date >> 9;
+	year = date >> 9;
 	month = max(1, (date >> 5) & 0xf);
-	day   = max(1, date & 0x1f) - 1;
+	day = max(1, date & 0x1f) - 1;
 
 	leap_day = (year + 3) / 4;
-	if (year > YEAR_2100)		/* 2100 isn't leap year */
+	if (year > YEAR_2100) /* 2100 isn't leap year */
 		leap_day--;
 	if (IS_LEAP_YEAR(year) && month > 2)
 		leap_day++;
 
-	second =  (time & 0x1f) << 1;
+	second = (time & 0x1f) << 1;
 	second += ((time >> 5) & 0x3f) * SECS_PER_MIN;
 	second += (time >> 11) * SECS_PER_HOUR;
-	second += (year * 365 + leap_day
-		   + days_in_year[month] + day
-		   + DAYS_DELTA) * SECS_PER_DAY;
+	second += (year * 365 + leap_day + days_in_year[month] + day +
+		   DAYS_DELTA) *
+		  SECS_PER_DAY;
 
 #if 0
 	if (!sbi->options.tz_set)
@@ -173,13 +171,13 @@ static void time_fat_fat2so3(unsigned short date, unsigned short time, struct ti
 		second -= sbi->options.time_offset * SECS_PER_MIN;
 #endif
 
-		ts->tv_sec = second;
-		ts->tv_nsec = 0;
+	ts->tv_sec = second;
+	ts->tv_nsec = 0;
 }
 
 int fat_read(int fd, void *buffer, int count)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
+	struct fat_entry *ptrent = (struct fat_entry *)vfs_get_priv(fd);
 	int rc = 0;
 	int bread = 0;
 
@@ -192,7 +190,8 @@ int fat_read(int fd, void *buffer, int count)
 		return -EINVAL;
 	}
 
-	if ((rc = f_read(&ptrent->entry.file, buffer, count, (unsigned *) &bread))) {
+	if ((rc = f_read(&ptrent->entry.file, buffer, count,
+			 (unsigned *)&bread))) {
 		return -rc;
 	}
 
@@ -201,7 +200,7 @@ int fat_read(int fd, void *buffer, int count)
 
 int fat_write(int fd, const void *buffer, int count)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
+	struct fat_entry *ptrent = (struct fat_entry *)vfs_get_priv(fd);
 	int rc = 0;
 	int bwritten = 0;
 
@@ -214,7 +213,8 @@ int fat_write(int fd, const void *buffer, int count)
 		return -EINVAL;
 	}
 
-	if ((rc = f_write(&ptrent->entry.file, buffer, count, (unsigned *) &bwritten))) {
+	if ((rc = f_write(&ptrent->entry.file, buffer, count,
+			  (unsigned *)&bwritten))) {
 		return -rc;
 	}
 
@@ -233,30 +233,30 @@ int fat_open(int fd, const char *path)
 	int rc;
 	uint32_t open_flags = vfs_get_open_mode(fd);
 
-	ptrent = (struct fat_entry *) malloc(sizeof(struct fat_entry));
+	ptrent = (struct fat_entry *)malloc(sizeof(struct fat_entry));
 	if (!ptrent) {
 		printk("%s: heap overflow...\n", __func__);
 		kernel_panic();
 	}
 
-	switch (open_flags & O_DIRECTORY){
-		case O_DIRECTORY:
-			/* This is a directory */
-			last_delim_remove((char *) path);
-			if ((rc = f_opendir(&ptrent->entry.dir.dir_ctx, path))) {
-				goto open_fail;
-			}
+	switch (open_flags & O_DIRECTORY) {
+	case O_DIRECTORY:
+		/* This is a directory */
+		last_delim_remove((char *)path);
+		if ((rc = f_opendir(&ptrent->entry.dir.dir_ctx, path))) {
+			goto open_fail;
+		}
 
-			ptrent->tentry =  TYPE_FOLDER;
-			break;
-		default:
-			/* Default is a file */
-			if ((rc = open_fat_file(fd, path, ptrent))) {
-				goto open_fail;
-			}
+		ptrent->tentry = TYPE_FOLDER;
+		break;
+	default:
+		/* Default is a file */
+		if ((rc = open_fat_file(fd, path, ptrent))) {
+			goto open_fail;
+		}
 
-			ptrent->tentry =  TYPE_FILE;
-			break;
+		ptrent->tentry = TYPE_FILE;
+		break;
 	}
 
 	vfs_set_priv(fd, (void *)ptrent);
@@ -270,21 +270,21 @@ open_fail:
 int fat_close(int fd)
 {
 	int rc;
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
+	struct fat_entry *ptrent = (struct fat_entry *)vfs_get_priv(fd);
 
 	switch (ptrent->tentry) {
-		case TYPE_FILE:
-			if ((rc = f_close(&ptrent->entry.file))) {
-				return -rc;
-			}
-			break;
-		case TYPE_FOLDER:
-			if ((rc = f_closedir(&ptrent->entry.dir.dir_ctx))) {
-				return -rc;
-			}
-			break;
-		default:
-			return -EBADFD;
+	case TYPE_FILE:
+		if ((rc = f_close(&ptrent->entry.file))) {
+			return -rc;
+		}
+		break;
+	case TYPE_FOLDER:
+		if ((rc = f_closedir(&ptrent->entry.dir.dir_ctx))) {
+			return -rc;
+		}
+		break;
+	default:
+		return -EBADFD;
 	}
 
 	free(ptrent);
@@ -296,10 +296,12 @@ int fat_mount(const char *mount_point)
 	int i;
 	int rc = 0;
 
-	for(i = 0; i < ARRAY_SIZE(volumes); i++) {
+	for (i = 0; i < ARRAY_SIZE(volumes); i++) {
 		if (!volumes[i].mounted) {
-			if((rc = f_mount(&volumes[i].mp, mount_point, MOUNT_NOW))) {
-				DBG("Error %d while mounting volume %s\n", rc, mount_point);
+			if ((rc = f_mount(&volumes[i].mp, mount_point,
+					  MOUNT_NOW))) {
+				DBG("Error %d while mounting volume %s\n", rc,
+				    mount_point);
 				return -rc;
 			}
 
@@ -318,7 +320,7 @@ int fat_unmount(const char *mount_point)
 
 struct dirent *fat_readdir(int fd)
 {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
+	struct fat_entry *ptrent = (struct fat_entry *)vfs_get_priv(fd);
 	struct dirent *dent;
 	DIR *tmp_dir;
 	FILINFO fno;
@@ -353,7 +355,7 @@ struct dirent *fat_readdir(int fd)
 
 	strcpy(dent->d_name, fn);
 
-	return (void *) dent;
+	return (void *)dent;
 }
 
 int fat_unlink(int fd, const char *path)
@@ -383,7 +385,6 @@ int fat_stat(const char *path, struct stat *st)
 	strcpy(st->st_name, path);
 	st->st_size = finfo.fsize;
 
-
 	return res;
 }
 
@@ -393,12 +394,12 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
 	int rc;
 
 	switch (cmd) {
-		case TIOCGWINSZ:
-			rc = serial_gwinsize((struct winsize *) args);
-			break;
-		default:
-			rc = -1;
-			break;
+	case TIOCGWINSZ:
+		rc = serial_gwinsize((struct winsize *)args);
+		break;
+	default:
+		rc = -1;
+		break;
 	}
 
 	return rc;
@@ -418,8 +419,9 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
  * from the beginning of the file.  On error, the value (off_t) -1 is returned and errno is set to indicate the error.
  *
  */
-static off_t fat_lseek(int fd, off_t off, int whence) {
-	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
+static off_t fat_lseek(int fd, off_t off, int whence)
+{
+	struct fat_entry *ptrent = (struct fat_entry *)vfs_get_priv(fd);
 	off_t ret;
 	uint32_t eof, cur;
 
@@ -430,67 +432,63 @@ static off_t fat_lseek(int fd, off_t off, int whence) {
 	cur = ptrent->entry.file.fptr;
 
 	switch (whence) {
-		case SEEK_END:
-			off += eof;
-			break;
+	case SEEK_END:
+		off += eof;
+		break;
 
-		case SEEK_CUR:
-			/*
+	case SEEK_CUR:
+		/*
 			 * Here we special-case the lseek(fd, 0, SEEK_CUR)
 			 * position-querying operation.  Avoid rewriting the "same"
 			 * f_pos value back to the file because a concurrent read(),
 			 * write() or lseek() might have altered it
 			 */
-			if (off == 0)
-				return ptrent->entry.file.fptr;
+		if (off == 0)
+			return ptrent->entry.file.fptr;
 
-			off += cur;
-			if (off >= eof) {
-				set_errno(EINVAL);
-				return -1;
-			}
-			break;
+		off += cur;
+		if (off >= eof) {
+			set_errno(EINVAL);
+			return -1;
+		}
+		break;
 
-		case SEEK_DATA:
-			if (off >= eof)
-				return -ENXIO;
-			break;
+	case SEEK_DATA:
+		if (off >= eof)
+			return -ENXIO;
+		break;
 
-		case SEEK_HOLE:
-			/*
+	case SEEK_HOLE:
+		/*
 			 * There is a virtual hole at the end of the file, so as long as
 			 * offset isn't i_size or larger, return i_size.
 			 */
-			if (off >= eof)
-				return -ENXIO;
-			off = eof;
-			break;
+		if (off >= eof)
+			return -ENXIO;
+		off = eof;
+		break;
 	}
 
 	ret = f_lseek(&ptrent->entry.file, off);
 	if (ret) {
 		set_errno(EINVAL);
-		return (off_t) -1;
+		return (off_t)-1;
 	}
 
 	return off;
 }
 
-static struct file_operations fatops = {
-	.open = fat_open,
-	.close = fat_close,
-	.read = fat_read,
-	.write = fat_write,
-	.mount = fat_mount,
-	.readdir = fat_readdir,
-	.stat = fat_stat,
-	.ioctl = fat_ioctl,
-	.lseek = fat_lseek
-};
+static struct file_operations fatops = { .open = fat_open,
+					 .close = fat_close,
+					 .read = fat_read,
+					 .write = fat_write,
+					 .mount = fat_mount,
+					 .readdir = fat_readdir,
+					 .stat = fat_stat,
+					 .ioctl = fat_ioctl,
+					 .lseek = fat_lseek };
 
 struct file_operations *register_fat(void)
 {
 	return &fatops;
 }
-
-

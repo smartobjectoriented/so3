@@ -29,7 +29,6 @@
 
 #include <avz/avz.h>
 
-
 /* ME ID related information management */
 
 /**
@@ -38,7 +37,8 @@
  *
  * @return a pointer to the string in the DT if it exists, NULL otherwise.
  */
-const char *get_me_shortdesc(void) {
+const char *get_me_shortdesc(void)
+{
 	const char *str = NULL;
 	int node;
 
@@ -57,7 +57,8 @@ const char *get_me_shortdesc(void) {
  *
  * @return a pointer to the string in the DT if it exists, NULL otherwise.
  */
-const char *get_me_name(void) {
+const char *get_me_name(void)
+{
 	const char *str = NULL;
 	int node;
 
@@ -77,7 +78,8 @@ const char *get_me_name(void) {
  * @param what  Either "spid"
  * @return SPID on 64-bit encoding
  */
-u64 get_spid(void) {
+u64 get_spid(void)
+{
 	u64 val;
 	int node;
 
@@ -100,18 +102,19 @@ u64 get_spid(void) {
 /**
  * Write the entries related to the ME ID in vbstore
  */
-void vbstore_ME_ID_populate(void) {
+void vbstore_ME_ID_populate(void)
+{
 	const char *name, *shortdesc;
-        u64 spid;
-        char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
+	u64 spid;
+	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
-        /* Set all ME ID related information */
+	/* Set all ME ID related information */
 
 	/* Set the SPID of this ME */
 	spid = get_spid();
-	 
+
 	avz_shared->dom_desc.u.ME.spid = spid;
- 
+
 	/* Set the name */
 	name = get_me_name();
 
@@ -130,6 +133,4 @@ void vbstore_ME_ID_populate(void) {
 
 	vbus_write(VBT_NIL, rootname, "name", name);
 	vbus_write(VBT_NIL, rootname, "shortdesc", shortdesc);
-
 }
-

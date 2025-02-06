@@ -26,13 +26,12 @@
  * The heap size is defined in the linker script (avz.lds)
  * The value must be strictly the same.
  */
-#define HEAP_SIZE 	(CONFIG_HEAP_SIZE * SZ_1M)
+#define HEAP_SIZE (CONFIG_HEAP_SIZE * SZ_1M)
 
-#define CHUNK_SIG	0xbeefdead
+#define CHUNK_SIG 0xbeefdead
 
 /* there's a list for each size. The size changes over the process lifetime. */
 struct mem_chunk {
-
 	/* Chunk signature to help identifying if a chunk has already be free'd or not. */
 	uint32_t sig;
 
@@ -60,16 +59,17 @@ struct mem_chunk {
 };
 typedef struct mem_chunk mem_chunk_t;
 
-
 #ifndef TRACKING
 void *malloc(size_t size);
 void *memalign(size_t size, unsigned int alignment);
 #else
-void *malloc_log(size_t size, const char *filename, const char *fname, const int line);
-void *memalign_log(size_t size, unsigned int alignment, const char *filename, const char *fname, const int line);
+void *malloc_log(size_t size, const char *filename, const char *fname,
+		 const int line);
+void *memalign_log(size_t size, unsigned int alignment, const char *filename,
+		   const char *fname, const int line);
 
 #define malloc(x) malloc_log(x, __FILE__, __func__, __LINE__)
-#define memalign(x,y) memalign_log(x, y, __FILE__, __func__, __LINE__)
+#define memalign(x, y) memalign_log(x, y, __FILE__, __func__, __LINE__)
 
 #endif
 
@@ -83,6 +83,5 @@ uint32_t heap_size(void);
 
 void heap_init(void);
 void dump_heap(const char *info);
-
 
 #endif /* HEAP_H */

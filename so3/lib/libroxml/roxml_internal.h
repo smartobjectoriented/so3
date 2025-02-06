@@ -36,9 +36,19 @@ extern int errno;
 
 /* PARSE_ERROR macro will raise an parsing error along with its reason */
 #ifdef VERBOSE_PARSING
-#define ROXML_PARSE_ERROR(str)        do { fprintf(stderr, "Parsing error at offset %d: %s\n", context->pos, str); errno = EINVAL; return -1; } while (0)
+#define ROXML_PARSE_ERROR(str)                                      \
+	do {                                                        \
+		fprintf(stderr, "Parsing error at offset %d: %s\n", \
+			context->pos, str);                         \
+		errno = EINVAL;                                     \
+		return -1;                                          \
+	} while (0)
 #else /* VERBOSE_PARSING */
-#define ROXML_PARSE_ERROR(str)        do { errno = EINVAL; return -1; } while (0);
+#define ROXML_PARSE_ERROR(str)  \
+	do {                    \
+		errno = EINVAL; \
+		return -1;      \
+	} while (0);
 #endif /* VERBOSE_PARSING */
 
 /* must be included first */

@@ -25,8 +25,7 @@
 
 #include <soo/vbus.h>
 
-enum vbus_msg_type
-{
+enum vbus_msg_type {
 	VBS_DIRECTORY,
 	VBS_DIRECTORY_EXISTS,
 	VBS_READ,
@@ -46,9 +45,8 @@ struct msgvec {
 };
 typedef struct msgvec msgvec_t;
 
-struct vbus_msg
-{
-	struct list_head list;   /* Used to store the msg into the standby list */
+struct vbus_msg {
+	struct list_head list; /* Used to store the msg into the standby list */
 
 	/* The next field *must* be allocated dynamically since the size of a struct completion depends
 	 * on SMP enabling.
@@ -57,17 +55,17 @@ struct vbus_msg
 		struct completion *reply_wait;
 	} u;
 
-	uint32_t type;  	/* vbus_msg type */
-	uint32_t len;   	/* Length of data following this. */
+	uint32_t type; /* vbus_msg type */
+	uint32_t len; /* Length of data following this. */
 
-	uint32_t id;		/* Unique msg ID (32-bit circular) */
-	uint32_t transactionID;	/* A non-zero value means we are in a transaction */
+	uint32_t id; /* Unique msg ID (32-bit circular) */
+	uint32_t transactionID; /* A non-zero value means we are in a transaction */
 
-	struct vbus_msg *reply; /* Refer to another vbus_msg message (case of the reply) */
+	struct vbus_msg *
+		reply; /* Refer to another vbus_msg message (case of the reply) */
 
 	/* Message content */
 	char *payload;
-
 };
 typedef struct vbus_msg vbus_msg_t;
 
@@ -82,7 +80,7 @@ struct vbstore_domain_interface {
 	volatile VBSTORE_RING_IDX req_cons, req_prod, req_pvt;
 	volatile VBSTORE_RING_IDX rsp_cons, rsp_prod, rsp_pvt;
 
-        domid_t domid;
+	domid_t domid;
 };
 typedef volatile struct vbstore_domain_interface vbstore_intf_t;
 
@@ -94,7 +92,7 @@ struct vbs_watcher {
 struct vbs_node {
 	struct list_head children; /* subtree */
 	struct list_head watchers;
-	struct list_head sibling;  /* at the same level */
+	struct list_head sibling; /* at the same level */
 	struct vbs_node *parent;
 	char *key;
 	void *value;
@@ -108,11 +106,13 @@ struct vbs_node *vbs_store_lookup(const char *key);
 void vbs_notify_watchers(vbus_msg_t vbus_msg, struct vbs_node *node);
 int vbs_store_read(const char *key, char **value, size_t size);
 int vbs_store_write(const char *key, const char *value);
-int vbs_store_write_notify(const char *key, const char *value, struct vbs_node **notify_node);
+int vbs_store_write_notify(const char *key, const char *value,
+			   struct vbs_node **notify_node);
 int vbs_store_mkdir(const char *key);
 int vbs_store_mkdir_notify(const char *key, struct vbs_node **notify_node);
 int vbs_store_rm(const char *key);
-int vbs_store_readdir(const char *key, char *children, const size_t size_children);
+int vbs_store_readdir(const char *key, char *children,
+		      const size_t size_children);
 int vbs_store_watch(const char *key, vbstore_intf_t *intf);
 int vbs_store_unwatch(const char *key, vbstore_intf_t *intf);
 

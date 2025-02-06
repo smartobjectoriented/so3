@@ -32,17 +32,17 @@ extern void secondary_startup(void);
 
 void smp_boot_secondary(unsigned int cpu)
 {
-	unsigned long secondary_startup_phys = (unsigned long) __pa((void *) secondary_startup);
+	unsigned long secondary_startup_phys =
+		(unsigned long)__pa((void *)secondary_startup);
 	void *intc_vaddr; /* We will add bytes to this pointer */
 
 	printk("%s: booting CPU: %d...\n", __func__, cpu);
 
-	intc_vaddr = (void *) io_map(LOCAL_INTC_PHYS, LOCAL_INTC_SIZE);
+	intc_vaddr = (void *)io_map(LOCAL_INTC_PHYS, LOCAL_INTC_SIZE);
 
-	iowrite32(intc_vaddr + LOCAL_MAILBOX3_SET0 + 16 * cpu, secondary_startup_phys);
+	iowrite32(intc_vaddr + LOCAL_MAILBOX3_SET0 + 16 * cpu,
+		  secondary_startup_phys);
 
 	dsb(sy);
 	sev();
 }
-
-

@@ -27,12 +27,11 @@
 typedef uint32_t mode_t;
 
 struct stat {
-	char	st_name[FILENAME_SIZE];		/* Filename */
-	unsigned long	st_size; 		/* Size of file */
-	time_t	st_mtim;			/* Time of last modification in sec*/
-	unsigned char	st_flags;		/* Regular file flag (not supported on fat) */
-	mode_t	st_mode;			/* Protection not used (not supported on fat) */
+	char st_name[FILENAME_SIZE]; /* Filename */
+	unsigned long st_size; /* Size of file */
+	time_t st_mtim; /* Time of last modification in sec*/
+	unsigned char st_flags; /* Regular file flag (not supported on fat) */
+	mode_t st_mode; /* Protection not used (not supported on fat) */
 };
-
 
 #endif /* STAT_H */

@@ -29,10 +29,10 @@
  */
 void printk(const char *fmt, ...)
 {
-	static char   buf[1024];
+	static char buf[1024];
 
-	va_list       args;
-	char         *p, *q;
+	va_list args;
+	char *p, *q;
 
 	va_start(args, fmt);
 	(void)vsnprintf(buf, sizeof(buf), fmt, args);
@@ -40,18 +40,15 @@ void printk(const char *fmt, ...)
 
 	p = buf;
 
-	while ((q = strchr(p, '\n')) != NULL)
-	{
+	while ((q = strchr(p, '\n')) != NULL) {
 		*q = '\0';
 
-		serial_write(p, strlen(p)+1);
+		serial_write(p, strlen(p) + 1);
 		serial_write("\n", 2);
 
 		p = q + 1;
 	}
 
 	if (*p != '\0')
-		serial_write(p, strlen(p)+1);
-
+		serial_write(p, strlen(p) + 1);
 }
-

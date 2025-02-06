@@ -54,7 +54,7 @@ void serial_puts(const char *s)
  */
 void console_init_post(void)
 {
-	__uart_vaddr = (addr_t) io_map(CONFIG_UART_LL_PADDR, PAGE_SIZE);
+	__uart_vaddr = (addr_t)io_map(CONFIG_UART_LL_PADDR, PAGE_SIZE);
 	BUG_ON(!__uart_vaddr);
 }
 
@@ -62,22 +62,21 @@ static void sercon_puts(const char *s)
 {
 	serial_puts(s);
 }
- 
+
 void do_console_io(console_t *console)
 {
 	switch (console->cmd) {
-		case CONSOLE_IO_KEYHANDLER:
-                        handle_keypress(console->u.c);
-                        break;
+	case CONSOLE_IO_KEYHANDLER:
+		handle_keypress(console->u.c);
+		break;
 
-                case CONSOLE_IO_PRINTCH:
-                        printch(console->u.c);
-                        break;
-		
-		case CONSOLE_IO_PRINTSTR:
-                        sercon_puts(console->u.str);
-                        break;
-			
+	case CONSOLE_IO_PRINTCH:
+		printch(console->u.c);
+		break;
+
+	case CONSOLE_IO_PRINTSTR:
+		sercon_puts(console->u.str);
+		break;
 	}
 }
 
@@ -93,13 +92,13 @@ static void __putstr(const char *str)
 }
 
 /* The console_lock must be hold. */
-static void __printk(char *buf) {
+static void __printk(char *buf)
+{
 	char *p, *q;
 
 	p = buf;
 
-	while ((q = strchr(p, '\n')) != NULL)
-	{
+	while ((q = strchr(p, '\n')) != NULL) {
 		*q = '\0';
 		__putstr(p);
 		__putstr("\n");
@@ -112,8 +111,8 @@ static void __printk(char *buf) {
 
 void printk(const char *fmt, ...)
 {
-	static char   buf[1024];
-	va_list       args;
+	static char buf[1024];
+	va_list args;
 
 	spin_lock(&console_lock);
 
@@ -127,9 +126,10 @@ void printk(const char *fmt, ...)
 }
 
 /* Just to keep compatibility with uapi/soo in Linux */
-void lprintk(char *fmt, ...) {
-	static char   buf[1024];
-	va_list       args;
+void lprintk(char *fmt, ...)
+{
+	static char buf[1024];
+	va_list args;
 
 	spin_lock(&console_lock);
 
@@ -142,7 +142,6 @@ void lprintk(char *fmt, ...) {
 	spin_unlock(&console_lock);
 }
 
-
 /**
  * Print the contents of a buffer.
  */
@@ -150,15 +149,16 @@ void printk_buffer(void *buffer, uint32_t n)
 {
 	uint32_t i;
 
-	for (i = 0 ; i < n ; i++)
-		printk("%02x ", ((char *) buffer)[i]);
+	for (i = 0; i < n; i++)
+		printk("%02x ", ((char *)buffer)[i]);
 	printk("\n");
 }
 
-void printk_buffer_separator(void *buffer, int n, char separator) {
+void printk_buffer_separator(void *buffer, int n, char separator)
+{
 	int i;
 
-	for (i = 0 ; i < n ; i++)
-		printk("%02x%c", ((char *) buffer)[i], separator);
+	for (i = 0; i < n; i++)
+		printk("%02x%c", ((char *)buffer)[i], separator);
 	printk("\n");
 }

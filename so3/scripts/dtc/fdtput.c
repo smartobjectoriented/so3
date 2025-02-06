@@ -16,18 +16,17 @@
 
 /* These are the operations we support */
 enum oper_type {
-	OPER_WRITE_PROP,		/* Write a property in a node */
-	OPER_CREATE_NODE,		/* Create a new node */
+	OPER_WRITE_PROP, /* Write a property in a node */
+	OPER_CREATE_NODE, /* Create a new node */
 };
 
 struct display_info {
-	enum oper_type oper;	/* operation to perform */
-	int type;		/* data type (s/i/u/x or 0 for default) */
-	int size;		/* data size (1/2/4) */
-	int verbose;		/* verbose output */
-	int auto_path;		/* automatically create all path components */
+	enum oper_type oper; /* operation to perform */
+	int type; /* data type (s/i/u/x or 0 for default) */
+	int size; /* data size (1/2/4) */
+	int verbose; /* verbose output */
+	int auto_path; /* automatically create all path components */
 };
-
 
 /**
  * Report an error with a particular node.
@@ -56,12 +55,12 @@ static void report_error(const char *name, int namelen, int err)
 static int encode_value(struct display_info *disp, char **arg, int arg_count,
 			char **valuep, int *value_len)
 {
-	char *value = NULL;	/* holding area for value */
-	int value_size = 0;	/* size of holding area */
-	char *ptr;		/* pointer to current value position */
-	int len;		/* length of this cell/string/byte */
+	char *value = NULL; /* holding area for value */
+	int value_size = 0; /* size of holding area */
+	char *ptr; /* pointer to current value position */
+	int len; /* length of this cell/string/byte */
 	int ival;
-	int upto;	/* the number of bytes we have written to buf */
+	int upto; /* the number of bytes we have written to buf */
 	char fmt[3];
 
 	upto = 0;
@@ -84,8 +83,10 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 			value_size = (upto + len) + 500;
 			value = realloc(value, value_size);
 			if (!value) {
-				fprintf(stderr, "Out of mmory: cannot alloc "
-					"%d bytes\n", value_size);
+				fprintf(stderr,
+					"Out of mmory: cannot alloc "
+					"%d bytes\n",
+					value_size);
 				return -1;
 			}
 		}
@@ -105,7 +106,8 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 			if (disp->verbose) {
 				fprintf(stderr, "\t%s: %d\n",
 					disp->size == 1 ? "byte" :
-					disp->size == 2 ? "short" : "int",
+					disp->size == 2 ? "short" :
+							  "int",
 					ival);
 			}
 		}
@@ -118,7 +120,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 }
 
 static int store_key_value(void *blob, const char *node_name,
-		const char *property, const char *buf, int len)
+			   const char *property, const char *buf, int len)
 {
 	int node;
 	int err;
@@ -164,7 +166,7 @@ static int create_paths(void *blob, const char *in_path)
 			sep = path + strlen(path);
 
 		node = fdt_subnode_offset_namelen(blob, offset, path,
-				sep - path);
+						  sep - path);
 		if (node == -FDT_ERR_NOTFOUND) {
 			node = fdt_add_subnode_namelen(blob, offset, path,
 						       sep - path);
@@ -219,7 +221,7 @@ static int create_node(void *blob, const char *node_name)
 }
 
 static int do_fdtput(struct display_info *disp, const char *filename,
-		    char **arg, int arg_count)
+		     char **arg, int arg_count)
 {
 	char *value;
 	char *blob;
@@ -239,7 +241,7 @@ static int do_fdtput(struct display_info *disp, const char *filename,
 		if (disp->auto_path && create_paths(blob, *arg))
 			return -1;
 		if (encode_value(disp, arg + 2, arg_count - 2, &value, &len) ||
-			store_key_value(blob, *arg, arg[1], value, len))
+		    store_key_value(blob, *arg, arg[1], value, len))
 			ret = -1;
 		break;
 	case OPER_CREATE_NODE:
@@ -271,8 +273,7 @@ static const char *usage_msg =
 	"\t-p\t\tAutomatically create nodes as needed for the node path\n"
 	"\t-t <type>\tType of data\n"
 	"\t-v\t\tVerbose: display each value decoded from command line\n"
-	"\t-h\t\tPrint this help\n\n"
-	USAGE_TYPE_MSG;
+	"\t-h\t\tPrint this help\n\n" USAGE_TYPE_MSG;
 
 static void usage(const char *msg)
 {
@@ -316,8 +317,7 @@ int main(int argc, char *argv[])
 			disp.auto_path = 1;
 			break;
 		case 't':
-			if (utilfdt_decode_type(optarg, &disp.type,
-					&disp.size))
+			if (utilfdt_decode_type(optarg, &disp.type, &disp.size))
 				usage("Invalid type string");
 			break;
 

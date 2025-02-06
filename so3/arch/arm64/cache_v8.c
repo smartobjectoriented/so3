@@ -41,36 +41,33 @@ void mmu_setup(void *pgtable)
 {
 	u64 attr, tcr;
 
-	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 | TCR_A1;
+	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 |
+	      TCR_A1;
 
 #ifdef CONFIG_VA_BITS_48
-	 tcr |= TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
+	tcr |= TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
 #elif CONFIG_VA_BITS_39
-	 tcr |= TCR_TxSZ(39) | (TCR_PS_BITS_1TB << TCR_IPS_SHIFT);
+	tcr |= TCR_TxSZ(39) | (TCR_PS_BITS_1TB << TCR_IPS_SHIFT);
 #else
 #error "Wrong VA_BITS configuration."
 #endif
 
 #ifdef CONFIG_AVZ
-	asm volatile("msr tcr_el2, %0" : : "r" (tcr) : "memory");
+	asm volatile("msr tcr_el2, %0" : : "r"(tcr) : "memory");
 
 	/* Prepare the stage-2 configuration */
-	tcr =  VTCR_T0SZ_VAL(48) |
-		VTCR_SL0_L0 |
-		TCR_PS_BITS_256TB |
-		(TCR_ORGN0_WBWA << TCR_IRGN0_SHIFT) |
-		(TCR_ORGN0_WBWA << TCR_ORGN0_SHIFT) |
-		TCR_SH0_INNER |
-		VTCR_RES1;
+	tcr = VTCR_T0SZ_VAL(48) | VTCR_SL0_L0 | TCR_PS_BITS_256TB |
+	      (TCR_ORGN0_WBWA << TCR_IRGN0_SHIFT) |
+	      (TCR_ORGN0_WBWA << TCR_ORGN0_SHIFT) | TCR_SH0_INNER | VTCR_RES1;
 
-	asm volatile("msr vtcr_el2, %0" : : "r" (tcr) : "memory");
+	asm volatile("msr vtcr_el2, %0" : : "r"(tcr) : "memory");
 	asm volatile("isb");
 
 	attr = MAIR_EL2_SET;
 
 	asm volatile("dsb sy");
 
-	asm volatile("msr mair_el2, %0" : : "r" (attr) : "memory");
+	asm volatile("msr mair_el2, %0" : : "r"(attr) : "memory");
 
 	asm volatile("isb");
 
@@ -86,14 +83,14 @@ void mmu_setup(void *pgtable)
 	/* We need ttbr0 for mapping the devices which physical addresses
 	 * are in the user space range.
 	 */
-	asm volatile("msr ttbr0_el1, %0" : : "r" (pgtable) : "memory");
+	asm volatile("msr ttbr0_el1, %0" : : "r"(pgtable) : "memory");
 
 	/* For kernel mapping */
-	asm volatile("msr ttbr1_el1, %0" : : "r" (pgtable) : "memory");
+	asm volatile("msr ttbr1_el1, %0" : : "r"(pgtable) : "memory");
 
-	asm volatile("msr tcr_el1, %0" : : "r" (tcr) : "memory");
+	asm volatile("msr tcr_el1, %0" : : "r"(tcr) : "memory");
 
-	asm volatile("msr mair_el1, %0" : : "r" (attr) : "memory");
+	asm volatile("msr mair_el1, %0" : : "r"(attr) : "memory");
 
 	asm volatile("isb");
 
@@ -107,7 +104,6 @@ void mmu_setup(void *pgtable)
 	__asm_invalidate_tlb_all();
 
 #endif /* !CONFIG_ARM64VT */
-
 }
 
 /*
@@ -131,7 +127,8 @@ inline void flush_dcache_all(void)
 /*
  * Flush all TLBs on local CPU
  */
-inline void flush_tlb_all(void) {
+inline void flush_tlb_all(void)
+{
 	__flush_tlb_all();
 }
 
@@ -154,10 +151,10 @@ void flush_dcache_range(unsigned long start, unsigned long end)
 /*
  * Flush an individual PTE entry
  */
-void flush_pte_entry(addr_t va, u64 *pte) {
+void flush_pte_entry(addr_t va, u64 *pte)
+{
 	__asm_invalidate_tlb(va);
-	invalidate_dcache_range((u64) pte, (u64) (pte+1));
-
+	invalidate_dcache_range((u64)pte, (u64)(pte + 1));
 }
 
 void dcache_enable(void)
@@ -175,7 +172,7 @@ void dcache_disable(void)
 	if (!(sctlr & CR_C))
 		return;
 
-	set_sctlr(sctlr & ~(CR_C|CR_M));
+	set_sctlr(sctlr & ~(CR_C | CR_M));
 
 	flush_dcache_all();
 	__asm_invalidate_tlb_all();
@@ -206,9 +203,9 @@ void invalidate_icache_all(void)
 	__asm_invalidate_icache_all();
 }
 
-void mmu_page_table_flush(unsigned long start, unsigned long end) {
+void mmu_page_table_flush(unsigned long start, unsigned long end)
+{
 	flush_dcache_range(start, end);
 	flush_tlb_all();
 	__asm_invalidate_tlb_all();
 }
-

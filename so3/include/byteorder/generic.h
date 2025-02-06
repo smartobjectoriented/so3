@@ -76,7 +76,6 @@
  *
  */
 
-
 #if defined(__KERNEL__)
 /*
  * inside the kernel, we can use nicknames;
@@ -120,7 +119,6 @@
 #define be16_to_cpus __be16_to_cpus
 #endif
 
-
 /*
  * Handle ntohl and suches. These have various compatibility
  * issues - like we want to give the prototype even though we
@@ -144,16 +142,15 @@
  * Do the prototypes. Somebody might want to take the
  * address or some such sick thing..
  */
-#if defined(__KERNEL__) || (defined (__GLIBC__) && __GLIBC__ >= 2)
-extern __u32			ntohl(__u32);
-extern __u32			htonl(__u32);
+#if defined(__KERNEL__) || (defined(__GLIBC__) && __GLIBC__ >= 2)
+extern __u32 ntohl(__u32);
+extern __u32 htonl(__u32);
 #else
-extern unsigned long int	ntohl(unsigned long int);
-extern unsigned long int	htonl(unsigned long int);
+extern unsigned long int ntohl(unsigned long int);
+extern unsigned long int htonl(unsigned long int);
 #endif
-extern unsigned short int	ntohs(unsigned short int);
-extern unsigned short int	htons(unsigned short int);
-
+extern unsigned short int ntohs(unsigned short int);
+extern unsigned short int htons(unsigned short int);
 
 #if defined(__GNUC__) && (__GNUC__ >= 2)
 
@@ -162,7 +159,7 @@ extern unsigned short int	htons(unsigned short int);
 #define ___ntohl(x) __be32_to_cpu(x)
 #define ___ntohs(x) __be16_to_cpu(x)
 
-#if defined(__KERNEL__) || (defined (__GLIBC__) && __GLIBC__ >= 2)
+#if defined(__KERNEL__) || (defined(__GLIBC__) && __GLIBC__ >= 2)
 #define htonl(x) ___htonl(x)
 #define ntohl(x) ___ntohl(x)
 #else
@@ -173,6 +170,5 @@ extern unsigned short int	htons(unsigned short int);
 #define ntohs(x) ___ntohs(x)
 
 #endif /* OPTIMIZE */
-
 
 #endif /* BYTEORDER_GENERIC_H */

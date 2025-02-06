@@ -27,8 +27,7 @@
 
 void spin_lock(spinlock_t *lock)
 {
-	while (unlikely(!spin_trylock(lock)))
-	{
+	while (unlikely(!spin_trylock(lock))) {
 		while (likely(spin_is_locked(lock))) {
 			cpu_relax();
 		}
@@ -39,15 +38,12 @@ void spin_lock_irq(spinlock_t *lock)
 {
 	local_irq_disable();
 
-	while (unlikely(!spin_trylock(lock)))
-	{
-
+	while (unlikely(!spin_trylock(lock))) {
 		local_irq_enable();
 		while (likely(spin_is_locked(lock)))
 			cpu_relax();
 		local_irq_disable();
 	}
-
 }
 
 unsigned long spin_lock_irqsave(spinlock_t *lock)
@@ -56,9 +52,7 @@ unsigned long spin_lock_irqsave(spinlock_t *lock)
 
 	flags = local_irq_save();
 
-	while (unlikely(!spin_trylock(lock)))
-	{
-
+	while (unlikely(!spin_trylock(lock))) {
 		local_irq_restore(flags);
 		while (likely(spin_is_locked(lock)))
 			cpu_relax();
@@ -83,10 +77,11 @@ void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags)
 	local_irq_restore(flags);
 }
 
-
 void spin_barrier(spinlock_t *lock)
 {
-	do { smp_mb(); } while (spin_is_locked(lock));
+	do {
+		smp_mb();
+	} while (spin_is_locked(lock));
 
 	smp_mb();
 }

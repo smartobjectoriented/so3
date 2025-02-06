@@ -18,16 +18,16 @@
 
 typedef struct user_fpregs {
 	struct fp_reg {
-		unsigned sign1:1;
-		unsigned unused:15;
-		unsigned sign2:1;
-		unsigned exponent:14;
-		unsigned j:1;
-		unsigned mantissa1:31;
-		unsigned mantissa0:32;
+		unsigned sign1 : 1;
+		unsigned unused : 15;
+		unsigned sign2 : 1;
+		unsigned exponent : 14;
+		unsigned j : 1;
+		unsigned mantissa1 : 31;
+		unsigned mantissa0 : 32;
 	} fpregs[8];
-	unsigned fpsr:32;
-	unsigned fpcr:32;
+	unsigned fpsr : 32;
+	unsigned fpcr : 32;
 	unsigned char ftype[8];
 	unsigned int init_flag;
 } elf_fpregset_t;

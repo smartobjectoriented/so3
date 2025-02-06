@@ -27,23 +27,24 @@
 /**
  * Wait-free loop based on the jiffy_ref
  */
-void udelay(u64 us) {
-
+void udelay(u64 us)
+{
 	u64 __delay = 0ull, target;
 
 #warning review the way how to calculate the delay...
-	target = ((us / ((u64) 1000000ull / (u64) 100))) * jiffies_ref;
+	target = ((us / ((u64)1000000ull / (u64)100))) * jiffies_ref;
 
-	while (__delay < target) __delay++;
-
+	while (__delay < target)
+		__delay++;
 }
 
 /*
  * Timer callback which will awake the thread.
  * IRQs are off.
  */
-void delay_handler(void *arg) {
-	tcb_t *tcb = (tcb_t *) arg;
+void delay_handler(void *arg)
+{
+	tcb_t *tcb = (tcb_t *)arg;
 	/*
 	 * delay_handler may be called two ways differently; the first one (and more standard way)
 	 * is right after an interrupt context during the softirq action processing. In this case,
@@ -54,7 +55,6 @@ void delay_handler(void *arg) {
 	 */
 
 	if (tcb->state == THREAD_STATE_WAITING) {
-
 		/* If the thread is submitted to a waiting timeout,
 		 * the value is re-adjusted here.
 		 */
@@ -68,7 +68,8 @@ void delay_handler(void *arg) {
 	}
 }
 
-static void __sleep(u64 ns) {
+static void __sleep(u64 ns)
+{
 	struct timer __timer;
 	unsigned long flags;
 
@@ -82,7 +83,6 @@ static void __sleep(u64 ns) {
 
 	/* Put the thread in waiting state *only* if the timer still makes sense. */
 	if (__timer.status == TIMER_STATUS_in_list) {
-
 		waiting();
 
 		/* We are resumed, but not necessarly by the timer handler (in case of a semaphore timeout based synchronization
@@ -90,33 +90,34 @@ static void __sleep(u64 ns) {
 		 * In this case, we have to clean the timer.
 		 */
 		stop_timer(&__timer);
-
 	}
 
 	local_irq_restore(flags);
-
 }
 
 /*
  * Suspend the current thread during <ms> milliseconds.
  */
-void msleep(uint32_t ms) {
+void msleep(uint32_t ms)
+{
 	__sleep(MILLISECS(ms));
 }
 
 /*
  * Suspend the current thread during <us> microseconds.
  */
-void usleep(u64 us) {
+void usleep(u64 us)
+{
 	__sleep(MICROSECS(us));
 }
 
-void sleep(u64 ns) {
+void sleep(u64 ns)
+{
 	__sleep(ns);
 }
 
-int do_nanosleep(const struct timespec *req, struct timespec *rem) {
-
+int do_nanosleep(const struct timespec *req, struct timespec *rem)
+{
 	if (req->tv_nsec != 0)
 		__sleep(req->tv_nsec);
 	else if (req->tv_sec != 0)
@@ -124,4 +125,3 @@ int do_nanosleep(const struct timespec *req, struct timespec *rem) {
 
 	return 0;
 }
-

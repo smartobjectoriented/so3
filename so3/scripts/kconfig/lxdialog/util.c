@@ -58,83 +58,83 @@ static void set_mono_theme(void)
 	dlg.darrow.atr = A_BOLD;
 }
 
-#define DLG_COLOR(dialog, f, b, h) \
-do {                               \
-	dlg.dialog.fg = (f);       \
-	dlg.dialog.bg = (b);       \
-	dlg.dialog.hl = (h);       \
-} while (0)
+#define DLG_COLOR(dialog, f, b, h)   \
+	do {                         \
+		dlg.dialog.fg = (f); \
+		dlg.dialog.bg = (b); \
+		dlg.dialog.hl = (h); \
+	} while (0)
 
 static void set_classic_theme(void)
 {
-	DLG_COLOR(screen,                COLOR_CYAN,   COLOR_BLUE,   true);
-	DLG_COLOR(shadow,                COLOR_BLACK,  COLOR_BLACK,  true);
-	DLG_COLOR(dialog,                COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(title,                 COLOR_YELLOW, COLOR_WHITE,  true);
-	DLG_COLOR(border,                COLOR_WHITE,  COLOR_WHITE,  true);
-	DLG_COLOR(button_active,         COLOR_WHITE,  COLOR_BLUE,   true);
-	DLG_COLOR(button_inactive,       COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(button_key_active,     COLOR_WHITE,  COLOR_BLUE,   true);
-	DLG_COLOR(button_key_inactive,   COLOR_RED,    COLOR_WHITE,  false);
-	DLG_COLOR(button_label_active,   COLOR_YELLOW, COLOR_BLUE,   true);
-	DLG_COLOR(button_label_inactive, COLOR_BLACK,  COLOR_WHITE,  true);
-	DLG_COLOR(inputbox,              COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(inputbox_border,       COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(searchbox,             COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(searchbox_title,       COLOR_YELLOW, COLOR_WHITE,  true);
-	DLG_COLOR(searchbox_border,      COLOR_WHITE,  COLOR_WHITE,  true);
-	DLG_COLOR(position_indicator,    COLOR_YELLOW, COLOR_WHITE,  true);
-	DLG_COLOR(menubox,               COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(menubox_border,        COLOR_WHITE,  COLOR_WHITE,  true);
-	DLG_COLOR(item,                  COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(item_selected,         COLOR_WHITE,  COLOR_BLUE,   true);
-	DLG_COLOR(tag,                   COLOR_YELLOW, COLOR_WHITE,  true);
-	DLG_COLOR(tag_selected,          COLOR_YELLOW, COLOR_BLUE,   true);
-	DLG_COLOR(tag_key,               COLOR_YELLOW, COLOR_WHITE,  true);
-	DLG_COLOR(tag_key_selected,      COLOR_YELLOW, COLOR_BLUE,   true);
-	DLG_COLOR(check,                 COLOR_BLACK,  COLOR_WHITE,  false);
-	DLG_COLOR(check_selected,        COLOR_WHITE,  COLOR_BLUE,   true);
-	DLG_COLOR(uarrow,                COLOR_GREEN,  COLOR_WHITE,  true);
-	DLG_COLOR(darrow,                COLOR_GREEN,  COLOR_WHITE,  true);
+	DLG_COLOR(screen, COLOR_CYAN, COLOR_BLUE, true);
+	DLG_COLOR(shadow, COLOR_BLACK, COLOR_BLACK, true);
+	DLG_COLOR(dialog, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(title, COLOR_YELLOW, COLOR_WHITE, true);
+	DLG_COLOR(border, COLOR_WHITE, COLOR_WHITE, true);
+	DLG_COLOR(button_active, COLOR_WHITE, COLOR_BLUE, true);
+	DLG_COLOR(button_inactive, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(button_key_active, COLOR_WHITE, COLOR_BLUE, true);
+	DLG_COLOR(button_key_inactive, COLOR_RED, COLOR_WHITE, false);
+	DLG_COLOR(button_label_active, COLOR_YELLOW, COLOR_BLUE, true);
+	DLG_COLOR(button_label_inactive, COLOR_BLACK, COLOR_WHITE, true);
+	DLG_COLOR(inputbox, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(inputbox_border, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(searchbox, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(searchbox_title, COLOR_YELLOW, COLOR_WHITE, true);
+	DLG_COLOR(searchbox_border, COLOR_WHITE, COLOR_WHITE, true);
+	DLG_COLOR(position_indicator, COLOR_YELLOW, COLOR_WHITE, true);
+	DLG_COLOR(menubox, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(menubox_border, COLOR_WHITE, COLOR_WHITE, true);
+	DLG_COLOR(item, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(item_selected, COLOR_WHITE, COLOR_BLUE, true);
+	DLG_COLOR(tag, COLOR_YELLOW, COLOR_WHITE, true);
+	DLG_COLOR(tag_selected, COLOR_YELLOW, COLOR_BLUE, true);
+	DLG_COLOR(tag_key, COLOR_YELLOW, COLOR_WHITE, true);
+	DLG_COLOR(tag_key_selected, COLOR_YELLOW, COLOR_BLUE, true);
+	DLG_COLOR(check, COLOR_BLACK, COLOR_WHITE, false);
+	DLG_COLOR(check_selected, COLOR_WHITE, COLOR_BLUE, true);
+	DLG_COLOR(uarrow, COLOR_GREEN, COLOR_WHITE, true);
+	DLG_COLOR(darrow, COLOR_GREEN, COLOR_WHITE, true);
 }
 
 static void set_blackbg_theme(void)
 {
-	DLG_COLOR(screen, COLOR_RED,   COLOR_BLACK, true);
+	DLG_COLOR(screen, COLOR_RED, COLOR_BLACK, true);
 	DLG_COLOR(shadow, COLOR_BLACK, COLOR_BLACK, false);
 	DLG_COLOR(dialog, COLOR_WHITE, COLOR_BLACK, false);
-	DLG_COLOR(title,  COLOR_RED,   COLOR_BLACK, false);
+	DLG_COLOR(title, COLOR_RED, COLOR_BLACK, false);
 	DLG_COLOR(border, COLOR_BLACK, COLOR_BLACK, true);
 
-	DLG_COLOR(button_active,         COLOR_YELLOW, COLOR_RED,   false);
-	DLG_COLOR(button_inactive,       COLOR_YELLOW, COLOR_BLACK, false);
-	DLG_COLOR(button_key_active,     COLOR_YELLOW, COLOR_RED,   true);
-	DLG_COLOR(button_key_inactive,   COLOR_RED,    COLOR_BLACK, false);
-	DLG_COLOR(button_label_active,   COLOR_WHITE,  COLOR_RED,   false);
-	DLG_COLOR(button_label_inactive, COLOR_BLACK,  COLOR_BLACK, true);
+	DLG_COLOR(button_active, COLOR_YELLOW, COLOR_RED, false);
+	DLG_COLOR(button_inactive, COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(button_key_active, COLOR_YELLOW, COLOR_RED, true);
+	DLG_COLOR(button_key_inactive, COLOR_RED, COLOR_BLACK, false);
+	DLG_COLOR(button_label_active, COLOR_WHITE, COLOR_RED, false);
+	DLG_COLOR(button_label_inactive, COLOR_BLACK, COLOR_BLACK, true);
 
-	DLG_COLOR(inputbox,         COLOR_YELLOW, COLOR_BLACK, false);
-	DLG_COLOR(inputbox_border,  COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(inputbox, COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(inputbox_border, COLOR_YELLOW, COLOR_BLACK, false);
 
-	DLG_COLOR(searchbox,        COLOR_YELLOW, COLOR_BLACK, false);
-	DLG_COLOR(searchbox_title,  COLOR_YELLOW, COLOR_BLACK, true);
-	DLG_COLOR(searchbox_border, COLOR_BLACK,  COLOR_BLACK, true);
+	DLG_COLOR(searchbox, COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(searchbox_title, COLOR_YELLOW, COLOR_BLACK, true);
+	DLG_COLOR(searchbox_border, COLOR_BLACK, COLOR_BLACK, true);
 
-	DLG_COLOR(position_indicator, COLOR_RED, COLOR_BLACK,  false);
+	DLG_COLOR(position_indicator, COLOR_RED, COLOR_BLACK, false);
 
-	DLG_COLOR(menubox,          COLOR_YELLOW, COLOR_BLACK, false);
-	DLG_COLOR(menubox_border,   COLOR_BLACK,  COLOR_BLACK, true);
+	DLG_COLOR(menubox, COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(menubox_border, COLOR_BLACK, COLOR_BLACK, true);
 
-	DLG_COLOR(item,             COLOR_WHITE, COLOR_BLACK, false);
-	DLG_COLOR(item_selected,    COLOR_WHITE, COLOR_RED,   false);
+	DLG_COLOR(item, COLOR_WHITE, COLOR_BLACK, false);
+	DLG_COLOR(item_selected, COLOR_WHITE, COLOR_RED, false);
 
-	DLG_COLOR(tag,              COLOR_RED,    COLOR_BLACK, false);
-	DLG_COLOR(tag_selected,     COLOR_YELLOW, COLOR_RED,   true);
-	DLG_COLOR(tag_key,          COLOR_RED,    COLOR_BLACK, false);
-	DLG_COLOR(tag_key_selected, COLOR_YELLOW, COLOR_RED,   true);
+	DLG_COLOR(tag, COLOR_RED, COLOR_BLACK, false);
+	DLG_COLOR(tag_selected, COLOR_YELLOW, COLOR_RED, true);
+	DLG_COLOR(tag_key, COLOR_RED, COLOR_BLACK, false);
+	DLG_COLOR(tag_key_selected, COLOR_YELLOW, COLOR_RED, true);
 
-	DLG_COLOR(check,            COLOR_YELLOW, COLOR_BLACK, false);
-	DLG_COLOR(check_selected,   COLOR_YELLOW, COLOR_RED,   true);
+	DLG_COLOR(check, COLOR_YELLOW, COLOR_BLACK, false);
+	DLG_COLOR(check_selected, COLOR_YELLOW, COLOR_RED, true);
 
 	DLG_COLOR(uarrow, COLOR_RED, COLOR_BLACK, false);
 	DLG_COLOR(darrow, COLOR_RED, COLOR_BLACK, false);
@@ -143,14 +143,13 @@ static void set_blackbg_theme(void)
 static void set_bluetitle_theme(void)
 {
 	set_classic_theme();
-	DLG_COLOR(title,               COLOR_BLUE,   COLOR_WHITE, true);
-	DLG_COLOR(button_key_active,   COLOR_YELLOW, COLOR_BLUE,  true);
-	DLG_COLOR(button_label_active, COLOR_WHITE,  COLOR_BLUE,  true);
-	DLG_COLOR(searchbox_title,     COLOR_BLUE,   COLOR_WHITE, true);
-	DLG_COLOR(position_indicator,  COLOR_BLUE,   COLOR_WHITE, true);
-	DLG_COLOR(tag,                 COLOR_BLUE,   COLOR_WHITE, true);
-	DLG_COLOR(tag_key,             COLOR_BLUE,   COLOR_WHITE, true);
-
+	DLG_COLOR(title, COLOR_BLUE, COLOR_WHITE, true);
+	DLG_COLOR(button_key_active, COLOR_YELLOW, COLOR_BLUE, true);
+	DLG_COLOR(button_label_active, COLOR_WHITE, COLOR_BLUE, true);
+	DLG_COLOR(searchbox_title, COLOR_BLUE, COLOR_WHITE, true);
+	DLG_COLOR(position_indicator, COLOR_BLUE, COLOR_WHITE, true);
+	DLG_COLOR(tag, COLOR_BLUE, COLOR_WHITE, true);
+	DLG_COLOR(tag_key, COLOR_BLUE, COLOR_WHITE, true);
 }
 
 /*
@@ -236,7 +235,7 @@ static void color_setup(const char *theme)
 /*
  * Set window to attribute 'attr'
  */
-void attr_clear(WINDOW * win, int height, int width, chtype attr)
+void attr_clear(WINDOW *win, int height, int width, chtype attr)
 {
 	int i, j;
 
@@ -272,7 +271,7 @@ int init_dialog(const char *backtitle)
 {
 	int height, width;
 
-	initscr();		/* Init curses */
+	initscr(); /* Init curses */
 	getmaxyx(stdscr, height, width);
 	if (height < 19 || width < 80) {
 		endwin();
@@ -315,7 +314,7 @@ void print_title(WINDOW *dialog, const char *title, int width)
 		int tlen = MIN(width - 2, strlen(title));
 		wattrset(dialog, dlg.title.atr);
 		mvwaddch(dialog, 0, (width - tlen) / 2 - 1, ' ');
-		mvwaddnstr(dialog, 0, (width - tlen)/2, title, tlen);
+		mvwaddnstr(dialog, 0, (width - tlen) / 2, title, tlen);
 		waddch(dialog, ' ');
 	}
 }
@@ -326,7 +325,7 @@ void print_title(WINDOW *dialog, const char *title, int width)
  * characters '\n' are replaced by spaces.  We start on a new line
  * if there is no room for at least 4 nonblanks following a double-space.
  */
-void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
+void print_autowrap(WINDOW *win, const char *prompt, int width, int y, int x)
 {
 	int newl, cur_x, cur_y;
 	int i, prompt_len, room, wlen;
@@ -344,7 +343,7 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
 			tempstr[i] = ' ';
 	}
 
-	if (prompt_len <= width - x * 2) {	/* If prompt is short */
+	if (prompt_len <= width - x * 2) { /* If prompt is short */
 		wmove(win, y, (width - prompt_len) / 2);
 		waddstr(win, tempstr);
 	} else {
@@ -362,11 +361,10 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
 			   short, and the next word does not fit. */
 			room = width - cur_x;
 			wlen = strlen(word);
-			if (wlen > room ||
-			    (newl && wlen < 4 && sp
-			     && wlen + 1 + strlen(sp) > room
-			     && (!(sp2 = strchr(sp, ' '))
-				 || wlen + 1 + (sp2 - sp) > room))) {
+			if (wlen > room || (newl && wlen < 4 && sp &&
+					    wlen + 1 + strlen(sp) > room &&
+					    (!(sp2 = strchr(sp, ' ')) ||
+					     wlen + 1 + (sp2 - sp) > room))) {
 				cur_y++;
 				cur_x = x;
 			}
@@ -375,8 +373,9 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
 			getyx(win, cur_y, cur_x);
 			cur_x++;
 			if (sp && *sp == ' ') {
-				cur_x++;	/* double space */
-				while (*++sp == ' ') ;
+				cur_x++; /* double space */
+				while (*++sp == ' ')
+					;
 				newl = 1;
 			} else
 				newl = 0;
@@ -388,28 +387,28 @@ void print_autowrap(WINDOW * win, const char *prompt, int width, int y, int x)
 /*
  * Print a button
  */
-void print_button(WINDOW * win, const char *label, int y, int x, int selected)
+void print_button(WINDOW *win, const char *label, int y, int x, int selected)
 {
 	int i, temp;
 
 	wmove(win, y, x);
-	wattrset(win, selected ? dlg.button_active.atr
-		 : dlg.button_inactive.atr);
+	wattrset(win,
+		 selected ? dlg.button_active.atr : dlg.button_inactive.atr);
 	waddstr(win, "<");
 	temp = strspn(label, " ");
 	label += temp;
-	wattrset(win, selected ? dlg.button_label_active.atr
-		 : dlg.button_label_inactive.atr);
+	wattrset(win, selected ? dlg.button_label_active.atr :
+				 dlg.button_label_inactive.atr);
 	for (i = 0; i < temp; i++)
 		waddch(win, ' ');
-	wattrset(win, selected ? dlg.button_key_active.atr
-		 : dlg.button_key_inactive.atr);
+	wattrset(win, selected ? dlg.button_key_active.atr :
+				 dlg.button_key_inactive.atr);
 	waddch(win, label[0]);
-	wattrset(win, selected ? dlg.button_label_active.atr
-		 : dlg.button_label_inactive.atr);
+	wattrset(win, selected ? dlg.button_label_active.atr :
+				 dlg.button_label_inactive.atr);
 	waddstr(win, (char *)label + 1);
-	wattrset(win, selected ? dlg.button_active.atr
-		 : dlg.button_inactive.atr);
+	wattrset(win,
+		 selected ? dlg.button_active.atr : dlg.button_inactive.atr);
 	waddstr(win, ">");
 	wmove(win, y, x + temp + 1);
 }
@@ -417,9 +416,8 @@ void print_button(WINDOW * win, const char *label, int y, int x, int selected)
 /*
  * Draw a rectangular box with line drawing characters
  */
-void
-draw_box(WINDOW * win, int y, int x, int height, int width,
-	 chtype box, chtype border)
+void draw_box(WINDOW *win, int y, int x, int height, int width, chtype box,
+	      chtype border)
 {
 	int i, j;
 
@@ -452,11 +450,11 @@ draw_box(WINDOW * win, int y, int x, int height, int width,
  * Draw shadows along the right and bottom edge to give a more 3D look
  * to the boxes
  */
-void draw_shadow(WINDOW * win, int y, int x, int height, int width)
+void draw_shadow(WINDOW *win, int y, int x, int height, int width)
 {
 	int i;
 
-	if (has_colors()) {	/* Whether terminal supports color? */
+	if (has_colors()) { /* Whether terminal supports color? */
 		wattrset(win, dlg.shadow.atr);
 		wmove(win, y + height, x + 2);
 		for (i = 0; i < width; i++)
@@ -567,13 +565,13 @@ void item_make(const char *fmt, ...)
 void item_add_str(const char *fmt, ...)
 {
 	va_list ap;
-        size_t avail;
+	size_t avail;
 
 	avail = sizeof(item_cur->node.str) - strlen(item_cur->node.str);
 
 	va_start(ap, fmt);
-	vsnprintf(item_cur->node.str + strlen(item_cur->node.str),
-		  avail, fmt, ap);
+	vsnprintf(item_cur->node.str + strlen(item_cur->node.str), avail, fmt,
+		  ap);
 	item_cur->node.str[sizeof(item_cur->node.str) - 1] = '\0';
 	va_end(ap);
 }
@@ -594,9 +592,7 @@ void item_set_selected(int val)
 
 int item_activate_selected(void)
 {
-	item_foreach()
-		if (item_is_selected())
-			return 1;
+	item_foreach() if (item_is_selected()) return 1;
 	return 0;
 }
 
@@ -623,9 +619,7 @@ int item_count(void)
 void item_set(int n)
 {
 	int i = 0;
-	item_foreach()
-		if (i++ == n)
-			return;
+	item_foreach() if (i++ == n) return;
 }
 
 int item_n(void)

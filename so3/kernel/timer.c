@@ -44,24 +44,23 @@
 #define set_errno(x)
 
 struct timers {
-
 	spinlock_t lock;
 	struct timer **heap;
 	struct timer *list;
 	struct timer *running;
 
-}__cacheline_aligned;
+} __cacheline_aligned;
 
 static DEFINE_PER_CPU(struct timers, timers);
 
-static void remove_from_list(struct timer **list, struct timer *t) {
+static void remove_from_list(struct timer **list, struct timer *t)
+{
 	struct timer *curr, *prev;
 
 	if (*list == t) {
 		*list = t->list_next;
 		t->list_next = NULL;
 	} else {
-
 		curr = *list;
 		while (curr != t) {
 			prev = curr;
@@ -72,14 +71,14 @@ static void remove_from_list(struct timer **list, struct timer *t) {
 	}
 }
 
-static void add_to_list(struct timer **list, struct timer *t) {
+static void add_to_list(struct timer **list, struct timer *t)
+{
 	struct timer *curr;
 
 	if (*list == NULL) {
 		*list = t;
 		t->list_next = NULL;
 	} else {
-
 		/* Check for an existing timer and update the deadline if so. */
 
 		curr = *list;
@@ -94,7 +93,6 @@ static void add_to_list(struct timer **list, struct timer *t) {
 		/* Not found, we add the new timer at the list head */
 		t->list_next = *list;
 		*list = t;
-
 	}
 }
 
@@ -121,7 +119,8 @@ static void add_to_list(struct timer **list, struct timer *t) {
  * reduce the conversion accuracy by chosing smaller mult and shift
  * factors.
  */
-void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec) {
+void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
+{
 	u64 tmp;
 	u32 sft, sftacc = 32;
 
@@ -129,7 +128,7 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 	 * Calculate the shift factor which is limiting the conversion
 	 * range:
 	 */
-	tmp = ((u64) maxsec * from) >> 32;
+	tmp = ((u64)maxsec * from) >> 32;
 	while (tmp) {
 		tmp >>= 1;
 		sftacc--;
@@ -140,7 +139,7 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 	 * accuracy and fits the maxsec conversion range:
 	 */
 	for (sft = 32; sft > 0; sft--) {
-		tmp = (u64) to << sft;
+		tmp = (u64)to << sft;
 		tmp += from / 2;
 		do_div(tmp, from);
 		if ((tmp >> sftacc) == 0)
@@ -150,7 +149,8 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 	*shift = sft;
 }
 
-static int remove_entry(struct timers *timers, struct timer *t) {
+static int remove_entry(struct timers *timers, struct timer *t)
+{
 	int rc = 0;
 
 	switch (t->status) {
@@ -169,8 +169,8 @@ static int remove_entry(struct timers *timers, struct timer *t) {
 	return rc;
 }
 
-static void add_entry(struct timers *timers, struct timer *t) {
-
+static void add_entry(struct timers *timers, struct timer *t)
+{
 	ASSERT(t->status == TIMER_STATUS_inactive);
 
 	t->status = TIMER_STATUS_in_list;
@@ -178,15 +178,18 @@ static void add_entry(struct timers *timers, struct timer *t) {
 	add_to_list(&timers->list, t);
 }
 
-static inline void add_timer(struct timer *timer) {
+static inline void add_timer(struct timer *timer)
+{
 	add_entry(&per_cpu(timers, timer->cpu), timer);
 }
 
-static inline void timer_lock(struct timer *timer) {
+static inline void timer_lock(struct timer *timer)
+{
 	spin_lock(&per_cpu(timers, timer->cpu).lock);
 }
 
-static inline void timer_unlock(struct timer *timer) {
+static inline void timer_unlock(struct timer *timer)
+{
 	spin_unlock(&per_cpu(timers, timer->cpu).lock);
 }
 
@@ -196,13 +199,14 @@ static inline void timer_unlock(struct timer *timer) {
  * 
  * @param offset 
  */
-void apply_timer_offset(u64 offset) {
+void apply_timer_offset(u64 offset)
+{
 	struct timer *curr;
 	struct timers *ts;
 
-        ts = &this_cpu(timers);
+	ts = &this_cpu(timers);
 
-        curr = ts->list;
+	curr = ts->list;
 	while (curr != NULL) {
 		curr->expires += offset;
 		curr = curr->list_next;
@@ -212,14 +216,14 @@ void apply_timer_offset(u64 offset) {
 /*
  * Stop a timer, i.e. remove from the timer list.
  */
-void __stop_timer(struct timer *timer) {
-
+void __stop_timer(struct timer *timer)
+{
 	if (active_timer(timer))
 		remove_entry(&per_cpu(timers, timer->cpu), timer);
 }
 
-void set_timer(struct timer *timer, u64 expires) {
-
+void set_timer(struct timer *timer, u64 expires)
+{
 	timer_lock(timer);
 
 	/* Must have been initialized */
@@ -244,18 +248,17 @@ void set_timer(struct timer *timer, u64 expires) {
 	/* Make sure than a possible call to schedule() can be performed */
 	if (!__in_interrupt)
 		do_softirq();
-
 }
 
-void stop_timer(struct timer *timer) {
-
+void stop_timer(struct timer *timer)
+{
 	timer_lock(timer);
 	__stop_timer(timer);
 	timer_unlock(timer);
 }
 
-void kill_timer(struct timer *timer) {
-
+void kill_timer(struct timer *timer)
+{
 	BUG_ON(this_cpu(timers).running == timer);
 
 	timer_lock(timer);
@@ -268,7 +271,8 @@ void kill_timer(struct timer *timer) {
 	timer_unlock(timer);
 }
 
-static void execute_timer(struct timers *ts, struct timer *t) {
+static void execute_timer(struct timers *ts, struct timer *t)
+{
 	void (*fn)(void *) = t->function;
 	void *data = t->data;
 
@@ -279,13 +283,13 @@ static void execute_timer(struct timers *ts, struct timer *t) {
 	spin_lock(&ts->lock);
 
 	ts->running = NULL;
-
 }
 
 /*
  * Main timer softirq processing
  */
-static void timer_softirq_action(void) {
+static void timer_softirq_action(void)
+{
 	struct timer *cur, *t, *start;
 	struct timers *ts;
 	u64 now;
@@ -309,8 +313,8 @@ again:
 		cur = cur->list_next;
 
 		if (t->expires <= now) {
-
-			DBG("### %s: NOW: %llu executing timer expires: %llu   ***  delta: %d\n", __func__, now, t->expires, t->expires - now);
+			DBG("### %s: NOW: %llu executing timer expires: %llu   ***  delta: %d\n",
+			    __func__, now, t->expires, t->expires - now);
 
 			remove_entry(ts, t);
 			execute_timer(ts, t);
@@ -321,8 +325,10 @@ again:
 	start = NULL;
 	t = ts->list;
 	while (t != NULL) {
-		DBG("### %s: NOW: %llu pending expires: %llu   ***  delta: %d\n", __func__, now, t->expires, t->expires - now);
-		if (((start == NULL) && (t->expires < end)) || (t->expires < start->expires))
+		DBG("### %s: NOW: %llu pending expires: %llu   ***  delta: %d\n",
+		    __func__, now, t->expires, t->expires - now);
+		if (((start == NULL) && (t->expires < end)) ||
+		    (t->expires < start->expires))
 			start = t;
 
 		t = t->list_next;
@@ -331,7 +337,6 @@ again:
 	if (start != NULL) {
 		if (timer_dev_set_deadline(start->expires))
 			goto again;
-
 	}
 
 	preempt_enable();
@@ -341,13 +346,16 @@ again:
 
 #ifdef CONFIG_AVZ
 
-static void dump_timer(struct timer *t, u64 now) {
+static void dump_timer(struct timer *t, u64 now)
+{
 	/* We convert 1000 to u64 in order to use the well-implemented __aeabi_uldivmod function */
 	lprintk("  expires = %llu, now = %llu, expires - now = %llu ns timer=%p cb=%p(%p) cpu=%d\n",
-			t->expires, now, t->expires - now, t, t->function, t->data, t->cpu);
+		t->expires, now, t->expires - now, t, t->function, t->data,
+		t->cpu);
 }
 
-static void dump_timerq(unsigned char key) {
+static void dump_timerq(unsigned char key)
+{
 	struct timer *t;
 	struct timers *ts;
 	u64 now = NOW();
@@ -367,8 +375,8 @@ static void dump_timerq(unsigned char key) {
 }
 
 static struct keyhandler dump_timerq_keyhandler = {
-		.fn = dump_timerq,
-		.desc = "dump timer queues"
+	.fn = dump_timerq,
+	.desc = "dump timer queues"
 };
 
 #endif /* CONFIG_AVZ */
@@ -376,8 +384,8 @@ static struct keyhandler dump_timerq_keyhandler = {
 /*
  * Main timer initialization
  */
-void timer_init(void) {
-
+void timer_init(void)
+{
 	int i;
 
 	for (i = 0; i < CONFIG_NR_CPUS; i++) {
@@ -389,7 +397,7 @@ void timer_init(void) {
 	register_softirq(TIMER_SOFTIRQ, timer_softirq_action);
 
 	spin_lock_init(&per_cpu(timers, smp_processor_id()).lock);
-	
+
 	/* The timer devices have been previously initialized during devices_init() */
 #ifdef CONFIG_RTOS
 	BUG_ON(oneshot_timer.start == NULL);
@@ -409,19 +417,19 @@ void timer_init(void) {
  */
 int do_get_time_of_day(struct timespec *ts)
 {
-        u64 time;
+	u64 time;
 
-        if (!ts) {
-                set_errno(EINVAL);
-                return -1;
-        }
+	if (!ts) {
+		set_errno(EINVAL);
+		return -1;
+	}
 
-        time = NOW();
+	time = NOW();
 
-        ts->tv_sec = time / (time_t) 1000000000;
-        ts->tv_nsec = time;
+	ts->tv_sec = time / (time_t)1000000000;
+	ts->tv_nsec = time;
 
-        return 0;
+	return 0;
 }
 
 /*
@@ -433,18 +441,17 @@ int do_get_time_of_day(struct timespec *ts)
  */
 int do_get_clock_time(int clk_id, struct timespec *ts)
 {
-        u64 time;
+	u64 time;
 
-        if (!ts) {
-                set_errno(EINVAL);
-                return -1;
-        }
+	if (!ts) {
+		set_errno(EINVAL);
+		return -1;
+	}
 
-        time = NOW();
+	time = NOW();
 
-        ts->tv_sec = time / (time_t) 1000000000;
-        ts->tv_nsec = time;
+	ts->tv_sec = time / (time_t)1000000000;
+	ts->tv_nsec = time;
 
-        return 0;
+	return 0;
 }
-

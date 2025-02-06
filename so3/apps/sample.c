@@ -69,18 +69,18 @@ void *app_thread_main(void *args)
 
 	spin_lock_init(&spinlock);
 
-	t1 = kernel_thread(thread_example, "fn1", (void *) 1, 0);
-	t2 = kernel_thread(thread_example, "fn2", (void *) 2, 0);
-	t3 = kernel_thread(thread_example, "fn2", (void *) 3, 0);
-	t4 = kernel_thread(thread_example, "fn2", (void *) 4, 0);
+	t1 = kernel_thread(thread_example, "fn1", (void *)1, 0);
+	t2 = kernel_thread(thread_example, "fn2", (void *)2, 0);
+	t3 = kernel_thread(thread_example, "fn2", (void *)3, 0);
+	t4 = kernel_thread(thread_example, "fn2", (void *)4, 0);
 
-	while (threads != 4) ;
-
+	while (threads != 4)
+		;
 
 	printk("### Total = %lld\n", count);
-	
-	while(1);
 
+	while (1)
+		;
 
 	return NULL;
 }

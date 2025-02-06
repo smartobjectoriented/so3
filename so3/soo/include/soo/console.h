@@ -43,20 +43,23 @@ void lprintk_int64_post(s64 number, char *post);
 void lprintk_int64(s64 number);
 
 /* Helper function to display agencyUID */
-static inline void lprintk_printUID(uint64_t uid) {
+static inline void lprintk_printUID(uint64_t uid)
+{
 	int i;
-	uint8_t *c = (uint8_t *) &uid;
+	uint8_t *c = (uint8_t *)&uid;
 
 	if (!uid)
 		lprintk("n/a");
 	else
-		for (i = 0; i < 8; i++ ) {
-			lprintk("%02x ", *(c+7-i)); /* Display byte per byte */
+		for (i = 0; i < 8; i++) {
+			lprintk("%02x ",
+				*(c + 7 - i)); /* Display byte per byte */
 		}
 }
 
 /* Helper function to display agencyUID */
-static inline void lprintk_printlnUID(uint64_t uid) {
+static inline void lprintk_printlnUID(uint64_t uid)
+{
 	lprintk_printUID(uid);
 	lprintk("\n");
 }
@@ -67,7 +70,7 @@ int avzcons_get_focus(void);
 /* Set the active domain to next_domain for the uart console and return the current active domain. */
 int avzcons_set_focus(int next_domain);
 
-#define avzcons_NEXT_FOCUS()	(avzcons_set_focus((avzcons_get_focus() + 1) % 4))
+#define avzcons_NEXT_FOCUS() (avzcons_set_focus((avzcons_get_focus() + 1) % 4))
 
 /* Return the current active domain for the graphic console */
 int vfb_get_focus(void);
@@ -75,13 +78,13 @@ int vfb_get_focus(void);
 /* Set the active domain to next_domain for the graphic console and return the current active domain. */
 int vfb_set_focus(int next_domain);
 
-#define VFB_NEXT_FOCUS()	(vfb_set_focus((vfb_get_focus() + 1) % 3))
+#define VFB_NEXT_FOCUS() (vfb_set_focus((vfb_get_focus() + 1) % 3))
 
 /* Temporary helper until the vfbback interaction have been cleared up */
-#define VFB_TRIG_IRQ() \
-	({\
+#define VFB_TRIG_IRQ()                                                   \
+	({                                                               \
 		extern irqreturn_t vfb_interrupt(int irq, void *dev_id); \
-	   	vfb_interrupt(0, NULL); \
+		vfb_interrupt(0, NULL);                                  \
 	})
 
 #endif /* CONSOLE_H */

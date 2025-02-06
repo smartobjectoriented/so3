@@ -28,7 +28,7 @@ static int list_width, check_x, item_x;
 /*
  * Print list item
  */
-static void print_item(WINDOW * win, int choice, int selected)
+static void print_item(WINDOW *win, int choice, int selected)
 {
 	int i;
 	char *list_item = malloc(list_width + 1);
@@ -43,8 +43,7 @@ static void print_item(WINDOW * win, int choice, int selected)
 		waddch(win, ' ');
 
 	wmove(win, choice, check_x);
-	wattrset(win, selected ? dlg.check_selected.atr
-		 : dlg.check.atr);
+	wattrset(win, selected ? dlg.check_selected.atr : dlg.check.atr);
 	if (!item_is_tag(':'))
 		wprintw(win, "(%c)", item_is_tag('X') ? 'X' : ' ');
 
@@ -62,8 +61,8 @@ static void print_item(WINDOW * win, int choice, int selected)
 /*
  * Print the scroll indicators.
  */
-static void print_arrows(WINDOW * win, int choice, int item_no, int scroll,
-	     int y, int x, int height)
+static void print_arrows(WINDOW *win, int choice, int item_no, int scroll,
+			 int y, int x, int height)
 {
 	wmove(win, y, x);
 
@@ -98,7 +97,7 @@ static void print_arrows(WINDOW * win, int choice, int item_no, int scroll,
 /*
  *  Display the termination buttons
  */
-static void print_buttons(WINDOW * dialog, int height, int width, int selected)
+static void print_buttons(WINDOW *dialog, int height, int width, int selected)
 {
 	int x = width / 2 - 11;
 	int y = height - 2;
@@ -122,7 +121,8 @@ int dialog_checklist(const char *title, const char *prompt, int height,
 	WINDOW *dialog, *list;
 
 	/* which item to highlight */
-	item_foreach() {
+	item_foreach()
+	{
 		if (item_is_tag('X'))
 			choice = item_n();
 		if (item_is_selected()) {
@@ -148,8 +148,7 @@ do_resize:
 	dialog = newwin(height, width, y, x);
 	keypad(dialog, TRUE);
 
-	draw_box(dialog, 0, 0, height, width,
-		 dlg.dialog.atr, dlg.border.atr);
+	draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
 	wattrset(dialog, dlg.border.atr);
 	mvwaddch(dialog, height - 3, 0, ACS_LTEE);
 	for (i = 0; i < width - 2; i++)
@@ -168,18 +167,17 @@ do_resize:
 
 	/* create new window for the list */
 	list = subwin(dialog, list_height, list_width, y + box_y + 1,
-	              x + box_x + 1);
+		      x + box_x + 1);
 
 	keypad(list, TRUE);
 
 	/* draw a box around the list items */
 	draw_box(dialog, box_y, box_x, list_height + 2, list_width + 2,
-	         dlg.menubox_border.atr, dlg.menubox.atr);
+		 dlg.menubox_border.atr, dlg.menubox.atr);
 
 	/* Find length of longest item in order to center checklist */
 	check_x = 0;
-	item_foreach()
-		check_x = MAX(check_x, strlen(item_str()) + 4);
+	item_foreach() check_x = MAX(check_x, strlen(item_str()) + 4);
 	check_x = MIN(check_x, list_width);
 
 	check_x = (list_width - check_x) / 2;
@@ -196,8 +194,8 @@ do_resize:
 		print_item(list, i, i == choice);
 	}
 
-	print_arrows(dialog, choice, item_count(), scroll,
-		     box_y, box_x + check_x + 5, list_height);
+	print_arrows(dialog, choice, item_count(), scroll, box_y,
+		     box_x + check_x + 5, list_height);
 
 	print_buttons(dialog, height, width, 0);
 
@@ -232,13 +230,15 @@ do_resize:
 					scroll--;
 					item_set(scroll);
 					print_item(list, 0, TRUE);
-					print_arrows(dialog, choice, item_count(),
-						     scroll, box_y, box_x + check_x + 5, list_height);
+					print_arrows(dialog, choice,
+						     item_count(), scroll,
+						     box_y, box_x + check_x + 5,
+						     list_height);
 
 					wnoutrefresh(dialog);
 					wrefresh(list);
 
-					continue;	/* wait for another key press */
+					continue; /* wait for another key press */
 				} else
 					i = choice - 1;
 			} else if (key == KEY_DOWN || key == '+') {
@@ -248,10 +248,10 @@ do_resize:
 					/* Scroll list up */
 					if (list_height > 1) {
 						/* De-highlight current last item before scrolling up */
-						item_set(scroll + max_choice - 1);
-						print_item(list,
-							    max_choice - 1,
-							    FALSE);
+						item_set(scroll + max_choice -
+							 1);
+						print_item(list, max_choice - 1,
+							   FALSE);
 						scrollok(list, TRUE);
 						wscrl(list, 1);
 						scrollok(list, FALSE);
@@ -260,13 +260,15 @@ do_resize:
 					item_set(scroll + max_choice - 1);
 					print_item(list, max_choice - 1, TRUE);
 
-					print_arrows(dialog, choice, item_count(),
-						     scroll, box_y, box_x + check_x + 5, list_height);
+					print_arrows(dialog, choice,
+						     item_count(), scroll,
+						     box_y, box_x + check_x + 5,
+						     list_height);
 
 					wnoutrefresh(dialog);
 					wrefresh(list);
 
-					continue;	/* wait for another key press */
+					continue; /* wait for another key press */
 				} else
 					i = choice + 1;
 			}
@@ -281,7 +283,7 @@ do_resize:
 				wnoutrefresh(dialog);
 				wrefresh(list);
 			}
-			continue;	/* wait for another key press */
+			continue; /* wait for another key press */
 		}
 		switch (key) {
 		case 'H':
@@ -293,8 +295,7 @@ do_resize:
 		case 's':
 		case ' ':
 		case '\n':
-			item_foreach()
-				item_set_selected(0);
+			item_foreach() item_set_selected(0);
 			item_set(scroll + choice);
 			item_set_selected(1);
 			delwin(list);
@@ -303,8 +304,9 @@ do_resize:
 		case TAB:
 		case KEY_LEFT:
 		case KEY_RIGHT:
-			button = ((key == KEY_LEFT ? --button : ++button) < 0)
-			    ? 1 : (button > 1 ? 0 : button);
+			button = ((key == KEY_LEFT ? --button : ++button) < 0) ?
+					 1 :
+					 (button > 1 ? 0 : button);
 
 			print_buttons(dialog, height, width, button);
 			wrefresh(dialog);
@@ -328,5 +330,5 @@ do_resize:
 	}
 	delwin(list);
 	delwin(dialog);
-	return key;		/* ESC pressed */
+	return key; /* ESC pressed */
 }

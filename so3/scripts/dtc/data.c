@@ -93,7 +93,8 @@ struct data data_copy_file(FILE *f, size_t maxlen)
 		ret = fread(d.val + d.len, 1, chunksize, f);
 
 		if (ferror(f))
-			die("Error reading file into data: %s", strerror(errno));
+			die("Error reading file into data: %s",
+			    strerror(errno));
 
 		if (d.len + ret < d.len)
 			die("Overflow reading file into data\n");
@@ -122,8 +123,7 @@ struct data data_insert_at_marker(struct data d, struct marker *m,
 
 	/* Adjust all markers after the one we're inserting at */
 	m = m->next;
-	for_each_marker(m)
-		m->offset += len;
+	for_each_marker(m) m->offset += len;
 	return d;
 }
 
@@ -146,8 +146,7 @@ struct data data_merge(struct data d1, struct data d2)
 	d = data_append_markers(data_append_data(d1, d2.val, d2.len), m2);
 
 	/* Adjust for the length of d1 */
-	for_each_marker(m2)
-		m2->offset += d1.len;
+	for_each_marker(m2) m2->offset += d1.len;
 
 	d2.markers = NULL; /* So data_free() doesn't clobber them */
 	data_free(d2);
@@ -245,11 +244,11 @@ bool data_is_one_string(struct data d)
 	if (len == 0)
 		return false;
 
-	for (i = 0; i < len-1; i++)
+	for (i = 0; i < len - 1; i++)
 		if (d.val[i] == '\0')
 			return false;
 
-	if (d.val[len-1] != '\0')
+	if (d.val[len - 1] != '\0')
 		return false;
 
 	return true;

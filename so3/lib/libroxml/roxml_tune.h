@@ -47,10 +47,10 @@
  * If unsure, set to 1
  */
 #ifndef CONFIG_XML_THREAD_SAFE
-#if(CONFIG_XML_HEAP_BUFFERS==1)
+#if (CONFIG_XML_HEAP_BUFFERS == 1)
 #error "The CONFIG_XML_THREAD_SAFE option is not compatible with CONFIG_XML_HEAP_BUFFERS. Disable one of those."
 #endif
-#define CONFIG_XML_THREAD_SAFE	1
+#define CONFIG_XML_THREAD_SAFE 1
 #endif /* CONFIG_XML_THREAD_SAFE */
 
 /* Is the target library uses stack for internal
@@ -60,7 +60,7 @@
  * If unsure, set to 0
  */
 #ifndef CONFIG_XML_HEAP_BUFFERS
-#define CONFIG_XML_HEAP_BUFFERS	0
+#define CONFIG_XML_HEAP_BUFFERS 0
 #endif /* CONFIG_XML_HEAP_BUFFERS */
 
 /* Define the size of internal buffer.
@@ -70,7 +70,7 @@
  * If unsure, set to 0
  */
 #ifndef CONFIG_XML_SMALL_BUFFER
-#define CONFIG_XML_SMALL_BUFFER	0
+#define CONFIG_XML_SMALL_BUFFER 0
 #endif /* CONFIG_XML_SMALL_BUFFER */
 
 /* Limit the size of input XML libroxml can handle
@@ -80,16 +80,16 @@
  * If unsure, set to 0
  */
 #ifndef CONFIG_XML_SMALL_INPUT_FILE
-#define CONFIG_XML_SMALL_INPUT_FILE	0
+#define CONFIG_XML_SMALL_INPUT_FILE 0
 #endif /* CONFIG_XML_SMALL_INPUT_FILE */
 
 /*************** Implement HEAP/STACK BUFFERS **********************/
-#if(CONFIG_XML_HEAP_BUFFERS==1)
-	#define ROXML_GET_BASE_BUFFER(name) char *name = malloc(ROXML_BASE_LEN)
-	#define ROXML_PUT_BASE_BUFFER(name) free(name)
+#if (CONFIG_XML_HEAP_BUFFERS == 1)
+#define ROXML_GET_BASE_BUFFER(name) char *name = malloc(ROXML_BASE_LEN)
+#define ROXML_PUT_BASE_BUFFER(name) free(name)
 #else /* CONFIG_XML_HEAP_BUFFERS==0 */
-	#define ROXML_GET_BASE_BUFFER(name) char name[ROXML_BASE_LEN]
-	#define ROXML_PUT_BASE_BUFFER(name)
+#define ROXML_GET_BASE_BUFFER(name) char name[ROXML_BASE_LEN]
+#define ROXML_PUT_BASE_BUFFER(name)
 #endif /* CONFIG_XML_HEAP_BUFFERS */
 
 #endif /* ROXML_TUNE_H */

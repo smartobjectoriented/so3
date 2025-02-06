@@ -23,5 +23,4 @@
 
 struct file_operations *register_fat(void);
 
-
 #endif /* FAT_H_ */

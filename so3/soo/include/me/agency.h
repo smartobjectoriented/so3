@@ -16,21 +16,19 @@
  *
  */
 
-
 #ifndef AGENCY_H
 #define AGENCY_H
 
 /* Struct embedding the version numbers of three main the agency components*/
 typedef struct {
-    unsigned int itb;
-    unsigned int uboot;
-    unsigned int rootfs;
+	unsigned int itb;
+	unsigned int uboot;
+	unsigned int rootfs;
 } upgrade_versions_args_t;
 
 extern const unsigned char upgrade_image[];
 extern const unsigned long upgrade_image_length;
 
 extern upgrade_versions_args_t get_agency_versions(void);
-
 
 #endif /* AGENCY_H */

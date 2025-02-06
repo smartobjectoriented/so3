@@ -22,20 +22,20 @@ extern int mmc_set_blocklen(struct mmc *mmc, int len);
 extern unsigned long mmc_berase(int dev_num, lbaint_t start, lbaint_t blkcnt);
 
 extern ulong mmc_bwrite(int dev_num, lbaint_t start, lbaint_t blkcnt,
-		const void *src);
+			const void *src);
 
 #else /* CONFIG_SPL_BUILD */
 
 /* SPL will never write or erase, declare dummies to reduce code size. */
 
 static inline unsigned long mmc_berase(int dev_num, lbaint_t start,
-		lbaint_t blkcnt)
+				       lbaint_t blkcnt)
 {
 	return 0;
 }
 
 static inline ulong mmc_bwrite(int dev_num, lbaint_t start, lbaint_t blkcnt,
-		const void *src)
+			       const void *src)
 {
 	return 0;
 }

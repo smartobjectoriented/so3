@@ -50,8 +50,8 @@
 extern void secondary_startup(void);
 
 unsigned long __invoke_psci_fn_smc(unsigned long function_id,
-			unsigned long arg0, unsigned long arg1,
-			unsigned long arg2)
+				   unsigned long arg0, unsigned long arg1,
+				   unsigned long arg2)
 {
 	struct arm_smccc_res res;
 
@@ -61,8 +61,8 @@ unsigned long __invoke_psci_fn_smc(unsigned long function_id,
 }
 
 unsigned long __invoke_psci_fn_hvc(unsigned long function_id,
-			unsigned long arg0, unsigned long arg1,
-			unsigned long arg2)
+				   unsigned long arg0, unsigned long arg1,
+				   unsigned long arg2)
 {
 	struct arm_smccc_res res;
 
@@ -70,7 +70,8 @@ unsigned long __invoke_psci_fn_hvc(unsigned long function_id,
 	return res.a0;
 }
 
-void cpu_on(unsigned long cpuid, addr_t entry_point) {
+void cpu_on(unsigned long cpuid, addr_t entry_point)
+{
 	int ret;
 
 #ifdef CONFIG_ARM64VT
@@ -83,6 +84,4 @@ void cpu_on(unsigned long cpuid, addr_t entry_point) {
 		printk("!! CPU PSCI failing with error code %d !!\n", ret);
 		BUG();
 	}
-
 }
-

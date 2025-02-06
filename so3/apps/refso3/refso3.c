@@ -51,17 +51,15 @@
  * small applications like a shell and the LVGL demo application.
  *
  */
-void *app_thread_main(void *args) {
- 
+void *app_thread_main(void *args)
+{
 	sh_refso3->cur_letter = 'A';
 
 	while (1) {
-
 		msleep(500);
 
-		lprintk("(%d)",  ME_domID());
+		lprintk("(%d)", ME_domID());
 		printk("%c ", sh_refso3->cur_letter);
-
 	}
 
 	return NULL;

@@ -32,15 +32,18 @@
 
 #include <soo/debug.h>
 
-static void vbs_me_rmdir(const char *dir, const char *node) {
+static void vbs_me_rmdir(const char *dir, const char *node)
+{
 	vbus_rm(VBT_NIL, dir, node);
 }
 
-static void vbs_me_mkdir(const char *dir, const char *node) {
+static void vbs_me_mkdir(const char *dir, const char *node)
+{
 	vbus_mkdir(VBT_NIL, dir, node);
 }
 
-static void vbs_me_write(const char *dir, const char *node, const char *string) {
+static void vbs_me_write(const char *dir, const char *node, const char *string)
+{
 	vbus_write(VBT_NIL, dir, node, string);
 }
 
@@ -50,14 +53,17 @@ static void vbs_me_write(const char *dir, const char *node, const char *string) 
  *
  * <realtime> tells if the device is realtime.
  */
-static void vbstore_dev_init(unsigned int domID, const char *devname, bool realtime, const char *compat) {
-
-	char rootname[VBS_KEY_LENGTH];  /* Root name depending on domID */
-	char propname[VBS_KEY_LENGTH];  /* Property name depending on domID */
+static void vbstore_dev_init(unsigned int domID, const char *devname,
+			     bool realtime, const char *compat)
+{
+	char rootname[VBS_KEY_LENGTH]; /* Root name depending on domID */
+	char propname[VBS_KEY_LENGTH]; /* Property name depending on domID */
 	char devrootname[VBS_KEY_LENGTH];
-	unsigned int dir_exists = 0; /* Data used to check if a directory exists */
+	unsigned int dir_exists =
+		0; /* Data used to check if a directory exists */
 
-	DBG("%s: creating vbstore entries for domain %d and dev %s\n", __func__, domID, devname);
+	DBG("%s: creating vbstore entries for domain %d and dev %s\n", __func__,
+	    domID, devname);
 
 	/*
 	 * We must check here if the /backend/% entry exists.
@@ -83,16 +89,15 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	strcat(devrootname, "/");
 	strcat(devrootname, devname);
 
-	sprintf(rootname, devrootname, domID);   /* "/device/%d/vuart"  */
+	sprintf(rootname, devrootname, domID); /* "/device/%d/vuart"  */
 	vbs_me_mkdir(rootname, "0");
 
-	strcat(devrootname, "/0");    /*  "/device/%d/vuart/0"   */
+	strcat(devrootname, "/0"); /*  "/device/%d/vuart/0"   */
 
 	sprintf(rootname, devrootname, domID);
-	vbs_me_write(rootname, "state", "1");  /* = VBusStateInitialising */
+	vbs_me_write(rootname, "state", "1"); /* = VBusStateInitialising */
 
 	switch (realtime) {
-
 	case true:
 		vbs_me_write(rootname, "realtime", "1");
 		break;
@@ -105,7 +110,7 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 
 	strcpy(devrootname, "backend/");
 	strcat(devrootname, devname);
-	strcat(devrootname, "/%d/0");    /* "backend/vuart/%d/0" */
+	strcat(devrootname, "/%d/0"); /* "backend/vuart/%d/0" */
 
 	sprintf(propname, devrootname, domID);
 	vbs_me_write(rootname, "backend", propname);
@@ -114,21 +119,20 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 
 	sprintf(propname, "%d", domID);
 	strcpy(devrootname, "backend/");
-	strcat(devrootname, devname);  /* "/backend/vuart"  */
+	strcat(devrootname, devname); /* "/backend/vuart"  */
 
 	vbs_me_mkdir(devrootname, propname);
 
-	strcat(devrootname, "/%d");   /* "/backend/vuart/%d" */
+	strcat(devrootname, "/%d"); /* "/backend/vuart/%d" */
 
 	sprintf(rootname, devrootname, domID);
 	vbs_me_mkdir(rootname, "0");
 
-	strcat(devrootname, "/0");   /* "/backend/vuart/%d/state/1" */
+	strcat(devrootname, "/0"); /* "/backend/vuart/%d/state/1" */
 	sprintf(rootname, devrootname, domID);
 	vbs_me_write(rootname, "state", "1");
 
 	switch (realtime) {
-
 	case true:
 		vbs_me_write(rootname, "realtime", "1");
 
@@ -145,7 +149,7 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 
 	strcpy(devrootname, "device/%d/");
 	strcat(devrootname, devname);
-	strcat(devrootname, "/0");  /* "device/%d/vuart/0" */
+	strcat(devrootname, "/0"); /* "device/%d/vuart/0" */
 
 	sprintf(propname, devrootname, domID);
 	vbs_me_write(rootname, "frontend", propname);
@@ -156,18 +160,19 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	/* Now, we create the corresponding device on the frontend side */
 	strcpy(devrootname, "device/%d/");
 	strcat(devrootname, devname);
-	strcat(devrootname, "/0");  /* "device/%d/vuart/0" */
+	strcat(devrootname, "/0"); /* "device/%d/vuart/0" */
 	sprintf(propname, devrootname, domID);
 
 	/* Create device structure and gets ready to begin interactions with the backend */
 	vdev_probe(propname, compat);
 }
 
-static void vbstore_dev_remove(unsigned int domID, const char *devname) {
-
-	char propname[VBS_KEY_LENGTH];  /* Property name depending on domID */
+static void vbstore_dev_remove(unsigned int domID, const char *devname)
+{
+	char propname[VBS_KEY_LENGTH]; /* Property name depending on domID */
 	char devrootname[VBS_KEY_LENGTH];
-	unsigned int dir_exists = 0; /* Data used to check if a directory exists */
+	unsigned int dir_exists =
+		0; /* Data used to check if a directory exists */
 
 	DBG("%s: removing vbstore entries for domain %d\n", __func__, domID);
 
@@ -197,8 +202,8 @@ static void vbstore_dev_remove(unsigned int domID, const char *devname) {
 	sprintf(propname, "/%d", domID);
 
 	strcpy(devrootname, "backend/");
-	strcat(devrootname, devname);   /* "/backend/vuart/" */
-	strcat(devrootname, propname);  /* "/backend/vuart/2" */
+	strcat(devrootname, devname); /* "/backend/vuart/" */
+	strcat(devrootname, propname); /* "/backend/vuart/2" */
 
 	vbs_me_rmdir(devrootname, "0");
 }
@@ -206,7 +211,8 @@ static void vbstore_dev_remove(unsigned int domID, const char *devname) {
 /*
  * Remove all vbstore entries related to this ME.
  */
-void remove_vbstore_entries(void) {
+void remove_vbstore_entries(void)
+{
 	int fdt_node;
 	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
@@ -250,7 +256,8 @@ void remove_vbstore_entries(void) {
 /*
  * Populate vbstore with all necessary properties required by the frontend drivers.
  */
-void vbstore_devices_populate(void) {
+void vbstore_devices_populate(void)
+{
 	int fdt_node;
 
 	DBG0("Populate vbstore with frontend information...\n");
@@ -258,13 +265,15 @@ void vbstore_devices_populate(void) {
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vdummy...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vdummy", false, "vdummy,frontend");
+		vbstore_dev_init(ME_domID(), "vdummy", false,
+				 "vdummy,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Init vUIHandler...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vuihandler", false, "vuihandler,frontend");
+		vbstore_dev_init(ME_domID(), "vuihandler", false,
+				 "vuihandler,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuart,frontend");
@@ -276,18 +285,20 @@ void vbstore_devices_populate(void) {
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsenseled,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsenseled...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vsenseled", false, "vsenseled,frontend");
+		vbstore_dev_init(ME_domID(), "vsenseled", false,
+				 "vsenseled,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsensej,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsensej...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vsensej", false, "vsensej,frontend");
+		vbstore_dev_init(ME_domID(), "vsensej", false,
+				 "vsensej,frontend");
 	}
-
 }
 
-void vbstore_trigger_dev_probe(void) {
+void vbstore_trigger_dev_probe(void)
+{
 	DBG("%s: sending DC_TRIGGER_DEV_PROBE to the agency...\n", __func__);
 
 	/* Trigger the probe on the backend side. */
@@ -297,8 +308,8 @@ void vbstore_trigger_dev_probe(void) {
 /*
  * Prepare the vbstore entries used by this ME.
  */
-void vbstore_me_init(void) {
-
+void vbstore_me_init(void)
+{
 	vbus_probe_frontend_init();
 
 	/* Initialize the interface to vbstore. */
@@ -306,8 +317,8 @@ void vbstore_me_init(void) {
 	vbus_vbstore_init();
 }
 
-void vbstore_init_dev_populate(void) {
-
+void vbstore_init_dev_populate(void)
+{
 	DBG0("Now ready to register vbstore entries\n");
 
 	/* Now, we are ready to register vbstore entries */
@@ -321,6 +332,3 @@ void vbstore_init_dev_populate(void) {
 		vbstore_trigger_dev_probe();
 	}
 }
-
-
-

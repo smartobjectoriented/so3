@@ -25,8 +25,8 @@
  * Stop the execution of the process, i.e. its main_thread and all other threads
  * (used by a ptrace activity for example).
  */
-void ptrace_process_stop(void) {
-
+void ptrace_process_stop(void)
+{
 	/* Wake up the tracer... */
 	/* It may be the case that the parent did not have time to wait for us and is still in ready */
 	if (current()->pcb->parent->main_thread->state != THREAD_STATE_READY)
@@ -35,24 +35,27 @@ void ptrace_process_stop(void) {
 	/* The process is in waiting state */
 	/* ... and wait on the tracer */
 
-	current()->pcb->state = PROC_STATE_WAITING; /* No further threads of this process may be running */
+	current()->pcb->state =
+		PROC_STATE_WAITING; /* No further threads of this process may be running */
 
 	waiting();
 }
 
-
-void __check_ptrace_traceme(void) {
+void __check_ptrace_traceme(void)
+{
 	tcb_t *tcb = current();
 
 	/* Check if the process is a tracee and if this thread is the main thread,
 	 * therefore we need to be stopped until the tracer executes waitpid()
 	 */
 
-	if ((tcb->pcb != NULL) && (tcb == tcb->pcb->main_thread) && (tcb->pcb->ptrace_pending_req == PTRACE_TRACEME))
+	if ((tcb->pcb != NULL) && (tcb == tcb->pcb->main_thread) &&
+	    (tcb->pcb->ptrace_pending_req == PTRACE_TRACEME))
 		ptrace_process_stop();
 }
 
-void __check_ptrace_syscall(void) {
+void __check_ptrace_syscall(void)
+{
 	/* Update the CPU regs of the TCB belonging to the current thread */
 	update_cpu_regs();
 
@@ -63,7 +66,9 @@ void __check_ptrace_syscall(void) {
 /*
  * Implementation of ptrace syscall
  */
-int do_ptrace(enum __ptrace_request request, uint32_t pid, void *addr, void *data) {
+int do_ptrace(enum __ptrace_request request, uint32_t pid, void *addr,
+	      void *data)
+{
 	pcb_t *pcb;
 
 	switch (request) {
@@ -101,13 +106,13 @@ int do_ptrace(enum __ptrace_request request, uint32_t pid, void *addr, void *dat
 			return -1;
 		}
 
-		retrieve_cpu_regs((struct user *) data, pcb);
+		retrieve_cpu_regs((struct user *)data, pcb);
 		break;
 
 	default:
-		printk("%s: request %d not yet implemented\n.", __func__, request);
+		printk("%s: request %d not yet implemented\n.", __func__,
+		       request);
 	}
 
 	return 0;
 }
-

@@ -27,26 +27,23 @@
 #include <asm/atomic.h>
 
 /* Maximum physical interrupts than can be managed by SO3 */
-#define NR_IRQS 		160
+#define NR_IRQS 160
 
 DECLARE_PER_CPU(spinlock_t, intc_lock);
 
 typedef enum {
-	IRQ_TYPE_NONE		= 0x00000000,
-	IRQ_TYPE_EDGE_RISING	= 0x00000001,
-	IRQ_TYPE_EDGE_FALLING	= 0x00000002,
-	IRQ_TYPE_EDGE_BOTH	= (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING),
-	IRQ_TYPE_LEVEL_HIGH	= 0x00000004,
-	IRQ_TYPE_LEVEL_LOW	= 0x00000008,
-	IRQ_TYPE_LEVEL_MASK	= (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH),
-	IRQ_TYPE_SENSE_MASK	= 0x0000000f,
-	IRQ_TYPE_DEFAULT	= IRQ_TYPE_SENSE_MASK,
+	IRQ_TYPE_NONE = 0x00000000,
+	IRQ_TYPE_EDGE_RISING = 0x00000001,
+	IRQ_TYPE_EDGE_FALLING = 0x00000002,
+	IRQ_TYPE_EDGE_BOTH = (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING),
+	IRQ_TYPE_LEVEL_HIGH = 0x00000004,
+	IRQ_TYPE_LEVEL_LOW = 0x00000008,
+	IRQ_TYPE_LEVEL_MASK = (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH),
+	IRQ_TYPE_SENSE_MASK = 0x0000000f,
+	IRQ_TYPE_DEFAULT = IRQ_TYPE_SENSE_MASK,
 } irq_type_t;
 
-typedef enum {
-	IRQ_COMPLETED = 0,
-	IRQ_BOTTOM
-} irq_return_t;
+typedef enum { IRQ_COMPLETED = 0, IRQ_BOTTOM } irq_return_t;
 
 typedef struct {
 	int irqnr;
@@ -54,18 +51,17 @@ typedef struct {
 	int irq_type;
 } irq_def_t;
 
-typedef irq_return_t(*irq_handler_t)(int irq, void *data);
+typedef irq_return_t (*irq_handler_t)(int irq, void *data);
 
 /* IRQ controller */
-typedef struct  {
+typedef struct {
+	void (*enable)(unsigned int irq);
+	void (*disable)(unsigned int irq);
+	void (*mask)(unsigned int irq);
+	void (*unmask)(unsigned int irq);
 
-    void (*enable)(unsigned int irq);
-    void (*disable)(unsigned int irq);
-    void (*mask)(unsigned int irq);
-    void (*unmask)(unsigned int irq);
-
-    void (*handle_low)(void *data);
-    void (*handle_high)(unsigned int irq);
+	void (*handle_low)(void *data);
+	void (*handle_high)(unsigned int irq);
 
 } irq_ops_t;
 
@@ -78,10 +74,10 @@ typedef struct irqdesc {
 	bool thread_active;
 
 	/* Specific IRQ chip (phys/virt) */
-        irq_ops_t *irq_ops;
+	irq_ops_t *irq_ops;
 
-        /* Private data */
-        void *data;
+	/* Private data */
+	void *data;
 
 	/* Multi-processing scenarios */
 	spinlock_t lock;
@@ -104,7 +100,8 @@ irqdesc_t *irq_to_desc(uint32_t irq);
 void irq_mask(int irq);
 void irq_unmask(int irq);
 
-void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn, void *data);
+void irq_bind(int irq, irq_handler_t handler, irq_handler_t irq_deferred_fn,
+	      void *data);
 void irq_unbind(int irq);
 
 void irq_set_irq_ops(int irq, irq_ops_t *irq_ops);

@@ -22,23 +22,22 @@
 #ifdef __ASSEMBLY__
 
 #ifndef ENTRY
-#define ENTRY(name) \
-  .globl name; \
-  .align 4, 0x90; \
-  name:
+#define ENTRY(name)     \
+	.globl name;    \
+	.align 4, 0x90; \
+name:
 #endif
 
 #ifndef END
-#define END(name) \
-  .size name, .-name
+#define END(name) .size name, .- name
 #endif
 
 #ifndef ENDPROC
-#define ENDPROC(name) \
-  .type name, %function; \
-  END(name)
+#define ENDPROC(name)           \
+	.type name, % function; \
+	END(name)
 #endif
- 
+
 #endif
 
 #ifdef __ASSEMBLY__
@@ -47,17 +46,16 @@
 #else
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y) __AC(X, Y)
-#define _AT(T, X) ((T) (X))
+#define _AT(T, X) ((T)(X))
 #endif
 
-#define _UL(x)		(_AC(x, UL))
-#define _ULL(x)		(_AC(x, ULL))
+#define _UL(x) (_AC(x, UL))
+#define _ULL(x) (_AC(x, ULL))
 
-#define _BITUL(x)	(_UL(1) << (x))
-#define _BITULL(x)	(_ULL(1) << (x))
+#define _BITUL(x) (_UL(1) << (x))
+#define _BITULL(x) (_ULL(1) << (x))
 
-#define UL(x)		(_UL(x))
-#define ULL(x)		(_ULL(x))
-
+#define UL(x) (_UL(x))
+#define ULL(x) (_ULL(x))
 
 #endif /* LINKAGE_H */

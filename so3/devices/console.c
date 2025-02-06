@@ -22,7 +22,7 @@
 static int console_getc(int gfd, void *buffer, int count)
 {
 	/* Read one byte from the UART console */
-	*((uint8_t *) buffer) = serial_getc();
+	*((uint8_t *)buffer) = serial_getc();
 
 	return 1;
 }
@@ -32,7 +32,7 @@ static int console_write(int gfd, const void *buffer, int count)
 {
 	int ret;
 
-	ret = serial_write((char *) buffer, count);
+	ret = serial_write((char *)buffer, count);
 
 	return ret;
 }
@@ -43,12 +43,12 @@ static int console_ioctl(int fd, unsigned long cmd, unsigned long args)
 	int rc;
 
 	switch (cmd) {
-		case TIOCGWINSZ:
-			rc = serial_gwinsize((struct winsize *) args);
-			break;
-		default:
-			rc = -1;
-			break;
+	case TIOCGWINSZ:
+		rc = serial_gwinsize((struct winsize *)args);
+		break;
+	default:
+		rc = -1;
+		break;
 	}
 
 	return rc;
@@ -62,5 +62,3 @@ struct file_operations console_fops = {
 	.write = console_write,
 	.ioctl = console_ioctl,
 };
-
-

@@ -23,7 +23,9 @@
  * \param func the function to call on match
  * \return the parser item
  */
-ROXML_INT roxml_parser_item_t *roxml_append_parser_item(roxml_parser_item_t * parser, char *key, roxml_parse_func func);
+ROXML_INT roxml_parser_item_t *
+roxml_append_parser_item(roxml_parser_item_t *parser, char *key,
+			 roxml_parse_func func);
 
 /** \brief parser table allocation
  *
@@ -40,7 +42,7 @@ ROXML_INT roxml_parser_item_t *roxml_parser_allocate(void);
  * \param parser the parser object
  * \return
  */
-ROXML_INT void roxml_parser_free(roxml_parser_item_t * parser);
+ROXML_INT void roxml_parser_free(roxml_parser_item_t *parser);
 
 /** \brief parser preparation function
  *
@@ -49,7 +51,8 @@ ROXML_INT void roxml_parser_free(roxml_parser_item_t * parser);
  * \param parser the parser object
  * \return
  */
-ROXML_INT roxml_parser_item_t *roxml_parser_prepare(roxml_parser_item_t * parser);
+ROXML_INT roxml_parser_item_t *
+roxml_parser_prepare(roxml_parser_item_t *parser);
 
 /** \brief line parsing function
  *
@@ -61,6 +64,7 @@ ROXML_INT roxml_parser_item_t *roxml_parser_prepare(roxml_parser_item_t * parser
  * \param ctx user data passed to the callbacks
  * \return the number of bytes processed
  */
-ROXML_INT ROXML_PARSE int roxml_parse_line(roxml_parser_item_t * parser, char *line, int len, void *ctx);
+ROXML_INT ROXML_PARSE int roxml_parse_line(roxml_parser_item_t *parser,
+					   char *line, int len, void *ctx);
 
 #endif /* ROXML_PARSER_H */

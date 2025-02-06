@@ -25,7 +25,8 @@
 
 extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 
-void lprintk(char *format, ...) {
+void lprintk(char *format, ...)
+{
 	char buf[CONSOLEIO_BUFFER_SIZE];
 	va_list va;
 	uint32_t flags;
@@ -38,7 +39,7 @@ void lprintk(char *format, ...) {
 
 	BUG_ON(strlen(buf) > CONSOLEIO_BUFFER_SIZE);
 
-        avz_printstr(buf);
+	avz_printstr(buf);
 
 	local_irq_restore(flags);
 }
@@ -46,27 +47,30 @@ void lprintk(char *format, ...) {
 /**
  * Print the contents of a buffer.
  */
-void lprintk_buffer(void *buffer, uint32_t n) {
+void lprintk_buffer(void *buffer, uint32_t n)
+{
 	uint32_t i;
 
-	for (i = 0 ; i < n ; i++)
-		lprintk("%02x ", ((char *) buffer)[i]);
+	for (i = 0; i < n; i++)
+		lprintk("%02x ", ((char *)buffer)[i]);
 }
 
 /**
  * Print the contents of a buffer. Each element is separated using a given character.
  */
-void lprintk_buffer_separator(void *buffer, uint32_t n, char separator) {
+void lprintk_buffer_separator(void *buffer, uint32_t n, char separator)
+{
 	uint32_t i;
 
-	for (i = 0 ; i < n ; i++)
-		lprintk("%02x%c", ((char *) buffer)[i], separator);
+	for (i = 0; i < n; i++)
+		lprintk("%02x%c", ((char *)buffer)[i], separator);
 }
 
 /**
  * Print an uint64_t number and concatenate a string.
  */
-void lprintk_int64_post(s64 number, char *post) {
+void lprintk_int64_post(s64 number, char *post)
+{
 	uint32_t msb = number >> 32;
 	uint32_t lsb = number & 0xffffffff;
 
@@ -76,6 +80,7 @@ void lprintk_int64_post(s64 number, char *post) {
 /**
  * Print an uint64_t number.
  */
-void lprintk_int64(s64 number) {
+void lprintk_int64(s64 number)
+{
 	lprintk_int64_post(number, "\n");
 }

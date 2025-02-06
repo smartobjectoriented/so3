@@ -16,19 +16,18 @@
  *
  */
 
-
 #ifndef ASF_USR_H
 #define ASF_USR_H
 
 /* ASF char drv related constants */
-#define ASF_DEV_MAJOR	100
-#define ASF_DEV_NAME  	"/dev/soo/asf"
+#define ASF_DEV_MAJOR 100
+#define ASF_DEV_NAME "/dev/soo/asf"
 
 /* ASF IOCTL - Send cmd to Hello World TA */
-#define ASF_IOCTL_CRYPTO_TEST		_IOW(0x5000DD30, 0, char)
-#define ASF_IOCTL_HELLO_WORLD_TEST	_IOW(0x5000DD30, 1, char)
-#define ASF_IOCTL_OPEN_SESSION		_IOW(0x5000DD30, 2, char)
-#define ASF_IOCTL_SESSION_OPENED	_IOW(0x5000DD30, 3, char)
-#define ASF_IOCTL_CLOSE_SESSION		_IOW(0x5000DD30, 4, char)
+#define ASF_IOCTL_CRYPTO_TEST _IOW(0x5000DD30, 0, char)
+#define ASF_IOCTL_HELLO_WORLD_TEST _IOW(0x5000DD30, 1, char)
+#define ASF_IOCTL_OPEN_SESSION _IOW(0x5000DD30, 2, char)
+#define ASF_IOCTL_SESSION_OPENED _IOW(0x5000DD30, 3, char)
+#define ASF_IOCTL_CLOSE_SESSION _IOW(0x5000DD30, 4, char)
 
 #endif /* ASF_USR_H */

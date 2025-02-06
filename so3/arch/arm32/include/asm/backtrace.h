@@ -28,8 +28,7 @@ void dump_all_execution_state(void);
 
 static inline void show_execution_state(cpu_regs_t *regs)
 {
-    show_registers(regs);
+	show_registers(regs);
 }
 
 #endif /* BACKTRACE_H */
-

@@ -23,17 +23,17 @@
 #include <soo/grant_table.h>
 #include <soo/vdevfront.h>
 
-#define VSENSELED_PACKET_SIZE	32
+#define VSENSELED_PACKET_SIZE 32
 
-#define VSENSELED_NAME		"vsenseled"
-#define VSENSELED_PREFIX	"[" VSENSELED_NAME "] "
+#define VSENSELED_NAME "vsenseled"
+#define VSENSELED_PREFIX "[" VSENSELED_NAME "] "
 
 typedef struct {
 	int lednr;
 	bool ledstate; /* true = on, false = off */
 } vsenseled_request_t;
 
-typedef struct  {
+typedef struct {
 	/* nothing */
 } vsenseled_response_t;
 

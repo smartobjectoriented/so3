@@ -23,16 +23,14 @@
 
 #include <compiler.h>
 
-#define BITS_TO_LONGS(bits) \
-    (((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-#define DECLARE_BITMAP(name,bits) \
-    unsigned long name[BITS_TO_LONGS(bits)]
+#define BITS_TO_LONGS(bits) (((bits) + BITS_PER_LONG - 1) / BITS_PER_LONG)
+#define DECLARE_BITMAP(name, bits) unsigned long name[BITS_TO_LONGS(bits)]
 
 /* sizeof() for a structure/union field */
-#define FIELD_SIZEOF(type, fld)	(sizeof(((type *)0)->fld))
+#define FIELD_SIZEOF(type, fld) (sizeof(((type *)0)->fld))
 
 /* create 64-bit mask with bytes 0 to size-1 set to 0xff */
-#define BYTE_MASK(size)		(0xffffffffffffffffULL >> ((8 - (size)) * 8))
+#define BYTE_MASK(size) (0xffffffffffffffffULL >> ((8 - (size)) * 8))
 
 /* create 64-bit mask with all bits in [last:first] set */
 #define BIT_MASK(last, first) \
@@ -48,7 +46,7 @@
 
 /* mandatory macros */
 #undef NULL
-#define NULL ((void *) 0)
+#define NULL ((void *)0)
 
 /* mandatory types */
 
@@ -59,41 +57,39 @@ typedef signed long ptrdiff_t;
 
 typedef unsigned int wchar_t;
 
-#define __ALIGN_MASK(x,mask)	(((x)+(mask))&~(mask))
-#define ALIGN(x,a)		__ALIGN_MASK((x),(typeof(x))(a)-1)
+#define __ALIGN_MASK(x, mask) (((x) + (mask)) & ~(mask))
+#define ALIGN(x, a) __ALIGN_MASK((x), (typeof(x))(a) - 1)
 
 /* Old compatibility names for C types.  */
 typedef unsigned long int ulong;
 typedef unsigned short int ushort;
 typedef unsigned int uint;
 
-typedef unsigned char		uchar;
-typedef volatile unsigned long	vu_long;
+typedef unsigned char uchar;
+typedef volatile unsigned long vu_long;
 typedef volatile unsigned short vu_short;
-typedef volatile unsigned char	vu_char;
+typedef volatile unsigned char vu_char;
 
+typedef __u8 uint8_t;
+typedef __u8 u8;
 
-typedef		__u8		uint8_t;
-typedef		__u8		u8;
+typedef __u16 uint16_t;
+typedef __u16 u16;
 
-typedef		__u16		uint16_t;
-typedef		__u16		u16;
+typedef __s16 int16_t;
+typedef __s16 s16;
 
-typedef		__s16		int16_t;
-typedef		__s16		s16;
+typedef __s32 int32_t;
+typedef __s32 s32;
 
-typedef		__s32		int32_t;
-typedef		__s32		s32;
+typedef __u32 uint32_t;
+typedef __u32 u32;
 
-typedef		__u32		uint32_t;
-typedef		__u32		u32;
+typedef __u64 uint64_t;
+typedef __u64 u64;
 
-typedef		__u64		uint64_t;
-typedef		__u64		u64;
-
-typedef		__s64		int64_t;
-typedef		__s64		s64;
-
+typedef __s64 int64_t;
+typedef __s64 s64;
 
 /*
  * Below are truly Linux-specific types that should never collide with
@@ -121,12 +117,11 @@ typedef __u64 __bitwise __be64;
 typedef __u16 __bitwise __sum16;
 typedef __u32 __bitwise __wsum;
 
-
-typedef unsigned __bitwise__	gfp_t;
+typedef unsigned __bitwise__ gfp_t;
 
 typedef u64 time_t;
 
-#define ROUND(a, b)     (((a) + (b) - 1) & ~((b) - 1))
+#define ROUND(a, b) (((a) + (b) - 1) & ~((b) - 1))
 
 /*
  * The ALLOC_CACHE_ALIGN_BUFFER macro is used to allocate a buffer on the
@@ -182,16 +177,16 @@ typedef u64 time_t;
  */
 #define PAD_COUNT(s, pad) (((s) - 1) / (pad) + 1)
 #define PAD_SIZE(s, pad) (PAD_COUNT(s, pad) * pad)
-#define ALLOC_ALIGN_BUFFER_PAD(type, name, size, align, pad)		\
-	char __##name[ROUND(PAD_SIZE((size) * sizeof(type), pad), align)  \
-		      + (align - 1)];					\
-									\
-	type *name = (type *) ALIGN((uintptr_t)__##name, align)
-#define ALLOC_ALIGN_BUFFER(type, name, size, align)		\
+#define ALLOC_ALIGN_BUFFER_PAD(type, name, size, align, pad)               \
+	char __##name[ROUND(PAD_SIZE((size) * sizeof(type), pad), align) + \
+		      (align - 1)];                                        \
+                                                                           \
+	type *name = (type *)ALIGN((uintptr_t)__##name, align)
+#define ALLOC_ALIGN_BUFFER(type, name, size, align) \
 	ALLOC_ALIGN_BUFFER_PAD(type, name, size, align, 1)
-#define ALLOC_CACHE_ALIGN_BUFFER_PAD(type, name, size, pad)		\
+#define ALLOC_CACHE_ALIGN_BUFFER_PAD(type, name, size, pad) \
 	ALLOC_ALIGN_BUFFER_PAD(type, name, size, ARCH_DMA_MINALIGN, pad)
-#define ALLOC_CACHE_ALIGN_BUFFER(type, name, size)			\
+#define ALLOC_CACHE_ALIGN_BUFFER(type, name, size) \
 	ALLOC_ALIGN_BUFFER(type, name, size, ARCH_DMA_MINALIGN)
 
 /*
@@ -199,23 +194,23 @@ typedef u64 time_t;
  * purpose is to allow allocating aligned buffers outside of function scope.
  * Usage of this macro shall be avoided or used with extreme care!
  */
-#define DEFINE_ALIGN_BUFFER(type, name, size, align)			\
-	static char __##name[roundup(size * sizeof(type), align)]	\
-			__aligned(align);				\
-									\
+#define DEFINE_ALIGN_BUFFER(type, name, size, align)                         \
+	static char __##name[roundup(size * sizeof(type), align)] __aligned( \
+		align);                                                      \
+                                                                             \
 	static type *name = (type *)__##name
-#define DEFINE_CACHE_ALIGN_BUFFER(type, name, size)			\
+#define DEFINE_CACHE_ALIGN_BUFFER(type, name, size) \
 	DEFINE_ALIGN_BUFFER(type, name, size, ARCH_DMA_MINALIGN)
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 typedef unsigned char bool;
-#define false 	0
-#define true	1
+#define false 0
+#define true 1
 
 /* align addr on a size boundary - adjust address up/down if needed */
-#define ALIGN_UP(addr,size) (((addr)+((size)-1))&(~((size)-1)))
-#define ALIGN_DOWN(addr,size) ((addr)&(~((size)-1)))
+#define ALIGN_UP(addr, size) (((addr) + ((size) - 1)) & (~((size) - 1)))
+#define ALIGN_DOWN(addr, size) ((addr) & (~((size) - 1)))
 
 typedef unsigned long addr_t;
 
@@ -228,7 +223,7 @@ static inline char _tolower(const char c)
 	return c | 0x20;
 }
 
-#define test_and_set_bool(b)   xchg(&(b), 1)
+#define test_and_set_bool(b) xchg(&(b), 1)
 #define test_and_clear_bool(b) xchg(&(b), 0)
 
 #endif /* TYPES_H */

@@ -24,39 +24,38 @@
 #include "util.h"
 
 #ifdef DEBUG
-#define debug(...)	printf(__VA_ARGS__)
+#define debug(...) printf(__VA_ARGS__)
 #else
 #define debug(...)
 #endif
 
-#define DEFAULT_FDT_VERSION	17
+#define DEFAULT_FDT_VERSION 17
 
 /*
  * Command line options
  */
-extern int quiet;		/* Level of quietness */
-extern int reservenum;		/* Number of memory reservation slots */
-extern int minsize;		/* Minimum blob size */
-extern int padsize;		/* Additional padding to blob */
-extern int alignsize;		/* Additional padding to blob accroding to the alignsize */
-extern int phandle_format;	/* Use linux,phandle or phandle properties */
-extern int generate_symbols;	/* generate symbols for nodes with labels */
-extern int generate_fixups;	/* generate fixups */
-extern int auto_label_aliases;	/* auto generate labels -> aliases */
-extern int annotate;		/* annotate .dts with input source location */
+extern int quiet; /* Level of quietness */
+extern int reservenum; /* Number of memory reservation slots */
+extern int minsize; /* Minimum blob size */
+extern int padsize; /* Additional padding to blob */
+extern int alignsize; /* Additional padding to blob accroding to the alignsize */
+extern int phandle_format; /* Use linux,phandle or phandle properties */
+extern int generate_symbols; /* generate symbols for nodes with labels */
+extern int generate_fixups; /* generate fixups */
+extern int auto_label_aliases; /* auto generate labels -> aliases */
+extern int annotate; /* annotate .dts with input source location */
 
-#define PHANDLE_LEGACY	0x1
-#define PHANDLE_EPAPR	0x2
-#define PHANDLE_BOTH	0x3
+#define PHANDLE_LEGACY 0x1
+#define PHANDLE_EPAPR 0x2
+#define PHANDLE_BOTH 0x3
 
 typedef uint32_t cell_t;
 
+#define streq(a, b) (strcmp((a), (b)) == 0)
+#define strstarts(s, prefix) (strncmp((s), (prefix), strlen(prefix)) == 0)
+#define strprefixeq(a, n, b) (strlen(b) == (n) && (memcmp(a, b, n) == 0))
 
-#define streq(a, b)	(strcmp((a), (b)) == 0)
-#define strstarts(s, prefix)	(strncmp((s), (prefix), strlen(prefix)) == 0)
-#define strprefixeq(a, n, b)	(strlen(b) == (n) && (memcmp(a, b, n) == 0))
-
-#define ALIGN(x, a)	(((x) + (a) - 1) & ~((a) - 1))
+#define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 
 /* Data blobs */
 enum markertype {
@@ -72,7 +71,7 @@ enum markertype {
 };
 extern const char *markername(enum markertype markertype);
 
-struct  marker {
+struct marker {
 	enum markertype type;
 	int offset;
 	char *ref;
@@ -85,14 +84,10 @@ struct data {
 	struct marker *markers;
 };
 
-
 #define empty_data ((struct data){ 0 /* all .members = 0 or NULL */ })
 
-#define for_each_marker(m) \
-	for (; (m); (m) = (m)->next)
-#define for_each_marker_of_type(m, t) \
-	for_each_marker(m) \
-		if ((m)->type == (t))
+#define for_each_marker(m) for (; (m); (m) = (m)->next)
+#define for_each_marker_of_type(m, t) for_each_marker(m) if ((m)->type == (t))
 
 size_t type_marker_length(struct marker *m);
 
@@ -122,8 +117,8 @@ bool data_is_one_string(struct data d);
 
 /* DT constraints */
 
-#define MAX_PROPNAME_LEN	31
-#define MAX_NODENAME_LEN	31
+#define MAX_PROPNAME_LEN 31
+#define MAX_NODENAME_LEN 31
 
 /* Live trees */
 struct label {
@@ -169,26 +164,20 @@ struct node {
 	bool omit_if_unused, is_referenced;
 };
 
-#define for_each_label_withdel(l0, l) \
-	for ((l) = (l0); (l); (l) = (l)->next)
+#define for_each_label_withdel(l0, l) for ((l) = (l0); (l); (l) = (l)->next)
 
-#define for_each_label(l0, l) \
-	for_each_label_withdel(l0, l) \
-		if (!(l)->deleted)
+#define for_each_label(l0, l) for_each_label_withdel(l0, l) if (!(l)->deleted)
 
 #define for_each_property_withdel(n, p) \
 	for ((p) = (n)->proplist; (p); (p) = (p)->next)
 
 #define for_each_property(n, p) \
-	for_each_property_withdel(n, p) \
-		if (!(p)->deleted)
+	for_each_property_withdel(n, p) if (!(p)->deleted)
 
 #define for_each_child_withdel(n, c) \
 	for ((c) = (n)->children; (c); (c) = (c)->next_sibling)
 
-#define for_each_child(n, c) \
-	for_each_child_withdel(n, c) \
-		if (!(c)->deleted)
+#define for_each_child(n, c) for_each_child_withdel(n, c) if (!(c)->deleted)
 
 void add_label(struct label **labels, char *label);
 void delete_labels(struct label **labels);
@@ -207,7 +196,8 @@ struct node *omit_node_if_unused(struct node *node);
 struct node *reference_node(struct node *node);
 struct node *chain_node(struct node *first, struct node *list);
 struct node *merge_nodes(struct node *old_node, struct node *new_node);
-struct node *add_orphan_node(struct node *old_node, struct node *new_node, char *ref);
+struct node *add_orphan_node(struct node *old_node, struct node *new_node,
+			     char *ref);
 
 void add_property(struct node *node, struct property *prop);
 void delete_property_by_name(struct node *node, char *name);
@@ -215,9 +205,8 @@ void delete_property(struct property *prop);
 void add_child(struct node *parent, struct node *child);
 void delete_node_by_name(struct node *parent, char *name);
 void delete_node(struct node *node);
-void append_to_property(struct node *node,
-			char *name, const void *data, int len,
-			enum markertype type);
+void append_to_property(struct node *node, char *name, const void *data,
+			int len, enum markertype type);
 
 const char *get_unitname(struct node *node);
 struct property *get_property(struct node *node, const char *propname);
@@ -252,18 +241,17 @@ struct reserve_info *chain_reserve_entry(struct reserve_info *first,
 struct reserve_info *add_reserve_entry(struct reserve_info *list,
 				       struct reserve_info *new);
 
-
 struct dt_info {
 	unsigned int dtsflags;
 	struct reserve_info *reservelist;
 	uint32_t boot_cpuid_phys;
-	struct node *dt;		/* the device tree */
-	const char *outname;		/* filename being written to, "-" for stdout */
+	struct node *dt; /* the device tree */
+	const char *outname; /* filename being written to, "-" for stdout */
 };
 
 /* DTS version flags definitions */
-#define DTSF_V1		0x0001	/* /dts-v1/ */
-#define DTSF_PLUGIN	0x0002	/* /plugin/ */
+#define DTSF_V1 0x0001 /* /dts-v1/ */
+#define DTSF_PLUGIN 0x0002 /* /plugin/ */
 
 struct dt_info *build_dt_info(unsigned int dtsflags,
 			      struct reserve_info *reservelist,

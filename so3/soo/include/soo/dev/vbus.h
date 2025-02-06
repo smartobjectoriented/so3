@@ -24,20 +24,19 @@
  * Detailed description is given in the SOO Framework technical reference.
  */
 
-enum vbus_state
-{
-	VbusStateUnknown      = 0,
+enum vbus_state {
+	VbusStateUnknown = 0,
 	VbusStateInitialising = 1,
-	VbusStateInitWait     = 2,
-	VbusStateInitialised  = 3,
-	VbusStateConnected    = 4,
-	VbusStateClosing      = 5,
-	VbusStateClosed       = 6,
+	VbusStateInitWait = 2,
+	VbusStateInitialised = 3,
+	VbusStateConnected = 4,
+	VbusStateClosing = 5,
+	VbusStateClosed = 6,
 	VbusStateReconfiguring = 7,
-	VbusStateReconfigured  = 8,
-	VbusStateSuspending    = 9,
-	VbusStateSuspended     = 10,
-	VbusStateResuming      = 11
+	VbusStateReconfigured = 8,
+	VbusStateSuspending = 9,
+	VbusStateSuspended = 10,
+	VbusStateResuming = 11
 
 };
 

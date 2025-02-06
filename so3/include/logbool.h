@@ -21,6 +21,4 @@
 
 void dump_all_logbool(unsigned char key);
 
-
 #endif /* LOGBOOL_H */
-

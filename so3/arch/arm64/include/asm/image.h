@@ -17,8 +17,6 @@
  */
 
 /* HEAD flags as follows: 4K kernel page size, 2MB aligned base as close possible to the base of DRAM */
-#define __HEAD_FLAGS    0x2
+#define __HEAD_FLAGS 0x2
 
-#define __HEAD_MAGIC 	"ARM\x64"
-
-
+#define __HEAD_MAGIC "ARM\x64"

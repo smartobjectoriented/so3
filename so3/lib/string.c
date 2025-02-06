@@ -24,12 +24,13 @@
 #include <heap.h>
 
 #define __ALIGN (sizeof(size_t))
-#define ONES ((size_t)-1/UCHAR_MAX)
-#define HIGHS (ONES * (UCHAR_MAX/2+1))
-#define HASZERO(x) ((x)-(ONES & ~(x) & HIGHS))
+#define ONES ((size_t)-1 / UCHAR_MAX)
+#define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
+#define HASZERO(x) ((x) - (ONES & ~(x) & HIGHS))
 
-#define BITOP(a,b,op) \
- ((a)[(size_t)(b)/(8*sizeof *(a))] op (size_t)1<<((size_t)(b)%(8*sizeof *(a))))
+#define BITOP(a, b, op)                                    \
+	((a)[(size_t)(b) / (8 * sizeof *(a))] op(size_t) 1 \
+	 << ((size_t)(b) % (8 * sizeof *(a))))
 
 void uppercase(char *str, int len)
 {
@@ -55,35 +56,35 @@ void downcase(char *str)
 /* http://clc-wiki.net/wiki/memchr#Implementation */
 void *memchr(const void *s, int c, size_t n)
 {
-    unsigned char *p = (unsigned char*)s;
-    while( n-- )
-        if( *p != (unsigned char)c )
-            p++;
-        else
-            return p;
-    return 0;
+	unsigned char *p = (unsigned char *)s;
+	while (n--)
+		if (*p != (unsigned char)c)
+			p++;
+		else
+			return p;
+	return 0;
 }
 
 /* http://clc-wiki.net/wiki/memcmp#Implementation */
-int memcmp(const void* s1, const void* s2,size_t n)
+int memcmp(const void *s1, const void *s2, size_t n)
 {
-    const unsigned char *p1 = s1, *p2 = s2;
-    while(n--)
-        if( *p1 != *p2 )
-            return *p1 - *p2;
-        else
-            p1++,p2++;
-    return 0;
+	const unsigned char *p1 = s1, *p2 = s2;
+	while (n--)
+		if (*p1 != *p2)
+			return *p1 - *p2;
+		else
+			p1++, p2++;
+	return 0;
 }
 
 /* http://clc-wiki.net/wiki/memcpy#Implementation */
 void *memcpy(void *dest, const void *src, size_t n)
 {
-    char *dp = dest;
-    const char *sp = src;
-    while (n--)
-        *dp++ = *sp++;
-    return dest;
+	char *dp = dest;
+	const char *sp = src;
+	while (n--)
+		*dp++ = *sp++;
+	return dest;
 }
 
 /* http://clc-wiki.net/wiki/memmove#Implementation
@@ -92,32 +93,32 @@ void *memcpy(void *dest, const void *src, size_t n)
 
 void *memmove(void *dest, const void *src, size_t n)
 {
-    unsigned char *pd = dest;
-    const unsigned char *ps = src;
-    if (__np_anyptrlt(ps, pd))
-        for (pd += n, ps += n; n--;)
-            *--pd = *--ps;
-    else
-        while(n--)
-            *pd++ = *ps++;
-    return dest;
+	unsigned char *pd = dest;
+	const unsigned char *ps = src;
+	if (__np_anyptrlt(ps, pd))
+		for (pd += n, ps += n; n--;)
+			*--pd = *--ps;
+	else
+		while (n--)
+			*pd++ = *ps++;
+	return dest;
 }
 
 /* http://clc-wiki.net/wiki/memset#Implementation */
 void *memset(void *s, int c, size_t n)
 {
-    unsigned char* p=s;
-    while(n--)
-        *p++ = (unsigned char)c;
-    return s;
+	unsigned char *p = s;
+	while (n--)
+		*p++ = (unsigned char)c;
+	return s;
 }
 
 /* http://clc-wiki.net/wiki/strcmp#Implementation */
-int strcmp(const char* s1, const char* s2)
+int strcmp(const char *s1, const char *s2)
 {
-    while(*s1 && (*s1==*s2))
-        s1++,s2++;
-    return *(const unsigned char*)s1-*(const unsigned char*)s2;
+	while (*s1 && (*s1 == *s2))
+		s1++, s2++;
+	return *(const unsigned char *)s1 - *(const unsigned char *)s2;
 }
 
 /**
@@ -126,17 +127,17 @@ int strcmp(const char* s1, const char* s2)
  * @ct: Another string
  * @count: The maximum number of bytes to compare
  */
-int strncmp(const char * cs,const char * ct,size_t count)
+int strncmp(const char *cs, const char *ct, size_t count)
 {
-        register signed char __res = 0;
+	register signed char __res = 0;
 
-        while (count) {
-                if ((__res = *cs - *ct++) != 0 || !*cs++)
-                        break;
-                count--;
-        }
+	while (count) {
+		if ((__res = *cs - *ct++) != 0 || !*cs++)
+			break;
+		count--;
+	}
 
-        return __res;
+	return __res;
 }
 
 char *strcat(char *dest, const char *src)
@@ -145,15 +146,15 @@ char *strcat(char *dest, const char *src)
 	return dest;
 }
 
-char *strcpy(char *dest, const char* src)
+char *strcpy(char *dest, const char *src)
 {
-    char *ret = dest;
-    while ((*dest++ = *src++))
-        ;
-    return ret;
+	char *ret = dest;
+	while ((*dest++ = *src++))
+		;
+	return ret;
 }
 
-size_t strnlen(const char * s, size_t count)
+size_t strnlen(const char *s, size_t count)
 {
 	const char *sc;
 
@@ -163,23 +164,25 @@ size_t strnlen(const char * s, size_t count)
 }
 
 /* http://clc-wiki.net/wiki/strlen#Implementation */
-size_t strlen(const char *s) {
-    size_t i;
-    for (i = 0; s[i] != '\0'; i++) ;
-    return i;
+size_t strlen(const char *s)
+{
+	size_t i;
+	for (i = 0; s[i] != '\0'; i++)
+		;
+	return i;
 }
 
 /* http://clc-wiki.net/wiki/strncpy#Implementation */
 char *strncpy(char *dest, const char *src, size_t n)
 {
-    char *ret = dest;
-    do {
-        if (!n--)
-            return ret;
-    } while ( (*dest++ = *src++) );
-    while (n--)
-        *dest++ = 0;
-    return ret;
+	char *ret = dest;
+	do {
+		if (!n--)
+			return ret;
+	} while ((*dest++ = *src++));
+	while (n--)
+		*dest++ = 0;
+	return ret;
 }
 
 char *strchrnul(const char *s, int c)
@@ -187,37 +190,46 @@ char *strchrnul(const char *s, int c)
 	size_t *w, k;
 
 	c = (unsigned char)c;
-	if (!c) return (char *)s + strlen(s);
+	if (!c)
+		return (char *)s + strlen(s);
 
 	for (; (uintptr_t)s % __ALIGN; s++)
-		if (!*s || *(unsigned char *)s == c) return (char *)s;
+		if (!*s || *(unsigned char *)s == c)
+			return (char *)s;
 	k = ONES * c;
-	for (w = (void *)s; !HASZERO(*w) && !HASZERO(*w^k); w++);
-	for (s = (void *)w; *s && *(unsigned char *)s != c; s++);
+	for (w = (void *)s; !HASZERO(*w) && !HASZERO(*w ^ k); w++)
+		;
+	for (s = (void *)w; *s && *(unsigned char *)s != c; s++)
+		;
 	return (char *)s;
 }
-
 
 size_t strcspn(const char *s, const char *c)
 {
 	const char *a = s;
-	size_t byteset[32/sizeof(size_t)];
+	size_t byteset[32 / sizeof(size_t)];
 
-	if (!c[0] || !c[1]) return strchrnul(s, *c)-a;
+	if (!c[0] || !c[1])
+		return strchrnul(s, *c) - a;
 
 	memset(byteset, 0, sizeof byteset);
-	for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++);
-	for (; *s && !BITOP(byteset, *(unsigned char *)s, &); s++);
-	return s-a;
+	for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++)
+		;
+	for (; *s && !BITOP(byteset, *(unsigned char *)s, &); s++)
+		;
+	return s - a;
 }
 
 char *strsep(char **str, const char *sep)
 {
 	char *s = *str, *end;
-	if (!s) return NULL;
+	if (!s)
+		return NULL;
 	end = s + strcspn(s, sep);
-	if (*end) *end++ = 0;
-	else end = 0;
+	if (*end)
+		*end++ = 0;
+	else
+		end = 0;
 	*str = end;
 	return s;
 }
@@ -225,8 +237,8 @@ char *strsep(char **str, const char *sep)
 char *strdup(const char *s)
 {
 	size_t l = strlen(s);
-	char *d = malloc(l+1);
-	if (!d) return NULL;
-	return memcpy(d, s, l+1);
+	char *d = malloc(l + 1);
+	if (!d)
+		return NULL;
+	return memcpy(d, s, l + 1);
 }
-

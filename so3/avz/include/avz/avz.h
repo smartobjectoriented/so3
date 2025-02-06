@@ -16,11 +16,10 @@
  *
  */
 
-
 #ifndef AVZ_H
 #define AVZ_H
 
-#include  <avz/uapi/avz.h>
+#include <avz/uapi/avz.h>
 
 #define avz_shared __avz_shared
 

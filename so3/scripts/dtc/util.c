@@ -34,7 +34,7 @@ char *xstrdup(const char *s)
 
 int xavsprintf_append(char **strp, const char *fmt, va_list ap)
 {
-	int n, size = 0;	/* start with 128 bytes */
+	int n, size = 0; /* start with 128 bytes */
 	char *p;
 	va_list ap_copy;
 
@@ -89,7 +89,7 @@ char *join_path(const char *path, const char *name)
 	char *str;
 
 	len = lenp + lenn + 2;
-	if ((lenp > 0) && (path[lenp-1] == '/')) {
+	if ((lenp > 0) && (path[lenp - 1] == '/')) {
 		needslash = 0;
 		len--;
 	}
@@ -100,7 +100,7 @@ char *join_path(const char *path, const char *name)
 		str[lenp] = '/';
 		lenp++;
 	}
-	memcpy(str+lenp, name, lenn+1);
+	memcpy(str + lenp, name, lenn + 1);
 	return str;
 }
 
@@ -173,7 +173,7 @@ static char get_hex_char(const char *s, int *i)
 	strncpy(x, s + *i, 2);
 
 	val = strtol(x, &endx, 16);
-	if (!(endx  > x))
+	if (!(endx > x))
 		die("\\x used with no following hex digits\n");
 
 	(*i) += endx - x;
@@ -182,9 +182,9 @@ static char get_hex_char(const char *s, int *i)
 
 char get_escape_char(const char *s, int *i)
 {
-	char	c = s[*i];
-	int	j = *i + 1;
-	char	val;
+	char c = s[*i];
+	int j = *i + 1;
+	char val;
 
 	switch (c) {
 	case 'a':
@@ -233,7 +233,7 @@ char get_escape_char(const char *s, int *i)
 
 int utilfdt_read_err(const char *filename, char **buffp, size_t *len)
 {
-	int fd = 0;	/* assume stdin */
+	int fd = 0; /* assume stdin */
 	char *buf = NULL;
 	size_t bufsize = 1024, offset = 0;
 	int ret = 0;
@@ -289,7 +289,7 @@ char *utilfdt_read(const char *filename, size_t *len)
 
 int utilfdt_write_err(const char *filename, const void *blob)
 {
-	int fd = 1;	/* assume stdout */
+	int fd = 1; /* assume stdout */
 	int totalsize;
 	int offset;
 	int ret = 0;
@@ -318,7 +318,6 @@ int utilfdt_write_err(const char *filename, const void *blob)
 	return ret < 0 ? -ret : 0;
 }
 
-
 int utilfdt_write(const char *filename, const void *blob)
 {
 	int ret = utilfdt_write_err(filename, blob);
@@ -343,7 +342,7 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size)
 		qualifier = *fmt++;
 		if (qualifier == *fmt) {
 			switch (*fmt++) {
-/* TODO:		case 'l': qualifier = 'L'; break;*/
+				/* TODO:		case 'l': qualifier = 'L'; break;*/
 			case 'h':
 				qualifier = 'b';
 				break;
@@ -358,8 +357,9 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size)
 	/* convert qualifier (bhL) to byte size */
 	if (*fmt != 's')
 		*size = qualifier == 'b' ? 1 :
-				qualifier == 'h' ? 2 :
-				qualifier == 'l' ? 4 : -1;
+			qualifier == 'h' ? 2 :
+			qualifier == 'l' ? 4 :
+					   -1;
 	*type = *fmt++;
 
 	/* that should be it! */
@@ -414,7 +414,7 @@ void NORETURN util_version(void)
 void NORETURN util_usage(const char *errmsg, const char *synopsis,
 			 const char *short_opts,
 			 struct option const long_opts[],
-			 const char * const opts_help[])
+			 const char *const opts_help[])
 {
 	FILE *fp = errmsg ? stderr : stdout;
 	const char a_arg[] = "<arg>";
@@ -425,7 +425,8 @@ void NORETURN util_usage(const char *errmsg, const char *synopsis,
 	fprintf(fp,
 		"Usage: %s\n"
 		"\n"
-		"Options: -[%s]\n", synopsis, short_opts);
+		"Options: -[%s]\n",
+		synopsis, short_opts);
 
 	/* prescan the --long opt length to auto-align */
 	optlen = 0;
@@ -453,7 +454,9 @@ void NORETURN util_usage(const char *errmsg, const char *synopsis,
 			fprintf(fp, "--%-*s", optlen, long_opts[i].name);
 		else
 			fprintf(fp, "--%s %s%*s", long_opts[i].name, a_arg,
-				(int)(optlen - strlen(long_opts[i].name) - a_arg_len), "");
+				(int)(optlen - strlen(long_opts[i].name) -
+				      a_arg_len),
+				"");
 
 		/* finally the help text */
 		fprintf(fp, "%s\n", opts_help[i]);

@@ -74,7 +74,8 @@ inline bool check_consistency_ready(void) {
 }
 #endif /* 0 */
 
-void preempt_disable(void) {
+void preempt_disable(void)
+{
 	unsigned long flags;
 
 	flags = spin_lock_irqsave(&schedule_lock);
@@ -82,7 +83,8 @@ void preempt_disable(void) {
 	spin_unlock_irqrestore(&schedule_lock, flags);
 }
 
-void preempt_enable(void) {
+void preempt_enable(void)
+{
 	unsigned long flags;
 
 	flags = spin_lock_irqsave(&schedule_lock);
@@ -93,7 +95,8 @@ void preempt_enable(void) {
 /*
  * Insert a new thread in the ready list.
  */
-void ready(tcb_t *tcb) {
+void ready(tcb_t *tcb)
+{
 	unsigned long flags;
 	queue_thread_t *cur;
 	bool already_locked;
@@ -109,11 +112,11 @@ void ready(tcb_t *tcb) {
 
 	tcb->state = THREAD_STATE_READY;
 
-	cur = (queue_thread_t *) malloc(sizeof(queue_thread_t));
+	cur = (queue_thread_t *)malloc(sizeof(queue_thread_t));
 	BUG_ON(cur == NULL);
-	
+
 #ifdef CONFIG_SCHED_PRIO_DYN
-	
+
 	/* Reset priority increment timer */
 	tcb->last_prio_inc_time = NOW();
 
@@ -135,7 +138,8 @@ void ready(tcb_t *tcb) {
  * Put a thread in the waiting state and invoke the scheduler.
  * It is assumed that the caller manages the waiting queue.
  */
-void waiting(void) {
+void waiting(void)
+{
 	unsigned long flags;
 
 	flags = local_irq_save();
@@ -152,7 +156,8 @@ void waiting(void) {
 /*
  * Put a thread into the zombie queue.
  */
-void zombie(void) {
+void zombie(void)
+{
 	queue_thread_t *cur;
 	unsigned long flags;
 
@@ -162,7 +167,7 @@ void zombie(void) {
 
 	current()->state = THREAD_STATE_ZOMBIE;
 
-	cur = (queue_thread_t *) malloc(sizeof(queue_thread_t));
+	cur = (queue_thread_t *)malloc(sizeof(queue_thread_t));
 	BUG_ON(cur == NULL);
 
 	cur->tcb = current();
@@ -178,7 +183,8 @@ void zombie(void) {
 /*
  * Remove a thread from the zombie list.
  */
-void remove_zombie(struct tcb *tcb) {
+void remove_zombie(struct tcb *tcb)
+{
 	queue_thread_t *cur;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
@@ -188,8 +194,7 @@ void remove_zombie(struct tcb *tcb) {
 	ASSERT(tcb != NULL);
 	ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
-	list_for_each_safe(pos, q, &zombieThreads)
-	{
+	list_for_each_safe(pos, q, &zombieThreads) {
 		cur = list_entry(pos, queue_thread_t, list);
 
 		_tcb = cur->tcb;
@@ -198,9 +203,8 @@ void remove_zombie(struct tcb *tcb) {
 			list_del(pos);
 
 			free(cur);
-			return ;
+			return;
 		}
-
 	}
 
 	printk("%s: zombie thread %d not found.\n", __func__, tcb->tid);
@@ -212,7 +216,8 @@ void remove_zombie(struct tcb *tcb) {
  * Wake up a thread which is in waiting state.
  * If the thread passed as argument is not sleeping, we just skip it.
  */
-void wake_up(struct tcb *tcb) {
+void wake_up(struct tcb *tcb)
+{
 	unsigned long flags;
 
 	flags = spin_lock_irqsave(&schedule_lock);
@@ -226,7 +231,8 @@ void wake_up(struct tcb *tcb) {
 /*
  * Remove a tcb from the ready list
  */
-void remove_ready(struct tcb *tcb) {
+void remove_ready(struct tcb *tcb)
+{
 	queue_thread_t *cur;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
@@ -238,8 +244,7 @@ void remove_ready(struct tcb *tcb) {
 
 	spin_lock(&schedule_lock);
 
-	list_for_each_safe(pos, q, &readyThreads)
-	{
+	list_for_each_safe(pos, q, &readyThreads) {
 		cur = list_entry(pos, queue_thread_t, list);
 		_tcb = cur->tcb;
 
@@ -249,9 +254,8 @@ void remove_ready(struct tcb *tcb) {
 			free(cur);
 
 			spin_unlock(&schedule_lock);
-			return ;
+			return;
 		}
-
 	}
 
 	printk("%s: ready thread %d not found.\n", __func__, tcb->tid);
@@ -266,7 +270,8 @@ void remove_ready(struct tcb *tcb) {
  * list for too long.
  * IRQs are off.
  */
-static tcb_t *next_thread(void) {
+static tcb_t *next_thread(void)
+{
 	tcb_t *tcb, *__current;
 	queue_thread_t *entry;
 	struct list_head *pos, *q;
@@ -284,13 +289,13 @@ static tcb_t *next_thread(void) {
 	spin_lock(&schedule_lock);
 
 	/* Increase priority for every ready threads left */
-	list_for_each_safe(pos, q, &readyThreads)
-	{
+	list_for_each_safe(pos, q, &readyThreads) {
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
 		current_time = NOW();
-		if (tcb->last_prio_inc_time + MILLISECS(PRIO_MAX_DELAY) < current_time) {
+		if (tcb->last_prio_inc_time + MILLISECS(PRIO_MAX_DELAY) <
+		    current_time) {
 			if (tcb->current_prio < 99)
 				tcb->current_prio++;
 
@@ -299,15 +304,14 @@ static tcb_t *next_thread(void) {
 	}
 
 	tcb_to_schedule = __current;
-	list_for_each_safe(pos, q, &readyThreads)
-	{
+	list_for_each_safe(pos, q, &readyThreads) {
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
 		/* First, compare with the running tcb if any... */
 		if (!tcb_to_schedule)
 			tcb_to_schedule = tcb;
-	        else if (tcb->current_prio > tcb_to_schedule->current_prio)
+		else if (tcb->current_prio > tcb_to_schedule->current_prio)
 			tcb_to_schedule = tcb;
 	}
 
@@ -326,7 +330,8 @@ static tcb_t *next_thread(void) {
  * to the scheduling policy.
  * IRQs are off.
  */
-static tcb_t *next_thread(void) {
+static tcb_t *next_thread(void)
+{
 	tcb_t *tcb, *__current;
 	queue_thread_t *entry;
 	struct list_head *pos, *q;
@@ -343,17 +348,15 @@ static tcb_t *next_thread(void) {
 	spin_lock(&schedule_lock);
 
 	tcb_to_schedule = __current;
-	list_for_each_safe(pos, q, &readyThreads)
-	{
+	list_for_each_safe(pos, q, &readyThreads) {
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
 		/* First, compare with the running tcb if any... */
 		if (!tcb_to_schedule)
 			tcb_to_schedule = tcb;
-	    else if (tcb->prio > tcb_to_schedule->prio)
-	        tcb_to_schedule = tcb;
-
+		else if (tcb->prio > tcb_to_schedule->prio)
+			tcb_to_schedule = tcb;
 	}
 
 	spin_unlock(&schedule_lock);
@@ -371,7 +374,8 @@ static tcb_t *next_thread(void) {
  * to the scheduling policy.
  * IRQs are off.
  */
-static tcb_t *next_thread(void) {
+static tcb_t *next_thread(void)
+{
 	tcb_t *tcb;
 	queue_thread_t *entry;
 	struct list_head *pos, *q;
@@ -380,12 +384,13 @@ static tcb_t *next_thread(void) {
 
 	spin_lock(&schedule_lock);
 
-	list_for_each_safe(pos, q, &readyThreads)
-	{
+	list_for_each_safe(pos, q, &readyThreads) {
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
-		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY) || (tcb->pcb->state == PROC_STATE_RUNNING)) {
+		if ((tcb->pcb == NULL) ||
+		    (tcb->pcb->state == PROC_STATE_READY) ||
+		    (tcb->pcb->state == PROC_STATE_RUNNING)) {
 			spin_unlock(&schedule_lock);
 
 			/* Warning ! entry will be freed in remove_ready() */
@@ -404,20 +409,21 @@ static tcb_t *next_thread(void) {
 /*
  * Main scheduling function.
  */
-void schedule(void) {
+void schedule(void)
+{
 	tcb_t *prev, *next;
 	unsigned long flags;
 	static volatile bool __in_scheduling = false;
 
 	if (unlikely(boot_stage < BOOT_STAGE_COMPLETED))
-		return ;
+		return;
 
 	BUG_ON(!__sched_preempt);
 	BUG_ON(!tcb_idle);
 
 	/* Already scheduling? May happen if set_timer leads to another softirq schedule */
 	if (__in_scheduling)
-		return ;
+		return;
 
 	flags = local_irq_save();
 
@@ -429,7 +435,7 @@ void schedule(void) {
 	next = next_thread();
 
 #ifdef CONFIG_SCHED_FREQ_PREEMPTION
-        set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
+	set_timer(&schedule_timer, NOW() + MILLISECS(SCHEDULE_FREQ));
 #endif
 
 	/* prev may be NULL at the very beginning (current is set to NULL at init). */
@@ -437,34 +443,38 @@ void schedule(void) {
 		next = tcb_idle;
 
 	if (next && (next != prev)) {
-
-		DBG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n", next->tid, next->name, ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
+		DBG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n",
+		    next->tid, next->name,
+		    ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
 		if (prev)
-			DBG("Previous was threadID: %d name: %s PID: %d\n", prev->tid, prev->name);
+			DBG("Previous was threadID: %d name: %s PID: %d\n",
+			    prev->tid, prev->name);
 
 		/*
 		 * The current threads (here prev) can be in different states, not only running; it may be in *waiting* or *zombie*
 		 * depending on the thread activities. Hence, we put it in the ready state ONLY if the thread is in *running*.
 		 */
-		if ((prev != NULL) && (prev->state == THREAD_STATE_RUNNING) && (likely(prev != tcb_idle)))
+		if ((prev != NULL) && (prev->state == THREAD_STATE_RUNNING) &&
+		    (likely(prev != tcb_idle)))
 			ready(prev);
 
 		next->state = THREAD_STATE_RUNNING;
 		set_current(next);
 
 #ifdef CONFIG_MMU
-		if ((next->pcb != NULL) && (next->pcb->pgtable != current_pgtable())) {
-
+		if ((next->pcb != NULL) &&
+		    (next->pcb->pgtable != current_pgtable())) {
 			/* Change the process context */
 
 			next->pcb->state = PROC_STATE_RUNNING;
 
-			if ((prev != NULL) && (prev->pcb != NULL) && (prev->pcb->state != PROC_STATE_ZOMBIE) && (prev->pcb->state != PROC_STATE_WAITING))
+			if ((prev != NULL) && (prev->pcb != NULL) &&
+			    (prev->pcb->state != PROC_STATE_ZOMBIE) &&
+			    (prev->pcb->state != PROC_STATE_WAITING))
 				prev->pcb->state = PROC_STATE_READY;
 
-			mmu_switch((void *) __pa(next->pcb->pgtable));
+			mmu_switch((void *)__pa(next->pcb->pgtable));
 			set_pgtable(next->pcb->pgtable);
-
 		}
 #endif /* CONFIG_MMU */
 
@@ -473,7 +483,6 @@ void schedule(void) {
 		__in_scheduling = false;
 
 		__switch_to(prev, next);
-
 	}
 	__in_scheduling = false;
 	__in_interrupt = false;
@@ -481,14 +490,16 @@ void schedule(void) {
 	local_irq_restore(flags);
 }
 
-static inline void raise_schedule(void *__dummy) {
+static inline void raise_schedule(void *__dummy)
+{
 	raise_softirq(SCHEDULE_SOFTIRQ);
 }
 
 /*
  * Dump the ready threads
  */
-void dump_ready(void) {
+void dump_ready(void)
+{
 	struct list_head *pos;
 	queue_thread_t *cur;
 	unsigned long flags;
@@ -500,14 +511,14 @@ void dump_ready(void) {
 	if (list_empty(&readyThreads)) {
 		lprintk("  <empty>\n");
 		local_irq_restore(flags);
-		return ;
+		return;
 	}
 
-	list_for_each(pos, &readyThreads)
-	{
+	list_for_each(pos, &readyThreads) {
 		cur = list_entry(pos, queue_thread_t, list);
-		lprintk("  Thread ID: %d name: %s state: %d prio: %d\n", cur->tcb->tid, cur->tcb->name, cur->tcb->state, cur->tcb->prio);
-
+		lprintk("  Thread ID: %d name: %s state: %d prio: %d\n",
+			cur->tcb->tid, cur->tcb->name, cur->tcb->state,
+			cur->tcb->prio);
 	}
 
 	local_irq_restore(flags);
@@ -516,7 +527,8 @@ void dump_ready(void) {
 /*
  * Dump the zombie threads
  */
-void dump_zombie(void) {
+void dump_zombie(void)
+{
 	struct list_head *pos;
 	queue_thread_t *cur;
 	unsigned long flags;
@@ -528,14 +540,14 @@ void dump_zombie(void) {
 	if (list_empty(&zombieThreads)) {
 		printk("  <empty>\n");
 		local_irq_restore(flags);
-		return ;
+		return;
 	}
 
-	list_for_each(pos, &zombieThreads)
-	{
+	list_for_each(pos, &zombieThreads) {
 		cur = list_entry(pos, queue_thread_t, list);
-		printk("  Proc ID: %d Thread ID: %d state: %d\n", ((cur->tcb->pcb != NULL) ? cur->tcb->pcb->pid : 0), cur->tcb->tid, cur->tcb->state);
-
+		printk("  Proc ID: %d Thread ID: %d state: %d\n",
+		       ((cur->tcb->pcb != NULL) ? cur->tcb->pcb->pid : 0),
+		       cur->tcb->tid, cur->tcb->state);
 	}
 
 	local_irq_restore(flags);
@@ -544,13 +556,14 @@ void dump_zombie(void) {
 /*
  * Dump information of the scheduling waitqueues.
  */
-void dump_sched(void) {
+void dump_sched(void)
+{
 	dump_ready();
 	dump_zombie();
 }
 
-void scheduler_init(void) {
-
+void scheduler_init(void)
+{
 	boot_stage = BOOT_STAGE_SCHED;
 
 	/* Low-level thread initialization */

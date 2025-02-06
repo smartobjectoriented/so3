@@ -41,7 +41,7 @@ void vfp_save_state(struct domain *d)
 	{
 		d->vfp.fpinst = READ_CP32(FPINST);
 
-		if ( d->vfp.fpexc & FPEXC_FP2V )
+		if (d->vfp.fpexc & FPEXC_FP2V)
 			d->vfp.fpinst2 = READ_CP32(FPINST2);
 
 		/* Disable FPEXC_EX */
@@ -50,14 +50,15 @@ void vfp_save_state(struct domain *d)
 
 	/* Save {d0-d15} */
 	asm volatile("stc p11, cr0, [%1], #32*4"
-			: "=Q" (*d->vfp.fpregs1) : "r" (d->vfp.fpregs1));
+		     : "=Q"(*d->vfp.fpregs1)
+		     : "r"(d->vfp.fpregs1));
 
 	/* 32 x 64 bits registers? */
-	if ((READ_CP32(MVFR0) & MVFR0_A_SIMD_MASK) == 2)
-	{
+	if ((READ_CP32(MVFR0) & MVFR0_A_SIMD_MASK) == 2) {
 		/* Save {d16-d31} */
 		asm volatile("stcl p11, cr0, [%1], #32*4"
-				: "=Q" (*d->vfp.fpregs2) : "r" (d->vfp.fpregs2));
+			     : "=Q"(*d->vfp.fpregs2)
+			     : "r"(d->vfp.fpregs2));
 	}
 
 	WRITE_CP32(d->vfp.fpexc & ~(FPEXC_EN), FPEXC);
@@ -68,15 +69,19 @@ void vfp_restore_state(struct domain *d)
 	WRITE_CP32(READ_CP32(FPEXC) | FPEXC_EN, FPEXC);
 
 	/* Restore {d0-d15} */
-	asm volatile("ldc p11, cr0, [%1], #32*4" : : "Q" (*d->vfp.fpregs1), "r" (d->vfp.fpregs1));
+	asm volatile("ldc p11, cr0, [%1], #32*4"
+		     :
+		     : "Q"(*d->vfp.fpregs1), "r"(d->vfp.fpregs1));
 
 	/* 32 x 64 bits registers? */
-	if ((READ_CP32(MVFR0) & MVFR0_A_SIMD_MASK) == 2) /* 32 x 64 bits registers */
+	if ((READ_CP32(MVFR0) & MVFR0_A_SIMD_MASK) ==
+	    2) /* 32 x 64 bits registers */
 		/* Restore {d16-d31} */
-		asm volatile("ldcl p11, cr0, [%1], #32*4" : : "Q" (*d->vfp.fpregs2), "r" (d->vfp.fpregs2));
+		asm volatile("ldcl p11, cr0, [%1], #32*4"
+			     :
+			     : "Q"(*d->vfp.fpregs2), "r"(d->vfp.fpregs2));
 
-	if (d->vfp.fpexc & FPEXC_EX)
-	{
+	if (d->vfp.fpexc & FPEXC_EX) {
 		WRITE_CP32(d->vfp.fpinst, FPINST);
 		if (d->vfp.fpexc & FPEXC_FP2V)
 			WRITE_CP32(d->vfp.fpinst2, FPINST2);
@@ -102,4 +107,3 @@ void vfp_enable(void)
 
 	__enable_vfp();
 }
-

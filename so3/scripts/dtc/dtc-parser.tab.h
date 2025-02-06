@@ -36,10 +36,10 @@
    private implementation details that can be changed or removed.  */
 
 #ifndef YY_YY_SCRIPTS_DTC_DTC_PARSER_TAB_H_INCLUDED
-# define YY_YY_SCRIPTS_DTC_DTC_PARSER_TAB_H_INCLUDED
+#define YY_YY_SCRIPTS_DTC_DTC_PARSER_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+#define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -47,54 +47,51 @@ extern int yydebug;
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
-# define YYTOKENTYPE
-  enum yytokentype
-  {
-    YYEMPTY = -2,
-    YYEOF = 0,                     /* "end of file"  */
-    YYerror = 256,                 /* error  */
-    YYUNDEF = 257,                 /* "invalid token"  */
-    DT_V1 = 258,                   /* DT_V1  */
-    DT_PLUGIN = 259,               /* DT_PLUGIN  */
-    DT_MEMRESERVE = 260,           /* DT_MEMRESERVE  */
-    DT_LSHIFT = 261,               /* DT_LSHIFT  */
-    DT_RSHIFT = 262,               /* DT_RSHIFT  */
-    DT_LE = 263,                   /* DT_LE  */
-    DT_GE = 264,                   /* DT_GE  */
-    DT_EQ = 265,                   /* DT_EQ  */
-    DT_NE = 266,                   /* DT_NE  */
-    DT_AND = 267,                  /* DT_AND  */
-    DT_OR = 268,                   /* DT_OR  */
-    DT_BITS = 269,                 /* DT_BITS  */
-    DT_DEL_PROP = 270,             /* DT_DEL_PROP  */
-    DT_DEL_NODE = 271,             /* DT_DEL_NODE  */
-    DT_OMIT_NO_REF = 272,          /* DT_OMIT_NO_REF  */
-    DT_PROPNODENAME = 273,         /* DT_PROPNODENAME  */
-    DT_LITERAL = 274,              /* DT_LITERAL  */
-    DT_CHAR_LITERAL = 275,         /* DT_CHAR_LITERAL  */
-    DT_BYTE = 276,                 /* DT_BYTE  */
-    DT_STRING = 277,               /* DT_STRING  */
-    DT_LABEL = 278,                /* DT_LABEL  */
-    DT_LABEL_REF = 279,            /* DT_LABEL_REF  */
-    DT_PATH_REF = 280,             /* DT_PATH_REF  */
-    DT_INCBIN = 281                /* DT_INCBIN  */
-  };
-  typedef enum yytokentype yytoken_kind_t;
+#define YYTOKENTYPE
+enum yytokentype {
+	YYEMPTY = -2,
+	YYEOF = 0, /* "end of file"  */
+	YYerror = 256, /* error  */
+	YYUNDEF = 257, /* "invalid token"  */
+	DT_V1 = 258, /* DT_V1  */
+	DT_PLUGIN = 259, /* DT_PLUGIN  */
+	DT_MEMRESERVE = 260, /* DT_MEMRESERVE  */
+	DT_LSHIFT = 261, /* DT_LSHIFT  */
+	DT_RSHIFT = 262, /* DT_RSHIFT  */
+	DT_LE = 263, /* DT_LE  */
+	DT_GE = 264, /* DT_GE  */
+	DT_EQ = 265, /* DT_EQ  */
+	DT_NE = 266, /* DT_NE  */
+	DT_AND = 267, /* DT_AND  */
+	DT_OR = 268, /* DT_OR  */
+	DT_BITS = 269, /* DT_BITS  */
+	DT_DEL_PROP = 270, /* DT_DEL_PROP  */
+	DT_DEL_NODE = 271, /* DT_DEL_NODE  */
+	DT_OMIT_NO_REF = 272, /* DT_OMIT_NO_REF  */
+	DT_PROPNODENAME = 273, /* DT_PROPNODENAME  */
+	DT_LITERAL = 274, /* DT_LITERAL  */
+	DT_CHAR_LITERAL = 275, /* DT_CHAR_LITERAL  */
+	DT_BYTE = 276, /* DT_BYTE  */
+	DT_STRING = 277, /* DT_STRING  */
+	DT_LABEL = 278, /* DT_LABEL  */
+	DT_LABEL_REF = 279, /* DT_LABEL_REF  */
+	DT_PATH_REF = 280, /* DT_PATH_REF  */
+	DT_INCBIN = 281 /* DT_INCBIN  */
+};
+typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-union YYSTYPE
-{
-
+#if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
+union YYSTYPE {
 	char *propnodename;
 	char *labelref;
 	uint8_t byte;
 	struct data data;
 
 	struct {
-		struct data	data;
-		int		bits;
+		struct data data;
+		int bits;
 	} array;
 
 	struct property *prop;
@@ -104,33 +101,28 @@ union YYSTYPE
 	struct reserve_info *re;
 	uint64_t integer;
 	unsigned int flags;
-
-
 };
 typedef union YYSTYPE YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
+#define YYSTYPE_IS_TRIVIAL 1
+#define YYSTYPE_IS_DECLARED 1
 #endif
 
 /* Location type.  */
-#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+#if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
 typedef struct YYLTYPE YYLTYPE;
-struct YYLTYPE
-{
-  int first_line;
-  int first_column;
-  int last_line;
-  int last_column;
+struct YYLTYPE {
+	int first_line;
+	int first_column;
+	int last_line;
+	int last_column;
 };
-# define YYLTYPE_IS_DECLARED 1
-# define YYLTYPE_IS_TRIVIAL 1
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL 1
 #endif
-
 
 extern YYSTYPE yylval;
 extern YYLTYPE yylloc;
 
-int yyparse (void);
-
+int yyparse(void);
 
 #endif /* !YY_YY_SCRIPTS_DTC_DTC_PARSER_TAB_H_INCLUDED  */

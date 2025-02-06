@@ -19,14 +19,17 @@
 #define MEMSLOT_H
 
 /* Number of possible MEs in the local SOO */
-#define MEMSLOT_BASE	  2
-#define MEMSLOT_NR	  (MEMSLOT_BASE + MAX_ME_DOMAINS)
+#define MEMSLOT_BASE 2
+#define MEMSLOT_NR (MEMSLOT_BASE + MAX_ME_DOMAINS)
 
 /* Basic memslots. */
-#define MEMSLOT_AVZ	  0
-#define MEMSLOT_AGENCY	  1
+#define MEMSLOT_AVZ 0
+#define MEMSLOT_AGENCY 1
 
-#define DOM_TO_MEMSLOT(domid) (((domid == DOMID_AGENCY) || (domid == DOMID_AGENCY_RT)) ? MEMSLOT_AGENCY : domid)
+#define DOM_TO_MEMSLOT(domid)                                      \
+	(((domid == DOMID_AGENCY) || (domid == DOMID_AGENCY_RT)) ? \
+		 MEMSLOT_AGENCY :                                  \
+		 domid)
 
 /*
  * Memslot management
@@ -34,10 +37,10 @@
  * Describes how domains are mapped in physical memory
  */
 typedef struct {
-	addr_t base_paddr;  /* Guest physical start address */
-        addr_t base_vaddr; /* Guest virtual start address */
+	addr_t base_paddr; /* Guest physical start address */
+	addr_t base_vaddr; /* Guest virtual start address */
 
-        size_t size;
+	size_t size;
 
 	unsigned int busy; /* Indicate if a memslot is available or not */
 

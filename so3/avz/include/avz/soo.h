@@ -21,13 +21,12 @@
 #include <soo/uapi/soo.h>
 
 /* Device tree features */
-#define ME_FEAT_ROOT		"/me_features"
+#define ME_FEAT_ROOT "/me_features"
 
 void soo_activity_init(void);
 void shutdown_ME(unsigned int ME_slotID);
 
 ME_state_t get_ME_state(uint32_t ME_slotID);
 void set_ME_state(uint32_t slotID, ME_state_t state);
-
 
 #endif /* SOO_H */

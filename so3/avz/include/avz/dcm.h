@@ -27,31 +27,31 @@
 #include <stddef.h>
 #endif /* __KERNEL__ */
 
-#define DCM_DEV_NAME		"/dev/soo/dcm"
+#define DCM_DEV_NAME "/dev/soo/dcm"
 
 #ifdef __KERNEL__
 
-#define DCM_MAJOR		127
+#define DCM_MAJOR 127
 
-#define DCM_N_RECV_BUFFERS	10
+#define DCM_N_RECV_BUFFERS 10
 
 /* Max ME size in bytes */
-#define DATACOMM_ME_MAX_SIZE	(32 * 1024 * 1024)
+#define DATACOMM_ME_MAX_SIZE (32 * 1024 * 1024)
 
 #endif /* __KERNEL__ */
 
 /* IOCTL codes exposed to the user space side */
-#define DCM_IOCTL_NEIGHBOUR_COUNT		_IOWR(0x5000DC30, 0, char)
-#define DCM_IOCTL_SEND				_IOWR(0x5000DC30, 1, char)
-#define DCM_IOCTL_RECV				_IOWR(0x5000DC30, 2, char)
-#define DCM_IOCTL_RELEASE			_IOWR(0x5000DC30, 3, char)
-#define DCM_IOCTL_DUMP_NEIGHBOURHOOD		_IOWR(0x5000DC30, 4, char)
-#define DCM_IOCTL_SET_AGENCY_UID		_IOWR(0x5000DC30, 5, char)
+#define DCM_IOCTL_NEIGHBOUR_COUNT _IOWR(0x5000DC30, 0, char)
+#define DCM_IOCTL_SEND _IOWR(0x5000DC30, 1, char)
+#define DCM_IOCTL_RECV _IOWR(0x5000DC30, 2, char)
+#define DCM_IOCTL_RELEASE _IOWR(0x5000DC30, 3, char)
+#define DCM_IOCTL_DUMP_NEIGHBOURHOOD _IOWR(0x5000DC30, 4, char)
+#define DCM_IOCTL_SET_AGENCY_UID _IOWR(0x5000DC30, 5, char)
 
 typedef struct {
-	void *ME_data;	/* Reference to the uncompressed ME */
-	size_t size;		/* Size of this ME ready to be compressed */
-	uint32_t prio;		/* Priority of this ME (unused at the moment) */
+	void *ME_data; /* Reference to the uncompressed ME */
+	size_t size; /* Size of this ME ready to be compressed */
+	uint32_t prio; /* Priority of this ME (unused at the moment) */
 } dcm_ioctl_send_args_t;
 
 typedef struct {
@@ -63,10 +63,7 @@ typedef struct {
 /*
  * Types of buffer; helpful to manage buffers in a seamless way.
  */
-typedef enum {
-	DCM_BUFFER_SEND = 0,
-	DCM_BUFFER_RECV
-} dcm_buffer_direction_t;
+typedef enum { DCM_BUFFER_SEND = 0, DCM_BUFFER_RECV } dcm_buffer_direction_t;
 
 #ifdef __KERNEL__
 
@@ -86,7 +83,7 @@ typedef enum {
  * Buffer descriptor
  */
 typedef struct {
-	dcm_buffer_status_t	status;
+	dcm_buffer_status_t status;
 
 	/*
 	 * Reference to the ME buffer.

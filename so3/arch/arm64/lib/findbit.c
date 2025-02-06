@@ -22,7 +22,7 @@
  */
 static inline unsigned long __ffs(unsigned long word)
 {
-        return __builtin_ctzl(word);
+	return __builtin_ctzl(word);
 }
 
 /* Based on linux/include/asm-generic/bitops/ffz.h */
@@ -32,25 +32,25 @@ static inline unsigned long __ffs(unsigned long word)
  *
  * Undefined if no zero exists, so code should check against ~0UL first.
  */
-#define ffz(x)  __ffs(~(x))
+#define ffz(x) __ffs(~(x))
 
 static inline int flsl(unsigned long x)
 {
-        uint64_t ret;
+	uint64_t ret;
 
-        asm("clz\t%0, %1" : "=r" (ret) : "r" (x));
+	asm("clz\t%0, %1" : "=r"(ret) : "r"(x));
 
-        return BITS_PER_LONG - ret;
+	return BITS_PER_LONG - ret;
 }
 
 /*
  * Find the next set bit in a memory region.
  */
 unsigned long _find_next_bit(const unsigned long *addr, unsigned long size,
-			    unsigned long offset)
+			     unsigned long offset)
 {
 	const unsigned long *p = addr + BIT_WORD(offset);
-	unsigned long result = offset & ~(BITS_PER_LONG-1);
+	unsigned long result = offset & ~(BITS_PER_LONG - 1);
 	unsigned long tmp;
 
 	if (offset >= size)
@@ -67,7 +67,7 @@ unsigned long _find_next_bit(const unsigned long *addr, unsigned long size,
 		size -= BITS_PER_LONG;
 		result += BITS_PER_LONG;
 	}
-	while (size & ~(BITS_PER_LONG-1)) {
+	while (size & ~(BITS_PER_LONG - 1)) {
 		if ((tmp = *(p++)))
 			goto found_middle;
 		result += BITS_PER_LONG;
@@ -79,8 +79,8 @@ unsigned long _find_next_bit(const unsigned long *addr, unsigned long size,
 
 found_first:
 	tmp &= (~0UL >> (BITS_PER_LONG - size));
-	if (tmp == 0UL)		/* Are any bits set? */
-		return result + size;	/* Nope. */
+	if (tmp == 0UL) /* Are any bits set? */
+		return result + size; /* Nope. */
 found_middle:
 	return result + __ffs(tmp);
 }
@@ -90,10 +90,10 @@ found_middle:
  * Linus' asm-alpha/bitops.h.
  */
 unsigned long _find_next_zero_bit(const unsigned long *addr, unsigned long size,
-		 		  unsigned long offset)
+				  unsigned long offset)
 {
 	const unsigned long *p = addr + BIT_WORD(offset);
-	unsigned long result = offset & ~(BITS_PER_LONG-1);
+	unsigned long result = offset & ~(BITS_PER_LONG - 1);
 	unsigned long tmp;
 
 	if (offset >= size)
@@ -110,7 +110,7 @@ unsigned long _find_next_zero_bit(const unsigned long *addr, unsigned long size,
 		size -= BITS_PER_LONG;
 		result += BITS_PER_LONG;
 	}
-	while (size & ~(BITS_PER_LONG-1)) {
+	while (size & ~(BITS_PER_LONG - 1)) {
 		if (~(tmp = *(p++)))
 			goto found_middle;
 		result += BITS_PER_LONG;
@@ -122,8 +122,8 @@ unsigned long _find_next_zero_bit(const unsigned long *addr, unsigned long size,
 
 found_first:
 	tmp |= ~0UL << size;
-	if (tmp == ~0UL)	/* Are any bits zero? */
-		return result + size;	/* Nope. */
+	if (tmp == ~0UL) /* Are any bits zero? */
+		return result + size; /* Nope. */
 found_middle:
 	return result + ffz(tmp);
 }
@@ -137,7 +137,7 @@ unsigned long _find_first_bit(const unsigned long *addr, unsigned long size)
 	unsigned long result = 0;
 	unsigned long tmp;
 
-	while (size & ~(BITS_PER_LONG-1)) {
+	while (size & ~(BITS_PER_LONG - 1)) {
 		if ((tmp = *(p++)))
 			goto found;
 		result += BITS_PER_LONG;
@@ -147,8 +147,8 @@ unsigned long _find_first_bit(const unsigned long *addr, unsigned long size)
 		return result;
 
 	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
-	if (tmp == 0UL)		/* Are any bits set? */
-		return result + size;	/* Nope. */
+	if (tmp == 0UL) /* Are any bits set? */
+		return result + size; /* Nope. */
 found:
 	return result + __ffs(tmp);
 }
@@ -156,13 +156,14 @@ found:
 /*
  * Find the first cleared bit in a memory region.
  */
-unsigned long _find_first_zero_bit(const unsigned long *addr, unsigned long size)
+unsigned long _find_first_zero_bit(const unsigned long *addr,
+				   unsigned long size)
 {
 	const unsigned long *p = addr;
 	unsigned long result = 0;
 	unsigned long tmp;
 
-	while (size & ~(BITS_PER_LONG-1)) {
+	while (size & ~(BITS_PER_LONG - 1)) {
 		if (~(tmp = *(p++)))
 			goto found;
 		result += BITS_PER_LONG;
@@ -172,9 +173,8 @@ unsigned long _find_first_zero_bit(const unsigned long *addr, unsigned long size
 		return result;
 
 	tmp = (*p) | (~0UL << size);
-	if (tmp == ~0UL)	/* Are any bits zero? */
-		return result + size;	/* Nope. */
+	if (tmp == ~0UL) /* Are any bits zero? */
+		return result + size; /* Nope. */
 found:
 	return result + ffz(tmp);
 }
- 

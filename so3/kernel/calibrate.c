@@ -26,7 +26,8 @@
 /**
  * Set the global variable jiffy_usec with the number of loop for 1us
  */
-void calibrate_delay(void) {
+void calibrate_delay(void)
+{
 	u64 __jiffies = jiffies;
 
 	printk("%s: calibrating...", __func__);
@@ -35,22 +36,23 @@ void calibrate_delay(void) {
 
 	if (!periodic_timer.start && !oneshot_timer.start) {
 		lprintk("Warning! No timer initialized yet.\n");
-		return ;
+		return;
 	}
 
 #ifdef CONFIG_RTOS
 	oneshot_timer.set_delay(NSECS / HZ);
 #endif /* CONFIG_RTOS */
 
-	while (jiffies == __jiffies) ;
+	while (jiffies == __jiffies)
+		;
 	__jiffies = jiffies;
 
 #ifdef CONFIG_RTOS
 	oneshot_timer.set_delay(NSECS / HZ);
 #endif /* CONFIG_RTOS */
 
-	while (jiffies == __jiffies) jiffies_ref++;
+	while (jiffies == __jiffies)
+		jiffies_ref++;
 
 	printk("done. jiffies_ref = %llx\n", jiffies_ref);
-
 }

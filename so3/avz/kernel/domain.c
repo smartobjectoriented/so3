@@ -83,9 +83,9 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 	 * 
 	 */
 
-        gnttab_init(d);
+	gnttab_init(d);
 
-        d->avz_shared->domID = domid;
+	d->avz_shared->domID = domid;
 
 	if (!is_idle_domain(d)) {
 		d->is_paused_by_controller = 1;
@@ -100,12 +100,9 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 
 	spin_lock_init(&d->virq_lock);
 
-	if (is_idle_domain(d))
-	{
+	if (is_idle_domain(d)) {
 		d->runstate = RUNSTATE_running;
-	}
-	else
-	{
+	} else {
 		d->runstate = RUNSTATE_offline;
 		set_bit(_VPF_down, &d->pause_flags);
 	}
@@ -115,21 +112,17 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 	if (is_idle_domain(d) && (cpu_id == AGENCY_CPU))
 		d->sched = &sched_agency;
 	else {
-
 		if (cpu_id == ME_CPU) {
-
 			d->sched = &sched_flip;
 			d->need_periodic_timer = true;
 
 		} else if (cpu_id == AGENCY_CPU) {
-
 			d->sched = &sched_agency;
 			d->need_periodic_timer = true;
 
 		} else if (cpu_id == AGENCY_RT_CPU)
 
 			d->sched = &sched_agency;
-
 	}
 
 	if (sched_init_domain(d, cpu_id) != 0)
@@ -144,12 +137,12 @@ static void complete_domain_destroy(struct domain *d)
 	sched_destroy_domain(d);
 
 	/* Remove the root page table */
-        reset_root_pgtable((void *) d->pagetable_vaddr, true);
+	reset_root_pgtable((void *)d->pagetable_vaddr, true);
 
-        /* Restore allocated memory for this domain */
+	/* Restore allocated memory for this domain */
 
-        free((void *) d->avz_shared);
-	free((void *) d->domain_stack);
+	free((void *)d->avz_shared);
+	free((void *)d->domain_stack);
 
 	free(d);
 }
@@ -196,7 +189,8 @@ void domain_unpause(struct domain *d)
 		vcpu_wake(d);
 }
 
-void domain_pause_by_systemcontroller(struct domain *d) {
+void domain_pause_by_systemcontroller(struct domain *d)
+{
 	/* We must ensure that the domain is not already paused */
 	BUG_ON(d->is_paused_by_controller);
 
@@ -222,14 +216,13 @@ void context_switch(struct domain *prev, struct domain *next)
 	local_irq_disable();
 
 	if (!is_idle_domain(current_domain)) {
-
-		local_irq_disable();  /* Again, if the guest re-enables the IRQ */
+		local_irq_disable(); /* Again, if the guest re-enables the IRQ */
 	}
-	
+
 	vcpu_save_context(prev);
 
 	switch_mm_domain(next);
-	
+
 	vcpu_restore_context(next);
 
 	/* Clear running flag /after/ writing context to memory. */
@@ -243,7 +236,6 @@ void context_switch(struct domain *prev, struct domain *next)
 	spin_unlock(&prev->sched->sched_data.schedule_lock);
 
 	__switch_domain_to(prev, next);
-
 }
 
 static void continue_cpu_idle_loop(void)
@@ -264,7 +256,6 @@ static void continue_cpu_idle_loop(void)
 
 void startup_cpu_idle_loop(void)
 {
-
 	ASSERT(is_idle_domain(current_domain));
 
 	raise_softirq(SCHEDULE_SOFTIRQ);
@@ -276,47 +267,51 @@ void machine_halt(void)
 {
 	printk("machine_halt called: spinning....\n");
 
-	while (1);
+	while (1)
+		;
 }
 
 void machine_restart(unsigned int delay_millisecs)
 {
 	printk("machine_restart called: spinning....\n");
 
-	while (1);
+	while (1)
+		;
 }
 
 void do_domctl(domctl_t *args)
 {
-        struct domain *d;
+	struct domain *d;
 
-        spin_lock(&domctl_lock);
+	spin_lock(&domctl_lock);
 
 	d = domains[args->domain];
 
-	switch (args->cmd)
-	{
+	switch (args->cmd) {
 	case DOMCTL_pauseME:
 
 		domain_pause_by_systemcontroller(d);
 		break;
 
 	case DOMCTL_unpauseME:
-		
-                DBG("%s: unpausing ME\n", __func__);
 
-                domain_unpause_by_systemcontroller(d);
+		DBG("%s: unpausing ME\n", __func__);
+
+		domain_unpause_by_systemcontroller(d);
 		break;
 
 	case DOMCTL_get_AVZ_shared:
-                if (current_domain->avz_shared->domID == DOMID_AGENCY) 
-                        args->avz_shared_paddr = memslot[MEMSLOT_AGENCY].ipa_addr + memslot[MEMSLOT_AGENCY].size;
-                else
-                        args->avz_shared_paddr =
-                            memslot[current_domain->avz_shared->domID].ipa_addr + memslot[current_domain->avz_shared->domID].size;
-                break;
-        }
+		if (current_domain->avz_shared->domID == DOMID_AGENCY)
+			args->avz_shared_paddr =
+				memslot[MEMSLOT_AGENCY].ipa_addr +
+				memslot[MEMSLOT_AGENCY].size;
+		else
+			args->avz_shared_paddr =
+				memslot[current_domain->avz_shared->domID]
+					.ipa_addr +
+				memslot[current_domain->avz_shared->domID].size;
+		break;
+	}
 
 	spin_unlock(&domctl_lock);
 }
-

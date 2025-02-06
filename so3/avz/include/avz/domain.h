@@ -26,21 +26,21 @@
 #include <asm/mmu.h>
 
 /* We keep the STACK_SIZE to 8192 in order to have a similar stack_size as guest OS in SVC mode */
-#define DOMAIN_STACK_SIZE  (PAGE_SIZE << 1)
+#define DOMAIN_STACK_SIZE (PAGE_SIZE << 1)
 
 #ifdef __ASSEMBLY__
 
-.macro	curdom	rd, tmp
+.macro curdom rd,
+	tmp
 
-	// Compute the address of the stack bottom where cpu_info is located.
-	ldr	\rd, =(~(DOMAIN_STACK_SIZE - 1))
-	mov	\tmp, sp
-	and	\rd, \tmp, \rd
+		// Compute the address of the stack bottom where cpu_info is located.
+		ldr	\rd,
+	= (~(DOMAIN_STACK_SIZE - 1)) mov	\tmp,
+	sp and	\rd, \tmp, \rd
 
-	// Get the address of the domain descriptor
-	ldr	\rd, [\rd]
-.endm
-
+		// Get the address of the domain descriptor
+		ldr	\rd,
+	[\rd].endm
 
 #else /* __ASSEMBLY__ */
 
@@ -50,22 +50,21 @@
 
 #include <avz/uapi/avz.h>
 
-#define NR_GRANT_PFN	32
+#define NR_GRANT_PFN 32
 
 typedef struct {
-        addr_t pfn;
-        bool free;
+	addr_t pfn;
+	bool free;
 } grant_pfn_t;
 
-struct evtchn
-{
-	u8  state;             /* ECS_* */
+struct evtchn {
+	u8 state; /* ECS_* */
 
 	bool can_notify;
 
 	struct {
 		domid_t remote_domid;
-	} unbound;     /* state == ECS_UNBOUND */
+	} unbound; /* state == ECS_UNBOUND */
 
 	struct {
 		u16 remote_evtchn;
@@ -74,12 +73,11 @@ struct evtchn
 
 	volatile bool pending;
 
-	u16 virq;      /* state == ECS_VIRQ */
-
+	u16 virq; /* state == ECS_VIRQ */
 };
 
 struct domain {
-        /* The spinlocks are placed here to have a 8-byte alignement
+	/* The spinlocks are placed here to have a 8-byte alignement
 	 * required by ldaxr instruction.
 	 */
 
@@ -89,16 +87,17 @@ struct domain {
 
 	vcpu_t vcpu;
 
-	addr_t	event_callback;
-	addr_t	domcall;
+	addr_t event_callback;
+	addr_t domcall;
 
-	avz_shared_t *avz_shared;     /* shared data area between AVZ and the domain */
+	avz_shared_t
+		*avz_shared; /* shared data area between AVZ and the domain */
 
 	/* Physical and virtual address of the page table used when the domain is bootstraping */
 	addr_t pagetable_paddr;
 	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
 
-	unsigned int max_pages;    /* maximum value for tot_pages */
+	unsigned int max_pages; /* maximum value for tot_pages */
 
 	/* Event channel information. */
 	struct evtchn evtchn[NR_EVTCHN];
@@ -111,12 +110,12 @@ struct domain {
 	bool is_paused_by_controller;
 
 	/* Grant table to store the pages granted by this domain to the other */
-        struct list_head gnttab;
+	struct list_head gnttab;
 
 	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
-        grant_pfn_t grant_pfn[NR_GRANT_PFN];
+	grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
-        int processor;
+	int processor;
 
 	bool need_periodic_timer;
 	struct timer oneshot_timer;
@@ -135,8 +134,8 @@ struct domain {
 	void *domain_stack;
 };
 
-#define USE_NORMAL_PGTABLE	0
-#define USE_SYSTEM_PGTABLE	1
+#define USE_NORMAL_PGTABLE 0
+#define USE_SYSTEM_PGTABLE 1
 
 extern struct domain *agency_rt_domain;
 extern struct domain *domains[MAX_DOMAINS];
@@ -149,18 +148,20 @@ ME_state_t get_ME_state(unsigned int ME_slotID);
 void do_domctl(domctl_t *args);
 
 void *setup_dom_stack(struct domain *d);
- 
+
 void machine_halt(void);
 
 void arch_domain_create(struct domain *d, int cpu_id);
 
-void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr, addr_t entry_addr);
+void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr,
+			      addr_t entry_addr);
 
 /*
  * setup_page_table_guestOS() is setting up the 1st-level and 2nd-level page tables within the domain.
  */
 
-void __setup_dom_pgtable(struct domain *d, addr_t ipa_start, unsigned long map_size);
+void __setup_dom_pgtable(struct domain *d, addr_t ipa_start,
+			 unsigned long map_size);
 
 void domain_unpause_by_systemcontroller(struct domain *d);
 
@@ -175,7 +176,7 @@ void free_vcpu_struct(struct vcpu *v);
 void vcpu_destroy(struct vcpu *v);
 
 void arch_domain_destroy(struct domain *d);
- 
+
 void arch_dump_vcpu_info(struct vcpu *v);
 
 void arch_dump_domain_info(struct domain *d);

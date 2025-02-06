@@ -37,10 +37,16 @@
 /* Maximum stack size for a process, including all thread stacks */
 #define PROC_STACK_SIZE (PROC_THREAD_MAX * THREAD_STACK_SIZE)
 
-#define FD_MAX 		64
-#define N_MUTEX		10
+#define FD_MAX 64
+#define N_MUTEX 10
 
-typedef enum { PROC_STATE_NEW, PROC_STATE_READY, PROC_STATE_RUNNING, PROC_STATE_WAITING, PROC_STATE_ZOMBIE } proc_state_t;
+typedef enum {
+	PROC_STATE_NEW,
+	PROC_STATE_READY,
+	PROC_STATE_RUNNING,
+	PROC_STATE_WAITING,
+	PROC_STATE_ZOMBIE
+} proc_state_t;
 typedef unsigned int thread_t;
 
 #define PROC_NAME_LEN 80
@@ -121,7 +127,6 @@ struct pcb {
 
 	/* Mutex lock to be used in conjunction with the user space (very temporary) */
 	mutex_t lock[N_MUTEX];
-
 };
 typedef struct pcb pcb_t;
 

@@ -28,17 +28,17 @@
 
 #include <device/arch/pl011.h>
 
-#include <asm/io.h>                 /* ioread/iowrite macros */
+#include <asm/io.h> /* ioread/iowrite macros */
 
 #include <printk.h>
 
-#define AMBA_ISR_PASS_LIMIT	256
-#define SERIAL_BUFFER_SIZE	80
+#define AMBA_ISR_PASS_LIMIT 256
+#define SERIAL_BUFFER_SIZE 80
 
-volatile void *__uart_vaddr = (void *) CONFIG_UART_LL_PADDR;
+volatile void *__uart_vaddr = (void *)CONFIG_UART_LL_PADDR;
 
 static volatile char serial_buffer[SERIAL_BUFFER_SIZE];
-static volatile uint32_t prod=0, cons=0;
+static volatile uint32_t prod = 0, cons = 0;
 
 extern mutex_t read_lock;
 
@@ -47,32 +47,32 @@ typedef struct {
 	irq_def_t irq_def;
 } pl011_t;
 
-pl011_t pl011 =
-{
+pl011_t pl011 = {
 	.base = CONFIG_UART_LL_PADDR,
 };
 
-static int pl011_put_byte(char c) {
-
-	while ((ioread16(pl011.base + UART01x_FR) & UART01x_FR_TXFF)) ;
+static int pl011_put_byte(char c)
+{
+	while ((ioread16(pl011.base + UART01x_FR) & UART01x_FR_TXFF))
+		;
 
 	iowrite16(pl011.base + UART01x_DR, c);
 
 	return 1;
 }
 
-static char pl011_get_byte(bool polling) {
+static char pl011_get_byte(bool polling)
+{
 	char tmp;
 
 	if (polling) {
-		
 		/* Poll while nothing available */
-		while (ioread8(pl011.base + UART01x_FR) & UART01x_FR_RXFE) ;
+		while (ioread8(pl011.base + UART01x_FR) & UART01x_FR_RXFE)
+			;
 
 		return ioread16(pl011.base + UART01x_DR);
 	} else {
 		while (prod == cons) {
-
 			schedule();
 
 			smp_mb();
@@ -83,7 +83,6 @@ static char pl011_get_byte(bool polling) {
 		cons = (cons + 1) % SERIAL_BUFFER_SIZE;
 
 		return tmp;
-
 	}
 
 	/* Makes gcc happy */
@@ -106,14 +105,16 @@ static irq_return_t pl011_int(int irq, void *dummy)
 	status = ioread16(pl011.base + UART011_MIS);
 	if (status) {
 		do {
-			iowrite16(pl011.base + UART011_ICR, status & ~(UART011_TXIS|UART011_RTIS | UART011_RXIS));
+			iowrite16(pl011.base + UART011_ICR,
+				  status & ~(UART011_TXIS | UART011_RTIS |
+					     UART011_RXIS));
 
-			if (status & (UART011_RTIS|UART011_RXIS)) {
-				serial_buffer[prod] = ioread16(pl011.base + UART01x_DR);
+			if (status & (UART011_RTIS | UART011_RXIS)) {
+				serial_buffer[prod] =
+					ioread16(pl011.base + UART01x_DR);
 
 				/* Check for SIGINT to be raised on Ctrl^C */
 				if (serial_buffer[prod] == 3) {
-
 					pl011_put_byte('^');
 					pl011_put_byte('C');
 					pl011_put_byte('\n');
@@ -121,7 +122,8 @@ static irq_return_t pl011_int(int irq, void *dummy)
 
 #ifdef CONFIG_IPC_SIGNAL
 					if (current()->pcb != NULL)
-						do_kill(current()->pcb->pid, SIGINT);
+						do_kill(current()->pcb->pid,
+							SIGINT);
 #endif
 				}
 
@@ -138,16 +140,18 @@ static irq_return_t pl011_int(int irq, void *dummy)
 	return IRQ_COMPLETED;
 }
 
-void pl011_enable_irq(void) {
+void pl011_enable_irq(void)
+{
 	irq_ops.enable(pl011.irq_def.irqnr);
 }
 
-void pl011_disable_irq(void) {
+void pl011_disable_irq(void)
+{
 	irq_ops.disable(pl011.irq_def.irqnr);
 }
 
-
-static int pl011_init(dev_t *dev, int fdt_offset) {
+static int pl011_init(dev_t *dev, int fdt_offset)
+{
 	const struct fdt_property *prop;
 	int prop_len;
 
@@ -167,9 +171,11 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
 #ifdef CONFIG_ARCH_ARM32
-	pl011.base = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	pl011.base = io_map(fdt32_to_cpu(((const fdt32_t *)prop->data)[0]),
+			    fdt32_to_cpu(((const fdt32_t *)prop->data)[1]));
 #else
-	pl011.base = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	pl011.base = io_map(fdt64_to_cpu(((const fdt64_t *)prop->data)[0]),
+			    fdt64_to_cpu(((const fdt64_t *)prop->data)[1]));
 #endif
 
 	fdt_interrupt_node(fdt_offset, &pl011.irq_def);
@@ -185,14 +191,14 @@ static int pl011_init(dev_t *dev, int fdt_offset) {
 	return 0;
 }
 
-void __ll_put_byte(char c) {
+void __ll_put_byte(char c)
+{
 	pl011_put_byte(c);
 }
 
-void printch(char c) {
+void printch(char c)
+{
 	__ll_put_byte(c);
 }
 
 REGISTER_DRIVER_POSTCORE("serial,pl011", pl011_init);
-
-

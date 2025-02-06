@@ -29,7 +29,6 @@
  * the use of ldrex/strex instructions will fail with cache disabled.
  */
 typedef struct {
-
 	/* Current letter */
 	char cur_letter;
 
@@ -45,5 +44,3 @@ typedef struct {
 extern sh_refso3_t *sh_refso3;
 
 #endif /* REFSO3_H */
-
-

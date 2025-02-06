@@ -35,7 +35,6 @@ typedef struct {
 } host_entry_t;
 
 typedef struct {
-
 	struct list_head list;
 
 	host_entry_t host_entry;
@@ -46,7 +45,6 @@ typedef struct {
  * This structure must be allocated within a page (or several contiguous pages).
  */
 typedef struct {
-
 	/* Number of visited (host) smart object */
 	int soohost_nr;
 
@@ -80,7 +78,8 @@ void del_host(struct list_head *hosts, uint64_t agencyUID);
  * @param me_common
  * @param agencyUID
  */
-void new_host(struct list_head *hosts, uint64_t agencyUID, void *priv, int priv_len);
+void new_host(struct list_head *hosts, uint64_t agencyUID, void *priv,
+	      int priv_len);
 
 /**
  * Retrieve the list of host from an array.

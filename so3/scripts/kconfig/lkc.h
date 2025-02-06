@@ -9,12 +9,22 @@
 #include "expr.h"
 
 #ifndef KBUILD_NO_NLS
-# include <libintl.h>
+#include <libintl.h>
 #else
-static inline const char *gettext(const char *txt) { return txt; }
-static inline void textdomain(const char *domainname) {}
-static inline void bindtextdomain(const char *name, const char *dir) {}
-static inline char *bind_textdomain_codeset(const char *dn, char *c) { return c; }
+static inline const char *gettext(const char *txt)
+{
+	return txt;
+}
+static inline void textdomain(const char *domainname)
+{
+}
+static inline void bindtextdomain(const char *name, const char *dir)
+{
+}
+static inline char *bind_textdomain_codeset(const char *dn, char *c)
+{
+	return c;
+}
 #endif
 
 #ifdef __cplusplus
@@ -22,10 +32,10 @@ extern "C" {
 #endif
 
 #ifdef LKC_DIRECT_LINK
-#define P(name,type,arg)	extern type name arg
+#define P(name, type, arg) extern type name arg
 #else
 #include "lkc_defs.h"
-#define P(name,type,arg)	extern type (*name ## _p) arg
+#define P(name, type, arg) extern type(*name##_p) arg
 #endif
 #include "lkc_proto.h"
 #undef P
@@ -45,21 +55,15 @@ extern "C" {
 #define CONFIG_ "CONFIG_"
 #endif
 
-#define TF_COMMAND	0x0001
-#define TF_PARAM	0x0002
-#define TF_OPTION	0x0004
+#define TF_COMMAND 0x0001
+#define TF_PARAM 0x0002
+#define TF_OPTION 0x0004
 
-enum conf_def_mode {
-	def_default,
-	def_yes,
-	def_mod,
-	def_no,
-	def_random
-};
+enum conf_def_mode { def_default, def_yes, def_mod, def_no, def_random };
 
-#define T_OPT_MODULES		1
-#define T_OPT_DEFCONFIG_LIST	2
-#define T_OPT_ENV		3
+#define T_OPT_MODULES 1
+#define T_OPT_DEFCONFIG_LIST 2
+#define T_OPT_ENV 3
 
 struct kconf_id {
 	int name;
@@ -111,8 +115,10 @@ void menu_add_entry(struct symbol *sym);
 void menu_end_entry(void);
 void menu_add_dep(struct expr *dep);
 void menu_add_visibility(struct expr *dep);
-struct property *menu_add_prop(enum prop_type type, char *prompt, struct expr *expr, struct expr *dep);
-struct property *menu_add_prompt(enum prop_type type, char *prompt, struct expr *dep);
+struct property *menu_add_prop(enum prop_type type, char *prompt,
+			       struct expr *expr, struct expr *dep);
+struct property *menu_add_prompt(enum prop_type type, char *prompt,
+				 struct expr *dep);
 void menu_add_expr(enum prop_type type, struct expr *expr, struct expr *dep);
 void menu_add_symbol(enum prop_type type, struct symbol *sym, struct expr *dep);
 void menu_add_option(int token, char *arg);
@@ -125,7 +131,7 @@ int file_write_dep(const char *name);
 
 struct gstr {
 	size_t len;
-	char  *s;
+	char *s;
 	/*
 	* when max_width is not zero long lines in string s (if any) get
 	* wrapped not to exceed the max_width value
@@ -157,7 +163,6 @@ static inline tristate sym_get_tristate_value(struct symbol *sym)
 {
 	return sym->curr.tri;
 }
-
 
 static inline struct symbol *sym_get_choice_value(struct symbol *sym)
 {

@@ -23,11 +23,11 @@
 #include <avz/domain.h>
 #include <avz/sched.h>
 
-void timer_interrupt(bool periodic) {
+void timer_interrupt(bool periodic)
+{
 	int i;
 
 	if (periodic) {
-
 		/* Now check for ticking the guest containers which need periodic ticks. */
 		for (i = 2; i < MAX_DOMAINS; i++) {
 			/*
@@ -35,21 +35,24 @@ void timer_interrupt(bool periodic) {
 			 * there is no need to propagate the timer event.
 			 */
 			if ((domains[i] != NULL) && !domains[i]->is_dying) {
-				if ((domains[i]->runstate == RUNSTATE_running) || (domains[i]->runstate == RUNSTATE_runnable)) {
-					if (domains[i]->need_periodic_timer) 
-						
+				if ((domains[i]->runstate ==
+				     RUNSTATE_running) ||
+				    (domains[i]->runstate ==
+				     RUNSTATE_runnable)) {
+					if (domains[i]->need_periodic_timer)
+
 						/* Forward to the guest */
 						send_timer_event(domains[i]);
 				}
 			}
 		}
 	}
-        raise_softirq(TIMER_SOFTIRQ);
+	raise_softirq(TIMER_SOFTIRQ);
 }
 
 extern void send_guest_virq(struct domain *d, int virq);
 
-void send_timer_event(struct domain *d) {
+void send_timer_event(struct domain *d)
+{
 	send_guest_virq(d, VIRQ_TIMER);
 }
-
