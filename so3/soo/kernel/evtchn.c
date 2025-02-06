@@ -52,8 +52,6 @@ typedef struct {
 
 static evtchn_info_t evtchn_info;
 
-bool in_upcall_progress;
-
 inline unsigned int evtchn_from_irq(int irq)
 {
 	return evtchn_info.irq_to_evtchn[irq];
@@ -73,18 +71,10 @@ void dump_evtchn_pending(void) {
 	printk("\n\n");
 }
 
-/*
- * evtchn_do_upcall
- *
- * This is the main entry point for processing IRQs and VIRQs for this domain.
- *
- * The function runs with IRQs OFF during the whole execution of the function. As such, this function is executed in top half processing of the IRQ.
- * - All pending event channels are processed one after the other, according to their bit position within the bitmap.
- * - Checking pending IRQs in AVZ (low-level IRQ) is performed at the end of the loop so that we can react immediately if some new IRQs have been generated
- *   and are present in the GIC.
- *
- * -> For VIRQ_TIMER_IRQ, avoid change the bind_virq_to_irqhandler.....
- *
+/**
+ * @brief Process the virtual IRQ injected by the hypervisor.
+ * 
+ * @param irq_nr 
  */
 void virq_handle(unsigned irq_nr) {
         unsigned int evtchn;
@@ -94,22 +84,14 @@ void virq_handle(unsigned irq_nr) {
 
 	BUG_ON(local_irq_is_enabled());
 
-	/*
-	 * This function has to be reentrant to allow the processing of event channel issued
-	 * by the avz softirq processing even if IRQs are off (during an hypercall upcall).
-	 * In this case, we check if we are already in a previous interrupt processing.
-	 */
-
-	if (in_upcall_progress)
-                return;
-
-        in_upcall_progress = true;
-
 retry:
 	l1 = xchg(&avz_shared->evtchn_upcall_pending, 0);
-	BUG_ON(l1 == 0);
 
-	while (true) {
+	/* If, in the meanwhile, the evtchn has been processed when an interrupt occured...*/
+	if (!l1)
+                return;
+
+        while (true) {
 		for (evtchn = 0; evtchn < NR_EVTCHN; evtchn++) 
 			if ((avz_shared->evtchn_pending[evtchn]) && !evtchn_is_masked(evtchn))
 				break;
@@ -139,12 +121,11 @@ retry:
 
 		BUG_ON(local_irq_is_enabled());
 
-	};
+	}
 
 	if (avz_shared->evtchn_upcall_pending)
 		goto retry;
 
-	in_upcall_progress = false;
 }
 
 static int find_unbound_irq(void)
@@ -161,10 +142,6 @@ static int find_unbound_irq(void)
 	}
 
 	return irq;
-}
-
-bool in_upcall_process(void) {
-	return in_upcall_progress;
 }
 
 static int bind_evtchn_to_virq(unsigned int evtchn)
@@ -375,13 +352,6 @@ static irq_ops_t virq_ops = {
 void virq_init(void) {
         int i;
 	irqdesc_t *irqdesc;
-
-	/*
-	 * For each CPU, initialize event channels for all IRQs.
-	 * An IRQ will processed by only one CPU, but it may be rebound to another CPU as well.
-	 */
-
-	in_upcall_progress = false;
 
 	/* No event-channel -> IRQ mappings. */
 	for (i = 0; i < NR_EVTCHN; i++) {
