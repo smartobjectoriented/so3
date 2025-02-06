@@ -17,15 +17,15 @@ static struct node *read_fstree(const char *dirname)
 
 	d = opendir(dirname);
 	if (!d)
-		die("Couldn't opendir() \"%s\": %s\n", dirname, strerror(errno));
+		die("Couldn't opendir() \"%s\": %s\n", dirname,
+		    strerror(errno));
 
 	tree = build_node(NULL, NULL, NULL);
 
 	while ((de = readdir(d)) != NULL) {
 		char *tmpname;
 
-		if (streq(de->d_name, ".")
-		    || streq(de->d_name, ".."))
+		if (streq(de->d_name, ".") || streq(de->d_name, ".."))
 			continue;
 
 		tmpname = join_path(dirname, de->d_name);
@@ -38,15 +38,14 @@ static struct node *read_fstree(const char *dirname)
 			FILE *pfile;
 
 			pfile = fopen(tmpname, "rb");
-			if (! pfile) {
-				fprintf(stderr,
-					"WARNING: Cannot open %s: %s\n",
+			if (!pfile) {
+				fprintf(stderr, "WARNING: Cannot open %s: %s\n",
 					tmpname, strerror(errno));
 			} else {
-				prop = build_property(xstrdup(de->d_name),
-						      data_copy_file(pfile,
-								     st.st_size),
-						      NULL);
+				prop = build_property(
+					xstrdup(de->d_name),
+					data_copy_file(pfile, st.st_size),
+					NULL);
 				add_property(tree, prop);
 				fclose(pfile);
 			}

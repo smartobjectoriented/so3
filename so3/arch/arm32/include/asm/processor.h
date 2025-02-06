@@ -19,6 +19,8 @@
  *
  */
 
+/* clang-format off */
+
 #include <stringify.h>
 #include <linkage.h>
 

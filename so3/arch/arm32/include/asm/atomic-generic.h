@@ -24,7 +24,7 @@
 
 typedef atomic64_t atomic_long_t;
 
-#define ATOMIC_LONG_INIT(i)	ATOMIC64_INIT(i)
+#define ATOMIC_LONG_INIT(i) ATOMIC64_INIT(i)
 
 static inline long atomic_long_read(atomic_long_t *l)
 {
@@ -72,7 +72,7 @@ static inline void atomic_long_sub(long i, atomic_long_t *l)
 
 typedef atomic_t atomic_long_t;
 
-#define ATOMIC_LONG_INIT(i)	ATOMIC_INIT(i)
+#define ATOMIC_LONG_INIT(i) ATOMIC_INIT(i)
 static inline long atomic_long_read(atomic_long_t *l)
 {
 	atomic_t *v = (atomic_t *)l;

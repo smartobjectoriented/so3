@@ -39,7 +39,6 @@
 #include <soo/dev/vdummy.h>
 
 typedef struct {
-
 	/* Must be the first field */
 	vdummy_t vdummy;
 
@@ -49,15 +48,16 @@ static struct vbus_device *vdummy_dev = NULL;
 
 static bool thread_created = false;
 
-irq_return_t vdummy_interrupt(int irq, void *dev_id) {
-	struct vbus_device *vdev = (struct vbus_device *) dev_id;
+irq_return_t vdummy_interrupt(int irq, void *dev_id)
+{
+	struct vbus_device *vdev = (struct vbus_device *)dev_id;
 	vdummy_priv_t *vdummy_priv = dev_get_drvdata(vdev->dev);
 	vdummy_response_t *ring_rsp;
 
 	DBG("%s, %d\n", __func__, ME_domID());
 
-	while ((ring_rsp = vdummy_get_ring_response(&vdummy_priv->vdummy.ring)) != NULL) {
-
+	while ((ring_rsp = vdummy_get_ring_response(
+			&vdummy_priv->vdummy.ring)) != NULL) {
 		DBG("%s, cons=%d\n", __func__, i);
 
 		/* Do something with the response */
@@ -105,7 +105,8 @@ void vdummy_generate_request(char *buffer) {
 }
 #endif
 
-static void vdummy_probe(struct vbus_device *vdev) {
+static void vdummy_probe(struct vbus_device *vdev)
+{
 	unsigned int evtchn;
 	vdummy_sring_t *sring;
 	struct vbus_transaction vbt;
@@ -114,7 +115,7 @@ static void vdummy_probe(struct vbus_device *vdev) {
 	DBG0("[" VDUMMY_NAME "] Frontend probe\n");
 
 	if (vdev->state == VbusStateConnected)
-		return ;
+		return;
 
 	vdummy_priv = dev_get_drvdata(vdev->dev);
 
@@ -129,13 +130,15 @@ static void vdummy_probe(struct vbus_device *vdev) {
 	/* Allocate an event channel associated to the ring */
 	vbus_alloc_evtchn(vdev, &evtchn);
 
-	vdummy_priv->vdummy.irq = bind_evtchn_to_irq_handler(evtchn, vdummy_interrupt, NULL, vdev);
+	vdummy_priv->vdummy.irq = bind_evtchn_to_irq_handler(
+		evtchn, vdummy_interrupt, NULL, vdev);
 	vdummy_priv->vdummy.evtchn = evtchn;
 
 	/* Allocate a shared page for the ring */
-	sring = (vdummy_sring_t *) get_free_vpage();
+	sring = (vdummy_sring_t *)get_free_vpage();
 	if (!sring) {
-		lprintk("%s - line %d: Allocating shared ring failed for device %s\n", __func__, __LINE__, vdev->nodename);
+		lprintk("%s - line %d: Allocating shared ring failed for device %s\n",
+			__func__, __LINE__, vdev->nodename);
 		BUG();
 	}
 
@@ -144,19 +147,23 @@ static void vdummy_probe(struct vbus_device *vdev) {
 
 	/* Prepare the shared to page to be visible on the other end */
 
-	vdummy_priv->vdummy.ring_ref = vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vdummy_priv->vdummy.ring.sring)));
+	vdummy_priv->vdummy.ring_ref = vbus_grant_ring(
+		vdev, phys_to_pfn(virt_to_phys_pt(
+			      (addr_t)vdummy_priv->vdummy.ring.sring)));
 
 	vbus_transaction_start(&vbt);
 
-	vbus_printf(vbt, vdev->nodename, "ring-ref", "%u", vdummy_priv->vdummy.ring_ref);
-	vbus_printf(vbt, vdev->nodename, "ring-evtchn", "%u", vdummy_priv->vdummy.evtchn);
+	vbus_printf(vbt, vdev->nodename, "ring-ref", "%u",
+		    vdummy_priv->vdummy.ring_ref);
+	vbus_printf(vbt, vdev->nodename, "ring-evtchn", "%u",
+		    vdummy_priv->vdummy.evtchn);
 
 	vbus_transaction_end(vbt);
-
 }
 
 /* At this point, the FE is not connected. */
-static void vdummy_reconfiguring(struct vbus_device *vdev) {
+static void vdummy_reconfiguring(struct vbus_device *vdev)
+{
 	int res;
 	struct vbus_transaction vbt;
 	vdummy_priv_t *vdummy_priv = dev_get_drvdata(vdev->dev);
@@ -174,11 +181,14 @@ static void vdummy_reconfiguring(struct vbus_device *vdev) {
 	vdummy_priv->vdummy.ring_ref = GRANT_INVALID_REF;
 
 	SHARED_RING_INIT(vdummy_priv->vdummy.ring.sring);
-	FRONT_RING_INIT(&vdummy_priv->vdummy.ring, (&vdummy_priv->vdummy.ring)->sring, PAGE_SIZE);
+	FRONT_RING_INIT(&vdummy_priv->vdummy.ring,
+			(&vdummy_priv->vdummy.ring)->sring, PAGE_SIZE);
 
 	/* Prepare the shared to page to be visible on the other end */
 
-	res = vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vdummy_priv->vdummy.ring.sring)));
+	res = vbus_grant_ring(vdev,
+			      phys_to_pfn(virt_to_phys_pt(
+				      (addr_t)vdummy_priv->vdummy.ring.sring)));
 	if (res < 0)
 		BUG();
 
@@ -186,18 +196,21 @@ static void vdummy_reconfiguring(struct vbus_device *vdev) {
 
 	vbus_transaction_start(&vbt);
 
-	vbus_printf(vbt, vdev->nodename, "ring-ref", "%u", vdummy_priv->vdummy.ring_ref);
-	vbus_printf(vbt, vdev->nodename, "ring-evtchn", "%u", vdummy_priv->vdummy.evtchn);
+	vbus_printf(vbt, vdev->nodename, "ring-ref", "%u",
+		    vdummy_priv->vdummy.ring_ref);
+	vbus_printf(vbt, vdev->nodename, "ring-evtchn", "%u",
+		    vdummy_priv->vdummy.evtchn);
 
 	vbus_transaction_end(vbt);
 }
 
-static void vdummy_shutdown(struct vbus_device *vdev) {
-
+static void vdummy_shutdown(struct vbus_device *vdev)
+{
 	DBG0("[" VDUMMY_NAME "] Frontend shutdown\n");
 }
 
-static void vdummy_closed(struct vbus_device *vdev) {
+static void vdummy_closed(struct vbus_device *vdev)
+{
 	vdummy_priv_t *vdummy_priv = dev_get_drvdata(vdev->dev);
 
 	DBG0("[" VDUMMY_NAME "] Frontend close\n");
@@ -209,7 +222,7 @@ static void vdummy_closed(struct vbus_device *vdev) {
 	/* Free resources associated with old device channel. */
 	if (vdummy_priv->vdummy.ring_ref != GRANT_INVALID_REF) {
 		gnttab_end_foreign_access(vdummy_priv->vdummy.ring_ref);
-		free_vpage((addr_t) vdummy_priv->vdummy.ring.sring);
+		free_vpage((addr_t)vdummy_priv->vdummy.ring.sring);
 
 		vdummy_priv->vdummy.ring_ref = GRANT_INVALID_REF;
 		vdummy_priv->vdummy.ring.sring = NULL;
@@ -221,13 +234,13 @@ static void vdummy_closed(struct vbus_device *vdev) {
 	vdummy_priv->vdummy.irq = 0;
 }
 
-static void vdummy_suspend(struct vbus_device *vdev) {
-
+static void vdummy_suspend(struct vbus_device *vdev)
+{
 	DBG0("[" VDUMMY_NAME "] Frontend suspend\n");
 }
 
-static void vdummy_resume(struct vbus_device *vdev) {
-
+static void vdummy_resume(struct vbus_device *vdev)
+{
 	DBG0("[" VDUMMY_NAME "] Frontend resume\n");
 }
 
@@ -247,7 +260,8 @@ int notify_fn(void *arg) {
 }
 #endif
 
-static void vdummy_connected(struct vbus_device *vdev) {
+static void vdummy_connected(struct vbus_device *vdev)
+{
 	vdummy_priv_t *vdummy_priv = dev_get_drvdata(vdev->dev);
 
 	DBG0("[" VDUMMY_NAME "] Frontend connected\n");
@@ -264,17 +278,16 @@ static void vdummy_connected(struct vbus_device *vdev) {
 	}
 }
 
-vdrvfront_t vdummydrv = {
-	.probe = vdummy_probe,
-	.reconfiguring = vdummy_reconfiguring,
-	.shutdown = vdummy_shutdown,
-	.closed = vdummy_closed,
-	.suspend = vdummy_suspend,
-	.resume = vdummy_resume,
-	.connected = vdummy_connected
-};
+vdrvfront_t vdummydrv = { .probe = vdummy_probe,
+			  .reconfiguring = vdummy_reconfiguring,
+			  .shutdown = vdummy_shutdown,
+			  .closed = vdummy_closed,
+			  .suspend = vdummy_suspend,
+			  .resume = vdummy_resume,
+			  .connected = vdummy_connected };
 
-static int vdummy_init(dev_t *dev, int fdt_offset) {
+static int vdummy_init(dev_t *dev, int fdt_offset)
+{
 	vdummy_priv_t *vdummy_priv;
 
 	vdummy_priv = malloc(sizeof(vdummy_priv_t));

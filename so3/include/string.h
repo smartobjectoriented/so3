@@ -42,12 +42,12 @@ char *strsep(char **str, const char *sep);
 
 int strcmp(const char *, const char *);
 int strncmp(const char *, const char *, size_t);
-size_t strnlen(const char * s, size_t count);
+size_t strnlen(const char *s, size_t count);
 
 char *strdup(const char *s);
 
 int sprintf(char *buf, const char *fmt, ...);
-int scnprintf(char * buf, size_t size, const char *fmt, ...);
+int scnprintf(char *buf, size_t size, const char *fmt, ...);
 
 char *strcpy(char *, const char *);
 size_t strlen(const char *);
@@ -57,16 +57,17 @@ char *strcat(char *dest, const char *src);
 int vsprintf(char *s, const char *fmt, va_list ap);
 int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 int vsscanf(const char *buf, const char *fmt, va_list args);
-int sscanf(const char * buf, const char * fmt, ...);
+int sscanf(const char *buf, const char *fmt, ...);
 int sprintf(char *buf, const char *fmt, ...);
-int snprintf(char * buf, size_t size, const char *fmt, ...);
+int snprintf(char *buf, size_t size, const char *fmt, ...);
 
 char *kvasprintf(const char *fmt, va_list ap);
 char *kasprintf(const char *fmt, ...);
 
 unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
 long simple_strtol(const char *cp, char **endp, unsigned int base);
-unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
+unsigned long long simple_strtoull(const char *cp, char **endp,
+				   unsigned int base);
 long long simple_strtoll(const char *cp, char **endp, unsigned int base);
 
 char *strrchr(const char *s, int c);

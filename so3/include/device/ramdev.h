@@ -26,5 +26,4 @@ bool valid_ramdev(void);
 unsigned long get_ramdev_size(void);
 addr_t get_ramdev_start(void);
 
-
 #endif /* RAMDEV_H */

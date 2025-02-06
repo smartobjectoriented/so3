@@ -21,16 +21,14 @@
  * error on failure.  @buf is always zero terminated.
  *
  */
-int string_get_size(u64 size, const enum string_size_units units,
-		    char *buf, int len)
+int string_get_size(u64 size, const enum string_size_units units, char *buf,
+		    int len)
 {
-	static const char *const units_10[] = {
-		"B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", NULL
-	};
-	static const char *const units_2[] = {
-		"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB",
-		NULL
-	};
+	static const char *const units_10[] = { "B",  "kB", "MB", "GB", "TB",
+						"PB", "EB", "ZB", "YB", NULL };
+	static const char *const units_2[] = { "B",   "KiB", "MiB", "GiB",
+					       "TiB", "PiB", "EiB", "ZiB",
+					       "YiB", NULL };
 	static const char *const *const units_str[] = {
 		[STRING_UNITS_10] = units_10,
 		[STRING_UNITS_2] = units_2,
@@ -52,7 +50,7 @@ int string_get_size(u64 size, const enum string_size_units units,
 		}
 
 		sf_cap = size;
-		for (j = 0; sf_cap*10 < 1000; j++)
+		for (j = 0; sf_cap * 10 < 1000; j++)
 			sf_cap *= 10;
 
 		if (j) {
@@ -60,12 +58,12 @@ int string_get_size(u64 size, const enum string_size_units units,
 			do_div(remainder, divisor[units]);
 			snprintf(tmp, sizeof(tmp), ".%03lld",
 				 (unsigned long long)remainder);
-			tmp[j+1] = '\0';
+			tmp[j + 1] = '\0';
 		}
 	}
 
-	snprintf(buf, len, "%lld%s %s", (unsigned long long)size,
-		 tmp, units_str[units][i]);
+	snprintf(buf, len, "%lld%s %s", (unsigned long long)size, tmp,
+		 units_str[units][i]);
 
 	return 0;
 }
@@ -214,19 +212,18 @@ int string_unescape(char *src, char *dst, size_t size, unsigned int flags)
 			size--;
 
 			if (flags & UNESCAPE_SPACE &&
-					unescape_space(&src, &out))
+			    unescape_space(&src, &out))
 				continue;
 
 			if (flags & UNESCAPE_OCTAL &&
-					unescape_octal(&src, &out))
+			    unescape_octal(&src, &out))
 				continue;
 
-			if (flags & UNESCAPE_HEX &&
-					unescape_hex(&src, &out))
+			if (flags & UNESCAPE_HEX && unescape_hex(&src, &out))
 				continue;
 
 			if (flags & UNESCAPE_SPECIAL &&
-					unescape_special(&src, &out))
+			    unescape_special(&src, &out))
 				continue;
 
 			*out++ = '\\';
@@ -509,17 +506,15 @@ int string_escape_mem(const char *src, size_t isz, char **dst, size_t osz,
 	return p - out;
 }
 
-
 char *strrchr(const char *s, int c)
 {
-    char *ret = 0;
+	char *ret = 0;
 
-    do {
-        if (*s == (char)c)
-            ret = (char *) s;
+	do {
+		if (*s == (char)c)
+			ret = (char *)s;
 
-    } while (*s++);
-    
-    return ret;
+	} while (*s++);
+
+	return ret;
 }
-

@@ -12,8 +12,8 @@
  */
 
 #ifdef __GNUC__
-#define PRINTF(i, j)	__attribute__((format (printf, i, j)))
-#define NORETURN	__attribute__((noreturn))
+#define PRINTF(i, j) __attribute__((format(printf, i, j)))
+#define NORETURN __attribute__((noreturn))
 #else
 #define PRINTF(i, j)
 #define NORETURN
@@ -21,8 +21,8 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#define stringify(s)	stringify_(s)
-#define stringify_(s)	#s
+#define stringify(s) stringify_(s)
+#define stringify_(s) #s
 
 static inline void NORETURN PRINTF(1, 2) die(const char *str, ...)
 {
@@ -154,9 +154,9 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size);
  * supported by utilfdt_decode_type.
  */
 
-#define USAGE_TYPE_MSG \
+#define USAGE_TYPE_MSG                                 \
 	"<type>\ts=string, i=int, u=unsigned, x=hex\n" \
-	"\tOptional modifier prefix:\n" \
+	"\tOptional modifier prefix:\n"                \
 	"\t\thh or b=byte, h=2 byte, l=4 byte (default)";
 
 /**
@@ -193,7 +193,7 @@ void NORETURN util_version(void);
 void NORETURN util_usage(const char *errmsg, const char *synopsis,
 			 const char *short_opts,
 			 struct option const long_opts[],
-			 const char * const opts_help[]);
+			 const char *const opts_help[]);
 
 /**
  * Show usage and exit
@@ -203,17 +203,17 @@ void NORETURN util_usage(const char *errmsg, const char *synopsis,
  *
  * @param errmsg	If non-NULL, an error message to display
  */
-#define usage(errmsg) \
-	util_usage(errmsg, usage_synopsis, usage_short_opts, \
-		   usage_long_opts, usage_opts_help)
+#define usage(errmsg)                                                         \
+	util_usage(errmsg, usage_synopsis, usage_short_opts, usage_long_opts, \
+		   usage_opts_help)
 
 /**
  * Call getopt_long() with standard options
  *
  * Since all util code runs getopt in the same way, provide a helper.
  */
-#define util_getopt_long() getopt_long(argc, argv, usage_short_opts, \
-				       usage_long_opts, NULL)
+#define util_getopt_long() \
+	getopt_long(argc, argv, usage_short_opts, usage_long_opts, NULL)
 
 /* Helper for aligning long_opts array */
 #define a_argument required_argument
@@ -222,21 +222,22 @@ void NORETURN util_usage(const char *errmsg, const char *synopsis,
 #define USAGE_COMMON_SHORT_OPTS "hV"
 
 /* Helper for usage_long_opts option array */
-#define USAGE_COMMON_LONG_OPTS \
-	{"help",      no_argument, NULL, 'h'}, \
-	{"version",   no_argument, NULL, 'V'}, \
-	{NULL,        no_argument, NULL, 0x0}
+#define USAGE_COMMON_LONG_OPTS                         \
+	{ "help", no_argument, NULL, 'h' },            \
+		{ "version", no_argument, NULL, 'V' }, \
+		{ NULL, no_argument, NULL, 0x0 }
 
 /* Helper for usage_opts_help array */
 #define USAGE_COMMON_OPTS_HELP \
-	"Print this help and exit", \
-	"Print version and exit", \
-	NULL
+	"Print this help and exit", "Print version and exit", NULL
 
 /* Helper for getopt case statements */
 #define case_USAGE_COMMON_FLAGS \
-	case 'h': usage(NULL); \
-	case 'V': util_version(); \
-	case '?': usage("unknown option");
+	case 'h':               \
+		usage(NULL);    \
+	case 'V':               \
+		util_version(); \
+	case '?':               \
+		usage("unknown option");
 
 #endif /* UTIL_H */

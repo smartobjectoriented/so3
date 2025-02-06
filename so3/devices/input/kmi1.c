@@ -41,20 +41,15 @@ static struct display_res {
 } res = { .h = 0xffff, .v = 0xffff };
 
 /* Defines the mouse position and button states. */
-struct ps2_mouse state = {
-	.x = 0, .y = 0,
-	.left = 0, .right = 0, .middle = 0
-};
+struct ps2_mouse state = { .x = 0, .y = 0, .left = 0, .right = 0, .middle = 0 };
 
 /* ioctl commands. */
 #define GET_STATE 0
-#define SET_SIZE  1
+#define SET_SIZE 1
 
 int ioctl_mouse(int fd, unsigned long cmd, unsigned long args);
 
-struct file_operations pl050_mouse_fops = {
-	.ioctl = ioctl_mouse
-};
+struct file_operations pl050_mouse_fops = { .ioctl = ioctl_mouse };
 
 /* Device info. */
 
@@ -85,7 +80,6 @@ irq_return_t pl050_int_mouse(int irq, void *dummy)
 	/* As long as a receiver interrupt has been asserted… */
 	i = 0;
 	while (status & KMIIR_RXINTR) {
-
 		/*
 		 * Read from the data register. We care only about the first 3
 		 * bytes, but we must continue reading until there are none
@@ -112,7 +106,8 @@ int pl050_init_mouse(dev_t *dev, int fdt_offset)
 	const struct fdt_property *prop;
 	int prop_len;
 
-	printk("%s: probing a mouse driver (PL050), please make sure such a device exists...\n", __func__);
+	printk("%s: probing a mouse driver (PL050), please make sure such a device exists...\n",
+	       __func__);
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
 	BUG_ON(!prop);
@@ -120,9 +115,13 @@ int pl050_init_mouse(dev_t *dev, int fdt_offset)
 
 	/* Mapping the two mem area of GIC (distributor & CPU interface) */
 #ifdef CONFIG_ARCH_ARM32
-	pl050_mouse.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	pl050_mouse.base =
+		(void *)io_map(fdt32_to_cpu(((const fdt32_t *)prop->data)[0]),
+			       fdt32_to_cpu(((const fdt32_t *)prop->data)[1]));
 #else
-	pl050_mouse.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	pl050_mouse.base =
+		(void *)io_map(fdt64_to_cpu(((const fdt64_t *)prop->data)[0]),
+			       fdt64_to_cpu(((const fdt64_t *)prop->data)[1]));
 #endif
 
 	fdt_interrupt_node(fdt_offset, &pl050_mouse.irq_def);
@@ -141,16 +140,15 @@ int pl050_init_mouse(dev_t *dev, int fdt_offset)
 int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
 {
 	switch (cmd) {
-
 	case GET_STATE:
 		/* Return the mouse coordinates and button states. */
-		*((struct ps2_mouse *) args) = state;
+		*((struct ps2_mouse *)args) = state;
 
 		break;
 
 	case SET_SIZE:
 		/* Set the display maximum size. */
-		res = *((struct display_res *) args);
+		res = *((struct display_res *)args);
 		break;
 
 	default:

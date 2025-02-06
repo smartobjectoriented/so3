@@ -42,7 +42,6 @@ void handle_keypress(unsigned char key)
 		return;
 
 	h->fn(key);
-
 }
 
 void register_keyhandler(unsigned char key, struct keyhandler *handler)
@@ -58,7 +57,7 @@ static void show_handlers(unsigned char key)
 	for (i = 0; i < ARRAY_SIZE(key_table); i++)
 		if (key_table[i] != NULL)
 			printk(" key '%c' (ascii '%02x') => %s\n",
-					isprint(i) ? i : ' ', i, key_table[i]->desc);
+			       isprint(i) ? i : ' ', i, key_table[i]->desc);
 }
 
 static struct keyhandler show_handlers_keyhandler = {
@@ -109,30 +108,30 @@ static struct keyhandler dump_agency_registers_keyhandler = {
 static void dump_domains(unsigned char key)
 {
 	struct domain *d;
-	u64    now = NOW();
+	u64 now = NOW();
 	int i;
 
 #define tmpstr keyhandler_scratch
 
 	printk("'%c' pressed -> dumping domain info (now=0x%X:%08X)\n", key,
-			(u32)(now>>32), (u32)now);
+	       (u32)(now >> 32), (u32)now);
 
 	for (i = 0; i < MAX_DOMAINS; i++) {
 		d = domains[i];
 
-		printk("General information for domain %u:\n", d->avz_shared->domID);
+		printk("General information for domain %u:\n",
+		       d->avz_shared->domID);
 
-		printk("    dying=%d nr_pages=%d max_pages=%u\n", d->is_dying, d->avz_shared->nr_pages, d->max_pages);
+		printk("    dying=%d nr_pages=%d max_pages=%u\n", d->is_dying,
+		       d->avz_shared->nr_pages, d->max_pages);
 
-		printk("VCPU information and callbacks for domain %u:\n", d->avz_shared->domID);
+		printk("VCPU information and callbacks for domain %u:\n",
+		       d->avz_shared->domID);
 
-		printk("    CPU%d [has=%c] flags=%lx ",
-			d->processor,
-			d->is_running ? 'T':'F',
-			d->pause_flags);
+		printk("    CPU%d [has=%c] flags=%lx ", d->processor,
+		       d->is_running ? 'T' : 'F', d->pause_flags);
 
 		printk("    %s\n", tmpstr);
-
 	}
 
 #undef tmpstr
@@ -143,13 +142,11 @@ static struct keyhandler dump_domains_keyhandler = {
 	.desc = "dump domain (and guest debug) info"
 };
 
-
 void initialize_keytable(void)
 {
-    register_keyhandler('d', &dump_registers_keyhandler);
-    register_keyhandler('h', &show_handlers_keyhandler);
-    register_keyhandler('q', &dump_domains_keyhandler);
+	register_keyhandler('d', &dump_registers_keyhandler);
+	register_keyhandler('h', &show_handlers_keyhandler);
+	register_keyhandler('q', &dump_domains_keyhandler);
 
-    register_keyhandler('0', &dump_agency_registers_keyhandler);
-
+	register_keyhandler('0', &dump_agency_registers_keyhandler);
 }

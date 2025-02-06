@@ -41,59 +41,62 @@
 #include <avz/uapi/avz.h>
 
 volatile avz_shared_t *avz_shared;
- 
- /**
+
+/**
   * @brief Signal-like handler called from AVZ during the recovering operation
   * 
   */
- static void resume_fn(void) {
+static void resume_fn(void)
+{
 	u64 time_offset;
 
 	/* Init the local GIC */
 	gic_hw_reset();
 
 	/* Init the timer too */
-        clocksource_timer_reset();
+	clocksource_timer_reset();
 
-        /* Now, we need to update the list of all existing timers since our
+	/* Now, we need to update the list of all existing timers since our
 	 * host clock will be different. We stored the current system time when saving,
 	 * so we compute the offset according to the current time.
 	 */
-        time_offset = NOW() - avz_shared->current_s_time;
-        apply_timer_offset(time_offset);
+	time_offset = NOW() - avz_shared->current_s_time;
+	apply_timer_offset(time_offset);
 
-        raise_softirq(SCHEDULE_SOFTIRQ);
+	raise_softirq(SCHEDULE_SOFTIRQ);
 
-        /* We finished with the signal handler processing */
-        avz_sig_terminate();
- }
+	/* We finished with the signal handler processing */
+	avz_sig_terminate();
+}
 
 /**
  * This function is called at early bootstrap stage along head.S.
  */
-void avz_setup(void) {
+void avz_setup(void)
+{
+	avz_get_shared();
 
-        avz_get_shared();
+	avz_shared->dom_desc.u.ME.resume_fn = resume_fn;
 
-        avz_shared->dom_desc.u.ME.resume_fn = resume_fn;
+	lprintk("SOO Virtualizer (avz) shared page:\n\n");
 
-        lprintk("SOO Virtualizer (avz) shared page:\n\n");
+	lprintk("- Dom phys offset: %lx\n\n", (addr_t)mem_info.phys_base);
 
-	lprintk("- Dom phys offset: %lx\n\n", (addr_t) mem_info.phys_base);
-	
 	virq_init();
 }
 
-void post_init_setup(void) {
+void post_init_setup(void)
+{
+	printk("Mapping VBstore shared page pfn %d\n",
+	       avz_shared->dom_desc.u.ME.vbstore_pfn);
 
-	printk("Mapping VBstore shared page pfn %d\n", avz_shared->dom_desc.u.ME.vbstore_pfn);
+	__intf = (void *)io_map(
+		pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
+	BUG_ON(!__intf);
 
-   	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
-        BUG_ON(!__intf);
+	printk("SOO Mobile Entity booting ...\n");
 
-        printk("SOO Mobile Entity booting ...\n");
-
-        soo_guest_activity_init();
+	soo_guest_activity_init();
 
 	callbacks_init();
 

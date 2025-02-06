@@ -3,12 +3,12 @@
 
 int main(int argc, char **argv)
 {
-  int i;
+	int i;
 
-  for (i = 1; i < argc; i++)
-    printf("%s ", argv[i]);
+	for (i = 1; i < argc; i++)
+		printf("%s ", argv[i]);
 
-  printf("\n");
+	printf("\n");
 
-  return 0;
+	return 0;
 }

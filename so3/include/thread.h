@@ -20,21 +20,27 @@
 #define THREAD_H
 
 /* The number of max threads must be aligned with the definition in so3.lds regarding the stack size. */
-#define	THREAD_MAX		32
-#define THREAD_NAME_LEN 	80
+#define THREAD_MAX 32
+#define THREAD_NAME_LEN 80
 
 /* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */
-#define	THREAD_STACK_SIZE	(64 * 1024)
+#define THREAD_STACK_SIZE (64 * 1024)
 
 /* Default priority is set to 10 */
-#define THREAD_PRIO_DEFAULT	10
+#define THREAD_PRIO_DEFAULT 10
 
 #ifndef __ASSEMBLY__
 
 #include <types.h>
 #include <list.h>
 
-typedef enum { THREAD_STATE_NEW, THREAD_STATE_READY, THREAD_STATE_RUNNING, THREAD_STATE_WAITING, THREAD_STATE_ZOMBIE } thread_state_t;
+typedef enum {
+	THREAD_STATE_NEW,
+	THREAD_STATE_READY,
+	THREAD_STATE_RUNNING,
+	THREAD_STATE_WAITING,
+	THREAD_STATE_ZOMBIE
+} thread_state_t;
 typedef unsigned int thread_t;
 
 extern addr_t __stack_top;
@@ -69,12 +75,12 @@ struct tcb {
 	uint32_t current_prio;
 
 	/* Store the last time that the current_prio field has been incremented (ns). */
-        u64 last_prio_inc_time;
+	u64 last_prio_inc_time;
 
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
 	/* Threaded function */
-        th_fn_t th_fn;
+	th_fn_t th_fn;
 	void *th_arg;
 
 	thread_t state;
@@ -86,7 +92,7 @@ struct tcb {
 
 	int *exit_status;
 
-	struct list_head list;  /* List of threads belonging to a process */
+	struct list_head list; /* List of threads belonging to a process */
 
 	/* Join queue to handle threads waiting on it */
 	struct list_head joinQueue;
@@ -99,12 +105,15 @@ addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn,
+		     addr_t arg_p);
 int do_thread_join(uint32_t pthread_id, int **value_p);
 void do_thread_exit(int *exit_status);
 
-tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb);
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg,
+		     uint32_t prio);
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg,
+		   pcb_t *pcb);
 
 int *thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);

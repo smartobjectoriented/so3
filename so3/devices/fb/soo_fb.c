@@ -28,14 +28,10 @@
 #include <device/driver.h>
 #include <device/fb/soo_fb_fb.h>
 
-
 void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count);
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args);
 
-struct file_operations vfb_fops = {
-	.mmap = fb_mmap,
-	.ioctl = fb_ioctl
-};
+struct file_operations vfb_fops = { .mmap = fb_mmap, .ioctl = fb_ioctl };
 
 struct devclass vfb_cdev = {
 	.class = DEV_CLASS_FB,
@@ -66,26 +62,27 @@ void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count)
 
 	for (i = 0; i < page_count; i++) {
 		/* Map the process' pages to physical ones. */
-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), fb_base + i * PAGE_SIZE, PAGE_SIZE, false, false);
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE),
+			       fb_base + i * PAGE_SIZE, PAGE_SIZE, false,
+			       false);
 	}
 
-	return (void *) virt_addr;
+	return (void *)virt_addr;
 }
 
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 {
 	switch (cmd) {
-
 	case IOCTL_HRES:
-		*((uint32_t *) args) = fb_hres;
+		*((uint32_t *)args) = fb_hres;
 		return 0;
 
 	case IOCTL_VRES:
-		*((uint32_t *) args) = fb_vres;
+		*((uint32_t *)args) = fb_vres;
 		return 0;
 
 	case IOCTL_SIZE:
-		*((uint32_t *) args) = fb_hres * fb_vres * 4; /* assume 24bpp */
+		*((uint32_t *)args) = fb_hres * fb_vres * 4; /* assume 24bpp */
 		return 0;
 
 	default:

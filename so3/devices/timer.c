@@ -24,7 +24,7 @@
 #include <device/irq.h>
 
 /* Value used to detect a potential clocksource wrap */
-#define CYCLE_DELTA_MIN		0x100000000ull
+#define CYCLE_DELTA_MIN 0x100000000ull
 
 static u64 sys_time = 0ull;
 
@@ -37,7 +37,8 @@ clocksource_timer_t clocksource_timer;
 /*
  * Return the time in ns from the monotonic clocksource.
  */
-u64 get_s_time(void) {
+u64 get_s_time(void)
+{
 	u64 cycle_now, cycle_delta;
 	unsigned long flags;
 
@@ -58,11 +59,14 @@ u64 get_s_time(void) {
 	 * We have to pay attention to and handle the second case to avoid too big values for cycle_delta due to the small interval
 	 * between cycle_now and cycle_last.
 	 */
-	if (unlikely((cycle_now < clocksource_timer.cycle_last) && (clocksource_timer.cycle_last - cycle_now < CYCLE_DELTA_MIN))) {
+	if (unlikely((cycle_now < clocksource_timer.cycle_last) &&
+		     (clocksource_timer.cycle_last - cycle_now <
+		      CYCLE_DELTA_MIN))) {
 		cycle_now = clocksource_timer.cycle_last;
 		cycle_delta = 0;
 	} else
-		cycle_delta = (cycle_now - clocksource_timer.cycle_last) & clocksource_timer.mask;
+		cycle_delta = (cycle_now - clocksource_timer.cycle_last) &
+			      clocksource_timer.mask;
 
 	clocksource_timer.cycle_last = cycle_now;
 
@@ -80,7 +84,8 @@ u64 get_s_time(void) {
  * Returns true if the deadline already expired (in the meanwhile for instance).
  *
  */
-bool timer_dev_set_deadline(u64 deadline) {
+bool timer_dev_set_deadline(u64 deadline)
+{
 	int64_t delta;
 
 	/* Only the oneshot timer will be possibly reprogrammed */
@@ -88,7 +93,6 @@ bool timer_dev_set_deadline(u64 deadline) {
 	delta = deadline - NOW();
 
 	if (delta <= 0) {
-
 		raise_softirq(TIMER_SOFTIRQ);
 		if (!__in_interrupt)
 			return true;
@@ -99,11 +103,9 @@ bool timer_dev_set_deadline(u64 deadline) {
 	return false;
 }
 
-void timer_dev_init(void) {
-
+void timer_dev_init(void)
+{
 	memset(&periodic_timer, 0, sizeof(periodic_timer_t));
 	memset(&oneshot_timer, 0, sizeof(oneshot_timer_t));
 	memset(&clocksource_timer, 0, sizeof(clocksource_timer_t));
-
 }
-

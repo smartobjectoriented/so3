@@ -19,7 +19,7 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
 
-typedef int(*syscall_handle_t)(unsigned long, unsigned long, unsigned long, unsigned long);
-
+typedef int (*syscall_handle_t)(unsigned long, unsigned long, unsigned long,
+				unsigned long);
 
 #endif /* SYSCALL_H */

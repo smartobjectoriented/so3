@@ -42,70 +42,45 @@
 
 #ifdef CONFIG_AVZ
 
-const char entry_error_messages[19][32] =
-{
-    "SYNC_INVALID_EL2t",
-    "IRQ_INVALID_EL2t",
-    "FIQ_INVALID_EL2t",
-    "SERROR_INVALID_EL2t",
-    "SYNC_INVALID_EL2h",
-    "IRQ_INVALID_EL2h",
-    "FIQ_INVALID_EL2h",
-    "SERROR_INVALID_EL2h",
-    "SYNC_INVALID_EL1_64",
-    "IRQ_INVALID_EL1_64",
-    "FIQ_INVALID_EL1_64",
-    "SERROR_INVALID_EL1_64",
-    "SYNC_INVALID_EL1_32",
-    "IRQ_INVALID_EL1_32",
-    "FIQ_INVALID_EL1_32",
-    "SERROR_INVALID_EL1_32",
-    "SYNC_ERROR",
-    "SYSCALL_ERROR",
-    "DATA_ABORT_ERROR"
+const char entry_error_messages[19][32] = {
+	"SYNC_INVALID_EL2t",	 "IRQ_INVALID_EL2t",	"FIQ_INVALID_EL2t",
+	"SERROR_INVALID_EL2t",	 "SYNC_INVALID_EL2h",	"IRQ_INVALID_EL2h",
+	"FIQ_INVALID_EL2h",	 "SERROR_INVALID_EL2h", "SYNC_INVALID_EL1_64",
+	"IRQ_INVALID_EL1_64",	 "FIQ_INVALID_EL1_64",	"SERROR_INVALID_EL1_64",
+	"SYNC_INVALID_EL1_32",	 "IRQ_INVALID_EL1_32",	"FIQ_INVALID_EL1_32",
+	"SERROR_INVALID_EL1_32", "SYNC_ERROR",		"SYSCALL_ERROR",
+	"DATA_ABORT_ERROR"
 };
 
 #else
 
-const char entry_error_messages[19][32] =
-{
-    "SYNC_INVALID_EL1t",
-    "IRQ_INVALID_EL1t",
-    "FIQ_INVALID_EL1t",
-    "SERROR_INVALID_EL1t",
-    "SYNC_INVALID_EL1h",
-    "IRQ_INVALID_EL1h",
-    "FIQ_INVALID_EL1h",
-    "SERROR_INVALID_EL1h",
-    "SYNC_INVALID_EL0_64",
-    "IRQ_INVALID_EL0_64",
-    "FIQ_INVALID_EL0_64",
-    "SERROR_INVALID_EL0_64",
-    "SYNC_INVALID_EL0_32",
-    "IRQ_INVALID_EL0_32",
-    "FIQ_INVALID_EL0_32",
-    "SERROR_INVALID_EL0_32",
-    "SYNC_ERROR",
-    "SYSCALL_ERROR",
-    "DATA_ABORT_ERROR"
+const char entry_error_messages[19][32] = {
+	"SYNC_INVALID_EL1t",	 "IRQ_INVALID_EL1t",	"FIQ_INVALID_EL1t",
+	"SERROR_INVALID_EL1t",	 "SYNC_INVALID_EL1h",	"IRQ_INVALID_EL1h",
+	"FIQ_INVALID_EL1h",	 "SERROR_INVALID_EL1h", "SYNC_INVALID_EL0_64",
+	"IRQ_INVALID_EL0_64",	 "FIQ_INVALID_EL0_64",	"SERROR_INVALID_EL0_64",
+	"SYNC_INVALID_EL0_32",	 "IRQ_INVALID_EL0_32",	"FIQ_INVALID_EL0_32",
+	"SERROR_INVALID_EL0_32", "SYNC_ERROR",		"SYSCALL_ERROR",
+	"DATA_ABORT_ERROR"
 };
 
 #endif
 
 void show_invalid_entry_message(u32 type, u64 esr, u64 address)
 {
-    printk("CPU%d: ERROR CAUGHT: ", smp_processor_id());
-    printk(entry_error_messages[type]);
-    printk(", ESR: ");
-    printk("%lx", esr);
-    printk(", Address: ");
-    printk("%lx\n", address);
+	printk("CPU%d: ERROR CAUGHT: ", smp_processor_id());
+	printk(entry_error_messages[type]);
+	printk(", ESR: ");
+	printk("%lx", esr);
+	printk(", Address: ");
+	printk("%lx\n", address);
 
-    while (1);
-
+	while (1)
+		;
 }
 
-void trap_handle_error(addr_t lr) {
+void trap_handle_error(addr_t lr)
+{
 #ifdef CONFIG_AVZ
 	unsigned long esr = read_sysreg(esr_el2);
 #else
@@ -126,14 +101,13 @@ extern addr_t cpu_entrypoint;
  * @param esr 
  * @return int 
  */
-int dabt_handle(cpu_regs_t *regs, unsigned long esr) {
-
+int dabt_handle(cpu_regs_t *regs, unsigned long esr)
+{
 #ifdef CONFIG_AVZ
-        return mmio_dabt_decode(regs, esr);
+	return mmio_dabt_decode(regs, esr);
 #else
-        return -1;
+	return -1;
 #endif
-
 }
 
 /**
@@ -144,9 +118,10 @@ int dabt_handle(cpu_regs_t *regs, unsigned long esr) {
  *
  * @param regs	Pointer to the stack frame
  */
-typedef void(*vector_fn_t)(cpu_regs_t *);
+typedef void (*vector_fn_t)(cpu_regs_t *);
 
-void trap_handle(cpu_regs_t *regs) {
+void trap_handle(cpu_regs_t *regs)
+{
 #ifndef CONFIG_AVZ
 	syscall_args_t sys_args;
 #endif
@@ -155,23 +130,25 @@ void trap_handle(cpu_regs_t *regs) {
 
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
- 
+
 #ifdef CONFIG_SOO
-        unsigned int memslotID = ((current_domain->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : current_domain->avz_shared->domID);
+	unsigned int memslotID =
+		((current_domain->avz_shared->domID == DOMID_AGENCY) ?
+			 MEMSLOT_AGENCY :
+			 current_domain->avz_shared->domID);
 #endif /* CONFIG_SOO */
 
 #else
 	unsigned long esr = read_sysreg(esr_el1);
 #endif /* CONFIG_ARM64VT */
 
-        switch (ESR_ELx_EC(esr)) {
-
+	switch (ESR_ELx_EC(esr)) {
 	case ESR_ELx_EC_DABT_LOW:
 
-                dabt_handle(regs, esr);
-                break;
+		dabt_handle(regs, esr);
+		break;
 
-        /* SVC used for syscalls */
+	/* SVC used for syscalls */
 	case ESR_ELx_EC_SVC64:
 
 #ifdef CONFIG_AVZ
@@ -193,46 +170,47 @@ void trap_handle(cpu_regs_t *regs) {
 
 #endif /* !CONFIG_AVZ */
 
-                break;
+		break;
 
 #ifdef CONFIG_AVZ
 	case ESR_ELx_EC_HVC64:
 		hvc_code = regs->x0;
 
-                switch (hvc_code) {
-
+		switch (hvc_code) {
 #ifdef CONFIG_SMP
-                /* PSCI hypercalls */
+		/* PSCI hypercalls */
 		case PSCI_0_2_FN_PSCI_VERSION:
 			regs->x0 = PSCI_VERSION(1, 1);
-                        break;
+			break;
 
-                case PSCI_0_2_FN64_CPU_ON:
-                        printk("Power on CPU #%d starting at %x...\n", regs->x1 & 3, regs->x2);
+		case PSCI_0_2_FN64_CPU_ON:
+			printk("Power on CPU #%d starting at %x...\n",
+			       regs->x1 & 3, regs->x2);
 
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);
 
-                        regs->x0 = PSCI_RET_SUCCESS;
-                        break;
+			regs->x0 = PSCI_RET_SUCCESS;
+			break;
 
-                case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
+		case PSCI_0_2_FN_MIGRATE_INFO_TYPE:
 		case PSCI_1_0_FN_PSCI_FEATURES:
-                        regs->x0 = PSCI_RET_SUCCESS;
-                        break;
+			regs->x0 = PSCI_RET_SUCCESS;
+			break;
 #endif /* CONFIG_SMP */
 
-                case AVZ_HYPERCALL_TRAP:
-                        do_avz_hypercall((avz_hyp_t *) ipa_to_va(memslotID, regs->x1));
-                        break;
-        
-                case AVZ_HYPERCALL_SIGRETURN:
-                        __sigreturn();
-                        break;
-                }
-                break;
+		case AVZ_HYPERCALL_TRAP:
+			do_avz_hypercall(
+				(avz_hyp_t *)ipa_to_va(memslotID, regs->x1));
+			break;
+
+		case AVZ_HYPERCALL_SIGRETURN:
+			__sigreturn();
+			break;
+		}
+		break;
 #endif /* CONFIG_AVZ */
-               
+
 #if 0
 	case ESR_ELx_EC_DABT_LOW:
 		break;
@@ -274,8 +252,9 @@ void trap_handle(cpu_regs_t *regs) {
 #endif
 
 	default:
-		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
+		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n",
+			smp_processor_id(), ESR_ELx_EC(esr));
 		trap_handle_error(regs->lr);
 		kernel_panic();
-        }
+	}
 }

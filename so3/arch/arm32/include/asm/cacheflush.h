@@ -32,7 +32,10 @@
 static inline void flush_pte_entry(void *pte)
 {
 	do {
-		asm("mcr p15, 0, %0, c7, c10, 1   @ flush pte" : : "r" (pte) : "cc");
+		asm("mcr p15, 0, %0, c7, c10, 1   @ flush pte"
+		    :
+		    : "r"(pte)
+		    : "cc");
 	} while (0);
 
 	dsb();

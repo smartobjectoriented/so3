@@ -34,47 +34,56 @@ static addr_t ramdev_start, ramdev_end;
 /*
  * Check if there is a valid ramdev which could be used for rootfs.
  */
-bool valid_ramdev(void) {
+bool valid_ramdev(void)
+{
 	return (ramdev_size > 0);
 }
 
-unsigned long get_ramdev_size(void) {
+unsigned long get_ramdev_size(void)
+{
 	return ramdev_size;
 }
 
 /*
  * Get the physical address of ramdev start
  */
-addr_t get_ramdev_start(void) {
+addr_t get_ramdev_start(void)
+{
 	return ramdev_start;
 }
 
-unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt, void *buffer) {
+unsigned long ramdev_read(int dev, lbaint_t start, lbaint_t blkcnt,
+			  void *buffer)
+{
 	uint32_t bytes_count;
 
 	ASSERT(valid_ramdev());
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy(buffer, (void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, bytes_count);
+	memcpy(buffer, (void *)RAMDEV_VADDR + start * ramdev_block_dev.blksz,
+	       bytes_count);
 
 	return blkcnt;
 }
 
-unsigned long ramdev_write(int dev, lbaint_t start, lbaint_t blkcnt, const void *buffer) {
+unsigned long ramdev_write(int dev, lbaint_t start, lbaint_t blkcnt,
+			   const void *buffer)
+{
 	uint32_t bytes_count;
 
 	ASSERT(valid_ramdev());
 
 	bytes_count = blkcnt * ramdev_block_dev.blksz;
 
-	memcpy((void *) RAMDEV_VADDR + start * ramdev_block_dev.blksz, buffer, bytes_count);
+	memcpy((void *)RAMDEV_VADDR + start * ramdev_block_dev.blksz, buffer,
+	       bytes_count);
 
 	return blkcnt;
 }
 
-unsigned long ramdev_erase(int dev, lbaint_t start, lbaint_t blkcnt) {
-
+unsigned long ramdev_erase(int dev, lbaint_t start, lbaint_t blkcnt)
+{
 	ASSERT(valid_ramdev());
 
 	return blkcnt;
@@ -82,7 +91,6 @@ unsigned long ramdev_erase(int dev, lbaint_t start, lbaint_t blkcnt) {
 
 block_dev_desc_t *ramdev_get_dev(int dev)
 {
-
 	/* Setup the universal parts of the block interface just once */
 	ramdev_block_dev.if_type = IF_TYPE_RAMDEV;
 
@@ -93,7 +101,6 @@ block_dev_desc_t *ramdev_get_dev(int dev)
 	ramdev_block_dev.block_read = ramdev_read;
 	ramdev_block_dev.block_write = ramdev_write;
 	ramdev_block_dev.block_erase = ramdev_erase;
-
 
 	ramdev_block_dev.lun = 0;
 	ramdev_block_dev.type = 0;
@@ -112,7 +119,8 @@ block_dev_desc_t *ramdev_get_dev(int dev)
  * Get the ramdev if any.
  * Returns the size of the ramdev if found.
  */
-static void get_ramdev(const void *fdt) {
+static void get_ramdev(const void *fdt)
+{
 	int nodeoffset = 0;
 	const struct fdt_property *initrd_start, *initrd_end;
 	int lenp;
@@ -123,27 +131,29 @@ static void get_ramdev(const void *fdt) {
 		nodeoffset = fdt_next_node(fdt, nodeoffset, &depth);
 		if (nodeoffset < 0)
 			/* No node found */
-			return ;
+			return;
 
 		/*
 		 * Try to find such strings since U-boot patches the dtb following
 		 * this convention (two pre-defined properties).
 		 */
-		initrd_start = fdt_get_property(fdt, nodeoffset, "linux,initrd-start", &lenp);
-		initrd_end = fdt_get_property(fdt, nodeoffset, "linux,initrd-end", &lenp);
+		initrd_start = fdt_get_property(fdt, nodeoffset,
+						"linux,initrd-start", &lenp);
+		initrd_end = fdt_get_property(fdt, nodeoffset,
+					      "linux,initrd-end", &lenp);
 
 		found = (initrd_start && initrd_end);
 	}
 
 	if (!found)
-		return ;
+		return;
 
 #ifdef CONFIG_ARCH_ARM32
-		ramdev_start = fdt32_to_cpu(((const fdt32_t *) initrd_start->data)[0]);
-		ramdev_end = fdt32_to_cpu(((const fdt32_t *) initrd_end->data)[0]);
+	ramdev_start = fdt32_to_cpu(((const fdt32_t *)initrd_start->data)[0]);
+	ramdev_end = fdt32_to_cpu(((const fdt32_t *)initrd_end->data)[0]);
 #else
-		ramdev_start = fdt64_to_cpu(((const fdt64_t *) initrd_start->data)[0]);
-		ramdev_end = fdt64_to_cpu(((const fdt64_t *) initrd_end->data)[0]);
+	ramdev_start = fdt64_to_cpu(((const fdt64_t *)initrd_start->data)[0]);
+	ramdev_end = fdt64_to_cpu(((const fdt64_t *)initrd_end->data)[0]);
 #endif
 
 	/*
@@ -160,23 +170,28 @@ static void get_ramdev(const void *fdt) {
  * Main ramdev initialization function.
  * Called by devices_init() in devce.c
  */
-void ramdev_init(void) {
+void ramdev_init(void)
+{
 	int i;
 	addr_t ramdev_pfn_start;
 
-	get_ramdev((void *) __fdt_addr);
+	get_ramdev((void *)__fdt_addr);
 
 	if (ramdev_size > 0) {
-		printk("so3: rootfs in RAM detected (ramdev enabled) with size of %d bytes...\n", ramdev_size);
+		printk("so3: rootfs in RAM detected (ramdev enabled) with size of %d bytes...\n",
+		       ramdev_size);
 
 		/* Mark all pfns dedicated to the (possible) ramdev as busy. */
 
 		ramdev_pfn_start = get_ramdev_start() >> PAGE_SHIFT;
 
-		for (i = ramdev_pfn_start; i <= ramdev_pfn_start + (ALIGN_UP(ramdev_size, PAGE_SIZE) >> PAGE_SHIFT); i++) {
+		for (i = ramdev_pfn_start;
+		     i <=
+		     ramdev_pfn_start +
+			     (ALIGN_UP(ramdev_size, PAGE_SIZE) >> PAGE_SHIFT);
+		     i++) {
 			pfn_to_page(i)->free = false;
 			pfn_to_page(i)->refcount++;
 		}
 	}
 }
-

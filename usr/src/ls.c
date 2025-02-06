@@ -29,9 +29,10 @@
  * The ls application is very very short and does not support any options like -l -a etc.
  * It is only possible to give a subdir name to list the directory entries of this subdir.
  */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	DIR *stream;
-	struct dirent  *p_entry;
+	struct dirent *p_entry;
 	char *dir;
 
 	if (argc == 1)
@@ -50,7 +51,6 @@ int main(int argc, char **argv) {
 
 	while ((p_entry = readdir(stream)) != NULL) {
 		switch (p_entry->d_type) {
-
 		/* Directory entry */
 		case DT_DIR:
 			printf("%s/\n", p_entry->d_name);
@@ -69,4 +69,3 @@ int main(int argc, char **argv) {
 
 	exit(0);
 }
-

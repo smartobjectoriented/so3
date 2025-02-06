@@ -21,12 +21,12 @@
 
 #include <types.h>
 
-#define GPIO_GPFSEL2	0x08
-#define GPIO_GPREN0	0x4c
-#define GPIO_GPEDS0	0x40
-#define GPIO_GPLEV0	0x34
+#define GPIO_GPFSEL2 0x08
+#define GPIO_GPREN0 0x4c
+#define GPIO_GPEDS0 0x40
+#define GPIO_GPLEV0 0x34
 
-#define FSEL_INPUT_23	0x00000e00
+#define FSEL_INPUT_23 0x00000e00
 
 #define NB_ROW 8
 #define NB_COL 8
@@ -34,22 +34,23 @@
 /* 8 (row) * 8 (column) * 3 (colors) + 1 (first byte needed blank) */
 #define SIZE_FB 193
 
-#define UP      0x04
-#define DOWN    0x01
-#define RIGHT   0x02
-#define LEFT    0x10
-#define CENTER  0x08
+#define UP 0x04
+#define DOWN 0x01
+#define RIGHT 0x02
+#define LEFT 0x10
+#define CENTER 0x08
 
-#define RPISENSE_I2C_ADDR	0x46
+#define RPISENSE_I2C_ADDR 0x46
 
-#define JOYSTICK_GPIO		(1 << 23)
-#define JOYSTICK_ADDR		0xf2
+#define JOYSTICK_GPIO (1 << 23)
+#define JOYSTICK_ADDR 0xf2
 
-typedef void(*joystick_handler_t)(void *arg, int key);
+typedef void (*joystick_handler_t)(void *arg, int key);
 
 void display_led(int led_nr, bool on);
 void rpisense_matrix_off(void);
 
-void rpisense_joystick_handler_register(void *arg, joystick_handler_t joystick_handler);
+void rpisense_joystick_handler_register(void *arg,
+					joystick_handler_t joystick_handler);
 
 #endif /* RPISENSE_H */

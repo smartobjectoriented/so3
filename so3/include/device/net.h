@@ -16,7 +16,6 @@
  *
  */
 
-
 #ifndef NETWORK_H
 #define NETWORK_H
 
@@ -30,28 +29,27 @@
 #define ETH_NAME_LEN 20
 
 struct eth_dev {
-    struct list_head list;
+	struct list_head list;
 
-    char name[ETH_NAME_LEN];
-    unsigned char enetaddr[ARP_HLEN];
+	char name[ETH_NAME_LEN];
+	unsigned char enetaddr[ARP_HLEN];
 
-    addr_t iobase;
-    irq_def_t irq_def;
+	addr_t iobase;
+	irq_def_t irq_def;
 
-    int state;
+	int state;
 
-    int (*init)(struct eth_dev *);
-    int (*send)(struct eth_dev *, void *packet, int length);
-    int (*recv)(struct eth_dev *);
-    void (*halt)(struct eth_dev *);
-    int (*write_hwaddr)(struct eth_dev *);
-    void *priv;
+	int (*init)(struct eth_dev *);
+	int (*send)(struct eth_dev *, void *packet, int length);
+	int (*recv)(struct eth_dev *);
+	void (*halt)(struct eth_dev *);
+	int (*write_hwaddr)(struct eth_dev *);
+	void *priv;
 
-    sem_t sem_read;
-    sem_t sem_write;
+	sem_t sem_read;
+	sem_t sem_write;
 
-    struct eth_dev *next;
-
+	struct eth_dev *next;
 };
 typedef struct eth_dev eth_dev_t;
 

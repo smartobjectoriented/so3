@@ -25,17 +25,16 @@
 #include <soo/grant_table.h>
 #include <soo/vdevfront.h>
 
-#define VSENSEJ_PACKET_SIZE	32
+#define VSENSEJ_PACKET_SIZE 32
 
-#define VSENSEJ_NAME		"vsensej"
-#define VSENSEJ_PREFIX		"[" VSENSEJ_NAME "] "
+#define VSENSEJ_NAME "vsensej"
+#define VSENSEJ_PREFIX "[" VSENSEJ_NAME "] "
 
 typedef struct {
 	/* nothing */
 } vsensej_request_t;
 
-typedef struct  {
-
+typedef struct {
 	uint16_t type;
 	uint16_t code;
 	int value;

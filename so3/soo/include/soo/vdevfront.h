@@ -31,7 +31,6 @@
 struct vdrvfront;
 
 struct vdevfront {
-
 	/* Frontend activity related declarations - managed by vdevfront generic code */
 
 	atomic_t processing_count;
@@ -45,7 +44,6 @@ struct vdevfront {
 typedef struct vdevfront vdevfront_t;
 
 struct vdrvfront {
-
 	struct vbus_driver vdrv;
 
 	void (*probe)(struct vbus_device *vdev);
@@ -56,11 +54,11 @@ struct vdrvfront {
 	void (*suspend)(struct vbus_device *vdev);
 	void (*resume)(struct vbus_device *vdev);
 	void (*connected)(struct vbus_device *vdev);
-
 };
 typedef struct vdrvfront vdrvfront_t;
 
-static inline vdrvfront_t *to_vdrvfront(struct vbus_device *vdev) {
+static inline vdrvfront_t *to_vdrvfront(struct vbus_device *vdev)
+{
 	struct vbus_driver *vdrv = vdev->vdrv;
 	return container_of(vdrv, vdrvfront_t, vdrv);
 }
@@ -70,7 +68,3 @@ bool vdevfront_processing_begin(struct vbus_device *vdev);
 void vdevfront_processing_end(struct vbus_device *vdev);
 
 #endif /* VDEVFRONT_H */
-
-
-
-

@@ -96,7 +96,8 @@ int vfs_get_gfd(int localfd)
  * @brief Get the refcount of a specific global fd.
  *
  */
-int vfs_refcount(int gfd) {
+int vfs_refcount(int gfd)
+{
 	int ret;
 
 	mutex_lock(&vfs_lock);
@@ -179,8 +180,8 @@ char *vfs_get_filename(int gfd)
 /*
  * Get the reference to the fops associated to a gfd.
  */
-struct file_operations *vfs_get_fops(uint32_t gfd) {
-
+struct file_operations *vfs_get_fops(uint32_t gfd)
+{
 	ASSERT(mutex_is_locked(&vfs_lock));
 
 	if (!vfs_is_valid_gfd(gfd))
@@ -215,7 +216,7 @@ int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 		goto vfs_open_failed;
 	}
 
-	open_fds[gfd] = (struct fd *) malloc(sizeof(struct fd));
+	open_fds[gfd] = (struct fd *)malloc(sizeof(struct fd));
 
 	if (!open_fds[gfd]) {
 		printk("%s: failed to allocate memory\n", __func__);
@@ -227,7 +228,7 @@ int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 
 	/* Store the filename */
 	if (filename) {
-		open_fds[gfd]->filename = malloc(strlen(filename)+1);
+		open_fds[gfd]->filename = malloc(strlen(filename) + 1);
 		if (!open_fds[gfd]) {
 			printk("%s: failed to allocate memory\n", __func__);
 			set_errno(ENOMEM);
@@ -275,7 +276,6 @@ uint32_t vfs_get_open_mode(int gfd)
 
 	if (open_fds[gfd])
 		return open_fds[gfd]->flags_open;
-
 
 	return 0;
 }
@@ -325,7 +325,6 @@ uint32_t vfs_get_operating_mode(int gfd)
 	return ret;
 }
 
-
 int vfs_set_operating_mode(int gfd, uint32_t flags_operating_mode)
 {
 	mutex_lock(&vfs_lock);
@@ -367,7 +366,6 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 	 * However, the global descriptor remains the same in all cases.
 	 */
 	for (i = 0; i < FD_MAX; i++) {
-
 		/* If invalid fd */
 		if ((fd_src[i] < 0) || (open_fds[fd_src[i]] == NULL)) {
 			fd_dst[i] = -1;
@@ -384,7 +382,7 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 }
 
 /**************************** Syscall implementation ****************************/
- 
+
 int do_read(int fd, void *buffer, int count)
 {
 	int gfd;
@@ -615,7 +613,7 @@ void do_close(int fd)
 
 	if (!open_fds[gfd]) {
 		mutex_unlock(&vfs_lock);
-		return ;
+		return;
 	}
 
 	/* Decrement reference counter to keep track of open fds */
@@ -631,8 +629,8 @@ void do_close(int fd)
 	/* Free only when no one is using the file descriptor */
 
 	if (!open_fds[gfd]->ref_count) {
-
-		ASSERT(gfd > STDERR); /* Abnormal situation if we attempt to remove the std* file descriptors */
+		ASSERT(gfd >
+		       STDERR); /* Abnormal situation if we attempt to remove the std* file descriptors */
 
 		/* The close() callback operation in the sub-layers must NOT suspend. */
 		if (open_fds[gfd]->fops->close)
@@ -658,7 +656,6 @@ int do_dup2(int oldfd, int newfd)
 	if ((newfd < 0) || (newfd > MAX_FDS))
 		return -EBADF;
 
-
 	if ((oldfd < 0) || (oldfd > MAX_FDS))
 		return -EBADF;
 
@@ -671,9 +668,8 @@ int do_dup2(int oldfd, int newfd)
 		return -1;
 	}
 
-	if (vfs_get_gfd(oldfd) !=  vfs_get_gfd(newfd))
+	if (vfs_get_gfd(oldfd) != vfs_get_gfd(newfd))
 		do_close(newfd);
-
 
 	vfs_link_fd(newfd, vfs_get_gfd(oldfd));
 
@@ -681,7 +677,6 @@ int do_dup2(int oldfd, int newfd)
 
 	return newfd;
 }
-
 
 /**
  * @brief This function will copy the oldfd and
@@ -810,7 +805,8 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
  * Implementation of standard lseek() syscall. It depends on the underlying
  * device operations.
  */
-off_t do_lseek(int fd, off_t off, int whence) {
+off_t do_lseek(int fd, off_t off, int whence)
+{
 	int rc, gfd;
 	mutex_lock(&vfs_lock);
 
@@ -835,8 +831,8 @@ off_t do_lseek(int fd, off_t off, int whence) {
 /*
  * Implementation of the fcntl syscall
  */
-int do_fcntl(int fd, unsigned long cmd, unsigned long args) {
-
+int do_fcntl(int fd, unsigned long cmd, unsigned long args)
+{
 	/* Not yet implemented */
 
 	return 0;
@@ -847,9 +843,9 @@ static void vfs_gfd_init(void)
 	memset(open_fds, 0, sizeof(struct fd));
 
 	/* Basic file descriptors */
-	open_fds[STDIN] = (struct fd *) malloc(sizeof(struct fd));
-	open_fds[STDOUT] = (struct fd *) malloc(sizeof(struct fd));
-	open_fds[STDERR] = (struct fd *) malloc(sizeof(struct fd));
+	open_fds[STDIN] = (struct fd *)malloc(sizeof(struct fd));
+	open_fds[STDOUT] = (struct fd *)malloc(sizeof(struct fd));
+	open_fds[STDERR] = (struct fd *)malloc(sizeof(struct fd));
 
 	if (!open_fds[STDIN] || !open_fds[STDOUT] || !open_fds[STDERR]) {
 		printk("%s: failed to allocate memory\n", __func__);

@@ -20,42 +20,42 @@
 #include <libfdt/libfdt.h>
 #include <libfdt/fdt_support.h>
 
-#define FIT_IMAGES_PATH		"/images"
-#define FIT_CONFS_PATH		"/configurations"
+#define FIT_IMAGES_PATH "/images"
+#define FIT_CONFS_PATH "/configurations"
 
 /* hash/signature node */
-#define FIT_HASH_NODENAME	"hash"
-#define FIT_ALGO_PROP		"algo"
-#define FIT_VALUE_PROP		"value"
-#define FIT_IGNORE_PROP		"uboot-ignore"
-#define FIT_SIG_NODENAME	"signature"
+#define FIT_HASH_NODENAME "hash"
+#define FIT_ALGO_PROP "algo"
+#define FIT_VALUE_PROP "value"
+#define FIT_IGNORE_PROP "uboot-ignore"
+#define FIT_SIG_NODENAME "signature"
 
 /* image node */
-#define FIT_DATA_PROP		"data"
-#define FIT_DATA_POSITION_PROP	"data-position"
-#define FIT_DATA_OFFSET_PROP	"data-offset"
-#define FIT_DATA_SIZE_PROP	"data-size"
-#define FIT_TIMESTAMP_PROP	"timestamp"
-#define FIT_DESC_PROP		"description"
-#define FIT_ARCH_PROP		"arch"
-#define FIT_TYPE_PROP		"type"
-#define FIT_OS_PROP		"os"
-#define FIT_COMP_PROP		"compression"
-#define FIT_ENTRY_PROP		"entry"
-#define FIT_LOAD_PROP		"load"
+#define FIT_DATA_PROP "data"
+#define FIT_DATA_POSITION_PROP "data-position"
+#define FIT_DATA_OFFSET_PROP "data-offset"
+#define FIT_DATA_SIZE_PROP "data-size"
+#define FIT_TIMESTAMP_PROP "timestamp"
+#define FIT_DESC_PROP "description"
+#define FIT_ARCH_PROP "arch"
+#define FIT_TYPE_PROP "type"
+#define FIT_OS_PROP "os"
+#define FIT_COMP_PROP "compression"
+#define FIT_ENTRY_PROP "entry"
+#define FIT_LOAD_PROP "load"
 
 /* configuration node */
-#define FIT_KERNEL_PROP		"kernel"
-#define FIT_RAMDISK_PROP	"ramdisk"
-#define FIT_FDT_PROP		"fdt"
-#define FIT_LOADABLE_PROP	"loadables"
-#define FIT_DEFAULT_PROP	"default"
-#define FIT_SETUP_PROP		"setup"
-#define FIT_FPGA_PROP		"fpga"
-#define FIT_FIRMWARE_PROP	"firmware"
-#define FIT_STANDALONE_PROP	"standalone"
+#define FIT_KERNEL_PROP "kernel"
+#define FIT_RAMDISK_PROP "ramdisk"
+#define FIT_FDT_PROP "fdt"
+#define FIT_LOADABLE_PROP "loadables"
+#define FIT_DEFAULT_PROP "default"
+#define FIT_SETUP_PROP "setup"
+#define FIT_FPGA_PROP "fpga"
+#define FIT_FIRMWARE_PROP "firmware"
+#define FIT_STANDALONE_PROP "standalone"
 
-#define FIT_MAX_HASH_LEN	HASH_MAX_DIGEST_SIZE
+#define FIT_MAX_HASH_LEN HASH_MAX_DIGEST_SIZE
 
 enum ih_category {
 	IH_ARCH,
@@ -73,33 +73,33 @@ enum ih_category {
  * Do not change values for backward compatibility.
  */
 enum {
-	IH_OS_INVALID		= 0,	/* Invalid OS	*/
-	IH_OS_OPENBSD,			/* OpenBSD	*/
-	IH_OS_NETBSD,			/* NetBSD	*/
-	IH_OS_FREEBSD,			/* FreeBSD	*/
-	IH_OS_4_4BSD,			/* 4.4BSD	*/
-	IH_OS_LINUX,			/* Linux	*/
-	IH_OS_SVR4,			/* SVR4		*/
-	IH_OS_ESIX,			/* Esix		*/
-	IH_OS_SOLARIS,			/* Solaris	*/
-	IH_OS_IRIX,			/* Irix		*/
-	IH_OS_SCO,			/* SCO		*/
-	IH_OS_DELL,			/* Dell		*/
-	IH_OS_NCR,			/* NCR		*/
-	IH_OS_LYNXOS,			/* LynxOS	*/
-	IH_OS_VXWORKS,			/* VxWorks	*/
-	IH_OS_PSOS,			/* pSOS		*/
-	IH_OS_QNX,			/* QNX		*/
-	IH_OS_U_BOOT,			/* Firmware	*/
-	IH_OS_RTEMS,			/* RTEMS	*/
-	IH_OS_ARTOS,			/* ARTOS	*/
-	IH_OS_UNITY,			/* Unity OS	*/
-	IH_OS_INTEGRITY,		/* INTEGRITY	*/
-	IH_OS_OSE,			/* OSE		*/
-	IH_OS_PLAN9,			/* Plan 9	*/
-	IH_OS_OPENRTOS,		/* OpenRTOS	*/
-	IH_OS_ARM_TRUSTED_FIRMWARE,     /* ARM Trusted Firmware */
-	IH_OS_TEE,			/* Trusted Execution Environment */
+	IH_OS_INVALID = 0, /* Invalid OS	*/
+	IH_OS_OPENBSD, /* OpenBSD	*/
+	IH_OS_NETBSD, /* NetBSD	*/
+	IH_OS_FREEBSD, /* FreeBSD	*/
+	IH_OS_4_4BSD, /* 4.4BSD	*/
+	IH_OS_LINUX, /* Linux	*/
+	IH_OS_SVR4, /* SVR4		*/
+	IH_OS_ESIX, /* Esix		*/
+	IH_OS_SOLARIS, /* Solaris	*/
+	IH_OS_IRIX, /* Irix		*/
+	IH_OS_SCO, /* SCO		*/
+	IH_OS_DELL, /* Dell		*/
+	IH_OS_NCR, /* NCR		*/
+	IH_OS_LYNXOS, /* LynxOS	*/
+	IH_OS_VXWORKS, /* VxWorks	*/
+	IH_OS_PSOS, /* pSOS		*/
+	IH_OS_QNX, /* QNX		*/
+	IH_OS_U_BOOT, /* Firmware	*/
+	IH_OS_RTEMS, /* RTEMS	*/
+	IH_OS_ARTOS, /* ARTOS	*/
+	IH_OS_UNITY, /* Unity OS	*/
+	IH_OS_INTEGRITY, /* INTEGRITY	*/
+	IH_OS_OSE, /* OSE		*/
+	IH_OS_PLAN9, /* Plan 9	*/
+	IH_OS_OPENRTOS, /* OpenRTOS	*/
+	IH_OS_ARM_TRUSTED_FIRMWARE, /* ARM Trusted Firmware */
+	IH_OS_TEE, /* Trusted Execution Environment */
 
 	IH_OS_COUNT,
 };
@@ -111,33 +111,33 @@ enum {
  * Do not change values for backward compatibility.
  */
 enum {
-	IH_ARCH_INVALID		= 0,	/* Invalid CPU	*/
-	IH_ARCH_ALPHA,			/* Alpha	*/
-	IH_ARCH_ARM,			/* ARM		*/
-	IH_ARCH_I386,			/* Intel x86	*/
-	IH_ARCH_IA64,			/* IA64		*/
-	IH_ARCH_MIPS,			/* MIPS		*/
-	IH_ARCH_MIPS64,			/* MIPS	 64 Bit */
-	IH_ARCH_PPC,			/* PowerPC	*/
-	IH_ARCH_S390,			/* IBM S390	*/
-	IH_ARCH_SH,			/* SuperH	*/
-	IH_ARCH_SPARC,			/* Sparc	*/
-	IH_ARCH_SPARC64,		/* Sparc 64 Bit */
-	IH_ARCH_M68K,			/* M68K		*/
-	IH_ARCH_NIOS,			/* Nios-32	*/
-	IH_ARCH_MICROBLAZE,		/* MicroBlaze   */
-	IH_ARCH_NIOS2,			/* Nios-II	*/
-	IH_ARCH_BLACKFIN,		/* Blackfin	*/
-	IH_ARCH_AVR32,			/* AVR32	*/
-	IH_ARCH_ST200,			/* STMicroelectronics ST200  */
-	IH_ARCH_SANDBOX,		/* Sandbox architecture (test only) */
-	IH_ARCH_NDS32,			/* ANDES Technology - NDS32  */
-	IH_ARCH_OPENRISC,		/* OpenRISC 1000  */
-	IH_ARCH_ARM64,			/* ARM64	*/
-	IH_ARCH_ARC,			/* Synopsys DesignWare ARC */
-	IH_ARCH_X86_64,			/* AMD x86_64, Intel and Via */
-	IH_ARCH_XTENSA,			/* Xtensa	*/
-	IH_ARCH_RISCV,			/* RISC-V */
+	IH_ARCH_INVALID = 0, /* Invalid CPU	*/
+	IH_ARCH_ALPHA, /* Alpha	*/
+	IH_ARCH_ARM, /* ARM		*/
+	IH_ARCH_I386, /* Intel x86	*/
+	IH_ARCH_IA64, /* IA64		*/
+	IH_ARCH_MIPS, /* MIPS		*/
+	IH_ARCH_MIPS64, /* MIPS	 64 Bit */
+	IH_ARCH_PPC, /* PowerPC	*/
+	IH_ARCH_S390, /* IBM S390	*/
+	IH_ARCH_SH, /* SuperH	*/
+	IH_ARCH_SPARC, /* Sparc	*/
+	IH_ARCH_SPARC64, /* Sparc 64 Bit */
+	IH_ARCH_M68K, /* M68K		*/
+	IH_ARCH_NIOS, /* Nios-32	*/
+	IH_ARCH_MICROBLAZE, /* MicroBlaze   */
+	IH_ARCH_NIOS2, /* Nios-II	*/
+	IH_ARCH_BLACKFIN, /* Blackfin	*/
+	IH_ARCH_AVR32, /* AVR32	*/
+	IH_ARCH_ST200, /* STMicroelectronics ST200  */
+	IH_ARCH_SANDBOX, /* Sandbox architecture (test only) */
+	IH_ARCH_NDS32, /* ANDES Technology - NDS32  */
+	IH_ARCH_OPENRISC, /* OpenRISC 1000  */
+	IH_ARCH_ARM64, /* ARM64	*/
+	IH_ARCH_ARC, /* Synopsys DesignWare ARC */
+	IH_ARCH_X86_64, /* AMD x86_64, Intel and Via */
+	IH_ARCH_XTENSA, /* Xtensa	*/
+	IH_ARCH_RISCV, /* RISC-V */
 
 	IH_ARCH_COUNT,
 };
@@ -185,45 +185,45 @@ enum {
  */
 
 enum {
-	IH_TYPE_INVALID		= 0,	/* Invalid Image		*/
-	IH_TYPE_STANDALONE,		/* Standalone Program		*/
-	IH_TYPE_KERNEL,			/* OS Kernel Image		*/
-	IH_TYPE_RAMDISK,		/* RAMDisk Image		*/
-	IH_TYPE_MULTI,			/* Multi-File Image		*/
-	IH_TYPE_FIRMWARE,		/* Firmware Image		*/
-	IH_TYPE_SCRIPT,			/* Script file			*/
-	IH_TYPE_FILESYSTEM,		/* Filesystem Image (any type)	*/
-	IH_TYPE_FLATDT,			/* Binary Flat Device Tree Blob	*/
-	IH_TYPE_KWBIMAGE,		/* Kirkwood Boot Image		*/
-	IH_TYPE_IMXIMAGE,		/* Freescale IMXBoot Image	*/
-	IH_TYPE_UBLIMAGE,		/* Davinci UBL Image		*/
-	IH_TYPE_OMAPIMAGE,		/* TI OMAP Config Header Image	*/
-	IH_TYPE_AISIMAGE,		/* TI Davinci AIS Image		*/
+	IH_TYPE_INVALID = 0, /* Invalid Image		*/
+	IH_TYPE_STANDALONE, /* Standalone Program		*/
+	IH_TYPE_KERNEL, /* OS Kernel Image		*/
+	IH_TYPE_RAMDISK, /* RAMDisk Image		*/
+	IH_TYPE_MULTI, /* Multi-File Image		*/
+	IH_TYPE_FIRMWARE, /* Firmware Image		*/
+	IH_TYPE_SCRIPT, /* Script file			*/
+	IH_TYPE_FILESYSTEM, /* Filesystem Image (any type)	*/
+	IH_TYPE_FLATDT, /* Binary Flat Device Tree Blob	*/
+	IH_TYPE_KWBIMAGE, /* Kirkwood Boot Image		*/
+	IH_TYPE_IMXIMAGE, /* Freescale IMXBoot Image	*/
+	IH_TYPE_UBLIMAGE, /* Davinci UBL Image		*/
+	IH_TYPE_OMAPIMAGE, /* TI OMAP Config Header Image	*/
+	IH_TYPE_AISIMAGE, /* TI Davinci AIS Image		*/
 	/* OS Kernel Image, can run from any load address */
 	IH_TYPE_KERNEL_NOLOAD,
-	IH_TYPE_PBLIMAGE,		/* Freescale PBL Boot Image	*/
-	IH_TYPE_MXSIMAGE,		/* Freescale MXSBoot Image	*/
-	IH_TYPE_GPIMAGE,		/* TI Keystone GPHeader Image	*/
-	IH_TYPE_ATMELIMAGE,		/* ATMEL ROM bootable Image	*/
-	IH_TYPE_SOCFPGAIMAGE,		/* Altera SOCFPGA CV/AV Preloader */
-	IH_TYPE_X86_SETUP,		/* x86 setup.bin Image		*/
-	IH_TYPE_LPC32XXIMAGE,		/* x86 setup.bin Image		*/
-	IH_TYPE_LOADABLE,		/* A list of typeless images	*/
-	IH_TYPE_RKIMAGE,		/* Rockchip Boot Image		*/
-	IH_TYPE_RKSD,			/* Rockchip SD card		*/
-	IH_TYPE_RKSPI,			/* Rockchip SPI image		*/
-	IH_TYPE_ZYNQIMAGE,		/* Xilinx Zynq Boot Image */
-	IH_TYPE_ZYNQMPIMAGE,		/* Xilinx ZynqMP Boot Image */
-	IH_TYPE_ZYNQMPBIF,		/* Xilinx ZynqMP Boot Image (bif) */
-	IH_TYPE_FPGA,			/* FPGA Image */
-	IH_TYPE_VYBRIDIMAGE,	/* VYBRID .vyb Image */
-	IH_TYPE_TEE,            /* Trusted Execution Environment OS Image */
-	IH_TYPE_FIRMWARE_IVT,		/* Firmware Image with HABv4 IVT */
-	IH_TYPE_PMMC,            /* TI Power Management Micro-Controller Firmware */
-	IH_TYPE_STM32IMAGE,		/* STMicroelectronics STM32 Image */
-	IH_TYPE_SOCFPGAIMAGE_V1,	/* Altera SOCFPGA A10 Preloader	*/
+	IH_TYPE_PBLIMAGE, /* Freescale PBL Boot Image	*/
+	IH_TYPE_MXSIMAGE, /* Freescale MXSBoot Image	*/
+	IH_TYPE_GPIMAGE, /* TI Keystone GPHeader Image	*/
+	IH_TYPE_ATMELIMAGE, /* ATMEL ROM bootable Image	*/
+	IH_TYPE_SOCFPGAIMAGE, /* Altera SOCFPGA CV/AV Preloader */
+	IH_TYPE_X86_SETUP, /* x86 setup.bin Image		*/
+	IH_TYPE_LPC32XXIMAGE, /* x86 setup.bin Image		*/
+	IH_TYPE_LOADABLE, /* A list of typeless images	*/
+	IH_TYPE_RKIMAGE, /* Rockchip Boot Image		*/
+	IH_TYPE_RKSD, /* Rockchip SD card		*/
+	IH_TYPE_RKSPI, /* Rockchip SPI image		*/
+	IH_TYPE_ZYNQIMAGE, /* Xilinx Zynq Boot Image */
+	IH_TYPE_ZYNQMPIMAGE, /* Xilinx ZynqMP Boot Image */
+	IH_TYPE_ZYNQMPBIF, /* Xilinx ZynqMP Boot Image (bif) */
+	IH_TYPE_FPGA, /* FPGA Image */
+	IH_TYPE_VYBRIDIMAGE, /* VYBRID .vyb Image */
+	IH_TYPE_TEE, /* Trusted Execution Environment OS Image */
+	IH_TYPE_FIRMWARE_IVT, /* Firmware Image with HABv4 IVT */
+	IH_TYPE_PMMC, /* TI Power Management Micro-Controller Firmware */
+	IH_TYPE_STM32IMAGE, /* STMicroelectronics STM32 Image */
+	IH_TYPE_SOCFPGAIMAGE_V1, /* Altera SOCFPGA A10 Preloader	*/
 
-	IH_TYPE_COUNT,			/* Number of image types */
+	IH_TYPE_COUNT, /* Number of image types */
 };
 
 /*
@@ -233,26 +233,26 @@ enum {
  * Do not change values for backward compatibility.
  */
 enum {
-	IH_COMP_NONE		= 0,	/*  No	 Compression Used	*/
-	IH_COMP_GZIP,			/* gzip	 Compression Used	*/
-	IH_COMP_BZIP2,			/* bzip2 Compression Used	*/
-	IH_COMP_LZMA,			/* lzma  Compression Used	*/
-	IH_COMP_LZO,			/* lzo   Compression Used	*/
-	IH_COMP_LZ4,			/* lz4   Compression Used	*/
+	IH_COMP_NONE = 0, /*  No	 Compression Used	*/
+	IH_COMP_GZIP, /* gzip	 Compression Used	*/
+	IH_COMP_BZIP2, /* bzip2 Compression Used	*/
+	IH_COMP_LZMA, /* lzma  Compression Used	*/
+	IH_COMP_LZO, /* lzo   Compression Used	*/
+	IH_COMP_LZ4, /* lz4   Compression Used	*/
 
 	IH_COMP_COUNT,
 };
 
-#define IH_MAGIC	0x27051956	/* Image Magic Number		*/
-#define IH_NMLEN		32	/* Image Name Length		*/
+#define IH_MAGIC 0x27051956 /* Image Magic Number		*/
+#define IH_NMLEN 32 /* Image Name Length		*/
 
 #define IMAGE_ENABLE_TIMESTAMP 0
 
 /* cmdline argument format parsing */
-int fit_parse_conf(const char *spec, ulong addr_curr,
-		ulong *addr, const char **conf_name);
-int fit_parse_subimage(const char *spec, ulong addr_curr,
-		ulong *addr, const char **image_name);
+int fit_parse_conf(const char *spec, ulong addr_curr, ulong *addr,
+		   const char **conf_name);
+int fit_parse_subimage(const char *spec, ulong addr_curr, ulong *addr,
+		       const char **image_name);
 
 int fit_get_subimage_count(const void *fit, int images_noffset);
 void fit_print_contents(const void *fit);
@@ -287,8 +287,8 @@ ulong fit_get_end(const void *fit);
  *     NULL, on error
  *     pointer to node name, on success
  */
-static inline const char *fit_get_name(const void *fit_hdr,
-		int noffset, int *len)
+static inline const char *fit_get_name(const void *fit_hdr, int noffset,
+				       int *len)
 {
 	return fdt_get_name(fit_hdr, noffset, len);
 }
@@ -303,18 +303,18 @@ int fit_image_get_type(const void *fit, int noffset, uint8_t *type);
 int fit_image_get_comp(const void *fit, int noffset, uint8_t *comp);
 int fit_image_get_load(const void *fit, int noffset, ulong *load);
 int fit_image_get_entry(const void *fit, int noffset, ulong *entry);
-int fit_image_get_data(const void *fit, int noffset,
-				const void **data, size_t *size);
+int fit_image_get_data(const void *fit, int noffset, const void **data,
+		       size_t *size);
 int fit_image_get_data_offset(const void *fit, int noffset, int *data_offset);
 int fit_image_get_data_position(const void *fit, int noffset,
 				int *data_position);
 int fit_image_get_data_size(const void *fit, int noffset, int *data_size);
-int fit_image_get_data_and_size(const void *fit, int noffset,
-				const void **data, size_t *size);
+int fit_image_get_data_and_size(const void *fit, int noffset, const void **data,
+				size_t *size);
 
 int fit_image_hash_get_algo(const void *fit, int noffset, char **algo);
 int fit_image_hash_get_value(const void *fit, int noffset, uint8_t **value,
-				int *value_len);
+			     int *value_len);
 
 int fit_set_timestamp(void *fit, int noffset, time_t timestamp);
 
@@ -368,13 +368,12 @@ int fit_conf_get_node(const void *fit, const char *conf_uname);
  * return the offset of the node referred to (e.g. offset of node
  * "/images/kernel".
  */
-int fit_conf_get_prop_node(const void *fit, int noffset,
-		const char *prop_name);
+int fit_conf_get_prop_node(const void *fit, int noffset, const char *prop_name);
 
-int fit_check_ramdisk(const void *fit, int os_noffset,
-		uint8_t arch, int verify);
+int fit_check_ramdisk(const void *fit, int os_noffset, uint8_t arch,
+		      int verify);
 
 int calculate_hash(const void *data, int data_len, const char *algo,
-			uint8_t *value, int *value_len);
+		   uint8_t *value, int *value_len);
 
-#endif	/* __IMAGE_H__ */
+#endif /* __IMAGE_H__ */

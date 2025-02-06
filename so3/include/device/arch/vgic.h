@@ -23,7 +23,7 @@
 
 #include <device/arch/gic.h>
 
-#define REG_RANGE(base, n, size)	(base)...((base) + (n - 1) * (size))
+#define REG_RANGE(base, n, size) (base)...((base) + (n - 1) * (size))
 
 enum mmio_result gic_handle_dist_access(struct mmio_access *mmio);
 

@@ -26,7 +26,6 @@
 #include <asm/atomic.h>
 
 typedef struct {
-
 	/* Semaphore counter */
 	uint32_t val;
 
@@ -49,4 +48,3 @@ int sem_timeddown(sem_t *sem, uint64_t timeout);
 void sem_init(sem_t *sem);
 
 #endif /* SEMAPHORE_H */
-

@@ -43,7 +43,8 @@ extern void startup_cpu_idle_loop(void);
 struct domain *idle_domain[CONFIG_NR_CPUS];
 
 /* Temporary until main.c is unified */
-void *app_thread_main(void *args) {
+void *app_thread_main(void *args)
+{
 	return NULL;
 }
 
@@ -63,7 +64,6 @@ void init_idle_domain(void)
 		BUG();
 
 	set_current_domain(idle_domain[cpu]);
-
 }
 
 void avz_start(void)
@@ -113,7 +113,8 @@ void avz_start(void)
 	/* create idle domain */
 	init_idle_domain();
 
-	printk("This configuration will spin up at most %d total processors ...\n", CONFIG_NR_CPUS);
+	printk("This configuration will spin up at most %d total processors ...\n",
+	       CONFIG_NR_CPUS);
 
 #ifdef CONFIG_SOO
 	/*
@@ -121,7 +122,8 @@ void avz_start(void)
 	 * hypercalls and upcalls will be processed correctly.
 	 */
 
-	domains[DOMID_AGENCY_RT] = domain_create(DOMID_AGENCY_RT, AGENCY_RT_CPU);
+	domains[DOMID_AGENCY_RT] =
+		domain_create(DOMID_AGENCY_RT, AGENCY_RT_CPU);
 
 	if (domains[DOMID_AGENCY_RT] == NULL)
 		panic("Error creating realtime agency subdomain.\n");
@@ -140,7 +142,8 @@ void avz_start(void)
 	/* Check that we do have a agency at this point, as we need it. */
 	if (agency == NULL) {
 		printk("No agency found, stopping here...\n");
-		while (1);
+		while (1)
+			;
 	}
 
 	/* Allow context switch between domains */
@@ -155,6 +158,4 @@ void avz_start(void)
 	set_current_domain(idle_domain[smp_processor_id()]);
 
 	startup_cpu_idle_loop();
-
 }
-

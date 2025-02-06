@@ -30,13 +30,12 @@
 #include <soo/vbstore.h>
 
 /* VBUS_KEY_LENGTH as it is managed by vbstore */
-#define VBS_KEY_LENGTH		50
-#define VBUS_ID_SIZE		VBS_KEY_LENGTH
-#define VBUS_DEV_TYPE		32
+#define VBS_KEY_LENGTH 50
+#define VBUS_ID_SIZE VBS_KEY_LENGTH
+#define VBUS_DEV_TYPE 32
 
 /* Register callback to watch this node. */
-struct vbus_watch
-{
+struct vbus_watch {
 	struct list_head list;
 
 	/* Path being watched. */
@@ -48,8 +47,7 @@ struct vbus_watch
 	volatile bool pending;
 };
 
-struct vbus_type
-{
+struct vbus_type {
 	char *root;
 	unsigned int levels;
 	int (*get_bus_id)(char bus_id[VBUS_ID_SIZE], const char *nodename);
@@ -60,7 +58,6 @@ struct vbus_type
 	void (*suspend)(void);
 	void (*resume)(void);
 };
-
 
 /* A vbus device. */
 struct vbus_device {
@@ -91,9 +88,8 @@ struct vbus_device {
 
 	int resuming;
 
-	bool realtime;  /* Tell if this device is a RT device */
+	bool realtime; /* Tell if this device is a RT device */
 };
-
 
 /* A vbus driver. */
 struct vbus_driver {
@@ -102,7 +98,8 @@ struct vbus_driver {
 	char devicetype[32];
 
 	void (*probe)(struct vbus_device *dev);
-	void (*otherend_changed)(struct vbus_device *dev, enum vbus_state backend_state);
+	void (*otherend_changed)(struct vbus_device *dev,
+				 enum vbus_state backend_state);
 
 	void (*shutdown)(struct vbus_device *dev);
 
@@ -116,22 +113,24 @@ struct vbus_driver {
 	void (*read_otherend_details)(struct vbus_device *dev);
 };
 
-
 void vbus_register_frontend(struct vbus_driver *drv);
 void vbus_unregister_driver(struct vbus_driver *drv);
 
-struct vbus_transaction
-{
+struct vbus_transaction {
 	u32 id; /* Unique non-zereo value to identify a transaction */
 };
 
 /* Nil transaction ID. */
-#define VBT_NIL ((struct vbus_transaction) { 0 })
+#define VBT_NIL ((struct vbus_transaction){ 0 })
 
-char **vbus_directory(struct vbus_transaction t, const char *dir, const char *node, unsigned int *num);
-int vbus_directory_exists(struct vbus_transaction t, const char *dir, const char *node);
-void *vbus_read(struct vbus_transaction t, const char *dir, const char *node, unsigned int *len);
-void vbus_write(struct vbus_transaction t, const char *dir, const char *node, const char *string);
+char **vbus_directory(struct vbus_transaction t, const char *dir,
+		      const char *node, unsigned int *num);
+int vbus_directory_exists(struct vbus_transaction t, const char *dir,
+			  const char *node);
+void *vbus_read(struct vbus_transaction t, const char *dir, const char *node,
+		unsigned int *len);
+void vbus_write(struct vbus_transaction t, const char *dir, const char *node,
+		const char *string);
 void vbus_mkdir(struct vbus_transaction t, const char *dir, const char *node);
 int vbus_exists(struct vbus_transaction t, const char *dir, const char *node);
 void vbus_rm(struct vbus_transaction t, const char *dir, const char *node);
@@ -140,12 +139,12 @@ void vbus_transaction_start(struct vbus_transaction *t);
 void vbus_transaction_end(struct vbus_transaction t);
 
 /* Single read and scanf: returns -errno or num scanned if > 0. */
-int vbus_scanf(struct vbus_transaction t, const char *dir, const char *node, const char *fmt, ...)
-	__attribute__((format(scanf, 4, 5)));
+int vbus_scanf(struct vbus_transaction t, const char *dir, const char *node,
+	       const char *fmt, ...) __attribute__((format(scanf, 4, 5)));
 
 /* Single printf and write: returns -errno or 0. */
-void vbus_printf(struct vbus_transaction t, const char *dir, const char *node, const char *fmt, ...)
-	__attribute__((format(printf, 4, 5)));
+void vbus_printf(struct vbus_transaction t, const char *dir, const char *node,
+		 const char *fmt, ...) __attribute__((format(printf, 4, 5)));
 
 /* Generic read function: NULL-terminated triples of name,
  * sprintf-style type string, and pointer. Returns 0 or errno.*/
@@ -175,13 +174,15 @@ extern int vbus_register_driver_common(struct vbus_driver *drv);
 
 extern int vbus_probe_devices(struct vbus_type *bus);
 
-extern void vbus_dev_changed(const char *node, char *type, struct vbus_type *bus, const char *compat);
+extern void vbus_dev_changed(const char *node, char *type,
+			     struct vbus_type *bus, const char *compat);
 
 extern void vbus_dev_shutdown(struct vbus_device *dev);
 
 extern void vbus_otherend_changed(struct vbus_watch *watch);
 
-extern void vbus_read_otherend_details(struct vbus_device *vdev, char *id_node, char *path_node);
+extern void vbus_read_otherend_details(struct vbus_device *vdev, char *id_node,
+				       char *path_node);
 
 /* Prepare for domain suspend: then resume or cancel the suspend. */
 int vbus_suspend_devices(unsigned int domID);
@@ -191,24 +192,30 @@ int vdev_probe(char *node, const char *compat);
 
 void vbus_probe_frontend_init(void);
 
-#define VBUS_IS_ERR_READ(str) ({			\
-	if (!IS_ERR(str) && strlen(str) == 0) {		\
-		kfree(str);				\
-		str = ERR_PTR(-ERANGE);			\
-	}						\
-	IS_ERR(str);					\
-})
+#define VBUS_IS_ERR_READ(str)                           \
+	({                                              \
+		if (!IS_ERR(str) && strlen(str) == 0) { \
+			kfree(str);                     \
+			str = ERR_PTR(-ERANGE);         \
+		}                                       \
+		IS_ERR(str);                            \
+	})
 
 #define VBUS_EXIST_ERR(err) ((err) == -ENOENT || (err) == -ERANGE)
 
-void vbus_watch_path(struct vbus_device *dev, char *path, struct vbus_watch *watch, void (*callback)(struct vbus_watch *));
-void vbus_watch_pathfmt(struct vbus_device *dev, struct vbus_watch *watch, void (*callback)(struct vbus_watch *), const char *pathfmt, ...)
-	__attribute__ ((format (printf, 4, 5)));
+void vbus_watch_path(struct vbus_device *dev, char *path,
+		     struct vbus_watch *watch,
+		     void (*callback)(struct vbus_watch *));
+void vbus_watch_pathfmt(struct vbus_device *dev, struct vbus_watch *watch,
+			void (*callback)(struct vbus_watch *),
+			const char *pathfmt, ...)
+	__attribute__((format(printf, 4, 5)));
 
 int vbus_grant_ring(struct vbus_device *dev, unsigned long ring_pfn);
- 
+
 void vbus_alloc_evtchn(struct vbus_device *dev, uint32_t *port);
-void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_port, uint32_t *port);
+void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_port,
+		      uint32_t *port);
 void vbus_free_evtchn(struct vbus_device *dev, uint32_t port);
 
 enum vbus_state vbus_read_driver_state(const char *path);
@@ -250,10 +257,10 @@ void vbus_init(void);
 
 #ifdef DEBUG
 #undef DBG
-#define DBG(fmt, ...) \
-    do { \
-        printk("%s:%i > "fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-    } while(0)
+#define DBG(fmt, ...)                                                          \
+	do {                                                                   \
+		printk("%s:%i > " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
+	} while (0)
 #else
 #define DBG(fmt, ...)
 #endif

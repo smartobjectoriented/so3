@@ -6,19 +6,16 @@
 
 #include <sys/time.h>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
+	time_t t;
+	struct timeval tv;
 
-  time_t t;
-  struct timeval tv;
+	while (true) {
+		gettimeofday(&tv, NULL);
 
-  while (true) {
+		time(&t);
 
-	gettimeofday(&tv, NULL);
-
-	time(&t);
-
-        printf("# time(s) : %llu  time(us) : %llu\n", t, tv.tv_usec);
-
-  }
-
+		printf("# time(s) : %llu  time(us) : %llu\n", t, tv.tv_usec);
+	}
 }

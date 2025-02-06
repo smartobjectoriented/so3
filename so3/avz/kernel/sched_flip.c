@@ -39,7 +39,8 @@ struct scheduler sched_flip;
 /*
  * Return the number of runnable domains for this scheduler policy.
  */
-static int flip_quant_runnable(void) {
+static int flip_quant_runnable(void)
+{
 	int i = 0;
 	int nr = 0;
 
@@ -74,16 +75,16 @@ struct task_slice flip_do_schedule(void)
 
 		/* Currently, a domain is attached to a dedicated CPU */
 		if ((ret.d != NULL) && (ret.d->processor != smp_processor_id()))
-                        ret.d = NULL;
+			ret.d = NULL;
 
-                loopmax--;
+		loopmax--;
 	} while ((ret.d == NULL) && loopmax);
 
 	if (ret.d == NULL)
 		ret.d = idle_domain[smp_processor_id()];
 
 	if (flip_quant_runnable() <= 1)
-		ret.time = 0;  /* Keep the schedule_softirq timer disabled */
+		ret.time = 0; /* Keep the schedule_softirq timer disabled */
 	else
 		ret.time = CONFIG_SCHED_FLIP_SCHEDFREQ;
 
@@ -108,9 +109,7 @@ static void flip_sleep(struct domain *d)
 
 	if (sched_flip.sched_data.current_dom == d->avz_shared->domID)
 		cpu_raise_softirq(d->processor, SCHEDULE_SOFTIRQ);
-
 }
-
 
 static void flip_wake(struct domain *d)
 {
@@ -121,7 +120,6 @@ static void flip_wake(struct domain *d)
 	cpu_raise_softirq(d->processor, SCHEDULE_SOFTIRQ);
 
 	/* We do not manage domain priorities, so we do not invoke schedule() at this time */
-
 }
 
 #ifdef CONFIG_SOO
@@ -134,7 +132,8 @@ static void s_timer_fn(void *unused)
 
 #endif
 
-void sched_flip_init(void) {
+void sched_flip_init(void)
+{
 	int i;
 
 	for (i = 0; i < MAX_DOMAINS; i++)
@@ -148,9 +147,9 @@ void sched_flip_init(void) {
 	/* Initiate a timer to trigger the schedule function */
 	init_timer(&sched_flip.sched_data.s_timer, s_timer_fn, NULL, ME_CPU);
 
-	set_timer(&sched_flip.sched_data.s_timer, NOW() + MILLISECS(CONFIG_SCHED_FLIP_SCHEDFREQ));
+	set_timer(&sched_flip.sched_data.s_timer,
+		  NOW() + MILLISECS(CONFIG_SCHED_FLIP_SCHEDFREQ));
 #endif /* CONFIG_SOO */
-
 }
 
 struct scheduler sched_flip = {

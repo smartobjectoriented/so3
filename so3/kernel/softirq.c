@@ -44,7 +44,6 @@ void do_softirq(void)
 	cpu = smp_processor_id();
 
 	while (true) {
-
 		spin_lock(&softirq_pending_lock);
 
 		for (i = 0; i < NR_SOFTIRQS; i++)
@@ -56,8 +55,9 @@ void do_softirq(void)
 			break;
 		}
 
-		if (loopmax > 100)   /* Probably something wrong ;-) */
-			printk("%s: Warning trying to process softirq on cpu %d for quite a long time (i = %d)...\n", __func__, cpu, i);
+		if (loopmax > 100) /* Probably something wrong ;-) */
+			printk("%s: Warning trying to process softirq on cpu %d for quite a long time (i = %d)...\n",
+			       __func__, cpu, i);
 
 		softirq_stat[cpu][i] = false;
 
@@ -77,9 +77,9 @@ void do_softirq(void)
 
 void register_softirq(int nr, softirq_handler handler)
 {
-    ASSERT(nr < NR_SOFTIRQS);
+	ASSERT(nr < NR_SOFTIRQS);
 
-    softirq_handlers[nr] = handler;
+	softirq_handlers[nr] = handler;
 }
 
 #ifdef CONFIG_SMP /* CONFIG_SMP */
@@ -102,8 +102,7 @@ void raise_softirq(unsigned int nr)
 	softirq_stat[smp_processor_id()][nr] = true;
 }
 
-
 void softirq_init(void)
 {
-	memset((void *) softirq_stat, 0, sizeof(softirq_stat));
+	memset((void *)softirq_stat, 0, sizeof(softirq_stat));
 }

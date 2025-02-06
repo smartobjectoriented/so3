@@ -23,7 +23,7 @@
 #include <thread.h>
 
 /* SCHEDULE_FREQ is the scheduler tick expressed in ms */
-#define SCHEDULE_FREQ	10
+#define SCHEDULE_FREQ 10
 
 #ifdef CONFIG_SCHED_PRIO_DYN
 
@@ -58,17 +58,20 @@ void dump_sched(void);
 
 extern struct tcb *current_thread;
 
-static inline void set_current(struct tcb *tcb) {
+static inline void set_current(struct tcb *tcb)
+{
 	current_thread = tcb;
 }
 
-static inline struct tcb *current(void) {
+static inline struct tcb *current(void)
+{
 	return current_thread;
 }
 
 struct tcb *current(void);
 
-static inline void reset_thread_timeout(void) {
+static inline void reset_thread_timeout(void)
+{
 	current_thread->timeout = 0ull;
 }
 

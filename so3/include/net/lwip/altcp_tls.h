@@ -75,31 +75,33 @@ struct altcp_tls_config *altcp_tls_create_config_server(u8_t cert_count);
 /** @ingroup altcp_tls
  * Add a certificate to an ALTCP_TLS server configuration handle
  */
-err_t altcp_tls_config_server_add_privkey_cert(struct altcp_tls_config *config,
-      const u8_t *privkey, size_t privkey_len,
-      const u8_t *privkey_pass, size_t privkey_pass_len,
-      const u8_t *cert, size_t cert_len);
+err_t altcp_tls_config_server_add_privkey_cert(
+	struct altcp_tls_config *config, const u8_t *privkey,
+	size_t privkey_len, const u8_t *privkey_pass, size_t privkey_pass_len,
+	const u8_t *cert, size_t cert_len);
 
 /** @ingroup altcp_tls
  * Create an ALTCP_TLS server configuration handle with one certificate
  * (short version of calling @ref altcp_tls_create_config_server and
  * @ref altcp_tls_config_server_add_privkey_cert)
  */
-struct altcp_tls_config *altcp_tls_create_config_server_privkey_cert(const u8_t *privkey, size_t privkey_len,
-                            const u8_t *privkey_pass, size_t privkey_pass_len,
-                            const u8_t *cert, size_t cert_len);
+struct altcp_tls_config *altcp_tls_create_config_server_privkey_cert(
+	const u8_t *privkey, size_t privkey_len, const u8_t *privkey_pass,
+	size_t privkey_pass_len, const u8_t *cert, size_t cert_len);
 
 /** @ingroup altcp_tls
  * Create an ALTCP_TLS client configuration handle
  */
-struct altcp_tls_config *altcp_tls_create_config_client(const u8_t *cert, size_t cert_len);
+struct altcp_tls_config *altcp_tls_create_config_client(const u8_t *cert,
+							size_t cert_len);
 
 /** @ingroup altcp_tls
  * Create an ALTCP_TLS client configuration handle with two-way server/client authentication
  */
-struct altcp_tls_config *altcp_tls_create_config_client_2wayauth(const u8_t *ca, size_t ca_len, const u8_t *privkey, size_t privkey_len,
-                            const u8_t *privkey_pass, size_t privkey_pass_len,
-                            const u8_t *cert, size_t cert_len);
+struct altcp_tls_config *altcp_tls_create_config_client_2wayauth(
+	const u8_t *ca, size_t ca_len, const u8_t *privkey, size_t privkey_len,
+	const u8_t *privkey_pass, size_t privkey_pass_len, const u8_t *cert,
+	size_t cert_len);
 
 /** @ingroup altcp_tls
  * Configure ALPN TLS extension
@@ -108,7 +110,8 @@ struct altcp_tls_config *altcp_tls_create_config_client_2wayauth(const u8_t *ca,
  * tls_config = altcp_tls_create_config_client(ca, ca_len);<br>
  * altcp_tls_conf_alpn_protocols(tls_config, g_alpn_protocols);<br>
  */
-int altcp_tls_configure_alpn_protocols(struct altcp_tls_config *conf, const char **protos);
+int altcp_tls_configure_alpn_protocols(struct altcp_tls_config *conf,
+				       const char **protos);
 
 /** @ingroup altcp_tls
  * Free an ALTCP_TLS configuration handle
@@ -129,7 +132,8 @@ void altcp_tls_free_entropy(void);
 /** @ingroup altcp_tls
  * Create new ALTCP_TLS layer wrapping an existing pcb as inner connection (e.g. TLS over TCP)
  */
-struct altcp_pcb *altcp_tls_wrap(struct altcp_tls_config *config, struct altcp_pcb *inner_pcb);
+struct altcp_pcb *altcp_tls_wrap(struct altcp_tls_config *config,
+				 struct altcp_pcb *inner_pcb);
 
 /** @ingroup altcp_tls
  * Create new ALTCP_TLS pcb and its inner tcp pcb
@@ -156,7 +160,7 @@ void *altcp_tls_context(struct altcp_pcb *conn);
 struct altcp_tls_session
 #if LWIP_ALTCP_TLS_MBEDTLS
 {
-    mbedtls_ssl_session data;
+	mbedtls_ssl_session data;
 }
 #endif
 ;
@@ -172,14 +176,16 @@ void altcp_tls_init_session(struct altcp_tls_session *dest);
  * Return error if saving session fail.
  * Real type depends on port (e.g. mbedtls use mbedtls_ssl_session)
  */
-err_t altcp_tls_get_session(struct altcp_pcb *conn, struct altcp_tls_session *dest);
+err_t altcp_tls_get_session(struct altcp_pcb *conn,
+			    struct altcp_tls_session *dest);
 
 /** @ingroup altcp_tls
  * Restore a previously saved session. Must be called before altcp_connect().
  * Return error if cannot restore session.
  * Real type depends on port (e.g. mbedtls use mbedtls_ssl_session)
  */
-err_t altcp_tls_set_session(struct altcp_pcb *conn, struct altcp_tls_session *from);
+err_t altcp_tls_set_session(struct altcp_pcb *conn,
+			    struct altcp_tls_session *from);
 
 /** @ingroup altcp_tls
  * Free allocated data inside a TLS session buffer.

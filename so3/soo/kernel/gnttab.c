@@ -40,18 +40,18 @@
  */
 int gnttab_grant_foreign_access(domid_t domid, unsigned long pfn)
 {
-        gnttab_op_t gnttab_op;
+	gnttab_op_t gnttab_op;
 
-        /* Invoke the hypercall to grant access to domid */
-        gnttab_op.cmd = GNTTAB_grant_page;
+	/* Invoke the hypercall to grant access to domid */
+	gnttab_op.cmd = GNTTAB_grant_page;
 	gnttab_op.domid = domid;
-        gnttab_op.pfn = pfn;
-	
+	gnttab_op.pfn = pfn;
+
 	avz_gnttab(&gnttab_op);
 
 	return gnttab_op.ref;
 }
- 
+
 /**
  * @brief Query the hypervisor to retrieve a pfn from a grant reference and
  *        do a mapping and return a vaddr
@@ -60,27 +60,26 @@ int gnttab_grant_foreign_access(domid_t domid, unsigned long pfn)
  * @param grant_ref 
  * @param vaddr 
  */
-void gnttab_map(domid_t domid, grant_ref_t grant_ref, void **vaddr) {
-        gnttab_op_t gnttab_op;
+void gnttab_map(domid_t domid, grant_ref_t grant_ref, void **vaddr)
+{
+	gnttab_op_t gnttab_op;
 
-        gnttab_op.cmd = GNTTAB_map_page;
-        gnttab_op.domid = domid;
-        gnttab_op.ref = grant_ref;
-        
+	gnttab_op.cmd = GNTTAB_map_page;
+	gnttab_op.domid = domid;
+	gnttab_op.ref = grant_ref;
+
 	avz_gnttab(&gnttab_op);
 
-        *vaddr = (void *) io_map(pfn_to_phys(gnttab_op.pfn), PAGE_SIZE);
-        BUG_ON(!*vaddr);
+	*vaddr = (void *)io_map(pfn_to_phys(gnttab_op.pfn), PAGE_SIZE);
+	BUG_ON(!*vaddr);
 }
 
 void gnttab_end_foreign_access(grant_ref_t ref)
 {
-        gnttab_op_t gnttab_op;
+	gnttab_op_t gnttab_op;
 
-        gnttab_op.cmd = GNTTAB_revoke_page;
-        gnttab_op.ref = ref;
+	gnttab_op.cmd = GNTTAB_revoke_page;
+	gnttab_op.ref = ref;
 
-        avz_gnttab(&gnttab_op);
+	avz_gnttab(&gnttab_op);
 }
-
- 

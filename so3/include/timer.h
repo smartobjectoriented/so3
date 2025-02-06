@@ -24,39 +24,39 @@
 
 #include <device/timer.h>
 
-#define NSECS		1000000000ull
+#define NSECS 1000000000ull
 
-#define NOW()           ((u64) get_s_time())
-#define SECONDS(_s)     ((u64)((_s)  * 1000000000ull))
-#define MILLISECS(_ms)  ((u64)((_ms) * 1000000ull))
-#define MICROSECS(_us)  ((u64)((_us) * 1000ull))
-#define STIME_MAX       ((u64)(~0ull))
+#define NOW() ((u64)get_s_time())
+#define SECONDS(_s) ((u64)((_s) * 1000000000ull))
+#define MILLISECS(_ms) ((u64)((_ms) * 1000000ull))
+#define MICROSECS(_us) ((u64)((_us) * 1000ull))
+#define STIME_MAX ((u64)(~0ull))
 
 struct timer {
-    /* System time expiry value (nanoseconds since boot). */
-    u64 expires;
+	/* System time expiry value (nanoseconds since boot). */
+	u64 expires;
 
-    /* Linked list. */
-    struct timer *list_next;
+	/* Linked list. */
+	struct timer *list_next;
 
-    /* On expiry, '(*function)(data)' will be executed in softirq context. */
-    void (*function)(void *);
+	/* On expiry, '(*function)(data)' will be executed in softirq context. */
+	void (*function)(void *);
 
-    /* Some timer might be initialized on CPU #1 or #2, and in this case, they rely on the CPU #0 timer */
-    struct timer *sibling;
-    int timer_cpu;
+	/* Some timer might be initialized on CPU #1 or #2, and in this case, they rely on the CPU #0 timer */
+	struct timer *sibling;
+	int timer_cpu;
 
-    void *data;
+	void *data;
 
-    /* CPU on which this timer will be installed and executed. */
-    uint16_t cpu;
+	/* CPU on which this timer will be installed and executed. */
+	uint16_t cpu;
 
-    /* Timer status. */
-#define TIMER_STATUS_inactive  0  /* Not in use; can be activated.    */
-#define TIMER_STATUS_killed    1  /* Not in use; canot be activated.  */
-#define TIMER_STATUS_in_list   2  /* In use; on overflow linked list. */
+	/* Timer status. */
+#define TIMER_STATUS_inactive 0 /* Not in use; can be activated.    */
+#define TIMER_STATUS_killed 1 /* Not in use; canot be activated.  */
+#define TIMER_STATUS_in_list 2 /* In use; on overflow linked list. */
 
-    uint8_t status;
+	uint8_t status;
 };
 typedef struct timer timer_t;
 
@@ -71,7 +71,7 @@ typedef struct timer timer_t;
  */
 static inline int active_timer(struct timer *timer)
 {
-    return (timer->status == TIMER_STATUS_in_list);
+	return (timer->status == TIMER_STATUS_in_list);
 }
 
 /*
@@ -80,13 +80,14 @@ static inline int active_timer(struct timer *timer)
  * time (and multiple times) on an inactive timer. It must *never* execute
  * concurrently with any other operation on the same timer.
  */
-static inline void init_timer(struct timer *timer, void (*function)(void *), void *data, unsigned int cpu)
+static inline void init_timer(struct timer *timer, void (*function)(void *),
+			      void *data, unsigned int cpu)
 {
-    memset(timer, 0, sizeof(*timer));
+	memset(timer, 0, sizeof(*timer));
 
-    timer->function = function;
-    timer->data     = data;
-    timer->cpu      = cpu;
+	timer->function = function;
+	timer->data = data;
+	timer->cpu = cpu;
 }
 
 /*
@@ -123,7 +124,8 @@ extern void apply_timer_offset(u64 offset);
 extern void reprogram_timer(u64 deadline);
 void clocksource_timer_reset(void);
 
-void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec);
+void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to,
+			    u32 maxsec);
 
 int do_nanosleep(const struct timespec *req, struct timespec *rem);
 

@@ -22,11 +22,10 @@
 typedef void keyhandler_fn_t(unsigned char key);
 
 struct keyhandler {
+	keyhandler_fn_t *fn;
 
-    keyhandler_fn_t *fn;
-
-    /* The string is not copied by register_keyhandler(), so must persist. */
-    char *desc;
+	/* The string is not copied by register_keyhandler(), so must persist. */
+	char *desc;
 };
 
 /* Initialize keytable with default handlers */

@@ -81,7 +81,7 @@ ROXML_INT int roxml_is_separator(char sep);
  * \return the root node or NULL
  * see roxml_close
  */
-ROXML_INT node_t *roxml_load(node_t *current_node, FILE * file, char *buffer);
+ROXML_INT node_t *roxml_load(node_t *current_node, FILE *file, char *buffer);
 
 /** \brief node parenting function
  *
@@ -102,19 +102,31 @@ ROXML_INT node_t *roxml_set_parent(node_t *parent, node_t *n);
  * \param n the node to parent
  * \return
  */
-ROXML_INT node_t *roxml_append_node(node_t *parent, node_t * n);
+ROXML_INT node_t *roxml_append_node(node_t *parent, node_t *n);
 
-ROXML_INT ROXML_PARSE int _func_load_quoted(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_dquoted(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_open_node(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_close_node(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_open_spec_node(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_close_comment(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_close_cdata(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_close_pi(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_end_node(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_white(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_colon(roxml_parser_item_t *parser, char *chunk, void *data);
-ROXML_INT ROXML_PARSE int _func_load_default(roxml_parser_item_t *parser, char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_quoted(roxml_parser_item_t *parser,
+					    char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_dquoted(roxml_parser_item_t *parser,
+					     char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_open_node(roxml_parser_item_t *parser,
+					       char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_close_node(roxml_parser_item_t *parser,
+						char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_open_spec_node(roxml_parser_item_t *parser,
+						    char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_close_comment(roxml_parser_item_t *parser,
+						   char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_close_cdata(roxml_parser_item_t *parser,
+						 char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_close_pi(roxml_parser_item_t *parser,
+					      char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_end_node(roxml_parser_item_t *parser,
+					      char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_white(roxml_parser_item_t *parser,
+					   char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_colon(roxml_parser_item_t *parser,
+					   char *chunk, void *data);
+ROXML_INT ROXML_PARSE int _func_load_default(roxml_parser_item_t *parser,
+					     char *chunk, void *data);
 
 #endif /* ROXML_CORE_H */

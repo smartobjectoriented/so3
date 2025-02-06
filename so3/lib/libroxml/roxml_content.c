@@ -20,22 +20,22 @@ struct roxml_escape_char {
 	char *escape;
 };
 
-struct roxml_escape_char specials[5] = {
-	{ .code = '"', .escape = "&quot;" },
-	{ .code = '\'', .escape = "&apos;" },
-	{ .code = '<', .escape = "&lt;"},
-	{ .code = '>', .escape = "&gt;"},
-	{ .code = '&', .escape = "&amp;"}
-};
+struct roxml_escape_char specials[5] = { { .code = '"', .escape = "&quot;" },
+					 { .code = '\'', .escape = "&apos;" },
+					 { .code = '<', .escape = "&lt;" },
+					 { .code = '>', .escape = "&gt;" },
+					 { .code = '&', .escape = "&amp;" } };
 
 ROXML_API int roxml_escape(const char *buf, int decode, char *out)
 {
 	size_t i = 0;
 	size_t l = 0;
-	for (; i < strlen(buf); ) {
+	for (; i < strlen(buf);) {
 		int s = 0;
 		for (; s < 5; s++) {
-			if (decode && (strncmp(specials[s].escape, buf+i, strlen(specials[s].escape)) == 0)) {
+			if (decode &&
+			    (strncmp(specials[s].escape, buf + i,
+				     strlen(specials[s].escape)) == 0)) {
 				if (out)
 					out[l] = specials[s].code;
 				l += 1;
@@ -43,7 +43,7 @@ ROXML_API int roxml_escape(const char *buf, int decode, char *out)
 				break;
 			} else if (!decode && (buf[i] == specials[s].code)) {
 				if (out)
-					strcpy(out+l, specials[s].escape);
+					strcpy(out + l, specials[s].escape);
 				l += strlen(specials[s].escape);
 				i += 1;
 				break;
@@ -71,7 +71,8 @@ ROXML_API int roxml_escape(const char *buf, int decode, char *out)
  * \param node the node that belong to the tree we want to read to
  * \return the number of bytes read
  */
-ROXML_STATIC ROXML_INT inline int roxml_read(int pos, int size, char *buffer, node_t *node)
+ROXML_STATIC ROXML_INT inline int roxml_read(int pos, int size, char *buffer,
+					     node_t *node)
 {
 	int len = 0;
 
@@ -131,7 +132,8 @@ ROXML_STATIC ROXML_INT inline int roxml_content_size(node_t *n, int *offset)
 	return total;
 }
 
-ROXML_STATIC ROXML_INT inline char *roxml_prepare_buffer(node_t *n, char *buffer, int contentsize, int size)
+ROXML_STATIC ROXML_INT inline char *
+roxml_prepare_buffer(node_t *n, char *buffer, int contentsize, int size)
 {
 	if (n == NULL) {
 		if (buffer)
@@ -145,7 +147,8 @@ ROXML_STATIC ROXML_INT inline char *roxml_prepare_buffer(node_t *n, char *buffer
 	return buffer;
 }
 
-ROXML_API char *roxml_get_content(node_t *n, char *buffer, int bufsize, int *size)
+ROXML_API char *roxml_get_content(node_t *n, char *buffer, int bufsize,
+				  int *size)
 {
 	int total = 0;
 	int content_offset;
@@ -178,7 +181,8 @@ ROXML_API char *roxml_get_content(node_t *n, char *buffer, int bufsize, int *siz
 
 				if (total + read_size > bufsize - 1)
 					read_size = bufsize - total - 1;
-				len += roxml_read(ptr->pos, read_size, content + total, ptr);
+				len += roxml_read(ptr->pos, read_size,
+						  content + total, ptr);
 
 				total += len;
 			}
@@ -188,7 +192,8 @@ ROXML_API char *roxml_get_content(node_t *n, char *buffer, int bufsize, int *siz
 		node_t *target = n;
 		if (n->type & ROXML_ATTR_NODE)
 			target = n->chld;
-		total = roxml_read(content_offset, content_size, content, target);
+		total = roxml_read(content_offset, content_size, content,
+				   target);
 	}
 
 	content[total] = '\0';
@@ -197,7 +202,8 @@ ROXML_API char *roxml_get_content(node_t *n, char *buffer, int bufsize, int *siz
 	return content;
 }
 
-ROXML_STATIC ROXML_INT inline int roxml_name_size(node_t *n, int size, int *offset)
+ROXML_STATIC ROXML_INT inline int roxml_name_size(node_t *n, int size,
+						  int *offset)
 {
 	int total = 0;
 
@@ -267,14 +273,16 @@ ROXML_API char *roxml_get_name(node_t *n, char *buffer, int size)
 			for (; count < total; count++) {
 				if (ROXML_WHITE(begin[count]))
 					break;
-				else if ((begin[count] == '?') && (begin[count + 1] == '>'))
+				else if ((begin[count] == '?') &&
+					 (begin[count + 1] == '>'))
 					break;
 			}
 		} else if (n->type & ROXML_ELM_NODE) {
 			for (; count < total; count++) {
 				if (ROXML_WHITE(begin[count]))
 					break;
-				else if ((begin[count] == '/') && (begin[count + 1] == '>'))
+				else if ((begin[count] == '/') &&
+					 (begin[count + 1] == '>'))
 					break;
 				else if (begin[count] == '>')
 					break;
@@ -287,7 +295,8 @@ ROXML_API char *roxml_get_name(node_t *n, char *buffer, int size)
 					break;
 				else if (begin[count] == '>')
 					break;
-				else if ((begin[count] == '/') && (begin[count + 1] == '>'))
+				else if ((begin[count] == '/') &&
+					 (begin[count + 1] == '>'))
 					break;
 			}
 		} else if (n->type & ROXML_DOCTYPE_NODE) {
@@ -333,7 +342,8 @@ ROXML_API int roxml_get_nodes_nb(node_t *n, int type)
 	return nb;
 }
 
-ROXML_STATIC ROXML_INT inline node_t *roxml_get_nodes_by_name(node_t *n, int type, char *name)
+ROXML_STATIC ROXML_INT inline node_t *
+roxml_get_nodes_by_name(node_t *n, int type, char *name)
 {
 	node_t *ptr;
 
@@ -354,7 +364,8 @@ ROXML_STATIC ROXML_INT inline node_t *roxml_get_nodes_by_name(node_t *n, int typ
 	return NULL;
 }
 
-ROXML_STATIC ROXML_INT inline node_t *roxml_get_nodes_by_nth(node_t *n, int type, int nth)
+ROXML_STATIC ROXML_INT inline node_t *roxml_get_nodes_by_nth(node_t *n,
+							     int type, int nth)
 {
 	node_t *ptr;
 	int count = 0;

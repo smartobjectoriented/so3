@@ -43,7 +43,7 @@ ROXML_INT void roxml_close_buff(node_t *n);
  * \return an error code and filled context
  * see roxml_close_buff
  */
-ROXML_INT int roxml_parse_buff(roxml_load_ctx_t *context, roxml_parser_item_t *parser, char *buffer);
+ROXML_INT int roxml_parse_buff(roxml_load_ctx_t *context,
+			       roxml_parser_item_t *parser, char *buffer);
 
 #endif /* ROXML_BUFF_H */
-

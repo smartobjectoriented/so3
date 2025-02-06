@@ -38,7 +38,7 @@
 #endif
 
 #ifndef ARCH_HAS_PREFETCHW
-#define prefetchw(x) __builtin_prefetch(x,1)
+#define prefetchw(x) __builtin_prefetch(x, 1)
 #endif
 
 #ifndef ARCH_HAS_SPINLOCK_PREFETCH
@@ -46,7 +46,7 @@
 #endif
 
 #ifndef PREFETCH_STRIDE
-#define PREFETCH_STRIDE (4*L1_CACHE_BYTES)
+#define PREFETCH_STRIDE (4 * L1_CACHE_BYTES)
 #endif
 
 static inline void prefetch_range(void *addr, size_t len)

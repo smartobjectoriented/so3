@@ -49,8 +49,6 @@ struct elf_img_info {
 
 #endif
 
-
-
 typedef struct elf_img_info elf_img_info_t;
 
 uint8_t *elf_load_buffer(const char *filename);

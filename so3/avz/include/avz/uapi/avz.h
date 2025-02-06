@@ -35,18 +35,19 @@
  * Virtual interrupts that a guest OS may receive from the hypervisor.
  *
  */
-#define NR_VIRQS	256
+#define NR_VIRQS 256
 
-#define VIRQ_TIMER      0  /* System timer tick virtualized interrupt */
-#define VIRQ_TIMER_RT   1  /* Timer tick issued from the oneshot timer (for RT agency and MEs */
+#define VIRQ_TIMER 0 /* System timer tick virtualized interrupt */
+#define VIRQ_TIMER_RT \
+	1 /* Timer tick issued from the oneshot timer (for RT agency and MEs */
 
 /**************************************************/
 
 /*
  * Commands to HYPERVISOR_console_io().
  */
-#define CONSOLEIO_write_string  0
-#define CONSOLEIO_process_char  1
+#define CONSOLEIO_write_string 0
+#define CONSOLEIO_process_char 1
 
 /* Idle domain. */
 #define DOMID_IDLE (0x7FFFU)
@@ -55,14 +56,14 @@
 #define DOMID_SELF (0x7FF0U)
 
 /* Agency */
-#define DOMID_AGENCY	0
+#define DOMID_AGENCY 0
 
 /* Realtime agency subdomain */
-#define DOMID_AGENCY_RT	1
+#define DOMID_AGENCY_RT 1
 
 #define DOMID_INVALID (0x7FF4U)
 
-#define AVZ_HYPERCALL_TRAP	0x2605
+#define AVZ_HYPERCALL_TRAP 0x2605
 #define AVZ_HYPERCALL_SIGRETURN 0x2606
 
 #ifndef __ASSEMBLY__
@@ -83,20 +84,19 @@ void avz_hypercall(avz_hyp_t *avz_hyp);
 typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
- 
+
 /*
  * Shared info page, shared between AVZ and the domain.
  */
 struct avz_shared {
-
 	domid_t domID;
 
 	/* Domain related information */
-	unsigned long nr_pages;     /* Total pages allocated to this domain.  */
+	unsigned long nr_pages; /* Total pages allocated to this domain.  */
 
 	addr_t fdt_paddr;
 
-        /* Other fields related to domain life */
+	/* Other fields related to domain life */
 
 	unsigned long domain_stack;
 	uint8_t evtchn_upcall_pending;
@@ -116,7 +116,7 @@ struct avz_shared {
 	 * useful to restore later. Some timer deadlines are based on it and
 	 * will need to be updated accordingly.
 	 */
-        u64 current_s_time;
+	u64 current_s_time;
 
 	/* Agency or ME descriptor */
 	dom_desc_t dom_desc;
@@ -126,7 +126,7 @@ struct avz_shared {
 
 	struct avz_shared *subdomain_shared;
 
-        /* Used to store a signature for consistency checking, for example after a migration/restoration */
+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
 	char signature[4];
 };
 
@@ -140,4 +140,3 @@ void __sigreturn(void);
 #endif /* __ASSEMBLY__ */
 
 #endif /* UAPI_AVZ_H */
-

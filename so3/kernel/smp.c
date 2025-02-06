@@ -44,7 +44,7 @@
 #include <mach/io.h>
 #endif
 
-static volatile int booted[CONFIG_NR_CPUS] = {0};
+static volatile int booted[CONFIG_NR_CPUS] = { 0 };
 
 DEFINE_PER_CPU(spinlock_t, softint_lock);
 
@@ -72,7 +72,8 @@ void write_pen_release(int val)
 	flush_dcache_all();
 }
 
-int read_pen_release(void) {
+int read_pen_release(void)
+{
 	smp_mb();
 
 	flush_dcache_all();
@@ -97,7 +98,7 @@ void smp_trigger_event(int target_cpu)
 /***************************/
 
 struct secondary_data secondary_data;
-extern  void periodic_timer_start(void);
+extern void periodic_timer_start(void);
 /*
  * This is the secondary CPU boot entry.  We're using this CPUs
  * idle thread stack, but a set of temporary page tables.
@@ -114,13 +115,15 @@ void secondary_start_kernel(void)
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
-#if defined(CONFIG_AVZ) 
+#if defined(CONFIG_AVZ)
 
 #ifdef CONFIG_SOO
 	if (cpu == AGENCY_RT_CPU) {
-		__mmu_switch_kernel((void *) current_domain->pagetable_paddr, true);
+		__mmu_switch_kernel((void *)current_domain->pagetable_paddr,
+				    true);
 #else
-		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+	__mmu_switch_kernel((void *)domains[DOMID_AGENCY]->pagetable_paddr,
+			    true);
 #endif /* CONFIG_SOO */
 
 		booted[cpu] = 1;
@@ -137,16 +140,17 @@ void secondary_start_kernel(void)
 			pre_ret_to_el1_with_spin(CPU3_RELEASE_ADDR);
 			break;
 		default:
-			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
+			printk("%s: trying to start CPU %d that is not supported.\n",
+			       __func__, cpu);
 		}
 #endif
 
 #ifdef CONFIG_SOO
 	}
-	
+
 	/* If no spin table is used, CPU #1 */
 	if (cpu == AGENCY_RT_CPU)
-        	pre_ret_to_el1();
+		pre_ret_to_el1();
 
 #endif /* CONFIG_SOO */
 
@@ -176,14 +180,12 @@ void secondary_start_kernel(void)
 	 */
 	periodic_timer_start();
 
-
 #ifdef CONFIG_AVZ
 	/* Prepare an idle domain and starts the idle loop */
 	startup_cpu_idle_loop();
 #endif
 
 	/* Never returned at this point ... */
-
 }
 
 void cpu_up(unsigned int cpu)
@@ -195,11 +197,11 @@ void cpu_up(unsigned int cpu)
 
 	switch (cpu) {
 	case AGENCY_RT_CPU:
-		secondary_data.stack = (void *) __cpu1_stack;
+		secondary_data.stack = (void *)__cpu1_stack;
 		break;
 
 	default:
-		secondary_data.stack = (void *) __cpu3_stack;
+		secondary_data.stack = (void *)__cpu3_stack;
 	}
 
 	secondary_data.pgdir = __pa(__sys_root_pgtable);
@@ -223,14 +225,14 @@ void cpu_up(unsigned int cpu)
 
 	smp_mb();
 
-	while (!booted[cpu]) ;
+	while (!booted[cpu])
+		;
 
 	printk("%s CPU %d finished waiting...\n", __func__, smp_processor_id());
 
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;
 }
-
 
 /******************************************************************************/
 /* From linux kernel/smp.c */
@@ -250,13 +252,15 @@ void smp_init(void)
 	 * The size must be enough to reach the stack.
 	 */
 
-	create_mapping(NULL, mem_info.phys_base, mem_info.phys_base, SZ_128M, false);
+	create_mapping(NULL, mem_info.phys_base, mem_info.phys_base, SZ_128M,
+		       false);
 
 #ifdef CONFIG_SOO
 
-	printk("CPU #%d is the second CPU reserved for Agency realtime activity.\n", AGENCY_RT_CPU);
+	printk("CPU #%d is the second CPU reserved for Agency realtime activity.\n",
+	       AGENCY_RT_CPU);
 
-		/* Since the RT domain is never scheduled, we set the current domain bound to
+	/* Since the RT domain is never scheduled, we set the current domain bound to
 		 * CPU #1 to this unique domain.
 		 */
 
@@ -287,8 +291,4 @@ void smp_init(void)
 #endif /* !CONFIG_SOO */
 
 #endif /* CONFIG_AVZ */
-
 }
-
-
-

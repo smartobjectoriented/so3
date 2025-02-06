@@ -67,14 +67,15 @@ void fs_init(void)
 	static lv_fs_drv_t drv;
 	lv_fs_drv_init(&drv);
 
-	drv.letter = 'S';			/* An uppercase letter to identify the drive */
-	drv.ready_cb = fs_ready_cb;		/* Callback to tell if the drive is ready to use */
+	drv.letter = 'S'; /* An uppercase letter to identify the drive */
+	drv.ready_cb =
+		fs_ready_cb; /* Callback to tell if the drive is ready to use */
 
-	drv.open_cb = fs_open_cb;		/* Callback to open a file */
-	drv.close_cb = fs_close_cb;		/* Callback to close a file */
+	drv.open_cb = fs_open_cb; /* Callback to open a file */
+	drv.close_cb = fs_close_cb; /* Callback to close a file */
 	drv.read_cb = fs_read_cb;
-	drv.seek_cb = fs_seek_cb;		/* Callback to seek in a file (Move cursor) */
-	drv.tell_cb = fs_tell_cb;		/* Callback to tell the cursor position */
+	drv.seek_cb = fs_seek_cb; /* Callback to seek in a file (Move cursor) */
+	drv.tell_cb = fs_tell_cb; /* Callback to tell the cursor position */
 
 	lv_fs_drv_register(&drv);
 }
@@ -103,13 +104,15 @@ lv_fs_res_t fs_close_cb(struct _lv_fs_drv_t *drv, void *file_p)
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf, uint32_t btr, uint32_t *br)
+lv_fs_res_t fs_read_cb(struct _lv_fs_drv_t *drv, void *file_p, void *buf,
+		       uint32_t btr, uint32_t *br)
 {
 	*br = fread(buf, sizeof(uint8_t), btr, file_p);
 	return LV_FS_RES_OK;
 }
 
-lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos, lv_fs_whence_t whence)
+lv_fs_res_t fs_seek_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t pos,
+		       lv_fs_whence_t whence)
 {
 	if (0 != fseek(file_p, pos, SEEK_SET)) {
 		return LV_FS_RES_UNKNOWN;
@@ -123,7 +126,6 @@ lv_fs_res_t fs_tell_cb(struct _lv_fs_drv_t *drv, void *file_p, uint32_t *pos_p)
 	*pos_p = ftell(file_p);
 	return LV_FS_RES_OK;
 }
-
 
 /*
  * Framebuffer and display initialisation.
@@ -146,10 +148,9 @@ int fb_init(void)
 	}
 
 	/* Get screen resolution. */
-	if (ioctl(fd, IOCTL_FB_HRES, &scr_hres)
-		|| ioctl(fd, IOCTL_FB_VRES, &scr_vres)
-		|| ioctl(fd, IOCTL_FB_SIZE, &fb_size)) {
-
+	if (ioctl(fd, IOCTL_FB_HRES, &scr_hres) ||
+	    ioctl(fd, IOCTL_FB_VRES, &scr_vres) ||
+	    ioctl(fd, IOCTL_FB_SIZE, &fb_size)) {
 		printf("Couldn't get framebuffer resolution.\n");
 		return -1;
 	}

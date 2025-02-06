@@ -33,38 +33,31 @@
 
 static unsigned int tid_next = 0;
 
-char *state_str[] = {
-		"NEW",
-		"READY",
-		"RUNNING",
-		"WAITING",
-		"ZOMBIE"
-};
+char *state_str[] = { "NEW", "READY", "RUNNING", "WAITING", "ZOMBIE" };
 
 /*
  * Display a convenient string to print the state of a thread.
  */
-char *print_state(struct tcb *tcb) {
+char *print_state(struct tcb *tcb)
+{
 	return state_str[tcb->state];
 }
-
 
 /*
  * Find a thread (tcb_t) from its tid. The thread belongs to the process @pcb.
  *
  * Return NULL if no process as been found.
  */
-tcb_t *find_thread_by_tid(pcb_t *pcb, uint32_t tid) {
+tcb_t *find_thread_by_tid(pcb_t *pcb, uint32_t tid)
+{
 	tcb_t *tcb;
 	struct list_head *pos;
 
-	list_for_each(pos, &pcb->threads)
-	{
+	list_for_each(pos, &pcb->threads) {
 		tcb = list_entry(pos, tcb_t, list);
 
 		if (tcb->tid == tid)
 			return tcb;
-
 	}
 
 	/* Not found */
@@ -76,12 +69,12 @@ tcb_t *find_thread_by_tid(pcb_t *pcb, uint32_t tid) {
  * If @tcb is the process main_thread, we perform removal on all tcb (except the main thread of course,
  * which will be cleaned by a subsequent call to waitpid().
  */
-void remove_tcb_from_pcb(tcb_t *tcb) {
+void remove_tcb_from_pcb(tcb_t *tcb)
+{
 	tcb_t *cur;
 	struct list_head *pos, *q;
 
-	list_for_each_safe(pos, q, &tcb->pcb->threads)
-	{
+	list_for_each_safe(pos, q, &tcb->pcb->threads) {
 		cur = list_entry(pos, tcb_t, list);
 
 		if ((tcb == tcb->pcb->main_thread) || (tcb == cur)) {
@@ -89,7 +82,7 @@ void remove_tcb_from_pcb(tcb_t *tcb) {
 			clean_thread(cur);
 
 			if (tcb != tcb->pcb->main_thread)
-				return ;
+				return;
 		}
 	}
 }
@@ -97,12 +90,12 @@ void remove_tcb_from_pcb(tcb_t *tcb) {
 /*
  * Discarding all tcb spawned in a process (except the main_thread of course)
  */
-void discard_tcb_in_pcb(pcb_t *pcb) {
+void discard_tcb_in_pcb(pcb_t *pcb)
+{
 	tcb_t *cur;
 	struct list_head *pos, *q;
 
-	list_for_each_safe(pos, q, &pcb->threads)
-	{
+	list_for_each_safe(pos, q, &pcb->threads) {
 		cur = list_entry(pos, tcb_t, list);
 
 		/* Check if the tcb is in a ready thread ? */
@@ -116,17 +109,16 @@ void discard_tcb_in_pcb(pcb_t *pcb) {
 	}
 }
 
-
 /*
  * Returns the number of running (active) threads in a process
  */
-uint32_t active_threads(pcb_t *pcb) {
+uint32_t active_threads(pcb_t *pcb)
+{
 	tcb_t *cur;
 	struct list_head *pos;
 	uint32_t threads = 0;
 
-	list_for_each(pos, &pcb->threads)
-	{
+	list_for_each(pos, &pcb->threads) {
 		cur = list_entry(pos, tcb_t, list);
 
 		if (cur->state != THREAD_STATE_ZOMBIE) {
@@ -149,8 +141,10 @@ bool kernel_stack_slot[THREAD_MAX];
  * The first stack area is the initial system stack and remains preserved so far.
  * The first thread stack slot ID #0 starts right under this area.
  */
-addr_t get_kernel_stack_top(uint32_t slotID) {
-	return (addr_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID*THREAD_STACK_SIZE);
+addr_t get_kernel_stack_top(uint32_t slotID)
+{
+	return (addr_t)((void *)&__stack_top - THREAD_STACK_SIZE -
+			slotID * THREAD_STACK_SIZE);
 }
 
 /*
@@ -185,8 +179,9 @@ void free_kernel_stack_slot(int slotID)
 /* Process thread stack management */
 
 /* Get the kernel stack (top), full descending */
-addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID) {
-	return (addr_t) ((void *) pcb->stack_top - slotID*THREAD_STACK_SIZE);
+addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID)
+{
+	return (addr_t)((void *)pcb->stack_top - slotID * THREAD_STACK_SIZE);
 }
 
 /*
@@ -216,15 +211,13 @@ void free_user_stack_slot(pcb_t *pcb, int slotID)
 	pcb->stack_slotID[slotID] = false;
 }
 
-
 #warning free_queue_thread() unused at the moment...
 void free_queue_thread(struct list_head *aList)
 {
 	queue_thread_t *cur;
 	struct list_head *pos, *q;
 
-	list_for_each_safe(pos, q, aList)
-	{
+	list_for_each_safe(pos, q, aList) {
 		cur = list_entry(pos, queue_thread_t, list);
 
 		list_del(pos);
@@ -245,7 +238,7 @@ void thread_exit(int *exit_status)
 
 	ASSERT(current()->state == THREAD_STATE_RUNNING);
 
-        current()->exit_status = exit_status;
+	current()->exit_status = exit_status;
 
 	/*
 	 * According to the thread which is calling thread_exit(), the behaviour may differ.
@@ -257,8 +250,8 @@ void thread_exit(int *exit_status)
 	 */
 	pcb = current()->pcb;
 
-	if (pcb && (current() == pcb->main_thread) && (pcb->state != PROC_STATE_ZOMBIE)) {
-
+	if (pcb && (current() == pcb->main_thread) &&
+	    (pcb->state != PROC_STATE_ZOMBIE)) {
 		while (active_threads(pcb) > 0) {
 			local_irq_enable();
 			wait_for_completion(&pcb->threads_active);
@@ -273,7 +266,6 @@ void thread_exit(int *exit_status)
 #endif
 
 	} else {
-
 		if (pcb && (current() == pcb->main_thread))
 			/* Discard all threaded spawned within this process */
 			discard_tcb_in_pcb(pcb);
@@ -282,10 +274,8 @@ void thread_exit(int *exit_status)
 		 * and no other threads are waiting on it, we can disappear from the system. */
 
 		if (!list_empty(&current()->joinQueue)) {
-
 			/* Wake up possible waiting threads */
-			list_for_each_safe(pos, q, &current()->joinQueue)
-			{
+			list_for_each_safe(pos, q, &current()->joinQueue) {
 				cur = list_entry(pos, queue_thread_t, list);
 
 				ready(cur->tcb);
@@ -297,7 +287,9 @@ void thread_exit(int *exit_status)
 			 * have to release the completion.
 			 */
 
-			if (pcb && (active_threads(pcb) == 1)) /* We are the last one, and we will be put in zombie state... */
+			if (pcb &&
+			    (active_threads(pcb) ==
+			     1)) /* We are the last one, and we will be put in zombie state... */
 				complete(&pcb->threads_active);
 		}
 
@@ -310,23 +302,20 @@ void thread_exit(int *exit_status)
 		if (current()->pcb != NULL)
 			zombie();
 		else {
-		
 			clean_thread(current());
 			set_current(NULL);
 			schedule();
-
 		}
 
 		/* Should never reach this point... */
 		BUG();
-
 	}
 }
 
 /*
  * The thread prologue starts its execution in USER mode.
  */
-void thread_prologue(void(*th_fn)(void *arg), void *arg)
+void thread_prologue(void (*th_fn)(void *arg), void *arg)
 {
 	/* Call the function of the user space */
 	th_fn(arg);
@@ -339,7 +328,6 @@ void thread_prologue(void(*th_fn)(void *arg), void *arg)
 	 */
 
 	thread_exit(NULL);
-
 }
 
 /*
@@ -349,7 +337,6 @@ void *thread_idle(void *dummy)
 {
 	/* Endless loop */
 	while (true) {
-
 		/* For the moment nothing... The call to schedule() is ensured right after an IRQ processing. */
 
 #ifdef CONFIG_RTOS
@@ -363,7 +350,6 @@ void *thread_idle(void *dummy)
 #endif /* CONFIG_RTOS */
 
 		cpu_standby();
- 
 	}
 
 	return NULL;
@@ -372,7 +358,8 @@ void *thread_idle(void *dummy)
 /*
  * Yield to another thread, i.e. simply invoke a call to schedule()
  */
-void do_thread_yield(void) {
+void do_thread_yield(void)
+{
 	schedule();
 }
 
@@ -390,7 +377,8 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  * @pcb: NULL means it is a pure kernel thread, otherwise is is a user thread.
  * @prio: 0 means the default priority, otherwise set to the thread to the corresponding priority
  */
-tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg,
+		     pcb_t *pcb, uint32_t prio)
 {
 	tcb_t *tcb;
 	unsigned long flags;
@@ -399,7 +387,7 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 
 	flags = local_irq_save();
 
-	tcb = (tcb_t *) malloc(sizeof(tcb_t));
+	tcb = (tcb_t *)malloc(sizeof(tcb_t));
 
 	if (tcb == NULL) {
 		printk("%s: failed to alloc memory.\n", __func__);
@@ -407,7 +395,7 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 	}
 
 	tcb->tid = tid_next++;
-	
+
 	/* We append the tid to the thread name */
 	snprintf(tcb->name, THREAD_NAME_LEN, "%s_%d", name, tcb->tid);
 
@@ -447,9 +435,9 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
 
 	if (tcb->pcb)
-		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_user;
-	 else
-		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_kernel;
+		tcb->cpu_regs.lr = (unsigned long)__thread_prologue_user;
+	else
+		tcb->cpu_regs.lr = (unsigned long)__thread_prologue_kernel;
 
 	/* Initialize the join queue associated to this thread */
 	INIT_LIST_HEAD(&tcb->joinQueue);
@@ -463,7 +451,8 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 	return tcb;
 }
 
-tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio)
+tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg,
+		     uint32_t prio)
 {
 	return thread_create(start_routine, name, arg, NULL, prio);
 }
@@ -478,17 +467,19 @@ tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_
  * @param pcb		PCB which the thread belongs to
  * @return		Address of the corresponding TCB
  */
-tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb)
+tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg,
+		   pcb_t *pcb)
 {
-	return thread_create(start_routine, name, arg, pcb, (pcb->main_thread ? pcb->main_thread->prio : 0));
+	return thread_create(start_routine, name, arg, pcb,
+			     (pcb->main_thread ? pcb->main_thread->prio : 0));
 }
 
 /*
  * @clean_thread is called when a final join on the (last) thread is performed, or an exec() is performed
  * so that the binary image is fully replaced.
  */
-void clean_thread(tcb_t *tcb) {
-
+void clean_thread(tcb_t *tcb)
+{
 	/* Definitively remove the thread */
 	free_kernel_stack_slot(tcb->stack_slotID);
 
@@ -525,12 +516,12 @@ int *thread_join(tcb_t *tcb)
 
 	/* Check if the thread already finished */
 	if (tcb->state != THREAD_STATE_ZOMBIE) {
-		
 		/* Register us in the join queue attached to the target thread */
 
-		cur = (queue_thread_t *) malloc(sizeof(queue_thread_t));
+		cur = (queue_thread_t *)malloc(sizeof(queue_thread_t));
 		if (cur == NULL) {
-			printk("%s: cannot allocate memory to register in join queue.\n", __func__);
+			printk("%s: cannot allocate memory to register in join queue.\n",
+			       __func__);
 			BUG();
 		}
 
@@ -549,20 +540,19 @@ int *thread_join(tcb_t *tcb)
 		 * performed in the child.
 		 */
 		if (is_main_thread)
-			tcb = __child_pcb->main_thread; /* Proceed with substitution; the other thread does not exist anymore. */
+			tcb = __child_pcb
+				      ->main_thread; /* Proceed with substitution; the other thread does not exist anymore. */
 
 		/*
 		 * At this point, we are awake; the target thread is over in *zombie* state.
 		 * So, we leave the join queue belonging to this thread.
 		 */
 
-		list_for_each_safe(pos, q, &tcb->joinQueue)
-		{
+		list_for_each_safe(pos, q, &tcb->joinQueue) {
 			cur = list_entry(pos, queue_thread_t, list);
 			_tcb = cur->tcb;
 
 			if (_tcb == current()) {
-
 				list_del(pos);
 				free(cur);
 				break;
@@ -571,17 +561,17 @@ int *thread_join(tcb_t *tcb)
 	}
 
 	/* Check if the child is a tracee (and therefore we have a tracer on it) */
-	if ((tcb != NULL) && (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
-		
+	if ((tcb != NULL) &&
+	    (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
 		exit_status = NULL;
 
 	} else {
-		
 		/* The joined thread *must* be in zombie */
 		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
 		if (is_main_thread)
-			exit_status = (void *) ((unsigned long) tcb->pcb->exit_status);
+			exit_status =
+				(void *)((unsigned long)tcb->pcb->exit_status);
 		else
 			exit_status = tcb->exit_status;
 
@@ -617,25 +607,27 @@ int *thread_join(tcb_t *tcb)
  * The function returns 0 if successful.
  */
 
-int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p) {
-
+int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn,
+		     addr_t arg_p)
+{
 	unsigned long flags;
 	tcb_t *tcb;
 	char *name;
 
 	flags = local_irq_save();
- 
+
 	/* Create a child thread for the running process */
 
 	/* Temporary name for this thread */
-	name = (char *) malloc(THREAD_NAME_LEN);
+	name = (char *)malloc(THREAD_NAME_LEN);
 	if (!name) {
 		printk("%s: heap overflow...\n", __func__);
 		kernel_panic();
 	}
 	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
 
-	tcb = user_thread((th_fn_t) thread_fn, name, (void *) arg_p, current()->pcb);
+	tcb = user_thread((th_fn_t)thread_fn, name, (void *)arg_p,
+			  current()->pcb);
 
 	/* The name has been copied in thread creation */
 	free(name);
@@ -653,7 +645,8 @@ int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr
 /*
  * Join an existing thread
  */
-int do_thread_join(uint32_t pthread_id, int **value_p) {
+int do_thread_join(uint32_t pthread_id, int **value_p)
+{
 	tcb_t *tcb;
 	int *ret;
 	unsigned long flags;
@@ -680,11 +673,12 @@ int do_thread_join(uint32_t pthread_id, int **value_p) {
 /*
  * do_thread_exit() is called when pthread_exit() is executed.
  */
-void do_thread_exit(int *exit_status) {
-
+void do_thread_exit(int *exit_status)
+{
 	/* Unallocate the user space stack slot if it is not the main thread */
 	if (current() != current()->pcb->main_thread)
-		free_user_stack_slot(current()->pcb, current()->pcb_stack_slotID);
+		free_user_stack_slot(current()->pcb,
+				     current()->pcb_stack_slotID);
 
 	thread_exit(exit_status);
 }

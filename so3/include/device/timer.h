@@ -16,7 +16,6 @@
  *
  */
 
-
 #ifndef DEVICE_TIMER_H
 #define DEVICE_TIMER_H
 
@@ -24,18 +23,18 @@
 
 #include <device/device.h>
 
-#define CLOCKSOURCE_MASK(bits) (u64)(bits<64 ? ((1ull<<bits)-1) : -1)
+#define CLOCKSOURCE_MASK(bits) (u64)(bits < 64 ? ((1ull << bits) - 1) : -1)
 
 /* Time conversion units */
 
 struct timespec {
-	time_t		tv_sec;			/* seconds */
-	time_t		tv_nsec;		/* nanoseconds */
+	time_t tv_sec; /* seconds */
+	time_t tv_nsec; /* nanoseconds */
 };
 
 struct timeval {
-	time_t		tv_sec;			/* seconds */
-	time_t		tv_usec;		/* microseconds */
+	time_t tv_sec; /* seconds */
+	time_t tv_usec; /* microseconds */
 };
 
 /* All timing information below must be express in nanoseconds. The underlying hardware is responsible
@@ -43,7 +42,7 @@ struct timeval {
 
 /* Structure for a periodic timer */
 typedef struct {
-	dev_t *dev;	/* Pointer to the periodic timer driver */
+	dev_t *dev; /* Pointer to the periodic timer driver */
 
 	uint64_t period; /* Period in ns of the periodic timer */
 
@@ -54,7 +53,7 @@ typedef struct {
 
 /* Structure for a oneshot timer */
 typedef struct {
-	dev_t *dev;	/* Pointer to the oneshot timer driver */
+	dev_t *dev; /* Pointer to the oneshot timer driver */
 
 	void (*set_delay)(uint64_t delay_ns);
 	void (*start)(void);
@@ -69,7 +68,7 @@ typedef struct {
 
 /* Structure of a clocksource timer */
 typedef struct {
-	dev_t *dev;	/* Pointer to the clocksource timer driver */
+	dev_t *dev; /* Pointer to the clocksource timer driver */
 
 	u64 (*read)(void);
 
@@ -103,7 +102,8 @@ extern clocksource_timer_t clocksource_timer;
  */
 static inline u64 cyc2ns(u64 cycles)
 {
-	return ((u64) cycles * clocksource_timer.mult) >> clocksource_timer.shift;
+	return ((u64)cycles * clocksource_timer.mult) >>
+	       clocksource_timer.shift;
 }
 
 u64 get_s_time(void);

@@ -19,7 +19,8 @@
 
 #ifdef CONFIG_MMU
 
-void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option option)
+void set_l1_pte_sect_dcache(uint32_t *l1pte,
+			    enum ttb_l1_sect_dcache_option option)
 {
 	u32 value;
 
@@ -36,7 +37,8 @@ void set_l1_pte_sect_dcache(uint32_t *l1pte, enum ttb_l1_sect_dcache_option opti
 	*l1pte |= value;
 }
 
-void set_l1_pte_page_dcache(uint32_t *l1pte, enum ttb_l1_page_dcache_option option)
+void set_l1_pte_page_dcache(uint32_t *l1pte,
+			    enum ttb_l1_page_dcache_option option)
 {
 	u32 value = 0;
 
@@ -78,21 +80,21 @@ void mmu_setup(void *pgtable)
 	arm_init_before_mmu();
 
 	/* Set TTBCR to disable LPAE */
-	asm volatile("mcr p15, 0, %0, c2, c0, 2" : : "r" (0) : "memory");
+	asm volatile("mcr p15, 0, %0, c2, c0, 2" : : "r"(0) : "memory");
 
 	/* Set TTBR0 */
-	reg = ((addr_t) pgtable) & TTBR0_BASE_ADDR_MASK;
+	reg = ((addr_t)pgtable) & TTBR0_BASE_ADDR_MASK;
 	reg |= TTBR0_RGN_WBWA | TTBR0_IRGN_WBWA;
 
-	asm volatile("mcr p15, 0, %0, c2, c0, 0" : : "r" (reg) : "memory");
+	asm volatile("mcr p15, 0, %0, c2, c0, 0" : : "r"(reg) : "memory");
 
 	/* Set the access control to all-supervisor */
-	asm volatile("mcr p15, 0, %0, c3, c0, 0" : : "r" (~0));
+	asm volatile("mcr p15, 0, %0, c3, c0, 0" : : "r"(~0));
 
 	arm_init_domains();
 
 	/* and enable the mmu */
-	reg = get_cr();	/* get control reg. */
+	reg = get_cr(); /* get control reg. */
 
 	/* No alignment trap */
 	reg &= ~CR_A;
@@ -114,7 +116,7 @@ void cache_enable(uint32_t cache_bit)
 
 	/* The data cache is not active unless the mmu is enabled too */
 
-	reg = get_cr();	/* get control reg. */
+	reg = get_cr(); /* get control reg. */
 	set_cr(reg | cache_bit);
 }
 
@@ -139,7 +141,6 @@ void cache_disable(uint32_t cache_bit)
 
 	set_cr(reg & ~cache_bit);
 }
-
 
 void icache_enable(void)
 {
@@ -170,4 +171,3 @@ int dcache_status(void)
 {
 	return (get_cr() & CR_C) != 0;
 }
-

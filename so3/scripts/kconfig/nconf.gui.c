@@ -8,7 +8,7 @@
 #include "nconf.h"
 
 /* a list of all the different widgets we use */
-attributes_t attributes[ATTR_MAX+1] = {0};
+attributes_t attributes[ATTR_MAX + 1] = { 0 };
 
 /* available colors:
    COLOR_BLACK   0
@@ -68,8 +68,10 @@ static void set_normal_colors(void)
 static void normal_color_theme(void)
 {
 	/* automatically add color... */
-#define mkattr(name, attr) do { \
-attributes[name] = attr | COLOR_PAIR(name); } while (0)
+#define mkattr(name, attr)                                  \
+	do {                                                \
+		attributes[name] = attr | COLOR_PAIR(name); \
+	} while (0)
 	mkattr(NORMAL, NORMAL);
 	mkattr(MAIN_HEADING, A_BOLD | A_UNDERLINE);
 
@@ -100,7 +102,10 @@ attributes[name] = attr | COLOR_PAIR(name); } while (0)
 static void no_colors_theme(void)
 {
 	/* automatically add highlight, no color */
-#define mkattrn(name, attr) { attributes[name] = attr; }
+#define mkattrn(name, attr)              \
+	{                                \
+		attributes[name] = attr; \
+	}
 
 	mkattrn(NORMAL, NORMAL);
 	mkattrn(MAIN_HEADING, A_BOLD | A_UNDERLINE);
@@ -142,17 +147,12 @@ void set_colors()
 	}
 }
 
-
 /* this changes the windows attributes !!! */
-void print_in_middle(WINDOW *win,
-		int starty,
-		int startx,
-		int width,
-		const char *string,
-		chtype color)
-{      int length, x, y;
+void print_in_middle(WINDOW *win, int starty, int startx, int width,
+		     const char *string, chtype color)
+{
+	int length, x, y;
 	float temp;
-
 
 	if (win == NULL)
 		win = stdscr;
@@ -167,7 +167,7 @@ void print_in_middle(WINDOW *win,
 	length = strlen(string);
 	temp = (width - length) / 2;
 	x = startx + (int)temp;
-	(void) wattrset(win, color);
+	(void)wattrset(win, color);
 	mvwprintw(win, y, x, "%s", string);
 	refresh();
 }
@@ -197,7 +197,7 @@ const char *get_line(const char *text, int line_no)
 	for (i = 0; text[i] != '\0' && lines < line_no; i++)
 		if (text[i] == '\n')
 			lines++;
-	return text+i;
+	return text + i;
 }
 
 int get_line_length(const char *line)
@@ -221,7 +221,7 @@ void fill_window(WINDOW *win, const char *text)
 	/* do not go over end of line */
 	total_lines = min(total_lines, y);
 	for (i = 0; i < total_lines; i++) {
-		char tmp[x+10];
+		char tmp[x + 10];
 		const char *line = get_line(text, i);
 		int len = get_line_length(line);
 		strncpy(tmp, line, min(len, x));
@@ -251,16 +251,15 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
 	WINDOW *msg_win;
 	WINDOW *menu_win;
 	MENU *menu;
-	ITEM *btns[btn_num+1];
+	ITEM *btns[btn_num + 1];
 	int i, x, y;
 	int res = -1;
-
 
 	va_start(ap, btn_num);
 	for (i = 0; i < btn_num; i++) {
 		btn = va_arg(ap, char *);
 		btns[i] = new_item(btn, "");
-		btns_width += strlen(btn)+1;
+		btns_width += strlen(btn) + 1;
 	}
 	va_end(ap);
 	btns[btn_num] = NULL;
@@ -276,32 +275,31 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
 
 	total_width = max(msg_width, btns_width);
 	/* place dialog in middle of screen */
-	y = (LINES-(msg_lines+4))/2;
-	x = (COLS-(total_width+4))/2;
-
+	y = (LINES - (msg_lines + 4)) / 2;
+	x = (COLS - (total_width + 4)) / 2;
 
 	/* create the windows */
 	if (btn_num > 0)
-		win_rows = msg_lines+4;
+		win_rows = msg_lines + 4;
 	else
-		win_rows = msg_lines+2;
+		win_rows = msg_lines + 2;
 
-	win = newwin(win_rows, total_width+4, y, x);
+	win = newwin(win_rows, total_width + 4, y, x);
 	keypad(win, TRUE);
-	menu_win = derwin(win, 1, btns_width, win_rows-2,
-			1+(total_width+2-btns_width)/2);
+	menu_win = derwin(win, 1, btns_width, win_rows - 2,
+			  1 + (total_width + 2 - btns_width) / 2);
 	menu = new_menu(btns);
-	msg_win = derwin(win, win_rows-2, msg_width, 1,
-			1+(total_width+2-msg_width)/2);
+	msg_win = derwin(win, win_rows - 2, msg_width, 1,
+			 1 + (total_width + 2 - msg_width) / 2);
 
 	set_menu_fore(menu, attributes[DIALOG_MENU_FORE]);
 	set_menu_back(menu, attributes[DIALOG_MENU_BACK]);
 
-	(void) wattrset(win, attributes[DIALOG_BOX]);
+	(void)wattrset(win, attributes[DIALOG_BOX]);
 	box(win, 0, 0);
 
 	/* print message */
-	(void) wattrset(msg_win, attributes[DIALOG_TEXT]);
+	(void)wattrset(msg_win, attributes[DIALOG_TEXT]);
 	fill_window(msg_win, msg);
 
 	set_menu_win(menu, win);
@@ -313,7 +311,6 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
 	menu_opts_on(menu, O_NONCYCLIC);
 	set_menu_mark(menu, "");
 	post_menu(menu);
-
 
 	touchwin(win);
 	refresh_all_windows(main_window);
@@ -339,7 +336,7 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
 			res = item_index(current_item(menu));
 			break;
 		} else if (res == 27 || res == KEY_F(F_BACK) ||
-				res == KEY_F(F_EXIT)) {
+			   res == KEY_F(F_EXIT)) {
 			res = KEY_EXIT;
 			break;
 		}
@@ -354,9 +351,8 @@ int btn_dialog(WINDOW *main_window, const char *msg, int btn_num, ...)
 	return res;
 }
 
-int dialog_inputbox(WINDOW *main_window,
-		const char *title, const char *prompt,
-		const char *init, char *result, int result_len)
+int dialog_inputbox(WINDOW *main_window, const char *title, const char *prompt,
+		    const char *init, char *result, int result_len)
 {
 	int prompt_lines = 0;
 	int prompt_width = 0;
@@ -367,7 +363,6 @@ int dialog_inputbox(WINDOW *main_window,
 	int i, x, y;
 	int res = -1;
 	int cursor_position = strlen(init);
-
 
 	/* find the widest line of msg: */
 	prompt_lines = get_line_no(prompt);
@@ -381,27 +376,27 @@ int dialog_inputbox(WINDOW *main_window,
 		prompt_width = max(prompt_width, strlen(title));
 
 	/* place dialog in middle of screen */
-	y = (LINES-(prompt_lines+4))/2;
-	x = (COLS-(prompt_width+4))/2;
+	y = (LINES - (prompt_lines + 4)) / 2;
+	x = (COLS - (prompt_width + 4)) / 2;
 
 	strncpy(result, init, result_len);
 
 	/* create the windows */
-	win = newwin(prompt_lines+6, prompt_width+7, y, x);
-	prompt_win = derwin(win, prompt_lines+1, prompt_width, 2, 2);
-	form_win = derwin(win, 1, prompt_width, prompt_lines+3, 2);
+	win = newwin(prompt_lines + 6, prompt_width + 7, y, x);
+	prompt_win = derwin(win, prompt_lines + 1, prompt_width, 2, 2);
+	form_win = derwin(win, 1, prompt_width, prompt_lines + 3, 2);
 	keypad(form_win, TRUE);
 
-	(void) wattrset(form_win, attributes[INPUT_FIELD]);
+	(void)wattrset(form_win, attributes[INPUT_FIELD]);
 
-	(void) wattrset(win, attributes[INPUT_BOX]);
+	(void)wattrset(win, attributes[INPUT_BOX]);
 	box(win, 0, 0);
-	(void) wattrset(win, attributes[INPUT_HEADING]);
+	(void)wattrset(win, attributes[INPUT_HEADING]);
 	if (title)
 		mvwprintw(win, 0, 3, "%s", title);
 
 	/* print message */
-	(void) wattrset(prompt_win, attributes[INPUT_TEXT]);
+	(void)wattrset(prompt_win, attributes[INPUT_TEXT]);
 	fill_window(prompt_win, prompt);
 
 	mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
@@ -427,17 +422,17 @@ int dialog_inputbox(WINDOW *main_window,
 		case 127:
 		case KEY_BACKSPACE:
 			if (cursor_position > 0) {
-				memmove(&result[cursor_position-1],
-						&result[cursor_position],
-						len-cursor_position+1);
+				memmove(&result[cursor_position - 1],
+					&result[cursor_position],
+					len - cursor_position + 1);
 				cursor_position--;
 			}
 			break;
 		case KEY_DC:
 			if (cursor_position >= 0 && cursor_position < len) {
 				memmove(&result[cursor_position],
-						&result[cursor_position+1],
-						len-cursor_position+1);
+					&result[cursor_position + 1],
+					len - cursor_position + 1);
 			}
 			break;
 		case KEY_UP:
@@ -453,11 +448,10 @@ int dialog_inputbox(WINDOW *main_window,
 			break;
 		default:
 			if ((isgraph(res) || isspace(res)) &&
-					len-2 < result_len) {
+			    len - 2 < result_len) {
 				/* insert the char at the proper position */
-				memmove(&result[cursor_position+1],
-						&result[cursor_position],
-						len+1);
+				memmove(&result[cursor_position + 1],
+					&result[cursor_position], len + 1);
 				result[cursor_position] = res;
 				cursor_position++;
 			} else {
@@ -477,7 +471,7 @@ int dialog_inputbox(WINDOW *main_window,
 			res = 0;
 			break;
 		} else if (res == 27 || res == KEY_F(F_BACK) ||
-				res == KEY_F(F_EXIT)) {
+			   res == KEY_F(F_EXIT)) {
 			res = KEY_EXIT;
 			break;
 		} else if (res == KEY_F(F_HELP)) {
@@ -504,9 +498,7 @@ void refresh_all_windows(WINDOW *main_window)
 }
 
 /* layman's scrollable window... */
-void show_scroll_win(WINDOW *main_window,
-		const char *title,
-		const char *text)
+void show_scroll_win(WINDOW *main_window, const char *title, const char *text)
 {
 	int res;
 	int total_lines = get_line_no(text);
@@ -526,42 +518,37 @@ void show_scroll_win(WINDOW *main_window,
 	for (i = 0; i < total_lines; i++) {
 		const char *line = get_line(text, i);
 		int len = get_line_length(line);
-		total_cols = max(total_cols, len+2);
+		total_cols = max(total_cols, len + 2);
 	}
 
 	/* create the pad */
-	pad = newpad(total_lines+10, total_cols+10);
-	(void) wattrset(pad, attributes[SCROLLWIN_TEXT]);
+	pad = newpad(total_lines + 10, total_cols + 10);
+	(void)wattrset(pad, attributes[SCROLLWIN_TEXT]);
 	fill_window(pad, text);
 
-	win_lines = min(total_lines+4, LINES-2);
-	win_cols = min(total_cols+2, COLS-2);
-	text_lines = max(win_lines-4, 0);
-	text_cols = max(win_cols-2, 0);
+	win_lines = min(total_lines + 4, LINES - 2);
+	win_cols = min(total_cols + 2, COLS - 2);
+	text_lines = max(win_lines - 4, 0);
+	text_cols = max(win_cols - 2, 0);
 
 	/* place window in middle of screen */
-	y = (LINES-win_lines)/2;
-	x = (COLS-win_cols)/2;
+	y = (LINES - win_lines) / 2;
+	x = (COLS - win_cols) / 2;
 
 	win = newwin(win_lines, win_cols, y, x);
 	keypad(win, TRUE);
 	/* show the help in the help window, and show the help panel */
-	(void) wattrset(win, attributes[SCROLLWIN_BOX]);
+	(void)wattrset(win, attributes[SCROLLWIN_BOX]);
 	box(win, 0, 0);
-	(void) wattrset(win, attributes[SCROLLWIN_HEADING]);
+	(void)wattrset(win, attributes[SCROLLWIN_HEADING]);
 	mvwprintw(win, 0, 3, " %s ", title);
 	panel = new_panel(win);
 
 	/* handle scrolling */
 	do {
-
-		copywin(pad, win, start_y, start_x, 2, 2, text_lines,
-				text_cols, 0);
-		print_in_middle(win,
-				text_lines+2,
-				0,
-				text_cols,
-				"<OK>",
+		copywin(pad, win, start_y, start_x, 2, 2, text_lines, text_cols,
+			0);
+		print_in_middle(win, text_lines + 2, 0, text_cols, "<OK>",
 				attributes[DIALOG_MENU_FORE]);
 		wrefresh(win);
 
@@ -569,16 +556,16 @@ void show_scroll_win(WINDOW *main_window,
 		switch (res) {
 		case KEY_NPAGE:
 		case ' ':
-			start_y += text_lines-2;
+			start_y += text_lines - 2;
 			break;
 		case KEY_PPAGE:
-			start_y -= text_lines+2;
+			start_y -= text_lines + 2;
 			break;
 		case KEY_HOME:
 			start_y = 0;
 			break;
 		case KEY_END:
-			start_y = total_lines-text_lines;
+			start_y = total_lines - text_lines;
 			break;
 		case KEY_DOWN:
 		case 'j':
@@ -597,18 +584,18 @@ void show_scroll_win(WINDOW *main_window,
 			start_x++;
 			break;
 		}
-		if (res == 10 || res == 27 || res == 'q'
-		    || res == KEY_F(F_BACK) || res == KEY_F(F_EXIT)) {
+		if (res == 10 || res == 27 || res == 'q' ||
+		    res == KEY_F(F_BACK) || res == KEY_F(F_EXIT)) {
 			break;
 		}
 		if (start_y < 0)
 			start_y = 0;
-		if (start_y >= total_lines-text_lines)
-			start_y = total_lines-text_lines;
+		if (start_y >= total_lines - text_lines)
+			start_y = total_lines - text_lines;
 		if (start_x < 0)
 			start_x = 0;
-		if (start_x >= total_cols-text_cols)
-			start_x = total_cols-text_cols;
+		if (start_x >= total_cols - text_cols)
+			start_x = total_cols - text_cols;
 	} while (res);
 
 	del_panel(panel);

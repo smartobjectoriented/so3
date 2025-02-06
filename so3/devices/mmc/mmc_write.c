@@ -77,12 +77,14 @@ unsigned long mmc_berase(int dev_num, lbaint_t start, lbaint_t blkcnt)
 		       "The erase range would be change to "
 		       "0x" LBAF "~0x" LBAF "\n\n",
 		       mmc->erase_grp_size, start & ~(mmc->erase_grp_size - 1),
-		       ((start + blkcnt + mmc->erase_grp_size)
-		       & ~(mmc->erase_grp_size - 1)) - 1);
+		       ((start + blkcnt + mmc->erase_grp_size) &
+			~(mmc->erase_grp_size - 1)) -
+			       1);
 
 	while (blk < blkcnt) {
 		blk_r = ((blkcnt - blk) > mmc->erase_grp_size) ?
-			mmc->erase_grp_size : (blkcnt - blk);
+				mmc->erase_grp_size :
+				(blkcnt - blk);
 		err = mmc_erase_t(mmc, start + blk, blk_r);
 		if (err)
 			break;
@@ -97,8 +99,8 @@ unsigned long mmc_berase(int dev_num, lbaint_t start, lbaint_t blkcnt)
 	return blk;
 }
 
-static ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start,
-		lbaint_t blkcnt, const void *src)
+static ulong mmc_write_blocks(struct mmc *mmc, lbaint_t start, lbaint_t blkcnt,
+			      const void *src)
 {
 	struct mmc_cmd cmd;
 	struct mmc_data data;
@@ -166,8 +168,8 @@ ulong mmc_bwrite(int dev_num, lbaint_t start, lbaint_t blkcnt, const void *src)
 		return 0;
 
 	do {
-		cur = (blocks_todo > mmc->cfg->b_max) ?
-			mmc->cfg->b_max : blocks_todo;
+		cur = (blocks_todo > mmc->cfg->b_max) ? mmc->cfg->b_max :
+							blocks_todo;
 		if (mmc_write_blocks(mmc, start, cur, src) != cur)
 			return 0;
 		blocks_todo -= cur;

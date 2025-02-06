@@ -66,7 +66,7 @@ ipamap_t ipamap[] = {
 		.ipa_addr = 0x600000000,
 		.phys_addr = 0x600000000,
 		.size = 0x1000,
-	},	 
+	},
 };
 
 #endif /* MACH_IPAMAP_H */

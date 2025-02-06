@@ -14,9 +14,9 @@
 
 #include "util.h"
 
-#define ALIGN(x, a)	(((x) + ((a) - 1)) & ~((a) - 1))
-#define PALIGN(p, a)	((void *)(ALIGN((unsigned long)(p), (a))))
-#define GET_CELL(p)	(p += 4, *((const uint32_t *)(p-4)))
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+#define PALIGN(p, a) ((void *)(ALIGN((unsigned long)(p), (a))))
+#define GET_CELL(p) (p += 4, *((const uint32_t *)(p - 4)))
 
 static void print_data(const char *data, int len)
 {
@@ -85,19 +85,18 @@ static void dump_blob(void *blob)
 		       fdt32_to_cpu(bph->size_dt_struct));
 	printf("\n");
 
-	for (i = 0; ; i++) {
+	for (i = 0;; i++) {
 		addr = fdt64_to_cpu(p_rsvmap[i].address);
 		size = fdt64_to_cpu(p_rsvmap[i].size);
 		if (addr == 0 && size == 0)
 			break;
 
-		printf("/memreserve/ %llx %llx;\n",
-		       (unsigned long long)addr, (unsigned long long)size);
+		printf("/memreserve/ %llx %llx;\n", (unsigned long long)addr,
+		       (unsigned long long)size);
 	}
 
 	p = p_struct;
 	while ((tag = fdt32_to_cpu(GET_CELL(p))) != FDT_END) {
-
 		/* printf("tag: 0x%08x (%d)\n", tag, p - p_struct); */
 
 		if (tag == FDT_BEGIN_NODE) {
@@ -126,7 +125,8 @@ static void dump_blob(void *blob)
 		}
 
 		if (tag != FDT_PROP) {
-			fprintf(stderr, "%*s ** Unknown tag 0x%08x\n", depth * shift, "", tag);
+			fprintf(stderr, "%*s ** Unknown tag 0x%08x\n",
+				depth * shift, "", tag);
 			break;
 		}
 		sz = fdt32_to_cpu(GET_CELL(p));
@@ -142,7 +142,6 @@ static void dump_blob(void *blob)
 		printf(";\n");
 	}
 }
-
 
 int main(int argc, char *argv[])
 {

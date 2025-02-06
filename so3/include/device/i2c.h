@@ -15,22 +15,23 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
- 
+
 #ifndef I2C_H
 #define I2C_H
 
 #include <types.h>
 
 /* I2C controller */
-typedef struct  {
-	void (*i2c_write_op)(uint32_t slave_addr, uint8_t* buf, size_t size);
-	void (*i2c_read_op)(uint32_t slave_addr, uint8_t* buf, size_t size);
+typedef struct {
+	void (*i2c_write_op)(uint32_t slave_addr, uint8_t *buf, size_t size);
+	void (*i2c_read_op)(uint32_t slave_addr, uint8_t *buf, size_t size);
 } i2c_ops_t;
 
 extern i2c_ops_t i2c_ops;
 
-void i2c_write(uint32_t slave_addr, uint8_t* buf, size_t size);
-void i2c_read(uint32_t slave_addr, uint8_t* buf, size_t size);
-void i2c_read_smbus_data_byte(uint32_t slave_addr, uint8_t* buf, uint8_t command);
+void i2c_write(uint32_t slave_addr, uint8_t *buf, size_t size);
+void i2c_read(uint32_t slave_addr, uint8_t *buf, size_t size);
+void i2c_read_smbus_data_byte(uint32_t slave_addr, uint8_t *buf,
+			      uint8_t command);
 
 #endif /* I2C_H */

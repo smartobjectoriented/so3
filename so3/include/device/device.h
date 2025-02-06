@@ -26,15 +26,14 @@
 #include <device/irq.h>
 
 /* Filename prefix of a device. */
-#define DEV_PREFIX      "/dev/"
-#define DEV_PREFIX_LEN  (sizeof(DEV_PREFIX)-1)
+#define DEV_PREFIX "/dev/"
+#define DEV_PREFIX_LEN (sizeof(DEV_PREFIX) - 1)
 
 /* Device classes. */
-#define DEV_CLASS_FB    	"fb"
-#define DEV_CLASS_INPUT 	"input"
-#define DEV_CLASS_MOUSE   	"mouse"
-#define DEV_CLASS_KEYBOARD 	"keyboard"
-
+#define DEV_CLASS_FB "fb"
+#define DEV_CLASS_INPUT "input"
+#define DEV_CLASS_MOUSE "mouse"
+#define DEV_CLASS_KEYBOARD "keyboard"
 
 /* Device status. */
 typedef enum {
@@ -64,27 +63,24 @@ typedef struct dev dev_t;
 
 /* Structure used by drivers to register their devices. */
 struct devclass {
-	dev_t *dev; 			/* Reference to the device */
-	char *class;			/* device class */
+	dev_t *dev; /* Reference to the device */
+	char *class; /* device class */
 
-	uint32_t id_start, id_end;	/* Range of device associated to this device */
+	uint32_t id_start,
+		id_end; /* Range of device associated to this device */
 
-	uint32_t type;			/* vfs type */
-	struct file_operations *fops;	/* the device's fops */
+	uint32_t type; /* vfs type */
+	struct file_operations *fops; /* the device's fops */
 
 	struct list_head list;
 
-	void *priv;			/* Private data for this device */
+	void *priv; /* Private data for this device */
 };
 
 /*
  * Core drivers are initialized before postcore drivers.
  */
-enum inicalls_levels {
-	CORE,
-	POSTCORE,
-	INITCALLS_LEVELS
-};
+enum inicalls_levels { CORE, POSTCORE, INITCALLS_LEVELS };
 
 static inline void dev_set_drvdata(dev_t *dev, void *data)
 {
@@ -99,16 +95,19 @@ static inline void *dev_get_drvdata(const dev_t *dev)
 /*
  * Attach a private data structure to a devclass.
  */
-static inline void devclass_set_priv(struct devclass *dev, void *priv) {
+static inline void devclass_set_priv(struct devclass *dev, void *priv)
+{
 	dev->priv = priv;
 }
 
-static inline void *devclass_get_priv(struct devclass *dev) {
+static inline void *devclass_get_priv(struct devclass *dev)
+{
 	return dev->priv;
 }
 
 void devclass_register(dev_t *dev, struct devclass *devclass);
-struct file_operations *devclass_get_fops(const char *filename, uint32_t *vfs_type);
+struct file_operations *devclass_get_fops(const char *filename,
+					  uint32_t *vfs_type);
 
 struct devclass *devclass_get_by_index(size_t index);
 struct devclass *devclass_by_filename(const char *filename);

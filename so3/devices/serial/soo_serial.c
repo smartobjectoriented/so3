@@ -24,12 +24,13 @@
 
 static dev_t soo_serial_dev;
 
-void __ll_put_byte(char c) {
+void __ll_put_byte(char c)
+{
 	lprintk("%c", c);
 }
 
-static int soo_serial_put_byte(char c) {
-
+static int soo_serial_put_byte(char c)
+{
 	if (!vuart_ready())
 		__ll_put_byte(c);
 	else
@@ -41,17 +42,16 @@ static int soo_serial_put_byte(char c) {
 /*
  * Read bytes coming from the backend.
  */
-static char soo_serial_get_byte(bool polling) {
-
+static char soo_serial_get_byte(bool polling)
+{
 	if (!vuart_ready())
 		DBG("## %s: failed to read (vuart not ready yet)\n", __func__);
 
 	return vuart_read_char();
 }
 
-
-static int soo_serial_init(dev_t *dev, int fdt_offset) {
-
+static int soo_serial_init(dev_t *dev, int fdt_offset)
+{
 	/* Init so3virt serial */
 
 	memcpy(&soo_serial_dev, dev, sizeof(dev_t));

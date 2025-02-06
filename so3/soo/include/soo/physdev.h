@@ -22,9 +22,7 @@
 /*
  * Tell the hypervisor the hardware is ready to startup the system timer (HW)
  */
-#define PHYSDEVOP_dump_page	1
-#define PHYSDEVOP_dump_logbool	2
-
+#define PHYSDEVOP_dump_page 1
+#define PHYSDEVOP_dump_logbool 2
 
 #endif /* __PHYSDEV_H__ */
-

@@ -56,20 +56,24 @@
 
 #include <libfdt/libfdt.h>
 
-#define MAX_COMPAT_SIZE		128
-#define MAX_NODE_SIZE 		128
-#define MAX_SUBNODE		4
+#define MAX_COMPAT_SIZE 128
+#define MAX_NODE_SIZE 128
+#define MAX_SUBNODE 4
 
 /* Virtual address of the current device tree */
 extern void *__fdt_addr;
 
 int fdt_find_compatible_node(void *fdt_addr, char *compat);
-const struct fdt_property *fdt_find_property(void *fdt_addr, int offset, const char *propname);
+const struct fdt_property *fdt_find_property(void *fdt_addr, int offset,
+					     const char *propname);
 int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename);
 
-int fdt_property_read_string(void *fdt_addr, int offset, const char *propname, const char **out_string);
-int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 *out_value);
-int fdt_property_read_u64(void *fdt_addr, int offset, const char *propname, u64 *out_value);
+int fdt_property_read_string(void *fdt_addr, int offset, const char *propname,
+			     const char **out_string);
+int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname,
+			  u32 *out_value);
+int fdt_property_read_u64(void *fdt_addr, int offset, const char *propname,
+			  u64 *out_value);
 
 int fdt_pack_reg(const void *fdt, void *buf, addr_t *address, size_t *size);
 int fdt_find_or_add_subnode(void *fdt, int parentoffset, const char *name);
@@ -78,7 +82,8 @@ int fdt_find_or_add_subnode(void *fdt, int parentoffset, const char *name);
  * Get device information from a device tree
  * This function will be in charge of allocating dev_inf struct;
  */
-int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *info);
+int get_dev_info(const void *fdt_addr, int offset, const char *compat,
+		 void *info);
 int fdt_get_int(void *fdt_addr, void *dev, const char *name);
 bool fdt_device_is_available(void *fdt_addr, int node_offset);
 void *find_device(const char *compat);

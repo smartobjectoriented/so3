@@ -7,10 +7,9 @@
  */
 
 #define __stringify_1(x...) #x
-#define __stringify(x...)   __stringify_1(x)
+#define __stringify(x...) __stringify_1(x)
 
 #define tostring(s...) #s
 #define stringify(s...) tostring(s)
 
-#endif	/* !__LINUX_STRINGIFY_H */
-
+#endif /* !__LINUX_STRINGIFY_H */

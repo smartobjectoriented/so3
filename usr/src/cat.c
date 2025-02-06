@@ -10,7 +10,8 @@
 
 char buf[BUFSIZE];
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	int fd, amount;
 
 	if (argc != 2) {

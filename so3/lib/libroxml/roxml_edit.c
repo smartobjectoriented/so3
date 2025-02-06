@@ -162,7 +162,8 @@ ROXML_STATIC ROXML_INT node_t *roxml_prepend_node(node_t *parent, node_t *n)
  * \param position the position, 0 means or > nb children means at the end
  * \return
  */
-ROXML_STATIC ROXML_INT node_t *roxml_parent_node(node_t *parent, node_t *n, int position)
+ROXML_STATIC ROXML_INT node_t *roxml_parent_node(node_t *parent, node_t *n,
+						 int position)
 {
 	int nb;
 
@@ -174,9 +175,10 @@ ROXML_STATIC ROXML_INT node_t *roxml_parent_node(node_t *parent, node_t *n, int 
 	if (n->type & ROXML_ATTR_NODE)
 		nb = roxml_get_attr_nb(parent);
 	else
-		nb = roxml_get_nodes_nb(parent,
-					ROXML_PI_NODE | ROXML_CMT_NODE | ROXML_TXT_NODE | ROXML_ELM_NODE |
-					ROXML_DOCTYPE_NODE);
+		nb = roxml_get_nodes_nb(parent, ROXML_PI_NODE | ROXML_CMT_NODE |
+							ROXML_TXT_NODE |
+							ROXML_ELM_NODE |
+							ROXML_DOCTYPE_NODE);
 
 	roxml_set_parent(parent, n);
 
@@ -206,8 +208,8 @@ ROXML_API void roxml_del_node(node_t *n)
 	if (n == ROXML_INVALID_DOC)
 		return;
 
-	if ((n->type & ROXML_ELM_NODE) ||
-	    (n->type & ROXML_DOCTYPE_NODE) || (n->type & ROXML_PI_NODE) || (n->type & ROXML_CMT_NODE)) {
+	if ((n->type & ROXML_ELM_NODE) || (n->type & ROXML_DOCTYPE_NODE) ||
+	    (n->type & ROXML_PI_NODE) || (n->type & ROXML_CMT_NODE)) {
 		roxml_del_std_node(n);
 	} else if (n->type & ROXML_ATTR_NODE) {
 		roxml_del_arg_node(n);
@@ -235,7 +237,8 @@ ROXML_STATIC ROXML_INT void roxml_generate_txt_node(node_t *n, char *content)
 	n->end = content_l + 1;
 }
 
-ROXML_STATIC ROXML_INT void roxml_generate_elm_node(node_t *n, char *name, char *content)
+ROXML_STATIC ROXML_INT void roxml_generate_elm_node(node_t *n, char *name,
+						    char *content)
 {
 	int content_l = 0;
 	int name_l = strlen(name);
@@ -245,11 +248,14 @@ ROXML_STATIC ROXML_INT void roxml_generate_elm_node(node_t *n, char *name, char 
 		content_l = strlen(content);
 
 	if (content) {
-		n->src.buf = malloc(sizeof(char) * (name_l * 2 + content_l + 6));
+		n->src.buf =
+			malloc(sizeof(char) * (name_l * 2 + content_l + 6));
 		sprintf(n->src.buf, "<%s>%s</%s>", name, content, name);
 		n->end = name_l + content_l + 2;
 
-		new_txt = roxml_create_node(name_l + 2, n->src.buf, ROXML_TXT_NODE | ROXML_PENDING | ROXML_BUFF);
+		new_txt = roxml_create_node(name_l + 2, n->src.buf,
+					    ROXML_TXT_NODE | ROXML_PENDING |
+						    ROXML_BUFF);
 		roxml_append_node(n, new_txt);
 		new_txt->end = name_l + content_l + 2;
 	} else {
@@ -259,7 +265,8 @@ ROXML_STATIC ROXML_INT void roxml_generate_elm_node(node_t *n, char *name, char 
 	}
 }
 
-ROXML_STATIC ROXML_INT void roxml_generate_pi_node(node_t *n, char *name, char *content)
+ROXML_STATIC ROXML_INT void roxml_generate_pi_node(node_t *n, char *name,
+						   char *content)
 {
 	int content_l = 0;
 	int name_l = strlen(name);
@@ -278,7 +285,8 @@ ROXML_STATIC ROXML_INT void roxml_generate_pi_node(node_t *n, char *name, char *
 	}
 }
 
-ROXML_STATIC ROXML_INT void roxml_generate_attr_node(node_t *n, int type, char *name, char *content)
+ROXML_STATIC ROXML_INT void roxml_generate_attr_node(node_t *n, int type,
+						     char *name, char *content)
 {
 	int xmlns_l = 0;
 	int content_l = strlen(content);
@@ -291,8 +299,10 @@ ROXML_STATIC ROXML_INT void roxml_generate_attr_node(node_t *n, int type, char *
 		if (name_l > 0)
 			xmlns_l++;
 
-		n->src.buf = malloc(sizeof(char) * (name_l + content_l + xmlns_l + 4));
-		sprintf(n->src.buf, "xmlns%s%s=\"%s\"", name_l ? ":" : "", name, content);
+		n->src.buf = malloc(sizeof(char) *
+				    (name_l + content_l + xmlns_l + 4));
+		sprintf(n->src.buf, "xmlns%s%s=\"%s\"", name_l ? ":" : "", name,
+			content);
 
 		ns = calloc(1, sizeof(roxml_ns_t) + name_l + 1);
 		ns->id = ROXML_NS_ID;
@@ -305,13 +315,16 @@ ROXML_STATIC ROXML_INT void roxml_generate_attr_node(node_t *n, int type, char *
 		sprintf(n->src.buf, "%s=\"%s\"", name, content);
 	}
 
-	new_txt = roxml_create_node(name_l + 2 + xmlns_l, n->src.buf, ROXML_TXT_NODE | ROXML_PENDING | ROXML_BUFF);
+	new_txt =
+		roxml_create_node(name_l + 2 + xmlns_l, n->src.buf,
+				  ROXML_TXT_NODE | ROXML_PENDING | ROXML_BUFF);
 	new_txt->end = name_l + content_l + 2 + xmlns_l;
 	n->end = name_l + 1 + xmlns_l;
 	roxml_append_node(n, new_txt);
 }
 
-ROXML_INT int roxml_add_node_check(node_t *parent, int type, char *name, char *content)
+ROXML_INT int roxml_add_node_check(node_t *parent, int type, char *name,
+				   char *content)
 {
 	int valid = 1;
 
@@ -320,7 +333,8 @@ ROXML_INT int roxml_add_node_check(node_t *parent, int type, char *name, char *c
 			if (((type & ROXML_TXT_NODE) == 0) || (parent->chld))
 				valid = 0;
 		} else if ((parent->type & ROXML_ELM_NODE) == 0) {
-			if (parent->prnt && (parent->prnt->type & ROXML_ELM_NODE))
+			if (parent->prnt &&
+			    (parent->prnt->type & ROXML_ELM_NODE))
 				valid = 2;
 			else
 				valid = 0;
@@ -351,12 +365,14 @@ ROXML_INT int roxml_add_node_check(node_t *parent, int type, char *name, char *c
 	return valid;
 }
 
-ROXML_API node_t *roxml_add_node(node_t *parent, int position, int type, char *name, char *content)
+ROXML_API node_t *roxml_add_node(node_t *parent, int position, int type,
+				 char *name, char *content)
 {
 	int ret;
 	node_t *new_node = NULL;
 
-	if (content && (type & ROXML_ESCAPED_MOD) && !(type & ROXML_NON_ESCAPABLE_NODES)) {
+	if (content && (type & ROXML_ESCAPED_MOD) &&
+	    !(type & ROXML_NON_ESCAPABLE_NODES)) {
 		int size = roxml_escape(content, ENCODE, NULL);
 		char *out = malloc(size + 1);
 		roxml_escape(content, ENCODE, out);
@@ -370,12 +386,14 @@ ROXML_API node_t *roxml_add_node(node_t *parent, int position, int type, char *n
 		parent = parent->prnt;
 
 	if (parent == NULL) {
-		node_t *n = roxml_create_node(0, NULL, ROXML_ELM_NODE | ROXML_PENDING | ROXML_BUFF);
+		node_t *n = roxml_create_node(
+			0, NULL, ROXML_ELM_NODE | ROXML_PENDING | ROXML_BUFF);
 
 		parent = roxml_create_root(n);
 	}
 
-	new_node = roxml_create_node(0, NULL, type | ROXML_PENDING | ROXML_BUFF);
+	new_node =
+		roxml_create_node(0, NULL, type | ROXML_PENDING | ROXML_BUFF);
 
 	if (type & ROXML_ATTR_NODE)
 		roxml_generate_attr_node(new_node, type, name, content);
@@ -388,7 +406,8 @@ ROXML_API node_t *roxml_add_node(node_t *parent, int position, int type, char *n
 	else if (type & ROXML_ELM_NODE)
 		roxml_generate_elm_node(new_node, name, content);
 
-	if (((type & ROXML_NON_ESCAPABLE_NODES) == 0) && (type & ROXML_ESCAPED_MOD))
+	if (((type & ROXML_NON_ESCAPABLE_NODES) == 0) &&
+	    (type & ROXML_ESCAPED_MOD))
 		free(content);
 
 	return roxml_parent_node(parent, new_node, position);

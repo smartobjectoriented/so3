@@ -18,16 +18,17 @@
 
 #include <types.h>
 
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define CLAMP(x, low, high) \
+	(((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
-#define MOUSE_STATUS_REMOTE     0x40
-#define MOUSE_STATUS_ENABLED    0x20
-#define MOUSE_STATUS_SCALE21    0x10
+#define MOUSE_STATUS_REMOTE 0x40
+#define MOUSE_STATUS_ENABLED 0x20
+#define MOUSE_STATUS_SCALE21 0x10
 
 /* Mouse packet byte indexes. */
 #define PS2_STATE 0
-#define PS2_X     1
-#define PS2_Y     2
+#define PS2_X 1
+#define PS2_Y 2
 
 /* Mouse commands. */
 #define EN_PKT_STREAM 0xf4
@@ -37,10 +38,10 @@
 #define X_OF (1 << 6)
 #define Y_BS (1 << 5)
 #define X_BS (1 << 4)
-#define AO   (1 << 3)
-#define BM   (1 << 2)
-#define BR   (1 << 1)
-#define BL   (1 << 0)
+#define AO (1 << 3)
+#define BM (1 << 2)
+#define BR (1 << 1)
+#define BL (1 << 0)
 
 /* Keyboard bytes */
 #define KEY_LSH 0x12
@@ -49,10 +50,9 @@
 #define KEY_REL 0xf0
 
 /* Keyboard masks */
-#define KEY_ST_PRESSED  (1 << 0)
-#define KEY_ST_SHIFT    (1 << 1)
+#define KEY_ST_PRESSED (1 << 0)
+#define KEY_ST_SHIFT (1 << 1)
 #define KEY_ST_EXTENDED (1 << 2)
-
 
 struct ps2_mouse {
 	int16_t x, y;
@@ -71,5 +71,6 @@ struct ps2_key {
 	uint8_t state;
 };
 
-void get_mouse_state(uint8_t *packet, struct ps2_mouse *, uint16_t max_x, uint16_t max_y);
+void get_mouse_state(uint8_t *packet, struct ps2_mouse *, uint16_t max_x,
+		     uint16_t max_y);
 void get_kb_key(uint8_t *packet, uint8_t len, struct ps2_key *);

@@ -25,7 +25,7 @@
  * On Aarch64, the field has to be 64-bit aligned apparently.
  */
 typedef struct {
-	__attribute__ ((aligned (8))) volatile uint32_t lock;
+	__attribute__((aligned(8))) volatile uint32_t lock;
 } spinlock_t;
 
 #include <asm/spinlock.h>
@@ -42,9 +42,8 @@ void spin_unlock(spinlock_t *lock);
 void spin_unlock_irq(spinlock_t *lock);
 void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags);
 
-#define spin_is_locked(x)	((x)->lock != 0)
+#define spin_is_locked(x) ((x)->lock != 0)
 
 void spin_barrier(spinlock_t *lock);
 
 #endif /* SPINLOCK_H */
-

@@ -22,19 +22,19 @@
 #include <device/device.h>
 
 /* Serial IOCTL  */
-#define TIOCGWINSZ	0x5413
+#define TIOCGWINSZ 0x5413
 
 /*  This is a reserved char code we use to query (patched) Qemu to retrieve the window size. */
-#define SERIAL_GWINSZ	"\254"
+#define SERIAL_GWINSZ "\254"
 
 /* The following code is used for telling Qemu that SO3 is aborting its execution.
  * This is used for terminating qemu properly when codecheck is executed.
  * qemu-system-arm must be started with option --codecheck
  */
-#define SERIAL_SO3_HALT	"\253"
+#define SERIAL_SO3_HALT "\253"
 
-#define WINSIZE_ROW_SIZE_DEFAULT	25
-#define WINSIZE_COL_SIZE_DEFAULT	80
+#define WINSIZE_ROW_SIZE_DEFAULT 25
+#define WINSIZE_COL_SIZE_DEFAULT 80
 
 typedef struct {
 	int (*put_byte)(char c);
@@ -46,10 +46,10 @@ typedef struct {
 extern serial_ops_t serial_ops;
 
 struct winsize {
-	unsigned short	ws_row;		/* rows, in characters */
-	unsigned short	ws_col;		/* columns, in characters */
-	unsigned short	ws_xpixel;	/* horizontal size, pixels */
-	unsigned short	ws_ypixel;	/* vertical size, pixels */
+	unsigned short ws_row; /* rows, in characters */
+	unsigned short ws_col; /* columns, in characters */
+	unsigned short ws_xpixel; /* horizontal size, pixels */
+	unsigned short ws_ypixel; /* vertical size, pixels */
 };
 
 int serial_putc(char c);

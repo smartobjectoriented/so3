@@ -29,7 +29,8 @@
 extern void secondary_startup(void);
 
 /* Wake up a CPU */
-void cpu_on(unsigned long cpuid, addr_t entry_point) {
+void cpu_on(unsigned long cpuid, addr_t entry_point)
+{
 	addr_t release_vaddr;
 
 	switch (cpuid) {
@@ -50,7 +51,7 @@ void cpu_on(unsigned long cpuid, addr_t entry_point) {
 		break;
 	}
 
-	*((volatile addr_t *) release_vaddr) = entry_point;
+	*((volatile addr_t *)release_vaddr) = entry_point;
 
 	__asm_flush_dcache_range(release_vaddr, release_vaddr + sizeof(addr_t));
 
@@ -63,5 +64,3 @@ void cpu_on(unsigned long cpuid, addr_t entry_point) {
 
 	io_unmap(release_vaddr);
 }
-
-

@@ -35,7 +35,7 @@
 #include <soo/vbstore.h>
 #include <soo/soo.h>
 #include <soo/console.h>
- 
+
 /*
  * Used to keep track of the target domain for a certain (outgoing) dc_event.
  * Value -1 means no dc_event in progress.
@@ -83,14 +83,17 @@ void do_sync_dom(int domID, dc_event_t dc_event)
 
 	set_dc_event(domID, dc_event);
 
-	DBG("%s: notifying via evtchn %d...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
+	DBG("%s: notifying via evtchn %d...\n", __func__,
+	    avz_shared->dom_desc.u.ME.dc_evtchn);
 	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 
 	/* Wait for the response from the outgoing domain */
-	DBG("%s: waiting for completion on dc_event %d...\n", __func__, dc_event);
+	DBG("%s: waiting for completion on dc_event %d...\n", __func__,
+	    dc_event);
 	wait_for_completion(&dc_stable_lock[dc_event]);
 
-	DBG("%s: all right, got the completion, resetting the barrier.\n", __func__);
+	DBG("%s: all right, got the completion, resetting the barrier.\n",
+	    __func__);
 
 	/* Now, reset the barrier. */
 	atomic_set(&dc_outgoing_domID[dc_event], -1);
@@ -100,7 +103,8 @@ void do_sync_dom(int domID, dc_event_t dc_event)
  * Tell a specific domain that we are now in a stable state regarding the dc_event actions.
  * Typically, this comes after receiving a dc_event leading to a dc_event related action.
  */
-void tell_dc_stable(int dc_event)  {
+void tell_dc_stable(int dc_event)
+{
 	int domID;
 
 	domID = atomic_read(&dc_incoming_domID[dc_event]);
@@ -119,7 +123,6 @@ void tell_dc_stable(int dc_event)  {
 	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
 }
 
-
 /*
  * Prepare a remote ME to react to a ping event.
  * @domID: the target ME
@@ -130,11 +133,11 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 
 	DBG("%s(%d, %d)\n", __func__, domID, dc_event);
 
-   	args.cmd = AVZ_DC_EVENT_SET;
-        args.u.avz_dc_event_args.domID = domID;
-        args.u.avz_dc_event_args.dc_event = dc_event;
+	args.cmd = AVZ_DC_EVENT_SET;
+	args.u.avz_dc_event_args.domID = domID;
+	args.u.avz_dc_event_args.dc_event = dc_event;
 
-        avz_hypercall(&args);
+	avz_hypercall(&args);
 
 	while (args.u.avz_dc_event_args.state == -EBUSY) {
 		schedule();
@@ -142,7 +145,7 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 		avz_hypercall(&args);
 	}
 }
- 
+
 /*
  * Get the state of a ME.
  */
@@ -156,8 +159,10 @@ void set_ME_state(ME_state_t state)
 	/* Be careful if the ME is in living state and suddently is set to killed.
 	 * Backends will be in a weird state.
 	 */
-	if ((state == ME_state_killed) && (avz_shared->dom_desc.u.ME.state == ME_state_living))
-		lprintk("## WARNING ! ME %d is set to killed while living!\n", ME_domID());
+	if ((state == ME_state_killed) &&
+	    (avz_shared->dom_desc.u.ME.state == ME_state_living))
+		lprintk("## WARNING ! ME %d is set to killed while living!\n",
+			ME_domID());
 
 	avz_shared->dom_desc.u.ME.state = state;
 }
@@ -168,7 +173,6 @@ void perform_task(dc_event_t dc_event)
 	soo_domcall_arg_t args;
 
 	switch (dc_event) {
-
 	case DC_FORCE_TERMINATE:
 		/* The ME will initiate the force_terminate processing on its own. */
 
@@ -176,7 +180,6 @@ void perform_task(dc_event_t dc_event)
 		cb_force_terminate();
 
 		if (get_ME_state() == ME_state_terminated) {
-
 			/* Prepare vbus to stop everything with the frontend */
 			/* (interactions with vbus) */
 			DBG("Device shutdown...\n");
@@ -188,23 +191,24 @@ void perform_task(dc_event_t dc_event)
 
 			/* Remove vbstore entries related to this ME */
 			DBG("Removing vbstore entries ...\n");
-                        remove_vbstore_entries();
-                }
+			remove_vbstore_entries();
+		}
 
-                break;
+		break;
 
 	case DC_RESUME:
 		DBG("resuming vbstore...\n");
 
-                BUG_ON((get_ME_state() != ME_state_resuming) && (get_ME_state() != ME_state_awakened));
+		BUG_ON((get_ME_state() != ME_state_resuming) &&
+		       (get_ME_state() != ME_state_awakened));
 
-                /* Giving a chance to perform actions before resuming devices */
-                args.cmd = CB_PRE_RESUME;
+		/* Giving a chance to perform actions before resuming devices */
+		args.cmd = CB_PRE_RESUME;
 		do_soo_activity(&args);
 
 		DBG("Now resuming vbstore...\n");
 		vbs_resume();
-	 
+
 		/* During a resuming after an awakened snapshot, re-init watch for device/<domID> */
 		if (get_ME_state() == ME_state_awakened)
 			postmig_setup();
@@ -215,7 +219,7 @@ void perform_task(dc_event_t dc_event)
 	case DC_SUSPEND:
 		DBG("Suspending vbstore...\n");
 
-                vbs_suspend();
+		vbs_suspend();
 		DBG("vbstore suspended.\n");
 
 		break;
@@ -242,16 +246,14 @@ void perform_task(dc_event_t dc_event)
 	tell_dc_stable(dc_event);
 }
 
-
 /*
  * This function is called as a deferred work during the container kernel execution.
  */
 void do_soo_activity(void *arg)
 {
-	soo_domcall_arg_t *args = (soo_domcall_arg_t *) arg;
-	
-	switch (args->cmd) {
+	soo_domcall_arg_t *args = (soo_domcall_arg_t *)arg;
 
+	switch (args->cmd) {
 	case CB_PRE_SUSPEND: /* Called by perform_pre_suspend */
 		DBG("Pre-suspend callback for ME %d\n", ME_domID());
 
@@ -263,7 +265,7 @@ void do_soo_activity(void *arg)
 
 		cb_pre_resume(arg);
 		break;
- 
+
 	case CB_POST_ACTIVATE: /* Called by perform_post_activate() */
 
 		DBG("Post_activate callback for ME %d\n", ME_domID());
@@ -275,12 +277,12 @@ void do_soo_activity(void *arg)
 
 ME_desc_t *get_ME_desc(void)
 {
-	return (ME_desc_t *) &avz_shared->dom_desc.u.ME;
+	return (ME_desc_t *)&avz_shared->dom_desc.u.ME;
 }
 
 agency_desc_t *get_agency_desc(void)
 {
-	return (agency_desc_t *) &avz_shared->dom_desc.u.agency;
+	return (agency_desc_t *)&avz_shared->dom_desc.u.agency;
 }
 
 void soo_guest_activity_init(void)
@@ -293,6 +295,4 @@ void soo_guest_activity_init(void)
 
 		init_completion(&dc_stable_lock[i]);
 	}
-
 }
-

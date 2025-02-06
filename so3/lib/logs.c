@@ -26,7 +26,8 @@
 #include <soo/avz.h>
 
 /* Sends some bytes to the UART */
-static int log_write(char *str, int len) {
+static int log_write(char *str, int len)
+{
 	int i;
 	unsigned long flags;
 
@@ -52,10 +53,10 @@ static int log_write(char *str, int len) {
  */
 void logs(const char *fmt, ...)
 {
-	static char   buf[1024];
-	static char   msg[1024];
-	va_list       args;
-	char         *p, *q;
+	static char buf[1024];
+	static char msg[1024];
+	va_list args;
+	char *p, *q;
 
 	va_start(args, fmt);
 	(void)vsnprintf(buf, sizeof(buf), fmt, args);
@@ -68,12 +69,12 @@ void logs(const char *fmt, ...)
 	while ((q = strchr(p, '\n')) != NULL) {
 		*q = '\0';
 
-		log_write(p, strlen(p)+1);
+		log_write(p, strlen(p) + 1);
 		log_write("\n", 2);
 
 		p = q + 1;
 	}
 
 	if (*p != '\0')
-		log_write(p, strlen(p)+1);
+		log_write(p, strlen(p) + 1);
 }

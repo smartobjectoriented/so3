@@ -22,11 +22,7 @@
 /* Low-latency softirqs come first in the following list.
  * SCHEDULE_SOFTIRQ must remain the last in the list.
  */
-enum {
-	TIMER_SOFTIRQ = 0,
-	SCHEDULE_SOFTIRQ,
-	NR_COMMON_SOFTIRQS
-};
+enum { TIMER_SOFTIRQ = 0, SCHEDULE_SOFTIRQ, NR_COMMON_SOFTIRQS };
 
 #include <common.h>
 #include <smp.h>

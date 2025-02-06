@@ -17,7 +17,6 @@
  *
  */
 
-
 #ifndef STRTOX_H
 #define STRTOX_H
 

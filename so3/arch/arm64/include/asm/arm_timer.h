@@ -37,15 +37,16 @@
  *
  * http://lists.infradead.org/pipermail/linux-arm-kernel/2019-February/631195.html
  */
-#define arch_counter_enforce_ordering(val) do {				\
-	u64 tmp, _val = (val);						\
-									\
-	asm volatile(							\
-	"	eor	%0, %1, %1\n"					\
-	"	add	%0, sp, %0\n"					\
-	"	ldr	xzr, [%0]"					\
-	: "=r" (tmp) : "r" (_val));					\
-} while (0)
+#define arch_counter_enforce_ordering(val)       \
+	do {                                     \
+		u64 tmp, _val = (val);           \
+                                                 \
+		asm volatile("	eor	%0, %1, %1\n" \
+			     "	add	%0, sp, %0\n" \
+			     "	ldr	xzr, [%0]"    \
+			     : "=r"(tmp)         \
+			     : "r"(_val));       \
+	} while (0)
 
 /*
  * These register accessors are marked inline so the compiler can
@@ -112,7 +113,8 @@ static inline u32 arch_timer_reg_read_el0(enum arch_timer_reg reg)
 
 #else
 
-static inline void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
+static inline void arch_timer_reg_write_cp15(int access,
+					     enum arch_timer_reg reg, u32 val)
 {
 	if (access == ARCH_TIMER_PHYS_ACCESS) {
 		switch (reg) {
@@ -140,20 +142,20 @@ static inline void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg
 static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 {
 	if (access == ARCH_TIMER_PHYS_ACCESS) {
-			switch (reg) {
-			case ARCH_TIMER_REG_CTRL:
-				return read_sysreg(cntp_ctl_el0);
-			case ARCH_TIMER_REG_TVAL:
-				return read_sysreg(cntp_tval_el0);
-			}
-		} else if (access == ARCH_TIMER_VIRT_ACCESS) {
-			switch (reg) {
-			case ARCH_TIMER_REG_CTRL:
-				return read_sysreg(cntv_ctl_el0);
-			case ARCH_TIMER_REG_TVAL:
-				return read_sysreg(cntv_tval_el0);
-			}
+		switch (reg) {
+		case ARCH_TIMER_REG_CTRL:
+			return read_sysreg(cntp_ctl_el0);
+		case ARCH_TIMER_REG_TVAL:
+			return read_sysreg(cntp_tval_el0);
 		}
+	} else if (access == ARCH_TIMER_VIRT_ACCESS) {
+		switch (reg) {
+		case ARCH_TIMER_REG_CTRL:
+			return read_sysreg(cntv_ctl_el0);
+		case ARCH_TIMER_REG_TVAL:
+			return read_sysreg(cntv_tval_el0);
+		}
+	}
 
 	BUG();
 

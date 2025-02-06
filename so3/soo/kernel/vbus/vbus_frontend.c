@@ -41,20 +41,21 @@ struct list_head frontends;
  * Walk through the list of frontend devices and perform an action.
  * When the action returns 1, we stop the walking.
  */
-void frontend_for_each(void *data, int (*fn)(struct vbus_device *, void *)) {
+void frontend_for_each(void *data, int (*fn)(struct vbus_device *, void *))
+{
 	struct list_head *pos, *q;
 	struct vbus_device *vdev;
 
-	list_for_each_safe(pos, q, &frontends)
-	{
+	list_for_each_safe(pos, q, &frontends) {
 		vdev = list_entry(pos, struct vbus_device, list);
 
 		if (fn(vdev, data) == 1)
-			return ;
+			return;
 	}
 }
 
-void add_new_dev(struct vbus_device *vdev) {
+void add_new_dev(struct vbus_device *vdev)
+{
 	list_add_tail(&vdev->list, &frontends);
 }
 
@@ -64,7 +65,7 @@ static int frontend_bus_id(char bus_id[VBUS_ID_SIZE], const char *nodename)
 	/* device/ */
 	nodename = strchr(nodename, '/');
 	/* domID/ */
-	nodename = strchr(nodename+1, '/');
+	nodename = strchr(nodename + 1, '/');
 	if (!nodename || strlen(nodename + 1) >= VBUS_ID_SIZE) {
 		printk("vbus: bad frontend %s\n", nodename);
 		BUG();
@@ -90,11 +91,10 @@ static char root_name[15];
 static char initial_rootname[15];
 
 static struct vbus_type vbus_frontend = {
-		.root = "device",
-		.get_bus_id = frontend_bus_id,
-		.otherend_changed = backend_changed,
+	.root = "device",
+	.get_bus_id = frontend_bus_id,
+	.otherend_changed = backend_changed,
 };
-
 
 static int remove_dev(struct vbus_device *vdev, void *data)
 {
@@ -128,7 +128,8 @@ static int __device_shutdown(struct vbus_device *vdev, void *data)
 	return 0;
 }
 
-void device_shutdown(void) {
+void device_shutdown(void)
+{
 	frontend_for_each(NULL, __device_shutdown);
 }
 
@@ -189,7 +190,7 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 	ptr_item = strchr(vdev->otherend, '/');
 
 	/* <type>/ */
-	ptr_item = strchr(ptr_item+1, '/');
+	ptr_item = strchr(ptr_item + 1, '/');
 	ptr_item++;
 
 	sscanf(ptr_item, "%d/%s", &domID, item);
@@ -206,13 +207,14 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 /**
  * Called after migration during the resume process.
  */
-void postmig_setup(void) {
+void postmig_setup(void)
+{
 	/*
 	 * First, we need to take care about local watches on vbstore entries to be ready
 	 * on property changes.
 	 */
- 
-        DBG0("Waiting for vbstore dev to be populated\n");
+
+	DBG0("Waiting for vbstore dev to be populated\n");
 
 	sprintf(root_name, "%s/%d", initial_rootname, ME_domID());
 	DBG("vbus_frontend: %s ... for domID: %d\n", root_name, ME_domID());
@@ -242,7 +244,8 @@ void postmig_setup(void) {
  * Probe a new device on the frontend bus.
  * Typically called by vbstore_dev_init()
  */
-int vdev_probe(char *node, const char *compat) {
+int vdev_probe(char *node, const char *compat)
+{
 	char *type, *pos;
 	char target[VBS_KEY_LENGTH];
 
@@ -250,9 +253,9 @@ int vdev_probe(char *node, const char *compat) {
 
 	strcpy(target, node);
 	pos = target;
-	type = strsep(&pos, "/");    /* "device/" */
-	type = strsep(&pos, "/");    /* "device/<domid>/" */
-	type = strsep(&pos, "/");    /* "/device/<domid>/<type>" */
+	type = strsep(&pos, "/"); /* "device/" */
+	type = strsep(&pos, "/"); /* "device/<domid>/" */
+	type = strsep(&pos, "/"); /* "/device/<domid>/<type>" */
 
 	vbus_dev_changed(node, type, &vbus_frontend, compat);
 
@@ -274,7 +277,3 @@ void vbus_probe_frontend_init(void)
 
 	INIT_LIST_HEAD(&frontends);
 }
-
-
-
-

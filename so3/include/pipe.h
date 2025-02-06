@@ -23,13 +23,12 @@
 #include <mutex.h>
 #include <completion.h>
 
-#define PIPE_READER	0
-#define PIPE_WRITER	0
+#define PIPE_READER 0
+#define PIPE_WRITER 0
 
-#define PIPE_SIZE	PAGE_SIZE
+#define PIPE_SIZE PAGE_SIZE
 
 struct pipe_desc {
-
 	/* Mutex to access critical parts */
 	struct mutex lock;
 
@@ -49,7 +48,7 @@ struct pipe_desc {
 	completion_t wait_for_writer;
 
 	/* Waiting queue for managing full pipe */
-  	completion_t wait_for_reader;
+	completion_t wait_for_reader;
 };
 typedef struct pipe_desc pipe_desc_t;
 

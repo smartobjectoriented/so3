@@ -23,16 +23,16 @@
 #include <soo/gnttab.h>
 #include <soo/vdevfront.h>
 
-#define VDUMMY_PACKET_SIZE	32
+#define VDUMMY_PACKET_SIZE 32
 
-#define VDUMMY_NAME		"vdummy"
-#define VDUMMY_PREFIX		"[" VDUMMY_NAME "] "
+#define VDUMMY_NAME "vdummy"
+#define VDUMMY_PREFIX "[" VDUMMY_NAME "] "
 
 typedef struct {
 	char buffer[VDUMMY_PACKET_SIZE];
 } vdummy_request_t;
 
-typedef struct  {
+typedef struct {
 	char buffer[VDUMMY_PACKET_SIZE];
 } vdummy_response_t;
 
@@ -53,10 +53,9 @@ typedef struct {
 	unsigned int irq;
 
 	grant_ref_t ring_ref;
-	
+
 	uint32_t evtchn;
 
 } vdummy_t;
-
 
 #endif /* VDUMMY_H */

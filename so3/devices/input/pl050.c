@@ -33,7 +33,6 @@
 #include <asm/io.h>
 #include <device/input/pl050.h>
 
-
 /* Write a byte to the device. */
 void pl050_write(void *base, uint8_t data)
 {
@@ -51,9 +50,9 @@ void pl050_write(void *base, uint8_t data)
  * Initialisation of the PL050 Keyboard/Mouse Interface.
  * Linux driver: input/serio/ambakmi.c
  */
-void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *))
+void pl050_init(void *base, irq_def_t *irq_def,
+		irq_return_t (*isr)(int, void *))
 {
-
 	/* Set the clock divisor (arbitrary value). */
 	iowrite8(base + KMI_CLKDIV, 2);
 
@@ -62,5 +61,4 @@ void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *)
 
 	/* Bind the ISR to the interrupt controller. */
 	irq_bind(irq_def->irqnr, isr, NULL, NULL);
-
 }

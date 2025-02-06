@@ -10,6 +10,8 @@
 #define LV_ATTRIBUTE_IMG_IMG_DEMO_WIDGETS_AVATAR
 #endif
 
+/* clang-format off */
+
 const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_DEMO_WIDGETS_AVATAR uint8_t img_demo_widgets_avatar_map[] = {
 #if LV_COLOR_DEPTH == 1 || LV_COLOR_DEPTH == 8
   /*Pixel format: Blue: 2 bit, Green: 3 bit, Red: 3 bit, Alpha 8 bit */
@@ -484,13 +486,15 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_IMG_DEMO_
 #endif
 };
 
+/* clang-format on */
+
 const lv_img_dsc_t img_demo_widgets_avatar = {
-  .header.always_zero = 0,
-  .header.w = 154,
-  .header.h = 154,
-  .data_size = 23716 * LV_IMG_PX_SIZE_ALPHA_BYTE,
-  .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
-  .data = img_demo_widgets_avatar_map,
+	.header.always_zero = 0,
+	.header.w = 154,
+	.header.h = 154,
+	.data_size = 23716 * LV_IMG_PX_SIZE_ALPHA_BYTE,
+	.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+	.data = img_demo_widgets_avatar_map,
 };
 
 #endif

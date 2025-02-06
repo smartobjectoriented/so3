@@ -32,15 +32,14 @@
 
 #include <soo/evtchn.h>
 
-static irq_return_t timer_isr(int irq, void *data) {
-
+static irq_return_t timer_isr(int irq, void *data)
+{
 	jiffies++;
 
 	raise_softirq(TIMER_SOFTIRQ);
 
 	return IRQ_COMPLETED;
 }
-
 
 /* Clocksource */
 
@@ -49,12 +48,13 @@ static irq_return_t timer_isr(int irq, void *data) {
  * from a previous location (other smart object).
  *
  */
-u64 clocksource_read(void) {
-
+u64 clocksource_read(void)
+{
 	return arch_counter_get_cntvct();
 }
 
-void clocksource_timer_reset(void) {
+void clocksource_timer_reset(void)
+{
 	clocksource_timer.rate = arch_timer_get_cntfrq();
 	clocksource_timer.cycle_last = clocksource_timer.read();
 }
@@ -62,32 +62,33 @@ void clocksource_timer_reset(void) {
 /*
  * Initialize the clocksource timer for free-running timer (used for system time)
  */
-static int clocksource_timer_init(dev_t *dev, int fdt_offset) {
-
+static int clocksource_timer_init(dev_t *dev, int fdt_offset)
+{
 	clocksource_timer.cycle_last = 0;
 
 	clocksource_timer.read = clocksource_read;
 	clocksource_timer.rate = arch_timer_get_cntfrq();
 	clocksource_timer.mask = CLOCKSOURCE_MASK(56);
-	 
-        return 0;
+
+	return 0;
 }
 
-void periodic_timer_start(void) {
-
+void periodic_timer_start(void)
+{
 	periodic_timer.period = NSECS / CONFIG_HZ;
 
-	clocks_calc_mult_shift(&clocksource_timer.mult, &clocksource_timer.shift, clocksource_timer.rate, NSECS, 3600);
+	clocks_calc_mult_shift(&clocksource_timer.mult,
+			       &clocksource_timer.shift, clocksource_timer.rate,
+			       NSECS, 3600);
 
 	bind_virq_to_irqhandler(VIRQ_TIMER, timer_isr, NULL, NULL);
 }
 
-
 /*
  * Initialize the periodic timer used by the kernel.
  */
-static int periodic_timer_init(dev_t *dev, int fdt_offset) {
-
+static int periodic_timer_init(dev_t *dev, int fdt_offset)
+{
 	/* Initialize Timer */
 
 	periodic_timer.start = periodic_timer_start;
@@ -97,4 +98,3 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset) {
 
 REGISTER_DRIVER_CORE("soo-timer,periodic-timer", periodic_timer_init);
 REGISTER_DRIVER_CORE("soo-timer,clocksource-timer", clocksource_timer_init);
-

@@ -9,7 +9,6 @@
  * The author added a static linking exception, see License.txt.
  */
 
-
 #include <string.h>
 #include "roxml_core.h"
 #include "roxml_parser.h"
@@ -30,7 +29,8 @@ ROXML_INT void roxml_close_file(node_t *root)
 	fclose(root->src.fil);
 }
 
-ROXML_INT int roxml_parse_file(roxml_load_ctx_t *context, roxml_parser_item_t *parser, FILE *file)
+ROXML_INT int roxml_parse_file(roxml_load_ctx_t *context,
+			       roxml_parser_item_t *parser, FILE *file)
 {
 	char *int_buffer;
 	int error = 0;
@@ -46,7 +46,9 @@ ROXML_INT int roxml_parse_file(roxml_load_ctx_t *context, roxml_parser_item_t *p
 	do {
 		int ret = 0;
 		int chunk_len = 0;
-		int_len = fread(int_buffer + circle, 1, ROXML_BULK_READ - circle, file) + circle;
+		int_len = fread(int_buffer + circle, 1,
+				ROXML_BULK_READ - circle, file) +
+			  circle;
 		int_buffer[int_len] = '\0';
 
 		if (int_len == ROXML_BULK_READ)

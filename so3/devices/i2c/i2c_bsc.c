@@ -69,38 +69,40 @@ static i2c_msg_t cur_msg;
 /* Used to wait for the end of the transfer */
 static completion_t transfer_done_completion;
 
-void i2c_bsc_fill_fifo(void) {
+void i2c_bsc_fill_fifo(void)
+{
 	uint32_t val;
 	while (cur_msg.remaining != 0) {
-
 		val = ioread32(&i2c.base->i2c_stat);
 		if (!(val & S_TXD))
 			break;
 
-		iowrite32(&(i2c.base->i2c_fifo), (uint32_t) (*cur_msg.buf & 0x000000FF));
+		iowrite32(&(i2c.base->i2c_fifo),
+			  (uint32_t)(*cur_msg.buf & 0x000000FF));
 
 		cur_msg.buf++;
 		cur_msg.remaining--;
 	}
 }
 
-void i2c_bsc_drain_fifo(void) {
+void i2c_bsc_drain_fifo(void)
+{
 	uint32_t val;
 
 	while (cur_msg.remaining != 0) {
-
 		val = ioread32(&(i2c.base->i2c_stat));
 		if (!(val & S_RXD))
 			break;
 
-		*cur_msg.buf = (uint8_t) ioread32(&i2c.base->i2c_fifo);
+		*cur_msg.buf = (uint8_t)ioread32(&i2c.base->i2c_fifo);
 		cur_msg.buf++;
 		cur_msg.remaining--;
 	}
 }
 
 /* Configure the CTRL register and start the transfer */
-static void i2c_bsc_start_transfer(bool is_read) {
+static void i2c_bsc_start_transfer(bool is_read)
+{
 	uint32_t c;
 
 	/* Slave address and data length setup */
@@ -118,17 +120,15 @@ static void i2c_bsc_start_transfer(bool is_read) {
 		c |= CTRL_INTT;
 	}
 	iowrite32(&i2c.base->i2c_ctrl, c);
-
 }
 
 /* Message cleanup */
-static void i2c_bsc_finish_transfer(void) {
-
+static void i2c_bsc_finish_transfer(void)
+{
 	cur_msg.addr = 0;
 	cur_msg.buf = NULL;
 	cur_msg.len = 0;
 	cur_msg.remaining = 0;
-
 }
 
 /*
@@ -137,7 +137,8 @@ static void i2c_bsc_finish_transfer(void) {
  *  -The FIFO needs reading
  *  -The FIFO needs writing
  */
-static irq_return_t i2c_bsc_isr(int irq, void *dummy) {
+static irq_return_t i2c_bsc_isr(int irq, void *dummy)
+{
 	uint32_t s;
 
 	s = ioread32(&i2c.base->i2c_stat);
@@ -176,8 +177,9 @@ complete:
 }
 
 /* Setups the message and the start/wait for the end of the transfer */
-static void i2c_xfer(uint32_t slave_addr, uint8_t *buf, size_t size, bool reading) {
-
+static void i2c_xfer(uint32_t slave_addr, uint8_t *buf, size_t size,
+		     bool reading)
+{
 	mutex_lock(&bus_lock);
 
 	cur_msg.addr = slave_addr;
@@ -195,11 +197,13 @@ static void i2c_xfer(uint32_t slave_addr, uint8_t *buf, size_t size, bool readin
 	mutex_unlock(&bus_lock);
 }
 
-void i2c_bsc_read_data(uint32_t slave_addr, uint8_t *buf, size_t size) {
+void i2c_bsc_read_data(uint32_t slave_addr, uint8_t *buf, size_t size)
+{
 	i2c_xfer(slave_addr, buf, size, I2C_READ);
 }
 
-void i2c_bsc_write_data(uint32_t slave_addr, uint8_t *buf, size_t size) {
+void i2c_bsc_write_data(uint32_t slave_addr, uint8_t *buf, size_t size)
+{
 	i2c_xfer(slave_addr, buf, size, I2C_WRITE);
 }
 
@@ -220,9 +224,13 @@ static int i2c_bsc_init(dev_t *dev, int fdt_offset)
 
 	/* Mapping the device properly */
 #ifdef CONFIG_ARCH_ARM32
-	i2c.base = (void *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	i2c.base =
+		(void *)io_map(fdt32_to_cpu(((const fdt32_t *)prop->data)[0]),
+			       fdt32_to_cpu(((const fdt32_t *)prop->data)[1]));
 #else
-	i2c.base = (void *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	i2c.base =
+		(void *)io_map(fdt64_to_cpu(((const fdt64_t *)prop->data)[0]),
+			       fdt64_to_cpu(((const fdt64_t *)prop->data)[1]));
 
 #endif
 	fdt_interrupt_node(fdt_offset, &i2c.irq_def);
@@ -234,7 +242,7 @@ static int i2c_bsc_init(dev_t *dev, int fdt_offset)
 	mask |= GPIO23_ALT0;
 
 	/* Configuration GPIO 2 et 3 alt0 */
-	iowrite32(gpio_regs_addr+GPIO_FSEL0_OFF, mask);
+	iowrite32(gpio_regs_addr + GPIO_FSEL0_OFF, mask);
 
 	/* Reset du registre ctrl l'i2c */
 	iowrite32(&(i2c.base->i2c_ctrl), 0x0);

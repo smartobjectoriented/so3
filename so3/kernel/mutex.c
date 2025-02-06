@@ -27,7 +27,8 @@
 #include <string.h>
 #include <process.h>
 
-void mutex_lock(struct mutex *lock) {
+void mutex_lock(struct mutex *lock)
+{
 	unsigned long flags;
 	queue_thread_t q_tcb;
 
@@ -63,7 +64,8 @@ void mutex_lock(struct mutex *lock) {
 		 * We only attempt the xchg if the count is non-negative in order
 		 * to avoid unnecessary xchg operations.
 		 */
-		if ((atomic_read(&lock->count) >= 0) && (atomic_xchg(&lock->count, -1) == 1))
+		if ((atomic_read(&lock->count) >= 0) &&
+		    (atomic_xchg(&lock->count, -1) == 1))
 			break;
 
 		/* Add waiting tasks to the end of the waitqueue (FIFO) */
@@ -94,11 +96,10 @@ skip_wait:
 	lock->owner = current();
 
 	spin_unlock_irqrestore(&lock->wait_lock, flags);
-
 }
 
-void mutex_unlock(struct mutex *lock) {
-
+void mutex_unlock(struct mutex *lock)
+{
 	queue_thread_t *curr;
 	bool need_resched = false;
 	unsigned long flags;
@@ -110,7 +111,7 @@ void mutex_unlock(struct mutex *lock) {
 	if (lock->recursive_count) {
 		lock->recursive_count--;
 		spin_unlock_irqrestore(&lock->wait_lock, flags);
-		return ;
+		return;
 	}
 	spin_unlock_irqrestore(&lock->wait_lock, flags);
 
@@ -131,7 +132,6 @@ void mutex_unlock(struct mutex *lock) {
 	flags = spin_lock_irqsave(&lock->wait_lock);
 
 	if (!list_empty(&lock->tcb_list)) {
-
 		/* Get the waiting the first entry of this associated waitqueue */
 		curr = list_first_entry(&lock->tcb_list, queue_thread_t, list);
 		need_resched = true;
@@ -139,7 +139,6 @@ void mutex_unlock(struct mutex *lock) {
 		list_del(&curr->list);
 
 		ready(curr->tcb);
-
 	}
 
 	spin_unlock_irqrestore(&lock->wait_lock, flags);
@@ -150,27 +149,25 @@ void mutex_unlock(struct mutex *lock) {
 /*
  * The following syscall implementation are a first attempt, mainly used for debugging kernel mutexes.
  */
-int do_mutex_lock(mutex_t *lock) {
+int do_mutex_lock(mutex_t *lock)
+{
 	mutex_lock(lock);
 
 	return 0;
 }
 
-int do_mutex_unlock(mutex_t *lock) {
+int do_mutex_unlock(mutex_t *lock)
+{
 	mutex_unlock(lock);
 
 	return 0;
 }
 
-void mutex_init(struct mutex *lock) {
-
+void mutex_init(struct mutex *lock)
+{
 	memset(lock, 0, sizeof(struct mutex));
 
 	INIT_LIST_HEAD(&lock->tcb_list);
 	atomic_set(&lock->count, 1);
 	spin_lock_init(&lock->wait_lock);
 }
-
-
-
-

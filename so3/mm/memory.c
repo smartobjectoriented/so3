@@ -53,28 +53,32 @@ static uint32_t kernel_size;
 /* Current available I/O range address */
 struct list_head io_maplist;
 
-void early_memory_init(void *fdt_paddr) {
+void early_memory_init(void *fdt_paddr)
+{
 	int offset;
 
 	/* Access to device tree */
-	offset = get_mem_info((void *) fdt_paddr, &mem_info);
+	offset = get_mem_info((void *)fdt_paddr, &mem_info);
 
 #ifndef CONFIG_AVZ
-	__fdt_addr = (void *) __va(fdt_paddr);
+	__fdt_addr = (void *)__va(fdt_paddr);
 #endif
 
 	if (offset >= 0)
-		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+		DBG("Found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M,
+		    mem_info.phys_base);
 }
 
-uint32_t get_kernel_size(void) {
+uint32_t get_kernel_size(void)
+{
 	return kernel_size;
 }
 
 /*
  * Get a free page. Return the physical address of the page (or 0 if not available).
  */
-addr_t get_free_page(void) {
+addr_t get_free_page(void)
+{
 	uint32_t loop_mark;
 	static uint32_t __next_free_page = 0;
 
@@ -94,7 +98,8 @@ addr_t get_free_page(void) {
 		}
 
 		/* Prepare to be ready fo the next request (or increment if not available */
-		__next_free_page = (__next_free_page + 1) % mem_info.avail_pages;
+		__next_free_page =
+			(__next_free_page + 1) % mem_info.avail_pages;
 
 	} while (__next_free_page != loop_mark);
 
@@ -107,7 +112,8 @@ addr_t get_free_page(void) {
 /*
  * Get a free page with a virtual mapping.
  */
-addr_t get_free_vpage(void) {
+addr_t get_free_vpage(void)
+{
 	addr_t paddr, vaddr;
 
 	paddr = get_free_page();
@@ -121,18 +127,20 @@ addr_t get_free_vpage(void) {
 /*
  * Release a page, mark as free.
  */
-void free_page(addr_t paddr) {
+void free_page(addr_t paddr)
+{
 	page_t *page;
 
 	spin_lock(&ft_lock);
 
-	page = (page_t *) phys_to_page(paddr);
+	page = (page_t *)phys_to_page(paddr);
 	page->free = true;
 
 	spin_unlock(&ft_lock);
 }
 
-void free_vpage(addr_t vaddr) {
+void free_vpage(addr_t vaddr)
+{
 	addr_t paddr;
 
 	paddr = virt_to_phys_pt(vaddr);
@@ -145,17 +153,18 @@ void free_vpage(addr_t vaddr) {
  * Search for a number of contiguous pages.
  * Returns 0 if not available.
  */
-addr_t get_contig_free_pages(uint32_t nrpages) {
+addr_t get_contig_free_pages(uint32_t nrpages)
+{
 	uint32_t i, base = 0;
 
 	spin_lock(&ft_lock);
 
 	for (i = 0; i < mem_info.avail_pages; i++) {
 		if (frame_table[i].free) {
-			if (i-base+1 == nrpages) {
+			if (i - base + 1 == nrpages) {
 				/* Set the page as busy */
 				for (i = 0; i < nrpages; i++)
-					frame_table[base+i].free = false;
+					frame_table[base + i].free = false;
 
 				spin_unlock(&ft_lock);
 
@@ -163,7 +172,7 @@ addr_t get_contig_free_pages(uint32_t nrpages) {
 				return page_to_phys(&frame_table[base]);
 			}
 		} else
-			base = i+1;
+			base = i + 1;
 	}
 
 	spin_unlock(&ft_lock);
@@ -175,7 +184,8 @@ addr_t get_contig_free_pages(uint32_t nrpages) {
  * Search for a number of contiguous physical and virtual pages.
  * Returns 0 if not available.
  */
-addr_t get_contig_free_vpages(uint32_t nrpages) {
+addr_t get_contig_free_vpages(uint32_t nrpages)
+{
 	addr_t vaddr, paddr;
 
 	paddr = get_contig_free_pages(nrpages);
@@ -186,23 +196,23 @@ addr_t get_contig_free_vpages(uint32_t nrpages) {
 	return vaddr;
 }
 
-
-void free_contig_pages(addr_t paddr, uint32_t nrpages) {
+void free_contig_pages(addr_t paddr, uint32_t nrpages)
+{
 	uint32_t i;
 	page_t *page;
 
 	spin_lock(&ft_lock);
 
-	page = (page_t *) phys_to_page(paddr);
+	page = (page_t *)phys_to_page(paddr);
 
 	for (i = 0; i < nrpages; i++)
 		(page + i)->free = true;
 
 	spin_unlock(&ft_lock);
-
 }
 
-void free_contig_vpages(addr_t vaddr, uint32_t nrpages) {
+void free_contig_vpages(addr_t vaddr, uint32_t nrpages)
+{
 	addr_t paddr;
 
 	paddr = virt_to_phys_pt(vaddr);
@@ -211,35 +221,40 @@ void free_contig_vpages(addr_t vaddr, uint32_t nrpages) {
 	free_contig_pages(paddr, nrpages);
 }
 
-void dump_frame_table(void) {
+void dump_frame_table(void)
+{
 	int i;
 
 	printk("** Dump of frame table contents **\n\n");
 
 	for (i = 0; i < mem_info.avail_pages; i++)
-		printk("  - Page address (phys) :%x, free: %d\n", virt_to_phys_pt((addr_t) &frame_table[i]), frame_table[i].free);
+		printk("  - Page address (phys) :%x, free: %d\n",
+		       virt_to_phys_pt((addr_t)&frame_table[i]),
+		       frame_table[i].free);
 }
 
 /*
  * I/O address space management
  */
-void dump_io_maplist(void) {
+void dump_io_maplist(void)
+{
 	io_map_t *cur = NULL;
 	struct list_head *pos;
 
 	printk("%s: ***** List of I/O mappings *****\n\n", __func__);
 
 	list_for_each(pos, &io_maplist) {
-
 		cur = list_entry(pos, io_map_t, list);
 
-		printk("    - vaddr: %x  mapped on   paddr: %x\n", cur->vaddr, cur->paddr);
+		printk("    - vaddr: %x  mapped on   paddr: %x\n", cur->vaddr,
+		       cur->paddr);
 		printk("          with size: %d bytes\n", cur->size);
 	}
 }
 
 /* Map a I/O address range to its physical range */
-addr_t io_map(addr_t phys, size_t size) {
+addr_t io_map(addr_t phys, size_t size)
+{
 	io_map_t *io_map;
 	struct list_head *pos;
 	io_map_t *cur = NULL;
@@ -277,7 +292,7 @@ addr_t io_map(addr_t phys, size_t size) {
 		}
 	}
 
-	io_map = (io_map_t *) malloc(sizeof(io_map_t));
+	io_map = (io_map_t *)malloc(sizeof(io_map_t));
 	ASSERT(io_map != NULL);
 
 	io_map->vaddr = target;
@@ -286,7 +301,6 @@ addr_t io_map(addr_t phys, size_t size) {
 
 	/* Insert the new entry before <cur> or if NULL at the tail of the list. */
 	if (cur != NULL) {
-
 		io_map->list.prev = pos->prev;
 		io_map->list.next = pos;
 
@@ -296,17 +310,16 @@ addr_t io_map(addr_t phys, size_t size) {
 	} else
 		list_add_tail(&io_map->list, &io_maplist);
 
-
 	create_mapping(NULL, io_map->vaddr, io_map->paddr, io_map->size, true);
 
 	return io_map->vaddr + offset;
-
 }
 
 /*
  * Try to find an io_map entry corresponding to a specific paddr .
  */
-io_map_t *find_io_map_by_paddr(addr_t paddr) {
+io_map_t *find_io_map_by_paddr(addr_t paddr)
+{
 	struct list_head *pos;
 	io_map_t *io_map;
 
@@ -322,7 +335,8 @@ io_map_t *find_io_map_by_paddr(addr_t paddr) {
 /*
  * Remove a mapping.
  */
-void io_unmap(addr_t vaddr) {
+void io_unmap(addr_t vaddr)
+{
 	io_map_t *cur = NULL;
 	struct list_head *pos, *q;
 
@@ -330,7 +344,6 @@ void io_unmap(addr_t vaddr) {
 	vaddr = vaddr & PAGE_MASK;
 
 	list_for_each_safe(pos, q, &io_maplist) {
-
 		cur = list_entry(pos, io_map_t, list);
 
 		if (cur->vaddr == vaddr) {
@@ -341,7 +354,8 @@ void io_unmap(addr_t vaddr) {
 	}
 
 	if (cur == NULL) {
-		lprintk("io_unmap failure: did not find entry for vaddr %x\n", vaddr);
+		lprintk("io_unmap failure: did not find entry for vaddr %x\n",
+			vaddr);
 		kernel_panic();
 	}
 
@@ -352,7 +366,8 @@ void io_unmap(addr_t vaddr) {
 #endif /* CONFIG_MMU */
 
 /* Initialize the frame table */
-void frame_table_init(addr_t frame_table_start) {
+void frame_table_init(addr_t frame_table_start)
+{
 	addr_t ft_phys;
 	uint32_t i, ft_length, ft_pages;
 	addr_t ft_pfn_end;
@@ -360,22 +375,25 @@ void frame_table_init(addr_t frame_table_start) {
 	/* The frame table (ft) is placed (page-aligned) right after the kernel region. */
 	ft_phys = ALIGN_UP(__pa(frame_table_start), PAGE_SIZE);
 
-	frame_table = (page_t *) __va(ft_phys);
+	frame_table = (page_t *)__va(ft_phys);
 
 	printk("SO3 Memory information:\n");
 
 	printk("  - Memory size : %d bytes\n", mem_info.size);
 
 	/* Size of the available memory (without the kernel region) */
-	mem_info.avail_pages = ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base), PAGE_SIZE) >> PAGE_SHIFT;
+	mem_info.avail_pages =
+		ALIGN_UP(mem_info.size - (ft_phys - mem_info.phys_base),
+			 PAGE_SIZE) >>
+		PAGE_SHIFT;
 
-	printk("  - Available pages: %d (%lx)\n", mem_info.avail_pages, mem_info.avail_pages);
+	printk("  - Available pages: %d (%lx)\n", mem_info.avail_pages,
+	       mem_info.avail_pages);
 
 	printk("  - Kernel size without frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
-			(ft_phys - mem_info.phys_base),
-			(ft_phys - mem_info.phys_base),
-			(ft_phys - mem_info.phys_base) / SZ_1M,
-			(ft_phys - mem_info.phys_base) >> PAGE_SHIFT);
+	       (ft_phys - mem_info.phys_base), (ft_phys - mem_info.phys_base),
+	       (ft_phys - mem_info.phys_base) / SZ_1M,
+	       (ft_phys - mem_info.phys_base) >> PAGE_SHIFT);
 
 	/* Determine the length of the frame table in bytes */
 	ft_length = mem_info.avail_pages * sizeof(page_t);
@@ -403,10 +421,15 @@ void frame_table_init(addr_t frame_table_start) {
 	/* First available pfn (right after the frame table) */
 	pfn_start = __pa(frame_table) >> PAGE_SHIFT;
 
-	printk("  - Kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n", kernel_size, kernel_size, kernel_size / SZ_1M, kernel_size >> PAGE_SHIFT);
-	printk("  - Number of available page frames: 0x%x\n", mem_info.avail_pages);
-	printk("  - Frame table size is: %d bytes meaning %d (0x%0x) page frames\n", ft_length, ft_pages, ft_pages);
-	printk("  - Page frame number of the first available page: 0x%x\n", pfn_start);
+	printk("  - Kernel size including frame table is: %d (0x%x) bytes, %d MB / 0x%x PFNs\n",
+	       kernel_size, kernel_size, kernel_size / SZ_1M,
+	       kernel_size >> PAGE_SHIFT);
+	printk("  - Number of available page frames: 0x%x\n",
+	       mem_info.avail_pages);
+	printk("  - Frame table size is: %d bytes meaning %d (0x%0x) page frames\n",
+	       ft_length, ft_pages, ft_pages);
+	printk("  - Page frame number of the first available page: 0x%x\n",
+	       pfn_start);
 
 	spin_lock_init(&ft_lock);
 }
@@ -415,7 +438,8 @@ void frame_table_init(addr_t frame_table_start) {
  * Main memory init function
  */
 
-void memory_init(void) {
+void memory_init(void)
+{
 #ifdef CONFIG_MMU
 
 #if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
@@ -434,27 +458,31 @@ void memory_init(void) {
 
 #ifdef CONFIG_MMU
 	lprintk("%s: Device tree virt addr: %lx\n", __func__, __fdt_addr);
-	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n", __func__, __fdt_addr, __end, fdt_totalsize(__fdt_addr));
+	lprintk("%s: relocating the device tree from 0x%x to 0x%p (size of %d bytes)\n",
+		__func__, __fdt_addr, __end, fdt_totalsize(__fdt_addr));
 
 	/* Move the device after the kernel stack (at &_end according to the linker script) */
-	fdt_move((const void *) __fdt_addr, __end, fdt_totalsize(__fdt_addr));
-	__fdt_addr = (addr_t *) __end;
+	fdt_move((const void *)__fdt_addr, __end, fdt_totalsize(__fdt_addr));
+	__fdt_addr = (addr_t *)__end;
 
 	/* Initialize the free page list */
-	frame_table_init(((addr_t) __end) + fdt_totalsize(__fdt_addr));
+	frame_table_init(((addr_t)__end) + fdt_totalsize(__fdt_addr));
 
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
 
 #if defined(CONFIG_ARCH_ARM32) && defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
 	/* Keep the installed vector table */
-	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) = *((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
+	*((uint32_t *)l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) =
+		*((uint32_t *)l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
 #endif
 
-	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, mem_info.phys_base, get_kernel_size(), false);
+	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR,
+		       mem_info.phys_base, get_kernel_size(), false);
 
 	/* Mapping UART I/O for debugging purposes */
-	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
+	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR,
+		       CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
 
 #ifdef CONFIG_AVZ
 #warning For ARM64VT we still need fo address the ME in the hypervisor...
@@ -462,7 +490,8 @@ void memory_init(void) {
 #ifndef CONFIG_SOO
 
 	/* Finally, create the agency domain area and for being able to read the device tree.*/
-	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET, memslot[MEMSLOT_AGENCY].base_paddr,
+	create_mapping(new_sys_root_pgtable, AGENCY_VOFFSET,
+		       memslot[MEMSLOT_AGENCY].base_paddr,
 		       memslot[MEMSLOT_AGENCY].size, false);
 
 #endif /* !CONFIG_SOO */
@@ -486,7 +515,8 @@ void memory_init(void) {
 
 	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
 
-	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
+	memcpy((void *)VECTOR_VADDR, (void *)&__vectors_start,
+	       (void *)&__vectors_end - (void *)&__vectors_start);
 #endif
 
 	set_pgtable(__sys_root_pgtable);
@@ -499,7 +529,8 @@ void memory_init(void) {
 /**
  * Re-adjust PFNs used for various purposes.
  */
-void readjust_io_map(long pfn_offset) {
+void readjust_io_map(long pfn_offset)
+{
 	io_map_t *io_map;
 	struct list_head *pos;
 	addr_t offset;
@@ -512,9 +543,9 @@ void readjust_io_map(long pfn_offset) {
 		io_map = list_entry(pos, io_map_t, list);
 
 		offset = io_map->paddr & (PAGE_SIZE - 1);
-		io_map->paddr = pfn_to_phys(phys_to_pfn(io_map->paddr) + pfn_offset);
+		io_map->paddr =
+			pfn_to_phys(phys_to_pfn(io_map->paddr) + pfn_offset);
 		io_map->paddr += offset;
-
 	}
 
 	/* Re-adjust other PFNs used for frametable management. */

@@ -20,11 +20,10 @@
 #define __SCHED_IF_H__
 
 struct schedule_data {
-    spinlock_t    schedule_lock;  /* spinlock protecting curr        */
-    struct timer  s_timer;        /* scheduling timer                */
+	spinlock_t schedule_lock; /* spinlock protecting curr        */
+	struct timer s_timer; /* scheduling timer                */
 
-    unsigned int current_dom;
-
+	unsigned int current_dom;
 };
 
 struct task_slice {
@@ -33,13 +32,13 @@ struct task_slice {
 };
 
 struct scheduler {
-	char *name;             /* full name for this scheduler      */
+	char *name; /* full name for this scheduler      */
 
-	void (*init)  (void);
-	void (*sleep) (struct domain *);
-	void (*wake)  (struct domain *);
+	void (*init)(void);
+	void (*sleep)(struct domain *);
+	void (*wake)(struct domain *);
 
-	struct task_slice (*do_schedule) (void);
+	struct task_slice (*do_schedule)(void);
 
 	struct schedule_data sched_data;
 };

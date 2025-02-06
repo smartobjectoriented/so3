@@ -63,8 +63,8 @@ static int menu_width, item_x;
 /*
  * Print menu item
  */
-static void do_print_item(WINDOW * win, const char *item, int line_y,
-                          int selected, int hotkey)
+static void do_print_item(WINDOW *win, const char *item, int line_y,
+			  int selected, int hotkey)
 {
 	int j;
 	char *menu_item = malloc(menu_width + 1);
@@ -88,8 +88,8 @@ static void do_print_item(WINDOW * win, const char *item, int line_y,
 	wattrset(win, selected ? dlg.item_selected.atr : dlg.item.atr);
 	mvwaddstr(win, line_y, item_x, menu_item);
 	if (hotkey) {
-		wattrset(win, selected ? dlg.tag_key_selected.atr
-			 : dlg.tag_key.atr);
+		wattrset(win,
+			 selected ? dlg.tag_key_selected.atr : dlg.tag_key.atr);
 		mvwaddch(win, line_y, item_x + j, menu_item[j]);
 	}
 	if (selected) {
@@ -99,16 +99,17 @@ static void do_print_item(WINDOW * win, const char *item, int line_y,
 	wrefresh(win);
 }
 
-#define print_item(index, choice, selected)				\
-do {									\
-	item_set(index);						\
-	do_print_item(menu, item_str(), choice, selected, !item_is_tag(':')); \
-} while (0)
+#define print_item(index, choice, selected)                       \
+	do {                                                      \
+		item_set(index);                                  \
+		do_print_item(menu, item_str(), choice, selected, \
+			      !item_is_tag(':'));                 \
+	} while (0)
 
 /*
  * Print the scroll indicators.
  */
-static void print_arrows(WINDOW * win, int item_no, int scroll, int y, int x,
+static void print_arrows(WINDOW *win, int item_no, int scroll, int y, int x,
 			 int height)
 {
 	int cur_y, cur_x;
@@ -152,7 +153,7 @@ static void print_arrows(WINDOW * win, int item_no, int scroll, int y, int x,
 /*
  * Display the termination buttons.
  */
-static void print_buttons(WINDOW * win, int height, int width, int selected)
+static void print_buttons(WINDOW *win, int height, int width, int selected)
 {
 	int x = width / 2 - 16;
 	int y = height - 2;
@@ -179,13 +180,13 @@ static void do_scroll(WINDOW *win, int *scroll, int n)
 /*
  * Display a menu for choosing among a number of options
  */
-int dialog_menu(const char *title, const char *prompt,
-                const void *selected, int *s_scroll)
+int dialog_menu(const char *title, const char *prompt, const void *selected,
+		int *s_scroll)
 {
 	int i, j, x, y, box_x, box_y;
 	int height, width, menu_height;
 	int key = 0, button = 0, scroll = 0, choice = 0;
-	int first_item =  0, max_choice;
+	int first_item = 0, max_choice;
 	WINDOW *dialog, *menu;
 
 do_resize:
@@ -195,7 +196,7 @@ do_resize:
 		return -ERRDISPLAYTOOSMALL;
 
 	height -= 4;
-	width  -= 5;
+	width -= 5;
 	menu_height = height - 10;
 
 	max_choice = MIN(menu_height, item_count());
@@ -209,8 +210,7 @@ do_resize:
 	dialog = newwin(height, width, y, x);
 	keypad(dialog, TRUE);
 
-	draw_box(dialog, 0, 0, height, width,
-		 dlg.dialog.atr, dlg.border.atr);
+	draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
 	wattrset(dialog, dlg.border.atr);
 	mvwaddch(dialog, height - 3, 0, ACS_LTEE);
 	for (i = 0; i < width - 2; i++)
@@ -229,8 +229,8 @@ do_resize:
 	box_x = (width - menu_width) / 2 - 1;
 
 	/* create new window for the menu */
-	menu = subwin(dialog, menu_height, menu_width,
-		      y + box_y + 1, x + box_x + 1);
+	menu = subwin(dialog, menu_height, menu_width, y + box_y + 1,
+		      x + box_x + 1);
 	keypad(menu, TRUE);
 
 	/* draw a box around the menu items */
@@ -243,13 +243,12 @@ do_resize:
 		item_x = 4;
 
 	/* Set choice to default item */
-	item_foreach()
-		if (selected && (selected == item_data()))
-			choice = item_n();
+	item_foreach() if (selected && (selected == item_data()))
+		choice = item_n();
 	/* get the saved scroll info */
 	scroll = *s_scroll;
 	if ((scroll <= choice) && (scroll + max_choice > choice) &&
-	   (scroll >= 0) && (scroll + max_choice <= item_count())) {
+	    (scroll >= 0) && (scroll + max_choice <= item_count())) {
 		first_item = scroll;
 		choice = choice - scroll;
 	} else {
@@ -270,8 +269,8 @@ do_resize:
 
 	wnoutrefresh(menu);
 
-	print_arrows(dialog, item_count(), scroll,
-		     box_y, box_x + item_x + 1, menu_height);
+	print_arrows(dialog, item_count(), scroll, box_y, box_x + item_x + 1,
+		     menu_height);
 
 	print_buttons(dialog, height, width, 0);
 	wmove(menu, choice, item_x + 1);
@@ -301,10 +300,9 @@ do_resize:
 				}
 		}
 
-		if (i < max_choice ||
-		    key == KEY_UP || key == KEY_DOWN ||
-		    key == '-' || key == '+' ||
-		    key == KEY_PPAGE || key == KEY_NPAGE) {
+		if (i < max_choice || key == KEY_UP || key == KEY_DOWN ||
+		    key == '-' || key == '+' || key == KEY_PPAGE ||
+		    key == KEY_NPAGE) {
 			/* Remove highligt of current item */
 			print_item(scroll + choice, choice, FALSE);
 
@@ -318,17 +316,18 @@ do_resize:
 					choice = MAX(choice - 1, 0);
 
 			} else if (key == KEY_DOWN || key == '+') {
-				print_item(scroll+choice, choice, FALSE);
+				print_item(scroll + choice, choice, FALSE);
 
 				if ((choice > max_choice - 3) &&
 				    (scroll + max_choice < item_count())) {
 					/* Scroll menu up */
 					do_scroll(menu, &scroll, 1);
 
-					print_item(scroll+max_choice - 1,
+					print_item(scroll + max_choice - 1,
 						   max_choice - 1, FALSE);
 				} else
-					choice = MIN(choice + 1, max_choice - 1);
+					choice =
+						MIN(choice + 1, max_choice - 1);
 
 			} else if (key == KEY_PPAGE) {
 				scrollok(menu, TRUE);
@@ -344,10 +343,12 @@ do_resize:
 
 			} else if (key == KEY_NPAGE) {
 				for (i = 0; (i < max_choice); i++) {
-					if (scroll + max_choice < item_count()) {
+					if (scroll + max_choice <
+					    item_count()) {
 						do_scroll(menu, &scroll, 1);
-						print_item(scroll+max_choice-1,
-							   max_choice - 1, FALSE);
+						print_item(
+							scroll + max_choice - 1,
+							max_choice - 1, FALSE);
 					} else {
 						if (choice + 1 < max_choice)
 							choice++;
@@ -358,21 +359,22 @@ do_resize:
 
 			print_item(scroll + choice, choice, TRUE);
 
-			print_arrows(dialog, item_count(), scroll,
-				     box_y, box_x + item_x + 1, menu_height);
+			print_arrows(dialog, item_count(), scroll, box_y,
+				     box_x + item_x + 1, menu_height);
 
 			wnoutrefresh(dialog);
 			wrefresh(menu);
 
-			continue;	/* wait for another key press */
+			continue; /* wait for another key press */
 		}
 
 		switch (key) {
 		case KEY_LEFT:
 		case TAB:
 		case KEY_RIGHT:
-			button = ((key == KEY_LEFT ? --button : ++button) < 0)
-			    ? 2 : (button > 2 ? 0 : button);
+			button = ((key == KEY_LEFT ? --button : ++button) < 0) ?
+					 2 :
+					 (button > 2 ? 0 : button);
 
 			print_buttons(dialog, height, width, button);
 			wrefresh(menu);
@@ -430,5 +432,5 @@ do_resize:
 	}
 	delwin(menu);
 	delwin(dialog);
-	return key;		/* ESC pressed */
+	return key; /* ESC pressed */
 }

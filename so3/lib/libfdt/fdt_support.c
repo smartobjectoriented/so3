@@ -12,7 +12,7 @@
 #include <libfdt/fdt_support.h>
 #include <libfdt/libfdt.h>
 
-#define printf( ... )
+#define printf(...)
 
 /*
  * Get cells len in bytes
@@ -53,8 +53,8 @@ static void write_cell(u8 *addr, u64 val, int size)
  * Convenience function to find a node and return it's property or a
  * default value if it doesn't exist.
  */
-u32 fdt_getprop_u32_default(const void *fdt, const char *path,
-				const char *prop, const u32 dflt)
+u32 fdt_getprop_u32_default(const void *fdt, const char *path, const char *prop,
+			    const u32 dflt)
 {
 	const fdt32_t *val;
 	int off;
@@ -98,14 +98,14 @@ int fdt_find_and_setprop(void *fdt, const char *node, const char *prop,
 
 int fdt_initrd(void *fdt, ulong initrd_start, ulong initrd_end, int force)
 {
-	int   nodeoffset, addr_cell_len;
-	int   err, j, total;
-	fdt64_t  tmp;
+	int nodeoffset, addr_cell_len;
+	int err, j, total;
+	fdt64_t tmp;
 	const char *path;
 	uint64_t addr, size;
 
 	/* Find the "chosen" node.  */
-	nodeoffset = fdt_path_offset (fdt, "/chosen");
+	nodeoffset = fdt_path_offset(fdt, "/chosen");
 
 	/* If there is no "chosen" node in the blob return */
 	if (nodeoffset < 0) {
@@ -142,20 +142,20 @@ int fdt_initrd(void *fdt, ulong initrd_start, ulong initrd_end, int force)
 	path = fdt_getprop(fdt, nodeoffset, "linux,initrd-start", NULL);
 	if ((path == NULL) || force) {
 		write_cell((u8 *)&tmp, initrd_start, addr_cell_len);
-		err = fdt_setprop(fdt, nodeoffset,
-			"linux,initrd-start", &tmp, addr_cell_len);
+		err = fdt_setprop(fdt, nodeoffset, "linux,initrd-start", &tmp,
+				  addr_cell_len);
 		if (err < 0) {
 			printf("WARNING: "
-				"could not set linux,initrd-start %s.\n",
-				fdt_strerror(err));
+			       "could not set linux,initrd-start %s.\n",
+			       fdt_strerror(err));
 			return err;
 		}
 		write_cell((u8 *)&tmp, initrd_end, addr_cell_len);
-		err = fdt_setprop(fdt, nodeoffset,
-			"linux,initrd-end", &tmp, addr_cell_len);
+		err = fdt_setprop(fdt, nodeoffset, "linux,initrd-end", &tmp,
+				  addr_cell_len);
 		if (err < 0) {
 			printf("WARNING: could not set linux,initrd-end %s.\n",
-				fdt_strerror(err));
+			       fdt_strerror(err));
 			return err;
 		}
 	}
@@ -189,8 +189,8 @@ int fdt_resize(void *blob)
 	 * for the fdt itself and 4 for a possible initrd
 	 * ((initrd-start + initrd-end) * 2 (name & value))
 	 */
-	actualsize = fdt_off_dt_strings(blob) +
-		fdt_size_dt_strings(blob) + 5 * sizeof(struct fdt_reserve_entry);
+	actualsize = fdt_off_dt_strings(blob) + fdt_size_dt_strings(blob) +
+		     5 * sizeof(struct fdt_reserve_entry);
 
 	/* Make it so the fdt ends on a page boundary */
 	actualsize = ALIGN_UP(actualsize + ((uintptr_t)blob & 0xfff), 0x1000);
@@ -206,4 +206,3 @@ int fdt_resize(void *blob)
 
 	return actualsize;
 }
-

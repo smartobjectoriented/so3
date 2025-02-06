@@ -18,34 +18,35 @@
 
 #include <device/irq.h>
 
-
 /* Register address offsets */
-#define KMI_CR     0x00
-#define KMI_STAT   0x04
-#define KMI_DATA   0x08
+#define KMI_CR 0x00
+#define KMI_STAT 0x04
+#define KMI_DATA 0x08
 #define KMI_CLKDIV 0x0c
-#define KMI_IR     0x10
+#define KMI_IR 0x10
 
 /* Control register values */
-#define KMICR_TYPE     (0 << 5) /* PS2/AT mode */
+#define KMICR_TYPE (0 << 5) /* PS2/AT mode */
 #define KMICR_RXINTREN (1 << 4) /* enable receiver interrupt */
 #define KMICR_TXINTREN (0 << 3) /* disable transmitter interrupt */
-#define KMICR_EN       (1 << 2) /* enable interface */
-#define KMICR_FD       (0 << 1)
-#define KMICR_FC       (0 << 0)
+#define KMICR_EN (1 << 2) /* enable interface */
+#define KMICR_FD (0 << 1)
+#define KMICR_FC (0 << 0)
 
 /* Status register values */
-#define KMISTAT_TXEMPTY  (1 << 6) /* transmit register is empty, can be written */
-#define KMISTAT_TXBUSY   (1 << 5) /* data is being sent */
-#define KMISTAT_RXFULL   (1 << 4) /* receive register is full, can be read */
-#define KMISTAT_RXBUSY   (1 << 3) /* data is being received */
+#define KMISTAT_TXEMPTY \
+	(1 << 6) /* transmit register is empty, can be written */
+#define KMISTAT_TXBUSY (1 << 5) /* data is being sent */
+#define KMISTAT_RXFULL (1 << 4) /* receive register is full, can be read */
+#define KMISTAT_RXBUSY (1 << 3) /* data is being received */
 #define KMISTAT_RXPARITY (1 << 2) /* parity of last received byte */
-#define KMISTAT_IC       (1 << 1)
-#define KMISTAT_ID       (1 << 0)
+#define KMISTAT_IC (1 << 1)
+#define KMISTAT_ID (1 << 0)
 
 /* Interrupt status register values */
 #define KMIIR_TXINTR (1 << 1) /* transmitter interrupt asserted */
 #define KMIIR_RXINTR (1 << 0) /* receiver interrupt asserted */
 
 void pl050_write(void *base, uint8_t data);
-void pl050_init(void *base, irq_def_t *irq_def, irq_return_t (*isr)(int, void *));
+void pl050_init(void *base, irq_def_t *irq_def,
+		irq_return_t (*isr)(int, void *));

@@ -10,14 +10,14 @@
 #define LKC_DIRECT_LINK
 #include "lkc.h"
 
-static char *escape(const char* text, char *bf, int len)
+static char *escape(const char *text, char *bf, int len)
 {
 	char *bfp = bf;
 	int multiline = strchr(text, '\n') != NULL;
 	int eol = 0;
 	int textlen = strlen(text);
 
-	if ((textlen > 0) && (text[textlen-1] == '\n'))
+	if ((textlen > 0) && (text[textlen - 1] == '\n'))
 		eol = 1;
 
 	*bfp++ = '"';
@@ -42,8 +42,7 @@ static char *escape(const char* text, char *bf, int len)
 			len -= 5;
 			++text;
 			goto next;
-		}
-		else if (*text == '\\') {
+		} else if (*text == '\\') {
 			*bfp++ = '\\';
 			len--;
 		}
@@ -74,17 +73,17 @@ static struct file_line *file_line__new(const char *file, int lineno)
 	if (self == NULL)
 		goto out;
 
-	self->file   = file;
+	self->file = file;
 	self->lineno = lineno;
-	self->next   = NULL;
+	self->next = NULL;
 out:
 	return self;
 }
 
 struct message {
-	const char	 *msg;
-	const char	 *option;
-	struct message	 *next;
+	const char *msg;
+	const char *option;
+	struct message *next;
 	struct file_line *files;
 };
 
@@ -140,7 +139,7 @@ static int message__add_file_line(struct message *self, const char *file,
 	if (fl == NULL)
 		goto out;
 
-	fl->next    = self->files;
+	fl->next = self->files;
 	self->files = fl;
 	rc = 0;
 out:
@@ -161,7 +160,7 @@ static int message__add(const char *msg, char *option, const char *file,
 		m = message__new(escaped, option, file, lineno);
 
 		if (m != NULL) {
-			m->next	      = message__list;
+			m->next = message__list;
 			message__list = m;
 		} else
 			rc = -1;
@@ -179,7 +178,8 @@ static void menu_build_message_list(struct menu *menu)
 
 	if (menu->sym != NULL && menu_has_help(menu))
 		message__add(menu_get_help(menu), menu->sym->name,
-			     menu->file == NULL ? "Root Menu" : menu->file->name,
+			     menu->file == NULL ? "Root Menu" :
+						  menu->file->name,
 			     menu->lineno);
 
 	for (child = menu->list; child != NULL; child = child->next)
@@ -211,7 +211,8 @@ static void message__print_gettext_msgid_msgstr(struct message *self)
 	message__print_file_lineno(self);
 
 	printf("msgid %s\n"
-	       "msgstr \"\"\n", self->msg);
+	       "msgstr \"\"\n",
+	       self->msg);
 }
 
 static void menu__xgettext(void)

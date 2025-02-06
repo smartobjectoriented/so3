@@ -35,22 +35,22 @@
 #include <avz/uapi/avz.h>
 
 /* VCPU is currently running on a physical CPU. */
-#define RUNSTATE_running  0
+#define RUNSTATE_running 0
 
 /* VCPU is runnable, but not currently scheduled on any physical CPU. */
 #define RUNSTATE_runnable 1
 
 /* VCPU is blocked (a.k.a. idle). It is therefore not runnable. */
-#define RUNSTATE_blocked  2
+#define RUNSTATE_blocked 2
 
 /* VCPU is offline, not blocked and not runnable */
-#define RUNSTATE_offline  3
+#define RUNSTATE_offline 3
 
 /*
  * Voluntarily yield the CPU.
  * @arg == NULL.
  */
-#define SCHEDOP_yield       0
+#define SCHEDOP_yield 0
 
 /*
  * Block execution of this VCPU until an event is received for processing.
@@ -59,7 +59,7 @@
  * VCPU. This avoids a "wakeup waiting" race.
  * @arg == NULL.
  */
-#define SCHEDOP_block       1
+#define SCHEDOP_block 1
 
 /* A global pointer to the initial domain (Agency). */
 extern struct domain *agency;
@@ -67,7 +67,7 @@ extern struct domain *domains[];
 
 DECLARE_PER_CPU(struct domain *, current_domain);
 
-void  evtchn_init(struct domain *d); /* from domain_create */
+void evtchn_init(struct domain *d); /* from domain_create */
 void evtchn_destroy(struct domain *d); /* from domain_kill */
 void evtchn_destroy_final(struct domain *d); /* from complete_domain_destroy */
 
@@ -78,7 +78,7 @@ void evtchn_destroy_final(struct domain *d); /* from complete_domain_destroy */
 
 #define is_idle_domain(d) ((d)->avz_shared->domID == DOMID_IDLE)
 
-#define DOMAIN_DESTROYED (1<<31) /* assumes atomic_t is >= 32 bits */
+#define DOMAIN_DESTROYED (1 << 31) /* assumes atomic_t is >= 32 bits */
 
 /*
  * Creation of new domain context associated to the agency or a Mobile Entity.
@@ -93,16 +93,18 @@ void domain_resume(struct domain *d);
 
 extern void periodic_timer_work(struct domain *);
 
-#define set_current_state(_s) do { current->state = (_s); } while (0)
+#define set_current_state(_s)          \
+	do {                           \
+		current->state = (_s); \
+	} while (0)
 void domain_scheduler_init(void);
 
-int  sched_init_domain(struct domain *d, unsigned int processor);
+int sched_init_domain(struct domain *d, unsigned int processor);
 void sched_destroy_domain(struct domain *d);
 
 void vcpu_wake(struct domain *d);
 void vcpu_sleep_nosync(struct domain *d);
 void vcpu_sleep_sync(struct domain *d);
-
 
 /*
  * Called by the scheduler to switch to another VCPU. This function must
@@ -115,11 +117,13 @@ void context_switch(struct domain *prev, struct domain *next);
 
 void startup_cpu_idle_loop(void);
 
-static inline void set_current_domain(struct domain *d) {
+static inline void set_current_domain(struct domain *d)
+{
 	per_cpu(current_domain, smp_processor_id()) = d;
 }
 
-static inline struct domain *current_domain(void) {
+static inline struct domain *current_domain(void)
+{
 	return per_cpu(current_domain, smp_processor_id());
 }
 
@@ -128,13 +132,13 @@ static inline struct domain *current_domain(void) {
 /*
  * Per-VCPU pause flags.
  */
- /* Domain is blocked waiting for an event. */
-#define _VPF_blocked         0
-#define VPF_blocked          (1UL<<_VPF_blocked)
+/* Domain is blocked waiting for an event. */
+#define _VPF_blocked 0
+#define VPF_blocked (1UL << _VPF_blocked)
 
 /* VCPU is offline. */
-#define _VPF_down            1
-#define VPF_down             (1UL<<_VPF_down)
+#define _VPF_down 1
+#define VPF_down (1UL << _VPF_down)
 
 void vcpu_unblock(struct domain *v);
 void vcpu_pause(struct domain *v);
@@ -151,4 +155,3 @@ void vcpu_restore_context(struct domain *d);
 struct task_slice flip_do_schedule(void);
 
 #endif /* __SCHED_H__ */
-

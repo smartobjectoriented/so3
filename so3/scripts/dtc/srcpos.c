@@ -12,15 +12,15 @@
 
 /* A node in our list of directories to search for source/include files */
 struct search_path {
-	struct search_path *next;	/* next node in list, NULL for end */
-	const char *dirname;		/* name of directory to search */
+	struct search_path *next; /* next node in list, NULL for end */
+	const char *dirname; /* name of directory to search */
 };
 
 /* This is the list of directories that we search for source files */
 static struct search_path *search_path_head, **search_path_tail;
 
 /* Detect infinite include recursion. */
-#define MAX_SRCFILE_DEPTH     (100)
+#define MAX_SRCFILE_DEPTH (100)
 static int srcfile_depth; /* = 0 */
 
 static char *get_dirname(const char *path)
@@ -250,8 +250,7 @@ void srcpos_update(struct srcpos *pos, const char *text, int len)
 	pos->last_column = current_srcfile->colno;
 }
 
-struct srcpos *
-srcpos_copy(struct srcpos *pos)
+struct srcpos *srcpos_copy(struct srcpos *pos)
 {
 	struct srcpos *pos_new;
 	struct srcfile_state *srcfile_state;
@@ -278,13 +277,13 @@ struct srcpos *srcpos_extend(struct srcpos *pos, struct srcpos *newtail)
 	if (!pos)
 		return newtail;
 
-	for (p = pos; p->next != NULL; p = p->next);
+	for (p = pos; p->next != NULL; p = p->next)
+		;
 	p->next = newtail;
 	return pos;
 }
 
-char *
-srcpos_string(struct srcpos *pos)
+char *srcpos_string(struct srcpos *pos)
 {
 	const char *fname = "<no-file>";
 	char *pos_str;
@@ -292,24 +291,21 @@ srcpos_string(struct srcpos *pos)
 	if (pos->file && pos->file->name)
 		fname = pos->file->name;
 
-
 	if (pos->first_line != pos->last_line)
-		xasprintf(&pos_str, "%s:%d.%d-%d.%d", fname,
-			  pos->first_line, pos->first_column,
-			  pos->last_line, pos->last_column);
+		xasprintf(&pos_str, "%s:%d.%d-%d.%d", fname, pos->first_line,
+			  pos->first_column, pos->last_line, pos->last_column);
 	else if (pos->first_column != pos->last_column)
-		xasprintf(&pos_str, "%s:%d.%d-%d", fname,
-			  pos->first_line, pos->first_column,
-			  pos->last_column);
+		xasprintf(&pos_str, "%s:%d.%d-%d", fname, pos->first_line,
+			  pos->first_column, pos->last_column);
 	else
-		xasprintf(&pos_str, "%s:%d.%d", fname,
-			  pos->first_line, pos->first_column);
+		xasprintf(&pos_str, "%s:%d.%d", fname, pos->first_line,
+			  pos->first_column);
 
 	return pos_str;
 }
 
-static char *
-srcpos_string_comment(struct srcpos *pos, bool first_line, int level)
+static char *srcpos_string_comment(struct srcpos *pos, bool first_line,
+				   int level)
 {
 	char *pos_str, *fname, *first, *rest;
 	bool fresh_fname = false;
@@ -338,9 +334,8 @@ srcpos_string_comment(struct srcpos *pos, bool first_line, int level)
 	}
 
 	if (level > 1)
-		xasprintf(&first, "%s:%d:%d-%d:%d", fname,
-			  pos->first_line, pos->first_column,
-			  pos->last_line, pos->last_column);
+		xasprintf(&first, "%s:%d:%d-%d:%d", fname, pos->first_line,
+			  pos->first_column, pos->last_line, pos->last_column);
 	else
 		xasprintf(&first, "%s:%d", fname,
 			  first_line ? pos->first_line : pos->last_line);
@@ -370,8 +365,8 @@ char *srcpos_string_last(struct srcpos *pos, int level)
 	return srcpos_string_comment(pos, false, level);
 }
 
-void srcpos_verror(struct srcpos *pos, const char *prefix,
-		   const char *fmt, va_list va)
+void srcpos_verror(struct srcpos *pos, const char *prefix, const char *fmt,
+		   va_list va)
 {
 	char *srcstr;
 
@@ -384,8 +379,7 @@ void srcpos_verror(struct srcpos *pos, const char *prefix,
 	free(srcstr);
 }
 
-void srcpos_error(struct srcpos *pos, const char *prefix,
-		  const char *fmt, ...)
+void srcpos_error(struct srcpos *pos, const char *prefix, const char *fmt, ...)
 {
 	va_list va;
 

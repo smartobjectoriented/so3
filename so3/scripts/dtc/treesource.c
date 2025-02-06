@@ -41,9 +41,8 @@ static void write_prefix(FILE *f, int level)
 
 static bool isstring(char c)
 {
-	return (isprint((unsigned char)c)
-		|| (c == '\0')
-		|| strchr("\a\b\t\n\v\f\r", c));
+	return (isprint((unsigned char)c) || (c == '\0') ||
+		strchr("\a\b\t\n\v\f\r", c));
 }
 
 static void write_propval_string(FILE *f, const char *s, size_t len)
@@ -93,7 +92,7 @@ static void write_propval_string(FILE *f, const char *s, size_t len)
 			if (isprint((unsigned char)c))
 				fprintf(f, "%c", c);
 			else
-				fprintf(f, "\\x%02"PRIx8, c);
+				fprintf(f, "\\x%02" PRIx8, c);
 		}
 	}
 	fprintf(f, "\"");
@@ -107,16 +106,19 @@ static void write_propval_int(FILE *f, const char *p, size_t len, size_t width)
 	for (; p < end; p += width) {
 		switch (width) {
 		case 1:
-			fprintf(f, "%02"PRIx8, *(const uint8_t*)p);
+			fprintf(f, "%02" PRIx8, *(const uint8_t *)p);
 			break;
 		case 2:
-			fprintf(f, "0x%02"PRIx16, fdt16_to_cpu(*(const fdt16_t*)p));
+			fprintf(f, "0x%02" PRIx16,
+				fdt16_to_cpu(*(const fdt16_t *)p));
 			break;
 		case 4:
-			fprintf(f, "0x%02"PRIx32, fdt32_to_cpu(*(const fdt32_t*)p));
+			fprintf(f, "0x%02" PRIx32,
+				fdt32_to_cpu(*(const fdt32_t *)p));
 			break;
 		case 8:
-			fprintf(f, "0x%02"PRIx64, fdt64_to_cpu(*(const fdt64_t*)p));
+			fprintf(f, "0x%02" PRIx64,
+				fdt64_to_cpu(*(const fdt64_t *)p));
 			break;
 		}
 		if (p + width < end)
@@ -146,18 +148,13 @@ size_t type_marker_length(struct marker *m)
 }
 
 static const char *delim_start[] = {
-	[TYPE_UINT8] = "[",
-	[TYPE_UINT16] = "/bits/ 16 <",
-	[TYPE_UINT32] = "<",
-	[TYPE_UINT64] = "/bits/ 64 <",
+	[TYPE_UINT8] = "[",  [TYPE_UINT16] = "/bits/ 16 <",
+	[TYPE_UINT32] = "<", [TYPE_UINT64] = "/bits/ 64 <",
 	[TYPE_STRING] = "",
 };
 static const char *delim_end[] = {
-	[TYPE_UINT8] = "]",
-	[TYPE_UINT16] = ">",
-	[TYPE_UINT32] = ">",
-	[TYPE_UINT64] = ">",
-	[TYPE_STRING] = "",
+	[TYPE_UINT8] = "]",  [TYPE_UINT16] = ">", [TYPE_UINT32] = ">",
+	[TYPE_UINT64] = ">", [TYPE_STRING] = "",
 };
 
 static enum markertype guess_value_type(struct property *prop)
@@ -170,21 +167,22 @@ static enum markertype guess_value_type(struct property *prop)
 	int i;
 
 	for (i = 0; i < len; i++) {
-		if (! isstring(p[i]))
+		if (!isstring(p[i]))
 			nnotstring++;
 		if (p[i] == '\0')
 			nnul++;
 	}
 
-	for_each_marker_of_type(m, LABEL) {
+	for_each_marker_of_type(m, LABEL)
+	{
 		if ((m->offset > 0) && (prop->val.val[m->offset - 1] != '\0'))
 			nnotstringlbl++;
 		if ((m->offset % sizeof(cell_t)) != 0)
 			nnotcelllbl++;
 	}
 
-	if ((p[len-1] == '\0') && (nnotstring == 0) && (nnul < (len-nnul))
-	    && (nnotstringlbl == 0)) {
+	if ((p[len - 1] == '\0') && (nnotstring == 0) &&
+	    (nnul < (len - nnul)) && (nnotstringlbl == 0)) {
 		return TYPE_STRING;
 	} else if (((len % sizeof(cell_t)) == 0) && (nnotcelllbl == 0)) {
 		return TYPE_UINT32;
@@ -225,9 +223,11 @@ static void write_propval(FILE *f, struct property *prop)
 		m = &dummy_marker;
 	}
 
-	for_each_marker(m) {
-		size_t chunk_len = (m->next ? m->next->offset : len) - m->offset;
-		size_t data_len = type_marker_length(m) ? : len - m->offset;
+	for_each_marker(m)
+	{
+		size_t chunk_len =
+			(m->next ? m->next->offset : len) - m->offset;
+		size_t data_len = type_marker_length(m) ?: len - m->offset;
 		const char *p = &prop->val.val[m->offset];
 
 		if (has_data_type_information(m)) {
@@ -243,7 +243,7 @@ static void write_propval(FILE *f, struct property *prop)
 			continue;
 		}
 
-		switch(emit_type) {
+		switch (emit_type) {
 		case TYPE_UINT16:
 			write_propval_int(f, p, chunk_len, 2);
 			break;
@@ -263,7 +263,7 @@ static void write_propval(FILE *f, struct property *prop)
 		if (chunk_len == data_len) {
 			size_t pos = m->offset + chunk_len;
 			fprintf(f, pos == len ? "%s" : "%s,",
-			        delim_end[emit_type] ? : "");
+				delim_end[emit_type] ?: "");
 			emit_type = TYPE_NONE;
 		}
 	}
@@ -286,8 +286,7 @@ static void write_tree_source_node(FILE *f, struct node *tree, int level)
 	char *srcstr;
 
 	write_prefix(f, level);
-	for_each_label(tree->labels, l)
-		fprintf(f, "%s: ", l->label);
+	for_each_label(tree->labels, l) fprintf(f, "%s: ", l->label);
 	if (tree->name && (*tree->name))
 		fprintf(f, "%s {", tree->name);
 	else
@@ -302,16 +301,17 @@ static void write_tree_source_node(FILE *f, struct node *tree, int level)
 	}
 	fprintf(f, "\n");
 
-	for_each_property(tree, prop) {
-		write_prefix(f, level+1);
-		for_each_label(prop->labels, l)
-			fprintf(f, "%s: ", l->label);
+	for_each_property(tree, prop)
+	{
+		write_prefix(f, level + 1);
+		for_each_label(prop->labels, l) fprintf(f, "%s: ", l->label);
 		fprintf(f, "%s", prop->name);
 		write_propval(f, prop);
 	}
-	for_each_child(tree, child) {
+	for_each_child(tree, child)
+	{
 		fprintf(f, "\n");
-		write_tree_source_node(f, child, level+1);
+		write_tree_source_node(f, child, level + 1);
 	}
 	write_prefix(f, level);
 	fprintf(f, "};");
@@ -334,8 +334,7 @@ void dt_to_source(FILE *f, struct dt_info *dti)
 	for (re = dti->reservelist; re; re = re->next) {
 		struct label *l;
 
-		for_each_label(re->labels, l)
-			fprintf(f, "%s: ", l->label);
+		for_each_label(re->labels, l) fprintf(f, "%s: ", l->label);
 		fprintf(f, "/memreserve/\t0x%016llx 0x%016llx;\n",
 			(unsigned long long)re->address,
 			(unsigned long long)re->size);

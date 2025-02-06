@@ -27,11 +27,11 @@
 
 #include <types.h>
 
-#define UART_THR			0x0
-#define UART_LSR			0x14
+#define UART_THR 0x0
+#define UART_LSR 0x14
 
-#define UART_CLK_FREQ		24000000 /* 24 MHz */
-#define UART_BAUDRATE		115200
+#define UART_CLK_FREQ 24000000 /* 24 MHz */
+#define UART_BAUDRATE 115200
 
 /* Bits and regs definitions */
 typedef struct {
@@ -52,39 +52,39 @@ typedef struct {
 		volatile uint32_t fcr;
 	};
 
-	volatile uint32_t lcr;          /* 0x0C */
-	volatile uint32_t mcr;          /* 0x10 */
-	volatile uint32_t lsr;          /* 0x14 */
-	volatile uint32_t msr;          /* 0x18 */
-	volatile uint32_t sch;          /* 0x1C */
-	volatile uint32_t _res0[23];    /* 0x20-0x78 */
-	volatile uint32_t usr;          /* 0x7C */
-	volatile uint32_t tfl;          /* 0x80 */
-	volatile uint32_t rfl;          /* 0x84 */
-	volatile uint32_t _res1[7];     /* 0x88-0xA0 */
-	volatile uint32_t halt;         /* 0xA4 */
+	volatile uint32_t lcr; /* 0x0C */
+	volatile uint32_t mcr; /* 0x10 */
+	volatile uint32_t lsr; /* 0x14 */
+	volatile uint32_t msr; /* 0x18 */
+	volatile uint32_t sch; /* 0x1C */
+	volatile uint32_t _res0[23]; /* 0x20-0x78 */
+	volatile uint32_t usr; /* 0x7C */
+	volatile uint32_t tfl; /* 0x80 */
+	volatile uint32_t rfl; /* 0x84 */
+	volatile uint32_t _res1[7]; /* 0x88-0xA0 */
+	volatile uint32_t halt; /* 0xA4 */
 } ns16550_t;
 
 /* LCR register bits */
-#define UART_5BITS      0x0
-#define UART_6BITS      0x1
-#define UART_7BITS      0x2
-#define UART_8BITS      0x3
+#define UART_5BITS 0x0
+#define UART_6BITS 0x1
+#define UART_7BITS 0x2
+#define UART_8BITS 0x3
 
-#define UART_1_STOP     (0 << 2)
-#define UART_1_5_STOP   (1 << 2)
+#define UART_1_STOP (0 << 2)
+#define UART_1_5_STOP (1 << 2)
 
-#define UART_PARITY_EN  (0 << 3)
+#define UART_PARITY_EN (0 << 3)
 #define UART_PARITY_DIS (1 << 3)
 
-#define UART_LCR_DLAB   (1 << 7)
+#define UART_LCR_DLAB (1 << 7)
 
 /* MCR register bits */
-#define UART_DTR        (1 << 0)
-#define UART_RTS        (1 << 1)
+#define UART_DTR (1 << 0)
+#define UART_RTS (1 << 1)
 
 /* LSR register bits */
-#define UART_LSR_DR     (1 << 0)
-#define UART_LSR_THRE   (1 << 5)
+#define UART_LSR_DR (1 << 0)
+#define UART_LSR_THRE (1 << 5)
 
 #endif /* NS16550_H */

@@ -24,24 +24,22 @@
 
 char internal_buffer[20];
 
-static int mydev_write(int fd, const void *buffer, int count) {
-
+static int mydev_write(int fd, const void *buffer, int count)
+{
 	strcpy(internal_buffer, buffer);
 
 	return count;
 }
 
-static int mydev_read(int fd, void *buffer, int count) {
-
+static int mydev_read(int fd, void *buffer, int count)
+{
 	strcpy(buffer, internal_buffer);
 
-	return strlen(internal_buffer)+1;
+	return strlen(internal_buffer) + 1;
 }
 
-struct file_operations mydev_fops = {
-	.write = mydev_write,
-	.read = mydev_read
-};
+struct file_operations mydev_fops = { .write = mydev_write,
+				      .read = mydev_read };
 
 struct devclass mydev_dev = {
 	.class = "mydev",
@@ -49,8 +47,8 @@ struct devclass mydev_dev = {
 	.fops = &mydev_fops,
 };
 
-
-int mydev_init(dev_t *dev, int fdt_offset) {
+int mydev_init(dev_t *dev, int fdt_offset)
+{
 	int node;
 	const char *propname;
 
@@ -62,6 +60,5 @@ int mydev_init(dev_t *dev, int fdt_offset) {
 
 	return 0;
 }
-
 
 REGISTER_DRIVER_POSTCORE("arm,mydev", mydev_init);

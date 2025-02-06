@@ -22,11 +22,11 @@
 
 #include <asm/processor.h>
 
-#define __L2(_x)  (((_x) & 0x00000002) ?   1 : 0)
-#define __L4(_x)  (((_x) & 0x0000000c) ? ( 2 + __L2( (_x)>> 2)) : __L2( _x))
-#define __L8(_x)  (((_x) & 0x000000f0) ? ( 4 + __L4( (_x)>> 4)) : __L4( _x))
-#define __L16(_x) (((_x) & 0x0000ff00) ? ( 8 + __L8( (_x)>> 8)) : __L8( _x))
-#define LOG_2(_x) (((_x) & 0xffff0000) ? (16 + __L16((_x)>>16)) : __L16(_x))
+#define __L2(_x) (((_x) & 0x00000002) ? 1 : 0)
+#define __L4(_x) (((_x) & 0x0000000c) ? (2 + __L2((_x) >> 2)) : __L2(_x))
+#define __L8(_x) (((_x) & 0x000000f0) ? (4 + __L4((_x) >> 4)) : __L4(_x))
+#define __L16(_x) (((_x) & 0x0000ff00) ? (8 + __L8((_x) >> 8)) : __L8(_x))
+#define LOG_2(_x) (((_x) & 0xffff0000) ? (16 + __L16((_x) >> 16)) : __L16(_x))
 
 /* create 64-bit mask with all bits in [last:first] set */
 #define BIT_MASK(last, first) \
@@ -35,14 +35,14 @@
 /* extract the field value at [last:first] from an input of up to 64 bits */
 #define GET_FIELD(value, last, first) \
 	(((value) & BIT_MASK((last), (first))) >> (first))
-	
+
 #ifndef __ASSEMBLY__
 
-#define smp_mb__before_clear_bit()	mb()
-#define smp_mb__after_clear_bit()	mb()
+#define smp_mb__before_clear_bit() mb()
+#define smp_mb__after_clear_bit() mb()
 
-#define BITOP_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
-#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
+#define BITOP_MASK(nr) (1UL << ((nr) % BITS_PER_LONG))
+#define BITOP_WORD(nr) ((nr) / BITS_PER_LONG)
 
 /**
  * test_bit - Determine whether a bit is set
@@ -51,7 +51,7 @@
  */
 static inline int test_bit(int nr, const volatile unsigned long *addr)
 {
-        return 1UL & (addr[BITOP_WORD(nr)] >> (nr & (BITS_PER_LONG-1)));
+	return 1UL & (addr[BITOP_WORD(nr)] >> (nr & (BITS_PER_LONG - 1)));
 }
 
 /*
@@ -59,7 +59,8 @@ static inline int test_bit(int nr, const volatile unsigned long *addr)
  *
  * First, the atomic bitops. These use native endian.
  */
-static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *p)
+static inline void ____atomic_set_bit(unsigned int bit,
+				      volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
@@ -71,7 +72,8 @@ static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *
 	local_irq_restore(flags);
 }
 
-static inline void ____atomic_clear_bit(unsigned int bit, volatile unsigned long *p)
+static inline void ____atomic_clear_bit(unsigned int bit,
+					volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
@@ -83,7 +85,8 @@ static inline void ____atomic_clear_bit(unsigned int bit, volatile unsigned long
 	local_irq_restore(flags);
 }
 
-static inline void ____atomic_change_bit(unsigned int bit, volatile unsigned long *p)
+static inline void ____atomic_change_bit(unsigned int bit,
+					 volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned long mask = 1UL << (bit & 31);
@@ -95,8 +98,8 @@ static inline void ____atomic_change_bit(unsigned int bit, volatile unsigned lon
 	local_irq_restore(flags);
 }
 
-static inline int
-____atomic_test_and_set_bit(unsigned int bit, volatile unsigned long *p)
+static inline int ____atomic_test_and_set_bit(unsigned int bit,
+					      volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned int res;
@@ -112,8 +115,8 @@ ____atomic_test_and_set_bit(unsigned int bit, volatile unsigned long *p)
 	return res & mask;
 }
 
-static inline int
-____atomic_test_and_clear_bit(unsigned int bit, volatile unsigned long *p)
+static inline int ____atomic_test_and_clear_bit(unsigned int bit,
+						volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned int res;
@@ -129,8 +132,8 @@ ____atomic_test_and_clear_bit(unsigned int bit, volatile unsigned long *p)
 	return res & mask;
 }
 
-static inline int
-____atomic_test_and_change_bit(unsigned int bit, volatile unsigned long *p)
+static inline int ____atomic_test_and_change_bit(unsigned int bit,
+						 volatile unsigned long *p)
 {
 	unsigned long flags;
 	unsigned int res;
@@ -145,8 +148,6 @@ ____atomic_test_and_change_bit(unsigned int bit, volatile unsigned long *p)
 
 	return res & mask;
 }
-
-
 
 /*
  *  A note about Endian-ness.
@@ -176,50 +177,48 @@ ____atomic_test_and_change_bit(unsigned int bit, volatile unsigned long *p)
 /*
  * Little endian assembly bitops.  nr = 0 -> byte 0 bit 0.
  */
-extern void _set_bit_le(int nr, volatile unsigned long * p);
-extern void _clear_bit_le(int nr, volatile unsigned long * p);
-extern void _change_bit_le(int nr, volatile unsigned long * p);
-extern int _test_and_set_bit_le(int nr, volatile unsigned long * p);
-extern int _test_and_clear_bit_le(int nr, volatile unsigned long * p);
-extern int _test_and_change_bit_le(int nr, volatile unsigned long * p);
-
+extern void _set_bit_le(int nr, volatile unsigned long *p);
+extern void _clear_bit_le(int nr, volatile unsigned long *p);
+extern void _change_bit_le(int nr, volatile unsigned long *p);
+extern int _test_and_set_bit_le(int nr, volatile unsigned long *p);
+extern int _test_and_clear_bit_le(int nr, volatile unsigned long *p);
+extern int _test_and_change_bit_le(int nr, volatile unsigned long *p);
 
 /*
  * The __* form of bitops are non-atomic and may be reordered.
  */
 
-#define	ATOMIC_BITOP_LE(name,nr,p)	 (____atomic_##name(nr, p) )
-#define	ATOMIC_BITOP_BE(name,nr,p)	(____atomic_##name(nr, p) )
+#define ATOMIC_BITOP_LE(name, nr, p) (____atomic_##name(nr, p))
+#define ATOMIC_BITOP_BE(name, nr, p) (____atomic_##name(nr, p))
 
-
-#define NONATOMIC_BITOP(name,nr,p)		\
-	(____nonatomic_##name(nr, p))
-
+#define NONATOMIC_BITOP(name, nr, p) (____nonatomic_##name(nr, p))
 
 /*
  * These are the little endian, atomic definitions.
  */
-#define set_bit(nr,p)			ATOMIC_BITOP_LE(set_bit,nr,p)
-#define clear_bit(nr,p)			ATOMIC_BITOP_LE(clear_bit,nr,p)
-#define change_bit(nr,p)		ATOMIC_BITOP_LE(change_bit,nr,p)
-#define test_and_set_bit(nr,p)		ATOMIC_BITOP_LE(test_and_set_bit,nr,p)
-#define test_and_clear_bit(nr,p)	ATOMIC_BITOP_LE(test_and_clear_bit,nr,p)
-#define test_and_change_bit(nr,p)	ATOMIC_BITOP_LE(test_and_change_bit,nr,p)
+#define set_bit(nr, p) ATOMIC_BITOP_LE(set_bit, nr, p)
+#define clear_bit(nr, p) ATOMIC_BITOP_LE(clear_bit, nr, p)
+#define change_bit(nr, p) ATOMIC_BITOP_LE(change_bit, nr, p)
+#define test_and_set_bit(nr, p) ATOMIC_BITOP_LE(test_and_set_bit, nr, p)
+#define test_and_clear_bit(nr, p) ATOMIC_BITOP_LE(test_and_clear_bit, nr, p)
+#define test_and_change_bit(nr, p) ATOMIC_BITOP_LE(test_and_change_bit, nr, p)
 
 /* Count leading zeroes */
-static inline unsigned long clz(unsigned long word) {
-        unsigned long val;
+static inline unsigned long clz(unsigned long word)
+{
+	unsigned long val;
 
-        asm volatile("clz %0, %1" : "=r"(val) : "r"(word));
-        return val;
+	asm volatile("clz %0, %1" : "=r"(val) : "r"(word));
+	return val;
 }
 
 /* Returns the position of the least significant 1, MSB=31, LSB=0*/
-static inline unsigned long ffsl(unsigned long word) {
-        if (!word)
-                return 0;
-        asm volatile("rbit %0, %0" : "+r"(word));
-        return clz(word);
+static inline unsigned long ffsl(unsigned long word)
+{
+	if (!word)
+		return 0;
+	asm volatile("rbit %0, %0" : "+r"(word));
+	return clz(word);
 }
 
 #endif /*__ASSEMBLY__ */

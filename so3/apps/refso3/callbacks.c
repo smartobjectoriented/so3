@@ -40,17 +40,18 @@ static LIST_HEAD(known_soo_list);
 
 /* Reference to the shared content helpful during synergy with other MEs */
 sh_refso3_t *sh_refso3;
- 
+
 /**
  * PRE_SUSPEND
  *
  * This callback is executed right before suspending the state of frontend drivers, before migrating
  *
  */
-void cb_pre_suspend(soo_domcall_arg_t *args) {
+void cb_pre_suspend(soo_domcall_arg_t *args)
+{
 	DBG(">> ME %d: cb_pre_suspend...\n", ME_domID());
 }
- 
+
 /**
  * PRE_RESUME
  *
@@ -58,14 +59,16 @@ void cb_pre_suspend(soo_domcall_arg_t *args) {
  *
  * Returns 0 if no propagation to the user space is required, 1 otherwise
  */
-void cb_pre_resume(soo_domcall_arg_t *args) {
+void cb_pre_resume(soo_domcall_arg_t *args)
+{
 	DBG(">> ME %d: cb_pre_resume...\n", ME_domID());
 }
 
 /**
  * POST_ACTIVATE callback (async)
  */
-void cb_post_activate(soo_domcall_arg_t *args) {
+void cb_post_activate(soo_domcall_arg_t *args)
+{
 #if 0
 	agency_ctl_args_t agency_ctl_args;
 	static uint32_t count = 0;
@@ -81,7 +84,8 @@ void cb_post_activate(soo_domcall_arg_t *args) {
  *
  */
 
-void cb_force_terminate(void) {
+void cb_force_terminate(void)
+{
 	DBG(">> ME %d: cb_force_terminate...\n", ME_domID());
 	DBG("ME state: %d\n", get_ME_state());
 
@@ -92,14 +96,11 @@ void cb_force_terminate(void) {
 	set_ME_state(ME_state_terminated);
 }
 
-void callbacks_init(void) {
-
+void callbacks_init(void)
+{
 	/* Allocate the shared page. */
-	sh_refso3 = (sh_refso3_t *) get_contig_free_vpages(1);
+	sh_refso3 = (sh_refso3_t *)get_contig_free_vpages(1);
 
 	/* Initialize the shared content page used to exchange information between other MEs */
 	memset(sh_refso3, 0, PAGE_SIZE);
-
 }
-
-

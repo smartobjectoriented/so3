@@ -19,7 +19,7 @@
 #ifndef __SCHEDOP_H__
 #define __SCHEDOP_H__
 
-#define SCHEDOP_yield     	0
+#define SCHEDOP_yield 0
 
 struct deadline_args {
 	u64 delta_ns;
@@ -27,4 +27,3 @@ struct deadline_args {
 typedef struct deadline_args deadline_args_t;
 
 #endif /* __SCHEDOP_H__ */
-

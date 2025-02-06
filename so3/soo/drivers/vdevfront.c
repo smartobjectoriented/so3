@@ -28,7 +28,6 @@
 #include <soo/debug.h>
 #include <soo/vdevfront.h>
 
-
 /* vdevfront_processing_start() and vdevfront_processing_end() will prevent against
  * suspending/closing actions.
  *
@@ -40,9 +39,10 @@
  *   we do not take care about ongoing activities. All will disappear...
  *
  */
-bool vdevfront_processing_begin(struct vbus_device *vdev) {
+bool vdevfront_processing_begin(struct vbus_device *vdev)
+{
 	void *priv = dev_get_drvdata(vdev->dev);
-	vdevfront_t *vdevfront = (vdevfront_t *) priv;
+	vdevfront_t *vdevfront = (vdevfront_t *)priv;
 
 	/* Could be still being initialized... */
 	if (vdev->state != VbusStateConnected)
@@ -56,7 +56,6 @@ bool vdevfront_processing_begin(struct vbus_device *vdev) {
 		if (vdev->state != VbusStateConnected)
 			wait_for_completion(&vdevfront->sync);
 
-
 		BUG_ON(vdev->state != VbusStateConnected);
 	} else
 		atomic_inc(&vdevfront->processing_count);
@@ -67,15 +66,15 @@ bool vdevfront_processing_begin(struct vbus_device *vdev) {
 /*
  * Finish a processing section against suspend/close prevention
  */
-void vdevfront_processing_end(struct vbus_device *vdev) {
+void vdevfront_processing_end(struct vbus_device *vdev)
+{
 	void *priv = dev_get_drvdata(vdev->dev);
-	vdevfront_t *vdevfront = (vdevfront_t *) priv;
+	vdevfront_t *vdevfront = (vdevfront_t *)priv;
 
 	atomic_dec(&vdevfront->processing_count);
 
 	if (atomic_read(&vdevfront->processing_count) == 0)
 		mutex_unlock(&vdevfront->processing_lock);
-
 }
 
 /**
@@ -85,9 +84,10 @@ void vdevfront_processing_end(struct vbus_device *vdev) {
  * Initialised state.
  *
  */
-static void __probe(struct vbus_device *vdev) {
+static void __probe(struct vbus_device *vdev)
+{
 	void *priv = dev_get_drvdata(vdev->dev);
-	vdevfront_t *vdevfront = (vdevfront_t *) priv;
+	vdevfront_t *vdevfront = (vdevfront_t *)priv;
 	vdrvfront_t *vdrvfront = to_vdrvfront(vdev);
 
 	DBG("%s: SOO dummy frontend driver for testing\n", __func__);
@@ -104,18 +104,20 @@ static void __probe(struct vbus_device *vdev) {
 /**
  * State machine by the frontend's side.
  */
-static void __otherend_changed(struct vbus_device *vdev, enum vbus_state backend_state) {
+static void __otherend_changed(struct vbus_device *vdev,
+			       enum vbus_state backend_state)
+{
 	void *priv = dev_get_drvdata(vdev->dev);
-	vdevfront_t *vdevfront = (vdevfront_t *) priv;
+	vdevfront_t *vdevfront = (vdevfront_t *)priv;
 	vdrvfront_t *vdrvfront = to_vdrvfront(vdev);
 
-	DBG("SOO vdummy frontend, backend %s changed its state to %d.\n", vdev->nodename, backend_state);
+	DBG("SOO vdummy frontend, backend %s changed its state to %d.\n",
+	    vdev->nodename, backend_state);
 
 	switch (backend_state) {
-
 	case VbusStateReconfiguring:
 		BUG_ON(vdev->state == VbusStateConnected);
-		
+
 		BUG_ON(!vdrvfront->reconfiguring);
 		vdrvfront->reconfiguring(vdev);
 
@@ -167,12 +169,14 @@ static void __otherend_changed(struct vbus_device *vdev, enum vbus_state backend
 
 	case VbusStateUnknown:
 	default:
-		lprintk("%s - line %d: Unknown state %d (backend) for device %s\n", __func__, __LINE__, backend_state, vdev->nodename);
+		lprintk("%s - line %d: Unknown state %d (backend) for device %s\n",
+			__func__, __LINE__, backend_state, vdev->nodename);
 		BUG();
 	}
 }
 
-static void __shutdown(struct vbus_device *vdev) {
+static void __shutdown(struct vbus_device *vdev)
+{
 	vdevfront_t *vdevfront = dev_get_drvdata(vdev->dev);
 	vdrvfront_t *vdrvfront = to_vdrvfront(vdev);
 
@@ -191,9 +195,8 @@ static void __shutdown(struct vbus_device *vdev) {
 	vdrvfront->shutdown(vdev);
 }
 
-
-void vdevfront_init(char *name, vdrvfront_t *vfrontdrv) {
-
+void vdevfront_init(char *name, vdrvfront_t *vfrontdrv)
+{
 	vfrontdrv->vdrv.name = name;
 	strcpy(vfrontdrv->vdrv.devicetype, name);
 
@@ -204,5 +207,4 @@ void vdevfront_init(char *name, vdrvfront_t *vfrontdrv) {
 	vfrontdrv->vdrv.otherend_changed = __otherend_changed;
 
 	vbus_register_frontend(&vfrontdrv->vdrv);
-
 }

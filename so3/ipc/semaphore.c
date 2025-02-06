@@ -29,22 +29,22 @@
  * The timeout is expressed in nanoseconds.
  * Returns the value 0 in case of successful semaphore acquisition, -1 in case of timeout.
  */
-int sem_timeddown(sem_t *sem, uint64_t timeout) {
+int sem_timeddown(sem_t *sem, uint64_t timeout)
+{
 	queue_thread_t q_tcb;
 	struct list_head *pos;
 
 	for (;;) {
-
 		mutex_lock(&sem->lock);
 
 		if (sem->val <= 0) {
-
 			q_tcb.tcb = current();
 			/*
 			 * We only attempt the xchg if the count is non-negative in order
 			 * to avoid unnecessary xchg operations.
 			 */
-			if ((atomic_read(&sem->count) >= 0) && (atomic_xchg(&sem->count, -1) == 1))
+			if ((atomic_read(&sem->count) >= 0) &&
+			    (atomic_xchg(&sem->count, -1) == 1))
 				break;
 
 			/* Add waiting tasks to the end of the waitqueue (FIFO) */
@@ -102,11 +102,13 @@ int sem_timeddown(sem_t *sem, uint64_t timeout) {
  * Sempahore down operation - Prepare to enter a critical section
  * by means of the semaphore paradigm.
  */
-void sem_down(sem_t *sem) {
+void sem_down(sem_t *sem)
+{
 	sem_timeddown(sem, 0ull);
 }
 
-void sem_up(sem_t *sem) {
+void sem_up(sem_t *sem)
+{
 	queue_thread_t *curr;
 	bool need_resched = false;
 
@@ -123,7 +125,6 @@ void sem_up(sem_t *sem) {
 		list_del(&curr->list);
 
 		wake_up(curr->tcb);
-
 	}
 	mutex_unlock(&sem->lock);
 
@@ -134,8 +135,8 @@ void sem_up(sem_t *sem) {
 /*
  * Must be called for every new semaphore.
  */
-void sem_init(sem_t *sem) {
-
+void sem_init(sem_t *sem)
+{
 	memset(sem, 0, sizeof(sem_t));
 
 	INIT_LIST_HEAD(&sem->tcb_list);
@@ -145,5 +146,4 @@ void sem_init(sem_t *sem) {
 	sem->val = 1;
 
 	mutex_init(&sem->lock);
-
 }

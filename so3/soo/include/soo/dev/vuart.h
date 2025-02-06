@@ -24,8 +24,8 @@
 #include <soo/vdevfront.h>
 #include <soo/gnttab.h>
 
-#define VUART_NAME	"vuart"
-#define VUART_PREFIX	"[" VUART_NAME "] "
+#define VUART_NAME "vuart"
+#define VUART_PREFIX "[" VUART_NAME "] "
 
 typedef struct {
 	char c;

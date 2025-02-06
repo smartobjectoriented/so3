@@ -35,8 +35,9 @@
  * construct_ME sets up a new Mobile Entity.
  */
 
-int construct_ME(struct domain *d) {
-        unsigned int slotID;
+int construct_ME(struct domain *d)
+{
+	unsigned int slotID;
 	unsigned long alloc_spfn;
 
 	slotID = d->avz_shared->domID;
@@ -64,13 +65,15 @@ int construct_ME(struct domain *d) {
 
 	clear_bit(_VPF_down, &d->pause_flags);
 
-	__setup_dom_pgtable(d, memslot[slotID].base_paddr, memslot[slotID].size);
+	__setup_dom_pgtable(d, memslot[slotID].base_paddr,
+			    memslot[slotID].size);
 
 	d->avz_shared->fdt_paddr = pa_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
 	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
-        initialize_hyp_dom_stack(d, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + L_TEXT_OFFSET);
+	initialize_hyp_dom_stack(d, d->avz_shared->fdt_paddr,
+				 memslot[slotID].ipa_addr + L_TEXT_OFFSET);
 
 	return 0;
 }

@@ -42,7 +42,7 @@ static void prepare_predef_packets(void);
 static void send_packet(void *buffer, size_t size);
 void sootest_dummy_process_received_echo(char *packet);
 static void sha1_hash(void *buffer, size_t size, void *hash);
-static int cycle_thread_fct(void * param);
+static int cycle_thread_fct(void *param);
 void sootest_dummy_init(void);
 void sootest_dummy_start_cycle(void);
 
@@ -51,27 +51,30 @@ extern void vdummy_generate_request(char *buffer);
 /**
  * Prepare the pre-defined packets.
  */
-static void prepare_predef_packets(void) {
+static void prepare_predef_packets(void)
+{
 	char *packet;
 	int i;
 #ifdef DEBUG
 	int j;
 #endif
 
-	for (i = 0 ; i < SOOTEST_N_PREDEF_PACKETS ; i++) {
-		predef_packets[i] = (char *) kzalloc(VDUMMY_PACKET_SIZE, GFP_KERNEL);
-		predef_packets_hashes[i] = (char *) kzalloc(SOOTEST_SHA1_HASH_LEN, GFP_KERNEL);
+	for (i = 0; i < SOOTEST_N_PREDEF_PACKETS; i++) {
+		predef_packets[i] =
+			(char *)kzalloc(VDUMMY_PACKET_SIZE, GFP_KERNEL);
+		predef_packets_hashes[i] =
+			(char *)kzalloc(SOOTEST_SHA1_HASH_LEN, GFP_KERNEL);
 	}
 
 	/* Packet 0: 0x00 0x01 .. 0x0f 0x00 0x01 ... */
 	packet = predef_packets[0];
-	for (i = 0 ; i < VDUMMY_PACKET_SIZE ; i++)
+	for (i = 0; i < VDUMMY_PACKET_SIZE; i++)
 		packet[i] = i % 0x10;
 	sha1_hash(packet, VDUMMY_PACKET_SIZE, predef_packets_hashes[0]);
 
 	/* Packet 1: 0x00 0x01 .. 0xff 0x00 0x01 ... */
 	packet = predef_packets[1];
-	for (i = 0 ; i < VDUMMY_PACKET_SIZE ; i++)
+	for (i = 0; i < VDUMMY_PACKET_SIZE; i++)
 		packet[i] = i % 0x100;
 	sha1_hash(packet, VDUMMY_PACKET_SIZE, predef_packets_hashes[1]);
 
@@ -87,7 +90,7 @@ static void prepare_predef_packets(void) {
 
 	/* Packet 4: 0x00 0xff 0x00 0xff ... */
 	packet = predef_packets[4];
-	for (i = 0 ; i < VDUMMY_PACKET_SIZE / 2 ; i++) {
+	for (i = 0; i < VDUMMY_PACKET_SIZE / 2; i++) {
 		packet[2 * i] = 0;
 		packet[2 * i + 1] = 0xff;
 	}
@@ -95,31 +98,41 @@ static void prepare_predef_packets(void) {
 
 	/* Packet 5: 0x00 0x11 0x22 .. 0xff 0x00 0x11 ... */
 	packet = predef_packets[5];
-	for (i = 0 ; i < VDUMMY_PACKET_SIZE ; i++)
+	for (i = 0; i < VDUMMY_PACKET_SIZE; i++)
 		packet[i] = ((i % 0x10) << 4) | (i % 0x10);
 	sha1_hash(packet, VDUMMY_PACKET_SIZE, predef_packets_hashes[5]);
 
 	/* Empty packets (TBD) */
-	sha1_hash(predef_packets[6], VDUMMY_PACKET_SIZE, predef_packets_hashes[6]);
-	sha1_hash(predef_packets[7], VDUMMY_PACKET_SIZE, predef_packets_hashes[7]);
-	sha1_hash(predef_packets[8], VDUMMY_PACKET_SIZE, predef_packets_hashes[8]);
-	sha1_hash(predef_packets[9], VDUMMY_PACKET_SIZE, predef_packets_hashes[9]);
-	sha1_hash(predef_packets[10], VDUMMY_PACKET_SIZE, predef_packets_hashes[10]);
-	sha1_hash(predef_packets[11], VDUMMY_PACKET_SIZE, predef_packets_hashes[11]);
-	sha1_hash(predef_packets[12], VDUMMY_PACKET_SIZE, predef_packets_hashes[12]);
-	sha1_hash(predef_packets[13], VDUMMY_PACKET_SIZE, predef_packets_hashes[13]);
-	sha1_hash(predef_packets[14], VDUMMY_PACKET_SIZE, predef_packets_hashes[14]);
-	sha1_hash(predef_packets[15], VDUMMY_PACKET_SIZE, predef_packets_hashes[15]);
+	sha1_hash(predef_packets[6], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[6]);
+	sha1_hash(predef_packets[7], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[7]);
+	sha1_hash(predef_packets[8], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[8]);
+	sha1_hash(predef_packets[9], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[9]);
+	sha1_hash(predef_packets[10], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[10]);
+	sha1_hash(predef_packets[11], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[11]);
+	sha1_hash(predef_packets[12], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[12]);
+	sha1_hash(predef_packets[13], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[13]);
+	sha1_hash(predef_packets[14], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[14]);
+	sha1_hash(predef_packets[15], VDUMMY_PACKET_SIZE,
+		  predef_packets_hashes[15]);
 
 #ifdef DEBUG
 	lprintk("packgen: pre-defined packets\n");
-	for (i = 0 ; i < 6 ; i++) {
+	for (i = 0; i < 6; i++) {
 		lprintk("%d:\n", i);
 		packet = predef_packets[i];
-		for (j = 0 ; j < VDUMMY_PACKET_SIZE ; j++)
+		for (j = 0; j < VDUMMY_PACKET_SIZE; j++)
 			lprintk("%02x ", packet[j]);
 		lprintk("\nhash: ");
-		for (j = 0 ; j < SOOTEST_SHA1_HASH_LEN ; j++)
+		for (j = 0; j < SOOTEST_SHA1_HASH_LEN; j++)
 			lprintk("%02x ", predef_packets_hashes[i][j]);
 		lprintk("\n");
 	}
@@ -129,7 +142,8 @@ static void prepare_predef_packets(void) {
 /**
  * Send a packet.
  */
-void send_packet(void *buffer, size_t size) {
+void send_packet(void *buffer, size_t size)
+{
 #ifdef DEBUG
 	int i;
 #endif
@@ -178,16 +192,16 @@ void sootest_dummy_process_received_echo(char *packet)
 	lprintk_buffer(echo_packet_hash, SOOTEST_SHA1_HASH_LEN);
 #endif
 
-	if (!memcmp(echo_packet_hash, sent_packet_hash, SOOTEST_SHA1_HASH_LEN)) {
+	if (!memcmp(echo_packet_hash, sent_packet_hash,
+		    SOOTEST_SHA1_HASH_LEN)) {
 #ifdef DEBUG
-			lprintk("OK\n");
+		lprintk("OK\n");
 #endif
 
-			packet_bitmap[packet_count / 8] |= 1 << (packet_count % 8);
-	}
-	else {
+		packet_bitmap[packet_count / 8] |= 1 << (packet_count % 8);
+	} else {
 #ifdef DEBUG
-			lprintk("Error\n");
+		lprintk("Error\n");
 #endif
 	}
 
@@ -196,16 +210,15 @@ void sootest_dummy_process_received_echo(char *packet)
 			lprintk("SOOTEST: dummy OK\n");
 			test_end = 1;
 		}
-	}
-	else {
+	} else {
 		if (unlikely(packet_count == SOOTEST_N_PREDEF_PACKETS - 1)) {
 			lprintk("SOOTEST: ");
-			lprintk_buffer_separator(packet_bitmap, sizeof(packet_bitmap), '-');
+			lprintk_buffer_separator(packet_bitmap,
+						 sizeof(packet_bitmap), '-');
 			memset(packet_bitmap, 0, sizeof(packet_bitmap));
 			packet_count = 0;
 			iter_count++;
-		}
-		else
+		} else
 			packet_count++;
 	}
 }
@@ -213,7 +226,8 @@ void sootest_dummy_process_received_echo(char *packet)
 /**
  * Compute the SHA1 hash.
  */
-static void sha1_hash(void *buffer, size_t size, void *hash) {
+static void sha1_hash(void *buffer, size_t size, void *hash)
+{
 	struct scatterlist hash_sg;
 	struct crypto_hash *hash_tfm;
 	struct hash_desc hash_desc;
@@ -231,7 +245,8 @@ static void sha1_hash(void *buffer, size_t size, void *hash) {
 	crypto_free_hash(hash_tfm);
 }
 
-void vdummy_cycle_fct(void) {
+void vdummy_cycle_fct(void)
+{
 	static int i = 0;
 
 	DBG("%s %d\n", __func__, i);
@@ -242,7 +257,8 @@ void vdummy_cycle_fct(void) {
 /**
  * Cyclic pre-defined packet sender.
  */
-static int cycle_thread_fct(void *param) {
+static int cycle_thread_fct(void *param)
+{
 	while (!kthread_should_stop()) {
 		vdummy_cycle_fct();
 		msleep(SOOTEST_CYCLE_DELAY);
@@ -251,12 +267,14 @@ static int cycle_thread_fct(void *param) {
 	return 0;
 }
 
-void sootest_dummy_init(void) {
+void sootest_dummy_init(void)
+{
 	prepare_predef_packets();
 	memset(packet_bitmap, 0, sizeof(packet_bitmap));
 }
 
-void sootest_dummy_start_cycle(void) {
+void sootest_dummy_start_cycle(void)
+{
 	cycle_thread = kthread_run(&cycle_thread_fct, NULL, "cycle_thread_fct");
 }
 #endif

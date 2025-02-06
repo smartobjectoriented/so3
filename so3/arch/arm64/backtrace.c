@@ -29,13 +29,13 @@ extern void __backtrace(void);
 
 void show_backtrace(ulong sp, ulong lr, ulong pc)
 {
-    __backtrace();
+	__backtrace();
 }
 
 void show_backtrace_regs(struct cpu_regs *regs)
 {
-    show_registers(regs);
-    __backtrace();
+	show_registers(regs);
+	__backtrace();
 }
 
 void show_registers(struct cpu_regs *regs)
@@ -137,24 +137,21 @@ void dump_execution_state(void)
 #endif
 }
 
-
 void dump_all_execution_state(void)
 {
-    ulong sp;
-    ulong lr;
+	ulong sp;
+	ulong lr;
 
-    dump_execution_state();
-    sp = (ulong)__builtin_frame_address(0);
-    lr = (ulong)__builtin_return_address(0);
+	dump_execution_state();
+	sp = (ulong)__builtin_frame_address(0);
+	lr = (ulong)__builtin_return_address(0);
 
-    show_backtrace(sp, lr, lr);
+	show_backtrace(sp, lr, lr);
 }
 
 void vcpu_show_execution_state(void)
 {
-    printk("*** Dumping current execution state ***\n");
+	printk("*** Dumping current execution state ***\n");
 
-
-    dump_execution_state();
+	dump_execution_state();
 }
-
