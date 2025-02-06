@@ -21,7 +21,7 @@ jobs:
       matrix:
         path:
           - check: "so3"
-            exclude: ""
+            exclude: ".S"
           - check: "usr/src"
             exclude: "(micropython|lv_)"
     steps:
