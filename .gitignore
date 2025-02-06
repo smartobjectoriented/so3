@@ -45,6 +45,7 @@ agency/rootfs/target/**
 !.gitignore #Don't ignore the ignore file ;-)
 !.github 
 !*.tmpl #TaMPLate files for the man documentation
+!.clang-format
 !buildroot/**
 !buildroot/docs/manual/*.mk
 !agency/rootfs/*.mk
