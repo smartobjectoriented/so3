@@ -116,15 +116,20 @@ char vuart_read_char(void) {
 	/* Always perform a wait on the completion since we always get an interrupt
 	 * per byte (hence a complete will be aised up).
 	 */
-	wait_for_completion(&vuart_priv->reader_wait);
 
 	vdevfront_processing_begin(vdev_console);
 
-	ring_rsp = vuart_get_ring_response(&vuart_priv->vuart.ring);
-	BUG_ON(!ring_rsp);
+	while ((ring_rsp = vuart_get_ring_response(&vuart_priv->vuart.ring)) == NULL) {
+		vdevfront_processing_end(vdev_console);
+		
+		wait_for_completion(&vuart_priv->reader_wait);
+
+		vdevfront_processing_begin(vdev_console);
+
+	}
 
 	vdevfront_processing_end(vdev_console);
-
+	
 	return ring_rsp->c;
 }
 

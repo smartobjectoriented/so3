@@ -86,8 +86,8 @@
 		/* Short description */
 		me_shortdesc =
 
-		"This is the standard reference ME that can be used as template or simply to \
-		perform various tests. This variant includes a rootfs with some user space \
+		"This is the standard reference ME that can be used as template or simply to \n \
+		perform various tests. This variant includes a rootfs with some user space \n \
 		applications.";
 
         frontends {
