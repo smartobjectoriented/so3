@@ -139,7 +139,7 @@ int fb_init(void)
 	static lv_disp_draw_buf_t disp_buf;
 
 	/* Get file descriptor. */
-	fd = open("/dev/fb0", 0);
+	fd = open("/dev/fb", 0);
 	if (-1 == fd) {
 		printf("Couldn't open framebuffer.\n");
 		return -1;
@@ -228,7 +228,7 @@ int mouse_init(void)
 	struct display_res res = { .h = scr_hres, .v = scr_vres };
 	static lv_indev_drv_t mouse_drv;
 
-	mfd = open("/dev/mouse0", 0);
+	mfd = open("/dev/mouse", 0);
 	if (mfd == -1) {
 		printf("Couldn't open input device.\n");
 		return -1;
@@ -281,7 +281,7 @@ int keyboard_init(void)
 	static lv_indev_drv_t keyboard_drv;
 	lv_indev_t *keyboard_dev;
 
-	kfd = open("/dev/keyboard0", 0);
+	kfd = open("/dev/keyboard", 0);
 	if (kfd == -1) {
 		printf("Couldn't open input device.\n");
 		return -1;
