@@ -1,3 +1,4 @@
+if FB
 config PL111_CLCD
 	bool "PL111 CLCD framebuffer device"
 	depends on VIRT32 || VIRT64
@@ -9,4 +10,4 @@ config QEMU_RAMFB
 config SOO_FB
 	bool "SOO Virtualized FB device"
 	depends on SOO && !AVZ
-
+endif
