@@ -481,8 +481,6 @@ static inline void set_cr(unsigned int val)
 #define smp_rmb()		rmb()
 #define smp_wmb()		wmb()
 
-#define barrier() __asm__ __volatile__("": : :"memory")
-
 #define cpu_get_l1pgtable()	\
 ({						\
 	unsigned long pg;			\
