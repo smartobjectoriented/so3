@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <bits/ioctl.h>
@@ -34,11 +35,14 @@
 #include "slv_mouse.h"
 
 static void *slv_tick(void *args);
+static uint32_t slv_tick_cb(void);
 static void *slv_loop_inner(void *args);
 
 int slv_init(slv_t *slv)
 {
 	lv_init();
+	lv_tick_set_cb(slv_tick_cb);
+
 	slv_fs_init();
 	int err = slv_fb_init(&slv->fb);
 	if (err < 0) {
@@ -54,12 +58,13 @@ int slv_init(slv_t *slv)
 		err = slv->mfd;
 		goto mouse_err;
 	}
-	slv->terminate = false;
 
-	err = pthread_create(&slv->tick_thread, NULL, slv_tick, slv);
-	if (err < 0) {
-		goto thread_err;
-	}
+	/*err = pthread_create(&slv->tick_thread, NULL, slv_tick, slv);*/
+	/*if (err < 0) {*/
+	/*	goto thread_err;*/
+	/*}*/
+
+	slv->terminate = false;
 
 	return 0;
 
@@ -100,6 +105,32 @@ void slv_terminate(slv_t *slv)
 	slv_keyboard_terminate(slv->kfd);
 	slv_mouse_terminate(slv->mfd);
 }
+static uint32_t slv_tick_cb(void)
+{
+	static uint32_t first = 0;
+	const uint32_t now = (uint32_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
+
+	if (!first) {
+		first = now;
+	}
+
+	return now - first;
+}
+
+static void *slv_tick(void *args)
+{
+	slv_t *slv = (slv_t *)args;
+	uint32_t last = 0;
+	while (!slv->terminate) {
+		usleep(1000);
+		uint32_t now = (uint32_t)((clock() * 1000ULL) / CLOCKS_PER_SEC);
+		lv_tick_inc(now - last);
+		/*printf("Now %d Last %d Diff %d\n", now, last, now - last);*/
+		last = now;
+	}
+	return NULL;
+}
+
 static void *slv_loop_inner(void *args)
 {
 	slv_t *slv = (slv_t *)args;
@@ -110,17 +141,6 @@ static void *slv_loop_inner(void *args)
 		} else {
 			usleep((uint64_t)next_timer * 1000);
 		}
-	}
-	return NULL;
-}
-
-static void *slv_tick(void *args)
-{
-	slv_t *slv = (slv_t *)args;
-	while (!slv->terminate) {
-		/* Tell LVGL that 10 milliseconds were elapsed */
-		usleep(10000);
-		lv_tick_inc(10);
 	}
 	return NULL;
 }
