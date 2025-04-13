@@ -34,10 +34,9 @@
 #include "slv_fs.h"
 #include "slv_mouse.h"
 
-static void *slv_tick(void *args);
 static uint32_t slv_tick_cb(void);
 static void *slv_loop_inner(void *args);
-
+static void *slv_tick(void *args);
 int slv_init(slv_t *slv)
 {
 	lv_init();
@@ -68,14 +67,14 @@ int slv_init(slv_t *slv)
 
 	return 0;
 
-fb_err:
-	lv_deinit();
-kb_err:
-	slv_fb_terminate(&slv->fb);
-mouse_err:
-	slv_keyboard_terminate(slv->kfd);
 thread_err:
 	slv_mouse_terminate(slv->mfd);
+mouse_err:
+	slv_keyboard_terminate(slv->kfd);
+kb_err:
+	slv_fb_terminate(&slv->fb);
+fb_err:
+	lv_deinit();
 	return err;
 }
 
