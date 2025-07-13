@@ -120,9 +120,9 @@ void get_mouse_state(uint8_t *packet, struct ps2_mouse *state, uint16_t max_x, u
 		state->y = CLAMP(state->y, 0, max_y);
 
 		LOG_DEBUG("sign_dxy[%s, %s], dxy_val[%03u, %03u], computed_dxy[%03d, %03d]; xy[%03d, %03d]; %03s %03s %03s\n",
-		    packet[PS2_STATE] & X_BS ? "neg" : "pos", packet[PS2_STATE] & Y_BS ? "neg" : "pos", packet[PS2_X],
-		    packet[PS2_Y], GET_DX(packet[PS2_STATE], packet[PS2_X]), GET_DY(packet[PS2_STATE], packet[PS2_Y]), state->x,
-		    state->y, state->left ? "LFT" : "", state->middle ? "MID" : "", state->right ? "RGT" : "");
+			  packet[PS2_STATE] & X_BS ? "neg" : "pos", packet[PS2_STATE] & Y_BS ? "neg" : "pos", packet[PS2_X],
+			  packet[PS2_Y], GET_DX(packet[PS2_STATE], packet[PS2_X]), GET_DY(packet[PS2_STATE], packet[PS2_Y]),
+			  state->x, state->y, state->left ? "LFT" : "", state->middle ? "MID" : "", state->right ? "RGT" : "");
 	} else {
 		printk("%s: packet discarded.\n", __func__);
 	}
@@ -169,5 +169,5 @@ void get_kb_key(uint8_t *packet, uint8_t len, struct ps2_key *key)
 	}
 
 	LOG_DEBUG("%s sc: 0x%02x v: %c\n", key->state & KEY_ST_PRESSED ? "pressed" : "release", packet[i],
-	    key->value ? key->value : ' ');
+		  key->value ? key->value : ' ');
 }

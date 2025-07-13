@@ -313,65 +313,65 @@ void write_ME_snapshot(avz_hyp_t *args)
 		args->u.avz_snapshot_args.slotID = slotID;
 	else
 		return;
-	}
+}
 
-	LOG_DEBUG("Available slotID: %d\n", args->u.avz_snapshot_args.slotID);
+LOG_DEBUG("Available slotID: %d\n", args->u.avz_snapshot_args.slotID);
 
-	LOG_DEBUG("Writing the snapshot into memory...\n");
-	snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
+LOG_DEBUG("Writing the snapshot into memory...\n");
+snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
 
-	domME = domains[slotID];
-	domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
+domME = domains[slotID];
+domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
 
-	restore_domain_context(slotID, domME, domctxt);
+restore_domain_context(slotID, domME, domctxt);
 
-	__setup_dom_pgtable(domME, memslot[slotID].base_paddr, memslot[slotID].size);
+__setup_dom_pgtable(domME, memslot[slotID].base_paddr, memslot[slotID].size);
 
-	/* Copy the ME content */
-	memcpy((void *) __xva(slotID, memslot[slotID].base_paddr),
-	       snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context), memslot[slotID].size);
+/* Copy the ME content */
+memcpy((void *) __xva(slotID, memslot[slotID].base_paddr), snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context),
+       memslot[slotID].size);
 
-	/* Create a stack for this restored domain */
+/* Create a stack for this restored domain */
 
-	dom_stack = memalign(DOMAIN_STACK_SIZE, DOMAIN_STACK_SIZE);
-	BUG_ON(!dom_stack);
+dom_stack = memalign(DOMAIN_STACK_SIZE, DOMAIN_STACK_SIZE);
+BUG_ON(!dom_stack);
 
-	/* Keep the reference for future removal */
-	domME->domain_stack = dom_stack;
+/* Keep the reference for future removal */
+domME->domain_stack = dom_stack;
 
-	/* Reserve the frame which will be restored later */
-	frame = dom_stack + DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
+/* Reserve the frame which will be restored later */
+frame = dom_stack + DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
 
-	/* Restore the EL2 frame */
-	memcpy(frame, &domctxt->stack_frame, sizeof(struct cpu_regs));
+/* Restore the EL2 frame */
+memcpy(frame, &domctxt->stack_frame, sizeof(struct cpu_regs));
 
-	/* We need to re-map the vbstore page corresponding to this slotID */
-	map_vbstore_pfn(domME->avz_shared->domID, domME->avz_shared->dom_desc.u.ME.vbstore_pfn);
+/* We need to re-map the vbstore page corresponding to this slotID */
+map_vbstore_pfn(domME->avz_shared->domID, domME->avz_shared->dom_desc.u.ME.vbstore_pfn);
 
-	if (domME->avz_shared->dom_desc.u.ME.state != ME_state_stopped) {
-		BUG_ON(domME->avz_shared->dom_desc.u.ME.state != ME_state_hibernate);
+if (domME->avz_shared->dom_desc.u.ME.state != ME_state_stopped) {
+	BUG_ON(domME->avz_shared->dom_desc.u.ME.state != ME_state_hibernate);
 
-		/* As we will be resumed from the schedule function, we need to update the
+	/* As we will be resumed from the schedule function, we need to update the
 		 * CPU registers from the VCPU regs.
 		 */
-		domME->vcpu.regs.sp = (unsigned long) frame;
-		domME->vcpu.regs.x21 = (unsigned long) domME->avz_shared->dom_desc.u.ME.resume_fn;
+	domME->vcpu.regs.sp = (unsigned long) frame;
+	domME->vcpu.regs.x21 = (unsigned long) domME->avz_shared->dom_desc.u.ME.resume_fn;
 
-		domME->vcpu.regs.lr = (unsigned long) resume_to_guest;
+	domME->vcpu.regs.lr = (unsigned long) resume_to_guest;
 
-		/* Now restoring event channel configuration */
-		evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.vbstore_levtchn,
-						 agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID]);
+	/* Now restoring event channel configuration */
+	evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.vbstore_levtchn,
+					 agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID]);
 
-		LOG_DEBUG("%s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__,
-			  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID], domME->avz_shared->dom_desc.u.ME.dc_evtchn);
+	LOG_DEBUG("%s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__,
+		  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID], domME->avz_shared->dom_desc.u.ME.dc_evtchn);
 
-		evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.dc_evtchn,
-						 agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID]);
-	}
-	LOG_DEBUG("%s: Now, resuming ME slotID %d...\n", __func__, slotID);
+	evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.dc_evtchn,
+					 agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID]);
+}
+LOG_DEBUG("%s: Now, resuming ME slotID %d...\n", __func__, slotID);
 
-	domain_unpause_by_systemcontroller(domME);
+domain_unpause_by_systemcontroller(domME);
 }
 
 void __sigreturn(void)

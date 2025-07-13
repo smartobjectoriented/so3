@@ -327,8 +327,7 @@ int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *inf
 	}
 
 	if (prop_len > MAX_COMPAT_SIZE) {
-		LOG_WARNING("Length of Compatible string > %d chars\n",
-		    MAX_COMPAT_SIZE);
+		LOG_WARNING("Length of Compatible string > %d chars\n", MAX_COMPAT_SIZE);
 		return new_offset;
 	}
 

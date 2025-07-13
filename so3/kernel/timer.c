@@ -313,8 +313,8 @@ again:
 		cur = cur->list_next;
 
 		if (t->expires <= now) {
-			LOG_DEBUG("### %s: NOW: %llu executing timer expires: %llu   ***  delta: %d\n",
-			    __func__, now, t->expires, t->expires - now);
+			LOG_DEBUG("### %s: NOW: %llu executing timer expires: %llu   ***  delta: %d\n", __func__, now,
+				  t->expires, t->expires - now);
 
 			remove_entry(ts, t);
 			execute_timer(ts, t);
@@ -325,10 +325,9 @@ again:
 	start = NULL;
 	t = ts->list;
 	while (t != NULL) {
-		LOG_DEBUG("### %s: NOW: %llu pending expires: %llu   ***  delta: %d\n",
-		    __func__, now, t->expires, t->expires - now);
-		if (((start == NULL) && (t->expires < end)) ||
-		    (t->expires < start->expires))
+		LOG_DEBUG("### %s: NOW: %llu pending expires: %llu   ***  delta: %d\n", __func__, now, t->expires,
+			  t->expires - now);
+		if (((start == NULL) && (t->expires < end)) || (t->expires < start->expires))
 			start = t;
 
 		t = t->list_next;
