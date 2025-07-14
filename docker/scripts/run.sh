@@ -5,6 +5,7 @@ set -e
 ROOTFS_PATH="/persistence/rootfs.fat.$PLATFORM"
 FILESYSTEM_PATH="/persistence/sdcard.img.$PLATFORM"
 
+
 mount_loop_partition() {
   image_path="$1"
   mount_point="$2"
@@ -54,7 +55,12 @@ build_usr()  {
 
   cd usr
 
-  ./build.sh -r
+  if [ -n "$SO3_USR_DEBUG" ]; then
+    ./build.sh
+  else
+    ./build.sh -r
+  fi
+
   if [ $? -ne '0' ]; then 
     exit 1
   fi
@@ -105,7 +111,11 @@ else
     exit 1
 fi
 
-qemu-system-${QEMU_ARCH} \
+if [ -n "$SO3_USR_DEBUG" ]; then
+  QEMU_DEBUG_ARGS="-S -gdb tcp::1234"
+fi
+
+qemu-system-${QEMU_ARCH} ${QEMU_DEBUG_ARGS} \
   -semihosting \
   -smp 2 \
   -icount shift=0,sleep=on,align=on \

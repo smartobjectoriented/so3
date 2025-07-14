@@ -52,6 +52,10 @@ add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/aarch64.lds -N -warn-common
 
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+	add_compile_options(-ggdb)
+endif()
+
 # All related libraries used by the linker
 add_subdirectory(lib)
 
