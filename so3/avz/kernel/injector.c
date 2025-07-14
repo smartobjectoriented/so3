@@ -335,7 +335,7 @@ void write_ME_snapshot(avz_hyp_t *args)
 	__setup_dom_pgtable(domME, memslot[slotID].base_paddr, memslot[slotID].size);
 
 	/* Copy the ME content */
-	memcpy((void *)__xva(slotID, memslot[slotID].base_paddr),
+	memcpy((void *) __xva(slotID, memslot[slotID].base_paddr),
 	       snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context), memslot[slotID].size);
 
 	/* Create a stack for this restored domain */
