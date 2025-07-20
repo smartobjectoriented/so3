@@ -15,7 +15,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+#define CONFIG_LOG_LEVEL LOG_LEVEL_DEBUG
 
+#include <common.h>
 #include <heap.h>
 #include <memory.h>
 #include <crc.h>
@@ -149,7 +151,8 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
 	if (me->avz_shared->dom_desc.u.ME.state == ME_state_suspended)
 		domctxt->avz_shared.dom_desc.u.ME.state = ME_state_hibernate;
 
-	BUG_ON(me->avz_shared->dom_desc.u.ME.state != ME_state_stopped);
+	BUG_ON((me->avz_shared->dom_desc.u.ME.state != ME_state_stopped) &&
+	       (me->avz_shared->dom_desc.u.ME.state != ME_state_suspended));
 
 	domctxt->pause_count = me->pause_count;
 
@@ -198,13 +201,16 @@ void read_ME_snapshot(avz_hyp_t *args)
 		return;
 	}
 
+	/* If the capsule is living, it will be put in ME_state_suspended state by Linux
+	 * before being entering this function.  
+	*/
 	if (domME->avz_shared->dom_desc.u.ME.state == ME_state_suspended) {
 		/* Pause the capsule */
 		domain_pause_by_systemcontroller(domME);
 	}
 
 	/* Gather all the info we need into structures */
-	/* This will put the capsule in state HIBERNATE */
+	/* This will put the capsule snapshot in HIBERNATE state */
 	build_domain_context(slotID, domME, &domain_context);
 
 	/* Copy the size of the payload which is made of the dom_info structure and the capsule */
@@ -313,7 +319,6 @@ void write_ME_snapshot(avz_hyp_t *args)
 		args->u.avz_snapshot_args.slotID = slotID;
 	else
 		return;
-	}
 
 	LOG_DEBUG("Available slotID: %d\n", args->u.avz_snapshot_args.slotID);
 
@@ -323,8 +328,10 @@ void write_ME_snapshot(avz_hyp_t *args)
 	domME = domains[slotID];
 	domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
 
+	LOG_DEBUG("Restoring the domain context...\n");
 	restore_domain_context(slotID, domME, domctxt);
 
+	LOG_DEBUG("Set up the page tables...\n");
 	__setup_dom_pgtable(domME, memslot[slotID].base_paddr, memslot[slotID].size);
 
 	/* Copy the ME content */
@@ -347,6 +354,7 @@ void write_ME_snapshot(avz_hyp_t *args)
 
 	/* We need to re-map the vbstore page corresponding to this slotID */
 	map_vbstore_pfn(domME->avz_shared->domID, domME->avz_shared->dom_desc.u.ME.vbstore_pfn);
+	LOG_DEBUG("State of the saved capsule: %d\n", domME->avz_shared->dom_desc.u.ME.state);
 
 	if (domME->avz_shared->dom_desc.u.ME.state != ME_state_stopped) {
 		BUG_ON(domME->avz_shared->dom_desc.u.ME.state != ME_state_hibernate);

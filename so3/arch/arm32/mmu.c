@@ -101,14 +101,14 @@ static void alloc_init_pte(uint32_t *l1pte, addr_t addr, addr_t end, addr_t pfn,
 
 		memset(l2pte, 0, size);
 
-		*l1pte = __pa((uint32_t)l2pte);
+		*l1pte = __pa((uint32_t) l2pte);
 
 		set_l1_pte_page_dcache(l1pte, (nocache ? L1_PAGE_DCACHE_OFF : L1_PAGE_DCACHE_WRITEALLOC));
 
 		LOG_DEBUG("Allocating a L2 page table at %p in l1pte: %p with contents: %x\n", l2pte, l1pte, *l1pte);
 	}
 
-	l2pgtable = (uint32_t *)__va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
+	l2pgtable = (uint32_t *) __va(*l1pte & TTB_L1_PAGE_ADDR_MASK);
 
 	l2pte = l2pte_offset(l1pte, addr);
 
@@ -142,7 +142,7 @@ static void alloc_init_section(uint32_t *l1pte, addr_t addr, addr_t end, addr_t 
 			*l1pte = phys;
 
 			set_l1_pte_sect_dcache(l1pte, (nocache ? L1_SECT_DCACHE_OFF : L1_SECT_DCACHE_WRITEALLOC));
-			
+
 			LOG_DEBUG("Allocating a section at l1pte: %p content: %x\n", l1pte, *l1pte);
 
 			phys += TTB_SECT_SIZE;

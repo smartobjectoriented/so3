@@ -289,10 +289,8 @@ int fat_mount(const char *mount_point)
 
 	for (i = 0; i < ARRAY_SIZE(volumes); i++) {
 		if (!volumes[i].mounted) {
-			if ((rc = f_mount(&volumes[i].mp, mount_point,
-					  MOUNT_NOW))) {
-				LOG_ERROR("Error %d while mounting volume %s\n", rc,
-				    mount_point);
+			if ((rc = f_mount(&volumes[i].mp, mount_point, MOUNT_NOW))) {
+				LOG_ERROR("Error %d while mounting volume %s\n", rc, mount_point);
 				return -rc;
 			}
 

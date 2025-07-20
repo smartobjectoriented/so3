@@ -138,9 +138,7 @@ void parse_dtb(void *fdt_addr)
 		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
 			if (fdt_device_is_available(fdt_addr, new_off)) {
 				for (i = 0; i < drivers_count[level]; i++) {
-					if (!strcmp(dev->compatible,
-						    driver_entries[level][i]
-							    .compatible)) {
+					if (!strcmp(dev->compatible, driver_entries[level][i].compatible)) {
 						found = true;
 
 						LOG_DEBUG("Found compatible:    %s\n", driver_entries[level][i].compatible);

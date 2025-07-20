@@ -172,13 +172,12 @@ void perform_task(dc_event_t dc_event)
 		/* The ME will initiate the shutdown processing on its own. */
 
 		DBG("perform a CB_SHUTDOWN on capsule %d\n", ME_domID());
-		
+
 		BUG_ON(get_ME_state() == ME_state_stopped);
 
 		cb_shutdown();
 
 		if (get_ME_state() == ME_state_terminated) {
-	
 			/* Prepare vbus to stop everything with the frontend */
 			/* (interactions with vbus) */
 			DBG("Device shutdown...\n");

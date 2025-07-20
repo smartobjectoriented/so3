@@ -48,14 +48,14 @@ typedef unsigned long addr_t;
 typedef uint32_t grant_ref_t;
 
 /* Grant table management */
-#define GRANT_INVALID_REF	0
+#define GRANT_INVALID_REF 0
 
 /* List of grant table commands which are processed by the hypervisor */
 
-#define GNTTAB_grant_page       1
-#define GNTTAB_revoke_page      2
-#define GNTTAB_map_page         3
-#define GNTTAB_unmap_page       4
+#define GNTTAB_grant_page 1
+#define GNTTAB_revoke_page 2
+#define GNTTAB_map_page 3
+#define GNTTAB_unmap_page 4
 
 struct gnttab_op {
 	/* Command to be processed in the hypercall */
@@ -76,16 +76,16 @@ void do_gnttab(gnttab_op_t *args);
 
 /* Event channel management */
 
-#define ECS_FREE         0 /* Channel is available for use.                  */
-#define ECS_RESERVED     1 /* Channel is reserved.                           */
-#define ECS_UNBOUND      2 /* Channel is waiting to bind to a remote domain. */
-#define ECS_INTERDOMAIN  3 /* Channel is bound to another domain.            */
-#define ECS_VIRQ         4 /* Channel is bound to a virtual IRQ line.        */
+#define ECS_FREE 0 /* Channel is available for use.                  */
+#define ECS_RESERVED 1 /* Channel is reserved.                           */
+#define ECS_UNBOUND 2 /* Channel is waiting to bind to a remote domain. */
+#define ECS_INTERDOMAIN 3 /* Channel is bound to another domain.            */
+#define ECS_VIRQ 4 /* Channel is bound to a virtual IRQ line.        */
 
-#define EVTCHNSTAT_closed       0  /* Channel is not in use.                 */
-#define EVTCHNSTAT_unbound      1  /* Channel is waiting interdom connection.*/
-#define EVTCHNSTAT_interdomain  2  /* Channel is connected to remote domain. */
-#define EVTCHNSTAT_virq         3  /* Channel is bound to a virtual IRQ line */
+#define EVTCHNSTAT_closed 0 /* Channel is not in use.                 */
+#define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
+#define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
+#define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
 /*
  * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
  * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn
@@ -94,7 +94,7 @@ void do_gnttab(gnttab_op_t *args);
  *  1. If the caller is unprivileged then <dom> must be DOMID_SELF.
  *  2. <rdom> may be DOMID_SELF, allowing loopback connections.
  */
-#define EVTCHNOP_alloc_unbound    6
+#define EVTCHNOP_alloc_unbound 6
 struct evtchn_alloc_unbound {
 	/* IN parameters */
 	domid_t dom, remote_dom;
@@ -113,9 +113,9 @@ typedef struct evtchn_alloc_unbound evtchn_alloc_unbound_t;
  * NOTES:
  *  2. <remote_dom> may be DOMID_SELF, allowing loopback connections.
  */
-#define EVTCHNOP_bind_interdomain     	      0
-#define EVTCHNOP_bind_existing_interdomain    7
-#define EVTCHNOP_unbind_domain 		      12
+#define EVTCHNOP_bind_interdomain 0
+#define EVTCHNOP_bind_existing_interdomain 7
+#define EVTCHNOP_unbind_domain 12
 
 struct evtchn_bind_interdomain {
 	/* IN parameters. */
@@ -170,7 +170,7 @@ struct evtchn_op {
 	} u;
 };
 typedef struct evtchn_op evtchn_op_t;
- 
+
 /* Domain control management */
 /*
  * There are two main scheduling policies: the one used for normal (standard) ME, and
@@ -179,9 +179,9 @@ typedef struct evtchn_op evtchn_op_t;
 #define AVZ_SCHEDULER_FLIP 0
 #define AVZ_SCHEDULER_RT 1
 
-#define DOMCTL_pauseME       	1
-#define DOMCTL_unpauseME     	2
-#define DOMCTL_get_AVZ_shared	3
+#define DOMCTL_pauseME 1
+#define DOMCTL_unpauseME 2
+#define DOMCTL_get_AVZ_shared 3
 
 struct domctl {
 	uint32_t cmd;
@@ -217,10 +217,7 @@ typedef enum {
  * FREE:	the slot is available (no ME)
  * BUSY:	the slot is allocated a ME
  */
-typedef enum {
-	ME_SLOT_FREE,
-	ME_SLOT_BUSY
-} ME_slotState_t;
+typedef enum { ME_SLOT_FREE, ME_SLOT_BUSY } ME_slotState_t;
 
 /* ME ID related information */
 #define ME_NAME_SIZE 40
@@ -276,15 +273,15 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
  * IOCTL codes
  */
 
-#define AGENCY_IOCTL_READ_SNAPSHOT		_IOWR('S', 1, agency_ioctl_args_t)
-#define AGENCY_IOCTL_WRITE_SNAPSHOT		_IOW('S', 2, agency_ioctl_args_t)
-#define AGENCY_IOCTL_SHUTDOWN   		_IOW('S', 3, agency_ioctl_args_t)
-#define AGENCY_IOCTL_INJECT_CAPSULE     	_IOWR('S', 4, agency_ioctl_args_t)
-#define AGENCY_IOCTL_START_CAPSULE              _IOWR('S', 5, agency_ioctl_args_t)
-#define AGENCY_IOCTL_GET_ME_ID			_IOWR('S', 6, agency_ioctl_args_t)
-#define AGENCY_IOCTL_GET_ME_ID_ARRAY		_IOR('S', 7, agency_ioctl_args_t)
+#define AGENCY_IOCTL_READ_SNAPSHOT _IOWR('S', 1, agency_ioctl_args_t)
+#define AGENCY_IOCTL_WRITE_SNAPSHOT _IOW('S', 2, agency_ioctl_args_t)
+#define AGENCY_IOCTL_SHUTDOWN _IOW('S', 3, agency_ioctl_args_t)
+#define AGENCY_IOCTL_INJECT_CAPSULE _IOWR('S', 4, agency_ioctl_args_t)
+#define AGENCY_IOCTL_START_CAPSULE _IOWR('S', 5, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_ME_ID _IOWR('S', 6, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_ME_ID_ARRAY _IOR('S', 7, agency_ioctl_args_t)
 
-#define SOO_NAME_SIZE				16
+#define SOO_NAME_SIZE 16
 
 /*
  * ME descriptor
@@ -293,18 +290,18 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
  * the same structure used in the ME.
  */
 typedef struct {
-	unsigned int	slotID;
-        uint64_t        spid;
+	unsigned int slotID;
+	uint64_t spid;
 
-	ME_state_t	state;
+	ME_state_t state;
 
-	unsigned int	size; /* Size of the ME with the struct dom_context size */
-        unsigned int    dc_evtchn;
+	unsigned int size; /* Size of the ME with the struct dom_context size */
+	unsigned int dc_evtchn;
 
-        unsigned int    vbstore_revtchn, vbstore_levtchn;
-        addr_t          vbstore_pfn;
+	unsigned int vbstore_revtchn, vbstore_levtchn;
+	addr_t vbstore_pfn;
 
-        void (*resume_fn)(void);
+	void (*resume_fn)(void);
 
 } ME_desc_t;
 
@@ -312,7 +309,6 @@ typedef struct {
  * Agency descriptor
  */
 typedef struct {
-
 	/*
 	 * SOO agencyUID unique 64-bit ID - Allowing to identify a SOO device.
 	 * agencyUID 0 is NOT valid.
@@ -320,14 +316,14 @@ typedef struct {
 
 	uint64_t agencyUID; /* Agency UID */
 
-        /* Event channels used for directcomm channel between agency and agency-RT or ME */
-        unsigned int dc_evtchn[MAX_DOMAINS];
-        
-        /* Event channels used by vbstore */
-        unsigned int vbstore_evtchn[MAX_DOMAINS];
+	/* Event channels used for directcomm channel between agency and agency-RT or ME */
+	unsigned int dc_evtchn[MAX_DOMAINS];
 
-        /* Local agency event channel for vbstore */
-        uint32_t vbstore_levtchn;
+	/* Event channels used by vbstore */
+	unsigned int vbstore_evtchn[MAX_DOMAINS];
+
+	/* Local agency event channel for vbstore */
+	uint32_t vbstore_levtchn;
 
 } agency_desc_t;
 
@@ -344,26 +340,24 @@ typedef struct {
 
 /* struct agency_ioctl_args used in IOCTLs */
 typedef struct agency_ioctl_args {
-	void	*buffer; /* IN/OUT */
-	int	slotID;
-	long	value;   /* IN/OUT */
+	void *buffer; /* IN/OUT */
+	int slotID;
+	long value; /* IN/OUT */
 } agency_ioctl_args_t;
 
+#define NSECS 1000000000ull
+#define SECONDS(_s) ((u64) ((_s) * 1000000000ull))
+#define MILLISECS(_ms) ((u64) ((_ms) * 1000000ull))
+#define MICROSECS(_us) ((u64) ((_us) * 1000ull))
 
-#define NSECS           	1000000000ull
-#define SECONDS(_s)     	((u64)((_s)  * 1000000000ull))
-#define MILLISECS(_ms)  	((u64)((_ms) * 1000000ull))
-#define MICROSECS(_us)  	((u64)((_us) * 1000ull))
-
-#define VBUS_TASK_PRIO			50
+#define VBUS_TASK_PRIO 50
 
 /*
  * The priority of the Directcomm thread must be higher than the priority of the SDIO
  * thread to make the Directcomm thread process a DC event and release it before any new
  * request by the SDIO's side thus avoiding a deadlock.
  */
-#define DC_ISR_TASK_PRIO		55
-
+#define DC_ISR_TASK_PRIO 55
 
 #ifndef __ASSEMBLY__
 
@@ -375,18 +369,18 @@ void rtdm_register_dc_event_callback(dc_event_t dc_event, dc_event_fn_t *callbac
 
 /* Console management */
 
-#define CONSOLE_IO_KEYHANDLER           0
-#define CONSOLE_IO_PRINTCH              1
-#define CONSOLE_IO_PRINTSTR             2
+#define CONSOLE_IO_KEYHANDLER 0
+#define CONSOLE_IO_PRINTCH 1
+#define CONSOLE_IO_PRINTSTR 2
 
-#define CONSOLE_STR_MAX_LEN             128
+#define CONSOLE_STR_MAX_LEN 128
 
 typedef struct {
-        int cmd;
-        union {
-                char c;
-                char str[CONSOLE_STR_MAX_LEN];
-        } u;
+	int cmd;
+	union {
+		char c;
+		char str[CONSOLE_STR_MAX_LEN];
+	} u;
 } console_t;
 
 /*
@@ -394,34 +388,34 @@ typedef struct {
  */
 
 /* AVZ hypercalls devoted to SOO */
-#define AVZ_ME_READ_SNAPSHOT   	        6
-#define AVZ_ME_WRITE_SNAPSHOT  	        7
-#define AVZ_START_CAPSULE               8
-#define AVZ_INJECT_CAPSULE      	9
-#define AVZ_KILL_ME			10
-#define AVZ_DC_EVENT_SET		11
-#define AVZ_GET_ME_STATE		13
-#define AVZ_SET_ME_STATE		14
-#define AVZ_GET_DOM_DESC		16
-#define AVZ_EVENT_CHANNEL_OP		17
-#define AVZ_CONSOLE_IO_OP		18
-#define AVZ_DOMAIN_CONTROL_OP           19
-#define AVZ_GRANT_TABLE_OP              20
+#define AVZ_ME_READ_SNAPSHOT 6
+#define AVZ_ME_WRITE_SNAPSHOT 7
+#define AVZ_START_CAPSULE 8
+#define AVZ_INJECT_CAPSULE 9
+#define AVZ_KILL_ME 10
+#define AVZ_DC_EVENT_SET 11
+#define AVZ_GET_ME_STATE 13
+#define AVZ_SET_ME_STATE 14
+#define AVZ_GET_DOM_DESC 16
+#define AVZ_EVENT_CHANNEL_OP 17
+#define AVZ_CONSOLE_IO_OP 18
+#define AVZ_DOMAIN_CONTROL_OP 19
+#define AVZ_GRANT_TABLE_OP 20
 
 /* AVZ_EVENT_CHANNEL_OP */
 typedef struct {
-        evtchn_op_t evtchn_op;
+	evtchn_op_t evtchn_op;
 } avz_evtchn_t;
 
 /* AVZ_INJECT_CAPSULE */
 typedef struct {
-        void *itb_paddr;
-        int slotID;
+	void *itb_paddr;
+	int slotID;
 } avz_inject_capsule_t;
 
 /* AVZ_START_CAPSULE */
 typedef struct {
-        int slotID;
+	int slotID;
 } avz_start_capsule_t;
 
 /* AVZ_DC_EVENT_SET */
@@ -434,25 +428,25 @@ typedef struct {
 /* AVZ_GET_ME_STATE */
 /* AVZ_SET_ME_STATE */
 typedef struct {
-        uint32_t slotID;
-        int state;
+	uint32_t slotID;
+	int state;
 } avz_me_state_t;
 
 /* AVZ_GET_DOM_DESC */
 typedef struct {
-        uint32_t slotID;
-        dom_desc_t dom_desc;
+	uint32_t slotID;
+	dom_desc_t dom_desc;
 } avz_dom_desc_t;
 
 /* AVZ_GET_ME_FREE_SLOT */
 typedef struct {
-        int slotID;
-        int size;
+	int slotID;
+	int size;
 } avz_free_slot_t;
 
 /* AVZ_MIG_INIT */
 typedef struct {
-        int slotID;
+	int slotID;
 } avz_mig_init_t;
 
 /* AVZ_READ_SNAPSHOT */
@@ -460,49 +454,49 @@ typedef struct {
 typedef struct {
 	void *snapshot_paddr;
 	int32_t slotID;
-        int size;
+	int size;
 } avz_snapshot_t;
 
 /* AVZ_KILL_ME */
 typedef struct {
-        uint32_t slotID;
+	uint32_t slotID;
 } avz_kill_me_t;
 
 /* AVZ_CONSOLE_IO_OP */
 typedef struct {
-        console_t console;
+	console_t console;
 } avz_console_io_t;
 
 /* AVZ_DOMAIN_CONTROL_OP */
 typedef struct {
-        domctl_t domctl;
+	domctl_t domctl;
 } avz_domctl_t;
 
 /* AVZ_GRANT_TABLE_OP */
 typedef struct {
-        gnttab_op_t gnttab_op;
+	gnttab_op_t gnttab_op;
 } avz_gnttab_t;
 
 /*
  * AVZ hypercall argument
  */
 typedef struct {
-        int cmd;
+	int cmd;
 	union {
-                avz_evtchn_t avz_evtchn;
-                avz_inject_capsule_t avz_inject_capsule_args;
-                avz_start_capsule_t avz_start_capsule_args;
-                avz_dc_event_t avz_dc_event_args;
-                avz_me_state_t avz_me_state_args;
-                avz_dom_desc_t avz_dom_desc_args;
-                avz_free_slot_t avz_free_slot_args;
-                avz_mig_init_t avz_mig_init_args;
-                avz_snapshot_t avz_snapshot_args;
-                avz_kill_me_t avz_kill_me_args;
-                avz_console_io_t avz_console_io_args;
-                avz_domctl_t avz_domctl_args;
-                avz_gnttab_t avz_gnttab_args;
-        } u;
+		avz_evtchn_t avz_evtchn;
+		avz_inject_capsule_t avz_inject_capsule_args;
+		avz_start_capsule_t avz_start_capsule_args;
+		avz_dc_event_t avz_dc_event_args;
+		avz_me_state_t avz_me_state_args;
+		avz_dom_desc_t avz_dom_desc_args;
+		avz_free_slot_t avz_free_slot_args;
+		avz_mig_init_t avz_mig_init_args;
+		avz_snapshot_t avz_snapshot_args;
+		avz_kill_me_t avz_kill_me_args;
+		avz_console_io_t avz_console_io_args;
+		avz_domctl_t avz_domctl_args;
+		avz_gnttab_t avz_gnttab_args;
+	} u;
 } avz_hyp_t;
 
 typedef struct {
@@ -528,25 +522,24 @@ typedef struct {
  *
  */
 
-#define CB_PRE_SUSPEND		4
-#define CB_PRE_RESUME		5
-#define CB_POST_ACTIVATE	6
-#define CB_AGENCY_CTL		9
+#define CB_PRE_SUSPEND 4
+#define CB_PRE_RESUME 5
+#define CB_POST_ACTIVATE 6
+#define CB_AGENCY_CTL 9
 
 typedef struct soo_domcall_arg {
-
 	/* Stores the agency ctl function.
 	 * Possibly, the agency_ctl function can be associated to a callback operation asked by a ME
 	 */
-	unsigned int			cmd;
-	unsigned int			slotID; /* Origin of the domcall */
+	unsigned int cmd;
+	unsigned int slotID; /* Origin of the domcall */
 
 	union {
-		pre_suspend_args_t	pre_suspend_args;
-		pre_resume_args_t	pre_resume_args;
+		pre_suspend_args_t pre_suspend_args;
+		pre_resume_args_t pre_resume_args;
 
-		post_activate_args_t	post_activate_args;
-		ME_state_t		set_me_state_args;
+		post_activate_args_t post_activate_args;
+		ME_state_t set_me_state_args;
 	} u;
 
 } soo_domcall_arg_t;

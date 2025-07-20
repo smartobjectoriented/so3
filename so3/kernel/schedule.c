@@ -440,12 +440,10 @@ void schedule(void)
 		next = tcb_idle;
 
 	if (next && (next != prev)) {
-		LOG_DEBUG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n",
-		    next->tid, next->name,
-		    ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
+		LOG_DEBUG("Now scheduling thread ID: %d name: %s PID: %d prio: %d\n", next->tid, next->name,
+			  ((next->pcb != NULL) ? next->pcb->pid : -1), next->prio);
 		if (prev)
-			LOG_DEBUG("Previous was threadID: %d name: %s PID: %d\n",
-			    prev->tid, prev->name);
+			LOG_DEBUG("Previous was threadID: %d name: %s PID: %d\n", prev->tid, prev->name);
 
 		/*
 		 * The current threads (here prev) can be in different states, not only running; it may be in *waiting* or *zombie*
