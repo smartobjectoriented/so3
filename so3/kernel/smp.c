@@ -54,7 +54,7 @@ extern void init_idle_domain(void);
 #endif
 
 /*
- * control for which core is the next to come out of the secondary
+ * Control for which core is the next to come out of the secondary
  * boot "holding pen"
  */
 volatile int pen_release = -1;
@@ -106,9 +106,9 @@ extern void periodic_timer_start(void);
 void secondary_start_kernel(void)
 {
 	unsigned int cpu = smp_processor_id();
-
+        
 #ifdef CONFIG_ARCH_ARM32
-	cpu_init();
+        cpu_init();
 #endif
 
 	gicc_init();
@@ -121,10 +121,10 @@ void secondary_start_kernel(void)
 	if (cpu == AGENCY_RT_CPU) {
 		__mmu_switch_kernel((void *) current_domain->pagetable_paddr, true);
 #else
-	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+        __mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
 #endif /* CONFIG_SOO */
 
-		booted[cpu] = 1;
+                booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
 		switch (cpu) {
@@ -147,10 +147,9 @@ void secondary_start_kernel(void)
 
 	/* If no spin table is used, CPU #1 */
 	if (cpu == AGENCY_RT_CPU)
-		pre_ret_to_el1();
-
-#endif /* CONFIG_SOO */
-
+#endif
+	pre_ret_to_el1();
+ 
 #endif /* CONFIG_AVZ */
 
 	secondary_timer_init();
@@ -187,21 +186,16 @@ void secondary_start_kernel(void)
 
 void cpu_up(unsigned int cpu)
 {
-	/*
-	 * We need to tell the secondary core where to find
-	 * its stack and the page tables.
-	 */
+        unsigned int cpu_stack_size;
 
-	switch (cpu) {
-	case AGENCY_RT_CPU:
-		secondary_data.stack = (void *) __cpu1_stack;
-		break;
+        /* We need to reach the top of the stack, so lets jump over
+         * the full kernel stack allocated to each CPU in so3.lds.
+         */
+	cpu_stack_size = (CONFIG_SYS_STACK_SIZE_KB + CONFIG_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB) * SZ_1K;
 
-	default:
-		secondary_data.stack = (void *) __cpu3_stack;
-	}
+        secondary_data.stack = ((void *) __stack_bottom) +  (cpu+1) * cpu_stack_size;
 
-	secondary_data.pgdir = __pa(__sys_root_pgtable);
+        secondary_data.pgdir = __pa(__sys_root_pgtable);
 
 	flush_dcache_all();
 

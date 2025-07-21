@@ -1,10 +1,23 @@
 
 config KERNEL_VADDR
-	hex "Virtual base address of the hypervisor"
+	hex "Virtual base address of the SO3 kernel or hypervisor"
 	default 0xff000000 if ARM32
 	default 0xffff700000000000 if ARM64 
 	default 0x100000000000 if ARM64VT
 	
-config HEAP_SIZE
-	int "Size of the heap in the hypervisor (MB)"
-	default 2
+config HEAP_SIZE_MB
+	int "Size of the heap (MB)"
+	default 8
+
+config SYS_STACK_SIZE_KB
+	int "Size of the system stack (KB)"
+	default  64
+	help
+	  System stack size is used for kernel activities.
+
+config THREAD_STACK_SIZE_KB
+	int "Size of the thread stack (KB)"
+	default  64
+	help
+	  Each thread has its own stack. This value is used to allocate the stack
+	  for each thread. 

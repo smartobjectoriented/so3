@@ -20,7 +20,9 @@
 #define DOMAIN_H
 
 #ifndef __ASSEMBLY__
+#ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
+#endif
 #endif
 
 #include <asm/mmu.h>
@@ -30,16 +32,15 @@
 
 #ifdef __ASSEMBLY__
 
-.macro curdom rd,
-	tmp
+.macro curdom rd, tmp
 
 		// Compute the address of the stack bottom where cpu_info is located.
-		ldr	\rd,
-	= (~(DOMAIN_STACK_SIZE - 1)) mov	\tmp, sp and	\rd, \tmp, \rd
+		ldr	\rd, =(~(DOMAIN_STACK_SIZE - 1)) 
+		mov	\tmp, sp and	\rd, \tmp, \rd
 
-						       // Get the address of the domain descriptor
-						       ldr	\rd,
-	[\rd].endm
+		// Get the address of the domain descriptor
+		ldr	\rd, [\rd]
+.endm
 
 #else /* __ASSEMBLY__ */
 
@@ -107,11 +108,13 @@ struct domain {
 	/* Domain is paused by controller software? */
 	bool is_paused_by_controller;
 
+#ifdef CONFIG_SOO
 	/* Grant table to store the pages granted by this domain to the other */
 	struct list_head gnttab;
 
 	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
+#endif /* CONFIG_SOO */
 
 	int processor;
 
@@ -135,13 +138,16 @@ struct domain {
 #define USE_NORMAL_PGTABLE 0
 #define USE_SYSTEM_PGTABLE 1
 
-extern struct domain *agency_rt_domain;
+#ifdef CONFIG_SOO
 extern struct domain *domains[MAX_DOMAINS];
+#endif /* CONFIG_SOO */
 
 extern int construct_agency(struct domain *d);
-extern int construct_ME(struct domain *d);
 
+#ifdef CONFIG_SOO
+extern int construct_ME(struct domain *d);
 ME_state_t get_ME_state(unsigned int ME_slotID);
+#endif /* CONFIG_SOO */
 
 void do_domctl(domctl_t *args);
 

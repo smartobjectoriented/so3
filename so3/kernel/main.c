@@ -17,10 +17,6 @@
  *
  */
 
-#if 0
-#define DEBUG
-#endif
-
 #include <common.h>
 #include <log.h>
 #include <calibrate.h>

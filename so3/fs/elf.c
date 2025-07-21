@@ -86,10 +86,10 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 	/* header */
 #ifdef CONFIG_ARCH_ARM32
 	elf_img_info->header =
-		(struct elf32_hdr *)malloc(sizeof(struct elf32_hdr));
+		(struct elf32_hdr *) malloc(sizeof(struct elf32_hdr));
 #else
 	elf_img_info->header =
-		(struct elf64_hdr *)malloc(sizeof(struct elf64_hdr));
+		(struct elf64_hdr *) malloc(sizeof(struct elf64_hdr));
 #endif
 	if (!elf_img_info->header) {
 		printk("%s: failed to allocate memory\n", __func__);
