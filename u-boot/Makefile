@@ -274,7 +274,7 @@ include ../build.conf
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt64 rpi4_64 cm4_64))
 ARCH	= arm64
-CROSS_COMPILE ?= aarch64-none-linux-gnu-
+CROSS_COMPILE ?= aarch64-none-elf-
 endif
 
 ifeq ($(PLATFORM),$(filter $(PLATFORM),virt32 rpi4 bbb))
