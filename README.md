@@ -13,12 +13,10 @@ Furthermore, the full documentation is available [here](https://smartobjectorien
 We would like to extend our heartfelt thanks to our sponsors for their generous support in funding the development of the SO3 ecosystem, especially [HEIG-VD](http://www.heig-vd.ch) and the [Hasler Foundations](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation) 
 
 
-
 Be careful with the requirements of various configs.
 
-- avz_vt -> ./st must have virtualization on => use ./stv
-- avz_pv -> ./st must have virtualization off => use ./st
-
+- If you use avz -> ./st must have virtualization on => use ./stv
+- If you use the framebuffer (LVGL case) -> ./stg to start QEMU with the graphic display
 
 To build the patch related to the CI:
 
