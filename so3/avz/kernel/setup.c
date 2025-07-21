@@ -116,18 +116,6 @@ void avz_start(void)
 
 	LOG_DEBUG("This configuration will spin up at most %d total processors ...", CONFIG_NR_CPUS);
 
-#ifdef CONFIG_SOO
-	/*
-	 * We need to create a sub-domain associated to the realtime CPU so that
-	 * hypercalls and upcalls will be processed correctly.
-	 */
-
-	domains[DOMID_AGENCY_RT] = domain_create(DOMID_AGENCY_RT, AGENCY_RT_CPU);
-
-	if (domains[DOMID_AGENCY_RT] == NULL)
-		panic("Error creating realtime agency subdomain.");
-#endif /* CONFIG_SOO */
-
 	/* Create initial domain 0. */
 	domains[DOMID_AGENCY] = domain_create(DOMID_AGENCY, AGENCY_CPU);
 	agency = domains[DOMID_AGENCY];

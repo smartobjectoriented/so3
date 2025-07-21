@@ -34,7 +34,7 @@
 
 .extern clear_bss
 .extern mmu_configure
-.extern __stack_top
+.extern __stack_bottom
 .extern __vectors
 .extern __get_avz_fdt_paddr
 
@@ -84,7 +84,9 @@ __start:
 	msr	cpacr_el1, x0
 
   	// Initialize stack pointers for current mode (normal case if no MMU is used)
-  	adrp	x0, __stack_top
+  	adrp	x0, __stack_bottom
+	add	x0, x0, #(CONFIG_SYS_STACK_SIZE_KB << 10)
+
   	mov	sp, x0
 
        // Up to here, a stack should be initialized
@@ -190,7 +192,9 @@ setup_mmu:
 	bl 	mmu_configure
 
 	// Readjust the stack
-	ldr	x0, =__stack_top
+	ldr	x0, =__stack_bottom
+	add	x0, x0, #(CONFIG_SYS_STACK_SIZE_KB << 10)
+
 	mov	sp, x0
 
 	// Keep executing in the kernel space
@@ -250,7 +254,8 @@ setup_mmu:
   	bl 	mmu_configure
 
   	// Readjust the stack
-  	ldr	x0, =__stack_top
+	ldr	x0, =__stack_bottom
+	add	x0, x0, #(CONFIG_SYS_STACK_SIZE_KB << 10)
 
   	mov	sp, x0
 
@@ -461,8 +466,8 @@ __secondary_kernel_main:
 
 ENTRY(secondary_startup)
 	/*
-     * Common entry point for secondary CPUs.
-     */
+         * Common entry point for secondary CPUs.
+         */
 
 	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
 
@@ -474,29 +479,29 @@ ENTRY(secondary_startup)
    	// Up to here, a stack should be initialized
     	adr 	x4, __secondary_data
 
-	ldr		x5, [x4]
-	ldr		x19, [x4, #8]
+	ldr	x5, [x4]
+	ldr	x19, [x4, #8]
 
 	// Nice trick to retrieve secondary_data field values (pgdir, stack)
 	// x5 is a virtual addresses at same location than x4 containing the physical location.
 	// So x10 will contain the offset
-	sub		x10, x4, x5
+	sub	x10, x4, x5
 
 	// Get secondary_data.pgdir (x19 is virtual, x0 is physical)
-	ldr		x0, [x10, x19]
+	ldr	x0, [x10, x19]
 
 	// Get the stack pointer (virt. address)
-	add		x19, x19, #8
-	ldr		x8, [x10, x19]
-	mov		sp, x8
+	add	x19, x19, #8
+	ldr	x8, [x10, x19]
+	mov	sp, x8
 
 	// Convert to physical address
-	add		sp, sp, x10
+	add	sp, sp, x10
 
-	bl		mmu_configure
+	bl	mmu_configure
 
-	ldr		x8, [x19]
-	mov		sp, x8
+	ldr	x8, [x19]
+	mov	sp, x8
 
   	// Keep executing in the kernel space
 
@@ -515,9 +520,9 @@ ENTRY(secondary_startup)
 
   	// Store the virtual address which will be used to continue
     	// execution after the MMU enabled.
-  	ldr		x19, .LC_virt_secondary_entry
+  	ldr	x19, .LC_virt_secondary_entry
 
-  	blr		x19
+  	blr	x19
 
 	nop
 	nop

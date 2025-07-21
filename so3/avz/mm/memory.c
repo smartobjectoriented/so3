@@ -30,7 +30,7 @@
 
 #include <asm/mmu.h>
 
-#include <avz/soo.h>
+//#include <avz/soo.h>
 
 #include <avz/sched.h>
 

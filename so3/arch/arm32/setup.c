@@ -23,10 +23,6 @@
 #include <memory.h>
 #include <log.h>
 
-#ifdef CONFIG_SO3VIRT
-#include <avz/uapi/avz.h>
-#endif
-
 #include <device/driver.h>
 #include <device/irq.h>
 
@@ -36,19 +32,6 @@
 #include <asm/vfp.h>
 
 extern unsigned char __irq_stack_start[];
-
-#ifdef CONFIG_SO3VIRT
-
-/* Force the variable to be stored in .data section so that the BSS can be freely cleared.
- * The value is set during the head.S execution before clear_bss().
- */
-avz_shared_t *avz_shared = (avz_shared_t *) 0xbeef;
-addr_t avz_guest_phys_offset;
-void (*__printch)(char c);
-
-volatile uint32_t *HYPERVISOR_hypercall_addr;
-
-#endif
 
 /* To keep the original CPU ID so that we can avoid
  * undesired activities running on another CPU.
@@ -126,14 +109,6 @@ void cpu_init(void)
  */
 void setup_arch(void)
 {
-#ifdef CONFIG_SO3VIRT
-
-	__printch = avz_shared->printch;
-
-	HYPERVISOR_hypercall_addr = (uint32_t *) avz_shared->hypercall_vaddr;
-
-#endif /* CONFIG_SO3VIRT */
-
 	/* Original boot CPU identification to prevent undesired activities on another CPU . */
 	origin_cpu = smp_processor_id();
 

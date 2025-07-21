@@ -87,7 +87,6 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 {
 	addr_t *new_pt;
 	int slotID;
-	int i;
 
 	ASSERT(d);
 
@@ -134,12 +133,13 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		 */
 		d->avz_shared->subdomain_shared_paddr = memslot[slotID].ipa_addr + map_size + PAGE_SIZE;
 	}
-
+#ifdef CONFIG_SOO
 	/* Initialize the grant pfn (ipa address) area */
-	for (i = 0; i < NR_GRANT_PFN; i++) {
+	for (int i = 0; i < NR_GRANT_PFN; i++) {
 		d->grant_pfn[i].pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + i;
 		d->grant_pfn[i].free = true;
 	}
+#endif /* CONFIG_SOO */
 }
 
 void arch_domain_create(struct domain *d, int cpu_id)

@@ -9,10 +9,6 @@ choice
 		bool "ARM 64-bit"
 endchoice
 
-config SO3VIRT
-		bool "SO3 Paravirtualized OS (running on AVZ)"
-		depends on MMU && !AVZ
-
 config ARCH
 	string "ARM Architecture"
 	default "arm32" if ARCH_ARM32

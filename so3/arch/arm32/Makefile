@@ -11,9 +11,5 @@ obj-y += lib/
 
 obj-$(CONFIG_MMU) += mmu.o
 
-obj-$(CONFIG_AVZ) += hypercalls.o domain.o migration.o
-
-#obj-$(CONFIG_PSCI) += smccc-call.o
-
 obj-y += $(TARGET)/
 

@@ -21,9 +21,6 @@
 
 #define L_TEXT_OFFSET 0x80000
 
-extern addr_t __cpu1_stack[];
-extern addr_t __cpu3_stack[];
-
 void setup_arch(void);
 void cpu_init(void);
 

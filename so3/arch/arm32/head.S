@@ -73,15 +73,6 @@ __start:
   @ r2 = dtb address
 
   @ Make sure we start in SVC mode
-#ifdef CONFIG_SO3VIRT
-
-  ldr	r10, =avz_shared
-  str 	r12, [r10]
-
-  @ For future conversion to physical which is not required in this case.
-  mov   r8, #0
-
-#else /* CONFIG_SO3VIRT */
 
   safe_svcmode_maskall r9
 
@@ -104,8 +95,6 @@ cont:
   ldr 	r1, =__vectors
   add	r1, r1, r8
   mcr 	p15, 0, r1, c12, c0, 0		@ vector table
-
-#endif /* !CONFIG_SO3VIRT */
 
   @ Prepare to clear bss and zero fp
   ldr	r6, =__bss_start
