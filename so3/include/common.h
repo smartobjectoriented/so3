@@ -49,18 +49,7 @@
 #ifndef __ASSEMBLY__
 
 extern addr_t __end[];
-
-#ifdef CONFIG_AVZ
-
-/*
- * Pseudo-usr mode allows the hypervisor to switch back to the right stack (G-stach/H-stack) depending on whether
- * the guest issued a hypercall or if an interrupt occurred during some processing in the hypervisor.
- * 0 means we are in some hypervisor code, 1 means we are in some guest code.
- */
-extern addr_t pseudo_usr_mode[];
-
-#endif /* CONFIG_AVZ */
-
+extern addr_t __stack_bottom[];
 
 #define DIV_ROUND_CLOSEST(x, divisor)                                \
 	({                                                           \

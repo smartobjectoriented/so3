@@ -6,16 +6,8 @@ OUTPUT_FORMAT(elf32-littlearm)
 OUTPUT_ARCH(arm)
 ENTRY(__start)
 
-/* The sizes of the stacks used by the application. */
- 
-/*
- * SVC stack is used for kernel activities *and* for each newly created thread.
- * Indeed a user thread (running in the user space) will also involve kernel activities
- * with syscalls and other.
- */
-SVC_STACK_SIZE = 32*1024 + 10*32*1024;  /* Initial system stack */
-
-HEAP_SIZE = CONFIG_HEAP_SIZE * 1024 * 1024;    /* Heap dedicated to kernel heap */
+STACK_SIZE = (CONFIG_SYS_STACK_SIZE_KB + CONFIG_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB) * 1024;
+HEAP_SIZE = CONFIG_HEAP_SIZE_MB * 1024 * 1024;    /* Heap dedicated to kernel heap */
 
 TABLE_L1_SIZE = 16 * 1024;   /* 16 KB 1st-level page table */ 
 
@@ -33,7 +25,7 @@ SECTIONS
     .vectors.text :
     {
         *(.vectors.text); 
-    }
+    } :text
     
   	__vectors_end = .;
   
@@ -42,13 +34,13 @@ SECTIONS
     .head.text :
     {
         *(.head.text);
-    }
+    } :text
 
     .text :
     {
         *(.text*) 
-    }
-    
+    } :text
+
 	. = ALIGN(4096);
 	
 	.root_proc_prologue :
@@ -59,13 +51,13 @@ SECTIONS
 		
 		__root_proc_end = .;
 		
-	}
+	} :text
 	
     . = ALIGN(4096);
     .data  : 
     { 
         *(.data*) 
-    }
+    } :data
 
     . = ALIGN(4096);
     __bss_start = .;
@@ -96,7 +88,7 @@ SECTIONS
      	
      	__per_cpu_end = .;
      	
-    }
+    } :data
 
     __bss_end = .;
 
@@ -145,47 +137,34 @@ SECTIONS
     /* Alignment is required for subsequent allocation of L1 page tables */
   
     . = ALIGN(16384);
-
+    
     .heap :
     {
       __heap_base_addr = . ;
-     
-      . += HEAP_SIZE;
-    }
 
+      . += HEAP_SIZE;
+    } :data
+    
     . = ALIGN(8192);
+
+    /* Each CPU has its own stack area of STACK_SIZE bytes. They are
+     * reserved in a contiguous way from __stack_bottom in this order: CPU#0 - CPU#1 - etc.
+     */
 
     .stack : 
     { 
-        . += SVC_STACK_SIZE;
-      
-        __stack_top = . ;
-        
-    }
+        __stack_bottom = . ;
 
-    .cpu1_stack : 
-    { 
-        . += SVC_STACK_SIZE;
-      
-        __cpu1_stack = . ;
+        . += STACK_SIZE * CONFIG_NR_CPUS;
         
-    }
-    
-    .cpu2_stack : 
-    { 
-        . += SVC_STACK_SIZE;
-      
-        __cpu2_stack = . ;
-        
-    }
-    
-    .cpu3_stack : 
-    { 
-        . += SVC_STACK_SIZE;
-      
-        __cpu3_stack = . ;
-        
-    }
-    
+        __stack_top = . ;
+    } :data
+
     __end = .;
+}
+
+ PHDRS
+{
+  text PT_LOAD FLAGS(5); /* R-X */
+  data PT_LOAD FLAGS(6); /* RW- */
 }

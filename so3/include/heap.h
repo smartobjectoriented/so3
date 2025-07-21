@@ -26,7 +26,7 @@
  * The heap size is defined in the linker script (avz.lds)
  * The value must be strictly the same.
  */
-#define HEAP_SIZE (CONFIG_HEAP_SIZE * SZ_1M)
+#define HEAP_SIZE (CONFIG_HEAP_SIZE_MB * SZ_1M)
 
 #define CHUNK_SIG 0xbeefdead
 
