@@ -88,7 +88,7 @@ config LOG_LEVEL
     default 6 if LOG_LEVEL_TRACE
     depends on !LOG_LEVEL_NONE
 
-if !AVZ
+if !AVZ && !ARCH_ARM32
 config SOO
 	bool "Configure SO3 as a Mobile Entity (ME)"
 endif
