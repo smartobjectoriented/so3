@@ -135,8 +135,7 @@ int do_kill(int pid, int sig)
 
 	proc = find_proc_by_pid(pid);
 	if (proc == NULL) {
-		LOG_ERROR("<kernel> %s: No process having the PID %d found!\n",
-		       __func__, pid);
+		LOG_ERROR("<kernel> %s: No process having the PID %d found!\n", __func__, pid);
 		return -1;
 	}
 

@@ -191,8 +191,7 @@ pcb_t *new_process(void)
 	pcb->lock = memalign(N_MUTEX * sizeof(mutex_t), 8);
 
 	if (!pcb->lock) {
-		LOG_CRITICAL("%s: failed to allocate memory for process mutex\n",
-		       __func__);
+		LOG_CRITICAL("%s: failed to allocate memory for process mutex\n", __func__);
 		kernel_panic();
 	}
 
@@ -258,8 +257,7 @@ void dump_proc_pages(pcb_t *pcb)
 
 	LOG_INFO("----- Dump of pages belonging to proc: %d -----\n\n", pcb->pid);
 	list_for_each_entry(cur, &pcb->page_list, list)
-		LOG_INFO("   -- page: %p  pfn: %x   refcount: %d\n", cur->page,
-		       page_to_pfn(cur->page), cur->page->refcount);
+		LOG_INFO("   -- page: %p  pfn: %x   refcount: %d\n", cur->page, page_to_pfn(cur->page), cur->page->refcount);
 	LOG_INFO("\n");
 }
 
@@ -327,8 +325,7 @@ void create_root_process(void)
 
 	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
-	LOG_DEBUG("Stack mapped at 0x%08x (size: %d bytes)\n",
-	    pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
+	LOG_DEBUG("Stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
 	/* First map the code in the user space so that
          * the initial code can run normally in user mode.
@@ -542,8 +539,7 @@ void post_setup_image(void *args_env)
 /*
  * Set up the PCB fields related to the binary image to be loaded.
  */
-int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
-			     char **argv, char **envp)
+int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc, char **argv, char **envp)
 {
 	uint32_t page_count;
 	void *__args_env;
@@ -582,8 +578,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
-	LOG_DEBUG("stack mapped at 0x%08x (size: %d bytes)\n",
-	    pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
+	LOG_DEBUG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
 
 	/* Initialize the pc register */
 	pcb->bin_image_entry = (uint32_t) elf_img_info->header->e_entry;
@@ -610,15 +605,13 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	allocate_page(pcb, pcb->heap_base, page_count, true);
 
-	LOG_DEBUG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base,
-	    HEAP_SIZE);
+	LOG_DEBUG("heap mapped at 0x%08x (size: %d bytes)\n", pcb->heap_base, HEAP_SIZE);
 
 	/* arguments (& env) will be stored in one more page */
 	pcb->page_count++;
 
 	allocate_page(pcb, arch_get_args_base(), 1, true);
-	LOG_DEBUG("arguments mapped at 0x%08x (size: %d bytes)\n",
-	    arch_get_args_base(), PAGE_SIZE);
+	LOG_DEBUG("arguments mapped at 0x%08x (size: %d bytes)\n", arch_get_args_base(), PAGE_SIZE);
 
 	/* Prepare the arguments within the page reserved for this purpose. */
 	if (__args_env)
@@ -677,8 +670,7 @@ void load_process(elf_img_info_t *elf_img_info)
 			}
 
 			if (!section_supported) {
-				LOG_DEBUG("Section %s not loaded: unsupported name\n",
-				    elf_img_info->section_names[j]);
+				LOG_DEBUG("Section %s not loaded: unsupported name\n", elf_img_info->section_names[j]);
 				continue;
 			}
 
@@ -848,8 +840,8 @@ int do_fork(void)
          * thread */
 	if (current() != parent->main_thread) {
 		LOG_WARNING("%s: forking from a thread other than the main thread "
-		       "is not allowed so far ...\n",
-		       __func__);
+			    "is not allowed so far ...\n",
+			    __func__);
 		return -1;
 	}
 
@@ -926,8 +918,7 @@ void do_exit(int exit_status)
 		semi_exit(0);
 
 #endif
-		LOG_CRITICAL("<kernel> %s: cannot finish the root process ...\n",
-		       __func__);
+		LOG_CRITICAL("<kernel> %s: cannot finish the root process ...\n", __func__);
 		kernel_panic();
 	}
 
@@ -1173,20 +1164,18 @@ void do_ps()
 	list_for_each(proc_pos, &proc_list) {
 		/* find and print main thread */
 		pcb = list_entry(proc_pos, pcb_t, list);
-		LOG_INFO(" [pid %02d] [main_tid %02d : priority %03d : %s]",
-		       pcb->pid, pcb->main_thread->tid,
-		       pcb->main_thread->priority, pcb->main_thread->name);
+		LOG_INFO(" [pid %02d] [main_tid %02d : priority %03d : %s]", pcb->pid, pcb->main_thread->tid,
+			 pcb->main_thread->priority, pcb->main_thread->name);
 
 		/* find and print other threads */
 		if (list_empty(&pcb->threads)) {
 			LOG_INFO("\n*********************************************"
-			       "*******\n\n");
+				 "*******\n\n");
 			return;
 		}
 		list_for_each(thread_pos, &pcb->threads) {
 			tcb = list_entry(thread_pos, tcb_t, list);
-			LOG_INFO(" [other_tid %02d : priority %03d : %s]\n",
-			       tcb->tid, tcb->priority, tcb->name);
+			LOG_INFO(" [other_tid %02d : priority %03d : %s]\n", tcb->tid, tcb->priority, tcb->name);
 		}
 	}
 	LOG_INFO("\n****************************************************\n\n");
@@ -1225,10 +1214,7 @@ void dump_proc(void)
 	list_for_each_entry(pcb, &proc_list, list) {
 		/* Based on process main thread. */
 
-		LOG_INFO(" [pid %d state: %s] [main_tid: %d name: %s]\n",
-		       pcb->pid, proc_state_str(pcb->state),
-		       ((pcb->main_thread != NULL) ? pcb->main_thread->tid :
-						     -1),
-		       pcb->main_thread->name);
+		LOG_INFO(" [pid %d state: %s] [main_tid: %d name: %s]\n", pcb->pid, proc_state_str(pcb->state),
+			 ((pcb->main_thread != NULL) ? pcb->main_thread->tid : -1), pcb->main_thread->name);
 	}
 }

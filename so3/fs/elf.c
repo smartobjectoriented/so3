@@ -85,32 +85,27 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 
 	/* header */
 #ifdef CONFIG_ARCH_ARM32
-	elf_img_info->header =
-		(struct elf32_hdr *) malloc(sizeof(struct elf32_hdr));
+	elf_img_info->header = (struct elf32_hdr *) malloc(sizeof(struct elf32_hdr));
 #else
-	elf_img_info->header =
-		(struct elf64_hdr *) malloc(sizeof(struct elf64_hdr));
+	elf_img_info->header = (struct elf64_hdr *) malloc(sizeof(struct elf64_hdr));
 #endif
+  
 	if (!elf_img_info->header) {
 		printk("%s: failed to allocate memory\n", __func__);
 		kernel_panic();
 	}
 
 #ifdef CONFIG_ARCH_ARM32
-	memcpy(elf_img_info->header, elf_img_info->file_buffer,
-	       sizeof(struct elf32_hdr));
+	memcpy(elf_img_info->header, elf_img_info->file_buffer, sizeof(struct elf32_hdr));
 #else
-	memcpy(elf_img_info->header, elf_img_info->file_buffer,
-	       sizeof(struct elf64_hdr));
+	memcpy(elf_img_info->header, elf_img_info->file_buffer, sizeof(struct elf64_hdr));
 #endif
 
-	LOG_DEBUG("Magic: 0x%02x%c%c%c\n", elf_img_info->header->e_ident[EI_MAG0],
-	    elf_img_info->header->e_ident[EI_MAG1],
-	    elf_img_info->header->e_ident[EI_MAG2],
-	    elf_img_info->header->e_ident[EI_MAG3]);
+	LOG_DEBUG("Magic: 0x%02x%c%c%c\n", elf_img_info->header->e_ident[EI_MAG0], elf_img_info->header->e_ident[EI_MAG1],
+		  elf_img_info->header->e_ident[EI_MAG2], elf_img_info->header->e_ident[EI_MAG3]);
 	LOG_DEBUG("%d sections\n", elf_img_info->header->e_shnum);
-	LOG_DEBUG("section table is at offset 0x%08x (%d bytes/section)\n",
-	    elf_img_info->header->e_shoff, elf_img_info->header->e_shentsize);
+	LOG_DEBUG("section table is at offset 0x%08x (%d bytes/section)\n", elf_img_info->header->e_shoff,
+		  elf_img_info->header->e_shentsize);
 
 #ifdef CONFIG_ARCH_ARM32
 	LOG_DEBUG("sizeof(struct elf32_shdr): %d bytes\n", sizeof(struct elf32_shdr));
@@ -120,11 +115,9 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 
 	/* sections */
 #ifdef CONFIG_ARCH_ARM32
-	elf_img_info->sections = (struct elf32_shdr *)malloc(
-		elf_img_info->header->e_shnum * sizeof(struct elf32_shdr));
+	elf_img_info->sections = (struct elf32_shdr *) malloc(elf_img_info->header->e_shnum * sizeof(struct elf32_shdr));
 #else
-	elf_img_info->sections = (struct elf64_shdr *)malloc(
-		elf_img_info->header->e_shnum * sizeof(struct elf64_shdr));
+	elf_img_info->sections = (struct elf64_shdr *) malloc(elf_img_info->header->e_shnum * sizeof(struct elf64_shdr));
 #endif
 
 	if (!elf_img_info->sections) {
@@ -132,8 +125,7 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 		kernel_panic();
 	}
 
-	elf_img_info->section_names =
-		(char **)malloc(elf_img_info->header->e_shnum * sizeof(char *));
+	elf_img_info->section_names = (char **) malloc(elf_img_info->header->e_shnum * sizeof(char *));
 	if (!elf_img_info->section_names) {
 		LOG_CRITICAL("%s: failed to allocate memory\n", __func__);
 		kernel_panic();
@@ -141,44 +133,31 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 
 	for (i = 0; i < elf_img_info->header->e_shnum; i++)
 		memcpy(elf_img_info->sections + i,
-		       elf_img_info->file_buffer +
-			       elf_img_info->header->e_shoff +
-			       i * elf_img_info->header->e_shentsize,
+		       elf_img_info->file_buffer + elf_img_info->header->e_shoff + i * elf_img_info->header->e_shentsize,
 		       sizeof(struct elf32_shdr));
 
 	/* Section names */
 	for (i = 0; i < elf_img_info->header->e_shnum; i++) {
 		section_name_offset =
-			elf_img_info->sections[elf_img_info->header->e_shstrndx]
-				.sh_offset +
-			elf_img_info->sections[i].sh_name;
-		section_name_len =
-			strlen((const char *)(elf_img_info->file_buffer +
-					      section_name_offset));
+			elf_img_info->sections[elf_img_info->header->e_shstrndx].sh_offset + elf_img_info->sections[i].sh_name;
+		section_name_len = strlen((const char *) (elf_img_info->file_buffer + section_name_offset));
 
-		elf_img_info->section_names[i] =
-			(char *)malloc(section_name_len + 1);
+		elf_img_info->section_names[i] = (char *) malloc(section_name_len + 1);
 		if (!elf_img_info->section_names[i]) {
 			printk("%s: failed to allocate memory\n", __func__);
 			kernel_panic();
 		}
 
-		strcpy(elf_img_info->section_names[i],
-		       (char *)(elf_img_info->file_buffer +
-				section_name_offset));
+		strcpy(elf_img_info->section_names[i], (char *) (elf_img_info->file_buffer + section_name_offset));
 
-		LOG_DEBUG("[0x%08x] section name: %s\t(%d bytes)\n",
-		    section_name_offset, elf_img_info->section_names[i],
-		    section_name_len);
+		LOG_DEBUG("[0x%08x] section name: %s\t(%d bytes)\n", section_name_offset, elf_img_info->section_names[i],
+			  section_name_len);
 	}
 
 	for (i = 0; i < elf_img_info->header->e_shnum; i++) {
-		LOG_DEBUG("\t[0x%08x] %s loads at 0x%08x (%d bytes) - flags: 0x%08x\n",
-		    elf_img_info->sections[i].sh_offset,
-		    elf_img_info->section_names[i],
-		    elf_img_info->sections[i].sh_addr,
-		    elf_img_info->sections[i].sh_size,
-		    elf_img_info->sections[i].sh_flags);
+		LOG_DEBUG("\t[0x%08x] %s loads at 0x%08x (%d bytes) - flags: 0x%08x\n", elf_img_info->sections[i].sh_offset,
+			  elf_img_info->section_names[i], elf_img_info->sections[i].sh_addr, elf_img_info->sections[i].sh_size,
+			  elf_img_info->sections[i].sh_flags);
 	}
 }
 
@@ -188,11 +167,9 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 
 	/* Segments */
 #ifdef CONFIG_ARCH_ARM32
-	elf_img_info->segments = (struct elf32_phdr *)malloc(
-		sizeof(struct elf32_phdr) * elf_img_info->header->e_phnum);
+	elf_img_info->segments = (struct elf32_phdr *) malloc(sizeof(struct elf32_phdr) * elf_img_info->header->e_phnum);
 #else
-	elf_img_info->segments = (struct elf64_phdr *)malloc(
-		sizeof(struct elf64_phdr) * elf_img_info->header->e_phnum);
+	elf_img_info->segments = (struct elf64_phdr *) malloc(sizeof(struct elf64_phdr) * elf_img_info->header->e_phnum);
 #endif
 
 	if (!elf_img_info->segments) {
@@ -201,8 +178,8 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 	}
 
 	LOG_DEBUG("%d segments\n", elf_img_info->header->e_phnum);
-	LOG_DEBUG("segment table is at offset 0x%08x (%d bytes/section)\n",
-	    elf_img_info->header->e_phoff, elf_img_info->header->e_phentsize);
+	LOG_DEBUG("segment table is at offset 0x%08x (%d bytes/section)\n", elf_img_info->header->e_phoff,
+		  elf_img_info->header->e_phentsize);
 #ifdef CONFIG_ARCH_ARM32
 	LOG_DEBUG("sizeof(struct elf32_phdr): %d bytes\n", sizeof(struct elf32_phdr));
 #else
@@ -213,34 +190,23 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
 #ifdef CONFIG_ARCH_ARM32
 		memcpy(elf_img_info->segments + i,
-		       elf_img_info->file_buffer +
-			       elf_img_info->header->e_phoff +
-			       i * elf_img_info->header->e_phentsize,
+		       elf_img_info->file_buffer + elf_img_info->header->e_phoff + i * elf_img_info->header->e_phentsize,
 		       sizeof(struct elf32_phdr));
 #else
 		memcpy(elf_img_info->segments + i,
-		       elf_img_info->file_buffer +
-			       elf_img_info->header->e_phoff +
-			       i * elf_img_info->header->e_phentsize,
+		       elf_img_info->file_buffer + elf_img_info->header->e_phoff + i * elf_img_info->header->e_phentsize,
 		       sizeof(struct elf64_phdr));
 #endif
 
 		if (elf_img_info->segments[i].p_type == PT_LOAD)
-			elf_img_info->segment_page_count +=
-				(elf_img_info->segments[i].p_memsz >>
-				 PAGE_SHIFT) +
-				1;
+			elf_img_info->segment_page_count += (elf_img_info->segments[i].p_memsz >> PAGE_SHIFT) + 1;
 	}
-	LOG_DEBUG("segments use %d virtual pages\n",
-	    elf_img_info->segment_page_count);
+	LOG_DEBUG("segments use %d virtual pages\n", elf_img_info->segment_page_count);
 
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
 		LOG_DEBUG("[0x%08x] vaddr: 0x%08x; paddr: 0x%08x; filesize: 0x%08x; memsize: 0x%08x flags: 0x%08x\n",
-		    elf_img_info->segments[i].p_offset,
-		    elf_img_info->segments[i].p_vaddr,
-		    elf_img_info->segments[i].p_paddr,
-		    elf_img_info->segments[i].p_filesz,
-		    elf_img_info->segments[i].p_memsz,
-		    elf_img_info->segments[i].p_flags);
+			  elf_img_info->segments[i].p_offset, elf_img_info->segments[i].p_vaddr,
+			  elf_img_info->segments[i].p_paddr, elf_img_info->segments[i].p_filesz,
+			  elf_img_info->segments[i].p_memsz, elf_img_info->segments[i].p_flags);
 	}
 }
