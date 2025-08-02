@@ -68,7 +68,7 @@ copyright = u'2014-2025, HEIG-VD - REDS Institute'
 # built documents.
 #
 # The short X.Y version.
-version = u'6.1.0
+version = u'6.1.0'
 
 # The full version, including alpha/beta/rc tags.
 release = u'6.1.0'
