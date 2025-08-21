@@ -74,12 +74,8 @@ void avz_start(void)
 	/* Parse the domain DT and load the loadables images from ITB (AVZ DT, Linux agency). */
 	loadAgency();
 
-#ifndef CONFIG_ARM64VT
-	memset(&pseudo_usr_mode, 0, CONFIG_NR_CPUS * sizeof(unsigned int));
-#endif
-
 	lprintk("\n\n********** Smart Object Oriented technology - AVZ Hypervisor  **********\n");
-	lprintk("Copyright (c) 2014-2023 REDS Institute, HEIG-VD, Yverdon-les-Bains\n");
+	lprintk("Copyright (c) 2014-2025 REDS Institute, HEIG-VD, Yverdon-les-Bains\n");
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
 	LOG_INFO("\n\nNow bootstraping the hypervisor kernel ...");
@@ -116,7 +112,7 @@ void avz_start(void)
 
 	LOG_DEBUG("This configuration will spin up at most %d total processors ...", CONFIG_NR_CPUS);
 
-	/* Create initial domain 0. */
+	/* Create initial domain 0 called agency */
 	domains[DOMID_AGENCY] = domain_create(DOMID_AGENCY, AGENCY_CPU);
 	agency = domains[DOMID_AGENCY];
 
@@ -127,11 +123,8 @@ void avz_start(void)
 		panic("Could not set up agency guest OS");
 
 	/* Check that we do have a agency at this point, as we need it. */
-	if (agency == NULL) {
-		LOG_CRITICAL("No agency found, stopping here...");
-		while (1)
-			;
-	}
+	if (agency == NULL) 
+		panic("No agency found, stopping here...");
 
 	/* Allow context switch between domains */
 	local_irq_enable();

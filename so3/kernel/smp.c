@@ -26,6 +26,8 @@
 #ifdef CONFIG_AVZ
 #include <avz/evtchn.h>
 #include <avz/domain.h>
+
+#include <avz/uapi/avz.h>
 #endif
 
 #include <device/irq.h>
@@ -81,19 +83,19 @@ int read_pen_release(void)
 	return pen_release;
 }
 
+#ifdef CONFIG_AVZ
+
 void smp_trigger_event(int target_cpu)
 {
 	int cpu = smp_processor_id();
 	long cpu_mask = 1 << target_cpu;
 
 	spin_lock(&per_cpu(softint_lock, cpu));
-
-	/* We keep forcing a send of IPI since the other CPU could be in WFI in an idle loop */
-
 	smp_cross_call(cpu_mask, IPI_EVENT_CHECK);
-
 	spin_unlock(&per_cpu(softint_lock, cpu));
 }
+
+#endif /* CONFIG_AVZ */
 
 /***************************/
 
@@ -117,12 +119,9 @@ void secondary_start_kernel(void)
 
 #if defined(CONFIG_AVZ)
 
-#ifdef CONFIG_SOO
-	if (cpu == AGENCY_RT_CPU) {
-		__mmu_switch_kernel((void *) current_domain->pagetable_paddr, true);
-#else
+#ifndef CONFIG_SOO
         __mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
-#endif /* CONFIG_SOO */
+#endif /* !CONFIG_SOO */
 
                 booted[cpu] = 1;
 
@@ -140,13 +139,6 @@ void secondary_start_kernel(void)
 		default:
 			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 		}
-#endif
-
-#ifdef CONFIG_SOO
-	}
-
-	/* If no spin table is used, CPU #1 */
-	if (cpu == AGENCY_RT_CPU)
 #endif
 	pre_ret_to_el1();
  
@@ -247,25 +239,11 @@ void smp_init(void)
 
 #ifdef CONFIG_SOO
 
-	printk("CPU #%d is the second CPU reserved for Agency realtime activity.\n", AGENCY_RT_CPU);
-
-	/* Since the RT domain is never scheduled, we set the current domain bound to
-		 * CPU #1 to this unique domain.
-		 */
-
-	per_cpu(current_domain, AGENCY_RT_CPU) = domains[DOMID_AGENCY_RT];
-
-#ifdef CONFIG_ARM64VT
-	printk("Preparing Agency RT CPU to be ready to start...\n");
-
-	cpu_up(AGENCY_RT_CPU);
-#endif
-
 	printk("Starting ME CPU...\n");
 
 	cpu_up(ME_CPU);
 
-	printk("Brought secondary CPUs for AVZ (at the moment CPU #3, CPU #2 will be for later...)\n");
+	printk("Brought secondary CPU %d for running SO3 capsules...\n", ME_CPU);
 
 #else /* CONFIG_SOO */
 

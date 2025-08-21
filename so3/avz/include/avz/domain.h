@@ -22,6 +22,8 @@
 #ifndef __ASSEMBLY__
 #ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
+#else
+#include <avz/uapi/avz.h>
 #endif
 #endif
 
@@ -47,8 +49,6 @@
 #include <spinlock.h>
 #include <timer.h>
 #include <list.h>
-
-#include <avz/uapi/avz.h>
 
 #define NR_GRANT_PFN 32
 

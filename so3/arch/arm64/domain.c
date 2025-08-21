@@ -86,7 +86,7 @@ void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr, addr_t entry_a
 void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map_size)
 {
 	addr_t *new_pt;
-	int slotID;
+	int slotID, i;
 
 	ASSERT(d);
 
@@ -122,20 +122,9 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	 */
 	__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size, __pa(d->avz_shared), PAGE_SIZE, true, S2);
 
-	if (d->avz_shared->subdomain_shared) {
-		/* We map the RT domain shared page using our vaddr since it is the IPA address. */
-
-		__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size + PAGE_SIZE, __pa(d->avz_shared->subdomain_shared),
-				 PAGE_SIZE, true, S2);
-
-		/* <subdomain_shared_paddr> will be used by the guest only. The AGENCY_RT domain has
-		 * its own shared page, so we will be able to use it via the domain descriptor in avz.
-		 */
-		d->avz_shared->subdomain_shared_paddr = memslot[slotID].ipa_addr + map_size + PAGE_SIZE;
-	}
 #ifdef CONFIG_SOO
 	/* Initialize the grant pfn (ipa address) area */
-	for (int i = 0; i < NR_GRANT_PFN; i++) {
+	for (i = 0; i < NR_GRANT_PFN; i++) {
 		d->grant_pfn[i].pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + i;
 		d->grant_pfn[i].free = true;
 	}

@@ -117,9 +117,11 @@ void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc)
 /**
  * SOO hypercall processing.
  */
-void do_avz_hypercall(avz_hyp_t *args)
+void do_avz_hypercall(void *__args)
 {
 	struct domain *dom;
+
+	avz_hyp_t *args = (avz_hyp_t *) __args;
 
 	/* Dispatch the hypercall to the appropriate handler
 	 * or do the local processing.

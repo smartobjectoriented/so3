@@ -66,6 +66,8 @@
 #define AVZ_HYPERCALL_TRAP 0x2605
 #define AVZ_HYPERCALL_SIGRETURN 0x2606
 
+#define IPI_EVENT_CHECK  2
+
 #ifndef __ASSEMBLY__
 
 /*
@@ -79,6 +81,9 @@ typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
 
+/*
+ * Generic hypercalls
+ */
 #define AVZ_EVENT_CHANNEL_OP		1
 #define AVZ_CONSOLE_IO_OP		2
 #define AVZ_DOMAIN_CONTROL_OP           3
@@ -223,10 +228,17 @@ typedef struct {
         evtchn_op_t evtchn_op;
 } avz_evtchn_t;
 
-#ifdef CONFIG_SOO
-#include <soo/uapi/soo.h>
-#else
+/* Assembly low-level code to raise up hypercall */
+extern long __avz_hypercall(int vector, long avz_hyp_args);
 
+/* Generic function to raise up hypercall */
+void avz_hypercall(void *avz_hyp);
+
+/*
+ * TODO: Refactor the following declarations to have cleaner separation
+ * between AVZ and SOO.
+ */
+#ifndef CONFIG_SOO
 
 /*
  * AVZ hypercall argument
@@ -239,13 +251,6 @@ typedef struct {
                 avz_domctl_t avz_domctl_args;
         } u;
 } avz_hyp_t;
-#endif /* !CONFIG_SOO */
-
-/* Assembly low-level code to raise up hypercall */
-extern long __avz_hypercall(int vector, long avz_hyp_args);
-
-/* Generic function to raise up hypercall */
-void avz_hypercall(avz_hyp_t *avz_hyp);
 
 /*
  * Shared info page, shared between AVZ and the domain.
@@ -280,26 +285,19 @@ struct avz_shared {
 	 */
 	u64 current_s_time;
 
-#ifdef CONFIG_SOO
-	/* Agency or ME descriptor */
-	dom_desc_t dom_desc;
-#endif /* CONFIG_SOO */
-
-	/* Keep the physical address so that the guest can map within in its address space. */
-	addr_t subdomain_shared_paddr;
-
-	struct avz_shared *subdomain_shared;
-
 	/* Used to store a signature for consistency checking, for example after a migration/restoration */
 	char signature[4];
 };
 
+#endif /* !CONFIG_SOO */
+
 typedef struct avz_shared avz_shared_t;
+extern volatile avz_shared_t *avz_shared;
 
-extern volatile avz_shared_t *__avz_shared;
-
-void do_avz_hypercall(avz_hyp_t *args);
+void do_avz_hypercall(void *args);
 void __sigreturn(void);
+void virq_handle(unsigned irq_nr);
+void virq_init(void);
 
 #endif /* __ASSEMBLY__ */
 

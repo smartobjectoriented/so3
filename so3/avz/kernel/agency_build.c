@@ -59,16 +59,7 @@ int construct_agency(struct domain *d)
 	d->avz_shared->nr_pages = memslot[MEMSLOT_AGENCY].size >> PAGE_SHIFT;
 
 	clear_bit(_VPF_down, &d->pause_flags);
-
-#ifdef CONFIG_SOO
-
-	/*
-	 * The RT domain has its own shared page.
-	 */
-	agency->avz_shared->subdomain_shared = domains[DOMID_AGENCY_RT]->avz_shared;
-
-#endif /* CONFIG_SOO */
-
+	
 	__setup_dom_pgtable(d, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size);
 
 	/* Propagate the virtual address of the shared info page for this domain */
@@ -79,15 +70,6 @@ int construct_agency(struct domain *d)
 	printk("Agency FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
 	printk("Shared AVZ page is located at: %lx\n", d->avz_shared);
-
-#ifdef CONFIG_SOO
-
-	/* Domain related information */
-	domains[DOMID_AGENCY_RT]->avz_shared->nr_pages = d->avz_shared->nr_pages;
-	domains[DOMID_AGENCY_RT]->avz_shared->fdt_paddr = d->avz_shared->fdt_paddr;
-	domains[DOMID_AGENCY_RT]->pagetable_paddr = d->pagetable_paddr;
-
-#endif /* CONFIG_SOO */
 
 	initialize_hyp_dom_stack(d, pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr), memslot[MEMSLOT_AGENCY].entry_addr);
 

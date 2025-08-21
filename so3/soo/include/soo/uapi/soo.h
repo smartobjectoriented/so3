@@ -21,6 +21,8 @@
 
 #ifndef __ASSEMBLY__
 
+#include <avz/uapi/avz.h>
+
 /* This signature is used to check the coherency of the ME image, after a migration
  * or a restoration for example.
  */
@@ -220,6 +222,46 @@ typedef struct {
 	} u;
 } dom_desc_t;
 
+struct avz_shared {
+	domid_t domID;
+
+	/* Domain related information */
+	unsigned long nr_pages; /* Total pages allocated to this domain.  */
+
+	addr_t fdt_paddr;
+
+	/* Other fields related to domain life */
+
+	unsigned long domain_stack;
+	uint8_t evtchn_upcall_pending;
+
+	/*
+	 * A domain can create "event channels" on which it can send and receive
+	 * asynchronous event notifications.
+	 * Each event channel is assigned a bit in evtchn_pending and its modification has to be
+	 * kept atomic.
+	 */
+
+	volatile bool evtchn_pending[NR_EVTCHN];
+
+	atomic_t dc_event;
+
+	/* This field is used when taking a snapshot of us. It will be
+	 * useful to restore later. Some timer deadlines are based on it and
+	 * will need to be updated accordingly.
+	 */
+	u64 current_s_time;
+
+	/* Agency or ME descriptor */
+	dom_desc_t dom_desc;
+
+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	char signature[4];
+};
+
+typedef struct avz_shared avz_shared_t;
+extern volatile avz_shared_t *avz_shared;
+
 /* struct agency_ioctl_args used in IOCTLs */
 typedef struct agency_ioctl_args {
 	void *buffer; /* IN/OUT */
@@ -240,14 +282,6 @@ typedef struct agency_ioctl_args {
  * request by the SDIO's side thus avoiding a deadlock.
  */
 #define DC_ISR_TASK_PRIO 55
-
-#ifndef __ASSEMBLY__
-
-extern volatile bool __cobalt_ready;
-
-void rtdm_register_dc_event_callback(dc_event_t dc_event, dc_event_fn_t *callback);
-
-#endif /* __ASSEMBLY__ */
 
 /*
  * SOO hypercall management

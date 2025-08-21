@@ -15,12 +15,12 @@ obj-y += timer.o
 obj-y += sched_flip.o 
 obj-y += schedule.o
 obj-y += hypercalls.o
-obj--${CONFIG_SOO} += gnttab.o
+obj-${CONFIG_SOO} += gnttab.o
 
 obj-y += image-fit.o
 obj-y += domain_utils.o
 
-obj--${CONFIG_SOO} += injector.o
+obj-${CONFIG_SOO} += injector.o
 
 
 

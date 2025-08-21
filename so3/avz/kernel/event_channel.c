@@ -84,7 +84,6 @@ static void evtchn_alloc_unbound(evtchn_alloc_unbound_t *alloc)
 	alloc->evtchn = evtchn;
 
 	spin_unlock(&d->event_lock);
-	;
 }
 
 static void evtchn_bind_interdomain(evtchn_bind_interdomain_t *bind)

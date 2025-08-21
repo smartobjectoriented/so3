@@ -15,7 +15,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-#define CONFIG_LOG_LEVEL LOG_LEVEL_DEBUG
 
 #include <common.h>
 #include <heap.h>
@@ -67,7 +66,7 @@ void inject_capsule(avz_hyp_t *args)
 
 	itb_vaddr = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_capsule_args.itb_paddr);
 
-	DBG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
+	LOG_DEBUG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
 
 	/* Retrieve the domain size of this ME through its device tree. */
 	fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr, &fdt_size);
