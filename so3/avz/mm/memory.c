@@ -30,7 +30,6 @@
 
 #include <asm/mmu.h>
 
-
 #include <avz/sched.h>
 
 #define ME_MEMCHUNK_SIZE 2 * 1024 * 1024
