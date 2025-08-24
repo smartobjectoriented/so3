@@ -76,9 +76,9 @@ void inject_capsule(avz_hyp_t *args)
 	}
 
 	get_mem_info(fdt_vaddr, &guest_mem_info);
-
-	/* Find a slotID to store this capsule */
-	slotID = get_ME_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
+       
+        /* Find a slotID to store this capsule */
+        slotID = get_ME_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
 	if (slotID == -1)
 		goto out;
 

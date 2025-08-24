@@ -140,6 +140,10 @@ void secondary_start_kernel(void)
 			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 		}
 #endif
+
+#ifdef CONFIG_SOO
+	if (cpu != ME_CPU)
+#endif
 	pre_ret_to_el1();
  
 #endif /* CONFIG_AVZ */
