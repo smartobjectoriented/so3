@@ -32,8 +32,6 @@
 #include <soo/debug.h>
 #include <soo/console.h>
 
-#include <avz/avz.h>
-
 /* List of frontend */
 struct list_head frontends;
 

@@ -92,9 +92,9 @@ void avz_gnttab(gnttab_op_t *op)
  * - p_val2: a (virtual) address to a second value
  */
 
-void avz_hypercall(avz_hyp_t *avz_hyp)
+void avz_hypercall(void *args)
 {
-	avz_hyp_t *__avz_hyp;
+	avz_hyp_t *__avz_hyp, *avz_hyp = (avz_hyp_t *) args;
 
 	if (boot_stage < BOOT_STAGE_HEAP_READY) {
 		__avz_hyp = &__avz_hyp_static;

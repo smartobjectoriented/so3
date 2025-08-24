@@ -196,9 +196,9 @@ static void *vbs_talkv(struct vbus_transaction t, vbus_msg_type_t type, const ms
 	/* Allocating a completion structure for this message - need to do that dynamically since the msg is part of the shared vbstore page
 	 * and the size may vary depending on SMP is enabled or not.
 	 */
-	msg.u.reply_wait = (struct completion *) malloc(sizeof(struct completion));
+	msg.reply_wait = (struct completion *) malloc(sizeof(struct completion));
 
-	init_completion(msg.u.reply_wait);
+	init_completion(msg.reply_wait);
 
 	msg.type = type;
 	msg.len = 0;
@@ -241,7 +241,7 @@ static void *vbs_talkv(struct vbus_transaction t, vbus_msg_type_t type, const ms
 	/* Now we are waiting for the answer from vbstore */
 	DBG("Now, we wait for the reply / msg ID: %d (0x%lx)\n", msg.id, &msg.list);
 
-	wait_for_completion(msg.u.reply_wait);
+	wait_for_completion(msg.reply_wait);
 
 	DBG("Talkv protocol completed / reply: %lx\n", msg.reply);
 
@@ -259,7 +259,7 @@ static void *vbs_talkv(struct vbus_transaction t, vbus_msg_type_t type, const ms
 
 	/* Free the reply msg */
 	free(msg.reply);
-	free(msg.u.reply_wait);
+	free(msg.reply_wait);
 
 	mutex_unlock(&vbs_state.request_mutex);
 
@@ -827,7 +827,7 @@ irq_return_t vbus_vbstore_isr(int irq, void *data)
 					orig_msg->reply = msg;
 
 					/* Wake up the thread waiting for the answer */
-					complete(orig_msg->u.reply_wait);
+					complete(orig_msg->reply_wait);
 
 					break; /* Ending the search loop */
 				}

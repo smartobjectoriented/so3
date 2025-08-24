@@ -19,7 +19,8 @@
 #ifndef _HYPERVISOR_H_
 #define _HYPERVISOR_H_
 
-#include <soo/avz.h>
+#include <soo/uapi/soo.h>
+
 #include <soo/physdev.h>
 
 void domcall(int cmd, void *arg);
