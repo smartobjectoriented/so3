@@ -22,6 +22,7 @@ obj-y += domain_utils.o
 
 obj-${CONFIG_SOO} += injector.o
 
+obj-${CONFIG_SMP} += smp.o
 
 
 

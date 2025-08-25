@@ -66,7 +66,13 @@
 #define AVZ_HYPERCALL_TRAP 0x2605
 #define AVZ_HYPERCALL_SIGRETURN 0x2606
 
+#ifdef CONFIG_SOO
+/* We use a Linux IPI which is not normally used (STOP) */
 #define IPI_EVENT_CHECK  2
+#else
+/* This is just to kick-start (or initialize) the CPU when the system powers on. */
+#define IPI_EVENT_CHECK  4
+#endif
 
 #ifndef __ASSEMBLY__
 

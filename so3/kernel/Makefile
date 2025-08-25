@@ -16,7 +16,6 @@ obj-y += 	main.o \
 obj-$(CONFIG_CPU_PSCI) += psci_smp.o
 obj-$(CONFIG_CPU_SPIN_TABLE) += spin_table.o
 
-obj-$(CONFIG_SMP) += smp.o 
 obj-y += timer.o
 obj-y += bitmap.o
 

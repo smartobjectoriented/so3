@@ -86,9 +86,12 @@ void initialize_hyp_dom_stack(struct domain *d, addr_t fdt_paddr, addr_t entry_a
 void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map_size)
 {
 	addr_t *new_pt;
-	int slotID, i;
+        int slotID;
+#ifdef CONFIG_SOO
+	int i;
+#endif
 
-	ASSERT(d);
+        ASSERT(d);
 
 	slotID = ((d->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : d->avz_shared->domID);
 

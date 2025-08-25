@@ -23,12 +23,10 @@
 #include <percpu.h>
 #include <memory.h>
 
-#ifdef CONFIG_AVZ
 #include <avz/evtchn.h>
 #include <avz/domain.h>
 
 #include <avz/uapi/avz.h>
-#endif
 
 #include <device/irq.h>
 #include <device/timer.h>
@@ -50,10 +48,8 @@ static volatile int booted[CONFIG_NR_CPUS] = { 0 };
 
 DEFINE_PER_CPU(spinlock_t, softint_lock);
 
-#ifdef CONFIG_AVZ
 extern void startup_cpu_idle_loop(void);
 extern void init_idle_domain(void);
-#endif
 
 /*
  * Control for which core is the next to come out of the secondary
@@ -83,7 +79,6 @@ int read_pen_release(void)
 	return pen_release;
 }
 
-#ifdef CONFIG_AVZ
 
 void smp_trigger_event(int target_cpu)
 {
@@ -94,8 +89,6 @@ void smp_trigger_event(int target_cpu)
 	smp_cross_call(cpu_mask, IPI_EVENT_CHECK);
 	spin_unlock(&per_cpu(softint_lock, cpu));
 }
-
-#endif /* CONFIG_AVZ */
 
 /***************************/
 
@@ -109,15 +102,9 @@ void secondary_start_kernel(void)
 {
 	unsigned int cpu = smp_processor_id();
         
-#ifdef CONFIG_ARCH_ARM32
-        cpu_init();
-#endif
-
 	gicc_init();
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
-
-#if defined(CONFIG_AVZ)
 
 #ifndef CONFIG_SOO
         __mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
@@ -146,8 +133,6 @@ void secondary_start_kernel(void)
 #endif
 	pre_ret_to_el1();
  
-#endif /* CONFIG_AVZ */
-
 	secondary_timer_init();
 
 	smp_mb();
@@ -156,14 +141,7 @@ void secondary_start_kernel(void)
 
 	printk("CPU%d booted...\n", cpu);
 
-#ifdef CONFIG_AVZ
 	init_idle_domain();
-#endif
-
-	/* Enabling VFP module on this CPU */
-#ifdef CONFIG_ARCH_ARM32
-	vfp_enable();
-#endif
 
 	printk("%s: entering idle loop...\n", __func__);
 
@@ -172,10 +150,8 @@ void secondary_start_kernel(void)
 	 */
 	periodic_timer_start();
 
-#ifdef CONFIG_AVZ
 	/* Prepare an idle domain and starts the idle loop */
 	startup_cpu_idle_loop();
-#endif
 
 	/* Never returned at this point ... */
 }
@@ -199,11 +175,6 @@ void cpu_up(unsigned int cpu)
 	 * Now bring the CPU into our world.
 	 */
 	smp_boot_secondary(cpu);
-
-#ifdef CONFIG_ARCH_ARM32
-	/* Some platforms may require to be kicked off this way. */
-	smp_trigger_event(cpu);
-#endif
 
 	/*
 	 * CPU was successfully started, wait for it
@@ -232,8 +203,6 @@ void smp_init(void)
 	for (i = 0; i < CONFIG_NR_CPUS; i++)
 		spin_lock_init(&per_cpu(softint_lock, i));
 
-#if defined(CONFIG_AVZ)
-
 	/* We re-create a small identity mapping to allow the hypervisor
 	 * to bootstrap correctly on other CPUs.
 	 * The size must be enough to reach the stack.
@@ -261,5 +230,4 @@ void smp_init(void)
 
 #endif /* !CONFIG_SOO */
 
-#endif /* CONFIG_AVZ */
 }
