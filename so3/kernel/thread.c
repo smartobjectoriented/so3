@@ -143,19 +143,19 @@ bool kernel_stack_slot[CONFIG_MAX_THREADS];
  */
 addr_t get_kernel_stack_top(uint32_t slotID)
 {
-        addr_t stack_top;
+	addr_t stack_top;
 
 	/* Set the bottom to the real CPU stack area */
-	stack_top = (addr_t) ((void *) &__stack_bottom) + 
-		smp_processor_id() * (CONFIG_SYS_STACK_SIZE_KB + CONFIG_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB) * SZ_1K;
+	stack_top = (addr_t) ((void *) &__stack_bottom) +
+		    smp_processor_id() * (CONFIG_SYS_STACK_SIZE_KB + CONFIG_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB) * SZ_1K;
 
 	/* Skip the system stack */
-	stack_top +=  CONFIG_SYS_STACK_SIZE_KB * SZ_1K;
+	stack_top += CONFIG_SYS_STACK_SIZE_KB * SZ_1K;
 
 	/* Move to the top of stack of corresponding slot */
-	stack_top += (slotID+1) * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K;
+	stack_top += (slotID + 1) * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K;
 
-        return stack_top;
+	return stack_top;
 }
 
 /*
