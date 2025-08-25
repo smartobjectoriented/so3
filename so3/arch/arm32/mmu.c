@@ -434,7 +434,6 @@ void reset_root_pgtable(void *pgtable, bool remove)
 
 void mmu_switch_kernel(void *pgtable_paddr)
 {
-
 	flush_dcache_all();
 
 	/* Take care about the lower bits because

@@ -211,4 +211,3 @@ void do_avz_hypercall(void *__args)
 
 	flush_dcache_all();
 }
-

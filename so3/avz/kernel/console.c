@@ -34,7 +34,7 @@
 #include <avz/keyhandler.h>
 #include <avz/evtchn.h>
 
-#include <avz/uapi/avz.h>	
+#include <avz/uapi/avz.h>
 
 #include <asm/io.h>
 

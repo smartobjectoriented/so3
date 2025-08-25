@@ -68,10 +68,10 @@
 
 #ifdef CONFIG_SOO
 /* We use a Linux IPI which is not normally used (STOP) */
-#define IPI_EVENT_CHECK  2
+#define IPI_EVENT_CHECK 2
 #else
 /* This is just to kick-start (or initialize) the CPU when the system powers on. */
-#define IPI_EVENT_CHECK  4
+#define IPI_EVENT_CHECK 4
 #endif
 
 #ifndef __ASSEMBLY__
@@ -90,34 +90,34 @@ typedef unsigned long addr_t;
 /*
  * Generic hypercalls
  */
-#define AVZ_EVENT_CHANNEL_OP		1
-#define AVZ_CONSOLE_IO_OP		2
-#define AVZ_DOMAIN_CONTROL_OP           3
+#define AVZ_EVENT_CHANNEL_OP 1
+#define AVZ_CONSOLE_IO_OP 2
+#define AVZ_DOMAIN_CONTROL_OP 3
 
-#define CONSOLE_STR_MAX_LEN             128
+#define CONSOLE_STR_MAX_LEN 128
 
 /* Console management */
 
-#define CONSOLE_IO_KEYHANDLER           0
-#define CONSOLE_IO_PRINTCH              1
-#define CONSOLE_IO_PRINTSTR             2
+#define CONSOLE_IO_KEYHANDLER 0
+#define CONSOLE_IO_PRINTCH 1
+#define CONSOLE_IO_PRINTSTR 2
 
 typedef struct {
-        int cmd;
-        union {
-                char c;
-                char str[CONSOLE_STR_MAX_LEN];
-        } u;
+	int cmd;
+	union {
+		char c;
+		char str[CONSOLE_STR_MAX_LEN];
+	} u;
 } console_t;
 
 /* AVZ_CONSOLE_IO_OP */
 typedef struct {
-        console_t console;
+	console_t console;
 } avz_console_io_t;
 
-#define DOMCTL_pauseME       	1
-#define DOMCTL_unpauseME     	2
-#define DOMCTL_get_AVZ_shared	3
+#define DOMCTL_pauseME 1
+#define DOMCTL_unpauseME 2
+#define DOMCTL_get_AVZ_shared 3
 
 struct domctl {
 	uint32_t cmd;
@@ -128,16 +128,16 @@ typedef struct domctl domctl_t;
 
 /* Event channel management */
 
-#define ECS_FREE         0 /* Channel is available for use.                  */
-#define ECS_RESERVED     1 /* Channel is reserved.                           */
-#define ECS_UNBOUND      2 /* Channel is waiting to bind to a remote domain. */
-#define ECS_INTERDOMAIN  3 /* Channel is bound to another domain.            */
-#define ECS_VIRQ         4 /* Channel is bound to a virtual IRQ line.        */
+#define ECS_FREE 0 /* Channel is available for use.                  */
+#define ECS_RESERVED 1 /* Channel is reserved.                           */
+#define ECS_UNBOUND 2 /* Channel is waiting to bind to a remote domain. */
+#define ECS_INTERDOMAIN 3 /* Channel is bound to another domain.            */
+#define ECS_VIRQ 4 /* Channel is bound to a virtual IRQ line.        */
 
-#define EVTCHNSTAT_closed       0  /* Channel is not in use.                 */
-#define EVTCHNSTAT_unbound      1  /* Channel is waiting interdom connection.*/
-#define EVTCHNSTAT_interdomain  2  /* Channel is connected to remote domain. */
-#define EVTCHNSTAT_virq         3  /* Channel is bound to a virtual IRQ line */
+#define EVTCHNSTAT_closed 0 /* Channel is not in use.                 */
+#define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
+#define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
+#define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
 /*
  * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
  * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn
@@ -146,7 +146,7 @@ typedef struct domctl domctl_t;
  *  1. If the caller is unprivileged then <dom> must be DOMID_SELF.
  *  2. <rdom> may be DOMID_SELF, allowing loopback connections.
  */
-#define EVTCHNOP_alloc_unbound    6
+#define EVTCHNOP_alloc_unbound 6
 struct evtchn_alloc_unbound {
 	/* IN parameters */
 	domid_t dom, remote_dom;
@@ -165,9 +165,9 @@ typedef struct evtchn_alloc_unbound evtchn_alloc_unbound_t;
  * NOTES:
  *  2. <remote_dom> may be DOMID_SELF, allowing loopback connections.
  */
-#define EVTCHNOP_bind_interdomain     	      0
-#define EVTCHNOP_bind_existing_interdomain    7
-#define EVTCHNOP_unbind_domain 		      12
+#define EVTCHNOP_bind_interdomain 0
+#define EVTCHNOP_bind_existing_interdomain 7
+#define EVTCHNOP_unbind_domain 12
 
 struct evtchn_bind_interdomain {
 	/* IN parameters. */
@@ -223,15 +223,14 @@ struct evtchn_op {
 };
 typedef struct evtchn_op evtchn_op_t;
 
-
 /* AVZ_DOMAIN_CONTROL_OP */
 typedef struct {
-        domctl_t domctl;
+	domctl_t domctl;
 } avz_domctl_t;
 
 /* AVZ_EVENT_CHANNEL_OP */
 typedef struct {
-        evtchn_op_t evtchn_op;
+	evtchn_op_t evtchn_op;
 } avz_evtchn_t;
 
 /* Assembly low-level code to raise up hypercall */
@@ -250,12 +249,12 @@ void avz_hypercall(void *avz_hyp);
  * AVZ hypercall argument
  */
 typedef struct {
-        int cmd;
+	int cmd;
 	union {
-                avz_evtchn_t avz_evtchn;
-                avz_console_io_t avz_console_io_args;
-                avz_domctl_t avz_domctl_args;
-        } u;
+		avz_evtchn_t avz_evtchn;
+		avz_console_io_t avz_console_io_args;
+		avz_domctl_t avz_domctl_args;
+	} u;
 } avz_hyp_t;
 
 /*

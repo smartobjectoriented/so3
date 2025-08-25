@@ -123,7 +123,7 @@ void avz_start(void)
 		panic("Could not set up agency guest OS");
 
 	/* Check that we do have a agency at this point, as we need it. */
-	if (agency == NULL) 
+	if (agency == NULL)
 		panic("No agency found, stopping here...");
 
 	/* Allow context switch between domains */

@@ -289,16 +289,16 @@ typedef struct agency_ioctl_args {
 
 /* AVZ hypercalls devoted to SOO */
 
-#define AVZ_ME_READ_SNAPSHOT   	        4
-#define AVZ_ME_WRITE_SNAPSHOT  	        5
-#define AVZ_START_CAPSULE               6
-#define AVZ_INJECT_CAPSULE      	7
-#define AVZ_KILL_ME			8
-#define AVZ_DC_EVENT_SET		9
-#define AVZ_GET_ME_STATE		10
-#define AVZ_SET_ME_STATE		11
-#define AVZ_GET_DOM_DESC		12
-#define AVZ_GRANT_TABLE_OP              13
+#define AVZ_ME_READ_SNAPSHOT 4
+#define AVZ_ME_WRITE_SNAPSHOT 5
+#define AVZ_START_CAPSULE 6
+#define AVZ_INJECT_CAPSULE 7
+#define AVZ_KILL_ME 8
+#define AVZ_DC_EVENT_SET 9
+#define AVZ_GET_ME_STATE 10
+#define AVZ_SET_ME_STATE 11
+#define AVZ_GET_DOM_DESC 12
+#define AVZ_GRANT_TABLE_OP 13
 
 /* AVZ_INJECT_CAPSULE */
 typedef struct {

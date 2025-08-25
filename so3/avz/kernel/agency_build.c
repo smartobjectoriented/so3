@@ -59,7 +59,7 @@ int construct_agency(struct domain *d)
 	d->avz_shared->nr_pages = memslot[MEMSLOT_AGENCY].size >> PAGE_SHIFT;
 
 	clear_bit(_VPF_down, &d->pause_flags);
-	
+
 	__setup_dom_pgtable(d, memslot[MEMSLOT_AGENCY].base_paddr, memslot[MEMSLOT_AGENCY].size);
 
 	/* Propagate the virtual address of the shared info page for this domain */

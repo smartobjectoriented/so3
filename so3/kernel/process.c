@@ -861,8 +861,8 @@ int do_fork(void)
 
 	/* Copy the kernel stack of the main thread */
 	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
-	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - 
-	       	CONFIG_THREAD_STACK_SIZE_KB * SZ_1K, CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
+	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
+	       CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
 
 	/*
          * Preserve the current value of all registers concerned by this

@@ -164,15 +164,17 @@ static int pl011_init(dev_t *dev, int fdt_offset)
 	BUG_ON(!prop);
 
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
-	 
+
 	/* To avoid loosing the UART base address used during boot, we store the new address
 	 * in a temporary variable so that io_map() can still display debug messages.
 	 */
-	
+
 #ifdef CONFIG_ARCH_ARM32
-	new_base_vaddr = io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	new_base_vaddr =
+		io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]), fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
 #else
-	new_base_vaddr = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	new_base_vaddr =
+		io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
 #endif
 	BUG_ON(!new_base_vaddr);
 

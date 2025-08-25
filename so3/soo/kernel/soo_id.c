@@ -27,7 +27,6 @@
 #include <soo/debug.h>
 #include <soo/vbus.h>
 
-
 /* ME ID related information management */
 
 /**
