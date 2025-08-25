@@ -92,7 +92,6 @@ int serial_write(char *str, int len)
 		if (str[i] != 0)
 			serial_putc(str[i]);
 
-
 	local_irq_restore(flags);
 
 	return len;
