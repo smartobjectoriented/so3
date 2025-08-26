@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <bits/ioctl.h>
 #include <sys/mman.h>
+#include <time.h>
 
 #include <lvgl.h>
 
@@ -33,12 +34,13 @@
 #include "slv_fs.h"
 #include "slv_mouse.h"
 
-static void *slv_tick(void *args);
+static uint32_t slv_tick_get(void);
 static void *slv_loop_inner(void *args);
 
 int slv_init(slv_t *slv)
 {
 	lv_init();
+	lv_tick_set_cb(slv_tick_get);
 	slv_fs_init();
 	int err = slv_fb_init(&slv->fb);
 	if (err < 0) {
@@ -56,11 +58,6 @@ int slv_init(slv_t *slv)
 	}
 	slv->terminate = false;
 
-	err = pthread_create(&slv->tick_thread, NULL, slv_tick, slv);
-	if (err < 0) {
-		goto thread_err;
-	}
-
 	return 0;
 
 fb_err:
@@ -69,7 +66,6 @@ kb_err:
 	slv_fb_terminate(&slv->fb);
 mouse_err:
 	slv_keyboard_terminate(slv->kfd);
-thread_err:
 	slv_mouse_terminate(slv->mfd);
 	return err;
 }
@@ -89,7 +85,7 @@ int slv_loop_start(slv_t *slv)
 void slv_terminate(slv_t *slv)
 {
 	slv->terminate = true;
-	pthread_join(slv->tick_thread, NULL);
+
 	if (slv->has_loop_thread) {
 		pthread_join(slv->has_loop_thread, NULL);
 	}
@@ -114,13 +110,12 @@ static void *slv_loop_inner(void *args)
 	return NULL;
 }
 
-static void *slv_tick(void *args)
+static uint32_t slv_tick_get(void)
 {
-	slv_t *slv = (slv_t *)args;
-	while (!slv->terminate) {
-		/* Tell LVGL that 10 milliseconds were elapsed */
-		usleep(10000);
-		lv_tick_inc(10);
-	}
-	return NULL;
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	uint32_t tick = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+
+	return tick;
 }

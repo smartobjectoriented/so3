@@ -35,7 +35,7 @@
 typedef struct {
 	int mfd, kfd;
 	slv_fb_t fb;
-	pthread_t tick_thread, loop_thread;
+	pthread_t loop_thread;
 	bool has_loop_thread;
 	bool terminate;
 } slv_t;
