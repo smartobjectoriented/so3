@@ -4,7 +4,4 @@ menu "SO3 Applications"
 	config APP_SAMPLE
 		bool "Sample application with thread environment"
 	
-	config APP_REFSO3
-		bool "Simple example of a SO3 container"
-		
 endmenu
