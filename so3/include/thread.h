@@ -28,6 +28,7 @@
 
 #include <types.h>
 #include <list.h>
+#include <syscall.h>
 
 typedef enum {
 	THREAD_STATE_NEW,
@@ -98,9 +99,9 @@ addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
 
 void threads_init(void);
 
-int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
-int do_thread_join(uint32_t pthread_id, int **value_p);
-void do_thread_exit(int *exit_status);
+SYSCALL_DECLARE(thread_create, uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
+SYSCALL_DECLARE(thread_join, uint32_t pthread_id, int **value_p);
+SYSCALL_DECLARE(thread_exit, int *exit_status);
 
 tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
 tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb);
@@ -108,7 +109,7 @@ tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pc
 int *thread_join(tcb_t *tcb);
 void thread_exit(int *exit_status);
 void clean_thread(tcb_t *tcb);
-void do_thread_yield(void);
+SYSCALL_DECLARE(thread_yield, void);
 
 void *thread_idle(void *dummy);
 

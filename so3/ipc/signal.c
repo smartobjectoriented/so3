@@ -26,7 +26,7 @@
 
 #include <asm/processor.h>
 
-void do_sigreturn(void)
+SYSCALL_DEFINE0(sigreturn)
 {
 	/* Nothing at the moment ... */
 
@@ -39,6 +39,8 @@ void do_sigreturn(void)
 	 * Cleaning the stack frame used for signal handling will be carried out
 	 * during along the return path to the user space.
 	 */
+
+	return 0;
 }
 
 /**
@@ -100,7 +102,7 @@ void __mem(int a, char *adr, int log) {
 }
 #endif /* 0 */
 
-int do_sigaction(int signum, const sigaction_t *action, sigaction_t *old_action)
+SYSCALL_DEFINE3(sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_action)
 {
 	if (signum < 0 || signum >= _NSIG) {
 		LOG_ERROR("signum not valid!\n");
@@ -121,7 +123,7 @@ int do_sigaction(int signum, const sigaction_t *action, sigaction_t *old_action)
 	return 0;
 }
 
-int do_kill(int pid, int sig)
+SYSCALL_DEFINE2(kill, int, pid, int, sig)
 {
 	pcb_t *proc;
 	unsigned long flags;

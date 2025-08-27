@@ -27,77 +27,100 @@
 #define SYSINFO_PRINTK 3
 #define SYSINFO_DUMP_PROC 4
 
-/*
- * Syscall number definition
- */
-
-#define SYSCALL_EXIT 1
-#define SYSCALL_EXECVE 2
-#define SYSCALL_WAITPID 3
-#define SYSCALL_READ 4
-#define SYSCALL_WRITE 5
-#define SYSCALL_FORK 7
-#define SYSCALL_PTRACE 8
-#define SYSCALL_READDIR 9
-#define SYSCALL_OPEN 14
-#define SYSCALL_CLOSE 15
-#define SYSCALL_THREAD_CREATE 16
-#define SYSCALL_THREAD_JOIN 17
-#define SYSCALL_THREAD_EXIT 18
-#define SYSCALL_PIPE 19
-#define SYSCALL_IOCTL 20
-#define SYSCALL_FCNTL 21
-#define SYSCALL_DUP 22
-#define SYSCALL_DUP2 23
-
-#define SYSCALL_SOCKET 26
-#define SYSCALL_BIND 27
-#define SYSCALL_LISTEN 28
-#define SYSCALL_ACCEPT 29
-#define SYSCALL_CONNECT 30
-#define SYSCALL_RECV 31
-#define SYSCALL_SEND 32
-#define SYSCALL_SENDTO 33
-
-#define SYSCALL_STAT 34
-#define SYSCALL_MMAP 35
-#define SYSCALL_GETPID 37
-
-#define SYSCALL_GETTIMEOFDAY 38
-#define SYSCALL_SETTIMEOFDAY 39
-#define SYSCALL_CLOCK_GETTIME 40
-
-#define SYSCALL_THREAD_YIELD 43
-
-#define SYSCALL_SBRK 45
-#define SYSCALL_SIGACTION 46
-#define SYSCALL_KILL 47
-#define SYSCALL_SIGRETURN 48
-
-#define SYSCALL_LSEEK 50
-
-#define SYSCALL_MUTEX_LOCK 60
-#define SYSCALL_MUTEX_UNLOCK 61
-
-#define SYSCALL_NANOSLEEP 70
-
-#define SYSCALL_SYSINFO 99
-
-#define SYSCALL_SETSOCKOPT 110
-#define SYSCALL_RECVFROM 111
+#include <asm/syscall_number.h>
 
 #ifndef __ASSEMBLY__
 
 #include <errno.h>
 #include <types.h>
 
+#define NR_SYSCALLS 468
+
+/**
+ * Map arguments set (type, name) into a comma separated list
+ * e.g. function arguments
+ *
+ * @param x Number of arguments to map
+ * @param m Macro mapping type and name correctly
+ * @param t Type of the function arguments
+ * @param n name of the function arguments
+ */
+#define __MAP1(m,t,n) m(t,n)
+#define __MAP2(m,t,n,...) m(t,n), __MAP1(m,__VA_ARGS__)
+#define __MAP3(m,t,n,...) m(t,n), __MAP2(m,__VA_ARGS__)
+#define __MAP4(m,t,n,...) m(t,n), __MAP3(m,__VA_ARGS__)
+#define __MAP5(m,t,n,...) m(t,n), __MAP4(m,__VA_ARGS__)
+#define __MAP6(m,t,n,...) m(t,n), __MAP5(m,__VA_ARGS__)
+#define __MAP(x,m,...) __MAP##x(m,__VA_ARGS__)
+
+/** Macros to map type and name with __MAP */
+#define __M_DECL(t,n) t n
+#define __M_LONG(t,n) long n
+#define __M_ARGS(t,n) n
+
+/**
+ * Map syscall arguments by casting them for function call.
+ *
+ * @param x Number of arguments to map
+ * @param args Arguments array to use
+ * @param m Macro mapping type and name correctly
+ * @param t Type of the function arguments
+ * @param n name of the function arguments, not use but allow
+ *          to use same __VA_ARGS__ as in __MAP()
+ */
+#define __MAP_ARGS1(x,args,t,n) (t)args[x-1]
+#define __MAP_ARGS2(x,args,t,n,...) (t)args[x-2], __MAP_ARGS1(x,args,__VA_ARGS__)
+#define __MAP_ARGS3(x,args,t,n,...) (t)args[x-3], __MAP_ARGS2(x,args,__VA_ARGS__)
+#define __MAP_ARGS4(x,args,t,n,...) (t)args[x-4], __MAP_ARGS3(x,args,__VA_ARGS__)
+#define __MAP_ARGS5(x,args,t,n,...) (t)args[x-5], __MAP_ARGS4(x,args,__VA_ARGS__)
+#define __MAP_ARGS6(x,args,t,n,...) (t)args[x-6], __MAP_ARGS5(x,args,__VA_ARGS__)
+#define __MAP_ARGS(x,args,...) __MAP_ARGS##x((x),(args),__VA_ARGS__)
+
+/**
+ * Syscall functions declaration and definitions helper.
+ *
+ * Two functions are added for each syscall.
+ *
+ * __sys_SYSCALL_NAME taking syscall_args_t as arguments allowing for
+ * a common interface between all syscall to put them in an array.
+ *
+ * do_SYSCALL_NAME actual function with the syscall implementation with
+ * arguments define like a normal function. That function is automatically
+ * called by __sys_SYCALL_NAME with the correct argument number and cast.
+ */
+#define SYSCALL_DECLARE(name,...) \
+	long __sys_##name(syscall_args_t *args); \
+	inline long do_##name(__VA_ARGS__);
+
+#define SYSCALL_DEFINE0(name) \
+	long __sys_##name(syscall_args_t *unused) { return do_##name(); } \
+	inline long do_##name(void)
+#define SYSCALL_DEFINE1(...) __SYSCALL_DEFINEx(1,__VA_ARGS__)
+#define SYSCALL_DEFINE2(...) __SYSCALL_DEFINEx(2,__VA_ARGS__)
+#define SYSCALL_DEFINE3(...) __SYSCALL_DEFINEx(3,__VA_ARGS__)
+#define SYSCALL_DEFINE4(...) __SYSCALL_DEFINEx(4,__VA_ARGS__)
+#define SYSCALL_DEFINE5(...) __SYSCALL_DEFINEx(5,__VA_ARGS__)
+#define SYSCALL_DEFINE6(...) __SYSCALL_DEFINEx(6,__VA_ARGS__)
+
+#define __SYSCALL_DEFINEx(x,name,...) \
+	long __sys_##name(syscall_args_t *args) \
+	{ \
+		return do_##name(__MAP_ARGS(x,args->args,__VA_ARGS__)); \
+	} \
+	inline long do_##name(__MAP(x,__M_DECL,__VA_ARGS__))
+
 typedef struct {
 	unsigned long args[6];
 } syscall_args_t;
 
+typedef long (*syscall_fn_t)(syscall_args_t *);
+
 long syscall_handle(syscall_args_t *);
 
 void set_errno(uint32_t val);
+
+SYSCALL_DECLARE(sysinfo, unsigned long info_number, char *text);
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* ASM_ARM_SYSCALL_H */

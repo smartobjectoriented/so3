@@ -26,6 +26,7 @@
 #include <list.h>
 #include <spinlock.h>
 #include <thread.h>
+#include <syscall.h>
 
 #include <asm/atomic.h>
 
@@ -58,8 +59,8 @@ void mutex_lock(struct mutex *lock);
 void mutex_unlock(struct mutex *lock);
 void mutex_init(struct mutex *lock);
 
-int do_mutex_init(void);
-int do_mutex_lock(unsigned long number);
-int do_mutex_unlock(unsigned long number);
+SYSCALL_DECLARE(mutex_init, void);
+SYSCALL_DECLARE(mutex_lock, unsigned long number);
+SYSCALL_DECLARE(mutex_unlock, unsigned long number);
 
 #endif /* MUTEX_H */

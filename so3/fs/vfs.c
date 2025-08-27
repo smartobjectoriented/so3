@@ -379,7 +379,7 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 
 /**************************** Syscall implementation ****************************/
 
-int do_read(int fd, void *buffer, int count)
+SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 {
 	int gfd;
 	int ret;
@@ -427,7 +427,7 @@ int do_read(int fd, void *buffer, int count)
 /**
  * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
  */
-int do_write(int fd, const void *buffer, int count)
+SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 {
 	int gfd;
 	int ret;
@@ -474,7 +474,7 @@ int do_write(int fd, const void *buffer, int count)
 /**
  * @brief This function opens a file. Not all file types are supported.
  */
-int do_open(const char *filename, int flags)
+SYSCALL_DEFINE2(open, const char *, filename, int, flags)
 {
 	int fd, gfd, ret = -1;
 	uint32_t type;
@@ -542,7 +542,7 @@ open_failed:
  * @brief readdir read a directory entry which will be stored in a struct dirent entry
  * @param fd This is the file descriptor provided as (DIR *) when doing opendir in the userspace.
  */
-int do_readdir(int fd, char *buf, int len)
+SYSCALL_DEFINE3(readdir, int, fd, char *, buf, int, len)
 {
 	struct dirent *dirent;
 	int gfd;
@@ -588,13 +588,13 @@ int do_readdir(int fd, char *buf, int len)
  * only when refcount is equal to zero (no more reference on the gfd).
  * @param fd This is the local fd from the process' table.
  */
-void do_close(int fd)
+SYSCALL_DEFINE1(close, int, fd)
 {
 	pcb_t *pcb = current()->pcb;
 	int gfd;
 
 	if ((!pcb) || (fd < 0))
-		return;
+		return 0;
 
 	mutex_lock(&vfs_lock);
 
@@ -604,12 +604,12 @@ void do_close(int fd)
 	if (gfd < 0) {
 		LOG_DEBUG("Was already freed\n");
 		mutex_unlock(&vfs_lock);
-		return;
+		return 0;
 	}
 
 	if (!open_fds[gfd]) {
 		mutex_unlock(&vfs_lock);
-		return;
+		return 0;
 	}
 
 	/* Decrement reference counter to keep track of open fds */
@@ -640,13 +640,15 @@ void do_close(int fd)
 	}
 
 	mutex_unlock(&vfs_lock);
+
+	return 0;
 }
 
 /**
  * @brief dup2 creates a synonym of oldfd on newfd
  *
  */
-int do_dup2(int oldfd, int newfd)
+SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 {
 	if ((newfd < 0) || (newfd > MAX_FDS))
 		return -EBADF;
@@ -680,7 +682,7 @@ int do_dup2(int oldfd, int newfd)
  * @param File descriptor to copy.
  * @return A copy of the file descriptor.
  */
-int do_dup(int oldfd)
+SYSCALL_DEFINE1(dup, int, oldfd)
 {
 #ifdef CONFIG_PROC_ENV
 	int newfd;
@@ -708,7 +710,7 @@ int do_dup(int oldfd)
 #endif
 }
 
-int do_stat(const char *path, struct stat *st)
+SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
 {
 	int ret;
 
@@ -737,7 +739,7 @@ int do_stat(const char *path, struct stat *st)
 /**
  * An mmap() implementation in VFS.
  */
-void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset)
+SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, offset)
 {
 	int gfd;
 	uint32_t page_count;
@@ -749,7 +751,7 @@ void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset)
 	if (-1 == gfd) {
 		printk("%s: could not get global fd.\n", __func__);
 		set_errno(EBADF);
-		return MAP_FAILED;
+		return (long)MAP_FAILED;
 	}
 
 	mutex_lock(&vfs_lock);
@@ -758,7 +760,7 @@ void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset)
 		printk("%s: could not get device fops.\n", __func__);
 		mutex_unlock(&vfs_lock);
 		set_errno(EBADF);
-		return MAP_FAILED;
+		return (long)MAP_FAILED;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -772,14 +774,14 @@ void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset)
 	if (!fops->mmap) {
 		printk("%s: device doesn't support mmap.\n", __func__);
 		set_errno(EACCES);
-		return MAP_FAILED;
+		return (long)MAP_FAILED;
 	}
 
 	/* Call the mmap fops that will do the actual mapping. */
-	return fops->mmap(fd, start, page_count, offset);
+	return (long)fops->mmap(fd, start, page_count, offset);
 }
 
-int do_ioctl(int fd, unsigned long cmd, unsigned long args)
+SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
 {
 	int rc, gfd;
 	mutex_lock(&vfs_lock);
@@ -808,7 +810,7 @@ int do_ioctl(int fd, unsigned long cmd, unsigned long args)
  * Implementation of standard lseek() syscall. It depends on the underlying
  * device operations.
  */
-off_t do_lseek(int fd, off_t off, int whence)
+SYSCALL_DEFINE3(lseek, int, fd, off_t, off, int, whence)
 {
 	int rc, gfd;
 	mutex_lock(&vfs_lock);
@@ -834,7 +836,7 @@ off_t do_lseek(int fd, off_t off, int whence)
 /*
  * Implementation of the fcntl syscall
  */
-int do_fcntl(int fd, unsigned long cmd, unsigned long args)
+SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
 {
 	/* Not yet implemented */
 

@@ -30,6 +30,7 @@
 #include <signal.h>
 #include <ptrace.h>
 #include <mutex.h>
+#include <syscall.h>
 
 #define PROC_MAX 64
 #define PROC_MAX_THREADS CONFIG_MAX_THREADS
@@ -133,12 +134,12 @@ void add_page_to_proc(pcb_t *pcb, page_t *page);
 
 void create_root_process(void);
 
-uint32_t do_getpid(void);
+SYSCALL_DECLARE(getpid, void);
 
-int do_execve(const char *filename, char **argv, char **envp);
-int do_fork(void);
-void do_exit(int exit_status);
-int do_waitpid(int pid, uint32_t *wstatus, uint32_t options);
+SYSCALL_DECLARE(execve, const char *filename, char **argv, char **envp);
+SYSCALL_DECLARE(fork, void);
+SYSCALL_DECLARE(exit, int exit_status);
+SYSCALL_DECLARE(waitpid, int pid, uint32_t *wstatus, uint32_t options);
 
 pcb_t *find_proc_by_pid(uint32_t pid);
 
@@ -149,6 +150,6 @@ void dump_proc(void);
 extern int __exec(const char *file);
 extern int __write(int fd, char *buffer, int count);
 
-int do_sbrk(int increment);
+SYSCALL_DECLARE(sbrk, int increment);
 
 #endif /* PROCESS_H */

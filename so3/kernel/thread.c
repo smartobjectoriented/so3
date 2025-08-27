@@ -366,9 +366,10 @@ void *thread_idle(void *dummy)
 /*
  * Yield to another thread, i.e. simply invoke a call to schedule()
  */
-void do_thread_yield(void)
+SYSCALL_DEFINE0(thread_yield)
 {
 	schedule();
+	return 0;
 }
 
 void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
@@ -607,7 +608,7 @@ int *thread_join(tcb_t *tcb)
  * The function returns 0 if successful.
  */
 
-int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p)
+SYSCALL_DEFINE4(thread_create, uint32_t *, pthread_id, addr_t, attr_p, addr_t, thread_fn, addr_t, arg_p)
 {
 	unsigned long flags;
 	tcb_t *tcb;
@@ -643,7 +644,7 @@ int do_thread_create(uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr
 /*
  * Join an existing thread
  */
-int do_thread_join(uint32_t pthread_id, int **value_p)
+SYSCALL_DEFINE2(thread_join, uint32_t, pthread_id, int **, value_p)
 {
 	tcb_t *tcb;
 	int *ret;
@@ -671,13 +672,15 @@ int do_thread_join(uint32_t pthread_id, int **value_p)
 /*
  * do_thread_exit() is called when pthread_exit() is executed.
  */
-void do_thread_exit(int *exit_status)
+SYSCALL_DEFINE1(thread_exit, int *, exit_status)
 {
 	/* Unallocate the user space stack slot if it is not the main thread */
 	if (current() != current()->pcb->main_thread)
 		free_user_stack_slot(current()->pcb, current()->pcb_stack_slotID);
 
 	thread_exit(exit_status);
+
+	return 0;
 }
 
 void threads_init(void)

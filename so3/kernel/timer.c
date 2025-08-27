@@ -410,7 +410,7 @@ void timer_init(void)
 /*
  * This function gets the current time and put it in the parameter tv
  */
-int do_get_time_of_day(struct timespec *ts)
+SYSCALL_DEFINE1(gettimeofday, struct timespec *, ts)
 {
 	u64 time;
 
@@ -434,7 +434,7 @@ int do_get_time_of_day(struct timespec *ts)
  *
  *  Currently, we only support CLOCK_MONOTONIC since we do not manage a RTC yet.
  */
-int do_get_clock_time(int clk_id, struct timespec *ts)
+SYSCALL_DEFINE2(clock_gettime, int, clk_id, struct timespec *, ts)
 {
 	u64 time;
 

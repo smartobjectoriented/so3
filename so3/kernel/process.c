@@ -692,7 +692,7 @@ void load_process(elf_img_info_t *elf_img_info)
 	flush_dcache_all();
 }
 
-int do_execve(const char *filename, char **argv, char **envp)
+SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 {
 	elf_img_info_t elf_img_info;
 	pcb_t *pcb;
@@ -827,7 +827,7 @@ pcb_t *duplicate_process(pcb_t *parent)
 /*
  * For a new process from the current running process.
  */
-int do_fork(void)
+SYSCALL_DEFINE0(fork)
 {
 	pcb_t *newp, *parent;
 	unsigned long flags;
@@ -895,7 +895,7 @@ int do_fork(void)
  * All allocated resources should be released except its PCB which still
  * contains the exit code.
  */
-void do_exit(int exit_status)
+SYSCALL_DEFINE1(exit, int, exit_status)
 {
 	pcb_t *pcb;
 	unsigned i;
@@ -955,12 +955,14 @@ void do_exit(int exit_status)
          */
 
 	thread_exit(NULL);
+
+	return 0;
 }
 
 /*
  * Returns the PID of the current process
  */
-uint32_t do_getpid(void)
+SYSCALL_DEFINE0(getpid)
 {
 	return current()->pcb->pid;
 }
@@ -975,7 +977,7 @@ uint32_t do_getpid(void)
  * - Clean the PCB and page tables
  * - Return the pid if successful operation
  */
-int do_waitpid(int pid, uint32_t *wstatus, uint32_t options)
+SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
 {
 	pcb_t *child;
 	unsigned long flags;
@@ -1088,7 +1090,7 @@ int do_waitpid(int pid, uint32_t *wstatus, uint32_t options)
  * @return  This function will the position of the end of the heap / program
  *break before increment
  */
-int do_sbrk(int increment)
+SYSCALL_DEFINE1(sbrk, int, increment)
 {
 	pcb_t *pcb = current()->pcb;
 	int ret_pointer;

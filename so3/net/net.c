@@ -368,7 +368,7 @@ struct file_operations *register_sock(void)
 
 /**************************** Syscall implementation ****************************/
 
-int do_socket(int domain, int type, int protocol)
+SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 {
 	int fd, gfd, lwip_fd;
 	struct file_operations *fops;
@@ -403,7 +403,7 @@ int do_socket(int domain, int type, int protocol)
 	return fd;
 }
 
-int do_connect(int sockfd, const struct sockaddr *addr, socklen_t namelen)
+SYSCALL_DEFINE3(connect, int, sockfd, const struct sockaddr *, addr, socklen_t, namelen)
 {
 	struct sockaddr_in addr_lwip;
 	struct sockaddr *addr_ptr;
@@ -415,7 +415,7 @@ int do_connect(int sockfd, const struct sockaddr *addr, socklen_t namelen)
 	return lwip_connect(lwip_fd, addr_ptr, namelen);
 }
 
-int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+SYSCALL_DEFINE3(bind, int, sockfd, const struct sockaddr *, addr, socklen_t, addrlen)
 {
 	struct sockaddr_in addr_lwip;
 	struct sockaddr *addr_ptr;
@@ -427,14 +427,14 @@ int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 	return lwip_bind(lwip_fd, addr_ptr, addrlen);
 }
 
-int do_listen(int sockfd, int backlog)
+SYSCALL_DEFINE2(listen, int, sockfd, int, backlog)
 {
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	return lwip_listen(lwip_fd, backlog);
 }
 
-int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrlen)
 {
 	int fd, gfd, lwip_fd, lwip_bind_fd;
 	struct file_operations *fops;
@@ -478,28 +478,28 @@ int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	return fd;
 }
 
-int do_recv(int sockfd, void *mem, size_t len, int flags)
+SYSCALL_DEFINE4(recv, int, sockfd, void *, mem, size_t, len, int, flags)
 {
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	return lwip_recv(lwip_fd, mem, len, flags);
 }
 
-int do_recvfrom(int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, struct sockaddr *, from, socklen_t *, fromlen)
 {
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	return lwip_recvfrom(lwip_fd, mem, len, flags, from, fromlen);
 }
 
-int do_send(int sockfd, const void *dataptr, size_t size, int flags)
+SYSCALL_DEFINE4(send, int, sockfd, const void *, dataptr, size_t, size, int, flags)
 {
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	return lwip_send(lwip_fd, dataptr, size, flags);
 }
 
-int do_sendto(int sockfd, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen)
+SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct sockaddr *, to, socklen_t, tolen)
 {
 	struct sockaddr_in to_lwip;
 	int lwip_fd = get_lwip_fd(sockfd);
@@ -509,7 +509,7 @@ int do_sendto(int sockfd, const void *dataptr, size_t size, int flags, const str
 	return lwip_sendto(lwip_fd, dataptr, size, flags, (struct sockaddr *) &to_lwip, tolen);
 }
 
-int do_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
+SYSCALL_DEFINE5(setsockopt, int, sockfd, int, level, int, optname, const void *, optval, socklen_t, optlen)
 {
 	int lwip_fd = get_lwip_fd(sockfd);
 
