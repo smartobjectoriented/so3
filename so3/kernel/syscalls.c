@@ -71,7 +71,7 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_MMAP] = __sys_mmap,
 	[SYSCALL_NANOSLEEP] = __sys_nanosleep,
 #ifdef CONFIG_PROC_ENV
-	[SYSCALL_SBRK] = __sys_sbrk,
+	[SYSCALL_BRK] = __sys_brk,
 #endif
 	[SYSCALL_MUTEX_LOCK] = __sys_mutex_lock,
 	[SYSCALL_MUTEX_UNLOCK] = __sys_mutex_unlock,
