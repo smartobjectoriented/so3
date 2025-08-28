@@ -91,7 +91,7 @@ void avz_setup(void)
 
 void post_init_setup(void)
 {
-	LOG_INFO("Mapping VBstore shared page pfn %d\n", avz_shared->dom_desc.u.ME.vbstore_pfn);
+	LOG_INFO("Mapping VBstore shared page pfn %lx\n", avz_shared->dom_desc.u.ME.vbstore_pfn);
 
 	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
 	BUG_ON(!__intf);

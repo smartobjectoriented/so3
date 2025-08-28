@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2020-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -22,7 +22,6 @@
 	description = "Kernel and rootfs components for virt64 (armv8) environment";
 
 	images {
-
 		avz {
 			description = "AVZ Hypervisor (64-bit) Polymorphic SO3";
             data = /incbin/("../avz/so3.bin");
@@ -33,21 +32,20 @@
 			load = <0x40080000>;
 			entry = <0x40080000>;
 		};
-		
-		/* This AVZ DT works with VT support (GIC reg cells number appropriate) */
-		avz_vt_dt {
+ 		
+		avz_dt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../avz/dts/virt64_avz_vt.dtb");
+			data = /incbin/("../avz/dts/virt64_avz.dtb");
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x40f00000>;
+			load = <0x46000000>;
 		};
-		
-		so3_agency {
+
+		so3 {
 			description = "SO3 OS kernel";
 			data = /incbin/("../so3/so3.bin");
-			type = "avz";
+			type = "guest";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
@@ -55,15 +53,15 @@
 			entry = <0x41080000>;
 		};
  
-        fdt_so3 {
+        fdt {
 			description = "Flattened Device Tree blob";
 			data = /incbin/("../so3/dts/virt64.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x42000000>;
+			load = <0x43000000>;
 		};	
-        
+
         ramfs {
         	description = "SO3 environment minimal rootfs";
 			data = /incbin/("../rootfs/rootfs.fat");
@@ -71,22 +69,20 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x42c00000>;
+			load = <0x43500000>;
     	};
-                
-};
-
-	configurations {
-		default = "so3_avz";
-                
-		so3_avz {
-			description = "SO3/AVZ on virt64";
-		    kernel = "avz";
-            loadables = "avz_vt_dt", "so3_agency";
-            fdt = "fdt_so3";
-            ramdisk = "ramfs"; 
-		};
                 
 	};
 
+	configurations {
+		default = "so3_guest";
+                
+		so3_guest {
+			description = "SO3 kernel image including device tree";
+		    kernel = "avz";
+            loadables = "avz_dt", "so3"; 
+			fdt = "fdt";
+            ramdisk = "ramfs"; 
+		};
+	};
 };

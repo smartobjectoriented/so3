@@ -27,7 +27,7 @@
 
 #include <device/irq.h>
 
-#include <avz/avz.h>
+#include <soo/uapi/soo.h>
 
 #include <soo/hypervisor.h>
 #include <soo/soo.h>

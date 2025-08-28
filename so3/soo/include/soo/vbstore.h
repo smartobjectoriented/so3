@@ -51,9 +51,7 @@ struct vbus_msg {
 	/* The next field *must* be allocated dynamically since the size of a struct completion depends
 	 * on SMP enabling.
 	 */
-	union {
-		struct completion *reply_wait;
-	} u;
+	struct completion *reply_wait;
 
 	uint32_t type; /* vbus_msg type */
 	uint32_t len; /* Length of data following this. */

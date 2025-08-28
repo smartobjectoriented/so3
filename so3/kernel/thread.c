@@ -132,18 +132,30 @@ uint32_t active_threads(pcb_t *pcb)
 /*
  * Thread stack management
  */
-bool kernel_stack_slot[THREAD_MAX];
+bool kernel_stack_slot[CONFIG_MAX_THREADS];
 
 /*
  * Get the kernel stack (top), full descending - The kernel stack is divided into small stack areas
  * used for individual kernel *and* user threads (in SVC mode).
  *
- * The first stack area is the initial system stack and remains preserved so far.
- * The first thread stack slot ID #0 starts right under this area.
+ * The first stack area is the initial system stack. 
+ * The first thread stack slot ID #0 starts right after the initial system stack.
  */
 addr_t get_kernel_stack_top(uint32_t slotID)
 {
-	return (addr_t) ((void *) &__stack_top - THREAD_STACK_SIZE - slotID * THREAD_STACK_SIZE);
+	addr_t stack_top;
+
+	/* Set the bottom to the real CPU stack area */
+	stack_top = (addr_t) ((void *) &__stack_bottom) +
+		    smp_processor_id() * (CONFIG_SYS_STACK_SIZE_KB + CONFIG_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB) * SZ_1K;
+
+	/* Skip the system stack */
+	stack_top += CONFIG_SYS_STACK_SIZE_KB * SZ_1K;
+
+	/* Move to the top of stack of corresponding slot */
+	stack_top += (slotID + 1) * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K;
+
+	return stack_top;
 }
 
 /*
@@ -151,13 +163,13 @@ addr_t get_kernel_stack_top(uint32_t slotID)
  * This function returns the stack base address.
  *
  * The general stack base address is retrieved from __svc_start__.
- * No need to reserve the first stack slot.
+ * No need to reserve the first stack sloFt.
  */
 int get_kernel_stack_slot(void)
 {
 	unsigned int i;
 
-	for (i = 0; i < THREAD_MAX; i++) {
+	for (i = 0; i < CONFIG_MAX_THREADS; i++) {
 		if (!kernel_stack_slot[i]) {
 			kernel_stack_slot[i] = true;
 
@@ -180,7 +192,7 @@ void free_kernel_stack_slot(int slotID)
 /* Get the kernel stack (top), full descending */
 addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID)
 {
-	return (addr_t) ((void *) pcb->stack_top - slotID * THREAD_STACK_SIZE);
+	return (addr_t) ((void *) pcb->stack_top - slotID * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
 }
 
 /*
@@ -190,7 +202,7 @@ int get_user_stack_slot(pcb_t *pcb)
 {
 	unsigned int i;
 
-	for (i = 0; i < PROC_THREAD_MAX; i++) {
+	for (i = 0; i < PROC_MAX_THREADS; i++) {
 		if (!pcb->stack_slotID[i]) {
 			pcb->stack_slotID[i] = true;
 
@@ -672,6 +684,6 @@ void threads_init(void)
 {
 	int i;
 
-	for (i = 0; i < THREAD_MAX; i++)
+	for (i = 0; i < CONFIG_MAX_THREADS; i++)
 		kernel_stack_slot[i] = false; /* Unallocated stack */
 }

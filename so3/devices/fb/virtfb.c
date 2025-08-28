@@ -29,9 +29,12 @@ typedef struct {
 
 static int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 {
-	struct devclass *dev = devclass_by_fd(fd);
+	struct devclass *dev;
 	virtfb_priv_t *priv;
+
+	dev = devclass_by_fd(fd);
 	BUG_ON(!dev);
+
 	priv = (virtfb_priv_t *) devclass_get_priv(dev);
 	BUG_ON(!priv);
 
@@ -47,6 +50,7 @@ static int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 	case IOCTL_FB_SIZE:
 		*((uint32_t *) args) = priv->hres * priv->vres * 4; /* assume 24bpp */
 		return 0;
+
 	case IOCTL_FB_IS_REAL:
 		*((uint32_t *) args) = 0;
 		return 0;
@@ -61,7 +65,9 @@ static int fb_close(int fd)
 {
 	struct devclass *dev = devclass_by_fd(fd);
 	virtfb_priv_t *priv = (virtfb_priv_t *) devclass_get_priv(dev);
+
 	free(priv->vaddr);
+
 	return 0;
 }
 
@@ -76,7 +82,9 @@ struct devclass virtfb_cdev = {
 static int virtfb_init(dev_t *dev, int fdt_offset)
 {
 	int err;
-	virtfb_priv_t *priv = (virtfb_priv_t *) malloc(sizeof(*priv));
+	virtfb_priv_t *priv;
+
+	priv = (virtfb_priv_t *) malloc(sizeof(*priv));
 	BUG_ON(!priv);
 
 	err = fdt_property_read_u32(__fdt_addr, fdt_offset, "hres", &priv->hres);

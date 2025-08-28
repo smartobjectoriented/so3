@@ -1,6 +1,9 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Polymorphic OS Configuration
+#
 # CONFIG_ARCH_ARM32 is not set
 CONFIG_ARCH_ARM64=y
-# CONFIG_SO3VIRT is not set
 CONFIG_ARCH="arm64"
 CONFIG_CROSS_COMPILE="aarch64-none-elf-"
 # CONFIG_ARM_TRUSTZONE is not set
@@ -13,19 +16,17 @@ CONFIG_VIRT64=y
 # CONFIG_RPI4_64 is not set
 # CONFIG_VA_BITS_39 is not set
 CONFIG_VA_BITS_48=y
-# end of Platform
-
 # CONFIG_THREAD_ENV is not set
 CONFIG_PROC_ENV=y
 
 #
 # Kernel & CPU features
 #
+CONFIG_MAX_THREADS=32
 # CONFIG_SMP is not set
 CONFIG_NR_CPUS=1
 CONFIG_HZ=100
 CONFIG_SCHED_FLIP_SCHEDFREQ=30
-# end of Kernel & CPU features
 
 #
 # SO3 Scheduling configuration
@@ -33,7 +34,6 @@ CONFIG_SCHED_FLIP_SCHEDFREQ=30
 CONFIG_SCHED_RR=y
 # CONFIG_SCHED_PRIO is not set
 CONFIG_SCHED_FREQ_PREEMPTION=y
-# end of SO3 Scheduling configuration
 
 #
 # Drivers
@@ -56,14 +56,12 @@ CONFIG_GIC=y
 CONFIG_VIRTFB=y
 # CONFIG_PL050_KMI is not set
 CONFIG_VIRT_INPUT=y
-# end of Drivers
 
 #
 # SO3 Applications
 #
 CONFIG_APP_SAMPLE=y
 # CONFIG_APP_REFSO3 is not set
-# end of SO3 Applications
 
 #
 # Filesystems
@@ -72,16 +70,15 @@ CONFIG_FS_FAT=y
 # CONFIG_ROOTFS_NONE is not set
 # CONFIG_ROOTFS_MMC is not set
 CONFIG_ROOTFS_RAMDEV=y
-# end of Filesystems
 
 #
 # IPC
 #
 CONFIG_IPC_SIGNAL=y
 CONFIG_IPC_PIPE=y
-# end of IPC
-
-CONFIG_HEAP_SIZE=8
+CONFIG_HEAP_SIZE_MB=8
+CONFIG_SYS_STACK_SIZE_KB=64
+CONFIG_THREAD_STACK_SIZE_KB=64
 # CONFIG_RTOS is not set
 # CONFIG_AVZ is not set
 CONFIG_USER_INIT_PROGRAM="lvgl_benchmark.elf"
@@ -91,6 +88,7 @@ CONFIG_LOG_LEVEL_CRITICAL=y
 # CONFIG_LOG_LEVEL_INFO is not set
 # CONFIG_LOG_LEVEL_DEBUG is not set
 # CONFIG_LOG_LEVEL_TRACE is not set
+# CONFIG_LOG_LEVEL_NONE is not set
 CONFIG_LOG_LEVEL=1
 # CONFIG_SOO is not set
 CONFIG_MMU=y

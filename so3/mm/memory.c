@@ -33,7 +33,7 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
-#if defined(CONFIG_SOO) || defined(CONFIG_SO3VIRT)
+#if defined(CONFIG_SOO)
 #include <avz/uapi/avz.h>
 #endif
 
@@ -428,7 +428,7 @@ void memory_init(void)
 {
 #ifdef CONFIG_MMU
 
-#if (defined(CONFIG_AVZ) || !defined(CONFIG_SOO)) && defined(CONFIG_ARCH_ARM32)
+#if defined(CONFIG_ARCH_ARM32)
 	addr_t vectors_paddr;
 #endif
 	void *new_sys_root_pgtable;
@@ -456,12 +456,6 @@ void memory_init(void)
 
 	/* Re-setup a system page table with a better granularity */
 	new_sys_root_pgtable = new_root_pgtable();
-
-#if defined(CONFIG_ARCH_ARM32) && defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
-	/* Keep the installed vector table */
-	*((uint32_t *) l1pte_offset(new_sys_root_pgtable, VECTOR_VADDR)) =
-		*((uint32_t *) l1pte_offset(__sys_root_pgtable, VECTOR_VADDR));
-#endif
 
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, mem_info.phys_base, get_kernel_size(), false);
 

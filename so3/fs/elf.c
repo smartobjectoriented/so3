@@ -89,6 +89,7 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 #else
 	elf_img_info->header = (struct elf64_hdr *) malloc(sizeof(struct elf64_hdr));
 #endif
+
 	if (!elf_img_info->header) {
 		printk("%s: failed to allocate memory\n", __func__);
 		kernel_panic();

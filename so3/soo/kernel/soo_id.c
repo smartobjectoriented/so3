@@ -27,8 +27,6 @@
 #include <soo/debug.h>
 #include <soo/vbus.h>
 
-#include <avz/avz.h>
-
 /* ME ID related information management */
 
 /**

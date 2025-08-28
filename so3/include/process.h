@@ -32,10 +32,10 @@
 #include <mutex.h>
 
 #define PROC_MAX 64
-#define PROC_THREAD_MAX 32
+#define PROC_MAX_THREADS CONFIG_MAX_THREADS
 
 /* Maximum stack size for a process, including all thread stacks */
-#define PROC_STACK_SIZE (PROC_THREAD_MAX * THREAD_STACK_SIZE)
+#define PROC_STACK_SIZE (PROC_MAX_THREADS * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K)
 
 #define FD_MAX 64
 #define N_MUTEX 5
@@ -67,7 +67,7 @@ struct pcb {
 	addr_t stack_top;
 
 	/* Thread stack slots */
-	bool stack_slotID[PROC_THREAD_MAX];
+	bool stack_slotID[PROC_MAX_THREADS];
 
 	/* Heap management */
 	addr_t heap_base;

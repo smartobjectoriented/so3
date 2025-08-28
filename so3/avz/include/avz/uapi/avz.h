@@ -21,10 +21,6 @@
 
 #ifndef __ASSEMBLY__
 
-#ifdef CONFIG_SOO
-#include <soo/uapi/soo.h>
-#endif
-
 #include <asm/atomic.h>
 
 #endif /* __ASSEMBLY__ */
@@ -54,6 +50,11 @@
 /* DOMID_SELF is used in certain contexts to refer to oneself. */
 #define DOMID_SELF (0x7FF0U)
 
+#define MAX_ME_DOMAINS 5
+
+/* We include the (non-RT & RT) agency domain */
+#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
+
 /* Agency */
 #define DOMID_AGENCY 0
 
@@ -65,13 +66,15 @@
 #define AVZ_HYPERCALL_TRAP 0x2605
 #define AVZ_HYPERCALL_SIGRETURN 0x2606
 
+#ifdef CONFIG_SOO
+/* We use a Linux IPI which is not normally used (STOP) */
+#define IPI_EVENT_CHECK 2
+#else
+/* This is just to kick-start (or initialize) the CPU when the system powers on. */
+#define IPI_EVENT_CHECK 4
+#endif
+
 #ifndef __ASSEMBLY__
-
-/* Assembly low-level code to raise up hypercall */
-extern long __avz_hypercall(int vector, long avz_hyp_args);
-
-/* Generic function to raise up hypercall */
-void avz_hypercall(avz_hyp_t *avz_hyp);
 
 /*
  * 128 event channels per domain
@@ -83,6 +86,176 @@ void avz_hypercall(avz_hyp_t *avz_hyp);
 typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
+
+/*
+ * Generic hypercalls
+ */
+#define AVZ_EVENT_CHANNEL_OP 1
+#define AVZ_CONSOLE_IO_OP 2
+#define AVZ_DOMAIN_CONTROL_OP 3
+
+#define CONSOLE_STR_MAX_LEN 128
+
+/* Console management */
+
+#define CONSOLE_IO_KEYHANDLER 0
+#define CONSOLE_IO_PRINTCH 1
+#define CONSOLE_IO_PRINTSTR 2
+
+typedef struct {
+	int cmd;
+	union {
+		char c;
+		char str[CONSOLE_STR_MAX_LEN];
+	} u;
+} console_t;
+
+/* AVZ_CONSOLE_IO_OP */
+typedef struct {
+	console_t console;
+} avz_console_io_t;
+
+#define DOMCTL_pauseME 1
+#define DOMCTL_unpauseME 2
+#define DOMCTL_get_AVZ_shared 3
+
+struct domctl {
+	uint32_t cmd;
+	domid_t domain;
+	addr_t avz_shared_paddr;
+};
+typedef struct domctl domctl_t;
+
+/* Event channel management */
+
+#define ECS_FREE 0 /* Channel is available for use.                  */
+#define ECS_RESERVED 1 /* Channel is reserved.                           */
+#define ECS_UNBOUND 2 /* Channel is waiting to bind to a remote domain. */
+#define ECS_INTERDOMAIN 3 /* Channel is bound to another domain.            */
+#define ECS_VIRQ 4 /* Channel is bound to a virtual IRQ line.        */
+
+#define EVTCHNSTAT_closed 0 /* Channel is not in use.                 */
+#define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
+#define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
+#define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
+/*
+ * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
+ * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn
+ * is allocated in <dom> and returned as <evtchn>.
+ * NOTES:
+ *  1. If the caller is unprivileged then <dom> must be DOMID_SELF.
+ *  2. <rdom> may be DOMID_SELF, allowing loopback connections.
+ */
+#define EVTCHNOP_alloc_unbound 6
+struct evtchn_alloc_unbound {
+	/* IN parameters */
+	domid_t dom, remote_dom;
+	/* OUT parameters */
+	uint32_t evtchn;
+	uint32_t use;
+};
+typedef struct evtchn_alloc_unbound evtchn_alloc_unbound_t;
+
+/*
+ * EVTCHNOP_bind_interdomain: Construct an interdomain event channel between
+ * the calling domain and <remote_dom>. <remote_dom,remote_evtchn> must identify
+ * a evtchn that is unbound and marked as accepting bindings from the calling
+ * domain. A fresh evtchn is allocated in the calling domain and returned as
+ * <local_evtchn>.
+ * NOTES:
+ *  2. <remote_dom> may be DOMID_SELF, allowing loopback connections.
+ */
+#define EVTCHNOP_bind_interdomain 0
+#define EVTCHNOP_bind_existing_interdomain 7
+#define EVTCHNOP_unbind_domain 12
+
+struct evtchn_bind_interdomain {
+	/* IN parameters. */
+	domid_t remote_dom;
+	uint32_t remote_evtchn;
+	uint32_t use;
+	/* OUT parameters. */
+	uint32_t local_evtchn;
+};
+typedef struct evtchn_bind_interdomain evtchn_bind_interdomain_t;
+
+#define EVTCHNOP_bind_virq 1
+struct evtchn_bind_virq {
+	/* IN parameters. */
+	uint32_t virq;
+	/* OUT parameters. */
+	uint32_t evtchn;
+};
+typedef struct evtchn_bind_virq evtchn_bind_virq_t;
+
+/*
+ * EVTCHNOP_close: Close a local event channel <evtchn>. If the channel is
+ * interdomain then the remote end is placed in the unbound state
+ * (EVTCHNSTAT_unbound), awaiting a new connection.
+ */
+#define EVTCHNOP_close 3
+struct evtchn_close {
+	/* IN parameters. */
+	uint32_t evtchn;
+};
+typedef struct evtchn_close evtchn_close_t;
+
+/*
+ * EVTCHNOP_send: Send an event to the remote end of the channel whose local
+ * endpoint is <evtchn>.
+ */
+#define EVTCHNOP_send 4
+struct evtchn_send {
+	/* IN parameters. */
+	uint32_t evtchn;
+};
+typedef struct evtchn_send evtchn_send_t;
+
+struct evtchn_op {
+	uint32_t cmd; /* EVTCHNOP_* */
+	union {
+		struct evtchn_alloc_unbound alloc_unbound;
+		struct evtchn_bind_interdomain bind_interdomain;
+		struct evtchn_bind_virq bind_virq;
+		struct evtchn_close close;
+		struct evtchn_send send;
+	} u;
+};
+typedef struct evtchn_op evtchn_op_t;
+
+/* AVZ_DOMAIN_CONTROL_OP */
+typedef struct {
+	domctl_t domctl;
+} avz_domctl_t;
+
+/* AVZ_EVENT_CHANNEL_OP */
+typedef struct {
+	evtchn_op_t evtchn_op;
+} avz_evtchn_t;
+
+/* Assembly low-level code to raise up hypercall */
+extern long __avz_hypercall(int vector, long avz_hyp_args);
+
+/* Generic function to raise up hypercall */
+void avz_hypercall(void *avz_hyp);
+
+/*
+ * TODO: Refactor the following declarations to have cleaner separation
+ * between AVZ and SOO.
+ */
+#ifndef CONFIG_SOO
+
+/*
+ * AVZ hypercall argument
+ */
+typedef struct {
+	int cmd;
+	union {
+		avz_evtchn_t avz_evtchn;
+		avz_console_io_t avz_console_io_args;
+		avz_domctl_t avz_domctl_args;
+	} u;
+} avz_hyp_t;
 
 /*
  * Shared info page, shared between AVZ and the domain.
@@ -117,24 +290,19 @@ struct avz_shared {
 	 */
 	u64 current_s_time;
 
-	/* Agency or ME descriptor */
-	dom_desc_t dom_desc;
-
-	/* Keep the physical address so that the guest can map within in its address space. */
-	addr_t subdomain_shared_paddr;
-
-	struct avz_shared *subdomain_shared;
-
 	/* Used to store a signature for consistency checking, for example after a migration/restoration */
 	char signature[4];
 };
 
+#endif /* !CONFIG_SOO */
+
 typedef struct avz_shared avz_shared_t;
+extern volatile avz_shared_t *avz_shared;
 
-extern volatile avz_shared_t *__avz_shared;
-
-void do_avz_hypercall(avz_hyp_t *args);
+void do_avz_hypercall(void *args);
 void __sigreturn(void);
+void virq_handle(unsigned irq_nr);
+void virq_init(void);
 
 #endif /* __ASSEMBLY__ */
 

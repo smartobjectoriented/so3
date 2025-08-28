@@ -29,8 +29,6 @@
 #include <asm/io.h>
 #include <asm/cacheflush.h>
 
-#include <soo/uapi/soo.h>
-
 #include <avz/evtchn.h>
 #include <avz/memslot.h>
 #include <avz/keyhandler.h>
@@ -39,6 +37,10 @@
 #include <avz/debug.h>
 #include <avz/console.h>
 #include <avz/injector.h>
+
+#ifdef CONFIG_SOO
+
+#include <soo/uapi/soo.h>
 
 /**
  * Return the state of the ME corresponding to the ME_slotID.
@@ -110,12 +112,17 @@ void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc)
 		memcpy(dom_desc, &domains[slotID]->avz_shared->dom_desc, sizeof(dom_desc_t));
 }
 
+#endif /* CONFIG_SOO */
+
 /**
  * SOO hypercall processing.
  */
-void do_avz_hypercall(avz_hyp_t *args)
+void do_avz_hypercall(void *__args)
 {
+#ifdef CONFIG_SOO
 	struct domain *dom;
+#endif
+	avz_hyp_t *args = (avz_hyp_t *) __args;
 
 	/* Dispatch the hypercall to the appropriate handler
 	 * or do the local processing.
@@ -133,6 +140,8 @@ void do_avz_hypercall(avz_hyp_t *args)
 	case AVZ_EVENT_CHANNEL_OP:
 		do_event_channel_op(args);
 		break;
+
+#ifdef CONFIG_SOO
 
 	case AVZ_GRANT_TABLE_OP:
 		do_gnttab(&args->u.avz_gnttab_args.gnttab_op);
@@ -192,6 +201,8 @@ void do_avz_hypercall(avz_hyp_t *args)
 		break;
 	}
 
+#endif /* CONFIG_SOO */
+
 	default:
 		printk("%s: Unrecognized hypercall: %d\n", __func__, args->cmd);
 		BUG();
@@ -199,9 +210,4 @@ void do_avz_hypercall(avz_hyp_t *args)
 	}
 
 	flush_dcache_all();
-}
-
-void soo_activity_init(void)
-{
-	DBG("Setting SOO avz up ...\n");
 }

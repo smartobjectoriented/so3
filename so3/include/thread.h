@@ -19,12 +19,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-/* The number of max threads must be aligned with the definition in so3.lds regarding the stack size. */
-#define THREAD_MAX 32
 #define THREAD_NAME_LEN 80
-
-/* Per thread stack size. WARNING !! The size must be the same than the size declared in so3.lds. */
-#define THREAD_STACK_SIZE (64 * 1024)
 
 /* Default priority is set to 10 */
 #define THREAD_PRIO_DEFAULT 10
@@ -42,8 +37,6 @@ typedef enum {
 	THREAD_STATE_ZOMBIE
 } thread_state_t;
 typedef unsigned int thread_t;
-
-extern addr_t __stack_top;
 
 extern void thread_epilogue(void);
 

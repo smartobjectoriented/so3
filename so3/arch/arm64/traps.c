@@ -130,6 +130,8 @@ void trap_handle(cpu_regs_t *regs)
 #ifdef CONFIG_SOO
 	unsigned int memslotID =
 		((current_domain->avz_shared->domID == DOMID_AGENCY) ? MEMSLOT_AGENCY : current_domain->avz_shared->domID);
+#else
+	unsigned int memslotID = MEMSLOT_AGENCY;
 #endif /* CONFIG_SOO */
 
 #else
@@ -195,10 +197,11 @@ void trap_handle(cpu_regs_t *regs)
 		case AVZ_HYPERCALL_TRAP:
 			do_avz_hypercall((avz_hyp_t *) ipa_to_va(memslotID, regs->x1));
 			break;
-
+#ifdef CONFIG_SOO
 		case AVZ_HYPERCALL_SIGRETURN:
 			__sigreturn();
 			break;
+#endif /* CONFIG_SOO */
 		}
 		break;
 #endif /* CONFIG_AVZ */

@@ -316,6 +316,16 @@ KBUILD_AFLAGS_KERNEL := -I. -I$(srctree)/.
 KBUILD_CFLAGS_KERNEL := -I. -I$(srctree)/. -I$(srctree)/lib/libfdt
 KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
+DEFSYM_FLAGS = \
+  --defsym=CONFIG_NR_CPUS=$(CONFIG_NR_CPUS) \
+  --defsym=CONFIG_HEAP_SIZE_MB=$(CONFIG_HEAP_SIZE_MB) \
+  --defsym=CONFIG_SYS_STACK_SIZE_KB=$(CONFIG_SYS_STACK_SIZE_KB) \
+  --defsym=CONFIG_MAX_THREADS=$(CONFIG_MAX_THREADS) \
+  --defsym=CONFIG_THREAD_STACK_SIZE_KB=$(CONFIG_THREAD_STACK_SIZE_KB) \
+  --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR)
+ 
+  
+
 # Specific CFLAGS/AFLAGS according to ARCH
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
@@ -395,12 +405,9 @@ so3-all		:= $(so3-objs) $(so3-libs)
 LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
-ifdef CONFIG_MMU
-     cmd_so3 = $(LD) --defsym=CONFIG_HEAP_SIZE=$(CONFIG_HEAP_SIZE)  -no-enum-size-warning --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR) -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
-else
-     cmd_so3 = $(LD) --defsym=CONFIG_HEAP_SIZE=$(CONFIG_HEAP_SIZE) -no-enum-size-warning --defsym=ENTRY_ADDR=$(CONFIG_RAM_BASE) -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
-endif
-	 
+
+cmd_so3 = $(LD) $(DEFSYM_FLAGS) -no-enum-size-warning -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+
 KBUILD_CFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/	
 KBUILD_AFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/
 

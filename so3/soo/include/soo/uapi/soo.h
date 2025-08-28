@@ -21,15 +21,13 @@
 
 #ifndef __ASSEMBLY__
 
+#include <avz/uapi/avz.h>
+
 /* This signature is used to check the coherency of the ME image, after a migration
  * or a restoration for example.
  */
 #define SOO_ME_SIGNATURE "SooZ"
 
-#define MAX_ME_DOMAINS 5
-
-/* We include the (non-RT & RT) agency domain */
-#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
 #endif /* __ASSEMBLY__ */
 
 #define AGENCY_CPU 0
@@ -74,121 +72,7 @@ typedef struct gnttab_op gnttab_op_t;
 
 void do_gnttab(gnttab_op_t *args);
 
-/* Event channel management */
-
-#define ECS_FREE 0 /* Channel is available for use.                  */
-#define ECS_RESERVED 1 /* Channel is reserved.                           */
-#define ECS_UNBOUND 2 /* Channel is waiting to bind to a remote domain. */
-#define ECS_INTERDOMAIN 3 /* Channel is bound to another domain.            */
-#define ECS_VIRQ 4 /* Channel is bound to a virtual IRQ line.        */
-
-#define EVTCHNSTAT_closed 0 /* Channel is not in use.                 */
-#define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
-#define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
-#define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
-/*
- * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
- * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn
- * is allocated in <dom> and returned as <evtchn>.
- * NOTES:
- *  1. If the caller is unprivileged then <dom> must be DOMID_SELF.
- *  2. <rdom> may be DOMID_SELF, allowing loopback connections.
- */
-#define EVTCHNOP_alloc_unbound 6
-struct evtchn_alloc_unbound {
-	/* IN parameters */
-	domid_t dom, remote_dom;
-	/* OUT parameters */
-	uint32_t evtchn;
-	uint32_t use;
-};
-typedef struct evtchn_alloc_unbound evtchn_alloc_unbound_t;
-
-/*
- * EVTCHNOP_bind_interdomain: Construct an interdomain event channel between
- * the calling domain and <remote_dom>. <remote_dom,remote_evtchn> must identify
- * a evtchn that is unbound and marked as accepting bindings from the calling
- * domain. A fresh evtchn is allocated in the calling domain and returned as
- * <local_evtchn>.
- * NOTES:
- *  2. <remote_dom> may be DOMID_SELF, allowing loopback connections.
- */
-#define EVTCHNOP_bind_interdomain 0
-#define EVTCHNOP_bind_existing_interdomain 7
-#define EVTCHNOP_unbind_domain 12
-
-struct evtchn_bind_interdomain {
-	/* IN parameters. */
-	domid_t remote_dom;
-	uint32_t remote_evtchn;
-	uint32_t use;
-	/* OUT parameters. */
-	uint32_t local_evtchn;
-};
-typedef struct evtchn_bind_interdomain evtchn_bind_interdomain_t;
-
-#define EVTCHNOP_bind_virq 1
-struct evtchn_bind_virq {
-	/* IN parameters. */
-	uint32_t virq;
-	/* OUT parameters. */
-	uint32_t evtchn;
-};
-typedef struct evtchn_bind_virq evtchn_bind_virq_t;
-
-/*
- * EVTCHNOP_close: Close a local event channel <evtchn>. If the channel is
- * interdomain then the remote end is placed in the unbound state
- * (EVTCHNSTAT_unbound), awaiting a new connection.
- */
-#define EVTCHNOP_close 3
-struct evtchn_close {
-	/* IN parameters. */
-	uint32_t evtchn;
-};
-typedef struct evtchn_close evtchn_close_t;
-
-/*
- * EVTCHNOP_send: Send an event to the remote end of the channel whose local
- * endpoint is <evtchn>.
- */
-#define EVTCHNOP_send 4
-struct evtchn_send {
-	/* IN parameters. */
-	uint32_t evtchn;
-};
-typedef struct evtchn_send evtchn_send_t;
-
-struct evtchn_op {
-	uint32_t cmd; /* EVTCHNOP_* */
-	union {
-		struct evtchn_alloc_unbound alloc_unbound;
-		struct evtchn_bind_interdomain bind_interdomain;
-		struct evtchn_bind_virq bind_virq;
-		struct evtchn_close close;
-		struct evtchn_send send;
-	} u;
-};
-typedef struct evtchn_op evtchn_op_t;
-
-/* Domain control management */
-/*
- * There are two main scheduling policies: the one used for normal (standard) ME, and
- * a second one used for realtime ME.
- */
 #define AVZ_SCHEDULER_FLIP 0
-#define AVZ_SCHEDULER_RT 1
-
-#define DOMCTL_pauseME 1
-#define DOMCTL_unpauseME 2
-#define DOMCTL_get_AVZ_shared 3
-
-struct domctl {
-	uint32_t cmd;
-	domid_t domain;
-	addr_t avz_shared_paddr;
-};
-typedef struct domctl domctl_t;
 
 /*
  * ME states:
@@ -338,6 +222,46 @@ typedef struct {
 	} u;
 } dom_desc_t;
 
+struct avz_shared {
+	domid_t domID;
+
+	/* Domain related information */
+	unsigned long nr_pages; /* Total pages allocated to this domain.  */
+
+	addr_t fdt_paddr;
+
+	/* Other fields related to domain life */
+
+	unsigned long domain_stack;
+	uint8_t evtchn_upcall_pending;
+
+	/*
+	 * A domain can create "event channels" on which it can send and receive
+	 * asynchronous event notifications.
+	 * Each event channel is assigned a bit in evtchn_pending and its modification has to be
+	 * kept atomic.
+	 */
+
+	volatile bool evtchn_pending[NR_EVTCHN];
+
+	atomic_t dc_event;
+
+	/* This field is used when taking a snapshot of us. It will be
+	 * useful to restore later. Some timer deadlines are based on it and
+	 * will need to be updated accordingly.
+	 */
+	u64 current_s_time;
+
+	/* Agency or ME descriptor */
+	dom_desc_t dom_desc;
+
+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	char signature[4];
+};
+
+typedef struct avz_shared avz_shared_t;
+extern volatile avz_shared_t *avz_shared;
+
 /* struct agency_ioctl_args used in IOCTLs */
 typedef struct agency_ioctl_args {
 	void *buffer; /* IN/OUT */
@@ -359,53 +283,22 @@ typedef struct agency_ioctl_args {
  */
 #define DC_ISR_TASK_PRIO 55
 
-#ifndef __ASSEMBLY__
-
-extern volatile bool __cobalt_ready;
-
-void rtdm_register_dc_event_callback(dc_event_t dc_event, dc_event_fn_t *callback);
-
-#endif /* __ASSEMBLY__ */
-
-/* Console management */
-
-#define CONSOLE_IO_KEYHANDLER 0
-#define CONSOLE_IO_PRINTCH 1
-#define CONSOLE_IO_PRINTSTR 2
-
-#define CONSOLE_STR_MAX_LEN 128
-
-typedef struct {
-	int cmd;
-	union {
-		char c;
-		char str[CONSOLE_STR_MAX_LEN];
-	} u;
-} console_t;
-
 /*
  * SOO hypercall management
  */
 
 /* AVZ hypercalls devoted to SOO */
-#define AVZ_ME_READ_SNAPSHOT 6
-#define AVZ_ME_WRITE_SNAPSHOT 7
-#define AVZ_START_CAPSULE 8
-#define AVZ_INJECT_CAPSULE 9
-#define AVZ_KILL_ME 10
-#define AVZ_DC_EVENT_SET 11
-#define AVZ_GET_ME_STATE 13
-#define AVZ_SET_ME_STATE 14
-#define AVZ_GET_DOM_DESC 16
-#define AVZ_EVENT_CHANNEL_OP 17
-#define AVZ_CONSOLE_IO_OP 18
-#define AVZ_DOMAIN_CONTROL_OP 19
-#define AVZ_GRANT_TABLE_OP 20
 
-/* AVZ_EVENT_CHANNEL_OP */
-typedef struct {
-	evtchn_op_t evtchn_op;
-} avz_evtchn_t;
+#define AVZ_ME_READ_SNAPSHOT 4
+#define AVZ_ME_WRITE_SNAPSHOT 5
+#define AVZ_START_CAPSULE 6
+#define AVZ_INJECT_CAPSULE 7
+#define AVZ_KILL_ME 8
+#define AVZ_DC_EVENT_SET 9
+#define AVZ_GET_ME_STATE 10
+#define AVZ_SET_ME_STATE 11
+#define AVZ_GET_DOM_DESC 12
+#define AVZ_GRANT_TABLE_OP 13
 
 /* AVZ_INJECT_CAPSULE */
 typedef struct {
@@ -461,16 +354,6 @@ typedef struct {
 typedef struct {
 	uint32_t slotID;
 } avz_kill_me_t;
-
-/* AVZ_CONSOLE_IO_OP */
-typedef struct {
-	console_t console;
-} avz_console_io_t;
-
-/* AVZ_DOMAIN_CONTROL_OP */
-typedef struct {
-	domctl_t domctl;
-} avz_domctl_t;
 
 /* AVZ_GRANT_TABLE_OP */
 typedef struct {

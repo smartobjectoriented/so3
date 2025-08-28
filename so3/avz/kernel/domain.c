@@ -16,13 +16,8 @@
  *
  */
 
-#if 0
-#define DEBUG
-#endif
-
 #include <common.h>
 #include <stdarg.h>
-#include <percpu.h>
 #include <serial.h>
 #include <console.h>
 #include <errno.h>
@@ -37,7 +32,10 @@
 #include <avz/sched.h>
 #include <avz/sched-if.h>
 #include <avz/debug.h>
+
+#ifdef CONFIG_SOO
 #include <avz/gnttab.h>
+#endif /* CONFIG_SOO */
 
 #include <avz/uapi/avz.h>
 
@@ -82,8 +80,9 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 	 * between domains, especially between the Linux domain and the SO3 containers.
 	 * 
 	 */
-
+#ifdef CONFIG_SOO
 	gnttab_init(d);
+#endif /* CONFIG_SOO */
 
 	d->avz_shared->domID = domid;
 
@@ -295,7 +294,7 @@ void do_domctl(domctl_t *args)
 
 	case DOMCTL_unpauseME:
 
-		DBG("%s: unpausing ME\n", __func__);
+		LOG_DEBUG("%s: unpausing ME\n", __func__);
 
 		domain_unpause_by_systemcontroller(d);
 		break;

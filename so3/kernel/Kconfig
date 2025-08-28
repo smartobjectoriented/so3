@@ -1,8 +1,8 @@
 
 choice
-	prompt "SO3 Execution mode"
+    prompt "SO3 Execution mode"
 
-	config THREAD_ENV
+    config THREAD_ENV
     	bool "Thread mode (no process)"
     	select APP_DEFAULT
     	
@@ -15,6 +15,14 @@ choice
 endchoice
 
 menu "Kernel & CPU features"
+
+config MAX_THREADS
+    int "Maximum number of threads"
+    default 32
+    help
+    	Maximum number of threads supported by the kernel.
+    	Note that this value is not related to the number of CPUs.
+    	It is the maximum number of threads that can be created.
 
 config SMP
     bool "Enabling multi-CPU support"

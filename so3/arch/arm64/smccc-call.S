@@ -8,7 +8,7 @@
 
 #include <asm/smccc.h>
 
-	.macro SMCCC instr
+.macro SMCCC instr
 	\instr	#0
 	ldr	x4, [sp]
 	stp	x0, x1, [x4, #ARM_SMCCC_RES_X0_OFFS]
@@ -20,7 +20,7 @@
 	b.ne	1f
 	str	x6, [x4, ARM_SMCCC_QUIRK_STATE_OFFS]
 1:	ret
-	.endm
+.endm
 
 /*
  * void arm_smccc_smc(unsigned long a0, unsigned long a1, unsigned long a2,

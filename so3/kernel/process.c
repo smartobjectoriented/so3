@@ -204,7 +204,7 @@ pcb_t *new_process(void)
 
 	pcb->pid = pid_current++;
 
-	for (i = 0; i < PROC_THREAD_MAX; i++)
+	for (i = 0; i < PROC_MAX_THREADS; i++)
 		pcb->stack_slotID[i] = false;
 
 	/* Init the list of child threads */
@@ -860,8 +860,9 @@ int do_fork(void)
 	newp->main_thread = user_thread(NULL, newp->name, (void *) arch_get_args_base(), newp);
 
 	/* Copy the kernel stack of the main thread */
-	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - THREAD_STACK_SIZE,
-	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - THREAD_STACK_SIZE, THREAD_STACK_SIZE);
+	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
+	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
+	       CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
 
 	/*
          * Preserve the current value of all registers concerned by this
