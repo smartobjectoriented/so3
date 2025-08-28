@@ -41,7 +41,7 @@
 
 #define SYSCALL_DUP 41
 
-#define SYSCALL_SBRK 45 // => brk
+#define SYSCALL_BRK 45
 #define SYSCALL_PIPE 46
 
 #define SYSCALL_IOCTL 54
