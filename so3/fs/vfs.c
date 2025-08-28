@@ -715,6 +715,20 @@ SYSCALL_DEFINE1(close, int, fd)
 	return 0;
 }
 
+SYSCALL_DEFINE3(dup3, int, oldfd, int, newfd, int, flags)
+{
+	if (oldfd == newfd) {
+		set_errno(EINVAL);
+		return -1;
+	}
+
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported.\n");
+	}
+
+	return do_dup2(oldfd, newfd);
+}
+
 /**
  * @brief dup2 creates a synonym of oldfd on newfd
  *

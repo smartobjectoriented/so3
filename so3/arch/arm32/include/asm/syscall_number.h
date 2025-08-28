@@ -80,6 +80,8 @@
 
 #define SYSCALL_SETSOCKOPT 294
 
+#define SYSCALL_DUP3 358
+
 // Does not exist
 #define SYSCALL_WAITPID 3 // => wait4?
 #define SYSCALL_READDIR 9 // getdents + 64?

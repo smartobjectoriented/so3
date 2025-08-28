@@ -66,7 +66,10 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_PIPE] = __sys_pipe,
 #endif
 	[SYSCALL_DUP] = __sys_dup,
+#ifdef SYSCALL_DUP2
 	[SYSCALL_DUP2] = __sys_dup2,
+#endif
+	[SYSCALL_DUP3] = __sys_dup3,
 	[SYSCALL_STAT] = __sys_stat,
 	[SYSCALL_MMAP] = __sys_mmap,
 	[SYSCALL_NANOSLEEP] = __sys_nanosleep,
