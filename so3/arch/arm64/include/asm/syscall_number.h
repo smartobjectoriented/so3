@@ -23,6 +23,7 @@
  * Syscall number definition
  */
 #define SYSCALL_DUP 23
+#define SYSCALL_DUP3 24
 
 #define SYSCALL_FCNTL 25
 
@@ -75,7 +76,6 @@
 #define SYSCALL_READDIR 9 // getdents64
 #define SYSCALL_OPEN 5 // => openat
 #define SYSCALL_PIPE 19 // => pipe2
-#define SYSCALL_DUP2 23 // => dup3
 #define SYSCALL_SEND 32 // => sendto
 #define SYSCALL_SIGACTION 46 // => rt_sigaction
 
