@@ -34,16 +34,16 @@
 
 #ifdef __ASSEMBLY__
 
-.macro curdom rd,
-	tmp
+.macro curdom rd, tmp
 
-		// Compute the address of the stack bottom where cpu_info is located.
-		ldr	\rd,
-	= (~(DOMAIN_STACK_SIZE - 1)) mov	\tmp, sp and	\rd, \tmp, \rd
+	// Compute the address of the stack bottom where cpu_info is located.
+	ldr	\rd, = (~(DOMAIN_STACK_SIZE - 1)) 
+	mov	\tmp, sp 
+	and	\rd, \tmp, \rd
 
-						       // Get the address of the domain descriptor
-						       ldr	\rd,
-	[\rd].endm
+	// Get the address of the domain descriptor
+	ldr	\rd, [\rd]
+.endm
 
 #else /* __ASSEMBLY__ */
 
