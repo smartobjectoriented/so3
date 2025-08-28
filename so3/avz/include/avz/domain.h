@@ -34,6 +34,7 @@
 
 #ifdef __ASSEMBLY__
 
+/* clang-format off */
 .macro curdom rd, tmp
 
 	// Compute the address of the stack bottom where cpu_info is located.
@@ -44,6 +45,7 @@
 	// Get the address of the domain descriptor
 	ldr	\rd, [\rd]
 .endm
+/* clang-format on */
 
 #else /* __ASSEMBLY__ */
 
