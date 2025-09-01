@@ -45,18 +45,18 @@
  * @param t Type of the function arguments
  * @param n name of the function arguments
  */
-#define __MAP1(m,t,n) m(t,n)
-#define __MAP2(m,t,n,...) m(t,n), __MAP1(m,__VA_ARGS__)
-#define __MAP3(m,t,n,...) m(t,n), __MAP2(m,__VA_ARGS__)
-#define __MAP4(m,t,n,...) m(t,n), __MAP3(m,__VA_ARGS__)
-#define __MAP5(m,t,n,...) m(t,n), __MAP4(m,__VA_ARGS__)
-#define __MAP6(m,t,n,...) m(t,n), __MAP5(m,__VA_ARGS__)
-#define __MAP(x,m,...) __MAP##x(m,__VA_ARGS__)
+#define __MAP1(m, t, n) m(t, n)
+#define __MAP2(m, t, n, ...) m(t, n), __MAP1(m, __VA_ARGS__)
+#define __MAP3(m, t, n, ...) m(t, n), __MAP2(m, __VA_ARGS__)
+#define __MAP4(m, t, n, ...) m(t, n), __MAP3(m, __VA_ARGS__)
+#define __MAP5(m, t, n, ...) m(t, n), __MAP4(m, __VA_ARGS__)
+#define __MAP6(m, t, n, ...) m(t, n), __MAP5(m, __VA_ARGS__)
+#define __MAP(x, m, ...) __MAP##x(m, __VA_ARGS__)
 
 /** Macros to map type and name with __MAP */
-#define __M_DECL(t,n) t n
-#define __M_LONG(t,n) long n
-#define __M_ARGS(t,n) n
+#define __M_DECL(t, n) t n
+#define __M_LONG(t, n) long n
+#define __M_ARGS(t, n) n
 
 /**
  * Map syscall arguments by casting them for function call.
@@ -68,13 +68,13 @@
  * @param n name of the function arguments, not use but allow
  *          to use same __VA_ARGS__ as in __MAP()
  */
-#define __MAP_ARGS1(x,args,t,n) (t)args[x-1]
-#define __MAP_ARGS2(x,args,t,n,...) (t)args[x-2], __MAP_ARGS1(x,args,__VA_ARGS__)
-#define __MAP_ARGS3(x,args,t,n,...) (t)args[x-3], __MAP_ARGS2(x,args,__VA_ARGS__)
-#define __MAP_ARGS4(x,args,t,n,...) (t)args[x-4], __MAP_ARGS3(x,args,__VA_ARGS__)
-#define __MAP_ARGS5(x,args,t,n,...) (t)args[x-5], __MAP_ARGS4(x,args,__VA_ARGS__)
-#define __MAP_ARGS6(x,args,t,n,...) (t)args[x-6], __MAP_ARGS5(x,args,__VA_ARGS__)
-#define __MAP_ARGS(x,args,...) __MAP_ARGS##x((x),(args),__VA_ARGS__)
+#define __MAP_ARGS1(x, args, t, n) (t) args[x - 1]
+#define __MAP_ARGS2(x, args, t, n, ...) (t) args[x - 2], __MAP_ARGS1(x, args, __VA_ARGS__)
+#define __MAP_ARGS3(x, args, t, n, ...) (t) args[x - 3], __MAP_ARGS2(x, args, __VA_ARGS__)
+#define __MAP_ARGS4(x, args, t, n, ...) (t) args[x - 4], __MAP_ARGS3(x, args, __VA_ARGS__)
+#define __MAP_ARGS5(x, args, t, n, ...) (t) args[x - 5], __MAP_ARGS4(x, args, __VA_ARGS__)
+#define __MAP_ARGS6(x, args, t, n, ...) (t) args[x - 6], __MAP_ARGS5(x, args, __VA_ARGS__)
+#define __MAP_ARGS(x, args, ...) __MAP_ARGS##x((x), (args), __VA_ARGS__)
 
 /**
  * Syscall functions declaration and definitions helper.
@@ -88,26 +88,29 @@
  * arguments define like a normal function. That function is automatically
  * called by __sys_SYCALL_NAME with the correct argument number and cast.
  */
-#define SYSCALL_DECLARE(name,...) \
+#define SYSCALL_DECLARE(name, ...)               \
 	long __sys_##name(syscall_args_t *args); \
 	inline long do_##name(__VA_ARGS__);
 
-#define SYSCALL_DEFINE0(name) \
-	long __sys_##name(syscall_args_t *unused) { return do_##name(); } \
+#define SYSCALL_DEFINE0(name)                     \
+	long __sys_##name(syscall_args_t *unused) \
+	{                                         \
+		return do_##name();               \
+	}                                         \
 	inline long do_##name(void)
-#define SYSCALL_DEFINE1(...) __SYSCALL_DEFINEx(1,__VA_ARGS__)
-#define SYSCALL_DEFINE2(...) __SYSCALL_DEFINEx(2,__VA_ARGS__)
-#define SYSCALL_DEFINE3(...) __SYSCALL_DEFINEx(3,__VA_ARGS__)
-#define SYSCALL_DEFINE4(...) __SYSCALL_DEFINEx(4,__VA_ARGS__)
-#define SYSCALL_DEFINE5(...) __SYSCALL_DEFINEx(5,__VA_ARGS__)
-#define SYSCALL_DEFINE6(...) __SYSCALL_DEFINEx(6,__VA_ARGS__)
+#define SYSCALL_DEFINE1(...) __SYSCALL_DEFINEx(1, __VA_ARGS__)
+#define SYSCALL_DEFINE2(...) __SYSCALL_DEFINEx(2, __VA_ARGS__)
+#define SYSCALL_DEFINE3(...) __SYSCALL_DEFINEx(3, __VA_ARGS__)
+#define SYSCALL_DEFINE4(...) __SYSCALL_DEFINEx(4, __VA_ARGS__)
+#define SYSCALL_DEFINE5(...) __SYSCALL_DEFINEx(5, __VA_ARGS__)
+#define SYSCALL_DEFINE6(...) __SYSCALL_DEFINEx(6, __VA_ARGS__)
 
-#define __SYSCALL_DEFINEx(x,name,...) \
-	long __sys_##name(syscall_args_t *args) \
-	{ \
-		return do_##name(__MAP_ARGS(x,args->args,__VA_ARGS__)); \
-	} \
-	inline long do_##name(__MAP(x,__M_DECL,__VA_ARGS__))
+#define __SYSCALL_DEFINEx(x, name, ...)                                   \
+	long __sys_##name(syscall_args_t *args)                           \
+	{                                                                 \
+		return do_##name(__MAP_ARGS(x, args->args, __VA_ARGS__)); \
+	}                                                                 \
+	inline long do_##name(__MAP(x, __M_DECL, __VA_ARGS__))
 
 typedef struct {
 	unsigned long args[6];

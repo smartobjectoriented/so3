@@ -751,7 +751,7 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 	if (-1 == gfd) {
 		printk("%s: could not get global fd.\n", __func__);
 		set_errno(EBADF);
-		return (long)MAP_FAILED;
+		return (long) MAP_FAILED;
 	}
 
 	mutex_lock(&vfs_lock);
@@ -760,7 +760,7 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 		printk("%s: could not get device fops.\n", __func__);
 		mutex_unlock(&vfs_lock);
 		set_errno(EBADF);
-		return (long)MAP_FAILED;
+		return (long) MAP_FAILED;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -774,11 +774,11 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 	if (!fops->mmap) {
 		printk("%s: device doesn't support mmap.\n", __func__);
 		set_errno(EACCES);
-		return (long)MAP_FAILED;
+		return (long) MAP_FAILED;
 	}
 
 	/* Call the mmap fops that will do the actual mapping. */
-	return (long)fops->mmap(fd, start, page_count, offset);
+	return (long) fops->mmap(fd, start, page_count, offset);
 }
 
 SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)

@@ -499,7 +499,8 @@ SYSCALL_DEFINE4(send, int, sockfd, const void *, dataptr, size_t, size, int, fla
 	return lwip_send(lwip_fd, dataptr, size, flags);
 }
 
-SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct sockaddr *, to, socklen_t, tolen)
+SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct sockaddr *, to, socklen_t,
+		tolen)
 {
 	struct sockaddr_in to_lwip;
 	int lwip_fd = get_lwip_fd(sockfd);
