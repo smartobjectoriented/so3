@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017 Xavier Ruppen <xavier.ruppen@heig-vd.ch>
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -94,6 +94,10 @@
 /* mmap flags options  */
 #define MAP_ANONYMOUS 0x10 /* don't use a file */
 
+/* Special value for dirfd used to indicate openat
+   should use the current working directory. */
+#define AT_FDCWD (-100)
+
 /* Return error values */
 #define MAP_FAILED ((void *) -1) /* mmap fail */
 
@@ -160,7 +164,8 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
-SYSCALL_DECLARE(open, const char *filename, int flags);
+SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, unsigned short mode)
+SYSCALL_DECLARE(open, const char *filename, int flags, unsigned short mode);
 SYSCALL_DECLARE(read, int fd, void *buffer, int count);
 SYSCALL_DECLARE(write, int fd, const void *buffer, int count);
 SYSCALL_DECLARE(getdents64, int fd, char *buf, size_t count);
@@ -170,6 +175,7 @@ SYSCALL_DECLARE(dup2, int oldfd, int newfd);
 SYSCALL_DECLARE(dup3, int oldfd, int newfd, int flags);
 SYSCALL_DECLARE(stat, const char *path, struct stat *st);
 SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
+SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
