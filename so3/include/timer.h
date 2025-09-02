@@ -128,7 +128,9 @@ void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec)
 
 SYSCALL_DECLARE(nanosleep, const struct timespec *req, struct timespec *rem);
 
-SYSCALL_DECLARE(gettimeofday, struct timespec *tv);
+SYSCALL_DECLARE(gettimeofday_time32, struct timeval32 *tv, void *tz);
+SYSCALL_DECLARE(gettimeofday, struct timeval *tv, void *tz);
+SYSCALL_DECLARE(clock_gettime32, int clk_id, struct timespec32 *ts);
 SYSCALL_DECLARE(clock_gettime, int clk_id, struct timespec *ts);
 
 #ifdef CONFIG_AVZ

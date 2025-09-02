@@ -47,12 +47,12 @@
 
 #define SYSCALL_KILL 129
 
-#define SYSCALL_GETTIMEOFDAY 169 // Add timezone
-#define SYSCALL_SETTIMEOFDAY 170 // Implement?
+#define SYSCALL_GETTIMEOFDAY 169
+// #define SYSCALL_SETTIMEOFDAY 170 // Implement?
 
 #define SYSCALL_GETPID 172
 
-#define SYSCALL_SYSINFO 179 // => struct sysinfo
+// #define SYSCALL_SYSINFO 179 // => struct sysinfo
 
 #define SYSCALL_SOCKET 198
 
