@@ -163,7 +163,7 @@ typedef enum {
 SYSCALL_DECLARE(open, const char *filename, int flags);
 SYSCALL_DECLARE(read, int fd, void *buffer, int count);
 SYSCALL_DECLARE(write, int fd, const void *buffer, int count);
-SYSCALL_DECLARE(readdir, int fd, char *buf, int len);
+SYSCALL_DECLARE(getdents64, int fd, char *buf, size_t count);
 SYSCALL_DECLARE(close, int fd);
 SYSCALL_DECLARE(dup, int oldfd);
 SYSCALL_DECLARE(dup2, int oldfd, int newfd);
