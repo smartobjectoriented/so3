@@ -31,6 +31,7 @@
 
 #define SYSCALL_CLOSE 57
 
+#define SYSCALL_GETDENTS64 61
 #define SYSCALL_LSEEK 62
 #define SYSCALL_READ 63
 #define SYSCALL_WRITE 64
@@ -42,6 +43,7 @@
 #define SYSCALL_NANOSLEEP 101
 
 #define SYSCALL_CLOCK_GETTIME 113
+#define SYSCALL_WAIT4 114
 
 #define SYSCALL_PTRACE 117
 
@@ -71,9 +73,7 @@
 #define SYSCALL_MMAP 222
 
 // Does not exist
-#define SYSCALL_WAITPID 3 // => wait4?
 #define SYSCALL_FORK 7 // => clone
-#define SYSCALL_READDIR 9 // getdents64
 #define SYSCALL_OPEN 5 // => openat
 #define SYSCALL_PIPE 19 // => pipe2
 #define SYSCALL_SEND 32 // => sendto

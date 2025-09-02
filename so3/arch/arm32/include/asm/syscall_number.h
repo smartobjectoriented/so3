@@ -64,6 +64,10 @@
 
 #define SYSCALL_NANOSLEEP 162
 
+#define SYSCALL_GETDENTS64 217
+
+#define SYSCALL_WAIT4 260
+
 #define SYSCALL_CLOCK_GETTIME32 263
 
 #define SYSCALL_SOCKET 281
@@ -85,8 +89,6 @@
 #define SYSCALL_CLOCK_GETTIME64 403
 
 // Does not exist
-#define SYSCALL_WAITPID 3 // => wait4?
-#define SYSCALL_READDIR 9 // getdents + 64?
 #define SYSCALL_MMAP 222 // => mmap2
 
 // => pthread

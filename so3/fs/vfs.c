@@ -616,7 +616,7 @@ open_failed:
  * @brief readdir read a directory entry which will be stored in a struct dirent entry
  * @param fd This is the file descriptor provided as (DIR *) when doing opendir in the userspace.
  */
-SYSCALL_DEFINE3(readdir, int, fd, char *, buf, int, len)
+SYSCALL_DEFINE3(getdents64, int, fd, char *, buf, size_t, len)
 {
 	struct dirent *dirent;
 	int gfd;
