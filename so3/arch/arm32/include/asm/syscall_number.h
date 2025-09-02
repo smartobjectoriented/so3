@@ -27,7 +27,7 @@
 #define SYSCALL_FORK 2
 #define SYSCALL_READ 3
 #define SYSCALL_WRITE 4
-#define SYSCALL_OPEN 5 // Add mode
+#define SYSCALL_OPEN 5
 #define SYSCALL_CLOSE 6
 
 #define SYSCALL_EXECVE 11
@@ -64,6 +64,8 @@
 
 #define SYSCALL_NANOSLEEP 162
 
+#define SYSCALL_MMAP2 192
+
 #define SYSCALL_GETDENTS64 217
 
 #define SYSCALL_WAIT4 260
@@ -84,12 +86,11 @@
 
 #define SYSCALL_SETSOCKOPT 294
 
+#define SYSCALL_OPENAT 322
+
 #define SYSCALL_DUP3 358
 
 #define SYSCALL_CLOCK_GETTIME64 403
-
-// Does not exist
-#define SYSCALL_MMAP 222 // => mmap2
 
 // => pthread
 #define SYSCALL_THREAD_CREATE 16

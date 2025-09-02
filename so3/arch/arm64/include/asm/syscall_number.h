@@ -29,6 +29,7 @@
 
 #define SYSCALL_IOCTL 29
 
+#define SYSCALL_OPENAT 56
 #define SYSCALL_CLOSE 57
 
 #define SYSCALL_GETDENTS64 61
@@ -74,7 +75,6 @@
 
 // Does not exist
 #define SYSCALL_FORK 7 // => clone
-#define SYSCALL_OPEN 5 // => openat
 #define SYSCALL_PIPE 19 // => pipe2
 #define SYSCALL_SEND 32 // => sendto
 #define SYSCALL_SIGACTION 46 // => rt_sigaction

@@ -548,11 +548,15 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 /**
  * @brief This function opens a file. Not all file types are supported.
  */
-SYSCALL_DEFINE2(open, const char *, filename, int, flags)
+SYSCALL_DEFINE3(open, const char *, filename, int, flags, unsigned short, mode)
 {
 	int fd, gfd, ret = -1;
 	uint32_t type;
 	struct file_operations *fops;
+
+	if (mode != 0) {
+		LOG_WARNING("mode parameters isn't supported\n");
+	}
 
 	mutex_lock(&vfs_lock);
 
@@ -610,6 +614,18 @@ open_failed:
 	mutex_unlock(&vfs_lock);
 
 	return ret;
+}
+
+/**
+ * dirfd is currently ignored.
+ */
+SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, unsigned short, mode)
+{
+	if (dirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+	}
+
+	return do_open(filename, flags, mode);
 }
 
 /*
@@ -835,6 +851,14 @@ SYSCALL_DEFINE6(mmap, addr_t, start, size_t, length, int, prot, int, flags, int,
 		return do_mmap_anon(fd, start, page_count, offset);
 	else
 		return do_mmap(fd, start, page_count, offset);
+}
+
+/**
+ * Works like mmap, but with the given offset been in page count.
+ */
+SYSCALL_DEFINE6(mmap2, addr_t, start, size_t, length, int, prot, int, flags, int, fd, off_t, pgoffset)
+{
+	return sys_do_mmap(start, length, prot, flags, fd, pgoffset * PAGE_SIZE);
 }
 
 SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
