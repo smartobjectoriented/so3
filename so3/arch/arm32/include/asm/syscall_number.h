@@ -50,12 +50,12 @@
 #define SYSCALL_DUP2 63
 #define SYSCALL_SIGACTION 67
 
-#define SYSCALL_GETTIMEOFDAY 78 // Add _time32
-#define SYSCALL_SETTIMEOFDAY 79 // Implement?
+#define SYSCALL_GETTIMEOFDAY_TIME32 78
+// #define SYSCALL_SETTIMEOFDAY 79 // Implement?
 
 #define SYSCALL_STAT 106
 
-#define SYSCALL_SYSINFO 116 // => struct sysinfo
+// #define SYSCALL_SYSINFO 116 // => struct sysinfo
 
 #define SYSCALL_SIGRETURN 119
 
@@ -64,7 +64,7 @@
 
 #define SYSCALL_NANOSLEEP 162
 
-#define SYSCALL_CLOCK_GETTIME 263 // 32 and 64
+#define SYSCALL_CLOCK_GETTIME32 263
 
 #define SYSCALL_SOCKET 281
 #define SYSCALL_BIND 282
@@ -81,6 +81,8 @@
 #define SYSCALL_SETSOCKOPT 294
 
 #define SYSCALL_DUP3 358
+
+#define SYSCALL_CLOCK_GETTIME64 403
 
 // Does not exist
 #define SYSCALL_WAITPID 3 // => wait4?

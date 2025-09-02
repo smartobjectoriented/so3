@@ -27,9 +27,19 @@
 
 /* Time conversion units */
 
+struct timespec32 {
+	time32_t tv_sec; /* seconds */
+	time32_t tv_nsec; /* nanoseconds */
+};
+
 struct timespec {
 	time_t tv_sec; /* seconds */
 	time_t tv_nsec; /* nanoseconds */
+};
+
+struct timeval32 {
+	time32_t tv_sec; /* seconds */
+	time32_t tv_usec; /* microseconds */
 };
 
 struct timeval {
