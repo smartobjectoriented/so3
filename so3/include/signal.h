@@ -20,6 +20,7 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
+#include <syscall.h>
 #include <types.h>
 #include <thread.h>
 
@@ -93,8 +94,8 @@ typedef struct __sigaction {
 	sigaction_t *sa;
 } __sigaction_t;
 
-int do_sigaction(int signum, const sigaction_t *action, sigaction_t *old_action);
-int do_kill(int pid, int sig);
-void do_sigreturn(void);
+SYSCALL_DECLARE(sigaction, int signum, const sigaction_t *action, sigaction_t *old_action);
+SYSCALL_DECLARE(kill, int pid, int sig);
+SYSCALL_DECLARE(sigreturn, void);
 
 #endif /* SIGNAL_H */

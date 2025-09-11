@@ -22,6 +22,7 @@
 #include <memory.h>
 #include <mutex.h>
 #include <completion.h>
+#include <syscall.h>
 
 #define PIPE_READER 0
 #define PIPE_WRITER 0
@@ -52,6 +53,6 @@ struct pipe_desc {
 };
 typedef struct pipe_desc pipe_desc_t;
 
-int do_pipe(int pipefd[2]);
+SYSCALL_DECLARE(pipe, int *pipefd);
 
 #endif /* PIPE_H */

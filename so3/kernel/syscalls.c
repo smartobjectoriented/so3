@@ -37,6 +37,64 @@ extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
 
+static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
+	[0 ... NR_SYSCALLS - 1] = NULL,
+
+#ifdef CONFIG_MMU
+	[SYSCALL_GETPID] = __sys_getpid,
+	[SYSCALL_GETTIMEOFDAY] = __sys_gettimeofday,
+	[SYSCALL_CLOCK_GETTIME] = __sys_clock_gettime,
+	[SYSCALL_EXIT] = __sys_exit,
+	[SYSCALL_EXECVE] = __sys_execve,
+	[SYSCALL_FORK] = __sys_fork,
+	[SYSCALL_WAITPID] = __sys_waitpid,
+	[SYSCALL_PTRACE] = __sys_ptrace,
+#endif
+	[SYSCALL_READ] = __sys_read,
+	[SYSCALL_WRITE] = __sys_write,
+	[SYSCALL_OPEN] = __sys_open,
+	[SYSCALL_CLOSE] = __sys_close,
+	[SYSCALL_THREAD_CREATE] = __sys_thread_create,
+	[SYSCALL_THREAD_JOIN] = __sys_thread_join,
+	[SYSCALL_THREAD_EXIT] = __sys_thread_exit,
+	[SYSCALL_THREAD_YIELD] = __sys_thread_yield,
+	[SYSCALL_READDIR] = __sys_readdir,
+	[SYSCALL_IOCTL] = __sys_ioctl,
+	[SYSCALL_FCNTL] = __sys_fcntl,
+	[SYSCALL_LSEEK] = __sys_lseek,
+#ifdef CONFIG_IPC_PIPE
+	[SYSCALL_PIPE] = __sys_pipe,
+#endif
+	[SYSCALL_DUP] = __sys_dup,
+	[SYSCALL_DUP2] = __sys_dup2,
+	[SYSCALL_STAT] = __sys_stat,
+	[SYSCALL_MMAP] = __sys_mmap,
+	[SYSCALL_NANOSLEEP] = __sys_nanosleep,
+#ifdef CONFIG_PROC_ENV
+	[SYSCALL_SBRK] = __sys_sbrk,
+#endif
+	[SYSCALL_MUTEX_LOCK] = __sys_mutex_lock,
+	[SYSCALL_MUTEX_UNLOCK] = __sys_mutex_unlock,
+#ifdef CONFIG_IPC_SIGNAL
+	[SYSCALL_SIGACTION] = __sys_sigaction,
+	[SYSCALL_KILL] = __sys_kill,
+	[SYSCALL_SIGRETURN] = __sys_sigreturn,
+#endif
+#ifdef CONFIG_NET
+	[SYSCALL_SOCKET] = __sys_socket,
+	[SYSCALL_BIND] = __sys_bind,
+	[SYSCALL_LISTEN] = __sys_listen,
+	[SYSCALL_ACCEPT] = __sys_accept,
+	[SYSCALL_CONNECT] = __sys_connect,
+	[SYSCALL_RECV] = __sys_recv,
+	[SYSCALL_SEND] = __sys_send,
+	[SYSCALL_SENDTO] = __sys_sendto,
+	[SYSCALL_SETSOCKOPT] = __sys_setsockopt,
+	[SYSCALL_RECVFROM] = __sys_recvfrom,
+#endif
+	[SYSCALL_SYSINFO] = __sys_sysinfo,
+};
+
 /*
  * Set the (user space) virtual address of the global <errno> variable which is defined in the libc.
  * <errno> is used to keep a error number in case of syscall execution failure.
@@ -60,6 +118,35 @@ void set_errno(uint32_t val)
 		*errno_addr = val;
 }
 
+SYSCALL_DEFINE2(sysinfo, unsigned long, info_number, char *, text)
+{
+	switch (info_number) {
+	case SYSINFO_DUMP_HEAP:
+		dump_heap("Heap info asked from user.\n");
+		break;
+
+	case SYSINFO_DUMP_SCHED:
+		dump_sched();
+		break;
+
+#ifdef CONFIG_MMU
+	case SYSINFO_DUMP_PROC:
+		dump_proc();
+		break;
+#endif
+
+#ifdef CONFIG_APP_TEST_MALLOC
+	case SYSINFO_TEST_MALLOC:
+		test_malloc(a->args[1]);
+		break;
+#endif
+	case SYSINFO_PRINTK:
+		printk("%s", (char *) text);
+		break;
+	}
+	return 0;
+}
+
 /*
  * Process syscalls according to the syscall number passed in r7 on ARM and x8 on ARM64.
  * According to SO3 ABI, the syscall arguments are passed in r0-r5 on ARM and x0-x5 on ARM64.
@@ -75,259 +162,11 @@ long syscall_handle(syscall_args_t *syscall_args)
 
 	set_errno_addr(__errno_addr);
 
-	switch (syscall_no) {
-#ifdef CONFIG_MMU
-	case SYSCALL_GETPID:
-		result = do_getpid();
-		break;
-
-	case SYSCALL_GETTIMEOFDAY:
-		/* a->args[1] contains a pointer to the timezone structure. */
-		/* Currently, this is not supported yet. */
-
-		result = do_get_time_of_day((struct timespec *) syscall_args->args[0]);
-		break;
-
-	case SYSCALL_CLOCK_GETTIME:
-
-		result = do_get_clock_time(syscall_args->args[0], (struct timespec *) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_SETTIMEOFDAY:
-
-		printk("## settimeofday not yet supported by so3\n");
-
-		set_errno(-ENOSYS);
-		result = -1;
-		break;
-
-	case SYSCALL_EXIT:
-		do_exit(syscall_args->args[0]);
-		break;
-
-	case SYSCALL_EXECVE:
-		result = do_execve((const char *) syscall_args->args[0], (char **) syscall_args->args[1],
-				   (char **) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_FORK:
-		result = do_fork();
-		break;
-
-	case SYSCALL_WAITPID:
-		result = do_waitpid(syscall_args->args[0], (uint32_t *) syscall_args->args[1], syscall_args->args[2]);
-		break;
-#endif /* CONFIG_MMU */
-
-	case SYSCALL_READ:
-		result = do_read(syscall_args->args[0], (void *) syscall_args->args[1], syscall_args->args[2]);
-		break;
-
-	case SYSCALL_WRITE:
-		result = do_write(syscall_args->args[0], (void *) syscall_args->args[1], syscall_args->args[2]);
-		break;
-
-	case SYSCALL_OPEN:
-		result = do_open((const char *) syscall_args->args[0], syscall_args->args[1]);
-		break;
-
-	case SYSCALL_CLOSE:
-		do_close((int) syscall_args->args[0]);
-		result = 0;
-		break;
-
-	case SYSCALL_THREAD_CREATE:
-		result = do_thread_create((uint32_t *) syscall_args->args[0], syscall_args->args[1], syscall_args->args[2],
-					  syscall_args->args[3]);
-		break;
-
-	case SYSCALL_THREAD_JOIN:
-		result = do_thread_join(syscall_args->args[0], (int **) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_THREAD_EXIT:
-		do_thread_exit((int *) syscall_args->args[0]);
-		result = 0;
-		break;
-
-	case SYSCALL_THREAD_YIELD:
-		do_thread_yield();
-		result = 0;
-		break;
-
-	case SYSCALL_READDIR:
-		result = do_readdir((int) syscall_args->args[0], (char *) syscall_args->args[1], syscall_args->args[2]);
-		break;
-
-	case SYSCALL_IOCTL:
-		result = do_ioctl((int) syscall_args->args[0], (unsigned long) syscall_args->args[1],
-				  (unsigned long) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_FCNTL:
-		result = do_fcntl((int) syscall_args->args[0], (int) syscall_args->args[1],
-				  (unsigned long) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_LSEEK:
-		result = do_lseek((int) syscall_args->args[0], (off_t) syscall_args->args[1], (int) syscall_args->args[2]);
-		break;
-
-#ifdef CONFIG_IPC_PIPE
-	case SYSCALL_PIPE:
-		result = do_pipe((int *) syscall_args->args[0]);
-		break;
-#endif /* CONFIG_IPC_PIPE */
-
-	case SYSCALL_DUP:
-		result = do_dup((int) syscall_args->args[0]);
-		break;
-
-	case SYSCALL_DUP2:
-		result = do_dup2((int) syscall_args->args[0], (int) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_STAT:
-		result = do_stat((char *) syscall_args->args[0], (struct stat *) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_MMAP:
-		result = (long) do_mmap((addr_t) syscall_args->args[0], (size_t) syscall_args->args[1],
-					(int) syscall_args->args[2], (int) syscall_args->args[3],
-					(off_t) syscall_args->args[4]);
-		break;
-
-	case SYSCALL_NANOSLEEP:
-		result = do_nanosleep((const struct timespec *) syscall_args->args[0],
-				      (struct timespec *) syscall_args->args[1]);
-		break;
-
-#ifdef CONFIG_PROC_ENV
-	case SYSCALL_SBRK:
-		result = do_sbrk((unsigned long) syscall_args->args[0]);
-		break;
-
-#endif /* CONFIG_PROC_ENV */
-
-		/* This is a first attempt of mutex syscall implementation.
-	 * Mainly used for debugging purposes (kernel mutex validation) at the moment ... */
-
-	case SYSCALL_MUTEX_LOCK:
-		result = do_mutex_lock(syscall_args->args[0]);
-		break;
-
-	case SYSCALL_MUTEX_UNLOCK:
-		result = do_mutex_unlock(syscall_args->args[0]);
-		break;
-
-#ifdef CONFIG_MMU
-	case SYSCALL_PTRACE:
-		result = do_ptrace((enum __ptrace_request) syscall_args->args[0], (uint32_t) syscall_args->args[1],
-				   (void *) syscall_args->args[2], (void *) syscall_args->args[3]);
-		break;
-#endif
-
-#ifdef CONFIG_IPC_SIGNAL
-	case SYSCALL_SIGACTION:
-		result = do_sigaction((int) syscall_args->args[0], (sigaction_t *) syscall_args->args[1],
-				      (sigaction_t *) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_KILL:
-		result = do_kill((int) syscall_args->args[0], (int) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_SIGRETURN:
-		do_sigreturn();
-		break;
-
-#endif /* CONFIG_IPC_SIGNAL */
-
-#ifdef CONFIG_NET
-	case SYSCALL_SOCKET:
-		result = do_socket((int) syscall_args->args[0], (int) syscall_args->args[1], (int) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_BIND:
-		result = do_bind((int) syscall_args->args[0], (const struct sockaddr *) syscall_args->args[1],
-				 (socklen_t) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_LISTEN:
-		result = do_listen((int) syscall_args->args[0], (int) syscall_args->args[1]);
-		break;
-
-	case SYSCALL_ACCEPT:
-		result = do_accept((int) syscall_args->args[0], (struct sockaddr *) syscall_args->args[1],
-				   (socklen_t *) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_CONNECT:
-		result = do_connect((int) syscall_args->args[0], (const struct sockaddr *) syscall_args->args[1],
-				    (socklen_t) syscall_args->args[2]);
-		break;
-
-	case SYSCALL_RECV:
-		result = do_recv((int) syscall_args->args[0], (void *) syscall_args->args[1], (size_t) syscall_args->args[2],
-				 (int) syscall_args->args[3]);
-		break;
-
-	case SYSCALL_SEND:
-		result = do_send((int) syscall_args->args[0], (const void *) syscall_args->args[1],
-				 (size_t) syscall_args->args[2], (int) syscall_args->args[3]);
-		break;
-
-	case SYSCALL_SENDTO:
-		result = do_sendto((int) syscall_args->args[0], (const void *) syscall_args->args[1],
-				   (size_t) syscall_args->args[2], (int) syscall_args->args[3],
-				   (const struct sockaddr *) syscall_args->args[4], (socklen_t) syscall_args->args[5]);
-		break;
-
-	case SYSCALL_SETSOCKOPT:
-		result = do_setsockopt((int) syscall_args->args[0], (int) syscall_args->args[1], (int) syscall_args->args[2],
-				       (const void *) syscall_args->args[3], (socklen_t) syscall_args->args[4]);
-		break;
-
-	case SYSCALL_RECVFROM:
-		result = do_recvfrom((int) syscall_args->args[0], (void *) syscall_args->args[1],
-				     (size_t) syscall_args->args[2], (int) syscall_args->args[3],
-				     (struct sockaddr *) syscall_args->args[4], (socklen_t *) syscall_args->args[5]);
-		break;
-
-#endif /* CONFIG_NET */
-
-	/* Sysinfo syscalls */
-	case SYSCALL_SYSINFO:
-		switch (syscall_args->args[0]) {
-		case SYSINFO_DUMP_HEAP:
-			dump_heap("Heap info asked from user.\n");
-			break;
-
-		case SYSINFO_DUMP_SCHED:
-			dump_sched();
-			break;
-
-#ifdef CONFIG_MMU
-		case SYSINFO_DUMP_PROC:
-			dump_proc();
-			break;
-#endif
-
-#ifdef CONFIG_APP_TEST_MALLOC
-		case SYSINFO_TEST_MALLOC:
-			test_malloc(a->args[1]);
-			break;
-#endif
-		case SYSINFO_PRINTK:
-			printk("%s", (char *) syscall_args->args[1]);
-			break;
-		}
-		result = 0;
-		break;
-
-	default:
+	if ((syscall_no >= NR_SYSCALLS) || (syscall_table[syscall_no] == NULL)) {
 		printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
-		break;
+		return -ENOSYS;
+	} else {
+		return syscall_table[syscall_no](syscall_args);
 	}
 
 #warning do_softirq?

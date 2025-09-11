@@ -20,6 +20,7 @@
 #define NET_H
 
 #include <vfs.h>
+#include <syscall.h>
 
 #include <net/lwip/sockets.h>
 
@@ -67,15 +68,15 @@
 
 void net_init(void);
 
-int do_socket(int domain, int type, int protocol);
-int do_connect(int sockfd, const struct sockaddr *name, socklen_t namelen);
-int do_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int do_listen(int sockfd, int backlog);
-int do_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-int do_recv(int sockfd, void *mem, size_t len, int flags);
-int do_recvfrom(int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
-int do_send(int sockfd, const void *dataptr, size_t size, int flags);
-int do_sendto(int sockfd, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
-int do_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+SYSCALL_DECLARE(socket, int domain, int type, int protocol);
+SYSCALL_DECLARE(connect, int sockfd, const struct sockaddr *name, socklen_t namelen);
+SYSCALL_DECLARE(bind, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+SYSCALL_DECLARE(listen, int sockfd, int backlog);
+SYSCALL_DECLARE(accept, int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+SYSCALL_DECLARE(recv, int sockfd, void *mem, size_t len, int flags);
+SYSCALL_DECLARE(recvfrom, int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
+SYSCALL_DECLARE(send, int sockfd, const void *dataptr, size_t size, int flags);
+SYSCALL_DECLARE(sendto, int sockfd, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
+SYSCALL_DECLARE(setsockopt, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 
 #endif /* NET_H */

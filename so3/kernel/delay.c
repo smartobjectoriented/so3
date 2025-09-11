@@ -116,7 +116,7 @@ void sleep(u64 ns)
 	__sleep(ns);
 }
 
-int do_nanosleep(const struct timespec *req, struct timespec *rem)
+SYSCALL_DEFINE2(nanosleep, const struct timespec *, req, struct timespec *, rem)
 {
 	if (req->tv_nsec != 0)
 		__sleep(req->tv_nsec);

@@ -99,6 +99,7 @@
 #include <types.h>
 #include <stat.h>
 #include <dirent.h>
+#include <syscall.h>
 
 #include <device/device.h>
 
@@ -149,18 +150,18 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
-int do_open(const char *filename, int flags);
-int do_read(int fd, void *buffer, int count);
-int do_write(int fd, const void *buffer, int count);
-int do_readdir(int fd, char *buf, int len);
-void do_close(int fd);
-int do_dup(int oldfd);
-int do_dup2(int oldfd, int newfd);
-int do_stat(const char *path, struct stat *st);
-void *do_mmap(addr_t start, size_t length, int prot, int fd, off_t offset);
-int do_ioctl(int fd, unsigned long cmd, unsigned long args);
-int do_fcntl(int fd, unsigned long cmd, unsigned long args);
-off_t do_lseek(int fd, off_t off, int whence);
+SYSCALL_DECLARE(open, const char *filename, int flags);
+SYSCALL_DECLARE(read, int fd, void *buffer, int count);
+SYSCALL_DECLARE(write, int fd, const void *buffer, int count);
+SYSCALL_DECLARE(readdir, int fd, char *buf, int len);
+SYSCALL_DECLARE(close, int fd);
+SYSCALL_DECLARE(dup, int oldfd);
+SYSCALL_DECLARE(dup2, int oldfd, int newfd);
+SYSCALL_DECLARE(stat, const char *path, struct stat *st);
+SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int fd, off_t offset);
+SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
+SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
+SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
 
 /* VFS common interface */
 

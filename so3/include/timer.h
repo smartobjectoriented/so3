@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <device/timer.h>
+#include <syscall.h>
 
 #define NSECS 1000000000ull
 
@@ -125,10 +126,10 @@ void clocksource_timer_reset(void);
 
 void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec);
 
-int do_nanosleep(const struct timespec *req, struct timespec *rem);
+SYSCALL_DECLARE(nanosleep, const struct timespec *req, struct timespec *rem);
 
-int do_get_time_of_day(struct timespec *tv);
-int do_get_clock_time(int clk_id, struct timespec *ts);
+SYSCALL_DECLARE(gettimeofday, struct timespec *tv);
+SYSCALL_DECLARE(clock_gettime, int clk_id, struct timespec *ts);
 
 #ifdef CONFIG_AVZ
 

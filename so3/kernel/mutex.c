@@ -149,7 +149,7 @@ void mutex_unlock(struct mutex *lock)
 /*
  * The following syscall implementation are a first attempt, mainly used for debugging kernel mutexes.
  */
-int do_mutex_lock(unsigned long number)
+SYSCALL_DEFINE1(mutex_lock, unsigned long, number)
 {
 	if (number >= N_MUTEX) {
 		set_errno(EINVAL);
@@ -159,7 +159,7 @@ int do_mutex_lock(unsigned long number)
 	return 0;
 }
 
-int do_mutex_unlock(unsigned long number)
+SYSCALL_DEFINE1(mutex_unlock, unsigned long, number)
 {
 	if (number >= N_MUTEX) {
 		set_errno(EINVAL);

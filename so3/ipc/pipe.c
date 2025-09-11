@@ -259,7 +259,7 @@ struct file_operations pipe_fops = { .read = pipe_read, .write = pipe_write, .cl
  * @return an array of two file descriptors (in/out) to access the pipe.
  */
 
-int do_pipe(int pipefd[2])
+SYSCALL_DEFINE1(pipe, int *, pipefd)
 {
 	/* Allocated two file descriptor */
 	pipe_desc_t *pd = (struct pipe_desc *) memalign(sizeof(pipe_desc_t), 2);
