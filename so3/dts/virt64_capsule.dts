@@ -109,7 +109,11 @@
 				status = "ok";
 			};
 
-
+			/* Enabling vlogs - logging supports */
+            vlogs {
+				compatible = "vlogs,frontend";
+				status = "ok";
+			};
         };
 	};
 

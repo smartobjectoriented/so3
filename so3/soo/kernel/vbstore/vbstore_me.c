@@ -287,6 +287,12 @@ void vbstore_devices_populate(void)
 		DBG("%s: init vsensej...\n", __func__);
 		vbstore_dev_init(ME_domID(), "vsensej", false, "vsensej,frontend");
 	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vlogs,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vlogs...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vlogs", false, "vlogs,frontend");
+	}
 }
 
 void vbstore_trigger_dev_probe(void)

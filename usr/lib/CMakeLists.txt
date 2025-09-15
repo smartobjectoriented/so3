@@ -12,3 +12,6 @@ set(CMAKE_C_FLAGS "${ORIGINAL_C_FLAGS}")
 
 # Non external libs
 add_subdirectory(slv)
+
+# logs functionality - it only works with SOO environment
+add_subdirectory(logs)
