@@ -70,8 +70,8 @@ bool vlogs_ready(void)
  */
 void vlogs_write(const char *fmt, ...)
 {
-	static char   buf[1024];
-	va_list       args;
+	static char buf[1024];
+	va_list args;
 	vlogs_request_t *ring_req;
 	vlogs_priv_t *vlogs_priv;
 
@@ -79,9 +79,8 @@ void vlogs_write(const char *fmt, ...)
 		return;
 
 	va_start(args, fmt);
-	(void)vsnprintf(buf, sizeof(buf), fmt, args);
+	(void) vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
-
 
 	vlogs_priv = (vlogs_priv_t *) dev_get_drvdata(vlogs_dev->dev);
 	BUG_ON(!vlogs_priv);
@@ -245,11 +244,11 @@ vdrvfront_t vlogsdrv = { .probe = vlogs_probe,
 /* Cdev - Write function (called from user-space) */
 static int vlogs_cwrite(int fd, const void *buffer, int count)
 {
-	static char   msg[1024];
+	static char msg[1024];
 
 	sprintf(msg, "[ME:%d] %s", get_ME_desc()->slotID, buffer);
 
-	vlogs_write((char *)msg);
+	vlogs_write((char *) msg);
 
 	return count;
 }

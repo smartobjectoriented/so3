@@ -45,10 +45,11 @@
 
 #elif defined(CONFIG_SOO)
 
-#define LOG(level, fmt, ...)                                                                               \
-	do {                                                                                                   \
+#define LOG(level, fmt, ...)                                                                                       \
+	do {                                                                                                       \
 		if (vlogs_ready())                                                                                 \
-			vlogs_write("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__, ##__VA_ARGS__); \
+			vlogs_write("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__, \
+				    ##__VA_ARGS__);                                                                \
 	} while (0)
 
 #else

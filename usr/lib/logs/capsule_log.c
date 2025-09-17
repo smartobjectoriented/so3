@@ -22,16 +22,23 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-
-/* Todo - add info */
+/*
+ * Generates logs messages. It does:
+ *   1. Add '[ME:<ME_ID>]' prefix to the message
+ *   2. Send message though vLOGS
+ *   3. The message is added in a file (`/var/log/soo/me_<SLOT-ID>.log) on the
+ *      agency (SOO environment)
+ *
+ *   Warnings: It works only on Capsule - SO3 running on SOO environment
+ */
 void capsule_log(const char *fmt, ...)
 {
 	int fd;
-	va_list       args;
-	static char   buffer[1024];
+	va_list args;
+	static char buffer[1024];
 
 	va_start(args, fmt);
-	(void)vsnprintf(buffer, sizeof(buffer), fmt, args);
+	(void) vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
 	fd = open("/dev/logsdev", O_RDWR);
