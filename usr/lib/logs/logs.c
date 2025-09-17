@@ -21,8 +21,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <unistd.h>
-
-
+#include <assert.h>
 
 void logs(const char *fmt, ...)
 {
@@ -35,37 +34,7 @@ void logs(const char *fmt, ...)
 	va_end(args);
 
 	fd = open("/dev/logs", O_RDWR);
+	assert(fd != 0)
 	write(fd, buffer, strlen(buffer) + 1);
 	close(fd);
 }
-
-// void logs(const char *fmt, ...)
-// {
-// 	static char   buf[1024];
-// 	static char   msg[1024];
-// 	va_list       args;
-// 	char         *p, *q;
-// 	ME_desc_t     *capsule_desc;
-
-
-
-// 	capsule_desc = get_ME_desc();
-
-// 	sprintf(msg, "[ME:%d] %s", capsule_desc->slotID, buf);
-
-// 	p = msg;
-
-// 	while ((q = strchr(p, '\n')) != NULL) {
-// 		*q = '\0';
-
-// 		logs_serial_write(p, strlen(p) + 1);
-// 		logs_serial_write("\n", 2);
-
-// 		p = q + 1;
-// 	}
-
-// 	if (*p != '\0')
-// 		logs_serial_write(p, strlen(p) + 1);
-// }
-
-
