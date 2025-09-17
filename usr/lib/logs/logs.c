@@ -26,11 +26,11 @@
 void logs(const char *fmt, ...)
 {
 	int fd;
-	va_list       args;
-	static char   buffer[1024];
+	va_list args;
+	static char buffer[1024];
 
 	va_start(args, fmt);
-	(void)vsnprintf(buffer, sizeof(buffer), fmt, args);
+	(void) vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
 	fd = open("/dev/logs", O_RDWR);

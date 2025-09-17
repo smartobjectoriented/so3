@@ -47,7 +47,6 @@ typedef struct {
 
 } vlogs_priv_t;
 
-
 irq_return_t vlogs_interrupt(int irq, void *dev_id)
 {
 	struct vbus_device *vdev = (struct vbus_device *) dev_id;
@@ -58,7 +57,6 @@ irq_return_t vlogs_interrupt(int irq, void *dev_id)
 	return IRQ_COMPLETED;
 }
 
-
 /*
  * Can be used outside the frontend by other subsystems.
  */
@@ -66,7 +64,6 @@ bool vlogs_ready(void)
 {
 	return (vlogs_dev && (vlogs_dev->state == VbusStateConnected));
 }
-
 
 /**
  * Send a string on the vlogs device.
@@ -97,7 +94,6 @@ void vlogs_write(char *buffer, int count)
 
 	vdevfront_processing_end(vlogs_dev);
 }
-
 
 void vlogs_probe(struct vbus_device *vdev)
 {
@@ -152,7 +148,6 @@ void vlogs_probe(struct vbus_device *vdev)
 	vbus_transaction_end(vbt);
 }
 
-
 /* At this point, the FE is not connected. */
 void vlogs_reconfiguring(struct vbus_device *vdev)
 {
@@ -191,12 +186,10 @@ void vlogs_reconfiguring(struct vbus_device *vdev)
 	vbus_transaction_end(vbt);
 }
 
-
 void vlogs_shutdown(struct vbus_device *vdev)
 {
 	DBG0("[vlogs] Frontend shutdown\n");
 }
-
 
 void vlogs_closed(struct vbus_device *vdev)
 {
@@ -238,14 +231,13 @@ void vlogs_connected(struct vbus_device *vdev)
 	DBG0("[vlogs] Frontend connected\n");
 }
 
-vdrvfront_t vlogsdrv = {
-	.probe = vlogs_probe,
-	.reconfiguring = vlogs_reconfiguring,
-	.shutdown = vlogs_shutdown,
-	.closed = vlogs_closed,
-	.suspend = vlogs_suspend,
-	.resume = vlogs_resume,
-	.connected = vlogs_connected };
+vdrvfront_t vlogsdrv = { .probe = vlogs_probe,
+			 .reconfiguring = vlogs_reconfiguring,
+			 .shutdown = vlogs_shutdown,
+			 .closed = vlogs_closed,
+			 .suspend = vlogs_suspend,
+			 .resume = vlogs_resume,
+			 .connected = vlogs_connected };
 
 static int vlogs_init(dev_t *dev, int fdt_offset)
 {

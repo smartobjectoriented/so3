@@ -34,7 +34,6 @@ static int logs_serial_put_byte(char c)
 	return 1;
 }
 
-
 /* Sends some bytes to the vlogs driver */
 static int logs_serial_write(char *str, int len)
 {
@@ -62,14 +61,14 @@ static int logs_serial_write(char *str, int len)
  */
 void logs(const char *fmt, ...)
 {
-	static char   buf[1024];
-	static char   msg[1024];
-	va_list       args;
-	char         *p, *q;
-	ME_desc_t     *capsule_desc;
+	static char buf[1024];
+	static char msg[1024];
+	va_list args;
+	char *p, *q;
+	ME_desc_t *capsule_desc;
 
 	va_start(args, fmt);
-	(void)vsnprintf(buf, sizeof(buf), fmt, args);
+	(void) vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
 	capsule_desc = get_ME_desc();
@@ -91,10 +90,9 @@ void logs(const char *fmt, ...)
 		logs_serial_write(p, strlen(p) + 1);
 }
 
-
 static int logs_write(int fd, const void *buffer, int count)
 {
-	logs((char *)buffer);
+	logs((char *) buffer);
 
 	return count;
 }
@@ -112,10 +110,8 @@ struct devclass logs_dev = {
 	.fops = &logs_fops,
 };
 
-
 void vlogs_cdev_init(dev_t *dev)
 {
 	/* Register the mydev driver so it can be accessed from user space. */
 	devclass_register(dev, &logs_dev);
 }
-
