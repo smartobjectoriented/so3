@@ -25,6 +25,7 @@
 #include <sizes.h>
 #include <types.h>
 #include <string.h>
+#include <log.h>
 
 /* Load the file in a buffer allocated in the kernel heap */
 uint8_t *elf_load_buffer(const char *filename)

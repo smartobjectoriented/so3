@@ -31,6 +31,7 @@
 #include <timer.h>
 #include <percpu.h>
 #include <heap.h>
+#include <log.h>
 
 #include <avz/keyhandler.h>
 

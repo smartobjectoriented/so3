@@ -1,1 +1,1 @@
-add_library(logs STATIC logs.c)
+add_library(logs STATIC capsule_log.c)

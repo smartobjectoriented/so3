@@ -27,7 +27,7 @@
 #define VLOGS_PREFIX "[" VLOGS_NAME "] "
 
 typedef struct {
-	char c;
+	char log[1024];
 } vlogs_request_t;
 
 typedef struct {
@@ -53,6 +53,6 @@ void vlogs_cdev_init(dev_t *dev);
 
 bool vlogs_ready(void);
 
-void vlogs_write(char *buffer, int count);
+void vlogs_write(const char *fmt, ...);
 
 #endif /* VLOGS_H */

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <common.h>
 #include <memory.h>
+#include <log.h>
 
 #include <device/device.h>
 #include <device/driver.h>

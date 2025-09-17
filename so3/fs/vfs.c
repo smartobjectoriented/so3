@@ -28,6 +28,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <console.h>
+#include <log.h>
 
 #include <fat/fat.h>
 #include <devfs/devfs.h>

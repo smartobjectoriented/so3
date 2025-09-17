@@ -23,6 +23,7 @@
 #include <thread.h>
 #include <types.h>
 #include <softirq.h>
+#include <log.h>
 
 #include <asm/processor.h>
 

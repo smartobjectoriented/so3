@@ -9,6 +9,7 @@
 
 #include <common.h>
 #include <part.h>
+#include <log.h>
 
 #include <fat/diskio.h> /* FatFs lower layer API */
 

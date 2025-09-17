@@ -45,6 +45,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h> /* strtol() */
+#include <log.h>
 
 #include "lwip/netif.h"
 #include "lwip/def.h"

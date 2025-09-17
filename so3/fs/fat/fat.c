@@ -19,6 +19,7 @@
 
 #include <common.h>
 #include <errno.h>
+#include <log.h>
 
 #include <fat/fat.h>
 #include <fat/ff.h>

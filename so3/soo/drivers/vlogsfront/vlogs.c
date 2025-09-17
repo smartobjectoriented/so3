@@ -68,25 +68,28 @@ bool vlogs_ready(void)
 /**
  * Send a string on the vlogs device.
  */
-void vlogs_write(char *buffer, int count)
+void vlogs_write(const char *fmt, ...)
 {
-	int i;
+	static char   buf[1024];
+	va_list       args;
 	vlogs_request_t *ring_req;
 	vlogs_priv_t *vlogs_priv;
 
 	if (!vlogs_dev)
 		return;
 
+	va_start(args, fmt);
+	(void)vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+
 	vlogs_priv = (vlogs_priv_t *) dev_get_drvdata(vlogs_dev->dev);
 	BUG_ON(!vlogs_priv);
 
 	vdevfront_processing_begin(vlogs_dev);
 
-	for (i = 0; i < count; i++) {
-		ring_req = vlogs_new_ring_request(&vlogs_priv->vlogs.ring);
-
-		ring_req->c = buffer[i];
-	}
+	ring_req = vlogs_new_ring_request(&vlogs_priv->vlogs.ring);
+	strcpy(ring_req->log, buf);
 
 	vlogs_ring_request_ready(&vlogs_priv->vlogs.ring);
 
@@ -239,12 +242,34 @@ vdrvfront_t vlogsdrv = { .probe = vlogs_probe,
 			 .resume = vlogs_resume,
 			 .connected = vlogs_connected };
 
+/* Cdev - Write function (called from user-space) */
+static int vlogs_cwrite(int fd, const void *buffer, int count)
+{
+	static char   msg[1024];
+
+	sprintf(msg, "[ME:%d] %s", get_ME_desc()->slotID, buffer);
+
+	vlogs_write((char *)msg);
+
+	return count;
+}
+
+struct file_operations vlogs_fops = {
+	.write = vlogs_cwrite,
+};
+
+struct devclass vlogs_cdev = {
+	.class = "logsdev",
+	.type = VFS_TYPE_DEV_CHAR,
+	.fops = &vlogs_fops,
+};
+
 static int vlogs_init(dev_t *dev, int fdt_offset)
 {
 	vlogs_priv_t *vlogs_priv;
 
-	/* cdev interface initialization */
-	vlogs_cdev_init(dev);
+	/* Register the mydev driver so it can be accessed from user space. */
+	devclass_register(dev, &vlogs_cdev);
 
 	vlogs_priv = malloc(sizeof(vlogs_priv_t));
 	BUG_ON(!vlogs_priv);

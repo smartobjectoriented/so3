@@ -1,1 +1,1 @@
-obj-y := logs.o vlogs.o
+obj-y := vlogs.o

@@ -22,6 +22,7 @@
 #include <sizes.h>
 #include <string.h>
 #include <process.h>
+#include <log.h>
 
 #include <device/ramdev.h>
 #include <device/fdt.h>

@@ -22,14 +22,14 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#include <logs.h>
+#include <capsule_log.h>
 
 int main(int argc, char **argv)
 {
 	int i = 0;
 
 	while (true) {
-		logs("%d - Message from so3 user-space\n", i++);
+		capsule_log("%d - Message from so3 user-space\n", i++);
 
 		sleep(5);
 	}
