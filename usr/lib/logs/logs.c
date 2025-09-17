@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
+ * Copyright (C) 2025 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -34,7 +34,7 @@ void logs(const char *fmt, ...)
 	(void)vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	fd = open("/dev/logsdev", O_RDWR);
+	fd = open("/dev/logs", O_RDWR);
 	write(fd, buffer, strlen(buffer) + 1);
 	close(fd);
 }

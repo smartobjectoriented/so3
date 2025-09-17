@@ -33,7 +33,6 @@
 #include <soo/gnttab.h>
 #include <soo/hypervisor.h>
 #include <soo/vbus.h>
-// #include <soo/console.h>
 #include <soo/debug.h>
 
 #include <soo/dev/vlogs.h>

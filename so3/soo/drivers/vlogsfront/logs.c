@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
+ * Copyright (C) 2025 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,7 +23,6 @@
 #include <vfs.h>
 #include <device/serial.h>
 
-// #include <soo/avz.h>
 #include <soo/soo.h>
 #include <soo/dev/vlogs.h>
 
@@ -108,7 +107,7 @@ struct file_operations logs_fops = {
 };
 
 struct devclass logs_dev = {
-	.class = "logsdev",
+	.class = "logs",
 	.type = VFS_TYPE_DEV_CHAR,
 	.fops = &logs_fops,
 };
