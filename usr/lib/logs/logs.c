@@ -34,7 +34,7 @@ void logs(const char *fmt, ...)
 	va_end(args);
 
 	fd = open("/dev/logs", O_RDWR);
-	assert(fd != 0)
+	assert(fd != 0);
 	write(fd, buffer, strlen(buffer) + 1);
 	close(fd);
 }

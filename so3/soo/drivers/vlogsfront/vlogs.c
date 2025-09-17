@@ -107,7 +107,6 @@ void vlogs_probe(struct vbus_device *vdev)
 	vlogs_priv_t *vlogs_priv;
 
 	DBG0("[vlogs] Frontend probe\n");
-	lprintk("[vlogs] == JMI == Frontend probe\n");
 
 	if (vdev->state == VbusStateConnected)
 		return;
@@ -251,8 +250,6 @@ vdrvfront_t vlogsdrv = {
 static int vlogs_init(dev_t *dev, int fdt_offset)
 {
 	vlogs_priv_t *vlogs_priv;
-
-	lprintk("[vlogs] == JMI == vlogs_init\n");
 
 	/* cdev interface initialization */
 	vlogs_cdev_init(dev);
