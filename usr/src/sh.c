@@ -329,7 +329,7 @@ void sigint_sh_handler(int sig)
 	printf("%s", prompt);
 	fflush(stdout);
 }
-/*d
+/*
  * Main entry point of the shell application.
  */
 int main(int argc, char *argv[])
