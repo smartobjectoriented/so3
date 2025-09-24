@@ -21,7 +21,7 @@ target_link_libraries(mydev_test.elf c)
 target_link_libraries(lvgl_demo.elf c slv lvgl lvgl_demos)
 target_link_libraries(lvgl_perf.elf c slv lvgl lvgl_demos)
 target_link_libraries(lvgl_benchmark.elf c slv lvgl lvgl_demos)
-target_link_libraries(logs_example.elf c logs)
+target_link_libraries(logs_example.elf c capsule_logs)
 
 if (MICROPYTHON AND (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
 	message("== Building uPython")
