@@ -41,7 +41,12 @@ void capsule_log(const char *fmt, ...)
 	(void) vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	fd = open("/dev/logsdev", O_RDWR);
+	fd = open("/dev/capsule_logs", O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "[LOGS] Failed to open '/dev/capsule_logs'\n");
+		exit(-1);
+	}
+
 	write(fd, buffer, strlen(buffer) + 1);
 	close(fd);
 }

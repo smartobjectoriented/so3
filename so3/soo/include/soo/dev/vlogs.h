@@ -48,9 +48,6 @@ typedef struct {
 
 } vlogs_t;
 
-/* vlogs cdev initialisation */
-void vlogs_cdev_init(dev_t *dev);
-
 bool vlogs_ready(void);
 
 void vlogs_write(const char *fmt, ...);

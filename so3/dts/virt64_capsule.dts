@@ -95,26 +95,26 @@
 		perform various tests. This variant includes a rootfs with some user space \n \
 		applications.";
 
-        frontends {
+		frontends {
 
 			/* Enabling vdummy for testing purposes */
-            vdummy {
+			vdummy {
 				compatible = "vdummy,frontend";
 				status = "disabled";
 			};
 
-            /* Enabling the console */
-            vuart {
+			/* Enabling the console */
+			vuart {
 				compatible = "vuart,frontend";
 				status = "ok";
 			};
 
 			/* Enabling vlogs - logging supports */
-            vlogs {
+			vlogs {
 				compatible = "vlogs,frontend";
 				status = "ok";
 			};
-        };
+		};
 	};
 
 

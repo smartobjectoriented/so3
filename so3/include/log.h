@@ -43,13 +43,15 @@
 		lprintk("[SO3:AVZ " #level "] <%s:%d> " fmt, __func__, __LINE__, ##__VA_ARGS__); \
 	} while (0)
 
-#elif defined(CONFIG_SOO)
+#elif defined(CONFIG_VLOGS_FRONTEND)
 
 #define LOG(level, fmt, ...)                                                                                       \
 	do {                                                                                                       \
 		if (vlogs_ready())                                                                                 \
 			vlogs_write("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__, \
 				    ##__VA_ARGS__);                                                                \
+		else \
+			lprintk("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__,  ##__VA_ARGS__); \
 	} while (0)
 
 #else

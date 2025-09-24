@@ -47,7 +47,7 @@ typedef struct {
 
 } vlogs_priv_t;
 
-irq_return_t vlogs_interrupt(int irq, void *dev_id)
+static irq_return_t vlogs_interrupt(int irq, void *dev_id)
 {
 	struct vbus_device *vdev = (struct vbus_device *) dev_id;
 	vlogs_priv_t *vlogs_priv = (vlogs_priv_t *) dev_get_drvdata(vdev->dev);
@@ -97,7 +97,7 @@ void vlogs_write(const char *fmt, ...)
 	vdevfront_processing_end(vlogs_dev);
 }
 
-void vlogs_probe(struct vbus_device *vdev)
+static void vlogs_probe(struct vbus_device *vdev)
 {
 	unsigned int evtchn;
 	vlogs_sring_t *sring;
@@ -151,7 +151,7 @@ void vlogs_probe(struct vbus_device *vdev)
 }
 
 /* At this point, the FE is not connected. */
-void vlogs_reconfiguring(struct vbus_device *vdev)
+static void vlogs_reconfiguring(struct vbus_device *vdev)
 {
 	int res;
 	struct vbus_transaction vbt;
@@ -188,12 +188,12 @@ void vlogs_reconfiguring(struct vbus_device *vdev)
 	vbus_transaction_end(vbt);
 }
 
-void vlogs_shutdown(struct vbus_device *vdev)
+static void vlogs_shutdown(struct vbus_device *vdev)
 {
 	DBG0("[vlogs] Frontend shutdown\n");
 }
 
-void vlogs_closed(struct vbus_device *vdev)
+static void vlogs_closed(struct vbus_device *vdev)
 {
 	vlogs_priv_t *vlogs_priv = dev_get_drvdata(vdev->dev);
 
@@ -218,17 +218,17 @@ void vlogs_closed(struct vbus_device *vdev)
 	vlogs_priv->vlogs.irq = 0;
 }
 
-void vlogs_suspend(struct vbus_device *vdev)
+static void vlogs_suspend(struct vbus_device *vdev)
 {
 	DBG0("[vlogs] Frontend suspend\n");
 }
 
-void vlogs_resume(struct vbus_device *vdev)
+static void vlogs_resume(struct vbus_device *vdev)
 {
 	DBG0("[vlogs] Frontend resume\n");
 }
 
-void vlogs_connected(struct vbus_device *vdev)
+static void vlogs_connected(struct vbus_device *vdev)
 {
 	DBG0("[vlogs] Frontend connected\n");
 }
@@ -258,7 +258,7 @@ struct file_operations vlogs_fops = {
 };
 
 struct devclass vlogs_cdev = {
-	.class = "logsdev",
+	.class = "capsule_logs",
 	.type = VFS_TYPE_DEV_CHAR,
 	.fops = &vlogs_fops,
 };
