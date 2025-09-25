@@ -55,8 +55,6 @@
 
 #define SYSCALL_STAT 106
 
-// #define SYSCALL_SYSINFO 116 // => struct sysinfo
-
 #define SYSCALL_SIGRETURN 119
 
 #define SYSCALL_READV 145

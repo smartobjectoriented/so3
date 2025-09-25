@@ -164,7 +164,6 @@ SYSCALLSTUB sys_settimeofday,		syscallSetTimeOfDay	2
 SYSCALLSTUB sys_clock_gettime,		syscallClockGetTime	2
 
 SYSCALLSTUB sys_sbrk,			syscallSbrk		1
-SYSCALLSTUB sys_info,			syscallSysinfo		2
 
 SYSCALLSTUB sys_lseek,			syscallLseek		3
 

@@ -21,12 +21,6 @@
 #ifndef ASM_ARM_SYSCALL_H
 #define ASM_ARM_SYSCALL_H
 
-#define SYSINFO_DUMP_HEAP 0
-#define SYSINFO_DUMP_SCHED 1
-#define SYSINFO_TEST_MALLOC 2
-#define SYSINFO_PRINTK 3
-#define SYSINFO_DUMP_PROC 4
-
 #include <asm/syscall_number.h>
 
 #ifndef __ASSEMBLY__
@@ -119,8 +113,6 @@ typedef struct {
 typedef long (*syscall_fn_t)(syscall_args_t *);
 
 long syscall_handle(syscall_args_t *);
-
-SYSCALL_DECLARE(sysinfo, unsigned long info_number, char *text);
 
 #endif /* __ASSEMBLY__ */
 
