@@ -19,11 +19,11 @@ dd if=/dev/zero of="${image_name}" count=${start_sector} status=none
 
 # Append the formatted partition
 dd if=/dev/zero of="${partition}" bs=${partition_size} count=1 status=none
-/usr/sbin/mkfs.vfat "${partition}" > /dev/null
+mkfs.vfat "${partition}" > /dev/null
 dd if="${partition}" status=none >> "${image_name}"
 
 # Set the partition table
-/usr/sbin/sfdisk "${image_name}" <<EOF
+sfdisk "${image_name}" <<EOF
 ${start_sector}, ${partition_size}, ${partition_type}
 EOF
 
