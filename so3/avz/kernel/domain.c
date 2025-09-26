@@ -24,6 +24,7 @@
 #include <softirq.h>
 #include <memory.h>
 #include <heap.h>
+#include <log.h>
 
 #include <asm/processor.h>
 #include <asm/vfp.h>

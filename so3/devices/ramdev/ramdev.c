@@ -17,9 +17,9 @@
  */
 
 #include <common.h>
-#include <log.h>
 #include <memory.h>
 #include <part.h>
+#include <log.h>
 
 #include <device/fdt.h>
 #include <device/ramdev.h>

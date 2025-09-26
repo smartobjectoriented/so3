@@ -27,6 +27,7 @@
 #include <vfs.h>
 #include <common.h>
 #include <memory.h>
+#include <log.h>
 
 #include <asm/io.h>
 #include <device/driver.h>

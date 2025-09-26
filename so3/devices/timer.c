@@ -19,6 +19,7 @@
 #include <spinlock.h>
 #include <timer.h>
 #include <softirq.h>
+#include <log.h>
 
 #include <device/timer.h>
 #include <device/irq.h>

@@ -16,9 +16,18 @@
  *
  */
 
-#ifndef LOGS_H
-#define LOGS_H
+#ifndef CAPSULE_LOG_H
+#define CAPSULE_LOG_H
 
-void logs(const char *fmt, ...);
+/*
+ * Generates logs messages. It does:
+ *   1. Add '[ME:<ME_ID>]' prefix to the message
+ *   2. Send message though vLOGS
+ *   3. The message is added in a file (`/var/log/soo/me_<SLOT-ID>.log) on the
+ *      agency (SOO environment)
+ *
+ *   Warnings: It works only on Capsule - SO3 running on SOO environment
+ */
+void capsule_log(const char *fmt, ...);
 
-#endif /* LOGS_H */
+#endif /* CAPSULE_LOG_H */

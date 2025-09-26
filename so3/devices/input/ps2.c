@@ -30,6 +30,7 @@
 #endif
 
 #include <common.h>
+#include <log.h>
 #include <device/input/ps2.h>
 
 #define GET_DX(state, x) ((x) - (((state) << 4) & 0x100))

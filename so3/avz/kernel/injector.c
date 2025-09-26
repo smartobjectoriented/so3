@@ -22,6 +22,7 @@
 #include <crc.h>
 #include <softirq.h>
 #include <ptrace.h>
+#include <log.h>
 
 #include <avz/memslot.h>
 #include <avz/domain.h>

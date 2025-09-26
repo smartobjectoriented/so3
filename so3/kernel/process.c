@@ -32,6 +32,7 @@
 #include <types.h>
 #include <vfs.h>
 #include <wait.h>
+#include <log.h>
 
 #include <device/serial.h>
 

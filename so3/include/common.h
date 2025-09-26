@@ -26,7 +26,6 @@
 #include <types.h>
 #include <printk.h>
 #include <string.h>
-#include <log.h>
 
 #endif /* __ASSEMBLY__ */
 

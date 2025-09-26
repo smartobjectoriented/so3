@@ -22,6 +22,7 @@
 #include <heap.h>
 #include <string.h>
 #include <thread.h>
+#include <log.h>
 
 #include <device/irq.h>
 

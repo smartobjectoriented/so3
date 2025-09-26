@@ -46,6 +46,7 @@
 #include <percpu.h>
 #include <smp.h>
 #include <spinlock.h>
+#include <log.h>
 
 #include <device/device.h>
 #include <device/driver.h>

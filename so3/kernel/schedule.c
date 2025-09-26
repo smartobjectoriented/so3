@@ -28,6 +28,7 @@
 #include <softirq.h>
 #include <mutex.h>
 #include <timer.h>
+#include <log.h>
 
 #include <device/irq.h>
 

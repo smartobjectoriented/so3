@@ -24,6 +24,7 @@
 #include <banner.h>
 #include <timer.h>
 #include <softirq.h>
+#include <log.h>
 
 #include <asm/cacheflush.h>
 #include <asm/mmu.h>

@@ -20,6 +20,11 @@
 
 #include <printk.h>
 
+#ifdef CONFIG_SOO
+#include <soo/soo.h>
+#include <soo/dev/vlogs.h>
+#endif
+
 #define LOG_LEVEL_CRITICAL 1
 #define LOG_LEVEL_ERROR 2
 #define LOG_LEVEL_WARNING 3
@@ -31,11 +36,22 @@
 #define CONFIG_LOG_LEVEL LOG_LEVEL_INFO
 #endif
 
-#ifdef CONFIG_AVZ
+#if defined(CONFIG_AVZ)
 
 #define LOG(level, fmt, ...)                                                                     \
 	do {                                                                                     \
 		lprintk("[SO3:AVZ " #level "] <%s:%d> " fmt, __func__, __LINE__, ##__VA_ARGS__); \
+	} while (0)
+
+#elif defined(CONFIG_VLOGS_FRONTEND)
+
+#define LOG(level, fmt, ...)                                                                                                   \
+	do {                                                                                                                   \
+		if (vlogs_ready())                                                                                             \
+			vlogs_write("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__,             \
+				    ##__VA_ARGS__);                                                                            \
+		else                                                                                                           \
+			lprintk("[ME:%d][" #level "] <%s:%d> " fmt, get_ME_desc()->slotID, __func__, __LINE__, ##__VA_ARGS__); \
 	} while (0)
 
 #else

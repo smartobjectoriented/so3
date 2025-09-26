@@ -19,5 +19,8 @@ config VSENSELED_FRONTEND
 config VSENSEJ_FRONTEND
     bool "vsensej joystick Sense HAT frontend"
 
+config VLOGS_FRONTEND
+    bool "vlogs serial driver"
+
 endmenu
 

@@ -21,6 +21,7 @@
 #include <heap.h>
 #include <sizes.h>
 #include <string.h>
+#include <log.h>
 
 #include <device/ramdev.h>
 
