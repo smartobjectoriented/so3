@@ -30,9 +30,7 @@
 #include <net.h>
 #include <syscall.h>
 
-static uint32_t *errno_addr = NULL;
-
-extern void __get_syscall_args_ext(uint32_t *syscall_no, uint32_t **__errno_addr);
+extern void __get_syscall_args_ext(uint32_t *syscall_no);
 extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
@@ -95,29 +93,6 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_SYSINFO] = __sys_sysinfo,
 };
 
-/*
- * Set the (user space) virtual address of the global <errno> variable which is defined in the libc.
- * <errno> is used to keep a error number in case of syscall execution failure.
- */
-void set_errno_addr(uint32_t *addr)
-{
-	errno_addr = addr;
-}
-
-uint32_t *get_errno_addr(void)
-{
-	return errno_addr;
-}
-
-/*
- * Set the errno to a specific value defined in errno.h
- */
-void set_errno(uint32_t val)
-{
-	if (errno_addr != NULL)
-		*errno_addr = val;
-}
-
 SYSCALL_DEFINE2(sysinfo, unsigned long, info_number, char *, text)
 {
 	switch (info_number) {
@@ -155,12 +130,10 @@ SYSCALL_DEFINE2(sysinfo, unsigned long, info_number, char *, text)
 long syscall_handle(syscall_args_t *syscall_args)
 {
 	long result = -1;
-	uint32_t syscall_no, *__errno_addr;
+	uint32_t syscall_no;
 
 	/* Get addtional args of the syscall according to the ARM & SO3 ABI */
-	__get_syscall_args_ext(&syscall_no, &__errno_addr);
-
-	set_errno_addr(__errno_addr);
+	__get_syscall_args_ext(&syscall_no);
 
 	if ((syscall_no >= NR_SYSCALLS) || (syscall_table[syscall_no] == NULL)) {
 		printk("%s: unhandled syscall: %d\n", __func__, syscall_no);

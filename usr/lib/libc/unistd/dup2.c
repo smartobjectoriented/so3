@@ -9,7 +9,7 @@ int dup2(int old, int new)
 	int r;
 #endif
 
-	return sys_dup2(old, new);
+	return __syscall_ret(sys_dup2(old, new));
 
 #if 0 /* SO3 */
 #ifdef SYS_dup2

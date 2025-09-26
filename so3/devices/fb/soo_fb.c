@@ -56,7 +56,7 @@ int fb_init(dev_t *dev)
 	return 0;
 }
 
-void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count, off_t offset)
+int fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count, off_t offset)
 {
 	uint32_t i;
 	pcb_t *pcb = current()->pcb;
@@ -68,7 +68,7 @@ void *fb_mmap(int fd, uint32_t virt_addr, uint32_t page_count, off_t offset)
 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), fb_base + i * PAGE_SIZE, PAGE_SIZE, false, false);
 	}
 
-	return (void *) virt_addr;
+	return virt_addr;
 }
 
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args)

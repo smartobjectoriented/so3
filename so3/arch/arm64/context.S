@@ -176,12 +176,10 @@ ENTRY(cpu_do_idle)
 // Get the additional arguments linked to the syscall.
 // The ABI convention is described in crt0.S of the libc.
 // x8 contains the syscall number
-// x9 contains the address of the errno variable
 
 __get_syscall_args_ext:
 
 	str	x8, [x0]
-	str	x9, [x1]
 
 	ret
 
@@ -297,9 +295,6 @@ ENTRY(__root_proc)
 	mov 	x2, welcome_len
 	mov 	x8, #SYSCALL_WRITE
 
-	// No errno
-	mov 	x9, xzr
-
 	// Invoke the syscall - kernel side
 	svc	0
 
@@ -311,9 +306,6 @@ ENTRY(__root_proc)
 	mov 	x1, xzr
 	mov 	x2, xzr
 
-	// No errno
-	mov 	x9, xzr
-
 	mov	x8, #SYSCALL_EXECVE
 
 	svc 	0
@@ -324,9 +316,6 @@ ENTRY(__root_proc)
 	adr 	x1, .LCnoshell
 	mov 	x2, noshell_len
 	mov 	x8, #SYSCALL_WRITE
-
-	// No errno
-	mov 	x9, xzr
 
 	svc 	0
 

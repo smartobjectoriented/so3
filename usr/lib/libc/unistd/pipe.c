@@ -3,7 +3,7 @@
 
 int pipe(int fd[2])
 {
-	return sys_pipe(fd);
+	return __syscall_ret(sys_pipe(fd));
 #if 0
 #ifdef SYS_pipe
 	return syscall(SYS_pipe, fd);

@@ -99,18 +99,15 @@ static int pipe_read(int gfd, void *buffer, int count)
 
 	/* Sanity checks*/
 	if (!buffer || (count <= 0)) {
-		set_errno(EPIPE);
-		return -1;
+		return -EPIPE;
 	}
 
 	mutex_lock(&pd->lock);
 
 	if ((otherend(gfd) == -1) && pipe_empty(pd)) {
 		/* No writers left, error */
-		set_errno(EPIPE);
 		mutex_unlock(&pd->lock);
-
-		return 0;
+		return -EPIPE;
 	}
 
 	first = true;
@@ -119,11 +116,8 @@ static int pipe_read(int gfd, void *buffer, int count)
 		ret = pipe_read_byte(gfd, (char *) buffer + pos, first);
 
 		if (ret < 0) {
-			set_errno(EPIPE);
 			mutex_unlock(&pd->lock);
-
-			/* According to Posix, read() will return 0 it the otherend is closed */
-			return 0;
+			return -EPIPE;
 		}
 
 		first = false;
@@ -177,27 +171,22 @@ static int pipe_write(int gfd, const void *buffer, int count)
 
 	/* Do Sanity checks */
 	if (!buffer || (count <= 0)) {
-		set_errno(EPIPE);
-		return -1;
+		return -EPIPE;
 	}
 
 	mutex_lock(&pd->lock);
 
 	if ((otherend(gfd) == -1) && pipe_full(pd)) {
 		/* No readers left, error no space left */
-		set_errno(EPIPE);
 		mutex_unlock(&pd->lock);
-
-		return -1;
+		return -EPIPE;
 	}
 
 	for (pos = 0; pos < count; pos++) {
 		ret = pipe_write_byte(pd, *((char *) buffer + pos));
 		if (ret < 0) {
-			set_errno(EPIPE);
 			mutex_unlock(&pd->lock);
-
-			return -1;
+			return -EPIPE;
 		}
 	}
 
@@ -278,8 +267,7 @@ SYSCALL_DEFINE1(pipe, int *, pipefd)
 
 	pd->pipe_buf = malloc(PIPE_SIZE);
 	if (pd->pipe_buf == NULL) {
-		set_errno(ENOMEM);
-		return -1;
+		return -ENOMEM;
 	}
 
 	init_completion(&pd->wait_for_reader);

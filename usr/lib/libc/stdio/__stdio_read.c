@@ -15,7 +15,7 @@ size_t __stdio_read(FILE *f, unsigned char *buf, size_t len)
 	cnt = syscall(SYS_readv, f->fd, iov, 2);
 #endif
 
-	sys_read(f->fd, buf, len);
+	len = __syscall_ret(sys_read(f->fd, buf, len));
 
 #if 0
 	if (cnt <= 0) {

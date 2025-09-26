@@ -25,7 +25,7 @@ void *__mmap(void *start, size_t len, int prot, int flags, int fd, off_t off)
 	if (!start)
 		start = sbrk(0) + HEAP_SIZE;
 
-	return sys_mmap((unsigned long) start, len, prot, fd, off);
+	return __syscall_ret(sys_mmap((unsigned long) start, len, prot, fd, off));
 
 #if 0 /* original musl implementation */
 	if (off & OFF_MASK) {

@@ -21,7 +21,7 @@ pid_t fork(void)
 	__block_all_sigs(&set);
 #endif /* 0 */
 
-	ret = sys_fork();
+	ret = __syscall_ret(sys_fork());
 #if 0
 #ifdef SYS_fork
 	ret = syscall(SYS_fork);

@@ -39,6 +39,22 @@
  * Mapping between internal fd and vfs fd
  */
 int lwip_fds[MAX_FDS];
+int lwip_errno = 0;
+
+/**
+ * Convert lwIP function calls return value into syscall return value.
+ *
+ * @param ret return value of a lwip function call
+ * @return ret if function is success and -lwip_errno if not.
+ */
+static int lwip_return(int ret)
+{
+	if (ret < 0) {
+		return -lwip_errno;
+	}
+
+	return ret;
+}
 
 /**
  *
@@ -62,20 +78,41 @@ static int get_lwip_fd(int fd)
 
 int read_sock(int fd, void *buffer, int count)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(fd);
-	return lwip_read(lwip_fd, buffer, count);
+
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_read(lwip_fd, buffer, count);
+	return lwip_return(ret);
 }
 
 int write_sock(int fd, const void *buffer, int count)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(fd);
-	return lwip_write(lwip_fd, buffer, count);
+
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_write(lwip_fd, buffer, count);
+	return lwip_return(ret);
 }
 
 int close_sock(int fd)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(fd);
-	return lwip_close(lwip_fd);
+
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_close(lwip_fd);
+	return lwip_return(ret);
 }
 
 #warning redefine as ifreq
@@ -129,6 +166,7 @@ struct sockaddr *user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockad
 
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(fd);
 	int id, index;
 	char *hwaddr;
@@ -136,24 +174,27 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 	struct netif *netif = NULL;
 	struct sockaddr_in *addr = NULL;
 
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
 	/* LwIP handeled the ioctl cmd */
-	if (!lwip_ioctl(lwip_fd, cmd, (void *) args)) {
-		return 0;
+	ret = lwip_ioctl(lwip_fd, cmd, (void *) args);
+	if ((ret >= 0) || (lwip_errno != ENOSYS)) {
+		return lwip_return(ret);
 	}
 
 	switch (cmd) {
 	case SIOCGIFNAME:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		id = ifreq->ifr_ifru.ifru_ivalue;
 		netif = netif_get_by_index((u8_t) id + 1); /* LWIP index start a 1 */
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		/* Lwip netid name is always 2 chars followed by an id */
@@ -163,16 +204,14 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFINDEX:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		index = netif_name_to_index(ifreq->ifrn_name);
 
 		if (index == NETIF_NO_INDEX) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_ivalue = index - 1;
@@ -180,15 +219,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFHWADDR:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
@@ -206,15 +243,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFADDR:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
@@ -227,15 +262,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCSIFADDR:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		addr = (struct sockaddr_in *) &ifreq->ifr_ifru.ifru_addr;
@@ -246,15 +279,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFBRDADDR:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
@@ -270,15 +301,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFNETMASK:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_addr.sa_family = AF_INET;
@@ -291,22 +320,19 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCSIFNETMASK:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		addr = (struct sockaddr_in *) &ifreq->ifr_ifru.ifru_addr;
 
 		if (!ip4_addr_netmask_valid(addr->sin_addr.s_addr)) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		netif_set_netmask(netif, &(ip4_addr_t) { .addr = addr->sin_addr.s_addr });
@@ -315,15 +341,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCGIFMTU:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		ifreq->ifr_ifru.ifru_mtu = netif->mtu;
@@ -332,15 +356,13 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 
 	case SIOCSIFMTU:
 		if (!args) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		ifreq = (struct ifreq2 *) args;
 
 		netif = netif_find(ifreq->ifrn_name);
 		if (netif == NULL) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 
 		netif->mtu = ifreq->ifr_ifru.ifru_mtu;
@@ -348,7 +370,7 @@ int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 		return 0;
 
 	default:
-		return -1;
+		return -EINVAL;
 	}
 }
 
@@ -380,8 +402,7 @@ SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 
 	if (fd < 0) {
 		/* fd already open */
-		set_errno(EBADF);
-		return -1;
+		return -EBADF;
 	}
 
 	/* Get index of open_fds*/
@@ -393,7 +414,7 @@ SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 
 	if (lwip_fd < 0) {
 		do_close(fd);
-		return lwip_fd;
+		return lwip_return(lwip_fd);
 	}
 
 	/* TODO: check fd ok */
@@ -405,33 +426,51 @@ SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 
 SYSCALL_DEFINE3(connect, int, sockfd, const struct sockaddr *, addr, socklen_t, namelen)
 {
+	int ret;
 	struct sockaddr_in addr_lwip;
 	struct sockaddr *addr_ptr;
 
 	int lwip_fd = get_lwip_fd(sockfd);
 
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
 	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
 
-	return lwip_connect(lwip_fd, addr_ptr, namelen);
+	ret = lwip_connect(lwip_fd, addr_ptr, namelen);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE3(bind, int, sockfd, const struct sockaddr *, addr, socklen_t, addrlen)
 {
+	int ret;
 	struct sockaddr_in addr_lwip;
 	struct sockaddr *addr_ptr;
 
 	int lwip_fd = get_lwip_fd(sockfd);
 
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
 	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
 
-	return lwip_bind(lwip_fd, addr_ptr, addrlen);
+	ret = lwip_bind(lwip_fd, addr_ptr, addrlen);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE2(listen, int, sockfd, int, backlog)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(sockfd);
 
-	return lwip_listen(lwip_fd, backlog);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_listen(lwip_fd, backlog);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrlen)
@@ -442,6 +481,9 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 	struct sockaddr *addr_ptr;
 
 	lwip_fd = get_lwip_fd(sockfd);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
 
 	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
 
@@ -452,8 +494,7 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 
 	if (fd < 0) {
 		/* fd already open */
-		set_errno(EBADF);
-		return -1;
+		return -EBADF;
 	}
 
 	/* Get index of open_fds*/
@@ -463,9 +504,9 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 
 	lwip_bind_fd = lwip_accept(lwip_fd, addr_ptr, addrlen);
 
-	if (lwip_fd < 0) {
+	if (lwip_bind_fd < 0) {
 		do_close(fd);
-		return lwip_fd;
+		return lwip_return(lwip_bind_fd);
 	}
 
 	/*  TODO check fd ok */
@@ -480,41 +521,71 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 
 SYSCALL_DEFINE4(recv, int, sockfd, void *, mem, size_t, len, int, flags)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(sockfd);
 
-	return lwip_recv(lwip_fd, mem, len, flags);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_recv(lwip_fd, mem, len, flags);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, struct sockaddr *, from, socklen_t *, fromlen)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(sockfd);
 
-	return lwip_recvfrom(lwip_fd, mem, len, flags, from, fromlen);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_recvfrom(lwip_fd, mem, len, flags, from, fromlen);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE4(send, int, sockfd, const void *, dataptr, size_t, size, int, flags)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(sockfd);
 
-	return lwip_send(lwip_fd, dataptr, size, flags);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_send(lwip_fd, dataptr, size, flags);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct sockaddr *, to, socklen_t,
 		tolen)
 {
+	int ret;
 	struct sockaddr_in to_lwip;
 	int lwip_fd = get_lwip_fd(sockfd);
 
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
 	user_to_lwip_sockadd((struct sockaddr_in_usr *) to, &to_lwip);
 
-	return lwip_sendto(lwip_fd, dataptr, size, flags, (struct sockaddr *) &to_lwip, tolen);
+	ret = lwip_sendto(lwip_fd, dataptr, size, flags, (struct sockaddr *) &to_lwip, tolen);
+	return lwip_return(ret);
 }
 
 SYSCALL_DEFINE5(setsockopt, int, sockfd, int, level, int, optname, const void *, optval, socklen_t, optlen)
 {
+	int ret;
 	int lwip_fd = get_lwip_fd(sockfd);
 
-	return lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
+	if (lwip_fd < 0) {
+		return -EBADF;
+	}
+
+	ret = lwip_setsockopt(lwip_fd, level, optname, optval, optlen);
+	return lwip_return(ret);
 }
 
 static void network_tcpip_done(void *args)

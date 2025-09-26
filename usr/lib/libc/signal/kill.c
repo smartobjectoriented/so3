@@ -3,7 +3,7 @@
 
 int kill(pid_t pid, int sig)
 {
-	return sys_kill(pid, sig);
+	return __syscall_ret(sys_kill(pid, sig));
 
 #if 0 /* SO3 */
 	return syscall(SYS_kill, pid, sig);

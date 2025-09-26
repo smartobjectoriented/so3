@@ -62,7 +62,7 @@ __start:
 	.globl	\name
 \name:
 
-  stmfd sp!, {r4, r5, r7, r10, ip}
+  stmfd sp!, {r4, r5, r7}
 
 /* Retrieve arguments 5 and 6 from the stack if needed */
 .ifge	\nargs - 5
@@ -74,13 +74,9 @@ __start:
 
   mov	r7, #\number
 
-  ldr	r10, =errno
-  mov	ip, #0
-  str	ip, [r10]
-
   swi	0
 
-  ldmfd sp!, {r4, r5, r7, r10, ip}
+  ldmfd sp!, {r4, r5, r7}
 
   mov pc, lr
 
@@ -108,13 +104,9 @@ __start:
 
   mov	x8, #\number
 
-  ldr	x9, =errno
-  str	wzr, [x9]
-
   svc	0
 
   ldr	x8, [sp]
-  ldr	x9, [sp, #8]
   ldr	lr, [sp, #16]
 
   add	sp, sp, #32

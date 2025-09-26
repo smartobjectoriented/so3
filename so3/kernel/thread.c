@@ -655,8 +655,7 @@ SYSCALL_DEFINE2(thread_join, uint32_t, pthread_id, int **, value_p)
 	tcb = find_thread_by_tid(current()->pcb, pthread_id);
 
 	if (tcb == NULL) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	ret = thread_join(tcb);

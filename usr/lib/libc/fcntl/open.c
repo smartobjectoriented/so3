@@ -14,7 +14,7 @@ int open(const char *filename, int flags, ...)
 		va_end(ap);
 	}
 
-	return sys_open(filename, flags, mode);
+	return __syscall_ret(sys_open(filename, flags, mode));
 
 #if 0 /* so3 */
 	int fd = __sys_open_cp(filename, flags, mode);

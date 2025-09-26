@@ -23,7 +23,6 @@
 #include <common.h>
 #include <timer.h>
 #include <softirq.h>
-#include <errno.h>
 
 #include <avz/sched.h>
 #include <avz/sched-if.h>

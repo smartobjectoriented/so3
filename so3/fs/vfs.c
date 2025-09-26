@@ -208,7 +208,7 @@ int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 
 	/* Reach max num */
 	if (gfd == MAX_FDS) {
-		set_errno(ENFILE);
+		fd = -ENFILE;
 		goto vfs_open_failed;
 	}
 
@@ -216,7 +216,7 @@ int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 
 	if (!open_fds[gfd]) {
 		printk("%s: failed to allocate memory\n", __func__);
-		set_errno(ENOMEM);
+		fd = -ENOMEM;
 		goto vfs_open_failed;
 	}
 
@@ -227,7 +227,7 @@ int vfs_open(const char *filename, struct file_operations *fops, uint32_t type)
 		open_fds[gfd]->filename = malloc(strlen(filename) + 1);
 		if (!open_fds[gfd]) {
 			printk("%s: failed to allocate memory\n", __func__);
-			set_errno(ENOMEM);
+			fd = -ENOMEM;
 			goto vfs_open_failed;
 		}
 
@@ -263,7 +263,7 @@ fs_open_failed:
 vfs_open_failed:
 
 	mutex_unlock(&vfs_lock);
-	return -1;
+	return fd;
 }
 
 uint32_t vfs_get_open_mode(int gfd)
@@ -387,8 +387,7 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 	/* FIXME Max size of buffer */
 	if (!buffer || count < 0) {
 		LOG_ERROR("Invalid inputs\n");
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	mutex_lock(&vfs_lock);
@@ -399,22 +398,19 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 	 * support regular file VFS_TYPE_FILE, VFS_TYPE_IO and pipes
 	 */
 	if (open_fds[gfd]->type == VFS_TYPE_DIR) {
-		set_errno(EISDIR);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EISDIR;
 	}
 
 	if (!vfs_is_valid_gfd(gfd)) {
-		set_errno(EINVAL);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EINVAL;
 	}
 
 	if (!open_fds[gfd]->fops->read) {
 		LOG_ERROR("No fops read\n");
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EBADF;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -435,8 +431,7 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 	/* FIXME Max size of buffer */
 	if (!buffer || count < 0) {
 		LOG_ERROR("Invalid inputs\n");
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	mutex_lock(&vfs_lock);
@@ -444,24 +439,21 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 	gfd = vfs_get_gfd(fd);
 
 	if (!vfs_is_valid_gfd(gfd)) {
-		set_errno(EINVAL);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EINVAL;
 	}
 
 	/* FIXME: As for now the do_read/do_open only
 	 * support regular file VFS_TYPE_FILE, VFS_TYPE_IO and pipes
 	 */
 	if (open_fds[gfd]->type == VFS_TYPE_DIR) {
-		set_errno(EISDIR);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EISDIR;
 	}
 
 	if (!open_fds[gfd]->fops->write) {
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EBADF;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -509,9 +501,8 @@ SYSCALL_DEFINE2(open, const char *, filename, int, flags)
 
 	if (fd < 0) {
 		/* fd already open */
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EBADF;
 	}
 
 	/* Get index of open_fds*/
@@ -520,9 +511,10 @@ SYSCALL_DEFINE2(open, const char *, filename, int, flags)
 	vfs_set_open_mode(gfd, flags);
 
 	/* The open() callback operation in the sub-layers must NOT suspend. */
-	if (fops->open && fops->open(gfd, filename)) {
-		ret = -1;
-		goto open_failed;
+	if (fops->open) {
+		ret = fops->open(gfd, filename);
+		if (ret != 0)
+			goto open_failed;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -552,27 +544,24 @@ SYSCALL_DEFINE3(readdir, int, fd, char *, buf, int, len)
 	gfd = vfs_get_gfd(fd);
 
 	if (!vfs_is_valid_gfd(gfd)) {
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
-		return 0;
+		return -EBADF;
 	}
 
 	if (open_fds[gfd]->type != VFS_TYPE_DIR) {
-		set_errno(ENOTDIR);
 		mutex_unlock(&vfs_lock);
-		return 0;
+		return -ENOTDIR;
 	}
 
 	if (!open_fds[gfd]->fops->readdir) {
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
-		return 0;
+		return -EBADF;
 	}
 
 	dirent = open_fds[gfd]->fops->readdir(gfd);
 	if (!dirent) {
 		mutex_unlock(&vfs_lock);
-		return 0;
+		return -EINVAL;
 	}
 
 	dirent->d_reclen = sizeof(struct dirent);
@@ -659,10 +648,9 @@ SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 	mutex_lock(&vfs_lock);
 
 	if (vfs_get_gfd(oldfd) < 0) {
-		set_errno(EBADF);
 		mutex_unlock(&vfs_lock);
 
-		return -1;
+		return -EBADF;
 	}
 
 	if (vfs_get_gfd(oldfd) != vfs_get_gfd(newfd))
@@ -718,15 +706,13 @@ SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
 
 	/* FIXME Find the correct mount point with the path */
 	if (!registered_fs_ops[FS_FAT]) {
-		set_errno(ENOENT);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -ENOENT;
 	}
 
 	if (!registered_fs_ops[FS_FAT]->stat) {
-		set_errno(ENOENT);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -ENOENT;
 	}
 
 	ret = registered_fs_ops[FS_FAT]->stat(path, st);
@@ -750,8 +736,7 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 	gfd = vfs_get_gfd(fd);
 	if (-1 == gfd) {
 		printk("%s: could not get global fd.\n", __func__);
-		set_errno(EBADF);
-		return (long) MAP_FAILED;
+		return -EBADF;
 	}
 
 	mutex_lock(&vfs_lock);
@@ -759,8 +744,7 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 	if (!fops) {
 		printk("%s: could not get device fops.\n", __func__);
 		mutex_unlock(&vfs_lock);
-		set_errno(EBADF);
-		return (long) MAP_FAILED;
+		return -EBADF;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -773,8 +757,7 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 
 	if (!fops->mmap) {
 		printk("%s: device doesn't support mmap.\n", __func__);
-		set_errno(EACCES);
-		return (long) MAP_FAILED;
+		return -EACCES;
 	}
 
 	/* Call the mmap fops that will do the actual mapping. */
@@ -789,16 +772,14 @@ SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
 	gfd = vfs_get_gfd(fd);
 
 	if (!vfs_is_valid_gfd(gfd)) {
-		set_errno(EINVAL);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EINVAL;
 	}
 
 	if (open_fds[gfd]->fops->ioctl)
 		rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
 	else {
-		set_errno(EPERM);
-		rc = -1;
+		rc = -EPERM;
 	}
 
 	mutex_unlock(&vfs_lock);
@@ -818,9 +799,8 @@ SYSCALL_DEFINE3(lseek, int, fd, off_t, off, int, whence)
 	gfd = vfs_get_gfd(fd);
 
 	if (!vfs_is_valid_gfd(gfd)) {
-		set_errno(EINVAL);
 		mutex_unlock(&vfs_lock);
-		return -1;
+		return -EINVAL;
 	}
 
 	if (open_fds[gfd]->fops->lseek)

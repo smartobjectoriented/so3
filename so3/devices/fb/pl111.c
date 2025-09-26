@@ -94,7 +94,7 @@
 #define LCDBPP (5 << 1) /* 5: 24bpp, 6: 16bpp565 */
 #define LCDEN (1 << 0) /* enable display */
 
-void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+int fb_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
 	uint32_t i;
 	addr_t page;
@@ -106,7 +106,7 @@ void *fb_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
 	}
 
-	return (void *) virt_addr;
+	return virt_addr;
 }
 
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args)

@@ -15,7 +15,7 @@
 #include "roxml_buff.h"
 #include "roxml_parser.h"
 
-int errno = 0;
+int roxml_errno = 0;
 
 #ifdef __DEBUG
 unsigned int _nb_node = 0;

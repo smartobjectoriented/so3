@@ -4,5 +4,5 @@
 
 int stat(const char *pathname, struct stat *statbuf)
 {
-	return sys_stat(pathname, statbuf);
+	return __syscall_ret(sys_stat(pathname, statbuf));
 }

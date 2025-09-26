@@ -4,5 +4,5 @@
 
 int connect(int fd, const struct sockaddr *addr, socklen_t len)
 {
-	return sys_connect(fd, addr, len);
+	return __sycall_ret(sys_connect(fd, addr, len));
 }

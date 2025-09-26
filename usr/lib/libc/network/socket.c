@@ -18,5 +18,5 @@ int socket(int domain, int type, int protocol)
             sys_socket(SYS_fcntl, s, F_SETFL, O_NONBLOCK);
 	}*/
 	int s = sys_socket(domain, type, protocol);
-	return s;
+	return __syscall_ret(s);
 }

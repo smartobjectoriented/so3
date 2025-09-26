@@ -120,8 +120,6 @@ typedef long (*syscall_fn_t)(syscall_args_t *);
 
 long syscall_handle(syscall_args_t *);
 
-void set_errno(uint32_t val);
-
 SYSCALL_DECLARE(sysinfo, unsigned long info_number, char *text);
 
 #endif /* __ASSEMBLY__ */

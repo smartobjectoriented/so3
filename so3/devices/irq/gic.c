@@ -40,7 +40,6 @@
  */
 
 #include <common.h>
-#include <errno.h>
 #include <heap.h>
 #include <memory.h>
 #include <percpu.h>

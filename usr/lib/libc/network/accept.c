@@ -4,5 +4,5 @@
 
 int accept(int fd, struct sockaddr *restrict addr, socklen_t *restrict len)
 {
-	return sys_accept(fd, addr, len);
+	return __syscall_ret(sys_accept(fd, addr, len));
 }

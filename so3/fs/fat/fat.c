@@ -359,14 +359,13 @@ int fat_stat(const char *path, struct stat *st)
 	int res;
 
 	if (!path || !st) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	memset(st, 0, sizeof(struct stat));
 
 	if ((res = f_stat(path, &finfo))) {
-		set_errno(EEXIST);
+		res = -EEXIST;
 	}
 
 	time_fat_fat2so3(finfo.fdate, finfo.ftime, &tm);
@@ -405,7 +404,7 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
  * - SEEK_HOLE       seek to the next hole
  *
  * Upon  successful  completion,  lseek() returns the resulting offset location as measured in bytes
- * from the beginning of the file.  On error, the value (off_t) -1 is returned and errno is set to indicate the error.
+ * from the beginning of the file. On error, a negative error code is returned.
  *
  */
 static off_t fat_lseek(int fd, off_t off, int whence)
@@ -437,8 +436,7 @@ static off_t fat_lseek(int fd, off_t off, int whence)
 
 		off += cur;
 		if (off >= eof) {
-			set_errno(EINVAL);
-			return -1;
+			return -EINVAL;
 		}
 		break;
 
@@ -460,8 +458,7 @@ static off_t fat_lseek(int fd, off_t off, int whence)
 
 	ret = f_lseek(&ptrent->entry.file, off);
 	if (ret) {
-		set_errno(EINVAL);
-		return (off_t) -1;
+		return -EINVAL;
 	}
 
 	return off;

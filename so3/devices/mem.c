@@ -26,7 +26,7 @@
 
 #define DEV_CLASS_MEM "mem"
 
-static void *mem_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+static int mem_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
 	const size_t MEM_START = mem_info.phys_base;
 	const size_t MEM_END = mem_info.phys_base + mem_info.size;
@@ -38,13 +38,11 @@ static void *mem_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offse
 
 	/* Detect physical or virtual address overflow */
 	if (((offset + remaining_size) < offset) || ((virt_addr + remaining_size) < virt_addr)) {
-		set_errno(EINVAL);
-		return MAP_FAILED;
+		return -EINVAL;
 	}
 
 	if (!virt_addr) {
-		set_errno(EINVAL);
-		return MAP_FAILED;
+		return -EINVAL;
 	}
 
 	pcb = current()->pcb;
@@ -74,7 +72,7 @@ static void *mem_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offse
 	if (remaining_size > 0)
 		create_mapping(pcb->pgtable, next_virt_addr, next_phys_addr, remaining_size, true);
 
-	return (void *) virt_addr;
+	return virt_addr;
 }
 
 static struct file_operations mem_fops = {

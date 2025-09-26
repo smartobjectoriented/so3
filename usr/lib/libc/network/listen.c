@@ -3,5 +3,5 @@
 
 int listen(int fd, int backlog)
 {
-	return sys_listen(fd, backlog);
+	return __syscall_ret(sys_listen(fd, backlog));
 }
