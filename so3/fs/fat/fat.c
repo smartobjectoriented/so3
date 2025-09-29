@@ -80,11 +80,55 @@ struct fat_mount {
 
 static struct fat_mount volumes[4];
 
+static int fresult_to_errno(FRESULT result)
+{
+	switch (result) {
+	case FR_OK:
+		return ESUCCESS;
+
+	case FR_DISK_ERR:
+	case FR_NOT_READY:
+	case FR_NOT_ENABLED:
+	case FR_NO_FILESYSTEM:
+	case FR_MKFS_ABORTED:
+	case FR_TIMEOUT:
+		return EIO;
+
+	case FR_NO_FILE:
+	case FR_NO_PATH:
+		return ENOENT;
+
+	case FR_DENIED:
+	case FR_LOCKED:
+		return EACCES;
+
+	case FR_WRITE_PROTECTED:
+		return EROFS;
+
+	case FR_EXIST:
+		return EEXIST;
+
+	case FR_NOT_ENOUGH_CORE:
+		return ENOMEM;
+
+	case FR_TOO_MANY_OPEN_FILES:
+		return EMFILE;
+
+	case FR_INT_ERR:
+	case FR_INVALID_NAME:
+	case FR_INVALID_OBJECT:
+	case FR_INVALID_DRIVE:
+	case FR_INVALID_PARAMETER:
+	default:
+		return EINVAL;
+	}
+}
+
 static int open_fat_file(int fd, const char *path, struct fat_entry *ptrent)
 {
 	uint32_t flags = vfs_get_open_mode(fd);
 	uint8_t fat_flags = 0;
-	int rc;
+	FRESULT rc;
 
 	flags |= vfs_get_access_mode(fd);
 	flags |= vfs_get_operating_mode(fd);
@@ -110,11 +154,8 @@ static int open_fat_file(int fd, const char *path, struct fat_entry *ptrent)
 		fat_flags |= FA_CREATE_ALWAYS;
 	}
 
-	if ((rc = f_open(&ptrent->entry.file, path, fat_flags))) {
-		return -rc;
-	}
-
-	return 0;
+	rc = f_open(&ptrent->entry.file, path, fat_flags);
+	return -fresult_to_errno(rc);
 }
 
 /* @brief: This remove the last occurence the char '/'
@@ -171,12 +212,12 @@ static void time_fat_fat2so3(unsigned short date, unsigned short time, struct ti
 int fat_read(int fd, void *buffer, int count)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
-	int rc = 0;
+	FRESULT rc = FR_OK;
 	int bread = 0;
 
 	if (!ptrent) {
 		LOG_ERROR("Error while reading fd %d\n", fd);
-		return -1;
+		return -EBADFD;
 	}
 
 	if (ptrent->tentry != TYPE_FILE) {
@@ -184,7 +225,7 @@ int fat_read(int fd, void *buffer, int count)
 	}
 
 	if ((rc = f_read(&ptrent->entry.file, buffer, count, (unsigned *) &bread))) {
-		return -rc;
+		return -fresult_to_errno(rc);
 	}
 
 	return bread;
@@ -193,7 +234,7 @@ int fat_read(int fd, void *buffer, int count)
 int fat_write(int fd, const void *buffer, int count)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
-	int rc = 0;
+	FRESULT rc = 0;
 	int bwritten = 0;
 
 	if (!ptrent) {
@@ -206,10 +247,12 @@ int fat_write(int fd, const void *buffer, int count)
 	}
 
 	if ((rc = f_write(&ptrent->entry.file, buffer, count, (unsigned *) &bwritten))) {
-		return -rc;
+		return -fresult_to_errno(rc);
 	}
 
-	rc = f_sync(&ptrent->entry.file);
+	if ((rc = f_sync(&ptrent->entry.file))) {
+		return -fresult_to_errno(rc);
+	}
 
 	return bwritten;
 }
@@ -221,6 +264,7 @@ int fat_write(int fd, const void *buffer, int count)
 int fat_open(int fd, const char *path)
 {
 	struct fat_entry *ptrent;
+	FRESULT res;
 	int rc;
 	uint32_t open_flags = vfs_get_open_mode(fd);
 
@@ -234,7 +278,8 @@ int fat_open(int fd, const char *path)
 	case O_DIRECTORY:
 		/* This is a directory */
 		last_delim_remove((char *) path);
-		if ((rc = f_opendir(&ptrent->entry.dir.dir_ctx, path))) {
+		if ((res = f_opendir(&ptrent->entry.dir.dir_ctx, path))) {
+			rc = -fresult_to_errno(res);
 			goto open_fail;
 		}
 
@@ -255,23 +300,23 @@ int fat_open(int fd, const char *path)
 
 open_fail:
 	free(ptrent);
-	return -rc;
+	return rc;
 }
 
 int fat_close(int fd)
 {
-	int rc;
+	FRESULT rc;
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
 
 	switch (ptrent->tentry) {
 	case TYPE_FILE:
 		if ((rc = f_close(&ptrent->entry.file))) {
-			return -rc;
+			return -fresult_to_errno(rc);
 		}
 		break;
 	case TYPE_FOLDER:
 		if ((rc = f_closedir(&ptrent->entry.dir.dir_ctx))) {
-			return -rc;
+			return -fresult_to_errno(rc);
 		}
 		break;
 	default:
@@ -285,13 +330,13 @@ int fat_close(int fd)
 int fat_mount(const char *mount_point)
 {
 	int i;
-	int rc = 0;
+	FRESULT rc = 0;
 
 	for (i = 0; i < ARRAY_SIZE(volumes); i++) {
 		if (!volumes[i].mounted) {
 			if ((rc = f_mount(&volumes[i].mp, mount_point, MOUNT_NOW))) {
 				LOG_ERROR("Error %d while mounting volume %s\n", rc, mount_point);
-				return -rc;
+				return -fresult_to_errno(rc);
 			}
 
 			return 0;
@@ -365,7 +410,7 @@ int fat_stat(const char *path, struct stat *st)
 	memset(st, 0, sizeof(struct stat));
 
 	if ((res = f_stat(path, &finfo))) {
-		res = -EEXIST;
+		return -fresult_to_errno(res);
 	}
 
 	time_fat_fat2so3(finfo.fdate, finfo.ftime, &tm);
@@ -373,7 +418,7 @@ int fat_stat(const char *path, struct stat *st)
 	strcpy(st->st_name, path);
 	st->st_size = finfo.fsize;
 
-	return res;
+	return 0;
 }
 
 /* Request an ioctl from user space */
@@ -386,7 +431,7 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
 		rc = serial_gwinsize((struct winsize *) args);
 		break;
 	default:
-		rc = -1;
+		rc = -EINVAL;
 		break;
 	}
 
@@ -410,7 +455,7 @@ static int fat_ioctl(int fd, unsigned long cmd, unsigned long args)
 static off_t fat_lseek(int fd, off_t off, int whence)
 {
 	struct fat_entry *ptrent = (struct fat_entry *) vfs_get_priv(fd);
-	off_t ret;
+	FRESULT ret;
 	uint32_t eof, cur;
 
 	/* Get the size of the file (eof) */
@@ -458,7 +503,7 @@ static off_t fat_lseek(int fd, off_t off, int whence)
 
 	ret = f_lseek(&ptrent->entry.file, off);
 	if (ret) {
-		return -EINVAL;
+		return -fresult_to_errno(ret);
 	}
 
 	return off;
