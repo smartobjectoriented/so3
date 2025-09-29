@@ -118,6 +118,8 @@ typedef void (*vector_fn_t)(cpu_regs_t *);
 
 void trap_handle(cpu_regs_t *regs)
 {
+	int ret = 0;
+
 #ifndef CONFIG_AVZ
 	syscall_args_t sys_args;
 #endif
@@ -141,7 +143,9 @@ void trap_handle(cpu_regs_t *regs)
 	switch (ESR_ELx_EC(esr)) {
 	case ESR_ELx_EC_DABT_LOW:
 
-		dabt_handle(regs, esr);
+		ret = dabt_handle(regs, esr);
+		if (ret == -1)
+			goto __err;
 		break;
 
 	/* SVC used for syscalls */
@@ -247,6 +251,7 @@ void trap_handle(cpu_regs_t *regs)
 #endif
 
 	default:
+__err:
 		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
 		trap_handle_error(regs->lr);
 		kernel_panic();

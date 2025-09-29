@@ -29,6 +29,15 @@ _Noreturn void exit(int code)
 {
 	__funcs_on_exit();
 	__libc_exit_fini();
+
+#warning __stdio_exit() issue
+	/* 
+	 * Currently, this function causes a data abort fault randomly. The effect
+	 * is visible on RPi4 (64-bit) more rarely on virt64
+	 */
+#if 0
 	__stdio_exit();
+#endif /* 0 */
+
 	_Exit(code);
 }
