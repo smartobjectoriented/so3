@@ -30,6 +30,10 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
+/* We disable these logs here because the UART is difficult to manage during the I/O re-mapping. */
+#undef LOG_DEBUG
+#define LOG_DEBUG(fmt, ...)
+
 void *__current_pgtable = NULL;
 
 void *current_pgtable(void)
@@ -675,8 +679,8 @@ void mmu_configure(addr_t fdt_addr)
 
 		/* Early mapping I/O for UART. Here, the UART is supposed to be in a different L1 entry than the RAM. */
 #ifdef CONFIG_VA_BITS_48
-		__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
+	__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
+	set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
 #elif CONFIG_VA_BITS_39
 	__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
 	set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
