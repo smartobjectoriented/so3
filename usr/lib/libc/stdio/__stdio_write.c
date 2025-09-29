@@ -22,9 +22,9 @@ size_t __stdio_write(FILE *f, const unsigned char *buf, size_t len)
 		cnt = 0;
 
 		if (iov[0].iov_len > 0)
-			cnt = __sycall_ret(sys_write(f->fd, iov[0].iov_base, iov[0].iov_len));
+			cnt += sys_write(f->fd, iov[0].iov_base, iov[0].iov_len);
 		if (iov[1].iov_len > 0)
-			cnt = __sycall_ret(sys_write(f->fd, iov[1].iov_base, iov[1].iov_len));
+			cnt += sys_write(f->fd, iov[1].iov_base, iov[1].iov_len);
 
 		if (cnt == rem) {
 			f->wend = f->buf + f->buf_size;

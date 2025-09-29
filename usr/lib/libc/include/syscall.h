@@ -111,6 +111,11 @@
 
 extern int errno;
 
+/**
+ * Convert a syscall return value into function return value and update errno accordingly.
+ */
+long __syscall_ret(unsigned long);
+
 /* The system call interface. These are the operations the SO3 kernel needs to
  * support, to be able to run user programs.
  *
@@ -486,7 +491,7 @@ int sys_setsockopt(int fd, int level, int optname, const void *optval, socklen_t
  * fd: is the file descriptor of the opened file
  * offset: is where to start mapping in the file
  */
-void *sys_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
+int sys_mmap(uint32_t start, size_t length, int prot, int fd, off_t offset);
 
 /**
  * The ptrace() system call provides a means by which one process (the "tracer")
@@ -537,7 +542,7 @@ int sys_clock_gettime(clockid_t clk, struct timespec *ts);
  * 	the heap, return (void *) -1 and sets ERRNO to ENOMEM. If increment equals 0, return current heap top.
  */
 
-void *sys_sbrk(int increment);
+int sys_sbrk(int increment);
 
 /*
  * First attempt of mutex implementation in the user space. Mainly used, at the moment,
