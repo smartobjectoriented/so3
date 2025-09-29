@@ -28,3 +28,15 @@ if (MICROPYTHON AND (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
 	add_subdirectory(micropython)
 endif()
 
+# == C++ experimental apps - use to setup C++ runtime ==
+
+include(ExternalProject)
+
+ExternalProject_Add(musl_cpp_app
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/musl_cpp_app
+  CMAKE_ARGS
+    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/aarch64-linux-musl.cmake
+  BUILD_ALWAYS ON
+  INSTALL_COMMAND ""
+)
+

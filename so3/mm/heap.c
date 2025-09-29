@@ -391,7 +391,7 @@ next_list:
 	if (!victim) {
 		/* not enough free space left */
 		/* FIXME: do sbrk() here to request more space. Request less space in init() */
-		LOG_CRITICAL("[malloc] Not enough free space, requested = %x", requested);
+		LOG_CRITICAL("[malloc] Not enough free space, requested = %x\n", requested);
 
 		spin_unlock_irqrestore(&heap_lock, flags);
 
