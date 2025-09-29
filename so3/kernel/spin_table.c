@@ -13,7 +13,6 @@
  * Author: Will Deacon <will.deacon@arm.com>
  */
 
-#include <errno.h>
 #include <spinlock.h>
 #include <smp.h>
 #include <psci.h>

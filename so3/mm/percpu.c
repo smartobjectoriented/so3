@@ -19,7 +19,6 @@
 #include <common.h>
 #include <memory.h>
 #include <heap.h>
-#include <errno.h>
 #include <string.h>
 #include <percpu.h>
 
