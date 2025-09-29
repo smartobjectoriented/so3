@@ -28,6 +28,7 @@
 #include <types.h>
 #include <completion.h>
 #include <mutex.h>
+#include <log.h>
 
 #include <asm/io.h>
 
@@ -212,7 +213,7 @@ static int i2c_bsc_init(dev_t *dev, int fdt_offset)
 	uint32_t mask;
 	uint32_t gpio_regs_addr;
 
-	DBG("I2C broadcom - Initialization\n");
+	LOG_DEBUG("I2C broadcom - Initialization\n");
 
 	memset(&i2c, 0, sizeof(i2c_t));
 
@@ -261,7 +262,7 @@ static int i2c_bsc_init(dev_t *dev, int fdt_offset)
 
 	io_unmap(gpio_regs_addr);
 
-	DBG("i2c_init end\n");
+	LOG_DEBUG("i2c_init end\n");
 
 	return 0;
 }
