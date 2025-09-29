@@ -96,20 +96,19 @@ __start:
 \name:
 
   // 16-byte stack alignment
-  sub	sp, sp, #32
+  sub	sp, sp, #16
 
   str	x8, [sp]
-  str	x9, [sp, #8]
-  str	lr,  [sp, #16]
+  str	lr,  [sp, #8]
 
   mov	x8, #\number
 
   svc	0
 
   ldr	x8, [sp]
-  ldr	lr, [sp, #16]
+  ldr	lr, [sp, #8]
 
-  add	sp, sp, #32
+  add	sp, sp, #16
 
   ret
 
