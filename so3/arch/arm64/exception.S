@@ -226,7 +226,7 @@ ENTRY(pre_ret_to_el1_with_spin)
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 
-	mov	x2, #PSR_MODE_EL1t
+	mov	x2, #PSR_MODE_EL1h
 
 	// Make sure no interrupt coming from CPU #0 is
 	// interferring with other CPU bootstrap
@@ -271,7 +271,7 @@ ENTRY(pre_ret_to_el1)
 	// Set the CPU in EL1 mode to proceed with
 	// the bootstrap of the domain
 
-	mov	x2, #PSR_MODE_EL1t
+	mov	x2, #PSR_MODE_EL1h
 
 	// Make sure no interrupt coming from CPU #0 is
 	// interferring with other CPU bootstrap
