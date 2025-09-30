@@ -40,8 +40,18 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 
 #ifdef CONFIG_MMU
 	[SYSCALL_GETPID] = __sys_getpid,
+#ifdef SYSCALL_GETTIMEOFDAY
 	[SYSCALL_GETTIMEOFDAY] = __sys_gettimeofday,
+#endif
+#ifdef SYSCALL_GETTIMEOFDAY_TIME32
+	[SYSCALL_GETTIMEOFDAY_TIME32] = __sys_gettimeofday_time32,
+#endif
+#ifdef SYSCALL_CLOCK_GETTIME
 	[SYSCALL_CLOCK_GETTIME] = __sys_clock_gettime,
+#endif
+#ifdef SYSCALL_CLOCK_GETTIME32
+	[SYSCALL_CLOCK_GETTIME32] = __sys_clock_gettime32,
+#endif
 	[SYSCALL_EXIT] = __sys_exit,
 	[SYSCALL_EXECVE] = __sys_execve,
 	[SYSCALL_FORK] = __sys_fork,
@@ -62,7 +72,7 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_THREAD_JOIN] = __sys_thread_join,
 	[SYSCALL_THREAD_EXIT] = __sys_thread_exit,
 	[SYSCALL_THREAD_YIELD] = __sys_thread_yield,
-	[SYSCALL_READDIR] = __sys_readdir,
+	[SYSCALL_GETDENTS64] = __sys_getdents64,
 	[SYSCALL_IOCTL] = __sys_ioctl,
 	[SYSCALL_FCNTL] = __sys_fcntl,
 	[SYSCALL_LSEEK] = __sys_lseek,
@@ -79,8 +89,16 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_DUP2] = __sys_dup2,
 #endif
 	[SYSCALL_DUP3] = __sys_dup3,
+#ifdef SYSCALL_STAT
 	[SYSCALL_STAT] = __sys_stat,
+#endif
+	[SYSCALL_FSTATAT] = __sys_fstatat,
+#ifdef SYSCALL_MMAP
 	[SYSCALL_MMAP] = __sys_mmap,
+#endif
+#ifdef SYSCALL_MMAP2
+	[SYSCALL_MMAP2] = __sys_mmap2,
+#endif
 	[SYSCALL_NANOSLEEP] = __sys_nanosleep,
 #ifdef CONFIG_PROC_ENV
 	[SYSCALL_BRK] = __sys_brk,
@@ -88,9 +106,15 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_MUTEX_LOCK] = __sys_mutex_lock,
 	[SYSCALL_MUTEX_UNLOCK] = __sys_mutex_unlock,
 #ifdef CONFIG_IPC_SIGNAL
+#ifdef SYSCALL_SIGACTION
 	[SYSCALL_SIGACTION] = __sys_sigaction,
+#endif
+	[SYSCALL_RT_SIGACTION] = __sys_rt_sigaction,
 	[SYSCALL_KILL] = __sys_kill,
+#ifdef SYSCALL_SIGRETURN
 	[SYSCALL_SIGRETURN] = __sys_sigreturn,
+#endif
+	[SYSCALL_RT_SIGRETURN] = __sys_rt_sigreturn,
 #endif
 #ifdef CONFIG_NET
 	[SYSCALL_SOCKET] = __sys_socket,
@@ -98,8 +122,12 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_LISTEN] = __sys_listen,
 	[SYSCALL_ACCEPT] = __sys_accept,
 	[SYSCALL_CONNECT] = __sys_connect,
+#ifdef SYSCALL_RECV
 	[SYSCALL_RECV] = __sys_recv,
+#endif
+#ifdef SYSCALL_SEND
 	[SYSCALL_SEND] = __sys_send,
+#endif
 	[SYSCALL_SENDTO] = __sys_sendto,
 	[SYSCALL_SETSOCKOPT] = __sys_setsockopt,
 	[SYSCALL_RECVFROM] = __sys_recvfrom,

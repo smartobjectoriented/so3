@@ -557,7 +557,7 @@ el01_sync_handler:
 
 	// Check if sigreturn has been called. In this case, we
 	// clean the stack frame which has been used to manage the user handler.
-	cmp	x8, #SYSCALL_SIGRETURN
+	cmp	x8, #SYSCALL_RT_SIGRETURN
 	bne	__ret_from_fork
 	
 	// Reset the stack frame by removing the one issued from sigreturn

@@ -818,6 +818,8 @@ SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
 {
 	int ret;
 
+	memset(st, 0, sizeof(*st));
+
 	mutex_lock(&vfs_lock);
 
 	/* FIXME Find the correct mount point with the path */
@@ -836,6 +838,43 @@ SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
 	mutex_unlock(&vfs_lock);
 
 	return ret;
+}
+
+SYSCALL_DEFINE3(fstatat, const char *, path, struct stat64 *, st, int, flags)
+{
+	struct stat stat32;
+	int ret;
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported\n");
+		return -ENOSYS;
+	}
+
+	ret = do_stat(path, &stat32);
+	if (ret < 0) {
+		return ret;
+	}
+
+	memset(st, 0, sizeof(*st));
+
+	// Copy with extension from 32 bits to 64 bits
+	st->st_dev = stat32.st_dev;
+	st->st_ino = stat32.st_ino;
+	st->st_mode = stat32.st_mode;
+	st->st_nlink = stat32.st_nlink;
+	st->st_uid = stat32.st_uid;
+	st->st_gid = stat32.st_gid;
+	st->st_rdev = stat32.st_rdev;
+	st->st_size = stat32.st_size;
+	st->st_blksize = stat32.st_blksize;
+	st->st_blocks = stat32.st_blocks;
+	st->st_atime = stat32.st_atime;
+	st->st_atime_nsec = stat32.st_atime_nsec;
+	st->st_mtime = stat32.st_mtime;
+	st->st_mtime_nsec = stat32.st_mtime_nsec;
+	st->st_ctime = stat32.st_ctime;
+	st->st_ctime_nsec = stat32.st_ctime_nsec;
+
+	return 0;
 }
 
 /**

@@ -20,18 +20,50 @@
 #ifndef STAT_H
 #define STAT_H
 
-#include <types.h>
-
-#define FILENAME_SIZE 256
-
-typedef uint32_t mode_t;
-
 struct stat {
-	char st_name[FILENAME_SIZE]; /* Filename */
-	unsigned long st_size; /* Size of file */
-	time_t st_mtim; /* Time of last modification in sec*/
-	unsigned char st_flags; /* Regular file flag (not supported on fat) */
-	mode_t st_mode; /* Protection not used (not supported on fat) */
+	unsigned long st_dev; /* Device.  */
+	unsigned long st_ino; /* File serial number.  */
+	unsigned int st_mode; /* File mode.  */
+	unsigned int st_nlink; /* Link count.  */
+	unsigned int st_uid; /* User ID of the file's owner.  */
+	unsigned int st_gid; /* Group ID of the file's group. */
+	unsigned long st_rdev; /* Device number, if device.  */
+	unsigned long __pad1;
+	long st_size; /* Size of file, in bytes.  */
+	int st_blksize; /* Optimal block size for I/O.  */
+	int __pad2;
+	long st_blocks; /* Number 512-byte blocks allocated. */
+	long st_atime; /* Time of last access.  */
+	unsigned long st_atime_nsec;
+	long st_mtime; /* Time of last modification.  */
+	unsigned long st_mtime_nsec;
+	long st_ctime; /* Time of last status change.  */
+	unsigned long st_ctime_nsec;
+	unsigned int __unused4;
+	unsigned int __unused5;
+};
+
+struct stat64 {
+	unsigned long long st_dev; /* Device.  */
+	unsigned long long st_ino; /* File serial number.  */
+	unsigned int st_mode; /* File mode.  */
+	unsigned int st_nlink; /* Link count.  */
+	unsigned int st_uid; /* User ID of the file's owner.  */
+	unsigned int st_gid; /* Group ID of the file's group. */
+	unsigned long long st_rdev; /* Device number, if device.  */
+	unsigned long long __pad1;
+	long long st_size; /* Size of file, in bytes.  */
+	int st_blksize; /* Optimal block size for I/O.  */
+	int __pad2;
+	long long st_blocks; /* Number 512-byte blocks allocated. */
+	int st_atime; /* Time of last access.  */
+	unsigned int st_atime_nsec;
+	int st_mtime; /* Time of last modification.  */
+	unsigned int st_mtime_nsec;
+	int st_ctime; /* Time of last status change.  */
+	unsigned int st_ctime_nsec;
+	unsigned int __unused4;
+	unsigned int __unused5;
 };
 
 #endif /* STAT_H */

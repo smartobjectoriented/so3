@@ -41,6 +41,8 @@
 #define SYSCALL_READV 65
 #define SYSCALL_WRITEV 66
 
+#define SYSCALL_FSTATAT 79
+
 #define SYSCALL_EXIT 93
 
 #define SYSCALL_NANOSLEEP 101
@@ -51,6 +53,10 @@
 #define SYSCALL_PTRACE 117
 
 #define SYSCALL_KILL 129
+
+#define SYSCALL_RT_SIGACTION 134
+
+#define SYSCALL_RT_SIGRETURN 139
 
 #define SYSCALL_GETTIMEOFDAY 169
 
@@ -74,11 +80,6 @@
 
 // Does not exist
 #define SYSCALL_FORK 7 // => clone
-#define SYSCALL_SEND 32 // => sendto
-#define SYSCALL_SIGACTION 46 // => rt_sigaction
-
-#define SYSCALL_STAT 34 // ????
-#define SYSCALL_SIGRETURN 48 // ?????
 
 #define SYSCALL_THREAD_CREATE 16
 #define SYSCALL_THREAD_JOIN 17

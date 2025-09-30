@@ -35,7 +35,7 @@ uint8_t *elf_load_buffer(const char *filename)
 	struct stat st;
 
 	/* open and read file */
-	fd = sys_do_open(filename, O_RDONLY);
+	fd = sys_do_open(filename, O_RDONLY, 0);
 
 	if (fd < 0)
 		return NULL;
