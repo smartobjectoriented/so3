@@ -32,6 +32,8 @@
 #define SYSCALL_OPENAT 56
 #define SYSCALL_CLOSE 57
 
+#define SYSCALL_PIPE2 59
+
 #define SYSCALL_GETDENTS64 61
 #define SYSCALL_LSEEK 62
 #define SYSCALL_READ 63
@@ -72,7 +74,6 @@
 
 // Does not exist
 #define SYSCALL_FORK 7 // => clone
-#define SYSCALL_PIPE 19 // => pipe2
 #define SYSCALL_SEND 32 // => sendto
 #define SYSCALL_SIGACTION 46 // => rt_sigaction
 

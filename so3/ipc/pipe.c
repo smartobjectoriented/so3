@@ -308,3 +308,16 @@ SYSCALL_DEFINE1(pipe, int *, pipefd)
 
 	return 0;
 }
+
+/**
+ * Simple pipe2 implementation ignoring flags for aarch64.
+ */
+SYSCALL_DEFINE2(pipe2, int *, pipefd, int, flags)
+{
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported.\n");
+		return -ENOSYS;
+	}
+
+	return do_pipe(pipefd);
+}

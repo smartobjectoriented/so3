@@ -45,12 +45,18 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_EXIT] = __sys_exit,
 	[SYSCALL_EXECVE] = __sys_execve,
 	[SYSCALL_FORK] = __sys_fork,
+#ifdef SYSCALL_WAITPID
 	[SYSCALL_WAITPID] = __sys_waitpid,
+#endif
+	[SYSCALL_WAIT4] = __sys_wait4,
 	[SYSCALL_PTRACE] = __sys_ptrace,
 #endif
 	[SYSCALL_READ] = __sys_read,
 	[SYSCALL_WRITE] = __sys_write,
+#ifdef SYSCALL_OPEN
 	[SYSCALL_OPEN] = __sys_open,
+#endif
+	[SYSCALL_OPENAT] = __sys_openat,
 	[SYSCALL_CLOSE] = __sys_close,
 	[SYSCALL_THREAD_CREATE] = __sys_thread_create,
 	[SYSCALL_THREAD_JOIN] = __sys_thread_join,
@@ -63,7 +69,10 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_READV] = __sys_readv,
 	[SYSCALL_WRITEV] = __sys_writev,
 #ifdef CONFIG_IPC_PIPE
+#ifdef SYSCALL_PIPE
 	[SYSCALL_PIPE] = __sys_pipe,
+#endif
+	[SYSCALL_PIPE2] = __sys_pipe2,
 #endif
 	[SYSCALL_DUP] = __sys_dup,
 #ifdef SYSCALL_DUP2

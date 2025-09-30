@@ -617,12 +617,13 @@ open_failed:
 }
 
 /**
- * dirfd is currently ignored.
+ * Simple openat implementation ignoring dirfd for aarch64.
  */
 SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, unsigned short, mode)
 {
 	if (dirfd != AT_FDCWD) {
 		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
 	}
 
 	return do_open(filename, flags, mode);
@@ -731,15 +732,18 @@ SYSCALL_DEFINE1(close, int, fd)
 	return 0;
 }
 
+/**
+ * Simple dup3 implementation ignoring flags for aarch64.
+ */
 SYSCALL_DEFINE3(dup3, int, oldfd, int, newfd, int, flags)
 {
 	if (oldfd == newfd) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	if (flags != 0) {
 		LOG_WARNING("Flags not supported.\n");
+		return -ENOSYS;
 	}
 
 	return do_dup2(oldfd, newfd);
