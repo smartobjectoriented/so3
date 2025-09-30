@@ -174,6 +174,7 @@ SYSCALL_DECLARE(dup, int oldfd);
 SYSCALL_DECLARE(dup2, int oldfd, int newfd);
 SYSCALL_DECLARE(dup3, int oldfd, int newfd, int flags);
 SYSCALL_DECLARE(stat, const char *path, struct stat *st);
+SYSCALL_DECLARE(fstatat, const char *path, struct stat64 *st, int flags);
 SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
 SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
