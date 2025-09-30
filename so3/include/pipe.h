@@ -54,5 +54,6 @@ struct pipe_desc {
 typedef struct pipe_desc pipe_desc_t;
 
 SYSCALL_DECLARE(pipe, int *pipefd);
+SYSCALL_DECLARE(pipe2, int *pipefd, int flags);
 
 #endif /* PIPE_H */
