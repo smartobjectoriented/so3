@@ -58,10 +58,8 @@ int __clock_gettime(clockid_t clk, struct timespec *ts)
 		}
 		r = -EINVAL;
 	}
-#if 0
+
 	return __syscall_ret(r);
-#endif
-	return r;
 }
 
 weak_alias(__clock_gettime, clock_gettime);

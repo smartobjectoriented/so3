@@ -20,7 +20,6 @@
 #include <heap.h>
 #include <memory.h>
 #include <list.h>
-#include <errno.h>
 #include <ctype.h>
 #include <vfs.h>
 #include <log.h>

@@ -18,7 +18,6 @@
 
 #include <common.h>
 #include <psci.h>
-#include <errno.h>
 #include <smp.h>
 #include <mmio.h>
 

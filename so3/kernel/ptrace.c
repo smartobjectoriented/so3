@@ -82,8 +82,7 @@ SYSCALL_DEFINE4(ptrace, enum __ptrace_request, request, uint32_t, pid, void *, a
 		 * Otherwise, the request is ignored.
 		 */
 		if (!pcb) {
-			set_errno(ESRCH);
-			return -1;
+			return -ESRCH;
 		}
 
 		if (pcb->state == PROC_STATE_WAITING)
@@ -92,15 +91,13 @@ SYSCALL_DEFINE4(ptrace, enum __ptrace_request, request, uint32_t, pid, void *, a
 
 	case PTRACE_GETREGS:
 		if (!data) {
-			set_errno(EFAULT);
-			return -1;
+			return -EFAULT;
 		}
 
 		pcb = find_proc_by_pid(pid);
 
 		if (!pcb) {
-			set_errno(ESRCH);
-			return -1;
+			return -ESRCH;
 		}
 
 		retrieve_cpu_regs((struct user *) data, pcb);

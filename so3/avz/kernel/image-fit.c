@@ -12,7 +12,6 @@
 
 #include <string.h>
 #include <console.h>
-#include <errno.h>
 
 #include <asm/byteorder.h>
 

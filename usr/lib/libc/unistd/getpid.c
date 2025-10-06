@@ -3,7 +3,7 @@
 
 pid_t getpid(void)
 {
-	return sys_getpid();
+	return __syscall_ret(sys_getpid());
 #if 0
 	return __syscall(SYS_getpid);
 #endif

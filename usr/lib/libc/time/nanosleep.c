@@ -4,5 +4,5 @@
 
 int nanosleep(const struct timespec *req, struct timespec *rem)
 {
-	return sys_nanosleep(req, rem);
+	return __syscall_ret(sys_nanosleep(req, rem));
 }

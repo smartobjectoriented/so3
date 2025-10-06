@@ -20,7 +20,6 @@
 #include <stdarg.h>
 #include <serial.h>
 #include <console.h>
-#include <errno.h>
 #include <softirq.h>
 #include <memory.h>
 #include <heap.h>

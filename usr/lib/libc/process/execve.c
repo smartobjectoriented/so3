@@ -7,5 +7,5 @@ int execve(const char *path, char *const argv[], char *const envp[])
 #if 0
 	return syscall(SYS_execve, path, argv, envp);
 #endif
-	return sys_execve(path, argv, envp);
+	return __syscall_ret(sys_execve(path, argv, envp));
 }

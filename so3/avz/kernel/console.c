@@ -18,7 +18,6 @@
 
 #include <common.h>
 #include <stdarg.h>
-#include <errno.h>
 #include <spinlock.h>
 #include <console.h>
 #include <serial.h>

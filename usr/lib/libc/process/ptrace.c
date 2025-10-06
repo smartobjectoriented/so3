@@ -20,7 +20,7 @@ long ptrace(int req, ...)
 #if 0
 	ret = syscall(SYS_ptrace, req, pid, addr, data, addr2);
 #endif
-	ret = sys_ptrace(req, pid, addr, data);
+	ret = __syscall_ret(sys_ptrace(req, pid, addr, data));
 
 	if (ret < 0 || req-1U >= 3) return ret;
 	return result;

@@ -20,7 +20,6 @@
 #include <percpu.h>
 #include <ctype.h>
 #include <console.h>
-#include <errno.h>
 #include <memory.h>
 #include <heap.h>
 

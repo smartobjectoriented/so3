@@ -12,5 +12,5 @@ int __stdio_close(FILE *f)
 #if 0
 	return syscall(SYS_close, __aio_close(f->fd));
 #endif
-	return sys_close(__aio_close(f->fd));
+	return __syscall_ret(sys_close(__aio_close(f->fd)));
 }

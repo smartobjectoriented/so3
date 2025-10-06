@@ -17,7 +17,8 @@ include_directories(
 add_library(c STATIC 
 	crt0.S crt1.c longjmp.S setjmp.S libc.c
 	pthread.c inet.c eabi_compat.c malloc.c 
-	shgetc.c intscan.c floatscan.c mutex.c sbrk.c)
+	shgetc.c intscan.c floatscan.c mutex.c sbrk.c
+	syscall_ret.c)
 
 add_subdirectory(string)
 add_subdirectory(stdio)

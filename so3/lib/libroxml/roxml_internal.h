@@ -14,7 +14,9 @@
 
 #include <errno.h>
 
-extern int errno;
+/** Mimic errno for roxml */
+extern int roxml_errno;
+#define errno roxml_errno
 
 #define ROXML_INT
 #ifdef __DEBUG

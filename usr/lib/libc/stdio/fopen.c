@@ -19,7 +19,7 @@ FILE *fopen(const char *restrict filename, const char *restrict mode)
 	/* Compute the flags to pass to open() */
 	flags = __fmodeflags(mode);
 
-	fd = sys_open(filename, flags, 0666);
+	fd = __syscall_ret(sys_open(filename, flags, 0666));
 	if (fd < 0) return 0;
 
 

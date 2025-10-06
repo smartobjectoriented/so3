@@ -3,5 +3,5 @@
 
 int dup(int fd)
 {
-	return sys_dup(fd);
+	return __syscall_ret(sys_dup(fd));
 }

@@ -3,5 +3,5 @@
 
 int setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-	return sys_setsockopt(fd, level, optname, optval, optlen);
+	return __syscall_ret(sys_setsockopt(fd, level, optname, optval, optlen));
 }

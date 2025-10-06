@@ -39,10 +39,15 @@
 #endif
 
 /**
- *
+ * Mimic errno support for lwIP library.
  */
-#include <errno.h>
-#define set_errno(err) set_errno(err)
+extern int lwip_errno;
+#define set_errno(err)                      \
+	do {                                \
+		if (err) {                  \
+			lwip_errno = (err); \
+		}                           \
+	} while (0)
 
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
 

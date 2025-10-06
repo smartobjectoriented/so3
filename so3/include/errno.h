@@ -10,7 +10,7 @@
 #define EINTR 4 /* Interrupted system call */
 #define EIO 5 /* I/O error */
 #define ENXIO 6 /* No such device or address */
-#define E2BIG 7 /* Arg list too long */
+#define E2BIG 7 /* Argument list too long */
 #define ENOEXEC 8 /* Exec format error */
 #define EBADF 9 /* Bad file number */
 #define ECHILD 10 /* No child processes */
@@ -41,7 +41,7 @@
 #define EDEADLK 35 /* Resource deadlock would occur */
 #define ENAMETOOLONG 36 /* File name too long */
 #define ENOLCK 37 /* No record locks available */
-#define ENOSYS 38 /* Function not implemented */
+#define ENOSYS 38 /* Invalid system call number */
 #define ENOTEMPTY 39 /* Directory not empty */
 #define ELOOP 40 /* Too many symbolic links encountered */
 #define EWOULDBLOCK EAGAIN /* Operation would block */
@@ -121,7 +121,7 @@
 #define EHOSTUNREACH 113 /* No route to host */
 #define EALREADY 114 /* Operation already in progress */
 #define EINPROGRESS 115 /* Operation now in progress */
-#define ESTALE 116 /* Stale NFS file handle */
+#define ESTALE 116 /* Stale file handle */
 #define EUCLEAN 117 /* Structure needs cleaning */
 #define ENOTNAM 118 /* Not a XENIX named type file */
 #define ENAVAIL 119 /* No XENIX semaphores available */
@@ -130,7 +130,14 @@
 #define EDQUOT 122 /* Quota exceeded */
 #define ENOMEDIUM 123 /* No medium found */
 #define EMEDIUMTYPE 124 /* Wrong medium type */
-
-void set_errno(uint32_t val);
+#define ECANCELED 125 /* Operation Canceled */
+#define ENOKEY 126 /* Required key not available */
+#define EKEYEXPIRED 127 /* Key has expired */
+#define EKEYREVOKED 128 /* Key has been revoked */
+#define EKEYREJECTED 129 /* Key was rejected by service */
+#define EOWNERDEAD 130 /* Owner died */
+#define ENOTRECOVERABLE 131 /* State not recoverable */
+#define ERFKILL 132 /* Operation not possible due to RF-kill */
+#define EHWPOISON 133 /* Memory page has hardware error */
 
 #endif /* ERRNO_H */

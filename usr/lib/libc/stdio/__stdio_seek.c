@@ -9,7 +9,7 @@ off_t __stdio_seek(FILE *f, off_t off, int whence)
 	if (syscall(SYS__llseek, f->fd, off>>32, off, &ret, whence)<0)
 		ret = -1;
 #else
-	ret = sys_lseek(f->fd, off, whence);
+	ret = __syscall_ret(sys_lseek(f->fd, off, whence));
 #if 0
 	ret = syscall(SYS_lseek, f->fd, off, whence);
 #endif

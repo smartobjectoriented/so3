@@ -41,9 +41,6 @@
 #include <device/timer.h>
 #include <device/irq.h>
 
-#warning set_errno
-#define set_errno(x)
-
 struct timers {
 	spinlock_t lock;
 	struct timer **heap;
@@ -416,8 +413,7 @@ SYSCALL_DEFINE1(gettimeofday, struct timespec *, ts)
 	u64 time;
 
 	if (!ts) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	time = NOW();
@@ -440,8 +436,7 @@ SYSCALL_DEFINE2(clock_gettime, int, clk_id, struct timespec *, ts)
 	u64 time;
 
 	if (!ts) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 
 	time = NOW();

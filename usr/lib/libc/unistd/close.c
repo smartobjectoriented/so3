@@ -14,7 +14,7 @@ int close(int fd)
 {
 	fd = __aio_close(fd);
 
-	return sys_close(fd);
+	return __syscall_ret(sys_close(fd));
 
 #if 0 /* so3 */
 	int r = __syscall_cp(SYS_close, fd);

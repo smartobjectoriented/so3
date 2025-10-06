@@ -20,7 +20,6 @@
 #include <timer.h>
 #include <softirq.h>
 #include <spinlock.h>
-#include <errno.h>
 
 #include <device/irq.h>
 

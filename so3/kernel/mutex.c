@@ -152,8 +152,7 @@ void mutex_unlock(struct mutex *lock)
 SYSCALL_DEFINE1(mutex_lock, unsigned long, number)
 {
 	if (number >= N_MUTEX) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 	mutex_lock(&current()->pcb->lock[number]);
 	return 0;
@@ -162,8 +161,7 @@ SYSCALL_DEFINE1(mutex_lock, unsigned long, number)
 SYSCALL_DEFINE1(mutex_unlock, unsigned long, number)
 {
 	if (number >= N_MUTEX) {
-		set_errno(EINVAL);
-		return -1;
+		return -EINVAL;
 	}
 	mutex_unlock(&current()->pcb->lock[number]);
 	return 0;

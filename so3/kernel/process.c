@@ -386,7 +386,7 @@ static void release_proc_pages(pcb_t *pcb)
  * Set up the arguments and environment variables for the current process
  * (current()->pcb)
  */
-void *preserve_args_and_env(int argc, char **argv, char **envp)
+addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 {
 	char *args_p, *args_str_p;
 	void *args;
@@ -394,8 +394,7 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
 	int i;
 
 	if ((argc > 0) && (argv == NULL)) {
-		set_errno(EINVAL);
-		return NULL;
+		return -EINVAL;
 	}
 
 	/* Page storing the args & env strings - <args> keeps a reference to it.
@@ -470,10 +469,9 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
                  * allocated before */
 		if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 			LOG_CRITICAL("Not enougth memory allocated\n");
-			set_errno(ENOMEM);
 
 			free(args);
-			return NULL;
+			return -ENOMEM;
 		}
 	}
 
@@ -495,16 +493,15 @@ void *preserve_args_and_env(int argc, char **argv, char **envp)
                          * allocated before. */
 			if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
 				LOG_ERROR("Not enough memory allocated\n");
-				set_errno(ENOMEM);
 
 				free(args);
-				return NULL;
+				return -ENOMEM;
 			}
 			i++;
 		}
 	}
 
-	return args;
+	return (addr_t) args;
 }
 
 void post_setup_image(void *args_env)
@@ -543,6 +540,7 @@ void post_setup_image(void *args_env)
 int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc, char **argv, char **envp)
 {
 	uint32_t page_count;
+	addr_t ret;
 	void *__args_env;
 
 	/* FIXME: detect fragmented executable (error)? */
@@ -554,9 +552,11 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
          * more at the original location.
          */
 
-	__args_env = preserve_args_and_env(argc, argv, envp);
-	if (__args_env < 0)
-		return -1;
+	ret = preserve_args_and_env(argc, argv, envp);
+	if (ret < 0)
+		return ret;
+
+	__args_env = (void *) ret;
 
 	/* Reset the process stack and page count */
 	reset_process_stack(pcb);
@@ -723,9 +723,7 @@ SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 	elf_img_info.file_buffer = elf_load_buffer(filename);
 	if (elf_img_info.file_buffer == NULL) {
 		local_irq_restore(flags);
-		set_errno(ENOENT);
-
-		return -1;
+		return -ENOENT;
 	}
 
 	elf_load_sections(&elf_img_info);
@@ -988,10 +986,8 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
 	if (pid == -1) {
 		child = find_proc_zombie_to_clean();
 		if (!child) {
-			set_errno(ECHILD);
 			local_irq_restore(flags);
-
-			return -1;
+			return -ECHILD;
 		}
 		pid = child->pid;
 	} else {
@@ -1000,8 +996,7 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
 		if (!child) {
 			if (wstatus != NULL)
 				*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
-			set_errno(ECHILD);
-			return -1;
+			return -ECHILD;
 		}
 	}
 	/* In the case the of NOHANG if the child did not change state,
@@ -1083,7 +1078,7 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
  *		page are already allocated. this function will only
  *		increase the heap_pointer and make sure it does not
  *		overflow the heap. If there is no memory left it will
- *		set the errno to ENONMEM and return -1;
+ *		return ENONMEM;
  * @param increment the amount of data to increase < decrease. If the value is 0
  *		function will return the current position of the program break
  *(end of heap);
@@ -1100,8 +1095,7 @@ SYSCALL_DEFINE1(sbrk, int, increment)
 
 	if (!pcb) {
 		/* case there is no pcb context */
-		set_errno(ESRCH);
-		return -1;
+		return -ESRCH;
 	}
 
 	ret_pointer = pcb->heap_pointer;
@@ -1112,8 +1106,7 @@ SYSCALL_DEFINE1(sbrk, int, increment)
 	req_sz = cur_sz + increment;
 
 	if ((req_sz >= HEAP_SIZE) || (req_sz < 0)) {
-		set_errno(ENOMEM);
-		return -1;
+		return -ENOMEM;
 	}
 
 #if 0
@@ -1198,9 +1191,8 @@ int proc_register_fd(int gfd)
 	fd = proc_new_fd(pcb);
 
 	if (fd < 0) {
-		set_errno(ENFILE);
 		LOG_ERROR("Number of local fd reached\n");
-		return fd;
+		return -ENFILE;
 	}
 
 	pcb->fd_array[fd] = gfd;

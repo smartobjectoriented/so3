@@ -19,7 +19,6 @@
 #include <device/driver.h>
 
 #include <asm/io.h>
-#include <errno.h>
 #include <mmc.h>
 #include <bitops.h>
 #include <heap.h>

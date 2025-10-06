@@ -235,6 +235,4 @@
  */
 #define LWIP_DHCP 1
 
-#define LWIP_PROVIDE_ERRNO 0
-
 #endif /* __LWIPOPTS_H__ */

@@ -66,11 +66,9 @@ __enable_vfp:
 @ Get the additional arguments linked to the syscall.
 @ The ABI convention is described in crt0.S of the libc.
 @ r7 contains the syscall number
-@ r10 contains the address of the errno variable
 __get_syscall_args_ext:
 
 	str		r7, [r0]
-	str		r10, [r1]
 
 	mov 	pc, lr
 
@@ -275,8 +273,6 @@ ENTRY(__root_proc)
 	adr r1, .LC_welcome
 	mov r2, #welcome_len
 	mov r7, #SYSCALL_WRITE
-	@ No errno
-	mov r10, #0
 	@ Invoke the syscall - kernel side
 	svc	0
 
@@ -285,8 +281,6 @@ ENTRY(__root_proc)
 	@ No args
 	mov r1, #0
 	mov r2, #0
-	@ No errno
-	mov r10, #0
 
 	mov	r7, #SYSCALL_EXECVE
 
