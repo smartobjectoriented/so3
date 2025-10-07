@@ -29,6 +29,9 @@
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
 
+#undef LOG_DEBUG
+#define LOG_DEBUG(fmt, ...)
+
 void *__current_pgtable = NULL;
 
 void *current_pgtable(void)
