@@ -605,6 +605,7 @@ void reset_root_pgtable(void *pgtable, bool remove)
  */
 void mmu_configure(addr_t fdt_addr)
 {
+	/* clang-format off */
 	int i;
 
 	icache_disable();
@@ -659,17 +660,18 @@ void mmu_configure(addr_t fdt_addr)
 				      DCACHE_WRITEALLOC);
 		}
 #elif CONFIG_VA_BITS_39
-		__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l2pgtable & TTB_L1_TABLE_ADDR_MASK;
-		set_pte_table(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
+	__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)] = (u64) __sys_linearmap_l2pgtable & TTB_L1_TABLE_ADDR_MASK;
+	set_pte_table(&__sys_root_pgtable[l1pte_index(CONFIG_KERNEL_VADDR)], DCACHE_WRITEALLOC);
 
-		/* Set up a 128 MB linear mapping to progress with the bootstrap code
+	/* Set up a 128 MB linear mapping to progress with the bootstrap code
 		 * until the memory manager re-configure the memory mapping with
 		 * a better granularity.
 		 */
-		for (i = 0; i < 64; i++) {
-			__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i * SZ_2M)] = (mem_info.phys_base + i * SZ_2M) & TTB_L2_BLOCK_ADDR_MASK;
-			set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i * SZ_2M)], DCACHE_WRITEALLOC);
-		}
+	for (i = 0; i < 64; i++) {
+		__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i * SZ_2M)] = (mem_info.phys_base + i * SZ_2M) &
+											  TTB_L2_BLOCK_ADDR_MASK;
+		set_pte_block(&__sys_linearmap_l2pgtable[l2pte_index(CONFIG_KERNEL_VADDR + i * SZ_2M)], DCACHE_WRITEALLOC);
+	}
 #else
 #error "Wrong VA_BITS configuration."
 #endif
@@ -679,8 +681,8 @@ void mmu_configure(addr_t fdt_addr)
 		__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
 		set_pte_block(&__sys_idmap_l1pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
 #elif CONFIG_VA_BITS_39
-		sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
-		set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
+	sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)] = CONFIG_UART_LL_PADDR & TTB_L1_BLOCK_ADDR_MASK;
+	set_pte_block(&__sys_root_pgtable[l1pte_index(CONFIG_UART_LL_PADDR)], DCACHE_OFF);
 #else
 #error "Wrong VA_BITS configuration."
 #endif
@@ -692,6 +694,8 @@ void mmu_configure(addr_t fdt_addr)
 
 	icache_enable();
 	dcache_enable();
+
+	/* clang-format on */
 }
 
 /*

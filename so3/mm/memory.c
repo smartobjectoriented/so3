@@ -71,7 +71,6 @@ void early_memory_init(void *fdt_paddr)
 #ifndef CONFIG_AVZ
 	__fdt_addr = (void *) __va(fdt_paddr);
 #endif
-
 }
 
 uint32_t get_kernel_size(void)
