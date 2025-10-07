@@ -836,20 +836,23 @@ SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
 SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
 {
 	int i;
-	int ret = -1;
+	int ret;
 	int total = 0;
 
 	for (i = 0; i < vlen; i++) {
 		ret = do_write(fd, (const void *)vec[i].iov_base, vec[i].iov_len);
-		if (ret < 0)
+		if (ret < 0) {
+			/* Error on the fist loop --> return error code */
+			if (i == 0)
+				total = -1;
 			break;
+		}
 
 		total += ret;
 	}
 
 	return total;
 }
-
 
 static void vfs_gfd_init(void)
 {
