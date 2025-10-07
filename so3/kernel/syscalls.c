@@ -60,6 +60,7 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_IOCTL] = __sys_ioctl,
 	[SYSCALL_FCNTL] = __sys_fcntl,
 	[SYSCALL_LSEEK] = __sys_lseek,
+	[SYSCALL_WRITEV] = __sys_writev,
 #ifdef CONFIG_IPC_PIPE
 	[SYSCALL_PIPE] = __sys_pipe,
 #endif

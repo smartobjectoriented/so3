@@ -380,6 +380,47 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 
 /**************************** Syscall implementation ****************************/
 
+/* Low Level write */
+static int do_write(int fd, const void *buffer, int count)
+{
+	int gfd;
+	int ret;
+
+	/* FIXME Max size of buffer */
+	if (!buffer || count < 0) {
+		LOG_ERROR("Invalid inputs\n");
+		return -EINVAL;
+	}
+
+	mutex_lock(&vfs_lock);
+
+	gfd = vfs_get_gfd(fd);
+
+	if (!vfs_is_valid_gfd(gfd)) {
+		mutex_unlock(&vfs_lock);
+		return -EINVAL;
+	}
+
+	/* FIXME: As for now the do_read/do_open only
+	 * support regular file VFS_TYPE_FILE, VFS_TYPE_IO and pipes
+	 */
+	if (open_fds[gfd]->type == VFS_TYPE_DIR) {
+		mutex_unlock(&vfs_lock);
+		return -EISDIR;
+	}
+
+	if (!open_fds[gfd]->fops->write) {
+		mutex_unlock(&vfs_lock);
+		return -EBADF;
+	}
+
+	mutex_unlock(&vfs_lock);
+
+	ret = open_fds[gfd]->fops->write(gfd, buffer, count);
+
+	return ret;
+}
+
 SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 {
 	int gfd;
@@ -426,42 +467,7 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
  */
 SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 {
-	int gfd;
-	int ret;
-
-	/* FIXME Max size of buffer */
-	if (!buffer || count < 0) {
-		LOG_ERROR("Invalid inputs\n");
-		return -EINVAL;
-	}
-
-	mutex_lock(&vfs_lock);
-
-	gfd = vfs_get_gfd(fd);
-
-	if (!vfs_is_valid_gfd(gfd)) {
-		mutex_unlock(&vfs_lock);
-		return -EINVAL;
-	}
-
-	/* FIXME: As for now the do_read/do_open only
-	 * support regular file VFS_TYPE_FILE, VFS_TYPE_IO and pipes
-	 */
-	if (open_fds[gfd]->type == VFS_TYPE_DIR) {
-		mutex_unlock(&vfs_lock);
-		return -EISDIR;
-	}
-
-	if (!open_fds[gfd]->fops->write) {
-		mutex_unlock(&vfs_lock);
-		return -EBADF;
-	}
-
-	mutex_unlock(&vfs_lock);
-
-	ret = open_fds[gfd]->fops->write(gfd, buffer, count);
-
-	return ret;
+	return do_write(fd, buffer, count);
 }
 
 /**
@@ -655,7 +661,7 @@ SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 	}
 
 	if (vfs_get_gfd(oldfd) != vfs_get_gfd(newfd))
-		do_close(newfd);
+		__do_close(newfd);
 
 	vfs_link_fd(newfd, vfs_get_gfd(oldfd));
 
@@ -823,6 +829,27 @@ SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
 
 	return 0;
 }
+
+/*
+ * Implementation of the writev syscall
+ */
+SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
+{
+	int i;
+	int ret = -1;
+	int total = 0;
+
+	for (i = 0; i < vlen; i++) {
+		ret = do_write(fd, (const void *)vec[i].iov_base, vec[i].iov_len);
+		if (ret < 0)
+			break;
+
+		total += ret;
+	}
+
+	return total;
+}
+
 
 static void vfs_gfd_init(void)
 {

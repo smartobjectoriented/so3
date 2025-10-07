@@ -90,14 +90,14 @@
  */
 #define SYSCALL_DECLARE(name, ...)               \
 	long __sys_##name(syscall_args_t *args); \
-	inline long do_##name(__VA_ARGS__);
+	inline long __do_##name(__VA_ARGS__);
 
 #define SYSCALL_DEFINE0(name)                     \
 	long __sys_##name(syscall_args_t *unused) \
 	{                                         \
-		return do_##name();               \
+		return __do_##name();               \
 	}                                         \
-	inline long do_##name(void)
+	inline long __do_##name(void)
 #define SYSCALL_DEFINE1(...) __SYSCALL_DEFINEx(1, __VA_ARGS__)
 #define SYSCALL_DEFINE2(...) __SYSCALL_DEFINEx(2, __VA_ARGS__)
 #define SYSCALL_DEFINE3(...) __SYSCALL_DEFINEx(3, __VA_ARGS__)
@@ -108,9 +108,9 @@
 #define __SYSCALL_DEFINEx(x, name, ...)                                   \
 	long __sys_##name(syscall_args_t *args)                           \
 	{                                                                 \
-		return do_##name(__MAP_ARGS(x, args->args, __VA_ARGS__)); \
+		return __do_##name(__MAP_ARGS(x, args->args, __VA_ARGS__)); \
 	}                                                                 \
-	inline long do_##name(__MAP(x, __M_DECL, __VA_ARGS__))
+	inline long __do_##name(__MAP(x, __M_DECL, __VA_ARGS__))
 
 typedef struct {
 	unsigned long args[6];

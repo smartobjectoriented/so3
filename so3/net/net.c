@@ -413,7 +413,7 @@ SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 	lwip_fd = lwip_socket(domain, type, protocol);
 
 	if (lwip_fd < 0) {
-		do_close(fd);
+		__do_close(fd);
 		return lwip_return(lwip_fd);
 	}
 
@@ -505,7 +505,7 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 	lwip_bind_fd = lwip_accept(lwip_fd, addr_ptr, addrlen);
 
 	if (lwip_bind_fd < 0) {
-		do_close(fd);
+		__do_close(fd);
 		return lwip_return(lwip_bind_fd);
 	}
 

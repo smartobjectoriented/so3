@@ -123,12 +123,12 @@ typedef u32_t socklen_t;
 #error "IOV_MAX larger than supported by LwIP"
 #endif /* IOV_MAX */
 
-#if !defined(iovec)
-struct iovec {
-	void *iov_base;
-	size_t iov_len;
-};
-#endif
+// #if !defined(iovec)
+// struct iovec {
+// 	void *iov_base;
+// 	size_t iov_len;
+// };
+// #endif
 
 typedef int msg_iovlen_t;
 
