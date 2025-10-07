@@ -103,6 +103,11 @@
 
 #include <device/device.h>
 
+struct iovec {
+	void *iov_base;
+	size_t iov_len;
+};
+
 struct file_operations {
 	int (*open)(int fd, const char *path);
 	int (*close)(int fd);
@@ -162,6 +167,7 @@ SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int fd, off_t offse
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
+SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 
 /* VFS common interface */
 

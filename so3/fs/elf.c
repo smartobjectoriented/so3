@@ -35,12 +35,12 @@ uint8_t *elf_load_buffer(const char *filename)
 	struct stat st;
 
 	/* open and read file */
-	fd = do_open(filename, O_RDONLY);
+	fd = __do_open(filename, O_RDONLY);
 
 	if (fd < 0)
 		return NULL;
 
-	if (do_stat(filename, &st))
+	if (__do_stat(filename, &st))
 		return NULL;
 
 	if (!st.st_size)
@@ -52,9 +52,9 @@ uint8_t *elf_load_buffer(const char *filename)
 		return NULL;
 	}
 
-	do_read(fd, buffer, st.st_size);
+	__do_read(fd, buffer, st.st_size);
 
-	do_close(fd);
+	__do_close(fd);
 
 	return buffer;
 }
