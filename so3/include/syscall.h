@@ -84,20 +84,20 @@
  * __sys_SYSCALL_NAME taking syscall_args_t as arguments allowing for
  * a common interface between all syscall to put them in an array.
  *
- * do_SYSCALL_NAME actual function with the syscall implementation with
+ * sys_do_SYSCALL_NAME actual function with the syscall implementation with
  * arguments define like a normal function. That function is automatically
  * called by __sys_SYCALL_NAME with the correct argument number and cast.
  */
 #define SYSCALL_DECLARE(name, ...)               \
 	long __sys_##name(syscall_args_t *args); \
-	inline long __do_##name(__VA_ARGS__);
+	inline long sys_do_##name(__VA_ARGS__);
 
 #define SYSCALL_DEFINE0(name)                     \
 	long __sys_##name(syscall_args_t *unused) \
 	{                                         \
-		return __do_##name();               \
+		return sys_do_##name();               \
 	}                                         \
-	inline long __do_##name(void)
+	inline long sys_do_##name(void)
 #define SYSCALL_DEFINE1(...) __SYSCALL_DEFINEx(1, __VA_ARGS__)
 #define SYSCALL_DEFINE2(...) __SYSCALL_DEFINEx(2, __VA_ARGS__)
 #define SYSCALL_DEFINE3(...) __SYSCALL_DEFINEx(3, __VA_ARGS__)
@@ -108,9 +108,9 @@
 #define __SYSCALL_DEFINEx(x, name, ...)                                   \
 	long __sys_##name(syscall_args_t *args)                           \
 	{                                                                 \
-		return __do_##name(__MAP_ARGS(x, args->args, __VA_ARGS__)); \
+		return sys_do_##name(__MAP_ARGS(x, args->args, __VA_ARGS__)); \
 	}                                                                 \
-	inline long __do_##name(__MAP(x, __M_DECL, __VA_ARGS__))
+	inline long sys_do_##name(__MAP(x, __M_DECL, __VA_ARGS__))
 
 typedef struct {
 	unsigned long args[6];

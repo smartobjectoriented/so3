@@ -119,7 +119,7 @@ static irq_return_t pl011_int(int irq, void *dummy)
 
 #ifdef CONFIG_IPC_SIGNAL
 					if (current()->pcb != NULL)
-						__do_kill(current()->pcb->pid, SIGINT);
+						sys_do_kill(current()->pcb->pid, SIGINT);
 #endif
 				}
 

@@ -467,43 +467,7 @@ static int do_write(int fd, const void *buffer, int count)
 
 SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 {
-	int gfd;
-	int ret;
-
-	/* FIXME Max size of buffer */
-	if (!buffer || count < 0) {
-		LOG_ERROR("Invalid inputs\n");
-		return -EINVAL;
-	}
-
-	mutex_lock(&vfs_lock);
-
-	gfd = vfs_get_gfd(fd);
-
-	/* FIXME: As for now the do_read/do_open only
-	 * support regular file VFS_TYPE_FILE, VFS_TYPE_IO and pipes
-	 */
-	if (open_fds[gfd]->type == VFS_TYPE_DIR) {
-		mutex_unlock(&vfs_lock);
-		return -EISDIR;
-	}
-
-	if (!vfs_is_valid_gfd(gfd)) {
-		mutex_unlock(&vfs_lock);
-		return -EINVAL;
-	}
-
-	if (!open_fds[gfd]->fops->read) {
-		LOG_ERROR("No fops read\n");
-		mutex_unlock(&vfs_lock);
-		return -EBADF;
-	}
-
-	mutex_unlock(&vfs_lock);
-
-	ret = open_fds[gfd]->fops->read(gfd, buffer, count);
-
-	return ret;
+	return do_read(fd, buffer, count);
 }
 
 /**
@@ -705,7 +669,7 @@ SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 	}
 
 	if (vfs_get_gfd(oldfd) != vfs_get_gfd(newfd))
-		__do_close(newfd);
+		sys_do_close(newfd);
 
 	vfs_link_fd(newfd, vfs_get_gfd(oldfd));
 
@@ -885,17 +849,21 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned l
 
 	for (i = 0; i < vlen; i++) {
 		ret = do_write(fd, (const void *)vec[i].iov_base, vec[i].iov_len);
+		ret = do_read(fd, vec[i].iov_base, vec[i].iov_len);
 		if (ret < 0) {
-			/* Error on the fist loop --> return error code */
-			if (i == 0)
-				total = -1;
+			break;
+		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
+			total += ret;
 			break;
 		}
 
 		total += ret;
 	}
 
-	return total;
+	if (total == 0)
+		return ret;
+	else
+		return total;
 }
 
 SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec,
@@ -908,16 +876,19 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec,
 	for (i = 0; i < vlen; i++) {
 		ret = do_read(fd, vec[i].iov_base, vec[i].iov_len);
 		if (ret < 0) {
-			/* Error on the fist loop --> return error code */
-			if (i == 0)
-				total = -1;
+			break;
+		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
+			total += ret;
 			break;
 		}
 
 		total += ret;
 	}
 
-	return total;
+	if (total == 0)
+		return ret;
+	else
+		return total;
 }
 
 static void vfs_gfd_init(void)
