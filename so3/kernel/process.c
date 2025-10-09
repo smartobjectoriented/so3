@@ -185,6 +185,8 @@ pcb_t *new_process(void)
 
 	pcb->state = PROC_STATE_NEW;
 
+	pcb->next_anon_start = USER_ANONYMOUS_VADDR;
+
 	/* Reset the ptrace request indicator */
 	pcb->ptrace_pending_req = PTRACE_NO_REQUEST;
 

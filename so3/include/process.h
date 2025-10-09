@@ -76,6 +76,9 @@ struct pcb {
 	/* current position of the heap pointer */
 	addr_t heap_pointer;
 
+	/* next anonymous start pointer */
+	addr_t next_anon_start;
+
 	/* Number of pages required by this process (including binary image) */
 	size_t page_count;
 

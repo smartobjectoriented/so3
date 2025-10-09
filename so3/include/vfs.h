@@ -91,6 +91,9 @@
 #define DT_LNK 10 /* Symbolic link */
 #define DT_SOCK 12 /* Socket device */
 
+/* mmap flags options  */
+#define MAP_ANONYMOUS	0x10		/* don't use a file */
+
 /* Return error values */
 #define MAP_FAILED ((void *) -1) /* mmap fail */
 
@@ -165,7 +168,7 @@ SYSCALL_DECLARE(close, int fd);
 SYSCALL_DECLARE(dup, int oldfd);
 SYSCALL_DECLARE(dup2, int oldfd, int newfd);
 SYSCALL_DECLARE(stat, const char *path, struct stat *st);
-SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int fd, off_t offset);
+SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
