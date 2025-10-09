@@ -380,7 +380,8 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 
 /**************************** Syscall implementation ****************************/
 
-SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
+/* Low Level read */
+static int do_read(int fd, void *buffer, int count)
 {
 	int gfd;
 	int ret;
@@ -421,10 +422,8 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 	return ret;
 }
 
-/**
- * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
- */
-SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
+/* Low Level write */
+static int do_write(int fd, const void *buffer, int count)
 {
 	int gfd;
 	int ret;
@@ -462,6 +461,19 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 	ret = open_fds[gfd]->fops->write(gfd, buffer, count);
 
 	return ret;
+}
+
+SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
+{
+	return do_read(fd, buffer, count);
+}
+
+/**
+ * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
+ */
+SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
+{
+	return do_write(fd, buffer, count);
 }
 
 /**
@@ -655,7 +667,7 @@ SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 	}
 
 	if (vfs_get_gfd(oldfd) != vfs_get_gfd(newfd))
-		do_close(newfd);
+		sys_do_close(newfd);
 
 	vfs_link_fd(newfd, vfs_get_gfd(oldfd));
 
@@ -822,6 +834,57 @@ SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
 	/* Not yet implemented */
 
 	return 0;
+}
+
+/*
+ * Implementation of the writev syscall
+ */
+SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
+{
+	int i;
+	int ret = 0;
+	int total = 0;
+
+	for (i = 0; i < vlen; i++) {
+		ret = do_write(fd, (const void *) vec[i].iov_base, vec[i].iov_len);
+		if (ret < 0) {
+			break;
+		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
+			total += ret;
+			break;
+		}
+
+		total += ret;
+	}
+
+	if (total == 0)
+		return ret;
+	else
+		return total;
+}
+
+SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
+{
+	int i;
+	int ret = 0;
+	int total = 0;
+
+	for (i = 0; i < vlen; i++) {
+		ret = do_read(fd, vec[i].iov_base, vec[i].iov_len);
+		if (ret < 0) {
+			break;
+		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
+			total += ret;
+			break;
+		}
+
+		total += ret;
+	}
+
+	if (total == 0)
+		return ret;
+	else
+		return total;
 }
 
 static void vfs_gfd_init(void)

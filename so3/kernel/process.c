@@ -925,7 +925,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
          * locking in the low layers. */
 
 	for (i = 0; i < FD_MAX; i++)
-		do_close(i);
+		sys_do_close(i);
 
 	local_irq_disable();
 
@@ -944,7 +944,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
 #ifdef CONFIG_IPC_SIGNAL
 
 	/* Send the SIGCHLD signal to the parent */
-	do_kill(pcb->parent->pid, SIGCHLD);
+	sys_do_kill(pcb->parent->pid, SIGCHLD);
 
 #endif /* CONFIG_IPC_SIGNAL */
 
