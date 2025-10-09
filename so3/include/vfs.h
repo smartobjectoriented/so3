@@ -110,7 +110,6 @@ struct iovec {
 
 #define iovec iovec
 
-
 struct file_operations {
 	int (*open)(int fd, const char *path);
 	int (*close)(int fd);
