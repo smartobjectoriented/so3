@@ -54,6 +54,13 @@ static uint32_t kernel_size;
 /* Current available I/O range address */
 struct list_head io_maplist;
 
+/**
+ * @brief This function is called early during the bootstrap by head.S
+ * 	  There is no MMU activated and all adresses are physical.
+ * 	  DO NOT PRINT ANYTHING IN THIS FUNCTION.
+ * 
+ * @param fdt_paddr 
+ */
 void early_memory_init(void *fdt_paddr)
 {
 	int offset;
@@ -64,9 +71,6 @@ void early_memory_init(void *fdt_paddr)
 #ifndef CONFIG_AVZ
 	__fdt_addr = (void *) __va(fdt_paddr);
 #endif
-
-	if (offset >= 0)
-		LOG_DEBUG("Found %d MB of RAM at 0x%08X", mem_info.size / SZ_1M, mem_info.phys_base);
 }
 
 uint32_t get_kernel_size(void)

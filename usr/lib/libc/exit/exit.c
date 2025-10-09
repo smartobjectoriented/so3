@@ -27,8 +27,16 @@ weak_alias(libc_exit_fini, __libc_exit_fini);
 
 _Noreturn void exit(int code)
 {
+	#warning exit() issue
+	/* 
+	 * Currently, the following code leads to data abort fault randomly. The effect
+	 * is visible on RPi4 (64-bit) more rarely on virt64
+	 */
+#if 0
 	__funcs_on_exit();
-	__libc_exit_fini();
+	__libc_exit_fini();	
 	__stdio_exit();
+#endif /* 0 */
+
 	_Exit(code);
 }

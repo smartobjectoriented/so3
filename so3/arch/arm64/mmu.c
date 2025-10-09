@@ -22,13 +22,15 @@
 #include <sizes.h>
 #include <string.h>
 #include <process.h>
-#include <log.h>
 
 #include <device/ramdev.h>
 #include <device/fdt.h>
 
 #include <asm/mmu.h>
 #include <asm/cacheflush.h>
+
+#undef LOG_DEBUG
+#define LOG_DEBUG(fmt, ...)
 
 void *__current_pgtable = NULL;
 
@@ -603,6 +605,7 @@ void reset_root_pgtable(void *pgtable, bool remove)
  */
 void mmu_configure(addr_t fdt_addr)
 {
+	/* clang-format off */
 	int i;
 
 	icache_disable();
@@ -691,6 +694,8 @@ void mmu_configure(addr_t fdt_addr)
 
 	icache_enable();
 	dcache_enable();
+
+	/* clang-format on */
 }
 
 /*
