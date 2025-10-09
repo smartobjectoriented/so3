@@ -422,8 +422,6 @@ static int do_read(int fd, void *buffer, int count)
 	return ret;
 }
 
-
-
 /* Low Level write */
 static int do_write(int fd, const void *buffer, int count)
 {
@@ -844,12 +842,11 @@ SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
 SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
 {
 	int i;
-	int ret;
+	int ret = 0;
 	int total = 0;
 
 	for (i = 0; i < vlen; i++) {
-		ret = do_write(fd, (const void *)vec[i].iov_base, vec[i].iov_len);
-		ret = do_read(fd, vec[i].iov_base, vec[i].iov_len);
+		ret = do_write(fd, (const void *) vec[i].iov_base, vec[i].iov_len);
 		if (ret < 0) {
 			break;
 		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
@@ -866,11 +863,10 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned l
 		return total;
 }
 
-SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec,
-		unsigned long, vlen)
+SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)
 {
 	int i;
-	int ret;
+	int ret = 0;
 	int total = 0;
 
 	for (i = 0; i < vlen; i++) {
