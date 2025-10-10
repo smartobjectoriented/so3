@@ -153,6 +153,6 @@ void dump_proc(void);
 extern int __exec(const char *file);
 extern int __write(int fd, char *buffer, int count);
 
-SYSCALL_DECLARE(brk, int increment);
+SYSCALL_DECLARE(brk, long increment);
 
 #endif /* PROCESS_H */

@@ -1090,7 +1090,7 @@ SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *,
  * @return  This function will the position of the end of the heap / program
  *break before increment
  */
-SYSCALL_DEFINE1(brk, int, increment)
+SYSCALL_DEFINE1(brk, long, increment)
 {
 	pcb_t *pcb = current()->pcb;
 	int ret_pointer;

@@ -39,14 +39,13 @@
 #define SYSCALL_READV 65
 #define SYSCALL_WRITEV 66
 
-#define SYSCALL_FSTATAT 79
+#define SYSCALL_NEWFSTATAT 79
 
 #define SYSCALL_EXIT 93
 
 #define SYSCALL_NANOSLEEP 101
 
 #define SYSCALL_CLOCK_GETTIME 113
-#define SYSCALL_WAIT4 114
 
 #define SYSCALL_PTRACE 117
 
@@ -76,7 +75,9 @@
 #define SYSCALL_EXECVE 221
 #define SYSCALL_MMAP 222
 
-/* Following syscalls stills need to be align */
+#define SYSCALL_WAIT4 260
+
+/* Following syscalls still need to be aligned */
 #define SYSCALL_FORK 7 // => clone
 
 #define SYSCALL_THREAD_CREATE 16

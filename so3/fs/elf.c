@@ -40,7 +40,7 @@ uint8_t *elf_load_buffer(const char *filename)
 	if (fd < 0)
 		return NULL;
 
-	if (sys_do_stat(filename, &st))
+	if (sys_do_newfstatat(AT_FDCWD, filename, &st, 0))
 		return NULL;
 
 	if (!st.st_size)

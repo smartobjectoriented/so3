@@ -111,8 +111,13 @@ void __mem(int a, char *adr, int log) {
 }
 #endif /* 0 */
 
-SYSCALL_DEFINE3(sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_action)
+SYSCALL_DEFINE4(rt_sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_action, size_t, sigsize)
 {
+	if (sigsize != sizeof(sigset_t)) {
+		LOG_WARNING("Invalid sigset size\n");
+		return -EINVAL;
+	}
+
 	if (signum < 0 || signum >= _NSIG) {
 		LOG_ERROR("signum not valid!\n");
 		return -EINVAL;
@@ -130,16 +135,6 @@ SYSCALL_DEFINE3(sigaction, int, signum, const sigaction_t *, action, sigaction_t
 	}
 
 	return 0;
-}
-
-SYSCALL_DEFINE4(rt_sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_actionm, size_t, sigsize)
-{
-	if (sigsize != sizeof(sigset_t)) {
-		LOG_WARNING("Invalid sigset size\n");
-		return -EINVAL;
-	}
-
-	return sys_do_sigaction(signum, action, old_actionm);
 }
 
 SYSCALL_DEFINE2(kill, int, pid, int, sig)

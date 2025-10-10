@@ -116,8 +116,8 @@ typedef __u32 __bitwise __wsum;
 
 typedef unsigned __bitwise__ gfp_t;
 
-typedef u32 time32_t;
-typedef u64 time_t;
+typedef long time32_t;
+typedef s64 time_t;
 
 #define ROUND(a, b) (((a) + (b) - 1) & ~((b) - 1))
 

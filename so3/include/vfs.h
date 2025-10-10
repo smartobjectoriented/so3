@@ -108,8 +108,6 @@
 #include <dirent.h>
 #include <syscall.h>
 
-#include <device/device.h>
-
 struct iovec {
 	void *iov_base;
 	size_t iov_len;
@@ -164,17 +162,18 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
-SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, unsigned short mode)
-SYSCALL_DECLARE(open, const char *filename, int flags, unsigned short mode);
-SYSCALL_DECLARE(read, int fd, void *buffer, int count);
-SYSCALL_DECLARE(write, int fd, const void *buffer, int count);
-SYSCALL_DECLARE(getdents64, int fd, char *buf, size_t count);
+SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, umode_t mode)
+SYSCALL_DECLARE(open, const char *filename, int flags, umode_t mode);
+SYSCALL_DECLARE(read, int fd, void *buffer, size_t count);
+SYSCALL_DECLARE(write, int fd, const void *buffer, size_t count);
+SYSCALL_DECLARE(getdents64, int fd, struct dirent *buf, size_t count);
 SYSCALL_DECLARE(close, int fd);
 SYSCALL_DECLARE(dup, int oldfd);
 SYSCALL_DECLARE(dup2, int oldfd, int newfd);
 SYSCALL_DECLARE(dup3, int oldfd, int newfd, int flags);
-SYSCALL_DECLARE(stat, const char *path, struct stat *st);
-SYSCALL_DECLARE(fstatat, const char *path, struct stat64 *st, int flags);
+SYSCALL_DECLARE(stat64, const char *path, struct stat64 *st);
+SYSCALL_DECLARE(fstatat64, int fd, const char *filename, struct stat64 *statbuf, int flag);
+SYSCALL_DECLARE(newfstatat, int fd, const char *filename, struct stat *statbuf, int flag);
 SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
 SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);

@@ -64,7 +64,7 @@ void __check_ptrace_syscall(void)
 /*
  * Implementation of ptrace syscall
  */
-SYSCALL_DEFINE4(ptrace, enum __ptrace_request, request, uint32_t, pid, void *, addr, void *, data)
+SYSCALL_DEFINE4(ptrace, enum __ptrace_request, request, int, pid, void *, addr, void *, data)
 {
 	pcb_t *pcb;
 

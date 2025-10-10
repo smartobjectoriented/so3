@@ -22,7 +22,7 @@
 #define DIRENT_H_
 
 typedef uint64_t ino_t;
-typedef uint32_t off_t;
+typedef int64_t off_t;
 
 struct dirent {
 	ino_t d_ino;
