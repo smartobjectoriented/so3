@@ -92,7 +92,7 @@
 #define DT_SOCK 12 /* Socket device */
 
 /* mmap flags options  */
-#define MAP_ANONYMOUS	0x10		/* don't use a file */
+#define MAP_ANONYMOUS 0x10 /* don't use a file */
 
 /* Return error values */
 #define MAP_FAILED ((void *) -1) /* mmap fail */
