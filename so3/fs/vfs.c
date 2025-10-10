@@ -954,16 +954,6 @@ SYSCALL_DEFINE3(lseek, int, fd, off_t, off, int, whence)
 }
 
 /*
- * Implementation of the fcntl syscall
- */
-SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
-{
-	/* Not yet implemented */
-
-	return 0;
-}
-
-/*
  * Implementation of the writev syscall
  */
 SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned long, vlen)

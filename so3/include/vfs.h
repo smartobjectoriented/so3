@@ -178,7 +178,6 @@ SYSCALL_DECLARE(fstatat, const char *path, struct stat64 *st, int flags);
 SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
 SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
-SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
 SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
