@@ -463,6 +463,75 @@ static int do_write(int fd, const void *buffer, int count)
 	return ret;
 }
 
+/* Low Level mmap */
+static int do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+{
+	int gfd;
+	struct file_operations *fops;
+
+	/* Get the fops associated to the file descriptor. */
+	gfd = vfs_get_gfd(fd);
+	if (-1 == gfd) {
+		printk("%s: could not get global fd.\n", __func__);
+		return -EBADF;
+	}
+
+	mutex_lock(&vfs_lock);
+	fops = vfs_get_fops(gfd);
+	if (!fops) {
+		printk("%s: could not get device fops.\n", __func__);
+		mutex_unlock(&vfs_lock);
+		return -EBADF;
+	}
+
+	mutex_unlock(&vfs_lock);
+
+	if (!fops->mmap) {
+		printk("%s: device doesn't support mmap.\n", __func__);
+		return -EACCES;
+	}
+
+	/* Call the mmap fops that will do the actual mapping. */
+	return (long) fops->mmap(fd, virt_addr, page_count, offset);
+}
+
+/* Low Level mmap - Anonymous case */
+static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+{
+	uint32_t page;
+	pcb_t *pcb;
+	int i;
+
+	if (offset != 0) {
+		printk("%s: Offset should be 0 with MAP_ANONYMOUS flag\n", __func__);
+		return -EINVAL;
+	}
+
+	pcb = current()->pcb;
+
+	/* Start is smaller or NULL than initial virt_addr pointer */
+	if (virt_addr < pcb->next_anon_start)
+		virt_addr = pcb->next_anon_start;
+
+	for (i = 0; i < page_count; i++) {
+		page = get_free_page();
+		BUG_ON(!page);
+
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+		add_page_to_proc(pcb, phys_to_page(page));
+	}
+
+	memset((void *) virt_addr, 0, page_count * PAGE_SIZE);
+
+	/* WARNIMG - This is a simple/basic way to set the start virtual address:
+	             It only increment the start address after each mmap call, no algorithm
+	             to search for available spaces.
+	*/
+	pcb->next_anon_start = virt_addr + (page_count * PAGE_SIZE);
+
+	return virt_addr;
+}
+
 SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 {
 	return do_read(fd, buffer, count);
@@ -738,29 +807,9 @@ SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
 /**
  * An mmap() implementation in VFS.
  */
-SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, offset)
+SYSCALL_DEFINE6(mmap, addr_t, start, size_t, length, int, prot, int, flags, int, fd, off_t, offset)
 {
-	int gfd;
 	uint32_t page_count;
-	struct file_operations *fops;
-
-	/* Get the fops associated to the file descriptor. */
-
-	gfd = vfs_get_gfd(fd);
-	if (-1 == gfd) {
-		printk("%s: could not get global fd.\n", __func__);
-		return -EBADF;
-	}
-
-	mutex_lock(&vfs_lock);
-	fops = vfs_get_fops(gfd);
-	if (!fops) {
-		printk("%s: could not get device fops.\n", __func__);
-		mutex_unlock(&vfs_lock);
-		return -EBADF;
-	}
-
-	mutex_unlock(&vfs_lock);
 
 	/* Page count to allocate to the current process to be able to map the desired region. */
 	page_count = length / PAGE_SIZE;
@@ -768,13 +817,10 @@ SYSCALL_DEFINE5(mmap, addr_t, start, size_t, length, int, prot, int, fd, off_t, 
 		page_count++;
 	}
 
-	if (!fops->mmap) {
-		printk("%s: device doesn't support mmap.\n", __func__);
-		return -EACCES;
-	}
-
-	/* Call the mmap fops that will do the actual mapping. */
-	return (long) fops->mmap(fd, start, page_count, offset);
+	if (flags & MAP_ANONYMOUS)
+		return do_mmap_anon(fd, start, page_count, offset);
+	else
+		return do_mmap(fd, start, page_count, offset);
 }
 
 SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
