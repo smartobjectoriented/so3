@@ -626,7 +626,7 @@ SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, unsigned
 		return -ENOSYS;
 	}
 
-	return do_open(filename, flags, mode);
+	return sys_do_open(filename, flags, mode);
 }
 
 /*
@@ -746,7 +746,7 @@ SYSCALL_DEFINE3(dup3, int, oldfd, int, newfd, int, flags)
 		return -ENOSYS;
 	}
 
-	return do_dup2(oldfd, newfd);
+	return sys_do_dup2(oldfd, newfd);
 }
 
 /**
@@ -849,7 +849,7 @@ SYSCALL_DEFINE3(fstatat, const char *, path, struct stat64 *, st, int, flags)
 		return -ENOSYS;
 	}
 
-	ret = do_stat(path, &stat32);
+	ret = sys_do_stat(path, &stat32);
 	if (ret < 0) {
 		return ret;
 	}
