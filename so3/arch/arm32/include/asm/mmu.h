@@ -39,6 +39,9 @@
 
 #define USER_SPACE_VADDR 0x1000ul
 
+/* Anonymous start virtual address */
+#define USER_ANONYMOUS_VADDR UL(CONFIG_KERNEL_VADDR / 2)
+
 /* Memory space all I/O mapped registers and additional mappings */
 #define IO_MAPPING_BASE 0xe0000000
 

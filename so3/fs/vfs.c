@@ -495,7 +495,6 @@ static int do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 	return (long) fops->mmap(fd, virt_addr, page_count, offset);
 }
 
-
 /* Low Level mmap - Anonymous case */
 static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
@@ -522,7 +521,7 @@ static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t off
 		add_page_to_proc(pcb, phys_to_page(page));
 	}
 
-	memset((void *)virt_addr, 0, page_count * PAGE_SIZE);
+	memset((void *) virt_addr, 0, page_count * PAGE_SIZE);
 
 	/* WARNIMG - This is a simple/basic way to set the start virtual address:
 	             It only increment the start address after each mmap call, no algorithm
