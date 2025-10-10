@@ -255,9 +255,9 @@ void thread_exit(int *exit_status)
 	 * According to the thread which is calling thread_exit(), the behaviour may differ.
 	 * Typically, if it is the main thread of the process, we have to wait until all
 	 * running threads (belonging to the process) are completed, and we pursue with
-	 * do_exit().
+	 * sys_do_exit().
 	 *
-	 * - If pcb->state == PROC_STATE_ZOMBIE, it means we are called from do_exit()
+	 * - If pcb->state == PROC_STATE_ZOMBIE, it means we are called from sys_do_exit()
 	 */
 	pcb = current()->pcb;
 

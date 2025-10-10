@@ -19,8 +19,8 @@
 
 #include <errno.h>
 #include <heap.h>
-#include <limits.h>
 #include <list.h>
+#include <log.h>
 #include <pipe.h>
 #include <vfs.h>
 #include <schedule.h>
@@ -319,5 +319,5 @@ SYSCALL_DEFINE2(pipe2, int *, pipefd, int, flags)
 		return -ENOSYS;
 	}
 
-	return do_pipe(pipefd);
+	return sys_do_pipe(pipefd);
 }

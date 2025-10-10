@@ -49,7 +49,7 @@ SYSCALL_DEFINE0(sigreturn)
  */
 SYSCALL_DEFINE0(rt_sigreturn)
 {
-	return do_sigreturn();
+	return sys_do_sigreturn();
 }
 
 /**
@@ -139,7 +139,7 @@ SYSCALL_DEFINE4(rt_sigaction, int, signum, const sigaction_t *, action, sigactio
 		return -EINVAL;
 	}
 
-	return do_sigaction(signum, action, old_actionm);
+	return sys_do_sigaction(signum, action, old_actionm);
 }
 
 SYSCALL_DEFINE2(kill, int, pid, int, sig)

@@ -409,7 +409,7 @@ SYSCALL_DEFINE2(gettimeofday_time32, struct timeval32 *, ts, void *, tz)
 {
 	struct timeval time64;
 
-	long ret = do_gettimeofday(&time64, NULL);
+	long ret = sys_do_gettimeofday(&time64, NULL);
 
 	if (ret < 0) {
 		return ret;
@@ -446,7 +446,7 @@ SYSCALL_DEFINE2(clock_gettime32, int, clk_id, struct timespec32 *, ts)
 {
 	struct timespec time64;
 
-	long ret = do_clock_gettime(clk_id, &time64);
+	long ret = sys_do_clock_gettime(clk_id, &time64);
 
 	if (ret < 0) {
 		return ret;
