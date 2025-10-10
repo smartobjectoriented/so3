@@ -66,17 +66,26 @@
 #define SIOCSIFHWBROADCAST 0x8937
 #define SIOCGIFCOUNT 0x8938
 
+/* network address struct used by the userspace */
+struct usr_sockaddr_in {
+	u16 sin_family;
+	in_port_t sin_port;
+	struct in_addr sin_addr;
+	uint8_t sin_zero[8];
+};
+
 void net_init(void);
 
 SYSCALL_DECLARE(socket, int domain, int type, int protocol);
-SYSCALL_DECLARE(connect, int sockfd, const struct sockaddr *name, socklen_t namelen);
-SYSCALL_DECLARE(bind, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+SYSCALL_DECLARE(connect, int sockfd, const struct usr_sockaddr_in *name, socklen_t namelen);
+SYSCALL_DECLARE(bind, int sockfd, const struct usr_sockaddr_in *addr, socklen_t addrlen);
 SYSCALL_DECLARE(listen, int sockfd, int backlog);
-SYSCALL_DECLARE(accept, int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+SYSCALL_DECLARE(accept, int sockfd, struct usr_sockaddr_in *addr, socklen_t *addrlen);
 SYSCALL_DECLARE(recv, int sockfd, void *mem, size_t len, int flags);
-SYSCALL_DECLARE(recvfrom, int sockfd, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
+SYSCALL_DECLARE(recvfrom, int sockfd, void *mem, size_t len, int flags, struct usr_sockaddr_in *from, socklen_t *fromlen);
 SYSCALL_DECLARE(send, int sockfd, const void *dataptr, size_t size, int flags);
-SYSCALL_DECLARE(sendto, int sockfd, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen);
+SYSCALL_DECLARE(sendto, int sockfd, const void *dataptr, size_t size, int flags, const struct usr_sockaddr_in *to,
+		socklen_t tolen);
 SYSCALL_DECLARE(setsockopt, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 
 #endif /* NET_H */

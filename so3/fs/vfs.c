@@ -33,6 +33,9 @@
 #include <fat/fat.h>
 #include <devfs/devfs.h>
 
+#include <device/device.h>
+#include <asm/mmu.h>
+
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
  * Every process has its own file descriptor table. A local file descriptor (belonging to a process) must be linked to a global file descriptor
  * according to the fd type.
@@ -381,7 +384,7 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 /**************************** Syscall implementation ****************************/
 
 /* Low Level read */
-static int do_read(int fd, void *buffer, int count)
+static int do_read(int fd, void *buffer, size_t count)
 {
 	int gfd;
 	int ret;
@@ -423,7 +426,7 @@ static int do_read(int fd, void *buffer, int count)
 }
 
 /* Low Level write */
-static int do_write(int fd, const void *buffer, int count)
+static int do_write(int fd, const void *buffer, size_t count)
 {
 	int gfd;
 	int ret;
@@ -532,7 +535,56 @@ static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t off
 	return virt_addr;
 }
 
-SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
+static long do_stat(const char *path, struct stat *st)
+{
+	int ret;
+
+	memset(st, 0, sizeof(*st));
+
+	mutex_lock(&vfs_lock);
+
+	/* FIXME Find the correct mount point with the path */
+	if (!registered_fs_ops[FS_FAT]) {
+		mutex_unlock(&vfs_lock);
+		return -ENOENT;
+	}
+
+	if (!registered_fs_ops[FS_FAT]->stat) {
+		mutex_unlock(&vfs_lock);
+		return -ENOENT;
+	}
+
+	ret = registered_fs_ops[FS_FAT]->stat(path, st);
+
+	mutex_unlock(&vfs_lock);
+
+	return ret;
+}
+
+static struct stat64 stat_to_stat64(struct stat *st)
+{
+	return (struct stat64) {
+		.st_dev = st->st_dev,
+		.__st_ino = st->st_ino,
+		.st_mode = st->st_mode,
+		.st_nlink = st->st_nlink,
+		.st_uid = st->st_uid,
+		.st_gid = st->st_gid,
+		.st_rdev = st->st_rdev,
+		.st_size = st->st_size,
+		.st_blksize = st->st_blksize,
+		.st_blocks = st->st_blocks,
+		.st_atime = st->st_atime,
+		.st_atime_nsec = st->st_atime_nsec,
+		.st_mtime = st->st_mtime,
+		.st_mtime_nsec = st->st_mtime_nsec,
+		.st_ctime = st->st_ctime,
+		.st_ctime_nsec = st->st_ctime_nsec,
+		.st_ino = st->st_ino,
+	};
+}
+
+SYSCALL_DEFINE3(read, int, fd, void *, buffer, size_t, count)
 {
 	return do_read(fd, buffer, count);
 }
@@ -540,7 +592,7 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 /**
  * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
  */
-SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
+SYSCALL_DEFINE3(write, int, fd, const void *, buffer, size_t, count)
 {
 	return do_write(fd, buffer, count);
 }
@@ -548,7 +600,7 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 /**
  * @brief This function opens a file. Not all file types are supported.
  */
-SYSCALL_DEFINE3(open, const char *, filename, int, flags, unsigned short, mode)
+SYSCALL_DEFINE3(open, const char *, filename, int, flags, umode_t, mode)
 {
 	int fd, gfd, ret = -1;
 	uint32_t type;
@@ -619,7 +671,7 @@ open_failed:
 /**
  * Simple openat implementation ignoring dirfd for aarch64.
  */
-SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, unsigned short, mode)
+SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, umode_t, mode)
 {
 	if (dirfd != AT_FDCWD) {
 		LOG_WARNING("dirfd parameters isn't supported\n");
@@ -630,13 +682,19 @@ SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, unsigned
 }
 
 /*
- * @brief readdir read a directory entry which will be stored in a struct dirent entry
+ * @brief gedetens64 read a directory entry which will be stored in a struct dirent entry
  * @param fd This is the file descriptor provided as (DIR *) when doing opendir in the userspace.
  */
-SYSCALL_DEFINE3(getdents64, int, fd, char *, buf, size_t, len)
+SYSCALL_DEFINE3(getdents64, int, fd, struct dirent *, buf, size_t, count)
 {
 	struct dirent *dirent;
 	int gfd;
+
+	/* Dirent d_name should be a flexible array, which is not the case here.
+	   So ensure that the given dirent can actually our full dirent. */
+	if (count < sizeof(struct dirent)) {
+		return -EINVAL;
+	}
 
 	mutex_lock(&vfs_lock);
 
@@ -814,67 +872,57 @@ SYSCALL_DEFINE1(dup, int, oldfd)
 #endif
 }
 
-SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
+SYSCALL_DEFINE2(stat64, const char *, path, struct stat64 *, st)
 {
-	int ret;
+	struct stat stat;
+	long ret = 0;
 
-	memset(st, 0, sizeof(*st));
+	ret = do_stat(path, &stat);
 
-	mutex_lock(&vfs_lock);
-
-	/* FIXME Find the correct mount point with the path */
-	if (!registered_fs_ops[FS_FAT]) {
-		mutex_unlock(&vfs_lock);
-		return -ENOENT;
+	if (ret >= 0) {
+		*st = stat_to_stat64(&stat);
 	}
-
-	if (!registered_fs_ops[FS_FAT]->stat) {
-		mutex_unlock(&vfs_lock);
-		return -ENOENT;
-	}
-
-	ret = registered_fs_ops[FS_FAT]->stat(path, st);
-
-	mutex_unlock(&vfs_lock);
 
 	return ret;
 }
 
-SYSCALL_DEFINE3(fstatat, const char *, path, struct stat64 *, st, int, flags)
+SYSCALL_DEFINE4(fstatat64, int, fd, const char *, path, struct stat64 *, st, int, flags)
 {
-	struct stat stat32;
+	struct stat stat;
 	int ret;
+
+	if (fd != AT_FDCWD) {
+		LOG_WARNING("fd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
 	if (flags != 0) {
 		LOG_WARNING("Flags not supported\n");
 		return -ENOSYS;
 	}
 
-	ret = sys_do_stat(path, &stat32);
-	if (ret < 0) {
-		return ret;
+	ret = do_stat(path, &stat);
+
+	if (ret >= 0) {
+		*st = stat_to_stat64(&stat);
 	}
 
-	memset(st, 0, sizeof(*st));
+	return ret;
+}
 
-	// Copy with extension from 32 bits to 64 bits
-	st->st_dev = stat32.st_dev;
-	st->st_ino = stat32.st_ino;
-	st->st_mode = stat32.st_mode;
-	st->st_nlink = stat32.st_nlink;
-	st->st_uid = stat32.st_uid;
-	st->st_gid = stat32.st_gid;
-	st->st_rdev = stat32.st_rdev;
-	st->st_size = stat32.st_size;
-	st->st_blksize = stat32.st_blksize;
-	st->st_blocks = stat32.st_blocks;
-	st->st_atime = stat32.st_atime;
-	st->st_atime_nsec = stat32.st_atime_nsec;
-	st->st_mtime = stat32.st_mtime;
-	st->st_mtime_nsec = stat32.st_mtime_nsec;
-	st->st_ctime = stat32.st_ctime;
-	st->st_ctime_nsec = stat32.st_ctime_nsec;
+SYSCALL_DEFINE4(newfstatat, int, fd, const char *, path, struct stat *, st, int, flags)
+{
+	if (fd != AT_FDCWD) {
+		LOG_WARNING("fd parameters isn't supported\n");
+		return -ENOSYS;
+	}
 
-	return 0;
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported\n");
+		return -ENOSYS;
+	}
+
+	return do_stat(path, st);
 }
 
 /**

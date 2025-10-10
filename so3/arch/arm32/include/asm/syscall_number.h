@@ -40,18 +40,17 @@
 #define SYSCALL_KILL 37
 
 #define SYSCALL_DUP 41
+#define SYSCALL_PIPE 42
 
 #define SYSCALL_BRK 45
-#define SYSCALL_PIPE 46
 
 #define SYSCALL_IOCTL 54
 
 #define SYSCALL_DUP2 63
-#define SYSCALL_SIGACTION 67
 
 #define SYSCALL_GETTIMEOFDAY_TIME32 78
 
-#define SYSCALL_STAT 106
+#define SYSCALL_WAIT4 114
 
 #define SYSCALL_SIGRETURN 119
 
@@ -65,9 +64,9 @@
 
 #define SYSCALL_MMAP2 192
 
-#define SYSCALL_GETDENTS64 217
+#define SYSCALL_STAT64 195
 
-#define SYSCALL_WAIT4 260
+#define SYSCALL_GETDENTS64 217
 
 #define SYSCALL_CLOCK_GETTIME32 263
 
@@ -87,14 +86,14 @@
 
 #define SYSCALL_OPENAT 322
 
-#define SYSCALL_FSTATAT 327
+#define SYSCALL_FSTATAT64 327
 
 #define SYSCALL_DUP3 358
 #define SYSCALL_PIPE2 359
 
 #define SYSCALL_CLOCK_GETTIME64 403
 
-/* Following syscalls stills need to be align */
+/* Following syscalls still need to be aligned */
 #define SYSCALL_THREAD_CREATE 16
 #define SYSCALL_THREAD_JOIN 17
 #define SYSCALL_THREAD_EXIT 18

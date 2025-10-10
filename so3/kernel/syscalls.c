@@ -35,9 +35,10 @@ extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
 
+#warning Not updated, a rework is needed to avoid having a big array because of #ifdef ...
 static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[0 ... NR_SYSCALLS - 1] = NULL,
-
+	/*
 #ifdef CONFIG_MMU
 	[SYSCALL_GETPID] = __sys_getpid,
 #ifdef SYSCALL_GETTIMEOFDAY
@@ -74,7 +75,6 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_THREAD_YIELD] = __sys_thread_yield,
 	[SYSCALL_GETDENTS64] = __sys_getdents64,
 	[SYSCALL_IOCTL] = __sys_ioctl,
-	[SYSCALL_FCNTL] = __sys_fcntl,
 	[SYSCALL_LSEEK] = __sys_lseek,
 	[SYSCALL_READV] = __sys_readv,
 	[SYSCALL_WRITEV] = __sys_writev,
@@ -132,6 +132,7 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_SETSOCKOPT] = __sys_setsockopt,
 	[SYSCALL_RECVFROM] = __sys_recvfrom,
 #endif
+*/
 };
 
 /*
