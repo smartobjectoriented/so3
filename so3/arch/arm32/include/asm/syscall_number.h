@@ -45,13 +45,11 @@
 #define SYSCALL_PIPE 46
 
 #define SYSCALL_IOCTL 54
-#define SYSCALL_FCNTL 55 // fcntl64?
 
 #define SYSCALL_DUP2 63
 #define SYSCALL_SIGACTION 67
 
 #define SYSCALL_GETTIMEOFDAY_TIME32 78
-// #define SYSCALL_SETTIMEOFDAY 79 // Implement?
 
 #define SYSCALL_STAT 106
 
@@ -96,13 +94,12 @@
 
 #define SYSCALL_CLOCK_GETTIME64 403
 
-// => pthread
+/* Following syscalls stills need to be align */
 #define SYSCALL_THREAD_CREATE 16
 #define SYSCALL_THREAD_JOIN 17
 #define SYSCALL_THREAD_EXIT 18
 #define SYSCALL_THREAD_YIELD 43
 
-// => ???
 #define SYSCALL_MUTEX_LOCK 60
 #define SYSCALL_MUTEX_UNLOCK 61
 

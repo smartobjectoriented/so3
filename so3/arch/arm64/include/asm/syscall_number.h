@@ -25,8 +25,6 @@
 #define SYSCALL_DUP 23
 #define SYSCALL_DUP3 24
 
-#define SYSCALL_FCNTL 25
-
 #define SYSCALL_IOCTL 29
 
 #define SYSCALL_OPENAT 56
@@ -78,7 +76,7 @@
 #define SYSCALL_EXECVE 221
 #define SYSCALL_MMAP 222
 
-// Does not exist
+/* Following syscalls stills need to be align */
 #define SYSCALL_FORK 7 // => clone
 
 #define SYSCALL_THREAD_CREATE 16
@@ -86,7 +84,6 @@
 #define SYSCALL_THREAD_EXIT 18
 #define SYSCALL_THREAD_YIELD 43
 
-// => ???
 #define SYSCALL_MUTEX_LOCK 60
 #define SYSCALL_MUTEX_UNLOCK 61
 
