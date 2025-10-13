@@ -1019,7 +1019,7 @@ SYSCALL_DEFINE3(lseek, int, fd, off_t, off, int, whence)
 /**
  * @brief Implementation of llseek syscall for ARM32 which use it instead of lseek.
  */
-SYSCALL_DEFINE5(llseek, int, fd, unsigned long, offset_high, unsigned long, offset_low, off_t *, result, unsigned, whence)
+SYSCALL_DEFINE5(_llseek, int, fd, unsigned long, offset_high, unsigned long, offset_low, off_t *, result, unsigned, whence)
 {
 	off_t offset = ((off_t) offset_high << 32) | offset_low;
 	off_t ret;

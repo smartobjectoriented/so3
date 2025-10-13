@@ -180,7 +180,7 @@ SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, 
 SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
-SYSCALL_DECLARE(llseek, int fd, unsigned long offset_high, unsigned long offset_low, off_t *result, unsigned whence);
+SYSCALL_DECLARE(_llseek, int fd, unsigned long offset_high, unsigned long offset_low, off_t *result, unsigned whence);
 SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 
