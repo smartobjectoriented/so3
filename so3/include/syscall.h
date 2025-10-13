@@ -21,7 +21,7 @@
 #ifndef ASM_ARM_SYSCALL_H
 #define ASM_ARM_SYSCALL_H
 
-#include <asm/syscall_number.h>
+#include <generated/syscall_number.h>
 
 #ifndef __ASSEMBLY__
 
