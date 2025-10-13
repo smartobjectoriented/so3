@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017 Xavier Ruppen <xavier.ruppen@heig-vd.ch>
- *
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -108,6 +108,8 @@
 #include <dirent.h>
 #include <syscall.h>
 
+typedef uint32_t mode_t;
+
 struct iovec {
 	void *iov_base;
 	size_t iov_len;
@@ -162,8 +164,8 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
-SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, umode_t mode)
-SYSCALL_DECLARE(open, const char *filename, int flags, umode_t mode);
+SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, mode_t mode)
+SYSCALL_DECLARE(open, const char *filename, int flags, mode_t mode);
 SYSCALL_DECLARE(read, int fd, void *buffer, size_t count);
 SYSCALL_DECLARE(write, int fd, const void *buffer, size_t count);
 SYSCALL_DECLARE(getdents64, int fd, struct dirent *buf, size_t count);
@@ -178,6 +180,7 @@ SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, 
 SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
+SYSCALL_DECLARE(llseek, int fd, unsigned long offset_high, unsigned long offset_low, off_t *result, unsigned whence);
 SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 

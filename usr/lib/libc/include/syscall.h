@@ -88,8 +88,16 @@
 
 #define syscallNanosleep		70
 
+#define syscallSysinfo			99
+
 #define syscallSetsockopt		110
 #define syscallRecvfrom			111
+
+
+#define SYSINFO_DUMP_HEAP	0
+#define SYSINFO_DUMP_SCHED	1
+#define SYSINFO_TEST_MALLOC	2
+#define SYSINFO_PRINTK	 	3
 
 #ifndef __ASSEMBLY__
 
