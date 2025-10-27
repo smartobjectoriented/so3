@@ -2,15 +2,31 @@
 # Kbuild for top-level directory of the kernel
 # This file takes care of the following:
 
-# Generate asm-offsets.h 
+# Generate syscall_table.h.in and syscall_number.h
+
+syscall-files = include/generated/syscall_table.h.in
+syscall-files += include/generated/syscall_number.h
+syscall-script = scripts/syscall_gen.sh
+syscall-src = syscall.tbl arch/$(SRCARCH)/syscall.h.in
+
+quiet_cmd_syscall_gen = GEN     $@
+      cmd_syscall_gen = $(syscall-script) $(syscall-src) $(syscall-files)
+
+$(syscall-files) &: $(syscall-script) $(syscall-src) Kbuild FORCE
+	$(call if_changed,syscall_gen)
+
+always  := $(syscall-files)
+targets := $(syscall-files)
+
+# Generate asm-offsets.h
 #
 
 offsets-file := include/generated/asm-offsets.h
 
-always  := $(offsets-file)
-targets := $(offsets-file)
+always  += $(offsets-file)
+targets += $(offsets-file)
 targets += arch/$(SRCARCH)/asm-offsets.s
- 
+
 # Default sed regexp - multiline due to syntax constraints
 define sed-y
 	"/^->/{s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; s:->::; p;}"
@@ -34,10 +50,9 @@ define cmd_offsets
 endef
 
 # We use internal kbuild rules to avoid the "is up to date" message from make
-arch/$(SRCARCH)/asm-offsets.s: $(srctree)/arch/$(SRCARCH)/asm-offsets.c  FORCE
+arch/$(SRCARCH)/asm-offsets.s: $(srctree)/arch/$(SRCARCH)/asm-offsets.c include/generated/syscall_number.h FORCE
 	$(Q)mkdir -p $(dir $@)
 	$(call if_changed_dep,cc_s_c)
 
 $(offsets-file): arch/$(SRCARCH)/asm-offsets.s Kbuild
 	$(call cmd,offsets)
-

@@ -1,0 +1,66 @@
+# Copyright (C) 2025 Clément Dieperink <clement.dieperink@heig-vd.ch>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This file declare all syscalls available on SO3, without taking into account
+# of CPU arch. See scripts/syscall_gen.sh for more information.
+#
+# Syscall name          Configuration requirement
+read
+readv
+write
+writev
+open
+openat
+close
+lseek
+_llseek
+ioctl
+dup
+dup2
+dup3
+getdents64
+stat64
+fstatat64
+newfstatat
+mmap
+mmap2
+nanosleep
+pipe                    IPC_PIPE
+pipe2                   IPC_PIPE
+rt_sigaction            IPC_SIGNAL
+rt_kill                 IPC_SIGNAL
+sigreturn               IPC_SIGNAL
+rt_sigreturn            IPC_SIGNAL
+getpid                  MMU
+execve                  MMU
+fork                    MMU
+exit                    MMU
+wait4                   MMU
+ptrace                  MMU
+gettimeofday            MMU
+gettimeofday_time32     MMU
+clock_gettime           MMU
+clock_gettime32         MMU
+socket                  NET
+connect                 NET
+bind                    NET
+listen                  NET
+accept                  NET
+recv                    NET
+recvfrom                NET
+send                    NET
+sendto                  NET
+setsockopt              NET
+brk                     PROC_ENV

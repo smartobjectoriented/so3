@@ -199,7 +199,7 @@ syscall_interrupt:
 	add	lr, sp, #OFFSET_SP_USR
 	stmia	lr, {sp, lr}^
 
-	cmp	r7, #SYSCALL_SIGRETURN
+	cmp	r7, #SYSCALL_sigreturn
 	beq	__after_push_sp_usr
 	
 	ldr	r0, [sp, #OFFSET_SP_USR]
@@ -228,7 +228,7 @@ __after_push_sp_usr:
 
 	@ Check if sigreturn has been called. In this case, we
 	@ clean the stack frame which has been used to manage the user handler.
-	cmp	r7, #SYSCALL_SIGRETURN
+	cmp	r7, #SYSCALL_sigreturn
 	bne	__no_sigreturn
 
 	@ Reset the stack frame by removing the one issued from sigreturn
@@ -246,7 +246,7 @@ __no_sigreturn:
 __ret_from_fork:
 
 	@ Store the return value on the stack frame
-	cmp	r7, #SYSCALL_SIGRETURN
+	cmp	r7, #SYSCALL_sigreturn
 	strne	r0, [sp, #OFFSET_R0]
 
 #ifdef CONFIG_IPC_SIGNAL

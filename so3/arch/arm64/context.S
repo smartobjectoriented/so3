@@ -293,7 +293,7 @@ ENTRY(__root_proc)
 	mov	x0, #STDOUT
 	adr 	x1, .LC_welcome
 	mov 	x2, welcome_len
-	mov 	x8, #SYSCALL_WRITE
+	mov 	x8, #SYSCALL_write
 
 	// Invoke the syscall - kernel side
 	svc	0
@@ -306,7 +306,7 @@ ENTRY(__root_proc)
 	mov 	x1, xzr
 	mov 	x2, xzr
 
-	mov	x8, #SYSCALL_EXECVE
+	mov	x8, #SYSCALL_execve
 
 	svc 	0
 
@@ -315,7 +315,7 @@ ENTRY(__root_proc)
 	mov	x0, #STDOUT
 	adr 	x1, .LCnoshell
 	mov 	x2, noshell_len
-	mov 	x8, #SYSCALL_WRITE
+	mov 	x8, #SYSCALL_write
 
 	svc 	0
 
