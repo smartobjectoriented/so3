@@ -33,6 +33,9 @@
 #include <fat/fat.h>
 #include <devfs/devfs.h>
 
+#include <device/device.h>
+#include <asm/mmu.h>
+
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
  * Every process has its own file descriptor table. A local file descriptor (belonging to a process) must be linked to a global file descriptor
  * according to the fd type.
@@ -381,7 +384,7 @@ int vfs_clone_fd(int *fd_src, int *fd_dst)
 /**************************** Syscall implementation ****************************/
 
 /* Low Level read */
-static int do_read(int fd, void *buffer, int count)
+static int do_read(int fd, void *buffer, size_t count)
 {
 	int gfd;
 	int ret;
@@ -423,7 +426,7 @@ static int do_read(int fd, void *buffer, int count)
 }
 
 /* Low Level write */
-static int do_write(int fd, const void *buffer, int count)
+static int do_write(int fd, const void *buffer, size_t count)
 {
 	int gfd;
 	int ret;
@@ -532,7 +535,62 @@ static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t off
 	return virt_addr;
 }
 
-SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
+/**
+ * @brief Low level stat implementation.
+ */
+static long do_stat(const char *path, struct stat *st)
+{
+	int ret;
+
+	memset(st, 0, sizeof(*st));
+
+	mutex_lock(&vfs_lock);
+
+	/* FIXME Find the correct mount point with the path */
+	if (!registered_fs_ops[FS_FAT]) {
+		mutex_unlock(&vfs_lock);
+		return -ENOENT;
+	}
+
+	if (!registered_fs_ops[FS_FAT]->stat) {
+		mutex_unlock(&vfs_lock);
+		return -ENOENT;
+	}
+
+	ret = registered_fs_ops[FS_FAT]->stat(path, st);
+
+	mutex_unlock(&vfs_lock);
+
+	return ret;
+}
+
+/**
+ * @brief Function to convert stat to stat64 for ARM32 compatibility.
+ */
+static struct stat64 stat_to_stat64(struct stat *st)
+{
+	return (struct stat64) {
+		.st_dev = st->st_dev,
+		.__st_ino = st->st_ino,
+		.st_mode = st->st_mode,
+		.st_nlink = st->st_nlink,
+		.st_uid = st->st_uid,
+		.st_gid = st->st_gid,
+		.st_rdev = st->st_rdev,
+		.st_size = st->st_size,
+		.st_blksize = st->st_blksize,
+		.st_blocks = st->st_blocks,
+		.st_atime = st->st_atime,
+		.st_atime_nsec = st->st_atime_nsec,
+		.st_mtime = st->st_mtime,
+		.st_mtime_nsec = st->st_mtime_nsec,
+		.st_ctime = st->st_ctime,
+		.st_ctime_nsec = st->st_ctime_nsec,
+		.st_ino = st->st_ino,
+	};
+}
+
+SYSCALL_DEFINE3(read, int, fd, void *, buffer, size_t, count)
 {
 	return do_read(fd, buffer, count);
 }
@@ -540,7 +598,7 @@ SYSCALL_DEFINE3(read, int, fd, void *, buffer, int, count)
 /**
  * @brief This function writes a REGULAR FILE/FOLDER. It only support regular file, dirs and pipes
  */
-SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
+SYSCALL_DEFINE3(write, int, fd, const void *, buffer, size_t, count)
 {
 	return do_write(fd, buffer, count);
 }
@@ -548,11 +606,15 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, int, count)
 /**
  * @brief This function opens a file. Not all file types are supported.
  */
-SYSCALL_DEFINE2(open, const char *, filename, int, flags)
+SYSCALL_DEFINE3(open, const char *, filename, int, flags, mode_t, mode)
 {
 	int fd, gfd, ret = -1;
 	uint32_t type;
 	struct file_operations *fops;
+
+	if (mode != 0) {
+		LOG_WARNING("mode parameters isn't supported\n");
+	}
 
 	mutex_lock(&vfs_lock);
 
@@ -612,14 +674,34 @@ open_failed:
 	return ret;
 }
 
+/**
+ * @brief Simple openat implementation ignoring dirfd for aarch64.
+ */
+SYSCALL_DEFINE4(openat, int, dirfd, const char *, filename, int, flags, mode_t, mode)
+{
+	if (dirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	return sys_do_open(filename, flags, mode);
+}
+
 /*
- * @brief readdir read a directory entry which will be stored in a struct dirent entry
+ * @brief gedetens64 read a directory entry which will be stored in a struct dirent entry.
+ *        This is used for readdir on userspace.
  * @param fd This is the file descriptor provided as (DIR *) when doing opendir in the userspace.
  */
-SYSCALL_DEFINE3(readdir, int, fd, char *, buf, int, len)
+SYSCALL_DEFINE3(getdents64, int, fd, struct dirent *, buf, size_t, count)
 {
 	struct dirent *dirent;
 	int gfd;
+
+	/* Dirent d_name should be a flexible array, which is not the case here.
+	   So ensure that the given dirent can actually our full dirent. */
+	if (count < sizeof(struct dirent)) {
+		return -EINVAL;
+	}
 
 	mutex_lock(&vfs_lock);
 
@@ -716,8 +798,24 @@ SYSCALL_DEFINE1(close, int, fd)
 }
 
 /**
+ * @brief Simple dup3 implementation ignoring flags for aarch64.
+ */
+SYSCALL_DEFINE3(dup3, int, oldfd, int, newfd, int, flags)
+{
+	if (oldfd == newfd) {
+		return -EINVAL;
+	}
+
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported.\n");
+		return -ENOSYS;
+	}
+
+	return sys_do_dup2(oldfd, newfd);
+}
+
+/**
  * @brief dup2 creates a synonym of oldfd on newfd
- *
  */
 SYSCALL_DEFINE2(dup2, int, oldfd, int, newfd)
 {
@@ -780,28 +878,66 @@ SYSCALL_DEFINE1(dup, int, oldfd)
 #endif
 }
 
-SYSCALL_DEFINE2(stat, const char *, path, struct stat *, st)
+/**
+ * @brief On ARM32, stat64 syscall is called instead of stat.
+ */
+SYSCALL_DEFINE2(stat64, const char *, path, struct stat64 *, st)
 {
-	int ret;
+	struct stat stat;
+	long ret = 0;
 
-	mutex_lock(&vfs_lock);
+	ret = do_stat(path, &stat);
 
-	/* FIXME Find the correct mount point with the path */
-	if (!registered_fs_ops[FS_FAT]) {
-		mutex_unlock(&vfs_lock);
-		return -ENOENT;
+	if (ret >= 0) {
+		*st = stat_to_stat64(&stat);
 	}
-
-	if (!registered_fs_ops[FS_FAT]->stat) {
-		mutex_unlock(&vfs_lock);
-		return -ENOENT;
-	}
-
-	ret = registered_fs_ops[FS_FAT]->stat(path, st);
-
-	mutex_unlock(&vfs_lock);
 
 	return ret;
+}
+
+/**
+ * @brief On ARM32, fstatat64 syscall is called instead of fstatat and stat in some condition.
+ */
+SYSCALL_DEFINE4(fstatat64, int, fd, const char *, path, struct stat64 *, st, int, flags)
+{
+	struct stat stat;
+	int ret;
+
+	if (fd != AT_FDCWD) {
+		LOG_WARNING("fd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported\n");
+		return -ENOSYS;
+	}
+
+	ret = do_stat(path, &stat);
+
+	if (ret >= 0) {
+		*st = stat_to_stat64(&stat);
+	}
+
+	return ret;
+}
+
+/**
+ * @brief On aarch64, newfstatat syscall is called for stat.
+ */
+SYSCALL_DEFINE4(newfstatat, int, fd, const char *, path, struct stat *, st, int, flags)
+{
+	if (fd != AT_FDCWD) {
+		LOG_WARNING("fd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported\n");
+		return -ENOSYS;
+	}
+
+	return do_stat(path, st);
 }
 
 /**
@@ -821,6 +957,14 @@ SYSCALL_DEFINE6(mmap, addr_t, start, size_t, length, int, prot, int, flags, int,
 		return do_mmap_anon(fd, start, page_count, offset);
 	else
 		return do_mmap(fd, start, page_count, offset);
+}
+
+/**
+ * Works like mmap, but with the given offset been in page count.
+ */
+SYSCALL_DEFINE6(mmap2, addr_t, start, size_t, length, int, prot, int, flags, int, fd, off_t, pgoffset)
+{
+	return sys_do_mmap(start, length, prot, flags, fd, pgoffset * PAGE_SIZE);
 }
 
 SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
@@ -872,14 +1016,23 @@ SYSCALL_DEFINE3(lseek, int, fd, off_t, off, int, whence)
 	return rc;
 }
 
-/*
- * Implementation of the fcntl syscall
+/**
+ * @brief Implementation of llseek syscall for ARM32 which use it instead of lseek.
  */
-SYSCALL_DEFINE3(fcntl, int, fd, unsigned long, cmd, unsigned long, args)
+SYSCALL_DEFINE5(_llseek, int, fd, unsigned long, offset_high, unsigned long, offset_low, off_t *, result, unsigned, whence)
 {
-	/* Not yet implemented */
+	off_t offset = ((off_t) offset_high << 32) | offset_low;
+	off_t ret;
 
-	return 0;
+	ret = sys_do_lseek(fd, offset, whence);
+
+	if (ret >= 0) {
+		/* New offset is returned in the 64 bits of result. */
+		*result = ret;
+		ret = 0;
+	}
+
+	return ret;
 }
 
 /*

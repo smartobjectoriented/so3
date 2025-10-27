@@ -134,29 +134,21 @@ struct ifreq2 {
 	} ifr_ifru;
 };
 
-/* network address struct used by the userspace */
-struct sockaddr_in_usr {
-	u16 sin_family;
-	in_port_t sin_port;
-	struct in_addr sin_addr;
-	uint8_t sin_zero[8];
-};
-
 /**
  * Adapt a userspace sockaddr to a lwip one.
  * Iwip sockaddr have a sa_len field as first byte
  * @param usr
  * @param lwip
  */
-struct sockaddr *user_to_lwip_sockadd(struct sockaddr_in_usr *usr, struct sockaddr_in *lwip)
+struct sockaddr *user_to_lwip_sockadd(const struct usr_sockaddr_in *usr, struct sockaddr_in *lwip)
 {
 	if (usr == NULL) {
 		return NULL;
 	}
 
-	memset(lwip, 0, sizeof(struct sockaddr));
+	memset(lwip, 0, sizeof(struct sockaddr_in));
 
-	lwip->sin_len = sizeof(struct sockaddr);
+	lwip->sin_len = sizeof(struct sockaddr_in);
 	lwip->sin_family = usr->sin_family;
 	lwip->sin_port = usr->sin_port;
 	lwip->sin_addr = usr->sin_addr;
@@ -424,7 +416,7 @@ SYSCALL_DEFINE3(socket, int, domain, int, type, int, protocol)
 	return fd;
 }
 
-SYSCALL_DEFINE3(connect, int, sockfd, const struct sockaddr *, addr, socklen_t, namelen)
+SYSCALL_DEFINE3(connect, int, sockfd, const struct usr_sockaddr_in *, addr, socklen_t, namelen)
 {
 	int ret;
 	struct sockaddr_in addr_lwip;
@@ -436,13 +428,13 @@ SYSCALL_DEFINE3(connect, int, sockfd, const struct sockaddr *, addr, socklen_t, 
 		return -EBADF;
 	}
 
-	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+	addr_ptr = user_to_lwip_sockadd(addr, &addr_lwip);
 
 	ret = lwip_connect(lwip_fd, addr_ptr, namelen);
 	return lwip_return(ret);
 }
 
-SYSCALL_DEFINE3(bind, int, sockfd, const struct sockaddr *, addr, socklen_t, addrlen)
+SYSCALL_DEFINE3(bind, int, sockfd, const struct usr_sockaddr_in *, addr, socklen_t, addrlen)
 {
 	int ret;
 	struct sockaddr_in addr_lwip;
@@ -454,7 +446,7 @@ SYSCALL_DEFINE3(bind, int, sockfd, const struct sockaddr *, addr, socklen_t, add
 		return -EBADF;
 	}
 
-	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+	addr_ptr = user_to_lwip_sockadd(addr, &addr_lwip);
 
 	ret = lwip_bind(lwip_fd, addr_ptr, addrlen);
 	return lwip_return(ret);
@@ -473,7 +465,7 @@ SYSCALL_DEFINE2(listen, int, sockfd, int, backlog)
 	return lwip_return(ret);
 }
 
-SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrlen)
+SYSCALL_DEFINE3(accept, int, sockfd, struct usr_sockaddr_in *, addr, socklen_t *, addrlen)
 {
 	int fd, gfd, lwip_fd, lwip_bind_fd;
 	struct file_operations *fops;
@@ -485,7 +477,7 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct sockaddr *, addr, socklen_t *, addrl
 		return -EBADF;
 	}
 
-	addr_ptr = user_to_lwip_sockadd((struct sockaddr_in_usr *) addr, &addr_lwip);
+	addr_ptr = user_to_lwip_sockadd(addr, &addr_lwip);
 
 	fops = register_sock();
 
@@ -532,16 +524,21 @@ SYSCALL_DEFINE4(recv, int, sockfd, void *, mem, size_t, len, int, flags)
 	return lwip_return(ret);
 }
 
-SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, struct sockaddr *, from, socklen_t *, fromlen)
+SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, struct usr_sockaddr_in *, from, socklen_t *,
+		fromlen)
 {
 	int ret;
+	struct sockaddr_in from_lwip;
+	struct sockaddr *from_ptr;
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
 	}
 
-	ret = lwip_recvfrom(lwip_fd, mem, len, flags, from, fromlen);
+	from_ptr = user_to_lwip_sockadd(from, &from_lwip);
+
+	ret = lwip_recvfrom(lwip_fd, mem, len, flags, from_ptr, fromlen);
 	return lwip_return(ret);
 }
 
@@ -558,20 +555,21 @@ SYSCALL_DEFINE4(send, int, sockfd, const void *, dataptr, size_t, size, int, fla
 	return lwip_return(ret);
 }
 
-SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct sockaddr *, to, socklen_t,
-		tolen)
+SYSCALL_DEFINE6(sendto, int, sockfd, const void *, dataptr, size_t, size, int, flags, const struct usr_sockaddr_in *, to,
+		socklen_t, tolen)
 {
 	int ret;
 	struct sockaddr_in to_lwip;
+	struct sockaddr *to_ptr;
 	int lwip_fd = get_lwip_fd(sockfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
 	}
 
-	user_to_lwip_sockadd((struct sockaddr_in_usr *) to, &to_lwip);
+	to_ptr = user_to_lwip_sockadd(to, &to_lwip);
 
-	ret = lwip_sendto(lwip_fd, dataptr, size, flags, (struct sockaddr *) &to_lwip, tolen);
+	ret = lwip_sendto(lwip_fd, dataptr, size, flags, to_ptr, tolen);
 	return lwip_return(ret);
 }
 

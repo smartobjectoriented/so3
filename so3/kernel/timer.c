@@ -405,10 +405,28 @@ void timer_init(void)
 #endif
 }
 
+SYSCALL_DEFINE2(gettimeofday_time32, struct timeval32 *, ts, void *, tz)
+{
+	struct timeval time64;
+
+	long ret = sys_do_gettimeofday(&time64, NULL);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	ts->tv_sec = (time32_t) time64.tv_sec;
+	ts->tv_usec = (time32_t) time64.tv_usec;
+
+	return 0;
+}
+
 /*
  * This function gets the current time and put it in the parameter tv
+ *
+ * Timezone (tz) is ignored
  */
-SYSCALL_DEFINE1(gettimeofday, struct timespec *, ts)
+SYSCALL_DEFINE2(gettimeofday, struct timeval *, ts, void *, tz)
 {
 	u64 time;
 
@@ -419,7 +437,23 @@ SYSCALL_DEFINE1(gettimeofday, struct timespec *, ts)
 	time = NOW();
 
 	ts->tv_sec = time / (time_t) 1000000000;
-	ts->tv_nsec = time;
+	ts->tv_usec = time / (time_t) 1000;
+
+	return 0;
+}
+
+SYSCALL_DEFINE2(clock_gettime32, int, clk_id, struct timespec32 *, ts)
+{
+	struct timespec time64;
+
+	long ret = sys_do_clock_gettime(clk_id, &time64);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	ts->tv_sec = (time32_t) time64.tv_sec;
+	ts->tv_nsec = (time32_t) time64.tv_nsec;
 
 	return 0;
 }

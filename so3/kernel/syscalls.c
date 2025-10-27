@@ -35,9 +35,10 @@ extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
 
+#warning Not updated, a rework is needed to avoid having a big array because of #ifdef ...
 static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[0 ... NR_SYSCALLS - 1] = NULL,
-
+	/*
 #ifdef CONFIG_MMU
 	[SYSCALL_GETPID] = __sys_getpid,
 	[SYSCALL_GETTIMEOFDAY] = __sys_gettimeofday,
@@ -93,36 +94,8 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[SYSCALL_RECVFROM] = __sys_recvfrom,
 #endif
 	[SYSCALL_SYSINFO] = __sys_sysinfo,
+*/
 };
-
-SYSCALL_DEFINE2(sysinfo, unsigned long, info_number, char *, text)
-{
-	switch (info_number) {
-	case SYSINFO_DUMP_HEAP:
-		dump_heap("Heap info asked from user.\n");
-		break;
-
-	case SYSINFO_DUMP_SCHED:
-		dump_sched();
-		break;
-
-#ifdef CONFIG_MMU
-	case SYSINFO_DUMP_PROC:
-		dump_proc();
-		break;
-#endif
-
-#ifdef CONFIG_APP_TEST_MALLOC
-	case SYSINFO_TEST_MALLOC:
-		test_malloc(a->args[1]);
-		break;
-#endif
-	case SYSINFO_PRINTK:
-		printk("%s", (char *) text);
-		break;
-	}
-	return 0;
-}
 
 /*
  * Process syscalls according to the syscall number passed in r7 on ARM and x8 on ARM64.

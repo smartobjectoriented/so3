@@ -45,6 +45,14 @@ SYSCALL_DEFINE0(sigreturn)
 }
 
 /**
+ * rt_sigreturn isn't different from sigreturn for SO3 use case.
+ */
+SYSCALL_DEFINE0(rt_sigreturn)
+{
+	return sys_do_sigreturn();
+}
+
+/**
  * Checks if signals were set and executes their handlers if so.
  */
 __sigaction_t *sig_check(void)
@@ -103,11 +111,16 @@ void __mem(int a, char *adr, int log) {
 }
 #endif /* 0 */
 
-SYSCALL_DEFINE3(sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_action)
+SYSCALL_DEFINE4(rt_sigaction, int, signum, const sigaction_t *, action, sigaction_t *, old_action, size_t, sigsize)
 {
+	if (sigsize != sizeof(sigset_t)) {
+		LOG_WARNING("Invalid sigset size\n");
+		return -EINVAL;
+	}
+
 	if (signum < 0 || signum >= _NSIG) {
 		LOG_ERROR("signum not valid!\n");
-		return -1;
+		return -EINVAL;
 	}
 
 	if (old_action != NULL)

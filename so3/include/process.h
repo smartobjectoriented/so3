@@ -142,7 +142,7 @@ SYSCALL_DECLARE(getpid, void);
 SYSCALL_DECLARE(execve, const char *filename, char **argv, char **envp);
 SYSCALL_DECLARE(fork, void);
 SYSCALL_DECLARE(exit, int exit_status);
-SYSCALL_DECLARE(waitpid, int pid, uint32_t *wstatus, uint32_t options);
+SYSCALL_DECLARE(wait4, int pid, uint32_t *wstatus, uint32_t options, void *rusage);
 
 pcb_t *find_proc_by_pid(uint32_t pid);
 
@@ -153,6 +153,6 @@ void dump_proc(void);
 extern int __exec(const char *file);
 extern int __write(int fd, char *buffer, int count);
 
-SYSCALL_DECLARE(sbrk, int increment);
+SYSCALL_DECLARE(brk, long increment);
 
 #endif /* PROCESS_H */

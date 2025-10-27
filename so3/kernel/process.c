@@ -969,7 +969,7 @@ SYSCALL_DEFINE0(getpid)
 }
 
 /*
- * Waitpid implementation - do_waitpid() does the following operations:
+ * Waitpid implementation via wait4 - sys_do_wait4() does the following operations:
  * - Suspend the current process until the child process finished its execution
  * (exit()) If the pid argument is -1, waitpid() looks for a possible terminated
  * process and performs the operation. If no process is finished (in zombie
@@ -977,8 +977,10 @@ SYSCALL_DEFINE0(getpid)
  * - Get the exit code from the child PCB
  * - Clean the PCB and page tables
  * - Return the pid if successful operation
+ *
+ * rusage is ignored
  */
-SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
+SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *, rusage)
 {
 	pcb_t *child;
 	unsigned long flags;
@@ -1088,7 +1090,7 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
  * @return  This function will the position of the end of the heap / program
  *break before increment
  */
-SYSCALL_DEFINE1(sbrk, int, increment)
+SYSCALL_DEFINE1(brk, long, increment)
 {
 	pcb_t *pcb = current()->pcb;
 	int ret_pointer;
