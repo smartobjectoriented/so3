@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2025 Clément Dieperink <clement.dieperink@heig-vd.ch>
 #
