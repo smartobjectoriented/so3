@@ -5,8 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
+    branches: ["main", "144-support-musl"]
 
 jobs:
   build-so3:
