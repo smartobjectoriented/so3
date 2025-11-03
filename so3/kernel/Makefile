@@ -8,6 +8,7 @@ obj-y += 	main.o \
 		thread.o \
 		schedule.o \
 		mutex.o  \
+		futex.o  \
 		spinlock.o \
 		syscalls.o \
 		softirq.o \
