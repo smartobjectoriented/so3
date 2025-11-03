@@ -31,9 +31,7 @@
 
 .global __switch_context
 .global __thread_prologue_kernel
-.global __thread_prologue_user
 .global __exec_prologue_user
-.global __thread_prologue_user_pre_launch
 
 .globl __get_syscall_args_ext
 .globl __get_syscall_arg
@@ -41,7 +39,6 @@
 .global __mmu_switch_ttbr0
 .global __exec
 .global __write
-.global __save_context
 
 .global __enable_vfp
 
@@ -51,7 +48,6 @@
 #ifdef CONFIG_MMU
 
 .extern __check_ptrace_traceme
-.extern ret_from_fork
 .extern pre_launch_proc
 
 #endif
@@ -83,39 +79,6 @@ __thread_prologue_kernel:
 	cpsie   i
 
 	bl	thread_prologue
-
-@ User thread initial entry point
-@ Called once per thread
-@ r4: th_fn, r5: th_arg, r6: user stack
-__thread_prologue_user:
-
-	@ Prepare to jump into C code
-	mov r0, r4 @ tcb->th_fn
-	mov r1, r5 @ tcb->th_arg
-
-#ifdef CONFIG_MMU
-	@ Check if the thread must stopped because of ptrace/tracee
-	stmfd sp!, {r0, r1}
-	bl	__check_ptrace_traceme
-	ldmfd sp!, {r0, r1}
-#endif
-
-	@ IRQ enabling - must be done in SVC mode of course ;-)
-	@ We should take care about protecting against signal receipt:
-	@ since the stack is not initialized yet, the signal processing should be kept disabled.
-	cpsie   i
-
- 	@ Switch into user mode
- 	mrs  r4, cpsr
-	bic	r4, r4, #PSR_MODE_MASK
-	orr	r4, r4, #PSR_USR_MODE
- 	msr	 cpsr, r4
-
-	@ User stack initialisation
-	mov  sp, r6
-
-	bl	thread_prologue
-
 
 #ifdef CONFIG_AVZ
 
@@ -207,37 +170,6 @@ __mmu_switch_ttbr0:
 	nop
 	nop
 	nop
-
-@ Store the current registers into a cpu_regs structure passed in r0 (as first argument)
-__save_context:
-
-	@ Adjust the kernel stack pointer so that we can proceed with ret_from_fork
-	@ SVC_STACK_FRAME_SIZE/4 registers are preserved when at the syscall vector entry point
-
-	@ Adjust the sp which is stored on the stack. Make sure
-	@ it refers to this stack and not the one issue from the copy
-	@ as during fork().
-
-	str		r1, [r1, #(OFFSET_SP-SVC_STACK_FRAME_SIZE)]
-
-	sub		r2, r1, #SVC_STACK_FRAME_SIZE
-
-	@ Prepare to configure sp during the context switch.
-	str		r2, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
-
-	@ Prepare the lr to branch to ret_from_fork
-	ldr		r1, .LCret_from_fork
-	str		r1, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
-
-	@ Preserve r7 which contains the syscall number (used to compare against SIG_RETURN)
-	str		r7, [r0, #(OFFSET_TCB_CPU_REGS + OFFSET_R7)]
-
-	@ The other registers are not important.
-
-	mov 	pc, lr
-
-.LCret_from_fork:
-	.word ret_from_fork
 
 .LCcurrent:
 	.word current_thread

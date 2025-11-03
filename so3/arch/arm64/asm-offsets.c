@@ -85,6 +85,7 @@ int main(void)
 	DEFINE(OFFSET_SP, offsetof(struct cpu_regs, sp));
 	DEFINE(OFFSET_PC, offsetof(struct cpu_regs, pc));
 	DEFINE(OFFSET_PSTATE, offsetof(struct cpu_regs, pstate));
+	DEFINE(OFFSET_TLS_USR, offsetof(struct cpu_regs, tls_usr));
 
 	BLANK();
 

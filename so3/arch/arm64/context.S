@@ -28,7 +28,6 @@
 
 .global __switch_context
 .global __thread_prologue_kernel
-.global __thread_prologue_user
 .global __exec_prologue_user
 
 .globl __get_syscall_args_ext
@@ -37,7 +36,6 @@
 .global __mmu_switch
 .global __exec
 .global __write
-.global __save_context
 .global __root_proc
 
 .extern thread_prologue
@@ -46,7 +44,6 @@
 .global __enable_vfp
 
 .extern __check_ptrace_traceme
-.extern ret_from_fork
 
 #ifdef CONFIG_AVZ
 
@@ -67,7 +64,7 @@ ____switch_to:
 
 save_ctx:
 	// store callee-saved registers
-	stp	x19, x20, [x8], #16		 
+	stp	x19, x20, [x8], #16
 	stp	x21, x22, [x8], #16
 	stp	x23, x24, [x8], #16
 	stp	x25, x26, [x8], #16
@@ -83,7 +80,7 @@ load_ctx:
 	add	x8, x1, x10
 
 	// restore callee-saved registers
-	ldp	x19, x20, [x8], #16		
+	ldp	x19, x20, [x8], #16
 	ldp	x21, x22, [x8], #16
 	ldp	x23, x24, [x8], #16
 	ldp	x25, x26, [x8], #16
@@ -141,7 +138,7 @@ ENTRY(__mmu_switch_ttbr1)
 	isb
 
 	msr	ttbr1_el1, x0
-	
+
 	tlbi	alle1
 
 	isb
@@ -163,7 +160,7 @@ ENTRY(__mmu_switch_vttbr)
 	tlbi	alle2
 
 	dsb	nsh
-	
+
 	ret
 
 ENTRY(cpu_do_idle)
@@ -196,68 +193,6 @@ __thread_prologue_kernel:
 
 	bl	thread_prologue
 	// Never reached
-
-// User thread initial entry point
-// Called once per thread
-// x19: th_fn, x20: th_arg, x21: user stack
-
-__thread_prologue_user:
-
-  	msr 	elr_el1, x19
-
-	msr 	sp_el0, x21
-
-	mov 	x0, #PSR_MODE_EL0t
-
-	msr 	spsr_el1, x0
-
-	// Prepare to jump into C code
-	mov 	x0, x20
-
-#if 0
-	at 	s1e0r, x19
- 	isb
- 	mrs 	x0, par_el1
-#endif
-
-	eret
-#if 0
-#ifdef CONFIG_MMU
-	// Check if the thread must stopped because of ptrace/tracee
-	stmfd 	sp!, {r0, r1}
-	bl	__check_ptrace_traceme
-	ldmfd	sp!, {r0, r1}
-#endif
-#endif
-
-// Store the current registers into a cpu_regs structure passed in r0 (as first argument)
-__save_context:
-
-	// Adjust the kernel stack pointer so that we can proceed with ret_from_fork.
-	// S_FRAME_SIZE/8 registers are preserved when at the syscall vector entry point
-
-	// Adjust the sp which is stored on the stack. Make sure
-	// it refers to this stack and not the one issue from the copy
-	// as during fork().
-
-	sub	x1, x1, #S_FRAME_SIZE
-
-	// Prepare to configure sp during the context switch
-	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_SP)]
-
-	// Prepare the lr to branch to ret_from_fork
-	ldr	x1, .LCret_from_fork
-	str	x1, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_LR)]
-
-	// Preserve x8 which contains the syscall number (used to compare against SIG_RETURN)
-	str	x8, [x0, #(OFFSET_TCB_CPU_REGS + OFFSET_X8)]
-
-	// The other registers are not important.
-
-	ret
-
-.LCret_from_fork:
-	.quad 	ret_from_fork
 
 .LCcurrent:
 	.quad 	current_thread

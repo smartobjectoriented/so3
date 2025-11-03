@@ -349,9 +349,10 @@ typedef struct cpu_regs {
 	__u32   lr;
 	__u32   pc;
 	__u32   psr;
-	__u32	sp_usr;
+	__u32   sp_usr;
 	__u32   lr_usr;
-	__u32   padding;  /* padding to keep 8-bytes alignment */
+	__u32   tls_usr;
+	/* Already aligned to 8-bytes, no padding required */
 } cpu_regs_t;
 
 #define cpu_relax()	wfe()

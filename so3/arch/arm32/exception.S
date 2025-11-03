@@ -118,6 +118,10 @@ __prepare_sig_handler:
 	tst	sp, #0x7	@ 8-bytes aligned
 	bne	__stack_alignment_fault
 
+	@ Copy TLS to the new stack frame
+	ldr	r0, [sp, #OFFSET_TLS_USR]
+	str	r0, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_TLS_USR)]
+
 	str	sp, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_SP)]	@ save sp
 
 	@ Build a new stack frame based on the current
@@ -169,7 +173,7 @@ __prepare_sig_handler:
 @ ARM EABI: the syscall nr is stored in r7
 .align  5
 syscall_interrupt:
- 
+
 	@ At the exception entry, the stack must be 8-byte aligned.
 	@ If it is not the case (gcc might not respect the AAPCS convention for optimization purposes),
 	@ sp will be adjusted. The original sp is preserved and will be correctly restored at the exit.
@@ -199,9 +203,13 @@ syscall_interrupt:
 	add	lr, sp, #OFFSET_SP_USR
 	stmia	lr, {sp, lr}^
 
+	@ Save user space TLS context
+	mrc	p15, 0, r0, c13, c0, 0
+	str 	r0, [sp, #OFFSET_TLS_USR]
+
 	cmp	r7, #SYSCALL_sigreturn
 	beq	__after_push_sp_usr
-	
+
 	ldr	r0, [sp, #OFFSET_SP_USR]
 	ldr 	r1, .LCcurrent
 	ldr 	r1, [r1]
@@ -254,6 +262,10 @@ __ret_from_fork:
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
 
+	@ Restore user space TLS context
+	ldr 	lr, [sp, #OFFSET_TLS_USR]
+	mcr	p15, 0, lr, c13, c0, 0
+
 	@ get the saved spsr and adjust the stack pointer
     	ldr 	lr, [sp, #OFFSET_PSR]
     	msr	spsr, lr
@@ -270,14 +282,14 @@ __ret_from_fork:
 
 	ldmia 	sp, {sp, lr, pc}^
 
- 
+
 
 @ Used at entry point of a fork'd process (setting the return value to 0)
 ret_from_fork:
 	mov	r0, #0
 
 	b	__ret_from_fork
- 
+
 .align  5
 prefetch_abort:
 
@@ -363,6 +375,10 @@ irq:
 	addeq	lr, sp, #OFFSET_SP_USR
 	stmeqia	lr, {sp, lr}^
 
+	@ Save user space TLS context
+	mrc	p15, 0, r0, c13, c0, 0
+	str 	r0, [sp, #OFFSET_TLS_USR]
+
 	@ Retrieve the lr_irq to set the pc out of this routine
 	ldr 	lr, [r0, #4]		@ retrieve lr_irq to set lr_svc
 	sub 	lr, lr, #4		@ Adjust the lr since it is automatically set from pc (in advance of 2 instructions due to the pipeline)
@@ -387,6 +403,10 @@ irq:
 	@ Is there any pending signals for this process?
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
+
+	@ Restore user space TLS context
+	ldr 	lr, [sp, #OFFSET_TLS_USR]
+	mcr	p15, 0, lr, c13, c0, 0
 
     	ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
     	msr	spsr, lr
