@@ -62,9 +62,6 @@ char *proc_state_str(proc_state_t state)
 static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
-/* Used to update regs during fork */
-extern void __save_context(tcb_t *newproc, addr_t stack_addr);
-
 /* only the following sections are supported */
 #define SUPPORTED_SECTION_COUNT 6
 static const char *supported_section_names[SUPPORTED_SECTION_COUNT] = {
@@ -207,9 +204,6 @@ pcb_t *new_process(void)
 
 	pcb->pid = pid_current++;
 
-	for (i = 0; i < PROC_MAX_THREADS; i++)
-		pcb->stack_slotID[i] = false;
-
 	/* Init the list of child threads */
 	INIT_LIST_HEAD(&pcb->threads);
 
@@ -245,7 +239,7 @@ pcb_t *new_process(void)
 void reset_process_stack(pcb_t *pcb)
 {
 	/* Set up the main process stack (including all thread stacks) */
-	pcb->page_count = ALIGN_UP(PROC_STACK_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
+	pcb->page_count = ALIGN_UP(INITIAL_STACK_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
 
 	/*
          * The stack virtual top is under the page of arguments, from the top
@@ -316,6 +310,7 @@ void create_root_process(void)
 {
 	pcb_t *pcb;
 	int i;
+	clone_args_t thread_args;
 
 	local_irq_disable();
 
@@ -336,9 +331,14 @@ void create_root_process(void)
 	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start),
 		       (void *) __root_proc_end - (void *) __root_proc_start, false);
 
-	/* Start main thread <args> of the thread is not used in this context.
-         */
-	pcb->main_thread = user_thread((th_fn_t) USER_SPACE_VADDR, "root_proc", NULL, pcb);
+	/* Start main user thread. */
+	thread_args = (clone_args_t) {
+		.name = "root_proc",
+		.pcb = pcb,
+		.stack = pcb->stack_top,
+		.fn = (th_fn_t) USER_SPACE_VADDR,
+	};
+	pcb->main_thread = user_thread(&thread_args);
 
 	/* init process? */
 	if (!root_process)
@@ -701,7 +701,6 @@ SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 	pcb_t *pcb;
 	unsigned long flags;
 	th_fn_t start_routine;
-	queue_thread_t *cur;
 	int ret, argc;
 
 	/* Count the number of arguments */
@@ -751,42 +750,16 @@ SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 	/* Release the kernel buffer used to store the ELF binary image */
 	elf_clean_image(&elf_img_info);
 
-	/* Now, we need to create the main user thread associated to this binary
-         * image. */
-	/* start main thread */
+	/* Now, we need to restart the user thread from the new program starting address */
 	start_routine = (th_fn_t) pcb->bin_image_entry;
 
-	/* We start the new thread */
-	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) arch_get_args_base(), pcb);
+	/* Rename thread to inlcude new PCB name */
+	snprintf(pcb->main_thread->name, THREAD_NAME_LEN, "%s_%d", pcb->name, pcb->main_thread->tid);
 
-	/* Transfer the waiting thread if any */
+	/* Arguments base is used as stack address and arguments will be retrieved from it by MUSL. */
+	arch_restart_user_thread(pcb->main_thread, start_routine, arch_get_args_base());
 
-	/* Make sure it is the main thread of the dying thread, i.e. another
-         * process is waiting on it (the parent) */
-	if (!list_empty(&current()->joinQueue)) {
-		cur = list_entry(current()->joinQueue.next, queue_thread_t, list);
-
-		ASSERT(cur->tcb->pcb == current()->pcb->parent);
-
-		/* Migrate the entry to the new main thread */
-		list_move(&cur->list, &pcb->main_thread->joinQueue);
-	}
-
-	/* Now, make sure there is no other waiting threads on the dying thread
-         */
-	ASSERT(list_empty(&current()->joinQueue));
-
-	/* We detach the thread from its pcb so that thread_exit() can
-         * distinguish between this kind of (replaced) thread and a standard
-         * thread which will be stay in zombie state.
-         */
-	current()->pcb = NULL;
-
-	/* Finishing the running thread. The final clean_thread() function will
-         * be called in thread_exit(). */
-	thread_exit(0);
-
-	/* IRQs never restored here... */
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -812,10 +785,6 @@ pcb_t *duplicate_process(pcb_t *parent)
 	pcb->heap_base = parent->heap_base;
 	pcb->heap_pointer = parent->heap_pointer;
 
-	/* Duplicate the array of allocated stack slots dedicated to user
-         * threads */
-	memcpy(pcb->stack_slotID, parent->stack_slotID, sizeof(parent->stack_slotID));
-
 	/* Clone all file descriptors */
 	if (vfs_clone_fd(parent->fd_array, pcb->fd_array)) {
 		LOG_CRITICAL("!! Error while cloning fds\n");
@@ -825,70 +794,109 @@ pcb_t *duplicate_process(pcb_t *parent)
 	return pcb;
 }
 
+static long do_clone(clone_args_t *args)
+{
+	/* Flags used by pthread_create in MUSL, only those are supported. */
+	static const unsigned long THREAD_FLAGS = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD |
+						  CLONE_SYSVSEM | CLONE_SETTLS | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
+						  CLONE_DETACHED;
+
+	unsigned long flags;
+	long ret;
+	pcb_t *new_pcb, *current_pcb;
+	tcb_t *new_tcb;
+
+	flags = local_irq_save();
+	current_pcb = current()->pcb;
+
+	if (args->flags & CLONE_THREAD) {
+		if (args->flags != THREAD_FLAGS) {
+			LOG_WARNING("Only pthread_create clone flags are supported for thread\n");
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* Don't need to create a new PCB, use current as "new" PCB to create the thread. */
+		new_pcb = current_pcb;
+	} else {
+		if (args->flags != 0) {
+			LOG_WARNING("Clone flags not support for forking\n");
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* For the time being, we *only* authorize to fork() from the main
+		 * thread */
+		if (current() != current_pcb->main_thread) {
+			LOG_WARNING("%s: forking from a thread other than the main thread "
+				    "is not allowed so far ...\n",
+				    __func__);
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* Duplicate the elements of the parent process into the child */
+		new_pcb = duplicate_process(current_pcb);
+
+		/* Copy the user space area of the parent process */
+		duplicate_user_space(current_pcb, new_pcb);
+
+		/* At the moment, we spawn the main_thread only in the child. In the
+		 * future, we will have to create a thread for each existing threads in
+		 * the parent process.
+		 */
+		snprintf(new_pcb->name, PROC_NAME_LEN, "%s_child_%d", current_pcb->name, new_pcb->pid);
+	}
+	args->pcb = new_pcb;
+
+	/* Use PCB name as thread name. The TID will be appended to it. */
+	args->name = new_pcb->name;
+
+	new_tcb = user_thread(args);
+
+	/* Child thread will return in ret_from_fork and so only parent thread reachs this */
+	ret = new_tcb->tid;
+
+	if (!(args->flags & CLONE_THREAD)) {
+		/* The main process thread is ready to be scheduled for its execution.*/
+		new_pcb->state = PROC_STATE_READY;
+
+		BUG_ON(!local_irq_is_disabled());
+
+		/* Prepare to perform scheduling to check if a context switch is
+		 * required. */
+		raise_softirq(SCHEDULE_SOFTIRQ);
+
+		/* Process clone should return the PID instead of the TID. */
+		ret = new_pcb->pid;
+	}
+
+error:
+	local_irq_restore(flags);
+	return ret;
+}
+
 /*
  * For a new process from the current running process.
  */
 SYSCALL_DEFINE0(fork)
 {
-	pcb_t *newp, *parent;
-	unsigned long flags;
+	clone_args_t args = {};
 
-	flags = local_irq_save();
+	return do_clone(&args);
+}
 
-	parent = current()->pcb;
+SYSCALL_DEFINE5(clone, unsigned long, flags, unsigned long, newsp, int *, parent_tid, unsigned long, tls, int *, child_tid)
+{
+	clone_args_t args = {
+		.flags = flags & ~CSIGNAL,
+		.stack = newsp,
+		.parent_tid = parent_tid,
+		.tls = tls,
+		.child_tid = child_tid,
+	};
 
-	/* For the time being, we *only* authorize to fork() from the main
-         * thread */
-	if (current() != parent->main_thread) {
-		LOG_WARNING("%s: forking from a thread other than the main thread "
-			    "is not allowed so far ...\n",
-			    __func__);
-		return -1;
-	}
-
-	/* Duplicate the elements of the parent process into the child */
-	newp = duplicate_process(parent);
-
-	/* Copy the user space area of the parent process */
-	duplicate_user_space(parent, newp);
-
-	/* At the moment, we spawn the main_thread only in the child. In the
-         * future, we will have to create a thread for each existing threads in
-         * the parent process.
-         */
-	sprintf(newp->name, "%s_child_%d", parent->name, newp->pid);
-
-	newp->main_thread = user_thread(NULL, newp->name, (void *) arch_get_args_base(), newp);
-
-	/* Copy the kernel stack of the main thread */
-	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
-	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
-	       CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
-
-	/*
-         * Preserve the current value of all registers concerned by this
-         * execution so that the new thread will be able to pursue its execution
-         * once scheduled.
-         */
-
-	__save_context(newp->main_thread, get_kernel_stack_top(newp->main_thread->stack_slotID));
-
-	/* The main process thread is ready to be scheduled for its execution.*/
-	newp->state = PROC_STATE_READY;
-
-	BUG_ON(!local_irq_is_disabled());
-
-	/* Prepare to perform scheduling to check if a context switch is
-         * required. */
-	raise_softirq(SCHEDULE_SOFTIRQ);
-
-	local_irq_restore(flags);
-
-	/* Return the PID of the child process. The child will do not execute
-         * this code, since it jumps to the ret_from_fork in context.S
-         */
-
-	return newp->pid;
+	return do_clone(&args);
 }
 
 /*
@@ -896,7 +904,7 @@ SYSCALL_DEFINE0(fork)
  * All allocated resources should be released except its PCB which still
  * contains the exit code.
  */
-SYSCALL_DEFINE1(exit, int, exit_status)
+SYSCALL_DEFINE1(exit_group, int, exit_status)
 {
 	pcb_t *pcb;
 	unsigned i;
@@ -955,7 +963,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
          * will lead to the wake up of the parent.
          */
 
-	thread_exit(NULL);
+	thread_exit(0);
 
 	return 0;
 }
@@ -1121,7 +1129,7 @@ SYSCALL_DEFINE1(brk, long, increment)
 			pcb->page_count += 1;
 			allocate_page(pcb, pcb->heap_base, page_count);
 			pcb->heap_pointer = pcb->heap_base + PAGE_SIZE;
-		} 
+		}
 		return -1;
 	}
 

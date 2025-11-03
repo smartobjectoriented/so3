@@ -1091,7 +1091,7 @@ enum trap_return {
  * addressed by index
  */
 typedef struct __attribute__((packed, aligned(8))) cpu_regs {
-        u64 x0;
+	u64 x0;
 	u64 x1;
 	u64 x2;
 	u64 x3;
@@ -1127,8 +1127,12 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 	u64 pstate;
 
 	/* <sp_usr> is used to keep track of the sp at the higher EL - used for signal-like handler */
-        u64 sp_usr;
-        u64 padding;
+	u64 sp_usr;
+
+	/* TLS is used by userspace to store thread context */
+	u64 tls_usr;
+
+	/* Already aligned on 16 bytes no padding required */
 } cpu_regs_t;
 
 #ifdef CONFIG_AVZ
@@ -1138,12 +1142,12 @@ typedef struct vcpu {
 	cpu_regs_t regs;	/* All CPU registers */
 
 	/* System registers at EL1 */
-        u64 sctlr_el1;
-        u64 vbar_el1;
-        u64 ttbr0_el1;
-        u64 ttbr1_el1;
-        u64 tcr_el1;
-        u64 mair_el1;
+	u64 sctlr_el1;
+	u64 vbar_el1;
+	u64 ttbr0_el1;
+	u64 ttbr1_el1;
+	u64 tcr_el1;
+	u64 mair_el1;
 
 } vcpu_t;
 

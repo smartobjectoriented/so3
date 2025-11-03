@@ -124,7 +124,7 @@ ENTRY(__vectors)
 
 	// Current EL with SPx / Synchronous
 	.align 7
-	
+
 	mov	x0, lr
 	b 	trap_handle_error
 
@@ -158,9 +158,9 @@ ENTRY(__vectors)
 
 #ifdef CONFIG_AVZ
 	b 	el12_sync_handler
-#else  
+#else
 	b 	el01_sync_handler
-#endif  
+#endif
 
 	// Lower EL using AArch64 / IRQ
 	.align 7
@@ -206,7 +206,7 @@ ENTRY(__vectors)
 
 	mov	x0, lr
 	b 	trap_handle_error
- 
+
 
 #ifdef CONFIG_CPU_SPIN_TABLE
 
@@ -317,7 +317,7 @@ ENTRY(pre_ret_to_el1)
 .endm
 
 
-// Exit macro at the end of an exception routine 
+// Exit macro at the end of an exception routine
 // It restores the sp_el0 as well.
 .macro prepare_to_exit_to_el1
 	ldr	x0, [sp, #OFFSET_PC]
@@ -375,7 +375,7 @@ cpu_entrypoint:
 
 __prepare_to_sig_el1_handler:
 
-	/* Preserve the SP_EL2 in the new stack frame used by 
+	/* Preserve the SP_EL2 in the new stack frame used by
 	 * the signal handler.
 	 */
 
@@ -387,7 +387,7 @@ __prepare_to_sig_el1_handler:
 
 	// Build a new stack frame based on the current
 	sub	sp, sp, #S_FRAME_SIZE
-	
+
 	// Set the handler to the PC
 	str	x21, [sp, #OFFSET_PC]
 
@@ -438,7 +438,7 @@ ENTRY(pre_ret_to_user)
 	ldr	x2, [sp, #OFFSET_LR]  // Entry point of the guest
 	msr	elr_el2, x2
 
-	/* 
+	/*
 	 * The MMU must be disabled so that the guest can keep its initial boot code.
 	 * Make sure CPU EL1 has MMU disabled.
 	 */
@@ -455,7 +455,7 @@ ENTRY(pre_ret_to_user)
 	msr	spsr_el2, x2
 
 	kernel_exit
-	
+
 	// Ready to jump into the domain...
 
 	eret
@@ -476,12 +476,15 @@ ENTRY(pre_ret_to_user)
 
 __prepare_sig_handler:
 
-	/* Preserve the SP_EL1 in the new stack frame used by 
-	 * the signal handler
+	/* Preserve the SP_EL1 and the TLS in the new stack frame used
+	 * by the signal handler
 	 */
 
 	ldr	x2, [sp, #OFFSET_SP_USR]
 	str	x2, [sp, #(OFFSET_SP_USR - S_FRAME_SIZE)]
+
+	ldr	x2, [sp, #OFFSET_TLS_USR]
+	str	x2, [sp, #(OFFSET_TLS_USR - S_FRAME_SIZE)]
 
 	// Build a new stack frame based on the current
 	sub	sp, sp, #S_FRAME_SIZE
@@ -489,10 +492,10 @@ __prepare_sig_handler:
 	mov	x2, #PSR_MODE_EL0t
 	bic	x2, x2, #PSR_I_BIT
 	str	x2, [sp, #OFFSET_PSTATE]
-	
+
 	ldr	x1, [x0, #OFFSET_SYS_SIGNUM]
 	str	x1, [sp, #OFFSET_X0]
-	
+
 	ldr	x1, [x0, #OFFSET_SYS_SA]
 	ldr	x2, [x1, #OFFSET_SA_HANDLER]
 	str	x2, [sp, #OFFSET_X1]
@@ -526,12 +529,15 @@ __prepare_sig_handler:
 	mrs	x0, sp_el0
 	str	x0, [sp, #OFFSET_SP_USR]
 
+	mrs	x0, tpidr_el0
+	str	x0, [sp, #OFFSET_TLS_USR]
+
 	mrs	x0, spsr_el1
 	str	x0, [sp, #OFFSET_PSTATE]
 .endm
 
 
-// Exit macro at the end of an exception routine 
+// Exit macro at the end of an exception routine
 // It restores the sp_el0 as well.
 .macro prepare_to_exit_to_el0
 	ldr	x0, [sp, #OFFSET_PC]
@@ -539,6 +545,9 @@ __prepare_sig_handler:
 
 	ldr 	x0, [sp, #OFFSET_SP_USR]
 	msr	sp_el0, x0
+
+	ldr	x0, [sp, #OFFSET_TLS_USR]
+	msr	tpidr_el0, x0
 
 	ldr	x0, [sp, #OFFSET_PSTATE]
 	msr	spsr_el1, x0
@@ -559,11 +568,11 @@ el01_sync_handler:
 	// clean the stack frame which has been used to manage the user handler.
 	cmp	x8, #SYSCALL_rt_sigreturn
 	bne	__ret_from_fork
-	
+
 	// Reset the stack frame by removing the one issued from sigreturn
 	add	sp, sp, #S_FRAME_SIZE
 
- 
+
 __ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
@@ -610,7 +619,7 @@ ret_from_fork:
 	ldmfd 	sp!, {r0-r4}
 #endif
 #endif
- 
+
 
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 

@@ -46,7 +46,9 @@ rt_sigreturn            IPC_SIGNAL
 getpid                  MMU
 execve                  MMU
 fork                    MMU
+clone                   MMU
 exit                    MMU
+exit_group              MMU
 wait4                   MMU
 ptrace                  MMU
 gettimeofday            MMU
