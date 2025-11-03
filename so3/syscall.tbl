@@ -37,6 +37,7 @@ newfstatat
 mmap
 mmap2
 nanosleep
+futex
 pipe                    IPC_PIPE
 pipe2                   IPC_PIPE
 rt_sigaction            IPC_SIGNAL
