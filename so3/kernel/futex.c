@@ -30,12 +30,11 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 {
 	unsigned long flags;
 	pcb_t *pcb = current()->pcb;
-	spinlock_t f_lock = pcb->futex_lock;
 	struct list_head *pos;
 	futex_t *futex;
 	futex_el_t *f_element;
 
-	flags = spin_lock_irqsave(&f_lock);
+	flags = spin_lock_irqsave(&pcb->futex_lock);
 
 	if (*futex_w != val)
 		return -EAGAIN;
@@ -54,6 +53,8 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 		if (futex == NULL)
 			BUG();
 
+		futex->key = (uintptr_t)futex_w;
+
 		list_add_tail(&futex->list, &pcb->futex);
 	}
 
@@ -67,15 +68,58 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	list_add_tail(&f_element->list, &futex->f_element);
 
 	/* go to sleep. */
-	spin_unlock(&f_lock);
+	spin_unlock(&pcb->futex_lock);
 	waiting();
 
 	BUG_ON(local_irq_is_enabled());
 
-	spin_unlock_irqrestore(&f_lock, flags);
+	spin_unlock_irqrestore(&pcb->futex_lock, flags);
 
 	return 0;
 }
+
+static int do_futex_wake(uint32_t *futex_w, uint32_t val)
+{
+	unsigned long flags;
+	pcb_t *pcb = current()->pcb;
+	struct list_head *pos, *p;
+	futex_t *futex;
+	futex_el_t *f_element;
+	unsigned idx = 0;
+
+	flags = spin_lock_irqsave(&pcb->futex_lock);
+
+	/* Search for the futex element with futex_w as key */
+	list_for_each(pos, &pcb->futex) {
+		futex = list_entry(pos, futex_t, list);
+
+		if ((uintptr_t)futex_w == futex->key)
+			break;
+	}
+
+	if (pos == &pcb->futex)
+		/* key does not exists in futex - Error */
+		BUG();
+
+	/* wakes at most val of the waiters that are waiting */
+	list_for_each_safe(pos, p, &futex->list) {
+		f_element = list_entry(pos, futex_el_t, list);
+
+		if (idx == val)
+			break;
+
+		list_del(&f_element->list);
+		ready(f_element->tcb);
+
+		idx++;
+	}
+
+	spin_unlock_irqrestore(&pcb->futex_lock, flags);
+
+	return 0;
+
+}
+
 
 SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
 		const struct timespec *, utime,
@@ -89,7 +133,7 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
 	case FUTEX_WAIT:
 		return do_futex_wait(uaddr, val);
 	case FUTEX_WAKE:
-		break;
+		return do_futex_wake(uaddr, val);
 	default:
 		printk("Futex cmd '%d' not supported !\n");
 		return -EINVAL;
