@@ -20,6 +20,9 @@
 #define FUTEX_H
 
 #include <timer.h>
+#include <thread.h>
+#include <list.h>
+#include <spinlock.h>
 #include <syscall.h>
 
 /* Commands */
@@ -37,6 +40,45 @@
 #define FUTEX_PRIVATE_FLAG 128
 #define FUTEX_CLOCK_REALTIME	256
 #define FUTEX_CMD_MASK		~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
+
+/*
+ * Hash buckets are shared by all the futex_keys that hash to the same
+ * location.  Each key may have multiple futex_q structures, one for each task
+ * waiting on a futex.
+ */
+// struct futex_hash_bucket {
+// 	atomic_t waiters;
+// 	spinlock_t lock;
+// 	struct plist_head chain;
+// };
+
+typedef struct futex_el {
+	struct list_head list;
+	tcb_t *tcb;
+} futex_el_t;
+
+typedef struct futex {
+	struct list_head list;
+	struct list_head f_element;
+	uintptr_t key;
+} futex_t;
+
+
+/**
+ * struct futex_q - The hashed futex queue entry, one per waiting task
+ *
+ * @list:		priority-sorted list of tasks waiting on this futex
+ * @lock_ptr:	the hash bucket lock
+ * @key:		the key the futex is hashed on
+ * @task:		the task waiting on the futex
+ */
+// struct futex_q {
+//     struct plist_node list;
+//     struct futex_hash_bucket *lock_ptr;
+//     struct futex_key key;
+//     struct task_struct *task; // the sleeping thread
+// };
+
 
 
 SYSCALL_DECLARE(futex, u32 *uaddr, int op, u32 val, const struct timespec * utime,
