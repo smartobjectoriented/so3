@@ -266,12 +266,19 @@ void thread_exit(int exit_status)
 				complete(&pcb->threads_active);
 		}
 
+		/* If clear child tid is set, inform waiting thread */
+		if (pcb && current() != pcb->main_thread) {
+			if (current()->clear_child_tid) {
+				*(current()->clear_child_tid) = 0;
+				do_futex(current()->clear_child_tid, FUTEX_WAKE, 1, NULL, NULL, 0, 0);
+			}
+		}
+
 		/* Check if this is a kernel thread OR a main thread before a image replacement (during exec()).
 		 * In this case, we do not leave the thread in zombie since we assume that no other threads are joining on it.
 		 * (This is currently a limitation: kernel threads can not join other threads).
 		 */
 #warning Kernel threads cannot join other threads!
-#warning TODO: check for clear_child_tid usage
 
 		if (current()->pcb != NULL)
 			zombie();
@@ -359,7 +366,7 @@ tcb_t *thread_create(clone_args_t *args)
 
 	flags = local_irq_save();
 
-	tcb = (tcb_t *) malloc(sizeof(tcb_t));
+	tcb = (tcb_t *) calloc(1, sizeof(tcb_t));
 
 	if (tcb == NULL) {
 		printk("%s: failed to alloc memory.\n", __func__);
@@ -405,7 +412,7 @@ tcb_t *thread_create(clone_args_t *args)
 	}
 
 	if (args->flags & CLONE_CHILD_CLEARTID)
-		tcb->child_clear_tid = (addr_t) args->child_tid;
+		tcb->clear_child_tid = args->child_tid;
 
 	local_irq_restore(flags);
 
@@ -581,6 +588,12 @@ SYSCALL_DEFINE1(exit, int, exit_status)
 	thread_exit(exit_status);
 
 	return 0;
+}
+
+SYSCALL_DEFINE1(set_tid_address, int *, tidptr)
+{
+	current()->clear_child_tid = tidptr;
+	return current()->tid;
 }
 
 void threads_init(void)
