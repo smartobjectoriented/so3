@@ -48,6 +48,7 @@ getpid                  MMU
 execve                  MMU
 fork                    MMU
 clone                   MMU
+set_tid_address         MMU
 exit                    MMU
 exit_group              MMU
 wait4                   MMU
