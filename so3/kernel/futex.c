@@ -45,24 +45,24 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	list_for_each(pos, &pcb->futex) {
 		futex = list_entry(pos, futex_t, list);
 
-		if ((uintptr_t)futex_w == futex->key)
+		if ((uintptr_t) futex_w == futex->key)
 			break;
 	}
 
 	if (pos == &pcb->futex) {
 		/* no futex on futex_w */
-		futex = (futex_t *)calloc(1, sizeof(futex_t));
+		futex = (futex_t *) calloc(1, sizeof(futex_t));
 		if (futex == NULL)
 			BUG();
 
-		futex->key = (uintptr_t)futex_w;
+		futex->key = (uintptr_t) futex_w;
 
 		INIT_LIST_HEAD(&futex->f_element);
 		list_add_tail(&futex->list, &pcb->futex);
 	}
 
 	/* Add the thread in the futex_element list */
-	f_element = (futex_el_t *)calloc(1, sizeof(futex_el_t));
+	f_element = (futex_el_t *) calloc(1, sizeof(futex_el_t));
 	if (f_element == NULL)
 		BUG();
 
@@ -102,7 +102,7 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 	list_for_each(pos, &pcb->futex) {
 		futex = list_entry(pos, futex_t, list);
 
-		if ((uintptr_t)futex_w == futex->key)
+		if ((uintptr_t) futex_w == futex->key)
 			break;
 	}
 
@@ -126,12 +126,10 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
 
 	return 0;
-
 }
 
-SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
-		const struct timespec *, utime,
-		uint32_t *, uaddr2, uint32_t, val3)
+SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val, const struct timespec *, utime, uint32_t *, uaddr2, uint32_t,
+		val3)
 {
 	int cmd = op & FUTEX_CMD_MASK;
 
@@ -163,6 +161,3 @@ void futex_init(pcb_t *pcb)
 	INIT_LIST_HEAD(&pcb->futex);
 	spin_lock_init(&pcb->futex_lock);
 }
-
-
-
