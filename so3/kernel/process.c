@@ -203,16 +203,12 @@ pcb_t *new_process(void)
 	INIT_LIST_HEAD(&pcb->page_list);
 
 	/* Init the futex */
-	INIT_LIST_HEAD(&pcb->futex);
-	spin_lock_init(&pcb->futex_lock);
+	futex_init(pcb);
 
 	pcb->pid = pid_current++;
 
 	/* Init the list of child threads */
 	INIT_LIST_HEAD(&pcb->threads);
-
-	/* Init the 'futex' list */
-	INIT_LIST_HEAD(&pcb->futex);
 
 	/* Process-related memory management */
 

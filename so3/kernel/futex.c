@@ -22,9 +22,11 @@
 #include <futex.h>
 
 /**
- * do_futex_wait -
+ * do_futex_wait - block on futex_w
  *
- * @param futex_w
+ * @param futex_w address of the futex word
+ * @param val expected value of the futex word
+ * @return 0 on success or error value
  */
 static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 {
@@ -55,6 +57,7 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 
 		futex->key = (uintptr_t)futex_w;
 
+		INIT_LIST_HEAD(&futex->f_element);
 		list_add_tail(&futex->list, &pcb->futex);
 	}
 
@@ -63,7 +66,7 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	if (f_element == NULL)
 		BUG();
 
-	f_element->tcb = current();
+	f_element->waiter = current();
 
 	list_add_tail(&f_element->list, &futex->f_element);
 
@@ -78,7 +81,13 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	return 0;
 }
 
-static int do_futex_wake(uint32_t *futex_w, uint32_t val)
+/**
+ * do_futex_wake - wake one or more tasks blocked on uaddr
+ *
+ * @nr_wake wake up to this many tasks
+ * @return the number of waiters that were woken up
+ */
+static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 {
 	unsigned long flags;
 	pcb_t *pcb = current()->pcb;
@@ -101,15 +110,15 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t val)
 		/* key does not exists in futex - Error */
 		BUG();
 
-	/* wakes at most val of the waiters that are waiting */
+	/* wakes at most nr_wake of the waiters that are waiting */
 	list_for_each_safe(pos, p, &futex->list) {
 		f_element = list_entry(pos, futex_el_t, list);
 
-		if (idx == val)
+		if (idx == nr_wake)
 			break;
 
 		list_del(&f_element->list);
-		ready(f_element->tcb);
+		ready(f_element->waiter);
 
 		idx++;
 	}
@@ -120,13 +129,10 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t val)
 
 }
 
-
 SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
 		const struct timespec *, utime,
 		uint32_t *, uaddr2, uint32_t, val3)
 {
-
-	// unsigned int flags = futex_to_flags(op);
 	int cmd = op & FUTEX_CMD_MASK;
 
 	switch (cmd) {
@@ -134,7 +140,14 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
 		return do_futex_wait(uaddr, val);
 	case FUTEX_WAKE:
 		return do_futex_wake(uaddr, val);
-	default:
+	case FUTEX_FD:
+	case FUTEX_REQUEUE:
+	case FUTEX_CMP_REQUEUE:
+	case FUTEX_WAKE_OP:
+	case FUTEX_LOCK_PI:
+	case FUTEX_UNLOCK_PI:
+	case FUTEX_TRYLOCK_PI:
+	case FUTEX_WAIT_BITSET:
 		printk("Futex cmd '%d' not supported !\n");
 		return -EINVAL;
 	}
@@ -142,10 +155,13 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val,
 	return -ENOSYS;
 }
 
-
-void futex_init(void)
+/**
+ * futex_init - Futex initialization
+ */
+void futex_init(pcb_t *pcb)
 {
-
+	INIT_LIST_HEAD(&pcb->futex);
+	spin_lock_init(&pcb->futex_lock);
 }
 
 
