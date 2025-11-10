@@ -42,7 +42,6 @@
 .extern current_thread
 .extern __sync_serror
 .extern do_exit
-.extern __check_ptrace_syscall
 .extern sig_check
 
 .global __vectors
@@ -609,17 +608,6 @@ el01_1_irq_handler:
 ret_from_fork:
 	str	xzr, [sp, #OFFSET_X0]
 	b	__ret_from_fork
-
-
-#if 0
-#ifdef CONFIG_MMU
-	// Give a chance to a ptrace tracer to monitor us (after the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-#endif
-
 
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 

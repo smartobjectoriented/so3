@@ -47,7 +47,6 @@
 
 #ifdef CONFIG_MMU
 
-.extern __check_ptrace_traceme
 .extern pre_launch_proc
 
 #endif
