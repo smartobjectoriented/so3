@@ -47,7 +47,6 @@
 .extern __data_abort
 .extern __undefined_instruction
 
-.extern __check_ptrace_syscall
 .extern sig_check
 .extern __stack_alignment_fault
 
@@ -221,13 +220,6 @@ __after_push_sp_usr:
 	@ Restore r0-r2
 	ldmia	sp, {r0-r2}
 
-#ifdef CONFIG_MMU
-	@ Give a chance to a ptrace tracer to monitor us (before the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-
 	mov	r0, sp
 
 	cpsie	i 			@ Re-enable interrupts
@@ -243,14 +235,6 @@ __after_push_sp_usr:
 	add	sp, sp, #SVC_STACK_FRAME_SIZE
 
 __no_sigreturn:
-
-#ifdef CONFIG_MMU
-	@ Give a chance to a ptrace tracer to monitor us (after the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-
 __ret_from_fork:
 
 	@ Store the return value on the stack frame

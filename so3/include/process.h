@@ -28,7 +28,6 @@
 #include <completion.h>
 #include <memory.h>
 #include <signal.h>
-#include <ptrace.h>
 #include <spinlock.h>
 #include <futex.h>
 #include <mutex.h>
@@ -80,11 +79,6 @@ typedef struct {
 	struct list_head list;
 	page_t *page;
 } page_list_t;
-
-typedef struct {
-	bool tracee;
-	enum __ptrace_request req_in_progress;
-} ptrace_info_t;
 
 struct pcb {
 	int pid;
@@ -149,9 +143,6 @@ struct pcb {
 
 	/* Bitmap of the signals set for this process */
 	sigset_t sigset_map;
-
-	/* The process might be under a ptrace activity, and hence becoming a tracer (parent) or tracee (child) */
-	enum __ptrace_request ptrace_pending_req;
 
 	/* Mutex lock to be used in conjunction with the user space (very temporary) */
 	mutex_t *lock;

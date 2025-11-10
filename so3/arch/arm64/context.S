@@ -43,8 +43,6 @@
 
 .global __enable_vfp
 
-.extern __check_ptrace_traceme
-
 #ifdef CONFIG_AVZ
 
 // Switch from a domain to another
