@@ -21,7 +21,7 @@ set(CMAKE_CXX_COMPILER "aarch64-linux-musl-g++")
 # set(CMAKE_C_LINK_EXECUTABLE "aarch64-linux-musl-ld <OBJECTS> -o <TARGET>  <LINK_LIBRARIES> <LINK_FLAGS> <LINK_LIBRARIES>")
 set(CMAKE_ASM_COMPILER "aarch64-linux-musl-gcc")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99 -D__ARM64__ -fno-common")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99 -D_GNU_SOURCE -D__ARM64__ -fno-common")
 
 set(CMAKE_ASM_FLAGS "-D__ARM64__ -D__ASSEMBLY__")
 

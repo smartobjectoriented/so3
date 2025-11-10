@@ -91,7 +91,7 @@ void slv_terminate(slv_t *slv)
 	slv->terminate = true;
 	pthread_join(slv->tick_thread, NULL);
 	if (slv->has_loop_thread) {
-		pthread_join(slv->has_loop_thread, NULL);
+		pthread_join(slv->loop_thread, NULL);
 	}
 
 	lv_deinit();

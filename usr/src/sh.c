@@ -129,6 +129,7 @@ void process_cmd(void)
 	int pipe_on = 0;
 	int pipe_fd[2];
 
+#if 0 /* MICOFE - sys_info is not a valid syscall - code needs to be updated */
 	if (!strcmp(tokens[0], "dumpsched")) {
 		sys_info(1, 0);
 		return;
@@ -138,6 +139,7 @@ void process_cmd(void)
 		sys_info(4, 0);
 		return;
 	}
+#endif
 
 	if (!strcmp(tokens[0], "exit")) {
 		if (getpid() == 1) {
@@ -167,8 +169,8 @@ void process_cmd(void)
 	/* env */
 	if (!strcmp(tokens[0], "env")) {
 		/* This function print the environment vars */
-		for (i = 0; __environ[i] != NULL; i++)
-			printf("%s\n", __environ[i]);
+		for (i = 0; environ[i] != NULL; i++)
+			printf("%s\n", environ[i]);
 
 		return;
 	}
