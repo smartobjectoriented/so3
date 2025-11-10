@@ -34,12 +34,14 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	pcb_t *pcb = current()->pcb;
 	struct list_head *pos;
 	futex_t *futex;
-	futex_el_t *f_element;
+	queue_thread_t f_element;
 
 	flags = spin_lock_irqsave(&pcb->futex_lock);
 
-	if (*futex_w != val)
+	if (*futex_w != val) {
+		spin_unlock_irqrestore(&pcb->futex_lock, flags);
 		return -EAGAIN;
+	}
 
 	/* look if a futex_w already exists */
 	list_for_each(pos, &pcb->futex) {
@@ -61,18 +63,16 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 		list_add_tail(&futex->list, &pcb->futex);
 	}
 
-	/* Add the thread in the futex_element list */
-	f_element = (futex_el_t *) calloc(1, sizeof(futex_el_t));
-	if (f_element == NULL)
-		BUG();
+	f_element.tcb = current();
 
-	f_element->waiter = current();
-
-	list_add_tail(&f_element->list, &futex->f_element);
+	list_add_tail(&f_element.list, &futex->f_element);
 
 	/* go to sleep. */
 	spin_unlock(&pcb->futex_lock);
 	waiting();
+
+	if (list_empty(&futex->f_element))
+		free(futex);
 
 	BUG_ON(local_irq_is_enabled());
 
@@ -93,7 +93,7 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 	pcb_t *pcb = current()->pcb;
 	struct list_head *pos, *p;
 	futex_t *futex;
-	futex_el_t *f_element;
+	queue_thread_t *f_element;
 	unsigned idx = 0;
 
 	flags = spin_lock_irqsave(&pcb->futex_lock);
@@ -106,32 +106,37 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 			break;
 	}
 
-	if (pos == &pcb->futex)
+	if (pos == &pcb->futex) {
 		/* key does not exists in futex - Error */
-		BUG();
+		spin_unlock_irqrestore(&pcb->futex_lock, flags);
+		return -EINVAL();
+	}
 
 	/* wakes at most nr_wake of the waiters that are waiting */
 	list_for_each_safe(pos, p, &futex->list) {
-		f_element = list_entry(pos, futex_el_t, list);
+		f_element = list_entry(pos, queue_thread_t, list);
 
 		if (idx == nr_wake)
 			break;
 
 		list_del(&f_element->list);
-		ready(f_element->waiter);
+		ready(f_element->tcb);
 
 		idx++;
 	}
 
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
 
-	return 0;
+	return idx;
 }
 
 SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val, const struct timespec *, utime, uint32_t *, uaddr2, uint32_t,
 		val3)
 {
 	int cmd = op & FUTEX_CMD_MASK;
+
+	if (utime)
+		printk("[futex] utime parameter is not used in current implementation\n");
 
 	switch (cmd) {
 	case FUTEX_WAIT:
@@ -151,13 +156,4 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val, const struct t
 	}
 
 	return -ENOSYS;
-}
-
-/**
- * futex_init - Futex initialization
- */
-void futex_init(pcb_t *pcb)
-{
-	INIT_LIST_HEAD(&pcb->futex);
-	spin_lock_init(&pcb->futex_lock);
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2014-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2025 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -42,14 +43,6 @@
 #define FUTEX_CMD_MASK ~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
 
 /**
- * list of thread (waiter) waiting on a futex
- */
-typedef struct futex_el {
-	struct list_head list;
-	tcb_t *waiter;
-} futex_el_t;
-
-/**
  * list of futexes
  */
 typedef struct futex {
@@ -59,7 +52,5 @@ typedef struct futex {
 } futex_t;
 
 SYSCALL_DECLARE(futex, u32 *uaddr, int op, u32 val, const struct timespec *utime, u32 *uaddr2, u32 val3)
-
-void futex_init(pcb_t *pcb);
 
 #endif /* FUTEX_H */
