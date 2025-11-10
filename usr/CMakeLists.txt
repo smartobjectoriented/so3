@@ -18,7 +18,6 @@ option(MICROPYTHON "Support for micro-python apps" OFF)
 include_directories(  
      src
      lib
-     lib/libc/include
      lib/lvgl
      lib/lvgl/src
      lib/slv
@@ -47,8 +46,7 @@ add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/arm.lds -N -warn-common
 
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 
-add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/aarch64.lds -N -warn-common 
-	-warn-constructors -warn-multiple-gp -L ${libgcc_path} -lgcc
+add_link_options(-N -Wl,--warn-common
 )
 
 endif()
