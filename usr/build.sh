@@ -87,7 +87,7 @@ cd $SCRIPTPATH/build
 if [ "$PLATFORM" = "virt32" -o "$PLATFORM" = "vexpress" -o "$PLATFORM" = "rpi4" ]; then
   default_toolchain="arm_toolchain.cmake"
 elif [ "$PLATFORM" = "virt64" -o "$PLATFORM" = "rpi4_64" ]; then
-  default_toolchain="aarch64_toolchain.cmake"
+  default_toolchain="aarch64-linux-musl.cmake"
 elif [ -z "$USR_BUILD_TOOLCHAIN_FILE" ]; then
   # Only fail if no custom toolchain is provided
   echo "Unsupported PLATFORM ($PLATFORM) and no TOOLCHAIN_FILE specified"

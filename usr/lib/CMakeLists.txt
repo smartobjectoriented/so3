@@ -2,7 +2,6 @@
 set(ORIGINAL_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
-add_subdirectory(libc)
 set(LV_BUILD_CONF_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
     CACHE PATH "Directory containing lv_conf.h")
