@@ -109,7 +109,7 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 	if (pos == &pcb->futex) {
 		/* key does not exists in futex - Error */
 		spin_unlock_irqrestore(&pcb->futex_lock, flags);
-		return -EINVAL();
+		return -EINVAL;
 	}
 
 	/* wakes at most nr_wake of the waiters that are waiting */
