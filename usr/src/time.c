@@ -16,6 +16,6 @@ int main(int argc, char *argv[])
 
 		time(&t);
 
-		printf("# time(s) : %llu  time(us) : %llu\n", t, tv.tv_usec);
+		printf("# time(s) : %lu  time(us) : %lu\n", t, tv.tv_usec);
 	}
 }
