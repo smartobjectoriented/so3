@@ -47,13 +47,11 @@ void arch_prepare_cpu_regs(tcb_t *tcb, clone_args_t *args)
 			arch_restart_user_thread(tcb, args->fn, args->stack);
 		} else {
 			/* Normal userspace that will copy userspace registers */
-			if (args->stack) {
+			if (args->stack)
 				user_regs->sp_usr = args->stack;
-			}
 
-			if (args->flags & CLONE_SETTLS) {
+			if (args->flags & CLONE_SETTLS)
 				user_regs->tls_usr = args->tls;
-			}
 
 			/* Copy userspace registers */
 			*user_regs = *(cpu_regs_t *) arch_get_kernel_stack_frame(current());

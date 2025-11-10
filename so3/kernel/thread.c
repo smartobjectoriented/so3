@@ -347,6 +347,8 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
  * Thread creation routine
  *
  * @param args Aguments to create the thread
+ *
+ * @return TCB of the newly created thread.
  */
 tcb_t *thread_create(clone_args_t *args)
 {
@@ -402,9 +404,8 @@ tcb_t *thread_create(clone_args_t *args)
 		*args->parent_tid = tcb->tid;
 	}
 
-	if (args->flags & CLONE_CHILD_CLEARTID) {
+	if (args->flags & CLONE_CHILD_CLEARTID)
 		tcb->child_clear_tid = (addr_t) args->child_tid;
-	}
 
 	local_irq_restore(flags);
 
@@ -418,6 +419,8 @@ tcb_t *thread_create(clone_args_t *args)
  * @param name Name of the thread.
  * @param arg Arguments passed to the function called by the thread.
  * @param prio The thread scheduling priority.
+ *
+ * @return TCB of the newly created thread.
  */
 tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio)
 {
@@ -434,8 +437,9 @@ tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_
 /**
  * Create a new user thread based on given arguments.
  *
- * @param args
- * @return Address of the corresponding TCB
+ * @param args Aguments to create the user thread
+ *
+ * @return TCB of the newly created thread.
  */
 tcb_t *user_thread(clone_args_t *args)
 {
