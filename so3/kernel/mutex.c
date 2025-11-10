@@ -146,27 +146,6 @@ void mutex_unlock(struct mutex *lock)
 		schedule();
 }
 
-/*
- * The following syscall implementation are a first attempt, mainly used for debugging kernel mutexes.
- */
-SYSCALL_DEFINE1(mutex_lock, unsigned long, number)
-{
-	if (number >= N_MUTEX) {
-		return -EINVAL;
-	}
-	mutex_lock(&current()->pcb->lock[number]);
-	return 0;
-}
-
-SYSCALL_DEFINE1(mutex_unlock, unsigned long, number)
-{
-	if (number >= N_MUTEX) {
-		return -EINVAL;
-	}
-	mutex_unlock(&current()->pcb->lock[number]);
-	return 0;
-}
-
 void mutex_init(struct mutex *lock)
 {
 	memset(lock, 0, sizeof(struct mutex));
