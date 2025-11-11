@@ -51,7 +51,7 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 			break;
 	}
 
-	if (pos == &pcb->futex) {
+	if (list_is_head(pos, &pcb->futex)) {
 		/* no futex on futex_w */
 		futex = (futex_t *) calloc(1, sizeof(futex_t));
 		if (futex == NULL)
@@ -71,10 +71,12 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val)
 	spin_unlock(&pcb->futex_lock);
 	waiting();
 
+	BUG_ON(local_irq_is_enabled());
+
+	spin_lock(&pcb->futex_lock);
+
 	if (list_empty(&futex->f_element))
 		free(futex);
-
-	BUG_ON(local_irq_is_enabled());
 
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
 
@@ -106,7 +108,8 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 			break;
 	}
 
-	if (pos == &pcb->futex) {
+	/* Check if the wanted key was found in the list */
+	if (list_is_head(pos, &pcb->futex)) {
 		/* key does not exists in futex - Error */
 		spin_unlock_irqrestore(&pcb->futex_lock, flags);
 		return -EINVAL;
