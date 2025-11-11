@@ -78,6 +78,7 @@ int main(void)
 	DEFINE(OFFSET_PSR, offsetof(cpu_regs_t, psr));
 	DEFINE(OFFSET_SP_USR, offsetof(cpu_regs_t, sp_usr));
 	DEFINE(OFFSET_LR_USR, offsetof(cpu_regs_t, lr_usr));
+	DEFINE(OFFSET_TLS_USR, offsetof(cpu_regs_t, tls_usr));
 
 	BLANK();
 
