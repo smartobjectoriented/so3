@@ -40,8 +40,7 @@ execute_process(
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
 
-add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/arm.lds -N -warn-common 
-	-warn-constructors -warn-multiple-gp -L ${libgcc_path} -lgcc
+add_link_options(-N -Wl,--warn-common
 )
 
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
