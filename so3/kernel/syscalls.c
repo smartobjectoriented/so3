@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <timer.h>
 #include <net.h>
+#include <futex.h>
 #include <syscall.h>
 
 extern void __get_syscall_args_ext(uint32_t *syscall_no);

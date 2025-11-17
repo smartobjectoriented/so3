@@ -29,6 +29,8 @@
 #include <memory.h>
 #include <signal.h>
 #include <ptrace.h>
+#include <spinlock.h>
+#include <futex.h>
 #include <mutex.h>
 #include <syscall.h>
 
@@ -105,6 +107,10 @@ struct pcb {
 
 	/* Number of pages required by this process (including binary image) */
 	size_t page_count;
+
+	/* List of futexes */
+	struct list_head futex;
+	spinlock_t futex_lock;
 
 	/* List of frames (physical pages) belonging to this process */
 	struct list_head page_list;

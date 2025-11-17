@@ -59,8 +59,4 @@ void mutex_lock(struct mutex *lock);
 void mutex_unlock(struct mutex *lock);
 void mutex_init(struct mutex *lock);
 
-SYSCALL_DECLARE(mutex_init, void);
-SYSCALL_DECLARE(mutex_lock, unsigned long number);
-SYSCALL_DECLARE(mutex_unlock, unsigned long number);
-
 #endif /* MUTEX_H */
