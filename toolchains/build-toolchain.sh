@@ -33,7 +33,12 @@ GIT_COMMIT="3635262"
 AARCH64_PATH='aarch64-linux-musl'
 ARM_PATH='arm-linux-musleabihf'
 
-cd $SCRIPTPATH
+if [[ $EUID -ne 0 ]]; then
+    echo "Please run as root"
+    exit 1
+fi
+
+pushd $SCRIPTPATH
 
 if [[ -v $OUTPUT_PATH ]]; then
     OUTPUT=$OUTPUT_PATH
@@ -61,4 +66,4 @@ cp ../config.mak.arm config.mak
 echo "OUTPUT = $OUTPUT/$ARM_PATH" >> config.mak
 make && sudo make install
 
-cd -
+popd
