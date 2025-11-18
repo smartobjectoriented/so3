@@ -80,7 +80,7 @@ struct tcb {
 	pcb_t *pcb;
 
 	int exit_status;
-	addr_t child_clear_tid;
+	int *clear_child_tid;
 
 	struct list_head list; /* List of threads belonging to a process */
 
@@ -119,6 +119,7 @@ typedef struct {
 void threads_init(void);
 
 SYSCALL_DECLARE(exit, int exit_status);
+SYSCALL_DECLARE(set_tid_address, int *tidptr);
 
 tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
 tcb_t *user_thread(clone_args_t *args);
