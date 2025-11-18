@@ -31,8 +31,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CMAKE_TOOLCHAIN_FILE: ['aarch64_toolchain.cmake', 
-                               'arm_toolchain.cmake']
+        CMAKE_TOOLCHAIN_FILE: ['aarch64-linux-musl.cmake',
+                               'arm-linux-musl.cmake']
         BUILD_TYPE: ['Debug', 'Release']
     steps:
       - name: Checkout repository
