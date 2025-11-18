@@ -22,7 +22,6 @@
 #include <heap.h>
 #include <memory.h>
 #include <process.h>
-#include <ptrace.h>
 #include <schedule.h>
 #include <signal.h>
 #include <softirq.h>
@@ -183,9 +182,6 @@ pcb_t *new_process(void)
 	pcb->state = PROC_STATE_NEW;
 
 	pcb->next_anon_start = USER_ANONYMOUS_VADDR;
-
-	/* Reset the ptrace request indicator */
-	pcb->ptrace_pending_req = PTRACE_NO_REQUEST;
 
 	/* The spinlock inside the mutex must aligned in aarch64 */
 	pcb->lock = memalign(N_MUTEX * sizeof(mutex_t), 8);
@@ -1022,68 +1018,26 @@ SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *,
 		if (child->state != PROC_STATE_ZOMBIE)
 			return 0;
 
-	/* Must the child be resumed after being stopped due to a ptrace request
-         * ? */
-	if ((child->ptrace_pending_req != PTRACE_NO_REQUEST) && (child->ptrace_pending_req != PTRACE_TRACEME)) {
-		/* Resume the child process being stopped previously. */
-
-		child->state = PROC_STATE_READY;
-		ready(child->main_thread);
-	}
-
 	if (child->state != PROC_STATE_WAITING)
 		/* Wait on the main_thread of this process */
 		thread_join(child->main_thread);
 
-	/* Before joining, we need to check the state of child because it could
-         * have been finished before this call. */
-	if ((child->state == PROC_STATE_ZOMBIE) && (child->ptrace_pending_req == PTRACE_NO_REQUEST)) {
-		/* Free the page tables used for this process */
-		reset_root_pgtable(child->pgtable, true);
+	/* Free the page tables used for this process */
+	reset_root_pgtable(child->pgtable, true);
 
-		/* Get the exit code left in the PCB by the child */
-		if (wstatus) {
-			*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
-			*wstatus = ((char) child->exit_status) << 8;
-		}
-
-		/*
-                 * SO3 approach consists in avoiding having orphan process.
-                 * The process will be removed from the system definitively only
-                 * if it has no children.
-                 */
-		if (!find_proc_by_parent(child))
-			remove_proc(child);
-
-	} else {
-		if (child->ptrace_pending_req != PTRACE_NO_REQUEST) {
-			/* In this case, the child has been stopped in the
-                         * context of the ptrace syscall */
-
-			/* Reset the ptrace request */
-			child->ptrace_pending_req = PTRACE_NO_REQUEST;
-
-			if (wstatus) {
-				*wstatus = 0x17f; /* WIFSTOPPED true */
-				*wstatus |= ((char) child->exit_status) << 8;
-			}
-		} else {
-			/* Free the page tables used for this process */
-			reset_root_pgtable(child->pgtable, true);
-
-			/* Get the exit code left in the PCB by the child */
-			if (wstatus) {
-				*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
-				*wstatus |= ((char) child->exit_status) << 8;
-			}
-
-			/* Finally remove the process from the system
-                         * definitively as long as there is no children from
-                         * there */
-			if (!find_proc_by_parent(child))
-				remove_proc(child);
-		}
+	/* Get the exit code left in the PCB by the child */
+	if (wstatus) {
+		*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
+		*wstatus |= ((char) child->exit_status) << 8;
 	}
+
+	/*
+	 * SO3 approach consists in avoiding having orphan process.
+	 * The process will be removed from the system definitively only
+	 * if it has no children.
+	 */
+	if (!find_proc_by_parent(child))
+		remove_proc(child);
 
 	local_irq_restore(flags);
 

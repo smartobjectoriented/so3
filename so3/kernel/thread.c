@@ -544,34 +544,28 @@ int thread_join(tcb_t *tcb)
 		}
 	}
 
-	/* Check if the child is a tracee (and therefore we have a tracer on it) */
-	if ((tcb != NULL) && (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
-		exit_status = 0;
+	/* The joined thread *must* be in zombie */
+	ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
-	} else {
-		/* The joined thread *must* be in zombie */
-		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
+	if (is_main_thread)
+		exit_status = tcb->pcb->exit_status;
+	else
+		exit_status = tcb->exit_status;
 
-		if (is_main_thread)
-			exit_status = tcb->pcb->exit_status;
-		else
-			exit_status = tcb->exit_status;
+	/*
+	 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
+	 * If the join is done on a main_thread, it means the waiting parent is doing the join, and
+	 * we can then clean the tcb (remember that the main_thread does not appear in the list
+	 * of threads of the PCB; only created threads are in it.
+	 */
 
-		/*
-		 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
-		 * If the join is done on a main_thread, it means the waiting parent is doing the join, and
-		 * we can then clean the tcb (remember that the main_thread does not appear in the list
-		 * of threads of the PCB; only created threads are in it.
-		 */
-
-		if (list_empty(&tcb->joinQueue)) {
-			if (is_main_thread) {
-				clean_thread(tcb);
-				tcb->pcb->main_thread = NULL;
-			} else
-				/* Remove the tcb from the list of threads owned by this process */
-				remove_tcb_from_pcb(tcb);
-		}
+	if (list_empty(&tcb->joinQueue)) {
+		if (is_main_thread) {
+			clean_thread(tcb);
+			tcb->pcb->main_thread = NULL;
+		} else
+			/* Remove the tcb from the list of threads owned by this process */
+			remove_tcb_from_pcb(tcb);
 	}
 	local_irq_restore(flags);
 

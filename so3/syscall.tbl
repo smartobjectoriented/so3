@@ -51,7 +51,6 @@ clone                   MMU
 exit                    MMU
 exit_group              MMU
 wait4                   MMU
-ptrace                  MMU
 gettimeofday            MMU
 gettimeofday_time32     MMU
 clock_gettime           MMU
