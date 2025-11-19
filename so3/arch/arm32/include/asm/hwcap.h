@@ -18,7 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef ASM_ARM_HWCAP_H
 #define ASM_ARM_HWCAP_H
 

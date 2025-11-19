@@ -14,12 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef ASM_ARM_HWCAP_H
 #define ASM_ARM_HWCAP_H
 
 /*
- * This isn't used be MUSL on AArch64, so simply let it to 0 for now.
+ * This isn't used by MUSL on AArch64, so simply let it to 0 for now.
  */
 #define HWCAP_ELF 0
 
