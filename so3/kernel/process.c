@@ -609,14 +609,14 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	pcb->page_count += elf_img_info->segment_page_count;
 
 	/* Map the elementary sections (text, data, bss) */
-	allocate_page(pcb, (uint32_t) elf_img_info->header->e_entry, elf_img_info->segment_page_count, true);
+	allocate_page(pcb, (uint32_t) (elf_img_info->header->e_entry & PAGE_MASK), elf_img_info->segment_page_count, true);
 
 	LOG_DEBUG("entry point: 0x%08x\n", elf_img_info->header->e_entry);
 	LOG_DEBUG("page count: 0x%08x\n", pcb->page_count);
 
 	/* Maximum heap size */
 	page_count = ALIGN_UP(HEAP_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
-	pcb->heap_base = (pcb->page_count + 1) * PAGE_SIZE;
+	pcb->heap_base = (elf_img_info->header->e_entry & PAGE_MASK) + (pcb->page_count + 1) * PAGE_SIZE;
 	pcb->heap_pointer = pcb->heap_base;
 	pcb->page_count += page_count;
 
