@@ -32,6 +32,9 @@
 #include <vfs.h>
 #include <wait.h>
 #include <log.h>
+#include <timer.h>
+
+#include <uapi/linux/auxvec.h>
 
 #include <device/serial.h>
 
@@ -39,9 +42,18 @@
 #include <asm/mmu.h>
 #include <asm/process.h>
 #include <asm/processor.h>
+#include <asm/hwcap.h>
 #ifndef CONFIG_ARCH_ARM32
 #include <asm/semihosting.h>
 #endif
+
+/* Structure to temporary save exec args/env */
+typedef struct {
+	int argc;
+	int envc;
+	size_t strings_size;
+	char arg_env[PAGE_SIZE];
+} args_env_t;
 
 static char *proc_state_strings[5] = {
 	[PROC_STATE_NEW] = "NEW",	  [PROC_STATE_READY] = "READY",	  [PROC_STATE_RUNNING] = "RUNNING",
@@ -390,150 +402,153 @@ static void release_proc_pages(pcb_t *pcb)
  */
 addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 {
-	char *args_p, *args_str_p;
-	void *args;
-	char **__args;
+	char *args_str_p;
+	size_t str_len;
+	args_env_t *saved;
 	int i;
 
 	if ((argc > 0) && (argv == NULL)) {
 		return -EINVAL;
 	}
 
-	/* Page storing the args & env strings - <args> keeps a reference to it.
-         */
-	args = malloc(PAGE_SIZE);
-	BUG_ON(args == NULL);
+	/* Allocate kernel memory to preserve the args/env */
+	saved = malloc(sizeof(args_env_t));
+	BUG_ON(saved == NULL);
 
-	memset(args, 0, PAGE_SIZE);
+	memset(saved->arg_env, 0, PAGE_SIZE);
 
-	args_p = (char *) args;
-	if (!argc)
-		i = 1;
-	else
-		i = argc;
+	args_str_p = (char *) saved->arg_env;
 
-	memcpy(args_p, &i, sizeof(int));
-
-	/* Number of args */
-	args_p += sizeof(int);
-
-	/* Store the array of strings for args & env */
-
-	/* The array starts right after argc (stored on 4 bytes).
-         * We find the addresses of the var strings followed by the addresses of
-         * env strings. The var strings come after followed by the env strings.
-         */
-
-	/* Manage the addresses of strings; determine the start of the first arg
-         * string. */
-
-	if (!argc) /* At least one arg containing the process name */
-		args_p += sizeof(char *);
-	else
-		args_p += sizeof(char *) * argc;
-
-	/* Environment string addresses */
-	if (!envp) {
-		*((addr_t *) args_p) = 0; /* Keep array-end with NULL */
-		args_p += sizeof(char *);
-
-	} else {
-		i = 0;
-		do {
-			args_p = args_p + sizeof(char *);
-		} while (envp[i++] != NULL);
-	}
-
-	/* Manage the arg strings */
-
-	args_str_p = args_p;
-	__args = (char **) (args + sizeof(int));
-
-	/* As said before, if argc is 0 (argv NULL), we put the process name (a
-         * kind of by-default argument) */
+	/* Save args strings */
 	if (!argc) {
-		__args[0] = args_str_p;
-		strcpy(__args[0], current()->pcb->name);
+		/* If no arguments, add one with process name */
+		saved->argc = 1;
+		strcpy(args_str_p, current()->pcb->name);
+		args_str_p += strlen(args_str_p) + 1;
+	} else {
+		/* Copy all arguments strings */
+		saved->argc = argc;
+		for (i = 0; i < argc; i++) {
+			str_len = strlen(argv[i]) + 1;
 
-		args_str_p += strlen(current()->pcb->name) + 1;
-	}
+			/* Ensure the newly copied string will not exceed the buffer size. */
+			if ((addr_t) args_str_p - (addr_t) saved->arg_env + str_len > PAGE_SIZE) {
+				LOG_CRITICAL("Not enougth memory allocated\n");
 
-	/* Place the strings with their addresses - <argv> is the new address
-         * (definitive location). */
-
-	for (i = 0; i < argc; i++) {
-		__args[i] = args_str_p;
-		strcpy(__args[i], argv[i]);
-
-		args_str_p += strlen(argv[i]) + 1;
-
-		/* We check if the pointer do not exceed the page we
-                 * allocated before */
-		if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
-			LOG_CRITICAL("Not enougth memory allocated\n");
-
-			free(args);
-			return -ENOMEM;
-		}
-	}
-
-	/* Environment strings */
-
-	/* First env. variable */
-	__args = (char **) (args + sizeof(int) + sizeof(char *) * (*((int *) args)));
-
-	/* If the environment was passed */
-	if (envp) {
-		i = 0;
-		while (envp[i] != NULL) {
-			__args[i] = args_str_p;
-			strcpy(__args[i], envp[i]);
-
-			args_str_p += strlen(envp[i]) + 1;
-
-			/* We check if pointer do not exceed the page we
-                         * allocated before. */
-			if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
-				LOG_ERROR("Not enough memory allocated\n");
-
-				free(args);
+				free(saved);
 				return -ENOMEM;
 			}
-			i++;
+
+			strcpy(args_str_p, argv[i]);
+			args_str_p += str_len;
 		}
 	}
 
-	return (addr_t) args;
+	/* Save env strings and count how many there are */
+	saved->envc = 0;
+	if (envp) {
+		do {
+			str_len = strlen(envp[saved->envc]) + 1;
+
+			/* Ensure the newly copied string will not exceed the buffer size. */
+			if ((addr_t) args_str_p - (addr_t) saved->arg_env + str_len > PAGE_SIZE) {
+				LOG_CRITICAL("Not enougth memory allocated\n");
+
+				free(saved);
+				return -ENOMEM;
+			}
+
+			strcpy(args_str_p, envp[saved->envc]);
+			args_str_p += strlen(args_str_p) + 1;
+		} while (envp[saved->envc++]);
+	}
+
+	/* Save total string size for easier copy to user. */
+	saved->strings_size = (addr_t) args_str_p - (addr_t) saved->arg_env;
+
+	return (addr_t) saved;
 }
 
-void post_setup_image(void *args_env)
+void post_setup_image(args_env_t *args_env, elf_img_info_t *elf_img_info)
 {
-	char **__args;
+	char **argv_p_base;
+	char *str_p;
+	char **env_p_base;
 	char *args_base;
-	int argc, i;
+	int i;
+	elf_addr_t *aux_elf;
 
 	args_base = (char *) arch_get_args_base();
 
-	memcpy(args_base, args_env, PAGE_SIZE);
+	/* Save argc as first arguments */
+	*((int *) args_base) = args_env->argc;
+
+	/* Get the base address for the array of pointer for args, env and aux */
+	argv_p_base = (char **) (args_base + sizeof(int));
+	env_p_base = (char **) ((addr_t) argv_p_base + args_env->argc * sizeof(char *));
+	/* Add one to account for the null termination of env */
+	aux_elf = (elf_addr_t *) ((addr_t) env_p_base + (args_env->envc + 1) * sizeof(char *));
+
+	/* Adds auxiliary before args and env to get the starting address for the strings.
+	 * Each auxiliary entry have an id and a value, the following temporary helper allows
+	 * to easily add an entry without missing something, or adding unecessary functions.
+	 * This is copied from linux/fs/binfmt_elf.c */
+#define NEW_AUX_ENT(id, val)      \
+	do {                      \
+		*aux_elf++ = id;  \
+		*aux_elf++ = val; \
+	} while (0)
+
+	/* Adds up auxiliary array. */
+	NEW_AUX_ENT(AT_PAGESZ, PAGE_SIZE);
+	NEW_AUX_ENT(AT_CLKTCK, clocksource_timer.rate);
+	NEW_AUX_ENT(AT_ENTRY, elf_img_info->header->e_entry);
+
+	/* By default, MUSL will use argv[0], so this isn't required as it con */
+	NEW_AUX_ENT(AT_EXECFN, 0);
+
+	/* This should contains a bitmask of hardware capabilities */
+	NEW_AUX_ENT(AT_HWCAP, HWCAP_ELF);
+
+	/* Those value should come from elf_img_info->header, but as user application
+	 * are compiled with linker option -N, the program header (PHDR) isn't in a PT_LOAD
+	 * segment meaning it will not be copied in userspace.
+	 * The main effect of this is that variable in thread local storage will not be possible.
+	 * Those variable are *flaged* with __thread (i.e `__thread int n;`) and aren't used for now.
+	 * This header is also used for dynamically linking, which isn't supported by SO3 anyway.
+	 */
+	NEW_AUX_ENT(AT_PHDR, 0);
+	NEW_AUX_ENT(AT_PHENT, 0);
+	NEW_AUX_ENT(AT_PHNUM, 0);
+
+	/* NULL termination */
+	NEW_AUX_ENT(AT_NULL, 0);
+
+	/* Remove the temporary helper. */
+#undef NEW_AUX_ENT
+
+	/* Copy all strings into their final destination and set pointers to them */
+
+	/* Strings will be put just after aux */
+	str_p = (char *) aux_elf;
+
+	memcpy(str_p, args_env->arg_env, args_env->strings_size);
+
+	/* Set the correct addresses into argv array */
+	for (i = 0; i < args_env->argc; i++) {
+		argv_p_base[i] = str_p;
+		str_p += strlen(str_p) + 1;
+	}
+
+	/* Set the correct addresses into env array */
+	for (i = 0; i < args_env->envc; i++) {
+		env_p_base[i] = str_p;
+		str_p += strlen(str_p) + 1;
+	}
+	/* Ensure the NULL terminated list */
+	env_p_base[args_env->envc] = NULL;
 
 	free(args_env);
-
-	/* Now, readjust the address of the var and env strings */
-
-	argc = *((int *) args_base);
-	__args = (char **) (args_base + sizeof(int));
-
-	/* We get the offset based on the current location and the start of the
-         * args_env page, then we adjust it to match our final destination.
-         */
-	for (i = 0; i < argc; i++)
-		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
-
-	/* Focus on the env addresses now */
-	__args = (char **) (args_base + sizeof(int) + argc * sizeof(char *));
-
-	for (i = 0; __args[i] != NULL; i++)
-		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
 }
 
 /*
@@ -543,7 +558,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 {
 	uint32_t page_count;
 	addr_t ret;
-	void *__args_env;
+	args_env_t *__args_env;
 
 	/* FIXME: detect fragmented executable (error)? */
 	/*
@@ -558,7 +573,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	if (ret < 0)
 		return ret;
 
-	__args_env = (void *) ret;
+	__args_env = (args_env_t *) ret;
 
 	/* Reset the process stack and page count */
 	reset_process_stack(pcb);
@@ -618,7 +633,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	/* Prepare the arguments within the page reserved for this purpose. */
 	if (__args_env)
-		post_setup_image(__args_env);
+		post_setup_image(__args_env, elf_img_info);
 
 	return 0;
 }
