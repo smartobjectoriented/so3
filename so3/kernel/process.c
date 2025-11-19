@@ -402,7 +402,6 @@ static void release_proc_pages(pcb_t *pcb)
  */
 addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 {
-	char *args_str_p;
 	size_t str_len;
 	args_env_t *saved;
 	int i;
@@ -417,14 +416,14 @@ addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 
 	memset(saved->arg_env, 0, PAGE_SIZE);
 
-	args_str_p = (char *) saved->arg_env;
+	saved->strings_size = 0;
 
 	/* Save args strings */
 	if (!argc) {
 		/* If no arguments, add one with process name */
 		saved->argc = 1;
-		strcpy(args_str_p, current()->pcb->name);
-		args_str_p += strlen(args_str_p) + 1;
+		strcpy(&saved->arg_env[saved->strings_size], current()->pcb->name);
+		saved->strings_size += strlen(current()->pcb->name) + 1;
 	} else {
 		/* Copy all arguments strings */
 		saved->argc = argc;
@@ -432,15 +431,15 @@ addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 			str_len = strlen(argv[i]) + 1;
 
 			/* Ensure the newly copied string will not exceed the buffer size. */
-			if ((addr_t) args_str_p - (addr_t) saved->arg_env + str_len > PAGE_SIZE) {
+			if (saved->strings_size + str_len > PAGE_SIZE) {
 				LOG_CRITICAL("Not enougth memory allocated\n");
 
 				free(saved);
 				return -ENOMEM;
 			}
 
-			strcpy(args_str_p, argv[i]);
-			args_str_p += str_len;
+			strcpy(&saved->arg_env[saved->strings_size], argv[i]);
+			saved->strings_size += str_len;
 		}
 	}
 
@@ -451,20 +450,17 @@ addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 			str_len = strlen(envp[saved->envc]) + 1;
 
 			/* Ensure the newly copied string will not exceed the buffer size. */
-			if ((addr_t) args_str_p - (addr_t) saved->arg_env + str_len > PAGE_SIZE) {
+			if (saved->strings_size + str_len > PAGE_SIZE) {
 				LOG_CRITICAL("Not enougth memory allocated\n");
 
 				free(saved);
 				return -ENOMEM;
 			}
 
-			strcpy(args_str_p, envp[saved->envc]);
-			args_str_p += strlen(args_str_p) + 1;
+			strcpy(&saved->arg_env[saved->strings_size], envp[saved->envc]);
+			saved->strings_size += str_len;
 		} while (envp[saved->envc++]);
 	}
-
-	/* Save total string size for easier copy to user. */
-	saved->strings_size = (addr_t) args_str_p - (addr_t) saved->arg_env;
 
 	return (addr_t) saved;
 }
@@ -531,6 +527,9 @@ void post_setup_image(args_env_t *args_env, elf_img_info_t *elf_img_info)
 
 	/* Strings will be put just after aux */
 	str_p = (char *) aux_elf;
+
+	/* Ensure that the strings will not overflow */
+	BUG_ON(args_env->strings_size + ((addr_t) str_p - (addr_t) args_base) > PAGE_SIZE);
 
 	memcpy(str_p, args_env->arg_env, args_env->strings_size);
 
