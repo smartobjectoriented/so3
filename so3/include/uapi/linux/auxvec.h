@@ -17,6 +17,8 @@
 #ifndef UAPI_LINUX_AUXVEC_H
 #define UAPI_LINUX_AUXVEC_H
 
+/* clang-format off */
+
 /* Copied from linux/include/uapi/linux/auxvec.h */
 
 /* Symbolic values for the entries in the auxiliary table
@@ -58,5 +60,7 @@
 
 /* Common in asm/auxvec.h of arm and arm64 */
 #define AT_SYSINFO_EHDR	33
+
+/* clang-format on */
 
 #endif /* _UAPI_LINUX_AUXVEC_H */
