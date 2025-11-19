@@ -21,6 +21,8 @@
 #ifndef ASM_ARM_HWCAP_H
 #define ASM_ARM_HWCAP_H
 
+/* clang-format off */
+
 /*
  * Hardware capabilities flags - for AT_HWCAP
  * Copied from Linux arch/arm/include/asm/procinfo.h
@@ -59,5 +61,7 @@
  * ARMv7 flags used by Linux, see arch/arm/mm/proc-v7.S, macro __v7_proc
  */
 #define HWCAP_ELF (HWCAP_SWP | HWCAP_HALF | HWCAP_THUMB | HWCAP_FAST_MULT | HWCAP_EDSP | HWCAP_TLS)
+
+/* clang-format on */
 
 #endif /* ASM_ARM_HWCAP */
