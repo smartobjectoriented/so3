@@ -1063,35 +1063,28 @@ SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *,
  *		increase the heap_pointer and make sure it does not
  *		overflow the heap. If there is no memory left it will
  *		return ENONMEM;
- * @param increment the amount of data to increase < decrease. If the value is 0
- *		function will return the current position of the program break
- *(end of heap);
+ * @param addr New end address requested by userspace.
  *
- * @return  This function will the position of the end of the heap / program
- *break before increment
+ * @return End address of the available heap.
  */
-SYSCALL_DEFINE1(brk, long, increment)
+SYSCALL_DEFINE1(brk, void *, addr)
 {
 	pcb_t *pcb = current()->pcb;
-	int ret_pointer;
 	int req_sz = 0;
-	int cur_sz;
 
-	if (!pcb) {
+	if (!pcb)
 		/* case there is no pcb context */
 		return -ESRCH;
-	}
 
-	ret_pointer = pcb->heap_pointer;
+	if (addr == NULL)
+		return pcb->heap_pointer;
 
 	/* we make sure the future size of the heap is not overflowing /
          * underflowing*/
-	cur_sz = pcb->heap_pointer - pcb->heap_base;
-	req_sz = cur_sz + increment;
+	req_sz = (addr_t) addr - pcb->heap_base;
 
-	if ((req_sz >= HEAP_SIZE) || (req_sz < 0)) {
+	if ((req_sz >= HEAP_SIZE) || (req_sz < 0))
 		return -ENOMEM;
-	}
 
 #if 0
 	/* This is the the code allocation will be done automatically*/
@@ -1122,8 +1115,8 @@ SYSCALL_DEFINE1(brk, long, increment)
 	}
 #endif
 
-	pcb->heap_pointer = pcb->heap_pointer + increment;
-	return ret_pointer;
+	pcb->heap_pointer = (addr_t) addr;
+	return pcb->heap_pointer;
 }
 
 #ifdef CONFIG_PRIORITY_SCHEDULER
