@@ -270,7 +270,7 @@ void thread_exit(int exit_status)
 		if (pcb && current() != pcb->main_thread) {
 			if (current()->clear_child_tid) {
 				*(current()->clear_child_tid) = 0;
-				do_futex(current()->clear_child_tid, FUTEX_WAKE, 1, NULL, NULL, 0, 0);
+				sys_do_futex(current()->clear_child_tid, FUTEX_WAKE, 1, NULL, NULL, 0);
 			}
 		}
 

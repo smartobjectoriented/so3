@@ -36,6 +36,8 @@ struct elf_img_info {
 	uint32_t segment_page_count;
 };
 
+typedef Elf32_Off elf_addr_t;
+
 #else
 
 struct elf_img_info {
@@ -46,6 +48,8 @@ struct elf_img_info {
 	void *file_buffer;
 	uint64_t segment_page_count;
 };
+
+typedef Elf64_Off elf_addr_t;
 
 #endif
 
