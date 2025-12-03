@@ -339,7 +339,7 @@ void *thread_idle(void *dummy)
 /*
  * Yield to another thread, i.e. simply invoke a call to schedule()
  */
-SYSCALL_DEFINE0(thread_yield)
+SYSCALL_DEFINE0(sched_yield)
 {
 	schedule();
 	return 0;

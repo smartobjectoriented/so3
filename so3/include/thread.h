@@ -138,7 +138,7 @@ tcb_t *user_thread(clone_args_t *args);
 int thread_join(tcb_t *tcb);
 void thread_exit(int exit_status);
 void clean_thread(tcb_t *tcb);
-SYSCALL_DECLARE(thread_yield, void);
+SYSCALL_DECLARE(sched_yield, void);
 
 void *thread_idle(void *dummy);
 
