@@ -28,6 +28,7 @@
 
 #include <types.h>
 #include <list.h>
+#include <signal.h>
 #include <syscall.h>
 
 typedef enum {
@@ -82,6 +83,11 @@ struct tcb {
 	int exit_status;
 	int *clear_child_tid;
 
+#ifdef CONFIG_IPC_SIGNAL
+	/* Mask for thread's disabled signals */
+	sigset_t sig_mask;
+#endif
+
 	struct list_head list; /* List of threads belonging to a process */
 
 	/* Join queue to handle threads waiting on it */
@@ -107,6 +113,11 @@ typedef struct {
 	/* Pointer to userspace parent/child tid to use depending on flags */
 	int *parent_tid;
 	int *child_tid;
+
+#ifdef CONFIG_IPC_SIGNAL
+	/* Starting mask for thread's disabled signals, should be the same as parent */
+	sigset_t sig_mask;
+#endif
 
 	/* Function to call for kernel thread or root user process */
 	th_fn_t fn;

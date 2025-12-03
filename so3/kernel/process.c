@@ -866,6 +866,11 @@ static long do_clone(clone_args_t *args)
 	/* Use PCB name as thread name. The TID will be appended to it. */
 	args->name = new_pcb->name;
 
+#ifdef CONFIG_IPC_SIGNAL
+	/* Copy current signal mask to new threads */
+	args->sig_mask = current()->sig_mask;
+#endif
+
 	new_tcb = user_thread(args);
 
 	/* Child thread will return in ret_from_fork and so only parent thread reachs this */

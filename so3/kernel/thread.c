@@ -386,6 +386,10 @@ tcb_t *thread_create(clone_args_t *args)
 	tcb->state = THREAD_STATE_NEW;
 	tcb->pcb = args->pcb;
 
+#ifdef CONFIG_IPC_SIGNAL
+	tcb->sig_mask = args->sig_mask;
+#endif
+
 	/* Init the thread kernel stack (svc mode) for both kernel and user thread. */
 	tcb->stack_slotID = get_kernel_stack_slot();
 

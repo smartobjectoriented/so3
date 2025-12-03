@@ -44,6 +44,7 @@ rt_sigaction            IPC_SIGNAL
 rt_kill                 IPC_SIGNAL
 sigreturn               IPC_SIGNAL
 rt_sigreturn            IPC_SIGNAL
+rt_sigprocmask          IPC_SIGNAL
 getpid                  MMU
 execve                  MMU
 fork                    MMU
