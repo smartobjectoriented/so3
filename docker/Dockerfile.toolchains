@@ -1,0 +1,25 @@
+# Create a Docker image which prepare the toolchains needed by SO3 env.
+#
+# Copyright (c) 2025 REDS Institute, HEIG-VD
+
+FROM ubuntu:24.04 AS toolchains-utils
+
+RUN apt-get update && apt-get install -y gcc-arm-none-eabi gcc-11 g++-11 git make \
+    patch sudo xz-utils wget && \
+	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 10 && \
+	update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 10 && \
+	apt clean && \
+	rm -rf /var/lib/apt/lists/*
+
+# Download aarch64-none-elf toolchain
+RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+RUN tar -xvf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+RUN rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+
+ENV PATH="$PATH:/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin"
+
+COPY  toolchains /toolchains
+RUN   /toolchains/build-toolchain.sh && rm -rf /toolchains/musl-cross-make
+
+ENV   PATH=$PATH:/toolchains/aarch64-linux-musl/bin
+ENV   PATH=$PATH:/toolchains/arm-linux-musleabihf/bin

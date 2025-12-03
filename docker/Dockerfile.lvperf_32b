@@ -1,4 +1,4 @@
-FROM alpine:latest AS baseimage
+FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
 
 FROM baseimage AS builder
 
