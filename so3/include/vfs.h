@@ -92,7 +92,7 @@
 #define DT_SOCK 12 /* Socket device */
 
 /* mmap flags options  */
-#define MAP_ANONYMOUS 0x10 /* don't use a file */
+#define MAP_ANONYMOUS 0x20 /* don't use a file */
 
 /* Special value for dirfd used to indicate openat
    should use the current working directory. */

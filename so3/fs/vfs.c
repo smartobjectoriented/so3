@@ -467,7 +467,7 @@ static int do_write(int fd, const void *buffer, size_t count)
 }
 
 /* Low Level mmap */
-static int do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+static long do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
 	int gfd;
 	struct file_operations *fops;
@@ -499,7 +499,7 @@ static int do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 }
 
 /* Low Level mmap - Anonymous case */
-static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
+static long do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
 	uint32_t page;
 	pcb_t *pcb;
@@ -526,7 +526,7 @@ static int do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t off
 
 	memset((void *) virt_addr, 0, page_count * PAGE_SIZE);
 
-	/* WARNIMG - This is a simple/basic way to set the start virtual address:
+	/* WARNING - This is a simple/basic way to set the start virtual address:
 	             It only increment the start address after each mmap call, no algorithm
 	             to search for available spaces.
 	*/
@@ -1045,15 +1045,18 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec *, vec, unsigned l
 	int total = 0;
 
 	for (i = 0; i < vlen; i++) {
-		ret = do_write(fd, (const void *) vec[i].iov_base, vec[i].iov_len);
-		if (ret < 0) {
-			break;
-		} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
-			total += ret;
-			break;
-		}
+		/* Do nothing for empty buffer */
+		if (vec[i].iov_len != 0) {
+			ret = do_write(fd, (const void *) vec[i].iov_base, vec[i].iov_len);
+			if (ret < 0) {
+				break;
+			} else if ((ret >= 0) && (ret < vec[i].iov_len)) {
+				total += ret;
+				break;
+			}
 
-		total += ret;
+			total += ret;
+		}
 	}
 
 	if (total == 0)
