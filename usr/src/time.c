@@ -8,14 +8,11 @@
 
 int main(int argc, char *argv[])
 {
-	time_t t;
 	struct timeval tv;
 
 	while (true) {
 		gettimeofday(&tv, NULL);
 
-		time(&t);
-
-		printf("# time(s) : %lu  time(us) : %lu\n", t, tv.tv_usec);
+		printf("# time(s) : %lu  time(us) : %lu\n", tv.tv_sec, tv.tv_usec);
 	}
 }

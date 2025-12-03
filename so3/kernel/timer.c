@@ -436,8 +436,8 @@ SYSCALL_DEFINE2(gettimeofday, struct timeval *, ts, void *, tz)
 
 	time = NOW();
 
-	ts->tv_sec = time / (time_t) 1000000000;
-	ts->tv_usec = time / (time_t) 1000;
+	ts->tv_sec = time / SECONDS(1);
+	ts->tv_usec = (time % SECONDS(1)) / MICROSECS(1);
 
 	return 0;
 }
@@ -475,8 +475,8 @@ SYSCALL_DEFINE2(clock_gettime, int, clk_id, struct timespec *, ts)
 
 	time = NOW();
 
-	ts->tv_sec = time / (time_t) 1000000000;
-	ts->tv_nsec = time;
+	ts->tv_sec = time / SECONDS(1);
+	ts->tv_nsec = time % SECONDS(1);
 
 	return 0;
 }

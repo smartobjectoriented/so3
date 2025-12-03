@@ -31,8 +31,7 @@
 #include <futex.h>
 #include <syscall.h>
 
-extern void __get_syscall_args_ext(uint32_t *syscall_no);
-extern uint32_t __get_syscall_stack_arg(uint32_t nr);
+extern void __get_syscall_args_ext(long *syscall_no);
 
 extern void test_malloc(int test_no);
 
@@ -49,7 +48,7 @@ static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 
 long syscall_handle(syscall_args_t *syscall_args)
 {
-	uint32_t syscall_no;
+	long syscall_no;
 
 	/* Get addtional args of the syscall according to the ARM & SO3 ABI */
 	__get_syscall_args_ext(&syscall_no);
