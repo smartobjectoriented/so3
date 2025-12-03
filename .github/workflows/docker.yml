@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: ["main, 216-use-musl-toolchain-in-usr"]
+    branches: ["main", "216-use-musl-toolchain-in-usr"]
   workflow_dispatch:
 
 env:
