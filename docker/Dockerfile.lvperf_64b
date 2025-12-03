@@ -1,11 +1,19 @@
-FROM alpine:latest AS baseimage
+FROM ubuntu:24.04 AS baseimage
 
 FROM baseimage AS builder
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-aarch64-none-elf \
-    qemu-system-aarch64 \
-    bison flex libc-dev  libressl-dev dtc
+RUN apt update && \
+    apt install -y build-essential cmake qemu-system-arm \
+    bison flex libssl-dev device-tree-compiler wget && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download aarch64-none-elf toolchain
+RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+RUN tar -xvf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+RUN rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+
+ENV PATH="$PATH:/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin"
 
 WORKDIR /so3
 
@@ -29,10 +37,19 @@ RUN cd u-boot;\
 
 FROM baseimage AS runner
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-aarch64-none-elf \
-    g++-aarch64-none-elf qemu-system-aarch64 \
-    util-linux dtc u-boot-tools dosfstools python3 py3-pip
+RUN apt update && apt install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    qemu-system-arm \
+    util-linux \
+    device-tree-compiler \
+    u-boot-tools \
+    dosfstools \
+    python3 \
+    python3-pip \
+    bash patch git && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages pcpp
 
@@ -49,10 +66,10 @@ COPY --from=builder /so3/u-boot/u-boot u-boot
 
 COPY u-boot/uEnv.d u-boot/uEnv.d
 
-COPY  toolchains /so3/toolchains
-RUN   toolchains/build-toolchain.sh && rm -rf toolchains/musl-cross-make
-ENV   PATH=$PATH:/so3/toolchains/aarch64-linux-musl/bin
-ENV   PATH=$PATH:/so3/toolchains/arm-linux-musleabihf/bin
+COPY  toolchains /toolchains
+RUN   /toolchains/build-toolchain.sh && rm -rf /toolchains/musl-cross-make
+ENV   PATH=$PATH:/toolchains/aarch64-linux-musl/bin
+ENV   PATH=$PATH:/toolchains/arm-linux-musleabihf/bin
 
 RUN mkdir target
 RUN mkdir -p usr
@@ -78,4 +95,4 @@ ENV USR_BUILD_TOOLCHAIN_FILE=aarch64_none_toolchain.cmake
 ENV QEMU_ARCH=aarch64
 ENV PLATFORM=virt64
 
-CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
+#CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
