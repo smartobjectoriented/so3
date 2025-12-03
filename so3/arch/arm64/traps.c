@@ -252,7 +252,7 @@ void trap_handle(cpu_regs_t *regs)
 	default:
 __err:
 		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
-		trap_handle_error(regs->lr);
+		trap_handle_error(regs->pc);
 		kernel_panic();
 	}
 }
