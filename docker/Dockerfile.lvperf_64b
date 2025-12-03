@@ -49,6 +49,11 @@ COPY --from=builder /so3/u-boot/u-boot u-boot
 
 COPY u-boot/uEnv.d u-boot/uEnv.d
 
+COPY  toolchains /so3/toolchains
+RUN   toolchains/build-toolchain.sh && rm -rf toolchains/musl-cross-make
+ENV   PATH=$PATH:/so3/toolchains/aarch64-linux-musl/bin
+ENV   PATH=$PATH:/so3/toolchains/arm-linux-musleabihf/bin
+
 RUN mkdir target
 RUN mkdir -p usr
 RUN mkdir -p docker/scripts
