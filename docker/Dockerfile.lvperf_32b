@@ -2,10 +2,11 @@ FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
 
 FROM baseimage AS builder
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-arm-none-eabi \
-    g++-arm-none-eabi qemu-system-arm \
-    bison flex libc-dev  libressl-dev dtc
+RUN apt update && \
+    apt install -y build-essential cmake qemu-system-arm gcc-arm-none-eabi \
+    bison flex libssl-dev device-tree-compiler qemu-system-arm g++-arm-none-eabi && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /so3
 

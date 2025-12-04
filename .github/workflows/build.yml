@@ -6,9 +6,13 @@ on:
       - main
   pull_request:
     branches: ["main", "144-support-musl"]
+  workflow_run:
+    workflows: ["Docker Image CI"]
+    types: [completed]
 
 jobs:
   build-so3:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -27,6 +31,7 @@ jobs:
           docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:main bash -c "cd so3 && make ${{ matrix.CONFIG }} && make -j`nproc`"
 
   build-usr:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
