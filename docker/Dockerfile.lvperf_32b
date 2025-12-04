@@ -30,10 +30,12 @@ RUN cd u-boot;\
 
 FROM baseimage AS runner
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-arm-none-eabi \
-    g++-arm-none-eabi qemu-system-arm \
-    util-linux dtc u-boot-tools dosfstools python3 py3-pip
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt install -y \
+      make cmake gcc-arm-none-eabi g++-arm-none-eabi qemu-system-arm \
+      util-linux device-tree-compiler u-boot-tools dosfstools python3 \
+      python3-pip \
+ && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages pcpp
 
