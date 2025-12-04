@@ -30,12 +30,12 @@ RUN cd u-boot;\
 
 FROM baseimage AS runner
 
-RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt install -y \
-      make cmake gcc-arm-none-eabi g++-arm-none-eabi qemu-system-arm \
+RUN apt-get update && \
+      apt install -y make cmake gcc-arm-none-eabi qemu-system-arm \
       util-linux device-tree-compiler u-boot-tools dosfstools python3 \
-      python3-pip \
- && rm -rf /var/lib/apt/lists/*
+      python3-pip && \
+      apt clean && \
+      rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages pcpp
 
