@@ -3,7 +3,7 @@ name: Docker Image CI
 on:
   push:
     paths:
-      - 'Dockerfile.*'
+      - 'docker/Dockerfile.*'
       - 'toolchains/*'
   workflow_dispatch:
 
