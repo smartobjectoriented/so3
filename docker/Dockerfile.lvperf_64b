@@ -1,5 +1,8 @@
 FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
 FROM baseimage AS builder
 
 RUN apt update && \

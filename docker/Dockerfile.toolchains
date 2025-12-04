@@ -1,6 +1,10 @@
 # Create a Docker image which prepare the toolchains needed by SO3 env.
 #
 # Copyright (c) 2025 REDS Institute, HEIG-VD
+#
+# Set 'aarch64-none-elf' toolchain & build arm & aarch64 musl toolchains
+#
+# Note: 'arm-none-eabi-' is installed for package manager in the others docker images
 
 FROM ubuntu:24.04 AS toolchains-utils
 
