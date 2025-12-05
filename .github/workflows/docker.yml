@@ -39,7 +39,6 @@ jobs:
           images: ghcr.io/smartobjectoriented/so3-toolchains
           tags: |
             type=raw,value=latest
-            type=sha
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -97,6 +96,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
