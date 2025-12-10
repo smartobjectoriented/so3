@@ -1,0 +1,48 @@
+/*
+ * Copyright (C) 2025 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#include <iostream>
+#include <string>
+
+class Person {
+private:
+    std::string _name;
+    int _age;
+
+public:
+    // Constructor
+    Person(const std::string& name, int age)
+        : _name(name), _age(age) {}
+
+    // Method to print info
+    void hello() const {
+        // std::cout << "Hi, I'm " << _name
+        //           << " and I'm " << _age
+        //           << " years old." << std::endl;
+
+        printf("Hi, I'm %s and I'm %d years old.\n");
+    }
+};
+
+int main()
+{
+    Person p("Jean-Pierre", 30);
+    p.hello();
+
+    return 0;
+}
