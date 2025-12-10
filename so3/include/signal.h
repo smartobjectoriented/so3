@@ -22,7 +22,6 @@
 
 #include <syscall.h>
 #include <types.h>
-#include <thread.h>
 
 #define SIGHUP 1
 #define SIGINT 2
@@ -59,14 +58,22 @@
 #define SIGSYS 31
 #define SIGUNUSED SIGSYS
 
-#define _NSIG 65
+/* sigprocmaks behaviors */
+#define SIG_BLOCK 0
+#define SIG_UNBLOCK 1
+#define SIG_SETMASK 2
+
+#define _NSIG 64
+/* Bits per sig map entry */
+#define _NSIG_BPE (8 * sizeof(unsigned long))
+#define _NSIG_NB_ENTRY (_NSIG / _NSIG_BPE)
 
 #define SIGMAP_CELLSIZE (sizeof(int))
 
 typedef void (*__sighandler_t)(int);
 
 typedef struct {
-	uint32_t sigmap[_NSIG / (8 * sizeof(uint32_t))];
+	unsigned long sigmap[_NSIG_NB_ENTRY];
 } sigset_t;
 
 /* Fake signal functions.  */
@@ -95,6 +102,7 @@ typedef struct __sigaction {
 } __sigaction_t;
 
 SYSCALL_DECLARE(rt_sigaction, int signum, const sigaction_t *action, sigaction_t *old_action, size_t sigsize);
+SYSCALL_DECLARE(rt_sigprocmask, int how, const sigset_t *set, sigset_t *old, size_t sigsize);
 SYSCALL_DECLARE(kill, int pid, int sig);
 SYSCALL_DECLARE(sigreturn, void);
 SYSCALL_DECLARE(rt_sigreturn, void);
