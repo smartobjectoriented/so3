@@ -74,10 +74,11 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /* only the following sections are supported */
-#define SUPPORTED_SECTION_COUNT 10
-static const char *supported_section_names[SUPPORTED_SECTION_COUNT] = {
-	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini", ".init_array", ".fini_array",
+static const char *supported_section_names[] = {
+	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini",
+	 ".eh_frame", ".gcc_except_table", ".init_array", ".fini_array", ".data.rel.ro", ".got", ".got.plt",
 };
+#define SUPPORTED_SECTION_COUNT (sizeof(supported_section_names) / sizeof(supported_section_names[0]))
 
 /*
  * Find a process (pcb_t) from its pid.

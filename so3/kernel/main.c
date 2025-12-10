@@ -98,7 +98,7 @@ void kernel_start(void)
 {
 	lprintk("%s", SO3_BANNER);
 
-	LOG_INFO("Now bootstraping the kernel ...");
+	LOG_INFO("Now bootstraping the kernel ...\n");
 
 	/* Memory manager subsystem initialization */
 	memory_init();
