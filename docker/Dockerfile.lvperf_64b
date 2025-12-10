@@ -79,11 +79,7 @@ RUN echo "#!/bin/sh" > install_dependencies.sh && chmod +x install_dependencies.
 RUN rm -rf /var/cache/apk/*
 RUN rm -rf /usr/share/man /usr/share/doc /usr/share/info /var/cache/apk/*
 
-# This env varialbe is read from the usr/build.sh script  in order to set a custom aarch64 toolchain
-# This may be removed if so3 is fully migrated to the aarch64-none-elf toolchain
-# Right now aarch64-none-linux-gnu is still used by default
-#ENV USR_BUILD_TOOLCHAIN_FILE=aarch64_none_toolchain.cmake
 ENV QEMU_ARCH=aarch64
 ENV PLATFORM=virt64
 
-#CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
+CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
