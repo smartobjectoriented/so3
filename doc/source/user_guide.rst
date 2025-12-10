@@ -67,8 +67,8 @@ SO3 root directory (main subdirs)::
 Build of the environment
 ************************
 
-About the toolchain
-===================
+kernel toolchain
+================
  
 We use the ``arm-none-eabi`` toolchain which has no dependencies on a libc.
 
@@ -77,6 +77,24 @@ The following package can be installed:
 .. code-block:: bash
    
    apt install gcc-arm-none-eabi
+
+usr-space toolchain
+===================
+
+The usr-space uses MUSL as libc. The Musl toolchains can be generated with
+``toolchains/build-toolchain.sh`` script.
+
+.. code-block:: bash
+
+   $ ./build-toolchain.sh
+
+By default, it generates ``aarch64-linux-musl`` and ``arm-linux-musleabihf``
+folder in the ``toolchains`` directory
+
+.. note::
+
+   The output directory (by default ``toolchains`` floder) can be changed by setting
+   the ``OUTPUT_PATH`` variable in the ``build-toolchain.sh`` script
 
 Quick setup & early test
 ========================

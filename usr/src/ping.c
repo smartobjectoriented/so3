@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 		if (!(packet.hdr.type == 69 && packet.hdr.code == 0)) {
 			printf("Error... Packet received with ICMP type %d code %d\n", packet.hdr.type, packet.hdr.code);
 		} else {
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%Lf ms\n", PING_PKT_LEN, ip, msg_count, ttl, rtt);
+			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%f ms\n", PING_PKT_LEN, ip, msg_count, ttl, rtt);
 
 			rtt_max = fmaxf(rtt_max, rtt);
 			rtt_min = fminf(rtt_min, rtt);
@@ -245,11 +245,11 @@ int main(int argc, char **argv)
 	}
 
 	printf("\n--- %s ping statistics ---\n", destination);
-	printf("%d packets transmitted, %d received, %d%% packet loss\n", msg_count, msg_count_succeed,
+	printf("%d packets transmitted, %d received, %f%% packet loss\n", msg_count, msg_count_succeed,
 	       (1.0 - msg_count_succeed / (float) msg_count) * 100);
 
 	if (msg_count_succeed > 0)
-		printf("rtt min/avg/max = %Lf/%Lf/%Lf ms\n", rtt_min, rtt_total / msg_count_succeed, rtt_max);
+		printf("rtt min/avg/max = %f/%f/%f ms\n", rtt_min, rtt_total / msg_count_succeed, rtt_max);
 
 	return 0;
 

@@ -10,15 +10,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MICROPYTHON "Support for micro-python apps" OFF)
 
-
-# Detect the correct compiler runtime library and add it
-# to 'LIBCXX_LIBRARIES'. back to gcc_s if available.
-
 # Where the header files are located
 include_directories(  
      src
      lib
-     lib/libc/include
      lib/lvgl
      lib/lvgl/src
      lib/slv
@@ -41,14 +36,12 @@ execute_process(
 
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armv7l")
 
-add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/arm.lds -N -warn-common 
-	-warn-constructors -warn-multiple-gp -L ${libgcc_path} -lgcc
+add_link_options(-N -Wl,--warn-common
 )
 
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 
-add_link_options(-T ${CMAKE_SOURCE_DIR}/lib/libc/aarch64.lds -N -warn-common 
-	-warn-constructors -warn-multiple-gp -L ${libgcc_path} -lgcc
+add_link_options(-N -Wl,--warn-common
 )
 
 endif()

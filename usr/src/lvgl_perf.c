@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	uint64_t delta = tv_end.tv_usec - tv_start.tv_usec;
 
 	printf("Performance test result:\n\n");
-	printf("# Elapsed time of lv_timer_handler() function: %lld microseconds.\n", delta);
+	printf("# Elapsed time of lv_timer_handler() function: %ld microseconds.\n", delta);
 	printf("\n***************************************************************************\n");
 
 	slv_terminate(&slv);
