@@ -10,10 +10,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MICROPYTHON "Support for micro-python apps" OFF)
 
-
-# Detect the correct compiler runtime library and add it
-# to 'LIBCXX_LIBRARIES'. back to gcc_s if available.
-
 # Where the header files are located
 include_directories(  
      src
