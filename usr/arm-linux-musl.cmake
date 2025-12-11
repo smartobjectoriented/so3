@@ -26,5 +26,4 @@ set(CMAKE_ASM_FLAGS "-D__ARM__ -D__ASSEMBLY__")
 
 set(CMAKE_LINKER "arm-linux-musleabihf-ld")
 
-
-set(CMAKE_EXE_LINKER_FLAGS "-Os -static" CACHE STRING "SO3 usr LDFLAGS for executables")
+set(CMAKE_EXE_LINKER_FLAGS "-Os -static -fno-rtti" CACHE STRING "SO3 usr LDFLAGS for executables")

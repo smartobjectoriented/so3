@@ -26,4 +26,4 @@ set(CMAKE_ASM_FLAGS "-D__ARM64__ -D__ASSEMBLY__")
 
 set(CMAKE_LINKER "aarch64-linux-musl-ld")
 
-set(CMAKE_EXE_LINKER_FLAGS "-Os -static" CACHE STRING "SO3 usr LDFLAGS for executables")
+set(CMAKE_EXE_LINKER_FLAGS "-Os -static -fno-rtti" CACHE STRING "SO3 usr LDFLAGS for executables")
