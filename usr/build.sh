@@ -11,6 +11,33 @@ usage() {
   echo "  -h        Print this help"
 }
 
+# Place the debug info of the applications in a separate file
+strip_debug_info()
+{
+  # retrieve the correct objcop tool
+  # if [ "$1" == "virt32" -o "$1" == "rpi4" ]; then
+  if [ "$1" = "virt32" ] || [ "$1" = "rpi4" ]; then
+    OBJCOPY="arm-linux-musleabihf-objcopy"
+  else
+    OBJCOPY="aarch64-linux-musl-objcopy"
+  fi
+
+  for app in build/deploy/*.elf; do
+    [ -e "$app" ] || continue
+
+    # 1. Create a file with only '.debug_*' sections
+    $OBJCOPY --only-keep-debug $app $app.debug
+
+    # 2. remove/strip debug info
+    $OBJCOPY --strip-all $app
+
+    # 3. Connect the two files
+    $OBJCOPY --add-gnu-debuglink=$app.debug $app
+
+  done
+}
+
+
 install_file_elf() {
   if [ -f $1 ] ; then 
     for subfolder_app in $(find build/src -type f -iname "*.elf"); do
@@ -119,5 +146,8 @@ mkdir -p build/deploy/
 install_directory_root out
 
 install_file_elf
+
+strip_debug_info "$PLATFORM"
+
 
 exit 0
