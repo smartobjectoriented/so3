@@ -19,16 +19,17 @@
 #include <new>
 #include <iostream>
 
-struct Aligned { alignas(64) int x; };
+struct Aligned {
+	alignas(64) int x;
+};
 
 int main()
 {
-    void* p = ::operator new(1024);
-    ::operator delete(p);
+	void *p = ::operator new(1024);
+	::operator delete(p);
 
-    Aligned* a = new Aligned;
-    delete a;
+	Aligned *a = new Aligned;
+	delete a;
 
-    std::cout << "Test OK" << std::endl;
+	std::cout << "Test OK" << std::endl;
 }
-

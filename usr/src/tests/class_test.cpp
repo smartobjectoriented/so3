@@ -20,30 +20,34 @@
 #include <string>
 
 class Person {
-private:
-    std::string _name;
-    int _age;
+    private:
+	std::string _name;
+	int _age;
 
-public:
-    Person(const std::string& name, int age)
-        : _name(name), _age(age) {
-            std::cout << "Person constructor" << std::endl;
-    }
+    public:
+	Person(const std::string &name, int age)
+		: _name(name)
+		, _age(age)
+	{
+		std::cout << "Person constructor" << std::endl;
+	}
 
-    ~Person() {
-            std::cout << "Person Destructor" << std::endl;
-    }
+	~Person()
+	{
+		std::cout << "Person Destructor" << std::endl;
+	}
 
-    // Method to print info
-    void hello() const {
-        std::cout << "Hi, I'm " << _name << " and I'm " << _age << " years old." << std::endl;
-    }
+	// Method to print info
+	void hello() const
+	{
+		std::cout << "Hi, I'm " << _name << " and I'm " << _age << " years old." << std::endl;
+	}
 };
 
 int main()
 {
-    Person p("Jean-Pierre", 30);
-    p.hello();
+	Person p("Jean-Pierre", 30);
+	p.hello();
 
-    return 0;
+	return 0;
 }

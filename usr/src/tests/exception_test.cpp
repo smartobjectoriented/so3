@@ -22,7 +22,7 @@ int main()
 {
 	try {
 		throw 42;
-    } catch (int x) {
-        std::cout << "caught: " << x << std::endl;
-    }
+	} catch (int x) {
+		std::cout << "caught: " << x << std::endl;
+	}
 }
