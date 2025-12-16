@@ -18,8 +18,10 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
-int main() {
+void vector_test()
+{
     // Create and initialize a vector with 3 integer values
     std::vector<int> numbers = {10, 20, 30};
 
@@ -30,7 +32,34 @@ int main() {
     }
 
     // Output the result
-    printf("Sum of vector entries: %d\n", sum);
+    std::cout << "Sum of vector entries: " << sum << std::endl;
+}
+
+
+void string_test()
+{
+    std::string s = "abc";
+    s += "def";
+    std::cout << "String: " << s << std::endl;
+}
+
+void map_test()
+{
+    std::map<int,int> m;
+
+    m[1] = 2;
+
+    std::cout << "Map m[1]: " << m[1] << std::endl;
+}
+
+
+int main() {
+
+    vector_test();
+
+    string_test();
+
+    map_test();
 
     return 0;
 }

@@ -20,7 +20,6 @@
 
 int main()
 {
-    // printf("JMI\n");
     std::cout << "Hello World!" << std::endl;
 
     return 0;

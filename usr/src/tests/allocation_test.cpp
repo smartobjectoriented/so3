@@ -16,34 +16,19 @@
  *
  */
 
+#include <new>
 #include <iostream>
-#include <string>
 
-class Person {
-private:
-    std::string _name;
-    int _age;
-
-public:
-    Person(const std::string& name, int age)
-        : _name(name), _age(age) {
-            std::cout << "Person constructor" << std::endl;
-    }
-
-    ~Person() {
-            std::cout << "Person Destructor" << std::endl;
-    }
-
-    // Method to print info
-    void hello() const {
-        std::cout << "Hi, I'm " << _name << " and I'm " << _age << " years old." << std::endl;
-    }
-};
+struct Aligned { alignas(64) int x; };
 
 int main()
 {
-    Person p("Jean-Pierre", 30);
-    p.hello();
+    void* p = ::operator new(1024);
+    ::operator delete(p);
 
-    return 0;
+    Aligned* a = new Aligned;
+    delete a;
+
+    std::cout << "Test OK" << std::endl;
 }
+

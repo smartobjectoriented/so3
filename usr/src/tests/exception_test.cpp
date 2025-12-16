@@ -17,33 +17,12 @@
  */
 
 #include <iostream>
-#include <string>
-
-class Person {
-private:
-    std::string _name;
-    int _age;
-
-public:
-    Person(const std::string& name, int age)
-        : _name(name), _age(age) {
-            std::cout << "Person constructor" << std::endl;
-    }
-
-    ~Person() {
-            std::cout << "Person Destructor" << std::endl;
-    }
-
-    // Method to print info
-    void hello() const {
-        std::cout << "Hi, I'm " << _name << " and I'm " << _age << " years old." << std::endl;
-    }
-};
 
 int main()
 {
-    Person p("Jean-Pierre", 30);
-    p.hello();
-
-    return 0;
+	try {
+		throw 42;
+    } catch (int x) {
+        std::cout << "caught: " << x << std::endl;
+    }
 }
