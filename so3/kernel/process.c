@@ -75,8 +75,9 @@ static pcb_t *root_process = NULL; /* root process */
 
 /* only the following sections are supported */
 static const char *supported_section_names[] = {
-	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini",
-	 ".eh_frame", ".gcc_except_table", ".init_array", ".fini_array", ".data.rel.ro", ".got", ".got.plt",
+	".init",       ".text",	      ".rodata",      ".data",	   ".sbss",
+	".bss",	       ".scommon",    ".fini",	      ".eh_frame", ".gcc_except_table",
+	".init_array", ".fini_array", ".data.rel.ro", ".got",	   ".got.plt",
 };
 #define SUPPORTED_SECTION_COUNT (sizeof(supported_section_names) / sizeof(supported_section_names[0]))
 
