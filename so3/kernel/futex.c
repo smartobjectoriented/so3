@@ -28,13 +28,16 @@
  * @param val expected value of the futex word
  * @return 0 on success or error value
  */
-static int do_futex_wait(uint32_t *futex_w, uint32_t val)
+static int do_futex_wait(uint32_t *futex_w, uint32_t val, const struct timespec *utime)
 {
 	unsigned long flags;
 	pcb_t *pcb = current()->pcb;
 	struct list_head *pos;
 	futex_t *futex;
 	queue_thread_t f_element;
+
+	if (utime)
+		printk("[futex] utime parameter is not used in current implementation\n");
 
 	flags = spin_lock_irqsave(&pcb->futex_lock);
 
@@ -116,7 +119,7 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 	}
 
 	/* wakes at most nr_wake of the waiters that are waiting */
-	list_for_each_safe(pos, p, &futex->list) {
+	list_for_each_safe(pos, p, &futex->f_element) {
 		f_element = list_entry(pos, queue_thread_t, list);
 
 		if (idx == nr_wake)
@@ -138,12 +141,9 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val, const struct t
 {
 	int cmd = op & FUTEX_CMD_MASK;
 
-	if (utime)
-		printk("[futex] utime parameter is not used in current implementation\n");
-
 	switch (cmd) {
 	case FUTEX_WAIT:
-		return do_futex_wait(uaddr, val);
+		return do_futex_wait(uaddr, val, utime);
 	case FUTEX_WAKE:
 		return do_futex_wake(uaddr, val);
 	case FUTEX_FD:
