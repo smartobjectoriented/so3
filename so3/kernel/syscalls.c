@@ -36,11 +36,23 @@ extern uint32_t __get_syscall_stack_arg(uint32_t nr);
 
 extern void test_malloc(int test_no);
 
+static long __sys_empty(syscall_args_t *args);
+
 static const syscall_fn_t syscall_table[NR_SYSCALLS] = {
 	[0 ... NR_SYSCALLS - 1] = NULL,
 /* Generated file with table element matching number to functions. */
 #include <generated/syscall_table.h.in>
 };
+
+/**
+ * Callback for syscalls with empty implementation to remove the unhandled message for them.
+ * This is useful as MUSL will use some syscalls that aren't implemented in SO3 due to simplification
+ * over Linux.
+ */
+static long __sys_empty(syscall_args_t *args)
+{
+	return -ENOSYS;
+}
 
 /*
  * Process syscalls according to the syscall number passed in r7 on ARM and x8 on ARM64.
