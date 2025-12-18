@@ -567,13 +567,13 @@ el01_sync_handler:
 	// Check if sigreturn has been called. In this case, we
 	// clean the stack frame which has been used to manage the user handler.
 	cmp	x8, #SYSCALL_rt_sigreturn
-	bne	__ret_from_fork
+	bne	ret_from_fork
 
 	// Reset the stack frame by removing the one issued from sigreturn
 	add	sp, sp, #S_FRAME_SIZE
 
-
-__ret_from_fork:
+	// Entry point for new user threads
+ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
 	// Is there any pending signals for this process?
@@ -604,11 +604,6 @@ el01_1_irq_handler:
 	kernel_exit
 
 	eret
-
-// Used at entry point of a fork'd process (setting the return value to 0)
-ret_from_fork:
-	str	xzr, [sp, #OFFSET_X0]
-	b	__ret_from_fork
 
 #if !defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 

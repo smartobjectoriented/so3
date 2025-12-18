@@ -74,9 +74,9 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /* only the following sections are supported */
-#define SUPPORTED_SECTION_COUNT 8
+#define SUPPORTED_SECTION_COUNT 10
 static const char *supported_section_names[SUPPORTED_SECTION_COUNT] = {
-	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini",
+	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini", ".init_array", ".fini_array",
 };
 
 /*

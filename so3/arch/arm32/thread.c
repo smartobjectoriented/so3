@@ -55,6 +55,12 @@ void arch_prepare_cpu_regs(tcb_t *tcb, clone_args_t *args)
 
 			if (args->flags & CLONE_SETTLS)
 				user_regs->tls_usr = args->tls;
+
+			/* Set return value to 0 to indicate new thread */
+			user_regs->r0 = 0;
+
+			/* Set kernel stack address used to restore stack on eret */
+			user_regs->sp = get_kernel_stack_top(tcb->stack_slotID);
 		}
 
 		tcb->cpu_regs.lr = (unsigned long) ret_from_fork;
@@ -79,8 +85,9 @@ void arch_restart_user_thread(tcb_t *tcb, th_fn_t fn_entry, addr_t stack_top)
 	 */
 	*user_regs = (cpu_regs_t) {
 		.pc = (u32) fn_entry,
-		.psr = PSR_USR_MODE,
+		.psr = PSR_USR_MODE | PSR_I_BIT,
 		.sp_usr = stack_top,
+		.sp = get_kernel_stack_top(tcb->stack_slotID),
 	};
 }
 
