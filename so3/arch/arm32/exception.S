@@ -39,7 +39,7 @@
 
 .extern current_thread
 .extern irq_handle
-.extern syscall_handle
+.extern arch_syscall_handle
 
 .extern dumpstack
 
@@ -118,8 +118,8 @@ __prepare_sig_handler:
 	bne	__stack_alignment_fault
 
 	@ Copy TLS to the new stack frame
-	ldr	r0, [sp, #OFFSET_TLS_USR]
-	str	r0, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_TLS_USR)]
+	ldr	r1, [sp, #OFFSET_TLS_USR]
+	str	r1, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_TLS_USR)]
 
 	str	sp, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_SP)]	@ save sp
 
@@ -203,8 +203,8 @@ syscall_interrupt:
 	stmia	lr, {sp, lr}^
 
 	@ Save user space TLS context
-	mrc	p15, 0, r0, c13, c0, 0
-	str 	r0, [sp, #OFFSET_TLS_USR]
+	mrc	p15, 0, lr, c13, c0, 3
+	str 	lr, [sp, #OFFSET_TLS_USR]
 
 	cmp	r7, #SYSCALL_sigreturn
 	beq	__after_push_sp_usr
@@ -223,7 +223,7 @@ __after_push_sp_usr:
 	mov	r0, sp
 
 	cpsie	i 			@ Re-enable interrupts
-	bl	syscall_handle
+	bl	arch_syscall_handle
 	cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
 
 	@ Check if sigreturn has been called. In this case, we
@@ -235,11 +235,13 @@ __after_push_sp_usr:
 	add	sp, sp, #SVC_STACK_FRAME_SIZE
 
 __no_sigreturn:
-__ret_from_fork:
 
 	@ Store the return value on the stack frame
 	cmp	r7, #SYSCALL_sigreturn
 	strne	r0, [sp, #OFFSET_R0]
+
+	// Entry point for new user threads
+ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
 	@ Is there any pending signals for this process?
@@ -248,7 +250,7 @@ __ret_from_fork:
 
 	@ Restore user space TLS context
 	ldr 	lr, [sp, #OFFSET_TLS_USR]
-	mcr	p15, 0, lr, c13, c0, 0
+	mcr	p15, 0, lr, c13, c0, 3
 
 	@ get the saved spsr and adjust the stack pointer
     	ldr 	lr, [sp, #OFFSET_PSR]
@@ -265,14 +267,6 @@ __ret_from_fork:
 	isb
 
 	ldmia 	sp, {sp, lr, pc}^
-
-
-
-@ Used at entry point of a fork'd process (setting the return value to 0)
-ret_from_fork:
-	mov	r0, #0
-
-	b	__ret_from_fork
 
 .align  5
 prefetch_abort:
@@ -360,8 +354,8 @@ irq:
 	stmeqia	lr, {sp, lr}^
 
 	@ Save user space TLS context
-	mrc	p15, 0, r0, c13, c0, 0
-	str 	r0, [sp, #OFFSET_TLS_USR]
+	mrceq	p15, 0, lr, c13, c0, 3
+	streq	lr, [sp, #OFFSET_TLS_USR]
 
 	@ Retrieve the lr_irq to set the pc out of this routine
 	ldr 	lr, [r0, #4]		@ retrieve lr_irq to set lr_svc
@@ -388,10 +382,6 @@ irq:
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
 
-	@ Restore user space TLS context
-	ldr 	lr, [sp, #OFFSET_TLS_USR]
-	mcr	p15, 0, lr, c13, c0, 0
-
     	ldr 	lr, [sp, #OFFSET_PSR]	@ get the saved spsr and adjust the stack pointer
     	msr	spsr, lr
 
@@ -402,6 +392,10 @@ irq:
 	@ Restoring user mode registers (sp_usr, lr_usr)
 	addeq	lr, sp, #OFFSET_SP_USR
 	ldmeqia	lr, {sp, lr}^
+
+	@ Restore user space TLS context
+	ldreq	lr, [sp, #OFFSET_TLS_USR]
+	mcreq	p15, 0, lr, c13, c0, 3
 
 	@ Restore registers
    	ldmia 	sp, {r0-r12}

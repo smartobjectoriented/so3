@@ -6,6 +6,7 @@ obj-y += thread.o
 obj-y += vfp.o
 obj-y += backtrace.o backtrace_asm.o
 obj-y += smccc-call.o
+obj-y += syscalls.o
 
 obj-y += lib/
 

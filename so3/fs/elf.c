@@ -165,6 +165,8 @@ void elf_load_sections(elf_img_info_t *elf_img_info)
 void elf_load_segments(elf_img_info_t *elf_img_info)
 {
 	size_t i;
+	size_t segment_start, segment_end;
+	size_t page_start, page_end;
 
 	/* Segments */
 #ifdef CONFIG_ARCH_ARM32
@@ -199,8 +201,16 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 		       sizeof(struct elf64_phdr));
 #endif
 
-		if (elf_img_info->segments[i].p_type == PT_LOAD)
-			elf_img_info->segment_page_count += (elf_img_info->segments[i].p_memsz >> PAGE_SHIFT) + 1;
+		if (elf_img_info->segments[i].p_type == PT_LOAD) {
+			/* Don't use only p_memsz to get page count as p_vaddr can be unaligned and additionnal page will be needed. */
+			segment_start = elf_img_info->segments[i].p_vaddr;
+			segment_end = segment_start + elf_img_info->segments[i].p_memsz;
+
+			page_start = segment_start >> PAGE_SHIFT;
+			page_end = (segment_end + PAGE_SIZE) >> PAGE_SHIFT;
+
+			elf_img_info->segment_page_count += page_end - page_start;
+		}
 	}
 	LOG_DEBUG("segments use %d virtual pages\n", elf_img_info->segment_page_count);
 

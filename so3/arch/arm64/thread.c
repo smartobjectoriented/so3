@@ -54,6 +54,9 @@ void arch_prepare_cpu_regs(tcb_t *tcb, clone_args_t *args)
 
 			if (args->flags & CLONE_SETTLS)
 				user_regs->tls_usr = args->tls;
+
+			/* Set return value to 0 to indicate new thread */
+			user_regs->x0 = 0;
 		}
 
 		tcb->cpu_regs.lr = (unsigned long) ret_from_fork;
