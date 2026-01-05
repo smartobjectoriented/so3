@@ -24,65 +24,65 @@
 #include <unistd.h>
 
 struct ThreadArgs {
-    long thread_id;
-    std::mutex* mtx;
+	long thread_id;
+	std::mutex *mtx;
 };
 
 // Thread function
 long simple_thread(ThreadArgs args)
 {
-    std::cout << "Thread " << args.thread_id << ": Executing" << std::endl;
+	std::cout << "Thread " << args.thread_id << ": Executing" << std::endl;
 
-    // Lock the mutex
-    args.mtx->lock();
-    std::cout << "Thread " << args.thread_id << ": Locked mutex" << std::endl;
+	// Lock the mutex
+	args.mtx->lock();
+	std::cout << "Thread " << args.thread_id << ": Locked mutex" << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+	std::this_thread::sleep_for(std::chrono::seconds(3));
 
-    std::cout << "Thread " << args.thread_id << ": Unlocking mutex" << std::endl;
-    args.mtx->unlock();
+	std::cout << "Thread " << args.thread_id << ": Unlocking mutex" << std::endl;
+	args.mtx->unlock();
 
-    std::cout << "Thread " << args.thread_id << ": Thread finished" << std::endl;
+	std::cout << "Thread " << args.thread_id << ": Thread finished" << std::endl;
 
-    return args.thread_id;
+	return args.thread_id;
 }
 
 int main()
 {
-    std::mutex mtx;
+	std::mutex mtx;
 
-    printf("== C++ threads tests ==\n");
+	printf("== C++ threads tests ==\n");
 
-    // Create thread arguments
-    ThreadArgs args1{1, &mtx};
-    ThreadArgs args2{2, &mtx};
+	// Create thread arguments
+	ThreadArgs args1{ 1, &mtx };
+	ThreadArgs args2{ 2, &mtx };
 
-    // Store threads and their return values
-    std::vector<std::thread> threads;
-    long ret1, ret2;
+	// Store threads and their return values
+	std::vector<std::thread> threads;
+	long ret1, ret2;
 
-    // Launch threads
-    std::thread t1([&]() { ret1 = simple_thread(args1); });
-    std::thread t2([&]() { ret2 = simple_thread(args2); });
+	// Launch threads
+	std::thread t1([&]() { ret1 = simple_thread(args1); });
+	std::thread t2([&]() { ret2 = simple_thread(args2); });
 
-   threads.push_back(std::move(t1));
-   threads.push_back(std::move(t2));
+	threads.push_back(std::move(t1));
+	threads.push_back(std::move(t2));
 
-    // Wait for threads to finish
-   for (auto& t : threads) {
-       if (t.joinable()) {
-           t.join();
-       }
-   }
+	// Wait for threads to finish
+	for (auto &t : threads) {
+		if (t.joinable()) {
+			t.join();
+		}
+	}
 
-    // Check return values
-   if (ret1 != 1) {
-       std::cout << "Unexpected return value for thread 1" << std::endl;
-   }
-   if (ret2 != 2) {
-       std::cout << "Unexpected return value for thread 2" << std::endl;
-   }
+	// Check return values
+	if (ret1 != 1) {
+		std::cout << "Unexpected return value for thread 1" << std::endl;
+	}
+	if (ret2 != 2) {
+		std::cout << "Unexpected return value for thread 2" << std::endl;
+	}
 
-    std::cout << "All threads finished" << std::endl;
-    return 0;
+	std::cout << "All threads finished" << std::endl;
+	return 0;
 }

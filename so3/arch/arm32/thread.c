@@ -83,7 +83,7 @@ void arch_restart_user_thread(tcb_t *tcb, th_fn_t fn_entry, addr_t stack_top)
 	/* Reset all user's registers to zero except for PC, PSTATE and SP
 	 * which needs to be set to the properly start the thread.
 	 */
-	*user_regs = (cpu_regs_t) {
+	*user_regs = (cpu_regs_t){
 		.pc = (u32) fn_entry,
 		.psr = PSR_USR_MODE | PSR_I_BIT,
 		.sp_usr = stack_top,
