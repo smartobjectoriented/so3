@@ -346,7 +346,7 @@ void create_root_process(void)
 		       (void *) __root_proc_end - (void *) __root_proc_start, false);
 
 	/* Start main user thread. */
-	thread_args = (clone_args_t){
+	thread_args = (clone_args_t) {
 		.name = "root_proc",
 		.pcb = pcb,
 		.stack = pcb->stack_top,
