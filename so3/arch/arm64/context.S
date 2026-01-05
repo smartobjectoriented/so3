@@ -31,7 +31,6 @@
 .global __exec_prologue_user
 
 .globl __get_syscall_args_ext
-.globl __get_syscall_arg
 
 .global __mmu_switch
 .global __exec

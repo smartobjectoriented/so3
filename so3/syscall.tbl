@@ -38,10 +38,11 @@ mmap
 mmap2
 nanosleep
 futex
+sched_yield
 pipe                    IPC_PIPE
 pipe2                   IPC_PIPE
 rt_sigaction            IPC_SIGNAL
-rt_kill                 IPC_SIGNAL
+kill                    IPC_SIGNAL
 sigreturn               IPC_SIGNAL
 rt_sigreturn            IPC_SIGNAL
 rt_sigprocmask          IPC_SIGNAL

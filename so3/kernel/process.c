@@ -74,9 +74,9 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /* only the following sections are supported */
-#define SUPPORTED_SECTION_COUNT 6
+#define SUPPORTED_SECTION_COUNT 8
 static const char *supported_section_names[SUPPORTED_SECTION_COUNT] = {
-	".text", ".rodata", ".data", ".sbss", ".bss", ".scommon",
+	".init", ".text", ".rodata", ".data", ".sbss", ".bss", ".scommon", ".fini",
 };
 
 /*
@@ -446,7 +446,7 @@ addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 	/* Save env strings and count how many there are */
 	saved->envc = 0;
 	if (envp) {
-		do {
+		while (envp[saved->envc]) {
 			str_len = strlen(envp[saved->envc]) + 1;
 
 			/* Ensure the newly copied string will not exceed the buffer size. */
@@ -459,7 +459,9 @@ addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 
 			strcpy(&saved->arg_env[saved->strings_size], envp[saved->envc]);
 			saved->strings_size += str_len;
-		} while (envp[saved->envc++]);
+
+			saved->envc++;
+		}
 	}
 
 	return (addr_t) saved;
@@ -477,11 +479,12 @@ void post_setup_image(args_env_t *args_env, elf_img_info_t *elf_img_info)
 	args_base = (char *) arch_get_args_base();
 
 	/* Save argc as first arguments */
-	*((int *) args_base) = args_env->argc;
+	*((long *) args_base) = args_env->argc;
 
 	/* Get the base address for the array of pointer for args, env and aux */
-	argv_p_base = (char **) (args_base + sizeof(int));
-	env_p_base = (char **) ((addr_t) argv_p_base + args_env->argc * sizeof(char *));
+	argv_p_base = (char **) (args_base + sizeof(long));
+	/* Add one to account for the null termination of env */
+	env_p_base = (char **) ((addr_t) argv_p_base + (args_env->argc + 1) * sizeof(char *));
 	/* Add one to account for the null termination of env */
 	aux_elf = (elf_addr_t *) ((addr_t) env_p_base + (args_env->envc + 1) * sizeof(char *));
 

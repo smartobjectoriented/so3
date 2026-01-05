@@ -495,13 +495,14 @@ __prepare_sig_handler:
 	ldr	x1, [x0, #OFFSET_SYS_SIGNUM]
 	str	x1, [sp, #OFFSET_X0]
 
+	// Set the handler to the PC
 	ldr	x1, [x0, #OFFSET_SYS_SA]
 	ldr	x2, [x1, #OFFSET_SA_HANDLER]
-	str	x2, [sp, #OFFSET_X1]
-
-	// Set the handler to the PC
-	ldr	x2, [x1, #OFFSET_SA_RESTORER]
 	str	x2, [sp, #OFFSET_PC]
+
+	// Set restorer to LR so the handler return to it.
+	ldr	x2, [x1, #OFFSET_SA_RESTORER]
+	str	x2, [sp, #OFFSET_LR]
 
 	ret
 
