@@ -24,6 +24,9 @@
 #  - syscall.tbl: Declares all syscalls available on SO3 without taking into
 #                 account the CPU arch. This also provides configuration
 #                 requirement for a given syscall.
+#                 Requirement can be set to EMPTY_IMPLEMENTATION, which will
+#                 set a default function returning -ENOSYS for syscalls that
+#                 are intentionally not implemented.
 #  - syscall.h.in: Contains all syscall number which are necessary implemented
 #                  in SO3. This is a copy of the same file from musl library.
 #
@@ -81,9 +84,13 @@ file_header "__SYSCALL_TABLE_H__" > "$outfile_table"
 valid_syscalls="$(grep -E "^[^#]" "$infile_table")"
 while read name requirement; do
 	sys_cond["$name"]="$requirement"
-	
+
 	echo "#ifdef SYSCALL_$name"
-	echo -e "\t[SYSCALL_$name] = &__sys_$name,"
+	if [ "$requirement" = "EMPTY_IMPLEMENTATION" ]; then
+		echo -e "\t[SYSCALL_$name] = &__sys_empty,"
+	else
+		echo -e "\t[SYSCALL_$name] = &__sys_$name,"
+	fi
 	echo "#endif"
 done < <(echo "$valid_syscalls") >> "$outfile_table"
 
@@ -100,13 +107,13 @@ grep -E "^#define " "$infile_number" | sed "s/^#define __NR_//" | {
 			continue
 		fi
 
-		if [ -n "${sys_cond[$name]}" ]; then
+		if [ -n "${sys_cond[$name]}" -a "${sys_cond[$name]}" != "EMPTY_IMPLEMENTATION" ]; then
 			echo "#ifdef CONFIG_${sys_cond[$name]}"
 		fi
 
 		echo "#define SYSCALL_$name $number"
 
-		if [ -n "${sys_cond[$name]}" ]; then
+		if [ -n "${sys_cond[$name]}" -a "${sys_cond[$name]}" != "EMPTY_IMPLEMENTATION" ]; then
 			echo "#endif"
 		fi
 	done

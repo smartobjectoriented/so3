@@ -69,3 +69,9 @@ send                    NET
 sendto                  NET
 setsockopt              NET
 brk                     PROC_ENV
+
+# TODO: implement. Heavily used in MUSL, so remove warning about it for now.
+munmap                  EMPTY_IMPLEMENTATION
+
+# mprotect allows to set memory protection (read/write/execute), which isn't supported.
+mprotect                EMPTY_IMPLEMENTATION
