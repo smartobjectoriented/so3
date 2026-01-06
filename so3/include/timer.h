@@ -126,7 +126,7 @@ void clocksource_timer_reset(void);
 
 void clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 maxsec);
 
-SYSCALL_DECLARE(nanosleep, const struct timespec *req, struct timespec *rem);
+SYSCALL_DECLARE(nanosleep, const struct long_timespec *req, struct long_timespec *rem);
 
 SYSCALL_DECLARE(gettimeofday_time32, struct timeval32 *tv, void *tz);
 SYSCALL_DECLARE(gettimeofday, struct timeval *tv, void *tz);
