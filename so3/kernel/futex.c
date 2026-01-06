@@ -78,8 +78,10 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val, const struct timespec 
 
 	spin_lock(&pcb->futex_lock);
 
-	if (list_empty(&futex->f_element))
+	if (list_empty(&futex->f_element)) {
+		list_del(&futex->list);
 		free(futex);
+	}
 
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
 

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <sys/time.h>
+#include <inttypes.h>
 
 int main(int argc, char *argv[])
 {
@@ -13,6 +14,6 @@ int main(int argc, char *argv[])
 	while (true) {
 		gettimeofday(&tv, NULL);
 
-		printf("# time(s) : %lu  time(us) : %lu\n", tv.tv_sec, tv.tv_usec);
+		printf("# time(s) : %" PRIu64 "  time(us) : %" PRIu64 "\n", tv.tv_sec, tv.tv_usec);
 	}
 }

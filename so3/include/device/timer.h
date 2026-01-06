@@ -49,6 +49,13 @@ struct timeval32 {
 	time32_t tv_usec; /* microseconds */
 };
 
+/* Time conversion units - Dynamic size (for nanosleep syscall). */
+
+struct long_timespec {
+	long tv_sec; /* seconds */
+	long tv_nsec; /* nanoseconds */
+};
+
 /* All timing information below must be express in nanoseconds. The underlying hardware is responsible
  * to perform the necessary alignment on 64 bits. */
 
