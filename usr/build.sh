@@ -15,7 +15,6 @@ usage() {
 strip_debug_info()
 {
   # retrieve the correct objcop tool
-  # if [ "$1" == "virt32" -o "$1" == "rpi4" ]; then
   if [ "$1" = "virt32" ] || [ "$1" = "rpi4" ]; then
     OBJCOPY="arm-linux-musleabihf-objcopy"
   else
