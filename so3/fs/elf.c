@@ -166,7 +166,7 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 {
 	size_t i;
 	size_t segment_start, segment_end;
-	size_t page_start, page_end;
+	size_t min_segment_start, max_segment_end;
 
 	/* Segments */
 #ifdef CONFIG_ARCH_ARM32
@@ -189,7 +189,8 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 	LOG_DEBUG("sizeof(struct elf64_phdr): %d bytes\n", sizeof(struct elf64_phdr));
 #endif
 
-	elf_img_info->segment_page_count = 0;
+	min_segment_start = -1;
+	max_segment_end = 0;
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
 #ifdef CONFIG_ARCH_ARM32
 		memcpy(elf_img_info->segments + i,
@@ -202,16 +203,22 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 #endif
 
 		if (elf_img_info->segments[i].p_type == PT_LOAD) {
-			/* Don't use only p_memsz to get page count as p_vaddr can be unaligned and additionnal page will be needed. */
 			segment_start = elf_img_info->segments[i].p_vaddr;
 			segment_end = segment_start + elf_img_info->segments[i].p_memsz;
 
-			page_start = segment_start >> PAGE_SHIFT;
-			page_end = (segment_end + PAGE_SIZE) >> PAGE_SHIFT;
-
-			elf_img_info->segment_page_count += page_end - page_start;
+			min_segment_start = min(min_segment_start, (segment_start & PAGE_MASK));
+			max_segment_end = max(max_segment_end, segment_end);
 		}
 	}
+
+	if (max_segment_end != -1) {
+		elf_img_info->segment_start_vaddr = min_segment_start;
+		elf_img_info->segment_end_vaddr = max_segment_end;
+	} else {
+		elf_img_info->segment_start_vaddr = 0;
+		elf_img_info->segment_end_vaddr = 0;
+	}
+
 	LOG_DEBUG("segments use %d virtual pages\n", elf_img_info->segment_page_count);
 
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {

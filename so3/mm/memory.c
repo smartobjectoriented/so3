@@ -434,6 +434,11 @@ void memory_init(void)
 
 #if defined(CONFIG_ARCH_ARM32)
 	addr_t vectors_paddr;
+
+	/* kuser helper are special function provided to userspace by the kernel. */
+	addr_t kuser_sz;
+	extern char __kuser_helper_start[];
+	extern char __kuser_helper_end[];
 #endif
 	void *new_sys_root_pgtable;
 
@@ -496,6 +501,9 @@ void memory_init(void)
 	create_mapping(NULL, VECTOR_VADDR, vectors_paddr, PAGE_SIZE, true);
 
 	memcpy((void *) VECTOR_VADDR, (void *) &__vectors_start, (void *) &__vectors_end - (void *) &__vectors_start);
+
+	kuser_sz = __kuser_helper_end - __kuser_helper_start;
+	memcpy((void *) (VECTOR_VADDR + PAGE_SIZE - kuser_sz), __kuser_helper_start, kuser_sz);
 #endif
 
 	set_pgtable(__sys_root_pgtable);

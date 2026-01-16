@@ -73,14 +73,6 @@ char *proc_state_str(proc_state_t state)
 static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
-/* only the following sections are supported */
-static const char *supported_section_names[] = {
-	".init",       ".text",	      ".rodata",      ".data",	   ".sbss",
-	".bss",	       ".scommon",    ".fini",	      ".eh_frame", ".gcc_except_table",
-	".init_array", ".fini_array", ".data.rel.ro", ".got",	   ".got.plt",
-};
-#define SUPPORTED_SECTION_COUNT (sizeof(supported_section_names) / sizeof(supported_section_names[0]))
-
 /*
  * Find a process (pcb_t) from its pid.
  * Return NULL if no process has been found.
@@ -511,16 +503,13 @@ void post_setup_image(args_env_t *args_env, elf_img_info_t *elf_img_info)
 	/* This should contains a bitmask of hardware capabilities */
 	NEW_AUX_ENT(AT_HWCAP, HWCAP_ELF);
 
-	/* Those value should come from elf_img_info->header, but as user application
-	 * are compiled with linker option -N, the program header (PHDR) isn't in a PT_LOAD
-	 * segment meaning it will not be copied in userspace.
-	 * The main effect of this is that variable in thread local storage will not be possible.
-	 * Those variable are *flaged* with __thread (i.e `__thread int n;`) and aren't used for now.
-	 * This header is also used for dynamically linking, which isn't supported by SO3 anyway.
+	/* Set PHDR information, so userspace can retrieve TLS information.
+	 * Due to how userspace application are built the PHDR segments is missing and so
+	 * we need to manually compute its address.
 	 */
-	NEW_AUX_ENT(AT_PHDR, 0);
-	NEW_AUX_ENT(AT_PHENT, 0);
-	NEW_AUX_ENT(AT_PHNUM, 0);
+	NEW_AUX_ENT(AT_PHDR, elf_img_info->header->e_phoff + (elf_img_info->segment_start_vaddr & PAGE_MASK));
+	NEW_AUX_ENT(AT_PHENT, sizeof(*elf_img_info->segments));
+	NEW_AUX_ENT(AT_PHNUM, elf_img_info->header->e_phnum);
 
 	/* NULL termination */
 	NEW_AUX_ENT(AT_NULL, 0);
@@ -611,17 +600,18 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
          * application must start at 0x1000 (at the lowest).
          */
 
-	pcb->page_count += elf_img_info->segment_page_count;
+	page_count = ((elf_img_info->segment_end_vaddr - elf_img_info->segment_start_vaddr) >> PAGE_SHIFT) + 1;
+	pcb->page_count += page_count;
 
 	/* Map the elementary sections (text, data, bss) */
-	allocate_page(pcb, (uint32_t) (elf_img_info->header->e_entry & PAGE_MASK), elf_img_info->segment_page_count, true);
+	allocate_page(pcb, elf_img_info->segment_start_vaddr, page_count, true);
 
 	LOG_DEBUG("entry point: 0x%08x\n", elf_img_info->header->e_entry);
 	LOG_DEBUG("page count: 0x%08x\n", pcb->page_count);
 
 	/* Maximum heap size */
 	page_count = ALIGN_UP(HEAP_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
-	pcb->heap_base = (elf_img_info->header->e_entry & PAGE_MASK) + (pcb->page_count + 1) * PAGE_SIZE;
+	pcb->heap_base = (elf_img_info->segment_end_vaddr & PAGE_MASK) + PAGE_SIZE;
 	pcb->heap_pointer = pcb->heap_base;
 	pcb->page_count += page_count;
 
@@ -645,12 +635,12 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 /* load sections from each loadable segment into the process' virtual pages */
 void load_process(elf_img_info_t *elf_img_info)
 {
-	unsigned long section_start, section_end;
-	unsigned long segment_start, segment_end;
-	int i, j, k, l;
-	bool section_supported;
-	char section_base_name[16];
-	int section_name_dots;
+	int i;
+
+	/* Manually copy the PHDR as no segement/section contains it. */
+	memcpy((void *) (elf_img_info->header->e_phoff + (elf_img_info->segment_start_vaddr & PAGE_MASK)),
+	       elf_img_info->file_buffer + elf_img_info->header->e_phoff,
+	       elf_img_info->header->e_phnum * elf_img_info->header->e_phentsize);
 
 	/* Loading the different segments */
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
@@ -658,56 +648,14 @@ void load_process(elf_img_info_t *elf_img_info)
 			/* Skip unloadable segments */
 			continue;
 
-		segment_start = elf_img_info->segments[i].p_offset;
-		segment_end = segment_start + elf_img_info->segments[i].p_memsz;
+		/* Copy all required data. */
+		memcpy((void *) elf_img_info->segments[i].p_vaddr,
+		       (void *) (elf_img_info->file_buffer + elf_img_info->segments[i].p_offset),
+		       elf_img_info->segments[i].p_filesz);
 
-		/* Sections */
-		for (j = 0; j < elf_img_info->header->e_shnum; j++) {
-			section_start = elf_img_info->sections[j].sh_offset;
-			section_end = section_start + elf_img_info->sections[j].sh_size;
-
-			/* Verify if the section is part of this segment */
-			if ((section_start < segment_start) || (section_end > segment_end))
-				continue;
-
-			/* Copy only base name of the section */
-			l = 0;
-			section_name_dots = 0;
-			do {
-				section_base_name[l] = elf_img_info->section_names[j][l];
-				if (section_base_name[l] == '.' && section_name_dots++)
-					break; // Base name stops at second '.'
-			} while (section_base_name[l++] != '\0');
-
-			/* Terminate string correctly (replace second '.' if stopped by it) */
-			section_base_name[l] = '\0';
-
-			/* Not all sections are supported */
-			section_supported = false;
-			for (k = 0; k < SUPPORTED_SECTION_COUNT; k++) {
-				if (!strcmp(section_base_name, supported_section_names[k])) {
-					section_supported = true;
-					break;
-				}
-			}
-
-			if (!section_supported) {
-				LOG_DEBUG("Section %s not loaded: unsupported name\n", elf_img_info->section_names[j]);
-				continue;
-			}
-
-			/* Load this section into the process' virtual memory */
-			if (elf_img_info->sections[j].sh_type == SHT_NOBITS)
-				/* unless it were not stored in the file (.bss)
-                                 */
-				continue;
-
-			/* Real load of contents in the user space memory of the
-                         * process */
-			memcpy((void *) elf_img_info->sections[j].sh_addr,
-			       (void *) (elf_img_info->file_buffer + elf_img_info->sections[j].sh_offset),
-			       elf_img_info->sections[j].sh_size);
-		}
+		/* Set remaining byte (bss) to zero. */
+		memset((void *) (elf_img_info->segments[i].p_vaddr + elf_img_info->segments[i].p_filesz), 0,
+		       elf_img_info->segments[i].p_memsz - elf_img_info->segments[i].p_filesz);
 	}
 
 	/* Make sure all data are flushed for future context switch. */
