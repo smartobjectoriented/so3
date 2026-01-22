@@ -87,6 +87,10 @@ void inject_capsule(avz_hyp_t *args)
 	/* At the beginning, the capsule is stopped */
 	domME->avz_shared->dom_desc.u.ME.state = ME_state_stopped;
 
+	/* Store slotID & capsuleID */
+	domME->avz_shared->dom_desc.u.ME.slotID = slotID;
+	domME->avz_shared->dom_desc.u.ME.capsuleID = args->u.avz_inject_capsule_args.capsuleID;
+
 	/* Set the size of this ME in its own descriptor with the dom_context size */
 	domME->avz_shared->dom_desc.u.ME.size = memslot[slotID].size;
 

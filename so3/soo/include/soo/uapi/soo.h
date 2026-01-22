@@ -175,6 +175,7 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
  */
 typedef struct {
 	unsigned int slotID;
+	unsigned int capsuleID;
 	uint64_t spid;
 
 	ME_state_t state;
@@ -266,6 +267,7 @@ extern volatile avz_shared_t *avz_shared;
 typedef struct agency_ioctl_args {
 	void *buffer; /* IN/OUT */
 	int slotID;
+	int capsuleID;
 	long value; /* IN/OUT */
 } agency_ioctl_args_t;
 
