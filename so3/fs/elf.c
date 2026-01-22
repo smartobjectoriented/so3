@@ -211,7 +211,7 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 		}
 	}
 
-	if (min_segment_end != -1) {
+	if (min_segment_start != -1) {
 		elf_img_info->segment_start_vaddr = min_segment_start;
 		elf_img_info->segment_end_vaddr = max_segment_end;
 	} else {
