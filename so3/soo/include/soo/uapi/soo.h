@@ -306,6 +306,7 @@ typedef struct agency_ioctl_args {
 typedef struct {
 	void *itb_paddr;
 	int slotID;
+	int capsuleID;
 } avz_inject_capsule_t;
 
 /* AVZ_START_CAPSULE */
