@@ -28,6 +28,7 @@
 
 #include <types.h>
 #include <list.h>
+#include <signal.h>
 #include <syscall.h>
 
 typedef enum {
@@ -73,18 +74,19 @@ struct tcb {
 
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
-	/* Threaded function */
-	th_fn_t th_fn;
-	void *th_arg;
-
 	thread_t state;
 	int stack_slotID; /* Thread kernel slot ID */
 
 	/* Reference to the process, if any - typically NULL for kernel threads */
 	pcb_t *pcb;
-	int pcb_stack_slotID; /* This is the user space stack slot ID (for user threads) */
 
-	int *exit_status;
+	int exit_status;
+	int *clear_child_tid;
+
+#ifdef CONFIG_IPC_SIGNAL
+	/* Mask for thread's disabled signals */
+	sigset_t sig_mask;
+#endif
 
 	struct list_head list; /* List of threads belonging to a process */
 
@@ -95,21 +97,48 @@ struct tcb {
 };
 typedef struct tcb tcb_t;
 
-addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID);
+typedef struct {
+	/* Clone flags to create/copy the current thread */
+	uint64_t flags;
+	const char *name;
+
+	pcb_t *pcb;
+
+	uint32_t prio;
+
+	/* Userspace stack and TLS address */
+	addr_t stack;
+	addr_t tls;
+
+	/* Pointer to userspace parent/child tid to use depending on flags */
+	int *parent_tid;
+	int *child_tid;
+
+#ifdef CONFIG_IPC_SIGNAL
+	/* Starting mask for thread's disabled signals, should be the same as parent */
+	sigset_t sig_mask;
+#endif
+
+	/* Function to call for kernel thread or root user process */
+	th_fn_t fn;
+
+	/* Arguments passed to the kernel thread function. For userspace thread, this is ignored
+	 * and arguments must put on top of the stack */
+	void *fn_arg;
+} clone_args_t;
 
 void threads_init(void);
 
-SYSCALL_DECLARE(thread_create, uint32_t *pthread_id, addr_t attr_p, addr_t thread_fn, addr_t arg_p);
-SYSCALL_DECLARE(thread_join, uint32_t pthread_id, int **value_p);
-SYSCALL_DECLARE(thread_exit, int *exit_status);
+SYSCALL_DECLARE(exit, int exit_status);
+SYSCALL_DECLARE(set_tid_address, int *tidptr);
 
 tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio);
-tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb);
+tcb_t *user_thread(clone_args_t *args);
 
-int *thread_join(tcb_t *tcb);
-void thread_exit(int *exit_status);
+int thread_join(tcb_t *tcb);
+void thread_exit(int exit_status);
 void clean_thread(tcb_t *tcb);
-SYSCALL_DECLARE(thread_yield, void);
+SYSCALL_DECLARE(sched_yield, void);
 
 void *thread_idle(void *dummy);
 
@@ -117,15 +146,16 @@ addr_t get_kernel_stack_top(uint32_t slotID);
 
 extern void __switch_context(tcb_t *prev, tcb_t *next);
 extern void __thread_prologue_kernel(void);
-extern void __thread_prologue_user(void);
-extern void __thread_prologue_user_pre_launch(void);
+extern void ret_from_fork(void);
 
 char *print_state(struct tcb *tcb);
 
 void *app_thread_main(void *args);
 
-void arch_prepare_cpu_regs(tcb_t *tcb);
+void arch_prepare_cpu_regs(tcb_t *tcb, clone_args_t *args);
+void arch_restart_user_thread(tcb_t *tcb, th_fn_t fn_entry, addr_t stack);
 addr_t arch_get_args_base(void);
+addr_t arch_get_kernel_stack_frame(tcb_t *tcb);
 
 #endif /* __ASSEMBLY__ */
 

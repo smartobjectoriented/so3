@@ -22,16 +22,52 @@
 
 #include <types.h>
 
-#define FILENAME_SIZE 256
-
-typedef uint32_t mode_t;
-
+/* Stat structure copied from Linux include/uapi/asm-generic/stat.h */
 struct stat {
-	char st_name[FILENAME_SIZE]; /* Filename */
-	unsigned long st_size; /* Size of file */
-	time_t st_mtim; /* Time of last modification in sec*/
-	unsigned char st_flags; /* Regular file flag (not supported on fat) */
-	mode_t st_mode; /* Protection not used (not supported on fat) */
+	unsigned long st_dev; /* Device. */
+	unsigned long st_ino; /* File serial number. */
+	unsigned int st_mode; /* File mode. */
+	unsigned int st_nlink; /* Link count. */
+	unsigned int st_uid; /* User ID of the file's owner. */
+	unsigned int st_gid; /* Group ID of the file's group. */
+	unsigned long st_rdev; /* Device number, if device. */
+	unsigned long __pad1;
+	long st_size; /* Size of file, in bytes. */
+	int st_blksize; /* Optimal block size for I/O. */
+	int __pad2;
+	long st_blocks; /* Number 512-byte blocks allocated. */
+	long st_atime; /* Time of last access. */
+	unsigned long st_atime_nsec;
+	long st_mtime; /* Time of last modification. */
+	unsigned long st_mtime_nsec;
+	long st_ctime; /* Time of last status change. */
+	unsigned long st_ctime_nsec;
+	unsigned int __unused4;
+	unsigned int __unused5;
+};
+
+/* This is for ARM32 compatibility as 64bits version of stat will be called.
+   Adapted from arch/arm64/include/asm/stat.h on Linux */
+struct stat64 {
+	u64 st_dev; /* Device. */
+	unsigned char __pad0[4];
+	u32 __st_ino; /* File serial number. */
+	u32 st_mode; /* File mode. */
+	u32 st_nlink; /* Link count. */
+	u32 st_uid; /* User ID of the file's owner. */
+	u32 st_gid; /* Group ID of the file's group. */
+	u64 st_rdev; /* Device number, if device. */
+	unsigned char __pad3[4];
+	s64 st_size; /* Size of file, in bytes. */
+	u32 st_blksize; /* Optimal block size for I/O. */
+	u64 st_blocks; /* Number 512-byte blocks allocated. */
+	u32 st_atime; /* Time of last access. */
+	u32 st_atime_nsec;
+	u32 st_mtime; /* Time of last modification. */
+	u32 st_mtime_nsec;
+	u32 st_ctime; /* Time of last status change. */
+	u32 st_ctime_nsec;
+	u64 st_ino;
 };
 
 #endif /* STAT_H */

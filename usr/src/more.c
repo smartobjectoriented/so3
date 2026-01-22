@@ -21,6 +21,8 @@
 
 #include <fcntl.h>
 
+#include <termios.h>
+#include <signal.h>
 #include <unistd.h>
 #include <syscall.h>
 #include <stdio.h>
@@ -32,9 +34,19 @@
 
 char buf[BUFSIZE];
 struct winsize wsz;
+struct termios old_term;
+
+/* Handler for sigint to restore console flags. */
+void sigint_handler(int sig)
+{
+	tcsetattr(STDERR_FILENO, TCSANOW, &old_term);
+	exit(0);
+}
 
 int main(int argc, char **argv)
 {
+	struct termios raw_term;
+	struct sigaction sa = {};
 	int quit = 0;
 	int fd = STDIN_FILENO, nb_bytes, line_max, columns_max;
 	int cpt_columns = -1, cpt_line = 0;
@@ -53,8 +65,20 @@ int main(int argc, char **argv)
 			return 2;
 		}
 	}
+
+	/* Save old console mode */
+	tcgetattr(STDERR_FILENO, &old_term);
+
+	/* Set SIGINT handler to restore the terminal mode correctly */
+	sa.sa_handler = sigint_handler;
+	sigaction(SIGINT, &sa, NULL);
+
+	/* Set console mode to raw */
+	cfmakeraw(&raw_term);
+	tcsetattr(STDERR_FILENO, TCSANOW, &raw_term);
+
 	/* Get number of lines and columns */
-	err = ioctl(STDOUT_FILENO, TIOCGWINSZ, &wsz);
+	err = ioctl(STDERR_FILENO, TIOCGWINSZ, &wsz);
 	if (err != 0) {
 		printf("Errno: %d\n  ioctl error %d\n", errno, err);
 		return 3;
@@ -97,7 +121,16 @@ int main(int argc, char **argv)
 				printf("\n--MORE--");
 				fflush(stdout);
 
-				key = getc(stderr);
+				/* Read next char. Don't use getc as it requires
+				   a FILE* and this will result in no actual read
+				   on stderr. stdin isn't available as it can be
+				   an input pipe. */
+				err = read(STDERR_FILENO, &key, 1);
+				if (err != 1) {
+					quit = 1;
+					break;
+				}
+
 				if ((key == 'q') || (key == 'Q')) {
 					quit = 1;
 					break;
@@ -112,6 +145,8 @@ int main(int argc, char **argv)
 			break;
 	}
 	putchar('\n');
+
+	tcsetattr(STDERR_FILENO, TCSANOW, &old_term);
 
 	return 0;
 }

@@ -39,7 +39,7 @@
 
 .extern current_thread
 .extern irq_handle
-.extern syscall_handle
+.extern arch_syscall_handle
 
 .extern dumpstack
 
@@ -47,7 +47,6 @@
 .extern __data_abort
 .extern __undefined_instruction
 
-.extern __check_ptrace_syscall
 .extern sig_check
 .extern __stack_alignment_fault
 
@@ -118,6 +117,10 @@ __prepare_sig_handler:
 	tst	sp, #0x7	@ 8-bytes aligned
 	bne	__stack_alignment_fault
 
+	@ Copy TLS to the new stack frame
+	ldr	r1, [sp, #OFFSET_TLS_USR]
+	str	r1, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_TLS_USR)]
+
 	str	sp, [sp, #(-SVC_STACK_FRAME_SIZE + OFFSET_SP)]	@ save sp
 
 	@ Build a new stack frame based on the current
@@ -169,7 +172,7 @@ __prepare_sig_handler:
 @ ARM EABI: the syscall nr is stored in r7
 .align  5
 syscall_interrupt:
- 
+
 	@ At the exception entry, the stack must be 8-byte aligned.
 	@ If it is not the case (gcc might not respect the AAPCS convention for optimization purposes),
 	@ sp will be adjusted. The original sp is preserved and will be correctly restored at the exit.
@@ -199,9 +202,13 @@ syscall_interrupt:
 	add	lr, sp, #OFFSET_SP_USR
 	stmia	lr, {sp, lr}^
 
-	cmp	r7, #SYSCALL_SIGRETURN
+	@ Save user space TLS context
+	mrc	p15, 0, lr, c13, c0, 3
+	str 	lr, [sp, #OFFSET_TLS_USR]
+
+	cmp	r7, #SYSCALL_sigreturn
 	beq	__after_push_sp_usr
-	
+
 	ldr	r0, [sp, #OFFSET_SP_USR]
 	ldr 	r1, .LCcurrent
 	ldr 	r1, [r1]
@@ -213,22 +220,15 @@ __after_push_sp_usr:
 	@ Restore r0-r2
 	ldmia	sp, {r0-r2}
 
-#ifdef CONFIG_MMU
-	@ Give a chance to a ptrace tracer to monitor us (before the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-
 	mov	r0, sp
 
 	cpsie	i 			@ Re-enable interrupts
-	bl	syscall_handle
+	bl	arch_syscall_handle
 	cpsid	i			@ Re-disable interrupts to be safe in regs manipulation
 
 	@ Check if sigreturn has been called. In this case, we
 	@ clean the stack frame which has been used to manage the user handler.
-	cmp	r7, #SYSCALL_SIGRETURN
+	cmp	r7, #SYSCALL_sigreturn
 	bne	__no_sigreturn
 
 	@ Reset the stack frame by removing the one issued from sigreturn
@@ -236,23 +236,21 @@ __after_push_sp_usr:
 
 __no_sigreturn:
 
-#ifdef CONFIG_MMU
-	@ Give a chance to a ptrace tracer to monitor us (after the syscall)
-	stmfd 	sp!, {r0-r4}
-	bl	__check_ptrace_syscall
-	ldmfd 	sp!, {r0-r4}
-#endif
-
-__ret_from_fork:
-
 	@ Store the return value on the stack frame
-	cmp	r7, #SYSCALL_SIGRETURN
+	cmp	r7, #SYSCALL_sigreturn
 	strne	r0, [sp, #OFFSET_R0]
+
+	// Entry point for new user threads
+ret_from_fork:
 
 #ifdef CONFIG_IPC_SIGNAL
 	@ Is there any pending signals for this process?
 	check_pending_signal
 #endif /* CONFIG_IPC_SIGNAL */
+
+	@ Restore user space TLS context
+	ldr 	lr, [sp, #OFFSET_TLS_USR]
+	mcr	p15, 0, lr, c13, c0, 3
 
 	@ get the saved spsr and adjust the stack pointer
     	ldr 	lr, [sp, #OFFSET_PSR]
@@ -270,14 +268,6 @@ __ret_from_fork:
 
 	ldmia 	sp, {sp, lr, pc}^
 
- 
-
-@ Used at entry point of a fork'd process (setting the return value to 0)
-ret_from_fork:
-	mov	r0, #0
-
-	b	__ret_from_fork
- 
 .align  5
 prefetch_abort:
 
@@ -363,6 +353,10 @@ irq:
 	addeq	lr, sp, #OFFSET_SP_USR
 	stmeqia	lr, {sp, lr}^
 
+	@ Save user space TLS context
+	mrceq	p15, 0, lr, c13, c0, 3
+	streq	lr, [sp, #OFFSET_TLS_USR]
+
 	@ Retrieve the lr_irq to set the pc out of this routine
 	ldr 	lr, [r0, #4]		@ retrieve lr_irq to set lr_svc
 	sub 	lr, lr, #4		@ Adjust the lr since it is automatically set from pc (in advance of 2 instructions due to the pipeline)
@@ -398,6 +392,10 @@ irq:
 	@ Restoring user mode registers (sp_usr, lr_usr)
 	addeq	lr, sp, #OFFSET_SP_USR
 	ldmeqia	lr, {sp, lr}^
+
+	@ Restore user space TLS context
+	ldreq	lr, [sp, #OFFSET_TLS_USR]
+	mcreq	p15, 0, lr, c13, c0, 3
 
 	@ Restore registers
    	ldmia 	sp, {r0-r12}

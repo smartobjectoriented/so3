@@ -35,6 +35,9 @@
 /* Fixmap page used for temporary mapping */
 #define FIXMAP_MAPPING UL(0xffffb00000000000)
 
+/* Anonymous start virtual address */
+#define USER_ANONYMOUS_VADDR UL(0x0000000100000000)
+
 /* The user space can be up to bits [47:0] and uses ttbr0_el1
  * as main L0 page table.
  */
@@ -44,6 +47,9 @@
 
 /* Fixmap page used for temporary mapping */
 #define FIXMAP_MAPPING UL(0xffffffd800000000)
+
+/* Anonymous start virtual address */
+#define USER_ANONYMOUS_VADDR UL(0x0000000100000000)
 
 /* The user space can be up to bits [38:0] and uses ttbr0_el1
  * as main L0 page table.

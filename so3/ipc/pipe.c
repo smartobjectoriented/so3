@@ -19,8 +19,8 @@
 
 #include <errno.h>
 #include <heap.h>
-#include <limits.h>
 #include <list.h>
+#include <log.h>
 #include <pipe.h>
 #include <vfs.h>
 #include <schedule.h>
@@ -307,4 +307,17 @@ SYSCALL_DEFINE1(pipe, int *, pipefd)
 	mutex_unlock(&pd->lock);
 
 	return 0;
+}
+
+/**
+ * Simple pipe2 implementation ignoring flags for aarch64.
+ */
+SYSCALL_DEFINE2(pipe2, int *, pipefd, int, flags)
+{
+	if (flags != 0) {
+		LOG_WARNING("Flags not supported.\n");
+		return -ENOSYS;
+	}
+
+	return sys_do_pipe(pipefd);
 }

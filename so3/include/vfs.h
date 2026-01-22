@@ -91,6 +91,13 @@
 #define DT_LNK 10 /* Symbolic link */
 #define DT_SOCK 12 /* Socket device */
 
+/* mmap flags options  */
+#define MAP_ANONYMOUS 0x20 /* don't use a file */
+
+/* Special value for dirfd used to indicate openat
+   should use the current working directory. */
+#define AT_FDCWD (-100)
+
 /* Return error values */
 #define MAP_FAILED ((void *) -1) /* mmap fail */
 
@@ -101,7 +108,14 @@
 #include <dirent.h>
 #include <syscall.h>
 
-#include <device/device.h>
+typedef uint32_t mode_t;
+
+struct iovec {
+	void *iov_base;
+	size_t iov_len;
+};
+
+#define iovec iovec
 
 struct file_operations {
 	int (*open)(int fd, const char *path);
@@ -150,18 +164,25 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
-SYSCALL_DECLARE(open, const char *filename, int flags);
-SYSCALL_DECLARE(read, int fd, void *buffer, int count);
-SYSCALL_DECLARE(write, int fd, const void *buffer, int count);
-SYSCALL_DECLARE(readdir, int fd, char *buf, int len);
+SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, mode_t mode)
+SYSCALL_DECLARE(open, const char *filename, int flags, mode_t mode);
+SYSCALL_DECLARE(read, int fd, void *buffer, size_t count);
+SYSCALL_DECLARE(write, int fd, const void *buffer, size_t count);
+SYSCALL_DECLARE(getdents64, int fd, struct dirent *buf, size_t count);
 SYSCALL_DECLARE(close, int fd);
 SYSCALL_DECLARE(dup, int oldfd);
 SYSCALL_DECLARE(dup2, int oldfd, int newfd);
-SYSCALL_DECLARE(stat, const char *path, struct stat *st);
-SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int fd, off_t offset);
+SYSCALL_DECLARE(dup3, int oldfd, int newfd, int flags);
+SYSCALL_DECLARE(stat64, const char *path, struct stat64 *st);
+SYSCALL_DECLARE(fstatat64, int fd, const char *filename, struct stat64 *statbuf, int flag);
+SYSCALL_DECLARE(newfstatat, int fd, const char *filename, struct stat *statbuf, int flag);
+SYSCALL_DECLARE(mmap, addr_t start, size_t length, int prot, int flags, int fd, off_t offset);
+SYSCALL_DECLARE(mmap2, addr_t start, size_t length, int prot, int flags, int fd, off_t pgoffset);
 SYSCALL_DECLARE(ioctl, int fd, unsigned long cmd, unsigned long args);
-SYSCALL_DECLARE(fcntl, int fd, unsigned long cmd, unsigned long args);
 SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
+SYSCALL_DECLARE(_llseek, int fd, unsigned long offset_high, unsigned long offset_low, off_t *result, unsigned whence);
+SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
+SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 
 /* VFS common interface */
 

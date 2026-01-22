@@ -22,6 +22,7 @@
 #include <bits/ioctl.h>
 #include <lvgl.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 
 #include "slv_mouse.h"
 

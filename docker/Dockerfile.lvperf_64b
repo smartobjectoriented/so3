@@ -1,11 +1,15 @@
-FROM alpine:latest AS baseimage
+FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 
 FROM baseimage AS builder
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-aarch64-none-elf \
-    qemu-system-aarch64 \
-    bison flex libc-dev  libressl-dev dtc
+RUN apt update && \
+    apt install -y build-essential cmake qemu-system-arm \
+    bison flex libssl-dev device-tree-compiler && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /so3
 
@@ -29,10 +33,19 @@ RUN cd u-boot;\
 
 FROM baseimage AS runner
 
-RUN apk update; \
-    apk add --no-cache make cmake gcc-aarch64-none-elf \
-    g++-aarch64-none-elf qemu-system-aarch64 \
-    util-linux dtc u-boot-tools dosfstools python3 py3-pip
+RUN apt update && apt install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    qemu-system-arm \
+    util-linux \
+    device-tree-compiler \
+    u-boot-tools \
+    dosfstools \
+    python3 \
+    python3-pip \
+    bash patch git && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages pcpp
 
@@ -66,10 +79,6 @@ RUN echo "#!/bin/sh" > install_dependencies.sh && chmod +x install_dependencies.
 RUN rm -rf /var/cache/apk/*
 RUN rm -rf /usr/share/man /usr/share/doc /usr/share/info /var/cache/apk/*
 
-# This env varialbe is read from the usr/build.sh script  in order to set a custom aarch64 toolchain
-# This may be removed if so3 is fully migrated to the aarch64-none-elf toolchain
-# Right now aarch64-none-linux-gnu is still used by default
-ENV USR_BUILD_TOOLCHAIN_FILE=aarch64_none_toolchain.cmake 
 ENV QEMU_ARCH=aarch64
 ENV PLATFORM=virt64
 

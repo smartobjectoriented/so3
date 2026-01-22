@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017 Xavier Ruppen <xavier.ruppen@heig-vd.ch>
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -138,7 +138,7 @@ bool kernel_stack_slot[CONFIG_MAX_THREADS];
  * Get the kernel stack (top), full descending - The kernel stack is divided into small stack areas
  * used for individual kernel *and* user threads (in SVC mode).
  *
- * The first stack area is the initial system stack. 
+ * The first stack area is the initial system stack.
  * The first thread stack slot ID #0 starts right after the initial system stack.
  */
 addr_t get_kernel_stack_top(uint32_t slotID)
@@ -187,41 +187,6 @@ void free_kernel_stack_slot(int slotID)
 	kernel_stack_slot[slotID] = false;
 }
 
-/* Process thread stack management */
-
-/* Get the kernel stack (top), full descending */
-addr_t get_user_stack_top(pcb_t *pcb, uint32_t slotID)
-{
-	return (addr_t) ((void *) pcb->stack_top - slotID * CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
-}
-
-/*
- * Reserve a (user space) stack slot dedicated to a user thread.
- */
-int get_user_stack_slot(pcb_t *pcb)
-{
-	unsigned int i;
-
-	for (i = 0; i < PROC_MAX_THREADS; i++) {
-		if (!pcb->stack_slotID[i]) {
-			pcb->stack_slotID[i] = true;
-
-			return i;
-		}
-	}
-
-	/* No free stack slot */
-	return -1;
-}
-
-/*
- * Release the user space stack slot.
- */
-void free_user_stack_slot(pcb_t *pcb, int slotID)
-{
-	pcb->stack_slotID[slotID] = false;
-}
-
 #warning free_queue_thread() unused at the moment...
 void free_queue_thread(struct list_head *aList)
 {
@@ -239,7 +204,7 @@ void free_queue_thread(struct list_head *aList)
 /*
  * Thread exit routine
  */
-void thread_exit(int *exit_status)
+void thread_exit(int exit_status)
 {
 	queue_thread_t *cur;
 	struct list_head *pos, *q;
@@ -255,9 +220,9 @@ void thread_exit(int *exit_status)
 	 * According to the thread which is calling thread_exit(), the behaviour may differ.
 	 * Typically, if it is the main thread of the process, we have to wait until all
 	 * running threads (belonging to the process) are completed, and we pursue with
-	 * do_exit().
+	 * sys_do_exit().
 	 *
-	 * - If pcb->state == PROC_STATE_ZOMBIE, it means we are called from do_exit()
+	 * - If pcb->state == PROC_STATE_ZOMBIE, it means we are called from sys_do_exit()
 	 */
 	pcb = current()->pcb;
 
@@ -272,7 +237,7 @@ void thread_exit(int *exit_status)
 		remove_tcb_from_pcb(current());
 
 #ifdef CONFIG_PROC_ENV
-		do_exit(0);
+		sys_do_exit_group(0);
 #endif
 
 	} else {
@@ -299,6 +264,14 @@ void thread_exit(int *exit_status)
 
 			if (pcb && (active_threads(pcb) == 1)) /* We are the last one, and we will be put in zombie state... */
 				complete(&pcb->threads_active);
+		}
+
+		/* If clear child tid is set, inform waiting thread */
+		if (pcb && current() != pcb->main_thread) {
+			if (current()->clear_child_tid) {
+				*(current()->clear_child_tid) = 0;
+				sys_do_futex(current()->clear_child_tid, FUTEX_WAKE, 1, NULL, NULL, 0);
+			}
 		}
 
 		/* Check if this is a kernel thread OR a main thread before a image replacement (during exec()).
@@ -335,7 +308,7 @@ void thread_prologue(void (*th_fn)(void *arg), void *arg)
  	 * If we reach this point, it means that a kernel thread has finished its execution.
 	 */
 
-	thread_exit(NULL);
+	thread_exit(0);
 }
 
 /*
@@ -366,7 +339,7 @@ void *thread_idle(void *dummy)
 /*
  * Yield to another thread, i.e. simply invoke a call to schedule()
  */
-SYSCALL_DEFINE0(thread_yield)
+SYSCALL_DEFINE0(sched_yield)
 {
 	schedule();
 	return 0;
@@ -377,16 +350,14 @@ void set_thread_registers(tcb_t *thread, cpu_regs_t *regs)
 	memcpy(&thread->cpu_regs, regs, sizeof(cpu_regs_t));
 }
 
-/*
+/**
  * Thread creation routine
  *
- * @start_routine: function to be threaded; if NULL, it means we are along a fork() processing.
- * @name: name of the thread. Warning ! The caller must foresee a concatenation of the tid to the string.
- * @arg: pointer to possible args
- * @pcb: NULL means it is a pure kernel thread, otherwise is is a user thread.
- * @prio: 0 means the default priority, otherwise set to the thread to the corresponding priority
+ * @param args Aguments to create the thread
+ *
+ * @return TCB of the newly created thread.
  */
-tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb, uint32_t prio)
+tcb_t *thread_create(clone_args_t *args)
 {
 	tcb_t *tcb;
 	unsigned long flags;
@@ -395,7 +366,7 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 
 	flags = local_irq_save();
 
-	tcb = (tcb_t *) malloc(sizeof(tcb_t));
+	tcb = (tcb_t *) calloc(1, sizeof(tcb_t));
 
 	if (tcb == NULL) {
 		printk("%s: failed to alloc memory.\n", __func__);
@@ -405,18 +376,19 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 	tcb->tid = tid_next++;
 
 	/* We append the tid to the thread name */
-	snprintf(tcb->name, THREAD_NAME_LEN, "%s_%d", name, tcb->tid);
+	snprintf(tcb->name, THREAD_NAME_LEN, "%s_%d", args->name, tcb->tid);
 
-	tcb->th_fn = start_routine;
-	tcb->th_arg = arg;
-
-	if (prio)
-		tcb->prio = prio;
+	if (args->prio)
+		tcb->prio = args->prio;
 	else
 		tcb->prio = THREAD_PRIO_DEFAULT;
 
 	tcb->state = THREAD_STATE_NEW;
-	tcb->pcb = pcb;
+	tcb->pcb = args->pcb;
+
+#ifdef CONFIG_IPC_SIGNAL
+	tcb->sig_mask = args->sig_mask;
+#endif
 
 	/* Init the thread kernel stack (svc mode) for both kernel and user thread. */
 	tcb->stack_slotID = get_kernel_stack_slot();
@@ -426,57 +398,77 @@ tcb_t *thread_create(th_fn_t start_routine, const char *name, void *arg, pcb_t *
 		kernel_panic();
 	}
 
-	/* Prepare the user stack if any related PCB */
-	if (tcb->pcb) {
-		/* Prepare the user stack */
-		tcb->pcb_stack_slotID = get_user_stack_slot(tcb->pcb);
-		if (tcb->pcb_stack_slotID < 0) {
-			printk("No available user stack for a new thread\n");
-			kernel_panic();
-		}
-	}
-
 	/* Prepare registers for future restore in switch_context() */
-	arch_prepare_cpu_regs(tcb);
-
-	/* Quite common registers on various architectures */
-	tcb->cpu_regs.sp = get_kernel_stack_top(tcb->stack_slotID);
-
-	if (tcb->pcb)
-		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_user;
-	else
-		tcb->cpu_regs.lr = (unsigned long) __thread_prologue_kernel;
+	arch_prepare_cpu_regs(tcb, args);
 
 	/* Initialize the join queue associated to this thread */
 	INIT_LIST_HEAD(&tcb->joinQueue);
 
 	/* We do not want to have the idle thread as a "ready" thread */
-	if (start_routine != thread_idle)
+	if (args->fn != thread_idle)
 		ready(tcb);
+
+	if (args->flags & CLONE_PARENT_SETTID) {
+		/* Return the TID of the child thread. The child will not execute
+		 * this code, since it jumps to the ret_from_fork in context.S
+		 */
+		*args->parent_tid = tcb->tid;
+	}
+
+	if (args->flags & CLONE_CHILD_CLEARTID)
+		tcb->clear_child_tid = args->child_tid;
 
 	local_irq_restore(flags);
 
 	return tcb;
 }
 
+/**
+ * Create a new kernel thread.
+ *
+ * @param start_routine Kernel function to call in the thread.
+ * @param name Name of the thread.
+ * @param arg Arguments passed to the function called by the thread.
+ * @param prio The thread scheduling priority.
+ *
+ * @return TCB of the newly created thread.
+ */
 tcb_t *kernel_thread(th_fn_t start_routine, const char *name, void *arg, uint32_t prio)
 {
-	return thread_create(start_routine, name, arg, NULL, prio);
+	clone_args_t args = {
+		.name = name,
+		.fn = start_routine,
+		.fn_arg = arg,
+		.prio = prio,
+	};
+
+	return thread_create(&args);
 }
 
 /**
- * Should not be called directly.
- * Called by create_process() or create_child_thread() instead.
+ * Create a new user thread based on given arguments.
  *
- * @param start_routine	Address ot the thread routine
- * @param name		Name of the thread
- * @param arg		Argument of the thread
- * @param pcb		PCB which the thread belongs to
- * @return		Address of the corresponding TCB
+ * @param args Aguments to create the user thread
+ *
+ * @return TCB of the newly created thread.
  */
-tcb_t *user_thread(th_fn_t start_routine, const char *name, void *arg, pcb_t *pcb)
+tcb_t *user_thread(clone_args_t *args)
 {
-	return thread_create(start_routine, name, arg, pcb, (pcb->main_thread ? pcb->main_thread->prio : 0));
+	tcb_t *tcb;
+
+	args->prio = (args->flags & CLONE_THREAD) ? args->pcb->main_thread->prio : 0;
+
+	tcb = thread_create(args);
+
+	if (args->flags & CLONE_THREAD) {
+		/* Insert the newly thread to the thread list of this process */
+		list_add_tail(&tcb->list, &args->pcb->threads);
+	} else {
+		BUG_ON(args->pcb->main_thread != NULL);
+		args->pcb->main_thread = tcb;
+	}
+
+	return tcb;
 }
 
 /*
@@ -505,10 +497,10 @@ void clean_thread(tcb_t *tcb)
  * The target thread which we are trying to join will be definitively removed
  * from the system when no other threads are joining it too.
  */
-int *thread_join(tcb_t *tcb)
+int thread_join(tcb_t *tcb)
 {
 	queue_thread_t *cur;
-	int *exit_status;
+	int exit_status;
 	tcb_t *_tcb;
 	struct list_head *pos, *q;
 	unsigned long flags;
@@ -563,34 +555,28 @@ int *thread_join(tcb_t *tcb)
 		}
 	}
 
-	/* Check if the child is a tracee (and therefore we have a tracer on it) */
-	if ((tcb != NULL) && (tcb->pcb->ptrace_pending_req != PTRACE_NO_REQUEST)) {
-		exit_status = NULL;
+	/* The joined thread *must* be in zombie */
+	ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
 
-	} else {
-		/* The joined thread *must* be in zombie */
-		ASSERT(tcb->state == THREAD_STATE_ZOMBIE);
+	if (is_main_thread)
+		exit_status = tcb->pcb->exit_status;
+	else
+		exit_status = tcb->exit_status;
 
-		if (is_main_thread)
-			exit_status = (void *) ((unsigned long) tcb->pcb->exit_status);
-		else
-			exit_status = tcb->exit_status;
+	/*
+	 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
+	 * If the join is done on a main_thread, it means the waiting parent is doing the join, and
+	 * we can then clean the tcb (remember that the main_thread does not appear in the list
+	 * of threads of the PCB; only created threads are in it.
+	 */
 
-		/*
-		 * Now, if we are the last which is woken up, we can proceed with the tcb removal.
-		 * If the join is done on a main_thread, it means the waiting parent is doing the join, and
-		 * we can then clean the tcb (remember that the main_thread does not appear in the list
-		 * of threads of the PCB; only created threads are in it.
-		 */
-
-		if (list_empty(&tcb->joinQueue)) {
-			if (is_main_thread) {
-				clean_thread(tcb);
-				tcb->pcb->main_thread = NULL;
-			} else
-				/* Remove the tcb from the list of threads owned by this process */
-				remove_tcb_from_pcb(tcb);
-		}
+	if (list_empty(&tcb->joinQueue)) {
+		if (is_main_thread) {
+			clean_thread(tcb);
+			tcb->pcb->main_thread = NULL;
+		} else
+			/* Remove the tcb from the list of threads owned by this process */
+			remove_tcb_from_pcb(tcb);
 	}
 	local_irq_restore(flags);
 
@@ -598,88 +584,20 @@ int *thread_join(tcb_t *tcb)
 }
 
 /*
- * do_thread_create is the syscall implementation behind the pthread_create() called in the libc.
- *
- * @pthread_p refers to the address of the resulting pthread_t id
- * @attr_p refers to the address of pthread attributes
- * @thread_fn refers to the threaded function in the user space
- * @arg_p refers to the arguments passed to the threaded function
- *
- * The function returns 0 if successful.
- */
-
-SYSCALL_DEFINE4(thread_create, uint32_t *, pthread_id, addr_t, attr_p, addr_t, thread_fn, addr_t, arg_p)
-{
-	unsigned long flags;
-	tcb_t *tcb;
-	char *name;
-
-	flags = local_irq_save();
-
-	/* Create a child thread for the running process */
-
-	/* Temporary name for this thread */
-	name = (char *) malloc(THREAD_NAME_LEN);
-	if (!name) {
-		printk("%s: heap overflow...\n", __func__);
-		kernel_panic();
-	}
-	snprintf(name, THREAD_NAME_LEN, "thread_p%d", current()->pcb->pid);
-
-	tcb = user_thread((th_fn_t) thread_fn, name, (void *) arg_p, current()->pcb);
-
-	/* The name has been copied in thread creation */
-	free(name);
-
-	/* Insert the newly thread to the thread list of this process */
-	list_add_tail(&tcb->list, &current()->pcb->threads);
-
-	*pthread_id = tcb->tid;
-
-	local_irq_restore(flags);
-
-	return 0;
-}
-
-/*
- * Join an existing thread
- */
-SYSCALL_DEFINE2(thread_join, uint32_t, pthread_id, int **, value_p)
-{
-	tcb_t *tcb;
-	int *ret;
-	unsigned long flags;
-
-	flags = local_irq_save();
-
-	tcb = find_thread_by_tid(current()->pcb, pthread_id);
-
-	if (tcb == NULL) {
-		return -EINVAL;
-	}
-
-	ret = thread_join(tcb);
-
-	if (value_p != NULL)
-		*value_p = ret;
-
-	local_irq_restore(flags);
-
-	return 0;
-}
-
-/*
  * do_thread_exit() is called when pthread_exit() is executed.
  */
-SYSCALL_DEFINE1(thread_exit, int *, exit_status)
+SYSCALL_DEFINE1(exit, int, exit_status)
 {
 	/* Unallocate the user space stack slot if it is not the main thread */
-	if (current() != current()->pcb->main_thread)
-		free_user_stack_slot(current()->pcb, current()->pcb_stack_slotID);
-
 	thread_exit(exit_status);
 
 	return 0;
+}
+
+SYSCALL_DEFINE1(set_tid_address, int *, tidptr)
+{
+	current()->clear_child_tid = tidptr;
+	return current()->tid;
 }
 
 void threads_init(void)

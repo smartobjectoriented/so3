@@ -8,10 +8,11 @@ obj-y += 	main.o \
 		thread.o \
 		schedule.o \
 		mutex.o  \
+		futex.o  \
 		spinlock.o \
 		syscalls.o \
 		softirq.o \
-		timer.o 
+		timer.o
 
 obj-$(CONFIG_CPU_PSCI) += psci_smp.o
 obj-$(CONFIG_CPU_SPIN_TABLE) += spin_table.o
@@ -22,7 +23,7 @@ obj-y += bitmap.o
 obj-y += softirq.o
 obj-y += spinlock.o
 
-obj-$(CONFIG_MMU) += process.o ptrace.o
+obj-$(CONFIG_MMU) += process.o
 
 EXTRA_CFLAGS += -I$(srctree)/include/net
 

@@ -1,0 +1,78 @@
+# Copyright (C) 2025 Clément Dieperink <clement.dieperink@heig-vd.ch>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+# This file declare all syscalls available on SO3, without taking into account
+# of CPU arch. See scripts/syscall_gen.sh for more information.
+#
+# Syscall name (MUSL)   Syscall function        Configuration requirement
+read                    read
+readv                   readv
+write                   write
+writev                  writev
+open                    open
+openat                  openat
+close                   close
+lseek                   lseek
+_llseek                 _llseek
+ioctl                   ioctl
+dup                     dup
+dup2                    dup2
+dup3                    dup3
+getdents64              getdents64
+stat64                  stat64
+fstatat64               fstatat64
+newfstatat              newfstatat
+mmap                    mmap
+mmap2                   mmap2
+nanosleep               nanosleep
+futex                   futex
+sched_yield             sched_yield
+pipe                    pipe                    IPC_PIPE
+pipe2                   pipe2                   IPC_PIPE
+rt_sigaction            rt_sigaction            IPC_SIGNAL
+kill                    kill                    IPC_SIGNAL
+sigreturn               sigreturn               IPC_SIGNAL
+rt_sigreturn            rt_sigreturn            IPC_SIGNAL
+rt_sigprocmask          rt_sigprocmask          IPC_SIGNAL
+getpid                  getpid                  MMU
+execve                  execve                  MMU
+fork                    fork                    MMU
+clone                   clone                   MMU
+set_tid_address         set_tid_address         MMU
+exit                    exit                    MMU
+exit_group              exit_group              MMU
+wait4                   wait4                   MMU
+gettimeofday            gettimeofday            MMU
+gettimeofday_time32     gettimeofday_time32     MMU
+clock_gettime           clock_gettime           MMU
+clock_gettime64         clock_gettime           MMU
+clock_gettime32         clock_gettime32         MMU
+socket                  socket                  NET
+connect                 connect                 NET
+bind                    bind                    NET
+listen                  listen                  NET
+accept                  accept                  NET
+recv                    recv                    NET
+recvfrom                recvfrom                NET
+send                    send                    NET
+sendto                  sendto                  NET
+setsockopt              setsockopt              NET
+brk                     brk                     PROC_ENV
+
+# TODO: implement. Heavily used in MUSL, so remove warning about it for now.
+munmap                  empty
+
+# mprotect allows to set memory protection (read/write/execute), which isn't supported.
+mprotect                empty

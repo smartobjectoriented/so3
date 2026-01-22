@@ -5,17 +5,15 @@
 #include <stdbool.h>
 
 #include <sys/time.h>
+#include <inttypes.h>
 
 int main(int argc, char *argv[])
 {
-	time_t t;
 	struct timeval tv;
 
 	while (true) {
 		gettimeofday(&tv, NULL);
 
-		time(&t);
-
-		printf("# time(s) : %llu  time(us) : %llu\n", t, tv.tv_usec);
+		printf("# time(s) : %" PRIu64 "  time(us) : %" PRIu64 "\n", tv.tv_sec, tv.tv_usec);
 	}
 }

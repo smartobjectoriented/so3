@@ -22,7 +22,6 @@
 #include <heap.h>
 #include <memory.h>
 #include <process.h>
-#include <ptrace.h>
 #include <schedule.h>
 #include <signal.h>
 #include <softirq.h>
@@ -33,6 +32,9 @@
 #include <vfs.h>
 #include <wait.h>
 #include <log.h>
+#include <timer.h>
+
+#include <uapi/linux/auxvec.h>
 
 #include <device/serial.h>
 
@@ -40,9 +42,18 @@
 #include <asm/mmu.h>
 #include <asm/process.h>
 #include <asm/processor.h>
+#include <asm/hwcap.h>
 #ifndef CONFIG_ARCH_ARM32
 #include <asm/semihosting.h>
 #endif
+
+/* Structure to temporary save exec args/env */
+typedef struct {
+	int argc;
+	int envc;
+	size_t strings_size;
+	char arg_env[PAGE_SIZE];
+} args_env_t;
 
 static char *proc_state_strings[5] = {
 	[PROC_STATE_NEW] = "NEW",	  [PROC_STATE_READY] = "READY",	  [PROC_STATE_RUNNING] = "RUNNING",
@@ -61,15 +72,6 @@ char *proc_state_str(proc_state_t state)
  * child process */
 static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
-
-/* Used to update regs during fork */
-extern void __save_context(tcb_t *newproc, addr_t stack_addr);
-
-/* only the following sections are supported */
-#define SUPPORTED_SECTION_COUNT 6
-static const char *supported_section_names[SUPPORTED_SECTION_COUNT] = {
-	".text", ".rodata", ".data", ".sbss", ".bss", ".scommon",
-};
 
 /*
  * Find a process (pcb_t) from its pid.
@@ -185,8 +187,7 @@ pcb_t *new_process(void)
 
 	pcb->state = PROC_STATE_NEW;
 
-	/* Reset the ptrace request indicator */
-	pcb->ptrace_pending_req = PTRACE_NO_REQUEST;
+	pcb->next_anon_start = USER_ANONYMOUS_VADDR;
 
 	/* The spinlock inside the mutex must aligned in aarch64 */
 	pcb->lock = memalign(N_MUTEX * sizeof(mutex_t), 8);
@@ -203,10 +204,11 @@ pcb_t *new_process(void)
 	/* Init the list of pages */
 	INIT_LIST_HEAD(&pcb->page_list);
 
-	pcb->pid = pid_current++;
+	/* Init the futex */
+	INIT_LIST_HEAD(&pcb->futex);
+	spin_lock_init(&pcb->futex_lock);
 
-	for (i = 0; i < PROC_MAX_THREADS; i++)
-		pcb->stack_slotID[i] = false;
+	pcb->pid = pid_current++;
 
 	/* Init the list of child threads */
 	INIT_LIST_HEAD(&pcb->threads);
@@ -243,7 +245,7 @@ pcb_t *new_process(void)
 void reset_process_stack(pcb_t *pcb)
 {
 	/* Set up the main process stack (including all thread stacks) */
-	pcb->page_count = ALIGN_UP(PROC_STACK_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
+	pcb->page_count = ALIGN_UP(INITIAL_STACK_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
 
 	/*
          * The stack virtual top is under the page of arguments, from the top
@@ -314,6 +316,7 @@ void create_root_process(void)
 {
 	pcb_t *pcb;
 	int i;
+	clone_args_t thread_args;
 
 	local_irq_disable();
 
@@ -334,9 +337,14 @@ void create_root_process(void)
 	create_mapping(pcb->pgtable, USER_SPACE_VADDR, __pa(__root_proc_start),
 		       (void *) __root_proc_end - (void *) __root_proc_start, false);
 
-	/* Start main thread <args> of the thread is not used in this context.
-         */
-	pcb->main_thread = user_thread((th_fn_t) USER_SPACE_VADDR, "root_proc", NULL, pcb);
+	/* Start main user thread. */
+	thread_args = (clone_args_t) {
+		.name = "root_proc",
+		.pcb = pcb,
+		.stack = pcb->stack_top,
+		.fn = (th_fn_t) USER_SPACE_VADDR,
+	};
+	pcb->main_thread = user_thread(&thread_args);
 
 	/* init process? */
 	if (!root_process)
@@ -388,150 +396,152 @@ static void release_proc_pages(pcb_t *pcb)
  */
 addr_t preserve_args_and_env(int argc, char **argv, char **envp)
 {
-	char *args_p, *args_str_p;
-	void *args;
-	char **__args;
+	size_t str_len;
+	args_env_t *saved;
 	int i;
 
 	if ((argc > 0) && (argv == NULL)) {
 		return -EINVAL;
 	}
 
-	/* Page storing the args & env strings - <args> keeps a reference to it.
-         */
-	args = malloc(PAGE_SIZE);
-	BUG_ON(args == NULL);
+	/* Allocate kernel memory to preserve the args/env */
+	saved = malloc(sizeof(args_env_t));
+	BUG_ON(saved == NULL);
 
-	memset(args, 0, PAGE_SIZE);
+	memset(saved->arg_env, 0, PAGE_SIZE);
 
-	args_p = (char *) args;
-	if (!argc)
-		i = 1;
-	else
-		i = argc;
+	saved->strings_size = 0;
 
-	memcpy(args_p, &i, sizeof(int));
-
-	/* Number of args */
-	args_p += sizeof(int);
-
-	/* Store the array of strings for args & env */
-
-	/* The array starts right after argc (stored on 4 bytes).
-         * We find the addresses of the var strings followed by the addresses of
-         * env strings. The var strings come after followed by the env strings.
-         */
-
-	/* Manage the addresses of strings; determine the start of the first arg
-         * string. */
-
-	if (!argc) /* At least one arg containing the process name */
-		args_p += sizeof(char *);
-	else
-		args_p += sizeof(char *) * argc;
-
-	/* Environment string addresses */
-	if (!envp) {
-		*((addr_t *) args_p) = 0; /* Keep array-end with NULL */
-		args_p += sizeof(char *);
-
-	} else {
-		i = 0;
-		do {
-			args_p = args_p + sizeof(char *);
-		} while (envp[i++] != NULL);
-	}
-
-	/* Manage the arg strings */
-
-	args_str_p = args_p;
-	__args = (char **) (args + sizeof(int));
-
-	/* As said before, if argc is 0 (argv NULL), we put the process name (a
-         * kind of by-default argument) */
+	/* Save args strings */
 	if (!argc) {
-		__args[0] = args_str_p;
-		strcpy(__args[0], current()->pcb->name);
+		/* If no arguments, add one with process name */
+		saved->argc = 1;
+		strcpy(&saved->arg_env[saved->strings_size], current()->pcb->name);
+		saved->strings_size += strlen(current()->pcb->name) + 1;
+	} else {
+		/* Copy all arguments strings */
+		saved->argc = argc;
+		for (i = 0; i < argc; i++) {
+			str_len = strlen(argv[i]) + 1;
 
-		args_str_p += strlen(current()->pcb->name) + 1;
-	}
+			/* Ensure the newly copied string will not exceed the buffer size. */
+			if (saved->strings_size + str_len > PAGE_SIZE) {
+				LOG_CRITICAL("Not enougth memory allocated\n");
 
-	/* Place the strings with their addresses - <argv> is the new address
-         * (definitive location). */
-
-	for (i = 0; i < argc; i++) {
-		__args[i] = args_str_p;
-		strcpy(__args[i], argv[i]);
-
-		args_str_p += strlen(argv[i]) + 1;
-
-		/* We check if the pointer do not exceed the page we
-                 * allocated before */
-		if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
-			LOG_CRITICAL("Not enougth memory allocated\n");
-
-			free(args);
-			return -ENOMEM;
-		}
-	}
-
-	/* Environment strings */
-
-	/* First env. variable */
-	__args = (char **) (args + sizeof(int) + sizeof(char *) * (*((int *) args)));
-
-	/* If the environment was passed */
-	if (envp) {
-		i = 0;
-		while (envp[i] != NULL) {
-			__args[i] = args_str_p;
-			strcpy(__args[i], envp[i]);
-
-			args_str_p += strlen(envp[i]) + 1;
-
-			/* We check if pointer do not exceed the page we
-                         * allocated before. */
-			if (((addr_t) args_str_p - (addr_t) args) > PAGE_SIZE) {
-				LOG_ERROR("Not enough memory allocated\n");
-
-				free(args);
+				free(saved);
 				return -ENOMEM;
 			}
-			i++;
+
+			strcpy(&saved->arg_env[saved->strings_size], argv[i]);
+			saved->strings_size += str_len;
 		}
 	}
 
-	return (addr_t) args;
+	/* Save env strings and count how many there are */
+	saved->envc = 0;
+	if (envp) {
+		while (envp[saved->envc]) {
+			str_len = strlen(envp[saved->envc]) + 1;
+
+			/* Ensure the newly copied string will not exceed the buffer size. */
+			if (saved->strings_size + str_len > PAGE_SIZE) {
+				LOG_CRITICAL("Not enougth memory allocated\n");
+
+				free(saved);
+				return -ENOMEM;
+			}
+
+			strcpy(&saved->arg_env[saved->strings_size], envp[saved->envc]);
+			saved->strings_size += str_len;
+
+			saved->envc++;
+		}
+	}
+
+	return (addr_t) saved;
 }
 
-void post_setup_image(void *args_env)
+void post_setup_image(args_env_t *args_env, elf_img_info_t *elf_img_info)
 {
-	char **__args;
+	char **argv_p_base;
+	char *str_p;
+	char **env_p_base;
 	char *args_base;
-	int argc, i;
+	int i;
+	elf_addr_t *aux_elf;
 
 	args_base = (char *) arch_get_args_base();
 
-	memcpy(args_base, args_env, PAGE_SIZE);
+	/* Save argc as first arguments */
+	*((long *) args_base) = args_env->argc;
+
+	/* Get the base address for the array of pointer for args, env and aux */
+	argv_p_base = (char **) (args_base + sizeof(long));
+	/* Add one to account for the null termination of env */
+	env_p_base = (char **) ((addr_t) argv_p_base + (args_env->argc + 1) * sizeof(char *));
+	/* Add one to account for the null termination of env */
+	aux_elf = (elf_addr_t *) ((addr_t) env_p_base + (args_env->envc + 1) * sizeof(char *));
+
+	/* Adds auxiliary before args and env to get the starting address for the strings.
+	 * Each auxiliary entry have an id and a value, the following temporary helper allows
+	 * to easily add an entry without missing something, or adding unecessary functions.
+	 * This is copied from linux/fs/binfmt_elf.c */
+#define NEW_AUX_ENT(id, val)      \
+	do {                      \
+		*aux_elf++ = id;  \
+		*aux_elf++ = val; \
+	} while (0)
+
+	/* Adds up auxiliary array. */
+	NEW_AUX_ENT(AT_PAGESZ, PAGE_SIZE);
+	NEW_AUX_ENT(AT_CLKTCK, clocksource_timer.rate);
+	NEW_AUX_ENT(AT_ENTRY, elf_img_info->header->e_entry);
+
+	/* By default, MUSL will use argv[0], so this isn't required as it con */
+	NEW_AUX_ENT(AT_EXECFN, 0);
+
+	/* This should contains a bitmask of hardware capabilities */
+	NEW_AUX_ENT(AT_HWCAP, HWCAP_ELF);
+
+	/* Set PHDR information, so userspace can retrieve TLS information.
+	 * Due to how userspace application are built the PHDR segments is missing and so
+	 * we need to manually compute its address.
+	 */
+	NEW_AUX_ENT(AT_PHDR, elf_img_info->header->e_phoff + (elf_img_info->segment_start_vaddr & PAGE_MASK));
+	NEW_AUX_ENT(AT_PHENT, sizeof(*elf_img_info->segments));
+	NEW_AUX_ENT(AT_PHNUM, elf_img_info->header->e_phnum);
+
+	/* NULL termination */
+	NEW_AUX_ENT(AT_NULL, 0);
+
+	/* Remove the temporary helper. */
+#undef NEW_AUX_ENT
+
+	/* Copy all strings into their final destination and set pointers to them */
+
+	/* Strings will be put just after aux */
+	str_p = (char *) aux_elf;
+
+	/* Ensure that the strings will not overflow */
+	BUG_ON(args_env->strings_size + ((addr_t) str_p - (addr_t) args_base) > PAGE_SIZE);
+
+	memcpy(str_p, args_env->arg_env, args_env->strings_size);
+
+	/* Set the correct addresses into argv array */
+	for (i = 0; i < args_env->argc; i++) {
+		argv_p_base[i] = str_p;
+		str_p += strlen(str_p) + 1;
+	}
+
+	/* Set the correct addresses into env array */
+	for (i = 0; i < args_env->envc; i++) {
+		env_p_base[i] = str_p;
+		str_p += strlen(str_p) + 1;
+	}
+	/* Ensure the NULL terminated list */
+	env_p_base[args_env->envc] = NULL;
 
 	free(args_env);
-
-	/* Now, readjust the address of the var and env strings */
-
-	argc = *((int *) args_base);
-	__args = (char **) (args_base + sizeof(int));
-
-	/* We get the offset based on the current location and the start of the
-         * args_env page, then we adjust it to match our final destination.
-         */
-	for (i = 0; i < argc; i++)
-		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
-
-	/* Focus on the env addresses now */
-	__args = (char **) (args_base + sizeof(int) + argc * sizeof(char *));
-
-	for (i = 0; __args[i] != NULL; i++)
-		__args[i] = ((addr_t) __args[i] - (addr_t) args_env) + args_base;
 }
 
 /*
@@ -541,7 +551,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 {
 	uint32_t page_count;
 	addr_t ret;
-	void *__args_env;
+	args_env_t *__args_env;
 
 	/* FIXME: detect fragmented executable (error)? */
 	/*
@@ -556,7 +566,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 	if (ret < 0)
 		return ret;
 
-	__args_env = (void *) ret;
+	__args_env = (args_env_t *) ret;
 
 	/* Reset the process stack and page count */
 	reset_process_stack(pcb);
@@ -590,17 +600,18 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
          * application must start at 0x1000 (at the lowest).
          */
 
-	pcb->page_count += elf_img_info->segment_page_count;
+	page_count = ((elf_img_info->segment_end_vaddr - elf_img_info->segment_start_vaddr) >> PAGE_SHIFT) + 1;
+	pcb->page_count += page_count;
 
 	/* Map the elementary sections (text, data, bss) */
-	allocate_page(pcb, (uint32_t) elf_img_info->header->e_entry, elf_img_info->segment_page_count, true);
+	allocate_page(pcb, elf_img_info->segment_start_vaddr, page_count, true);
 
 	LOG_DEBUG("entry point: 0x%08x\n", elf_img_info->header->e_entry);
 	LOG_DEBUG("page count: 0x%08x\n", pcb->page_count);
 
 	/* Maximum heap size */
 	page_count = ALIGN_UP(HEAP_SIZE, PAGE_SIZE) >> PAGE_SHIFT;
-	pcb->heap_base = (pcb->page_count + 1) * PAGE_SIZE;
+	pcb->heap_base = (elf_img_info->segment_end_vaddr & PAGE_MASK) + PAGE_SIZE;
 	pcb->heap_pointer = pcb->heap_base;
 	pcb->page_count += page_count;
 
@@ -616,7 +627,7 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	/* Prepare the arguments within the page reserved for this purpose. */
 	if (__args_env)
-		post_setup_image(__args_env);
+		post_setup_image(__args_env, elf_img_info);
 
 	return 0;
 }
@@ -624,12 +635,12 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 /* load sections from each loadable segment into the process' virtual pages */
 void load_process(elf_img_info_t *elf_img_info)
 {
-	unsigned long section_start, section_end;
-	unsigned long segment_start, segment_end;
-	int i, j, k, l;
-	bool section_supported;
-	char section_base_name[16];
-	int section_name_dots;
+	int i;
+
+	/* Manually copy the PHDR as no segement/section contains it. */
+	memcpy((void *) (elf_img_info->header->e_phoff + (elf_img_info->segment_start_vaddr & PAGE_MASK)),
+	       elf_img_info->file_buffer + elf_img_info->header->e_phoff,
+	       elf_img_info->header->e_phnum * elf_img_info->header->e_phentsize);
 
 	/* Loading the different segments */
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
@@ -637,56 +648,14 @@ void load_process(elf_img_info_t *elf_img_info)
 			/* Skip unloadable segments */
 			continue;
 
-		segment_start = elf_img_info->segments[i].p_offset;
-		segment_end = segment_start + elf_img_info->segments[i].p_memsz;
+		/* Copy all required data. */
+		memcpy((void *) elf_img_info->segments[i].p_vaddr,
+		       (void *) (elf_img_info->file_buffer + elf_img_info->segments[i].p_offset),
+		       elf_img_info->segments[i].p_filesz);
 
-		/* Sections */
-		for (j = 0; j < elf_img_info->header->e_shnum; j++) {
-			section_start = elf_img_info->sections[j].sh_offset;
-			section_end = section_start + elf_img_info->sections[j].sh_size;
-
-			/* Verify if the section is part of this segment */
-			if ((section_start < segment_start) || (section_end > segment_end))
-				continue;
-
-			/* Copy only base name of the section */
-			l = 0;
-			section_name_dots = 0;
-			do {
-				section_base_name[l] = elf_img_info->section_names[j][l];
-				if (section_base_name[l] == '.' && section_name_dots++)
-					break; // Base name stops at second '.'
-			} while (section_base_name[l++] != '\0');
-
-			/* Terminate string correctly (replace second '.' if stopped by it) */
-			section_base_name[l] = '\0';
-
-			/* Not all sections are supported */
-			section_supported = false;
-			for (k = 0; k < SUPPORTED_SECTION_COUNT; k++) {
-				if (!strcmp(section_base_name, supported_section_names[k])) {
-					section_supported = true;
-					break;
-				}
-			}
-
-			if (!section_supported) {
-				LOG_DEBUG("Section %s not loaded: unsupported name\n", elf_img_info->section_names[j]);
-				continue;
-			}
-
-			/* Load this section into the process' virtual memory */
-			if (elf_img_info->sections[j].sh_type == SHT_NOBITS)
-				/* unless it were not stored in the file (.bss)
-                                 */
-				continue;
-
-			/* Real load of contents in the user space memory of the
-                         * process */
-			memcpy((void *) elf_img_info->sections[j].sh_addr,
-			       (void *) (elf_img_info->file_buffer + elf_img_info->sections[j].sh_offset),
-			       elf_img_info->sections[j].sh_size);
-		}
+		/* Set remaining byte (bss) to zero. */
+		memset((void *) (elf_img_info->segments[i].p_vaddr + elf_img_info->segments[i].p_filesz), 0,
+		       elf_img_info->segments[i].p_memsz - elf_img_info->segments[i].p_filesz);
 	}
 
 	/* Make sure all data are flushed for future context switch. */
@@ -699,7 +668,6 @@ SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 	pcb_t *pcb;
 	unsigned long flags;
 	th_fn_t start_routine;
-	queue_thread_t *cur;
 	int ret, argc;
 
 	/* Count the number of arguments */
@@ -749,42 +717,16 @@ SYSCALL_DEFINE3(execve, const char *, filename, char **, argv, char **, envp)
 	/* Release the kernel buffer used to store the ELF binary image */
 	elf_clean_image(&elf_img_info);
 
-	/* Now, we need to create the main user thread associated to this binary
-         * image. */
-	/* start main thread */
+	/* Now, we need to restart the user thread from the new program starting address */
 	start_routine = (th_fn_t) pcb->bin_image_entry;
 
-	/* We start the new thread */
-	pcb->main_thread = user_thread(start_routine, pcb->name, (void *) arch_get_args_base(), pcb);
+	/* Rename thread to inlcude new PCB name */
+	snprintf(pcb->main_thread->name, THREAD_NAME_LEN, "%s_%d", pcb->name, pcb->main_thread->tid);
 
-	/* Transfer the waiting thread if any */
+	/* Arguments base is used as stack address and arguments will be retrieved from it by MUSL. */
+	arch_restart_user_thread(pcb->main_thread, start_routine, arch_get_args_base());
 
-	/* Make sure it is the main thread of the dying thread, i.e. another
-         * process is waiting on it (the parent) */
-	if (!list_empty(&current()->joinQueue)) {
-		cur = list_entry(current()->joinQueue.next, queue_thread_t, list);
-
-		ASSERT(cur->tcb->pcb == current()->pcb->parent);
-
-		/* Migrate the entry to the new main thread */
-		list_move(&cur->list, &pcb->main_thread->joinQueue);
-	}
-
-	/* Now, make sure there is no other waiting threads on the dying thread
-         */
-	ASSERT(list_empty(&current()->joinQueue));
-
-	/* We detach the thread from its pcb so that thread_exit() can
-         * distinguish between this kind of (replaced) thread and a standard
-         * thread which will be stay in zombie state.
-         */
-	current()->pcb = NULL;
-
-	/* Finishing the running thread. The final clean_thread() function will
-         * be called in thread_exit(). */
-	thread_exit(0);
-
-	/* IRQs never restored here... */
+	local_irq_restore(flags);
 
 	return 0;
 }
@@ -810,10 +752,6 @@ pcb_t *duplicate_process(pcb_t *parent)
 	pcb->heap_base = parent->heap_base;
 	pcb->heap_pointer = parent->heap_pointer;
 
-	/* Duplicate the array of allocated stack slots dedicated to user
-         * threads */
-	memcpy(pcb->stack_slotID, parent->stack_slotID, sizeof(parent->stack_slotID));
-
 	/* Clone all file descriptors */
 	if (vfs_clone_fd(parent->fd_array, pcb->fd_array)) {
 		LOG_CRITICAL("!! Error while cloning fds\n");
@@ -823,70 +761,114 @@ pcb_t *duplicate_process(pcb_t *parent)
 	return pcb;
 }
 
+static long do_clone(clone_args_t *args)
+{
+	/* Flags used by pthread_create in MUSL, only those are supported. */
+	static const unsigned long THREAD_FLAGS = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD |
+						  CLONE_SYSVSEM | CLONE_SETTLS | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID |
+						  CLONE_DETACHED;
+
+	unsigned long flags;
+	long ret;
+	pcb_t *new_pcb, *current_pcb;
+	tcb_t *new_tcb;
+
+	flags = local_irq_save();
+	current_pcb = current()->pcb;
+
+	if (args->flags & CLONE_THREAD) {
+		if (args->flags != THREAD_FLAGS) {
+			LOG_WARNING("Only pthread_create clone flags are supported for thread\n");
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* Don't need to create a new PCB, use current as "new" PCB to create the thread. */
+		new_pcb = current_pcb;
+	} else {
+		if (args->flags != 0) {
+			LOG_WARNING("Clone flags not support for forking\n");
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* For the time being, we *only* authorize to fork() from the main
+		 * thread */
+		if (current() != current_pcb->main_thread) {
+			LOG_WARNING("%s: forking from a thread other than the main thread "
+				    "is not allowed so far ...\n",
+				    __func__);
+			ret = -EINVAL;
+			goto error;
+		}
+
+		/* Duplicate the elements of the parent process into the child */
+		new_pcb = duplicate_process(current_pcb);
+
+		/* Copy the user space area of the parent process */
+		duplicate_user_space(current_pcb, new_pcb);
+
+		/* At the moment, we spawn the main_thread only in the child. In the
+		 * future, we will have to create a thread for each existing threads in
+		 * the parent process.
+		 */
+		snprintf(new_pcb->name, PROC_NAME_LEN, "%s_child_%d", current_pcb->name, new_pcb->pid);
+	}
+	args->pcb = new_pcb;
+
+	/* Use PCB name as thread name. The TID will be appended to it. */
+	args->name = new_pcb->name;
+
+#ifdef CONFIG_IPC_SIGNAL
+	/* Copy current signal mask to new threads */
+	args->sig_mask = current()->sig_mask;
+#endif
+
+	new_tcb = user_thread(args);
+
+	/* Child thread will return in ret_from_fork and so only parent thread reachs this */
+	ret = new_tcb->tid;
+
+	if (!(args->flags & CLONE_THREAD)) {
+		/* The main process thread is ready to be scheduled for its execution.*/
+		new_pcb->state = PROC_STATE_READY;
+
+		BUG_ON(!local_irq_is_disabled());
+
+		/* Prepare to perform scheduling to check if a context switch is
+		 * required. */
+		raise_softirq(SCHEDULE_SOFTIRQ);
+
+		/* Process clone should return the PID instead of the TID. */
+		ret = new_pcb->pid;
+	}
+
+error:
+	local_irq_restore(flags);
+	return ret;
+}
+
 /*
  * For a new process from the current running process.
  */
 SYSCALL_DEFINE0(fork)
 {
-	pcb_t *newp, *parent;
-	unsigned long flags;
+	clone_args_t args = {};
 
-	flags = local_irq_save();
+	return do_clone(&args);
+}
 
-	parent = current()->pcb;
+SYSCALL_DEFINE5(clone, unsigned long, flags, unsigned long, newsp, int *, parent_tid, unsigned long, tls, int *, child_tid)
+{
+	clone_args_t args = {
+		.flags = flags & ~CSIGNAL,
+		.stack = newsp,
+		.parent_tid = parent_tid,
+		.tls = tls,
+		.child_tid = child_tid,
+	};
 
-	/* For the time being, we *only* authorize to fork() from the main
-         * thread */
-	if (current() != parent->main_thread) {
-		LOG_WARNING("%s: forking from a thread other than the main thread "
-			    "is not allowed so far ...\n",
-			    __func__);
-		return -1;
-	}
-
-	/* Duplicate the elements of the parent process into the child */
-	newp = duplicate_process(parent);
-
-	/* Copy the user space area of the parent process */
-	duplicate_user_space(parent, newp);
-
-	/* At the moment, we spawn the main_thread only in the child. In the
-         * future, we will have to create a thread for each existing threads in
-         * the parent process.
-         */
-	sprintf(newp->name, "%s_child_%d", parent->name, newp->pid);
-
-	newp->main_thread = user_thread(NULL, newp->name, (void *) arch_get_args_base(), newp);
-
-	/* Copy the kernel stack of the main thread */
-	memcpy((void *) get_kernel_stack_top(newp->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
-	       (void *) get_kernel_stack_top(parent->main_thread->stack_slotID) - CONFIG_THREAD_STACK_SIZE_KB * SZ_1K,
-	       CONFIG_THREAD_STACK_SIZE_KB * SZ_1K);
-
-	/*
-         * Preserve the current value of all registers concerned by this
-         * execution so that the new thread will be able to pursue its execution
-         * once scheduled.
-         */
-
-	__save_context(newp->main_thread, get_kernel_stack_top(newp->main_thread->stack_slotID));
-
-	/* The main process thread is ready to be scheduled for its execution.*/
-	newp->state = PROC_STATE_READY;
-
-	BUG_ON(!local_irq_is_disabled());
-
-	/* Prepare to perform scheduling to check if a context switch is
-         * required. */
-	raise_softirq(SCHEDULE_SOFTIRQ);
-
-	local_irq_restore(flags);
-
-	/* Return the PID of the child process. The child will do not execute
-         * this code, since it jumps to the ret_from_fork in context.S
-         */
-
-	return newp->pid;
+	return do_clone(&args);
 }
 
 /*
@@ -894,7 +876,7 @@ SYSCALL_DEFINE0(fork)
  * All allocated resources should be released except its PCB which still
  * contains the exit code.
  */
-SYSCALL_DEFINE1(exit, int, exit_status)
+SYSCALL_DEFINE1(exit_group, int, exit_status)
 {
 	pcb_t *pcb;
 	unsigned i;
@@ -925,7 +907,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
          * locking in the low layers. */
 
 	for (i = 0; i < FD_MAX; i++)
-		do_close(i);
+		sys_do_close(i);
 
 	local_irq_disable();
 
@@ -944,7 +926,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
 #ifdef CONFIG_IPC_SIGNAL
 
 	/* Send the SIGCHLD signal to the parent */
-	do_kill(pcb->parent->pid, SIGCHLD);
+	sys_do_kill(pcb->parent->pid, SIGCHLD);
 
 #endif /* CONFIG_IPC_SIGNAL */
 
@@ -953,7 +935,7 @@ SYSCALL_DEFINE1(exit, int, exit_status)
          * will lead to the wake up of the parent.
          */
 
-	thread_exit(NULL);
+	thread_exit(0);
 
 	return 0;
 }
@@ -967,7 +949,7 @@ SYSCALL_DEFINE0(getpid)
 }
 
 /*
- * Waitpid implementation - do_waitpid() does the following operations:
+ * Waitpid implementation via wait4 - sys_do_wait4() does the following operations:
  * - Suspend the current process until the child process finished its execution
  * (exit()) If the pid argument is -1, waitpid() looks for a possible terminated
  * process and performs the operation. If no process is finished (in zombie
@@ -975,8 +957,10 @@ SYSCALL_DEFINE0(getpid)
  * - Get the exit code from the child PCB
  * - Clean the PCB and page tables
  * - Return the pid if successful operation
+ *
+ * rusage is ignored
  */
-SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
+SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *, rusage)
 {
 	pcb_t *child;
 	unsigned long flags;
@@ -1006,68 +990,26 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
 		if (child->state != PROC_STATE_ZOMBIE)
 			return 0;
 
-	/* Must the child be resumed after being stopped due to a ptrace request
-         * ? */
-	if ((child->ptrace_pending_req != PTRACE_NO_REQUEST) && (child->ptrace_pending_req != PTRACE_TRACEME)) {
-		/* Resume the child process being stopped previously. */
-
-		child->state = PROC_STATE_READY;
-		ready(child->main_thread);
-	}
-
 	if (child->state != PROC_STATE_WAITING)
 		/* Wait on the main_thread of this process */
 		thread_join(child->main_thread);
 
-	/* Before joining, we need to check the state of child because it could
-         * have been finished before this call. */
-	if ((child->state == PROC_STATE_ZOMBIE) && (child->ptrace_pending_req == PTRACE_NO_REQUEST)) {
-		/* Free the page tables used for this process */
-		reset_root_pgtable(child->pgtable, true);
+	/* Free the page tables used for this process */
+	reset_root_pgtable(child->pgtable, true);
 
-		/* Get the exit code left in the PCB by the child */
-		if (wstatus) {
-			*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
-			*wstatus = ((char) child->exit_status) << 8;
-		}
-
-		/*
-                 * SO3 approach consists in avoiding having orphan process.
-                 * The process will be removed from the system definitively only
-                 * if it has no children.
-                 */
-		if (!find_proc_by_parent(child))
-			remove_proc(child);
-
-	} else {
-		if (child->ptrace_pending_req != PTRACE_NO_REQUEST) {
-			/* In this case, the child has been stopped in the
-                         * context of the ptrace syscall */
-
-			/* Reset the ptrace request */
-			child->ptrace_pending_req = PTRACE_NO_REQUEST;
-
-			if (wstatus) {
-				*wstatus = 0x17f; /* WIFSTOPPED true */
-				*wstatus |= ((char) child->exit_status) << 8;
-			}
-		} else {
-			/* Free the page tables used for this process */
-			reset_root_pgtable(child->pgtable, true);
-
-			/* Get the exit code left in the PCB by the child */
-			if (wstatus) {
-				*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
-				*wstatus |= ((char) child->exit_status) << 8;
-			}
-
-			/* Finally remove the process from the system
-                         * definitively as long as there is no children from
-                         * there */
-			if (!find_proc_by_parent(child))
-				remove_proc(child);
-		}
+	/* Get the exit code left in the PCB by the child */
+	if (wstatus) {
+		*wstatus = ~0x7f; /* !WTERMSIG -> WIFEXITED true */
+		*wstatus |= ((char) child->exit_status) << 8;
 	}
+
+	/*
+	 * SO3 approach consists in avoiding having orphan process.
+	 * The process will be removed from the system definitively only
+	 * if it has no children.
+	 */
+	if (!find_proc_by_parent(child))
+		remove_proc(child);
 
 	local_irq_restore(flags);
 
@@ -1079,35 +1021,28 @@ SYSCALL_DEFINE3(waitpid, int, pid, uint32_t *, wstatus, uint32_t, options)
  *		increase the heap_pointer and make sure it does not
  *		overflow the heap. If there is no memory left it will
  *		return ENONMEM;
- * @param increment the amount of data to increase < decrease. If the value is 0
- *		function will return the current position of the program break
- *(end of heap);
+ * @param addr New end address requested by userspace.
  *
- * @return  This function will the position of the end of the heap / program
- *break before increment
+ * @return End address of the available heap.
  */
-SYSCALL_DEFINE1(sbrk, int, increment)
+SYSCALL_DEFINE1(brk, void *, addr)
 {
 	pcb_t *pcb = current()->pcb;
-	int ret_pointer;
 	int req_sz = 0;
-	int cur_sz;
 
-	if (!pcb) {
+	if (!pcb)
 		/* case there is no pcb context */
 		return -ESRCH;
-	}
 
-	ret_pointer = pcb->heap_pointer;
+	if (addr == NULL)
+		return pcb->heap_pointer;
 
 	/* we make sure the future size of the heap is not overflowing /
          * underflowing*/
-	cur_sz = pcb->heap_pointer - pcb->heap_base;
-	req_sz = cur_sz + increment;
+	req_sz = (addr_t) addr - pcb->heap_base;
 
-	if ((req_sz >= HEAP_SIZE) || (req_sz < 0)) {
+	if ((req_sz >= HEAP_SIZE) || (req_sz < 0))
 		return -ENOMEM;
-	}
 
 #if 0
 	/* This is the the code allocation will be done automatically*/
@@ -1117,7 +1052,7 @@ SYSCALL_DEFINE1(sbrk, int, increment)
 			pcb->page_count += 1;
 			allocate_page(pcb, pcb->heap_base, page_count);
 			pcb->heap_pointer = pcb->heap_base + PAGE_SIZE;
-		} 
+		}
 		return -1;
 	}
 
@@ -1138,8 +1073,8 @@ SYSCALL_DEFINE1(sbrk, int, increment)
 	}
 #endif
 
-	pcb->heap_pointer = pcb->heap_pointer + increment;
-	return ret_pointer;
+	pcb->heap_pointer = (addr_t) addr;
+	return pcb->heap_pointer;
 }
 
 #ifdef CONFIG_PRIORITY_SCHEDULER
