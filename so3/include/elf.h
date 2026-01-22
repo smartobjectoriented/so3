@@ -33,7 +33,8 @@ struct elf_img_info {
 	Elf32_Phdr *segments; /* program header */
 	char **section_names;
 	void *file_buffer;
-	uint32_t segment_page_count;
+	addr_t segment_start_vaddr;
+	addr_t segment_end_vaddr;
 };
 
 typedef Elf32_Off elf_addr_t;
@@ -46,7 +47,8 @@ struct elf_img_info {
 	Elf64_Phdr *segments; /* program header */
 	char **section_names;
 	void *file_buffer;
-	uint64_t segment_page_count;
+	addr_t segment_start_vaddr;
+	addr_t segment_end_vaddr;
 };
 
 typedef Elf64_Off elf_addr_t;

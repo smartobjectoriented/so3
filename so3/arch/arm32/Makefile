@@ -7,6 +7,7 @@ obj-y += vfp.o
 obj-y += backtrace.o backtrace_asm.o
 obj-y += smccc-call.o
 obj-y += syscalls.o
+obj-y += kuser_helper.o
 
 obj-y += lib/
 

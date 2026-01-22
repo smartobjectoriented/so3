@@ -21,10 +21,10 @@ set(CMAKE_CXX_COMPILER "arm-linux-musleabihf-g++")
 set(CMAKE_ASM_COMPILER "arm-linux-musleabihf-gcc")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99 -D_GNU_SOURCE -D__ARM__ -marm -mno-thumb-interwork -ffreestanding -fno-common")
- 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -D_GNU_SOURCE -D__ARM__ -marm -mno-thumb-interwork -ffreestanding -fno-common")
+
 set(CMAKE_ASM_FLAGS "-D__ARM__ -D__ASSEMBLY__")
 
 set(CMAKE_LINKER "arm-linux-musleabihf-ld")
 
-
-set(CMAKE_EXE_LINKER_FLAGS "-Os -static" CACHE STRING "SO3 usr LDFLAGS for executables")
+set(CMAKE_EXE_LINKER_FLAGS "-Os -static -fno-rtti" CACHE STRING "SO3 usr LDFLAGS for executables")
