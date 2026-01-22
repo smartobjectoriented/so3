@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef GNTTAB_H
-#define GNTTAB_H
+#ifndef AVZ_GNTTAB_H
+#define AVZ_GNTTAB_H
 
 #include <list.h>
 
@@ -41,4 +41,4 @@ void gnttab_init(struct domain *d);
 void do_gnttab(gnttab_op_t *args);
 addr_t map_vbstore_pfn(int target_domid, int pfn);
 
-#endif /* GNTTAB_H */
+#endif /* AVZ_GNTTAB_H */
