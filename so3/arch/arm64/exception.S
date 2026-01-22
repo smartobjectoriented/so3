@@ -564,6 +564,7 @@ el01_sync_handler:
 	mov	x0, sp
    	bl 	trap_handle
 
+#ifdef CONFIG_IPC_SIGNAL
 	// Check if sigreturn has been called. In this case, we
 	// clean the stack frame which has been used to manage the user handler.
 	cmp	x8, #SYSCALL_rt_sigreturn
@@ -571,6 +572,7 @@ el01_sync_handler:
 
 	// Reset the stack frame by removing the one issued from sigreturn
 	add	sp, sp, #S_FRAME_SIZE
+#endif
 
 	// Entry point for new user threads
 ret_from_fork:
