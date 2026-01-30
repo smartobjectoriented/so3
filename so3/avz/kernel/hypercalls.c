@@ -47,7 +47,7 @@
  * If the ME does not exist anymore (for example, following a KILL_ME),
  * the state is set to ME_state_dead.
  */
-ME_state_t avz_get_ME_state(unsigned int ME_slotID)
+ME_state_t get_ME_state(unsigned int ME_slotID)
 {
 	if (domains[ME_slotID] == NULL)
 		return ME_state_dead;
@@ -72,7 +72,7 @@ void shutdown_ME(unsigned int ME_slotID)
 
 	vcpu_pause(dom);
 
-	DBG("Destroy evtchn if necessary - state: %d\n", avz_get_ME_state(ME_slotID));
+	DBG("Destroy evtchn if necessary - state: %d\n", get_ME_state(ME_slotID));
 	evtchn_destroy(dom);
 
 	DBG("Wiping domain area...\n");
@@ -193,7 +193,7 @@ void do_avz_hypercall(void *__args)
 		break;
 
 	case AVZ_GET_ME_STATE:
-		args->u.avz_me_state_args.state = avz_get_ME_state(args->u.avz_me_state_args.slotID);
+		args->u.avz_me_state_args.state = get_ME_state(args->u.avz_me_state_args.slotID);
 		break;
 
 	case AVZ_SET_ME_STATE: {

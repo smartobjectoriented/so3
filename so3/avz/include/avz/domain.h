@@ -149,7 +149,7 @@ extern int construct_agency(struct domain *d);
 
 #ifdef CONFIG_SOO
 extern int construct_ME(struct domain *d);
-ME_state_t avz_get_ME_state(unsigned int ME_slotID);
+ME_state_t get_ME_state(unsigned int ME_slotID);
 #endif /* CONFIG_SOO */
 
 void do_domctl(domctl_t *args);
