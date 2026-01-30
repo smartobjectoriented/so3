@@ -20,7 +20,7 @@
 
 #include <printk.h>
 
-#ifdef CONFIG_SOO
+#ifdef CONFIG_VLOGS_FRONTEND
 #include <soo/soo.h>
 #include <soo/dev/vlogs.h>
 #endif

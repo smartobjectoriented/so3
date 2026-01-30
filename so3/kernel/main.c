@@ -78,7 +78,7 @@ void *rest_init(void *dummy)
 
 	kernel_thread(app_thread_main, "main_kernel", NULL, 0);
 
-	thread_exit(NULL);
+	thread_exit(0);
 
 #elif defined(CONFIG_PROC_ENV)
 

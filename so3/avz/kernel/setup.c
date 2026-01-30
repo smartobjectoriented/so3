@@ -78,7 +78,7 @@ void avz_start(void)
 	lprintk("Copyright (c) 2014-2025 REDS Institute, HEIG-VD, Yverdon-les-Bains\n");
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
-	LOG_INFO("\n\nNow bootstraping the hypervisor kernel ...");
+	LOG_INFO("\n\nNow bootstraping the hypervisor kernel ...\n");
 
 	/* Memory manager subsystem initialization */
 	memory_init();

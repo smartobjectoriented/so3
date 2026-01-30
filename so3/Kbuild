@@ -6,8 +6,8 @@
 
 syscall-files = include/generated/syscall_table.h.in
 syscall-files += include/generated/syscall_number.h
-syscall-script = scripts/syscall_gen.sh
-syscall-src = syscall.tbl arch/$(SRCARCH)/syscall.h.in
+syscall-script = $(srctree)/scripts/syscall_gen.sh
+syscall-src = $(srctree)/syscall.tbl $(srctree)/arch/$(SRCARCH)/syscall.h.in
 
 quiet_cmd_syscall_gen = GEN     $@
       cmd_syscall_gen = $(syscall-script) $(syscall-src) $(syscall-files)
