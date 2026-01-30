@@ -38,7 +38,7 @@ prevent annoying warnings:
 
    sudo apt-get install bison flex
 
-Files and directroy organisation
+Files and directory organization
 ********************************
 
 SO3 root directory (main subdirs)::
@@ -67,7 +67,7 @@ SO3 root directory (main subdirs)::
 Build of the environment
 ************************
 
-kernel toolchain
+Kernel toolchain
 ================
  
 We use the ``arm-none-eabi`` toolchain which has no dependencies on a libc.
@@ -78,22 +78,22 @@ The following package can be installed:
    
    apt install gcc-arm-none-eabi
 
-usr-space toolchain
-===================
+User space toolchain
+====================
 
-The usr-space uses MUSL as libc. The Musl toolchains can be generated with
+The user space uses MUSL as libc. The Musl toolchains can be generated with
 ``toolchains/build-toolchain.sh`` script.
 
 .. code-block:: bash
 
-   $ ./build-toolchain.sh
+   $ sudo ./build-toolchain.sh
 
 By default, it generates ``aarch64-linux-musl`` and ``arm-linux-musleabihf``
 folder in the ``toolchains`` directory
 
 .. note::
 
-   The output directory (by default ``toolchains`` floder) can be changed by setting
+   The output directory (by default ``toolchains`` folder) can be changed by setting
    the ``OUTPUT_PATH`` variable in the ``build-toolchain.sh`` script
 
 Quick setup & early test

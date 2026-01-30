@@ -209,17 +209,17 @@ ENTRY(__vectors)
 
 #ifdef CONFIG_CPU_SPIN_TABLE
 
-ENTRY(pre_ret_to_el1_with_spin)
+ENTRY(pre_ret_to_el1_spin)
 
-	mov	x1, x0
+	mov		x1, x0
 	str 	xzr, [x1]
 1:
 	wfe
  	ldr 	x0, [x1]
 
-    	cbz 	x0, 1b
+    cbz 	x0, 1b
 
-    	// Branch to the given address
+    // Branch to the given address
 	msr	elr_el2, x0
 
 	// Set the CPU in EL1 mode to proceed with
@@ -239,7 +239,7 @@ ENTRY(pre_ret_to_el1_with_spin)
 	mov	x2, #0
 	mov	x3, #0
 
-	// Ready to jump into the Linux domain...
+	// Ready to jump into the Agency domain...
 
 	eret
 
@@ -264,7 +264,7 @@ ENTRY(pre_ret_to_el1)
 
 	wfi
 
-	ldr 	x0, cpu_entrypoint
+	ldr x0, cpu_entrypoint
 	msr	elr_el2, x0
 
 	// Set the CPU in EL1 mode to proceed with

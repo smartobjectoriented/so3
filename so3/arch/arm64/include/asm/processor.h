@@ -1263,7 +1263,7 @@ void __switch_domain_to(struct domain *prev, struct domain *next);
 void ret_to_user(void);
 void pre_ret_to_user(void);
 void pre_ret_to_el1(void);
-void pre_ret_to_el1_with_spin(addr_t release_addr);
+void pre_ret_to_el1_spin(addr_t release_addr);
 
 #endif /* CONFIG_AVZ */
 

@@ -329,8 +329,9 @@ void create_root_process(void)
 
 	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
+#ifndef CONFIG_AVZ
 	LOG_DEBUG("Stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
-
+#endif
 	/* First map the code in the user space so that
          * the initial code can run normally in user mode.
          */
@@ -589,8 +590,9 @@ int setup_proc_image_replace(elf_img_info_t *elf_img_info, pcb_t *pcb, int argc,
 
 	allocate_page(pcb, pcb->stack_top - (pcb->page_count * PAGE_SIZE), pcb->page_count, true);
 
+#ifndef CONFIG_AVZ
 	LOG_DEBUG("stack mapped at 0x%08x (size: %d bytes)\n", pcb->stack_top - (pcb->page_count * PAGE_SIZE), PROC_STACK_SIZE);
-
+#endif
 	/* Initialize the pc register */
 	pcb->bin_image_entry = (uint32_t) elf_img_info->header->e_entry;
 

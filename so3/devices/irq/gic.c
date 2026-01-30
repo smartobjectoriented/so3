@@ -431,11 +431,8 @@ void gich_init(void)
 
 void gicc_init(void)
 {
-	unsigned int cpu = smp_processor_id();
 	u32 bypass = 0;
 	int i;
-
-	spin_lock_init(&per_cpu(intc_lock, cpu));
 
 	/*
          * Deal with the banked PPI and SGI interrupts - disable all
@@ -659,7 +656,11 @@ static int gic_init(dev_t *dev, int fdt_offset)
 {
 	const struct fdt_property *prop;
 	int prop_len;
+	int cpu;
 
+	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++)
+		spin_lock_init(&per_cpu(intc_lock, cpu));
+	
 	gic = (gic_t *) malloc(sizeof(gic_t));
 	BUG_ON(!gic);
 

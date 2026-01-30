@@ -21,7 +21,7 @@
 
 #include <asm/mmu.h>
 
-ipamap_t ipamap[] = {
+ipamap_t agency_ipamap[] = {
 	{
 		.ipa_addr = 0xf0000000,
 		.phys_addr = 0xf0000000,
@@ -68,5 +68,23 @@ ipamap_t ipamap[] = {
 		.size = 0x1000,
 	},
 };
+
+/**
+ * In the guest environment, the access to the GIC distributor must lead to a data abort
+ * which will be trapped and handled by the hypervisor.
+ */
+
+ipamap_t capsule_ipamap[] = {
+
+	{
+	/* Only mapping the CPU interface to the vGIC CPU interface.
+	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
+	 */
+		.ipa_addr = 0x08010000,
+		.phys_addr = 0x08040000,
+		.size = 0x10000,
+	},
+};
+
 
 #endif /* MACH_IPAMAP_H */
