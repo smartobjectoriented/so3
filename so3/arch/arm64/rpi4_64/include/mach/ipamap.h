@@ -27,6 +27,7 @@ ipamap_t agency_ipamap[] = {
 		.phys_addr = 0xf0000000,
 		.size = 0x10000000,
 	},
+	#if 0
 	{
 		.ipa_addr = 0x1faf0000,
 		.phys_addr = 0x1faf0000,
@@ -52,11 +53,13 @@ ipamap_t agency_ipamap[] = {
 		.phys_addr = 0x1fafe000,
 		.size = 0x2000,
 	},
+	#endif
 	{
 		.ipa_addr = 0x0,
 		.phys_addr = 0x0,
 		.size = 0x1000,
 	},
+	#if 0
 	{
 		.ipa_addr = 0x50000000,
 		.phys_addr = 0x50000000,
@@ -67,6 +70,7 @@ ipamap_t agency_ipamap[] = {
 		.phys_addr = 0x600000000,
 		.size = 0x1000,
 	},
+	#endif
 };
 
 /**

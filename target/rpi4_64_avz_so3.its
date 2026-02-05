@@ -40,7 +40,7 @@
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x00f00000>;
+			load = <0x03000000>;
 		};
 
 		so3 {
@@ -50,8 +50,8 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x01080000>;
-			entry = <0x01080000>;
+			load = <0x10080000>;
+			entry = <0x10080000>;
 		};
 
 		fdt {
@@ -60,7 +60,7 @@
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x02000000>;
+			load = <0x15000000>;
 		};
 
 		ramfs {
@@ -70,7 +70,7 @@
 				arch = "arm64";
 				os = "linux";
 				compression = "none";
-				load = <0x02c00000>;
+				load = <0x15c00000>;
 		};
 
 	};
