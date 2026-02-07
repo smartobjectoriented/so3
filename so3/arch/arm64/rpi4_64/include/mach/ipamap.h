@@ -22,55 +22,21 @@
 #include <asm/mmu.h>
 
 ipamap_t agency_ipamap[] = {
+	
+	/* I/O Memory space*/
 	{
 		.ipa_addr = 0xf0000000,
 		.phys_addr = 0xf0000000,
 		.size = 0x10000000,
 	},
-	#if 0
-	{
-		.ipa_addr = 0x1faf0000,
-		.phys_addr = 0x1faf0000,
-		.size = 0x1000,
-	},
-	{
-		.ipa_addr = 0x1faf1000,
-		.phys_addr = 0x1faf1000,
-		.size = 0x9000,
-	},
-	{
-		.ipa_addr = 0x1fafa000,
-		.phys_addr = 0x1fafa000,
-		.size = 0x2000,
-	},
-	{
-		.ipa_addr = 0x1fafc000,
-		.phys_addr = 0x1fafc000,
-		.size = 0x2000,
-	},
-	{
-		.ipa_addr = 0x1fafe000,
-		.phys_addr = 0x1fafe000,
-		.size = 0x2000,
-	},
-	#endif
+
+	/* Null pointer exception */
 	{
 		.ipa_addr = 0x0,
 		.phys_addr = 0x0,
 		.size = 0x1000,
 	},
-	#if 0
-	{
-		.ipa_addr = 0x50000000,
-		.phys_addr = 0x50000000,
-		.size = 0x10000000,
-	},
-	{
-		.ipa_addr = 0x600000000,
-		.phys_addr = 0x600000000,
-		.size = 0x1000,
-	},
-	#endif
+
 };
 
 /**
@@ -81,7 +47,7 @@ ipamap_t agency_ipamap[] = {
 ipamap_t capsule_ipamap[] = {
 
 	{
-	/* Only mapping the CPU interface to the vGIC CPU interface.
+		/* Only mapping the CPU interface to the vGIC CPU interface.
 	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
 	 */
 		.ipa_addr = 0x08010000,
@@ -89,6 +55,5 @@ ipamap_t capsule_ipamap[] = {
 		.size = 0x10000,
 	},
 };
-
 
 #endif /* MACH_IPAMAP_H */
