@@ -658,10 +658,11 @@ static int gic_init(dev_t *dev, int fdt_offset)
 	int prop_len;
 	int cpu;
 
-	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) {
+	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) 
+	{
 		spin_lock_init(&per_cpu(intc_lock, cpu));
 	}
-	
+
 	gic = (gic_t *) malloc(sizeof(gic_t));
 	BUG_ON(!gic);
 
