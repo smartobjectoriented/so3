@@ -21,7 +21,8 @@
 
 #include <asm/mmu.h>
 
-ipamap_t agency_ipamap[] = {
+ipamap_t agency_ipamap[] = 
+{
 	
 	/* I/O Memory space*/
 	{
