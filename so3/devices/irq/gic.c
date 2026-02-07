@@ -106,8 +106,7 @@ void display_lr(unsigned int n)
 
 	printk("LR state: \n");
 	printk("  - virq: %x\n", lr & GICH_LR_VIRT_ID_MASK);
-	printk("  - prio: %x\n",
-	       (lr >> GICH_LR_PRIORITY_SHIFT) & GICH_LR_PRIORITY_MASK);
+	printk("  - prio: %x\n", (lr >> GICH_LR_PRIORITY_SHIFT) & GICH_LR_PRIORITY_MASK);
 	printk("  - pending: %x\n", lr & GICH_LR_PENDING_BIT);
 	printk("  - active: %x\n", lr & GICH_LR_ACTIVE_BIT);
 	printk("  - hw: %x\n", lr & GICH_LR_HW_BIT);
@@ -128,8 +127,7 @@ void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def)
 	const fdt32_t *p;
 
 	/* Interrupts - as described in the bindings - have 3 specific cells */
-	prop = fdt_get_property(__fdt_addr, fdt_offset, "interrupts",
-				&prop_len);
+	prop = fdt_get_property(__fdt_addr, fdt_offset, "interrupts", &prop_len);
 	BUG_ON(!prop);
 
 	p = (const fdt32_t *) prop->data;
@@ -143,11 +141,9 @@ void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def)
 		/* Not all combinations are currently handled. */
 
 		if (irq_def->irq_class != GIC_IRQ_TYPE_SGI)
-			irq_def->irqnr +=
-				16; /* Possibly for a Private Peripheral Interrupt (PPI) */
+			irq_def->irqnr += 16; /* Possibly for a Private Peripheral Interrupt (PPI) */
 
-		if (irq_def->irq_class ==
-		    GIC_IRQ_TYPE_SPI) /* It is a Shared Peripheral Interrupt (SPI) */
+		if (irq_def->irq_class == GIC_IRQ_TYPE_SPI) /* It is a Shared Peripheral Interrupt (SPI) */
 			irq_def->irqnr += 16;
 
 	} else {
@@ -518,8 +514,7 @@ static void gic_handle(void *data)
 
 		if (irq_nr < 16) {
 #ifdef CONFIG_AVZ
-			if ((smp_processor_id() == ME_CPU) &&
-			    current_domain->avz_shared->evtchn_upcall_pending)
+			if ((smp_processor_id() == ME_CPU) && current_domain->avz_shared->evtchn_upcall_pending)
 				gic_set_pending(irq_nr);
 
 #else
@@ -608,9 +603,7 @@ void gic_hw_reset(void)
 	/* Distributor interface initialization */
 
 	/* Disable distributor */
-	iowrite32(&gic->gicd->ctlr,
-		  ioread32(((void *) &gic->gicd->ctlr) + INTC_CPU_CTRL_REG0) &
-			  ~INTC_DISABLE);
+	iowrite32(&gic->gicd->ctlr, ioread32(((void *) &gic->gicd->ctlr) + INTC_CPU_CTRL_REG0) & ~INTC_DISABLE);
 
 	/* All interrupts level triggered, active high by default */
 	for (n = 32; n < NR_IRQS; n++)
@@ -685,42 +678,33 @@ static int gic_init(dev_t *dev, int fdt_offset)
 
 	/* Mapping the two mem area of GIC (distributor & CPU interface) */
 #ifdef CONFIG_ARCH_ARM32
-	gic->gicd = (struct gicd_regs *) io_map(
-		fdt32_to_cpu(((const fdt32_t *) prop->data)[0]),
-		fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
-	gic->gicd_paddr =
-		(void *) fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
+	gic->gicd = (struct gicd_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[0]),
+						fdt32_to_cpu(((const fdt32_t *) prop->data)[1]));
+	gic->gicd_paddr = (void *) fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 
-	gic->gicc = (struct gicc_regs *) io_map(
-		fdt32_to_cpu(((const fdt32_t *) prop->data)[2]),
-		fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
+	gic->gicc = (struct gicc_regs *) io_map(fdt32_to_cpu(((const fdt32_t *) prop->data)[2]),
+						fdt32_to_cpu(((const fdt32_t *) prop->data)[3]));
 #else
-	gic->gicd = (struct gicd_regs *) io_map(
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[0]),
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
-	gic->gicd_paddr =
-		(void *) fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
+	gic->gicd = (struct gicd_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]),
+						fdt64_to_cpu(((const fdt64_t *) prop->data)[1]));
+	gic->gicd_paddr = (void *) fdt64_to_cpu(((const fdt64_t *) prop->data)[0]);
 
-	gic->gicc = (struct gicc_regs *) io_map(
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[2]),
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
+	gic->gicc = (struct gicc_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[2]),
+						fdt64_to_cpu(((const fdt64_t *) prop->data)[3]));
 #endif
 
 #ifdef CONFIG_AVZ
 
-	gic->gich = (struct gich_regs *) io_map(
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[4]),
-		fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
+	gic->gich = (struct gich_regs *) io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[4]),
+						fdt64_to_cpu(((const fdt64_t *) prop->data)[5]));
 
 	spin_lock_init(&pending_irqs.lock);
 
 	/* Disable PPIs, except for the maintenance interrupt. */
-	iowrite32(&gic->gicd->isenabler,
-		  0xffff0000 & ~(1 << IRQ_ARCH_ARM_MAINT));
+	iowrite32(&gic->gicd->isenabler, 0xffff0000 & ~(1 << IRQ_ARCH_ARM_MAINT));
 
 	/* Ensure all IPIs and the maintenance PPI are enabled */
-	iowrite32(&gic->gicd->isenabler,
-		  0x0000ffff & ~(1 << IRQ_ARCH_ARM_MAINT));
+	iowrite32(&gic->gicd->isenabler, 0x0000ffff & ~(1 << IRQ_ARCH_ARM_MAINT));
 
 #endif
 

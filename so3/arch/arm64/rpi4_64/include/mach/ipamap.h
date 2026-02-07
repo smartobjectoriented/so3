@@ -36,7 +36,6 @@ ipamap_t agency_ipamap[] = {
 		.phys_addr = 0x0,
 		.size = 0x1000,
 	},
-
 };
 
 /**
