@@ -21,7 +21,8 @@
 
 #include <asm/mmu.h>
 
-ipamap_t agency_ipamap[] = {
+ipamap_t agency_ipamap[] = 
+{
 	{
 		.ipa_addr = 0x08000000,
 		.phys_addr = 0x08000000,
@@ -34,10 +35,11 @@ ipamap_t agency_ipamap[] = {
  * which will be trapped and handled by the hypervisor.
  */
 
-ipamap_t capsule_ipamap[] = {
+ipamap_t capsule_ipamap[] = 
+{
 
 	{
-	/* Only mapping the CPU interface to the vGIC CPU interface.
+		/* Only mapping the CPU interface to the vGIC CPU interface.
 	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
 	 */
 		.ipa_addr = 0x08010000,
