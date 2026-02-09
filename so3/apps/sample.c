@@ -77,7 +77,7 @@ void *app_thread_main(void *args)
 	while (threads != 4)
 		;
 
-	printk("### Total = %lld\n", count);
+	printk("### Total = %d\n", count);
 
 	while (1)
 		;

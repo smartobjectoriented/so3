@@ -22,6 +22,7 @@
 
 #include <types.h>
 #include <soo/soo.h>
+#include <compiler.h>
 
 #define CONSOLEIO_BUFFER_SIZE 256
 
@@ -35,7 +36,7 @@ void init_console(void);
 void avz_printch(char c);
 void avz_printstr(char *str);
 
-void lprintk(char *format, ...);
+void lprintk(char *format, ...) __attribute_printf(1, 2);
 void lprintk_buffer(void *buffer, uint32_t n);
 void lprintk_buffer_separator(void *buffer, uint32_t n, char separator);
 

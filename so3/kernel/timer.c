@@ -346,7 +346,7 @@ again:
 static void dump_timer(struct timer *t, u64 now)
 {
 	/* We convert 1000 to u64 in order to use the well-implemented __aeabi_uldivmod function */
-	lprintk("  expires = %llu, now = %llu, expires - now = %llu ns timer=%p cb=%p(%p) cpu=%d\n", t->expires, now,
+	lprintk("  expires = %lu, now = %lu, expires - now = %lu ns timer=%p cb=%p(%p) cpu=%d\n", t->expires, now,
 		t->expires - now, t, t->function, t->data, t->cpu);
 }
 

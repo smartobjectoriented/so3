@@ -54,7 +54,7 @@ int construct_ME(struct domain *d)
 	d->max_pages = ~0U;
 
 	d->avz_shared->nr_pages = memslot[slotID].size >> PAGE_SHIFT;
-	printk("Max dom size %d\n", memslot[slotID].size);
+	printk("Max dom size %ld\n", memslot[slotID].size);
 
 	printk("Domain length = %lu pages.\n", d->avz_shared->nr_pages);
 

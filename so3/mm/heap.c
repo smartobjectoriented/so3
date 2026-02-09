@@ -391,7 +391,7 @@ next_list:
 	if (!victim) {
 		/* not enough free space left */
 		/* FIXME: do sbrk() here to request more space. Request less space in init() */
-		LOG_CRITICAL("[malloc] Not enough free space, requested = %x", requested);
+		LOG_CRITICAL("[malloc] Not enough free space, requested = %lx", requested);
 
 		spin_unlock_irqrestore(&heap_lock, flags);
 
@@ -519,7 +519,7 @@ void free(void *ptr)
 	flags = spin_lock_irqsave(&heap_lock);
 
 	if (chunk->sig != CHUNK_SIG) {
-		LOG_CRITICAL("Heap failure: already free'd chunk for address %x...", ptr);
+		LOG_CRITICAL("Heap failure: already free'd chunk for address %p...", ptr);
 		kernel_panic();
 	}
 

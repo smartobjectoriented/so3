@@ -49,6 +49,16 @@ typedef long int intptr_t;
 
 #define __must_check __attribute__((warn_unused_result))
 
+/**
+ * printf/scanf attributes to let the compiler check that supplied arguments match
+ * the specified format.
+ *
+ * @param f index of the string format in function's argument list (starting form 1)
+ * @param a index of the first argument associated with the format (starting form 1)
+ */
+#define __attribute_printf(f, a) __attribute__((format(printf, f, a)))
+#define __attribute_scanf(f, a) __attribute__((format(scanf, f, a)))
+
 #define offsetof(a, b) __builtin_offsetof(a, b)
 
 #ifdef GCC_HAS_VISIBILITY_ATTRIBUTE

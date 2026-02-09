@@ -125,7 +125,7 @@ void vbstore_ME_ID_populate(void)
 	vbus_mkdir(VBT_NIL, rootname, entry);
 
 	sprintf(rootname, "soo/me/%d", ME_domID());
-	sprintf(entry, "%llx", spid);
+	sprintf(entry, "%lx", spid);
 
 	vbus_write(VBT_NIL, rootname, "spid", entry);
 

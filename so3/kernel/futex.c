@@ -156,7 +156,7 @@ SYSCALL_DEFINE6(futex, uint32_t *, uaddr, int, op, uint32_t, val, const struct t
 	case FUTEX_UNLOCK_PI:
 	case FUTEX_TRYLOCK_PI:
 	case FUTEX_WAIT_BITSET:
-		printk("Futex cmd '%d' not supported !\n");
+		printk("Futex cmd '%d' not supported !\n", cmd);
 		return -EINVAL;
 	}
 

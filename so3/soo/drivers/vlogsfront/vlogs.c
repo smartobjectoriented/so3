@@ -246,7 +246,7 @@ static int vlogs_cwrite(int fd, const void *buffer, int count)
 {
 	static char msg[1024];
 
-	sprintf(msg, "[ME:%d] %s", get_ME_desc()->capsuleID, buffer);
+	sprintf(msg, "[ME:%d] %s", get_ME_desc()->capsuleID, (const char *) buffer);
 
 	vlogs_write((char *) msg);
 

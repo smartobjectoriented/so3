@@ -20,6 +20,7 @@
 #define AVZ_CONSOLE_H
 
 #include <stdarg.h>
+#include <compiler.h>
 
 #include <avz/uapi/avz.h>
 
@@ -27,7 +28,7 @@ void init_console(void);
 
 extern void (*__printch)(char c);
 
-void lprintk(char *format, ...);
+void lprintk(char *format, ...) __attribute_printf(1, 2);
 void lprintk_buffer(void *buffer, uint32_t n);
 void lprintk_buffer_separator(void *buffer, uint32_t n, char separator);
 

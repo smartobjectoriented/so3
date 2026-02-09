@@ -761,7 +761,7 @@ void dump_pgtable(void *l0pgtable)
 	for (i = 0; i < TTB_L0_ENTRIES; i++) {
 		l0pte = __l0pgtable + i;
 		if ((i != 0xe0) && *l0pte) {
-			lprintk("  - L0 pte@%lx (idx %x) mapping %lx content: %lx\n", __l0pgtable + i, i, i << TTB_I0_SHIFT,
+			lprintk("  - L0 pte@%p (idx %lx) mapping %lx content: %lx\n", __l0pgtable + i, i, i << TTB_I0_SHIFT,
 				*l0pte);
 			BUG_ON(pte_type(l0pte) != PTE_TYPE_TABLE);
 
@@ -770,14 +770,14 @@ void dump_pgtable(void *l0pgtable)
 				l1pte = ((u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK)) + j;
 				if (*l1pte) {
 					if (pte_type(l1pte) == PTE_TYPE_TABLE) {
-						lprintk("    (TABLE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j,
+						lprintk("    (TABLE) L1 pte@%p (idx %lx) mapping %lx content: %lx\n", l1pte, j,
 							(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
 
 						for (k = 0; k < TTB_L2_ENTRIES; k++) {
 							l2pte = ((u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + k;
 							if (*l2pte) {
 								if (pte_type(l2pte) == PTE_TYPE_TABLE) {
-									lprintk("    (TABLE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n",
+									lprintk("    (TABLE) L2 pte@%p (idx %lx) mapping %lx content: %lx\n",
 										l2pte, k,
 										(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) +
 											(k << TTB_I2_SHIFT),
@@ -788,7 +788,7 @@ void dump_pgtable(void *l0pgtable)
 												      TTB_L2_TABLE_ADDR_MASK)) +
 											l;
 										if (*l3pte)
-											lprintk("      (PAGE) L3 pte@%lx (idx %x) mapping %lx content: %lx\n",
+											lprintk("      (PAGE) L3 pte@%p (idx %lx) mapping %lx content: %lx\n",
 												l3pte, l,
 												(i << TTB_I0_SHIFT) +
 													(j << TTB_I1_SHIFT) +
@@ -799,7 +799,7 @@ void dump_pgtable(void *l0pgtable)
 								} else {
 									/* Necessary of BLOCK type */
 									BUG_ON(pte_type(l2pte) != PTE_TYPE_BLOCK);
-									lprintk("      (PAGE) L2 pte@%lx (idx %x) mapping %lx content: %lx\n",
+									lprintk("      (PAGE) L2 pte@%p (idx %lx) mapping %lx content: %lx\n",
 										l2pte, k,
 										(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT) +
 											(k << TTB_I2_SHIFT),
@@ -811,7 +811,7 @@ void dump_pgtable(void *l0pgtable)
 						/* Necessary of BLOCK type */
 						BUG_ON(pte_type(l1pte) != PTE_TYPE_BLOCK);
 
-						lprintk("      (PAGE) L1 pte@%lx (idx %x) mapping %lx content: %lx\n", l1pte, j,
+						lprintk("      (PAGE) L1 pte@%p (idx %lx) mapping %lx content: %lx\n", l1pte, j,
 							(i << TTB_I0_SHIFT) + (j << TTB_I1_SHIFT), *l1pte);
 					}
 				}

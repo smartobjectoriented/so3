@@ -107,7 +107,7 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	printk("   Map size (bytes) 		: 0x%lx\n", map_size);
 
 	printk("   Intermediate phys address    : 0x%lx\n", memslot[slotID].ipa_addr);
-	printk("   Stage-2 vttbr 		: (va) 0x%lx - (pa) 0x%lx\n", new_pt, __pa(new_pt));
+	printk("   Stage-2 vttbr 		: (va) 0x%p - (pa) 0x%lx\n", new_pt, __pa(new_pt));
 
 	d->pagetable_vaddr = (addr_t) new_pt;
 	d->pagetable_paddr = __pa(new_pt);
