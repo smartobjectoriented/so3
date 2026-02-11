@@ -260,7 +260,7 @@ void dump_proc_pages(pcb_t *pcb)
 
 	LOG_INFO("----- Dump of pages belonging to proc: %d -----\n\n", pcb->pid);
 	list_for_each_entry(cur, &pcb->page_list, list)
-		LOG_INFO("   -- page: %p  pfn: %x   refcount: %d\n", cur->page, page_to_pfn(cur->page), cur->page->refcount);
+		LOG_INFO("   -- page: %p  pfn: %lx   refcount: %d\n", cur->page, page_to_pfn(cur->page), cur->page->refcount);
 	LOG_INFO("\n");
 }
 

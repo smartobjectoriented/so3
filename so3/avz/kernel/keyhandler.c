@@ -110,7 +110,7 @@ static void dump_domains(unsigned char key)
 
 		printk("General information for domain %u:\n", d->avz_shared->domID);
 
-		printk("    dying=%d nr_pages=%d max_pages=%u\n", d->is_dying, d->avz_shared->nr_pages, d->max_pages);
+		printk("    dying=%d nr_pages=%ld max_pages=%u\n", d->is_dying, d->avz_shared->nr_pages, d->max_pages);
 
 		printk("VCPU information and callbacks for domain %u:\n", d->avz_shared->domID);
 

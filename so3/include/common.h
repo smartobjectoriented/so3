@@ -24,6 +24,7 @@
 #ifndef __ASSEMBLY__
 
 #include <types.h>
+#include <compiler.h>
 #include <printk.h>
 #include <string.h>
 
@@ -91,7 +92,7 @@ extern addr_t __stack_bottom[];
 void kernel_panic(void);
 void _bug(char *file, int line);
 
-static inline void panic(const char *fmt, ...)
+__attribute_printf(1, 2) static inline void panic(const char *fmt, ...)
 {
 	va_list args;
 	static char buf[128];
@@ -103,8 +104,6 @@ static inline void panic(const char *fmt, ...)
 	printk("%s", buf);
 	kernel_panic();
 }
-
-extern void panic(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 #define BUG() _bug(__FILE__, __LINE__)
 #define BUG_ON(p)                \

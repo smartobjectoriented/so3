@@ -19,6 +19,7 @@
 #ifndef VLOGS_H
 #define VLOGS_H
 
+#include <compiler.h>
 #include <soo/ring.h>
 #include <soo/vdevfront.h>
 #include <soo/gnttab.h>
@@ -50,6 +51,6 @@ typedef struct {
 
 bool vlogs_ready(void);
 
-void vlogs_write(const char *fmt, ...);
+void vlogs_write(const char *fmt, ...) __attribute_printf(1, 2);
 
 #endif /* VLOGS_H */

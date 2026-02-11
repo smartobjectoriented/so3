@@ -245,8 +245,8 @@ void loadAgency(void)
 	/* Get the RAM information of the board */
 	early_memory_init(__fdt_addr);
 
-	lprintk("  AVZ DT at physical address : %lx\n", __fdt_addr);
-	lprintk("  AVZ memory descriptor : found %d MB of RAM at 0x%08X\n", mem_info.size / SZ_1M, mem_info.phys_base);
+	lprintk("  AVZ DT at physical address : %p\n", __fdt_addr);
+	lprintk("  AVZ memory descriptor : found %ld MB of RAM at 0x%08lX\n", mem_info.size / SZ_1M, mem_info.phys_base);
 
 	memslot[MEMSLOT_AVZ].base_paddr = mem_info.phys_base;
 	memslot[MEMSLOT_AVZ].base_vaddr = CONFIG_KERNEL_VADDR;
@@ -290,14 +290,14 @@ void loadME(unsigned int slotID, void *itb)
 				lprintk("!! Missing load-addr in the agency node !!\n");
 				BUG();
 			}
-			lprintk("ITB: Domain load addr = 0x%lx\n", dom_addr);
+			lprintk("ITB: Domain load addr = 0x%x\n", dom_addr);
 
 			ret = fdt_property_read_u32(itb, nodeoffset, "entry", &entry_addr);
 			if (ret == -1) {
 				lprintk("!! Missing entry in the agency node !!\n");
 				BUG();
 			}
-			lprintk("ITB: Domain entry addr = 0x%lx\n", entry_addr);
+			lprintk("ITB: Domain entry addr = 0x%x\n", entry_addr);
 
 			/* Get the pointer to the OS binary image from the ITB we got from the user space. */
 			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &ME_vaddr, &ME_size);

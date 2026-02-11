@@ -183,7 +183,7 @@ void trap_handle(cpu_regs_t *regs)
 			break;
 
 		case PSCI_0_2_FN64_CPU_ON:
-			printk("Power on CPU #%d starting at %x...\n", regs->x1 & 3, regs->x2);
+			printk("Power on CPU #%ld starting at %lx...\n", regs->x1 & 3, regs->x2);
 
 			cpu_entrypoint = regs->x2;
 			smp_trigger_event(regs->x1 & 3);

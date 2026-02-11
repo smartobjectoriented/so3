@@ -66,7 +66,7 @@ long syscall_handle(syscall_args_t *syscall_args)
 	__get_syscall_args_ext(&syscall_no);
 
 	if ((syscall_no >= NR_SYSCALLS) || (syscall_table[syscall_no] == NULL)) {
-		printk("%s: unhandled syscall: %d\n", __func__, syscall_no);
+		printk("%s: unhandled syscall: %ld\n", __func__, syscall_no);
 		return -ENOSYS;
 	}
 

@@ -25,6 +25,7 @@
 
 #include <stdarg.h>
 #include <types.h>
+#include <compiler.h>
 
 void *memchr(const void *, int, size_t);
 int memcmp(const void *, const void *, size_t);
@@ -46,8 +47,8 @@ size_t strnlen(const char *s, size_t count);
 
 char *strdup(const char *s);
 
-int sprintf(char *buf, const char *fmt, ...);
-int scnprintf(char *buf, size_t size, const char *fmt, ...);
+int sprintf(char *buf, const char *fmt, ...) __attribute_printf(2, 3);
+int scnprintf(char *buf, size_t size, const char *fmt, ...) __attribute_printf(3, 4);
 
 char *strcpy(char *, const char *);
 size_t strlen(const char *);
@@ -57,12 +58,12 @@ char *strcat(char *dest, const char *src);
 int vsprintf(char *s, const char *fmt, va_list ap);
 int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 int vsscanf(const char *buf, const char *fmt, va_list args);
-int sscanf(const char *buf, const char *fmt, ...);
-int sprintf(char *buf, const char *fmt, ...);
-int snprintf(char *buf, size_t size, const char *fmt, ...);
+int sscanf(const char *buf, const char *fmt, ...) __attribute_scanf(2, 3);
+int sprintf(char *buf, const char *fmt, ...) __attribute_printf(2, 3);
+int snprintf(char *buf, size_t size, const char *fmt, ...) __attribute_printf(3, 4);
 
 char *kvasprintf(const char *fmt, va_list ap);
-char *kasprintf(const char *fmt, ...);
+char *kasprintf(const char *fmt, ...) __attribute_printf(1, 2);
 
 unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base);
 long simple_strtol(const char *cp, char **endp, unsigned int base);

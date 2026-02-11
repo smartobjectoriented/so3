@@ -237,7 +237,7 @@ void perform_task(dc_event_t dc_event)
 		break;
 
 	default:
-		lprintk("Wrong DC event %d\n", avz_shared->dc_event);
+		lprintk("Wrong DC event %d\n", dc_event);
 	}
 
 	tell_dc_stable(dc_event);

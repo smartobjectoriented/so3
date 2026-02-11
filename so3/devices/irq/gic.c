@@ -148,7 +148,7 @@ void fdt_interrupt_node(int fdt_offset, irq_def_t *irq_def)
 
 	} else {
 		/* Unsupported size of interrupts property */
-		lprintk("%s: unsupported size of interrupts property\n");
+		LOG_ERROR("unsupported size of interrupts property\n");
 		BUG();
 	}
 }

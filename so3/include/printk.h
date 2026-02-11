@@ -21,13 +21,14 @@
 
 #include <stdarg.h>
 #include <types.h>
+#include <compiler.h>
 
-void lprintk(char *format, ...);
-void llprintk(char *format, ...);
+void lprintk(char *format, ...) __attribute_printf(1, 2);
+void llprintk(char *format, ...) __attribute_printf(1, 2);
 
 void lprintk_buffer(void *buffer, uint32_t n);
 
-void printk(const char *fmt, ...);
+void printk(const char *fmt, ...) __attribute_printf(1, 2);
 
 #ifndef __ASSEMBLY__
 

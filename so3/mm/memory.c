@@ -354,7 +354,7 @@ void io_unmap(addr_t vaddr)
 	}
 
 	if (cur == NULL) {
-		LOG_CRITICAL("io_unmap failure: did not find entry for vaddr %x", vaddr);
+		LOG_CRITICAL("io_unmap failure: did not find entry for vaddr %lx", vaddr);
 		kernel_panic();
 	}
 

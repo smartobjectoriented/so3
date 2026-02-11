@@ -51,7 +51,7 @@ int construct_agency(struct domain *d)
 	d->max_pages = ~0U;
 
 	printk("-> Agency base address from ITB: %lx\n", memslot[MEMSLOT_AGENCY].base_paddr);
-	printk("-> Max dom size %d\n", memslot[MEMSLOT_AGENCY].size);
+	printk("-> Max dom size %ld\n", memslot[MEMSLOT_AGENCY].size);
 
 	ASSERT(d);
 
@@ -68,7 +68,7 @@ int construct_agency(struct domain *d)
 	printk("AVZ Hypervisor vaddr: 0x%lx\n", CONFIG_KERNEL_VADDR);
 	printk("Agency FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
-	printk("Shared AVZ page is located at: %lx\n", d->avz_shared);
+	printk("Shared AVZ page is located at: %p\n", d->avz_shared);
 
 	initialize_hyp_dom_stack(d, pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr), memslot[MEMSLOT_AGENCY].entry_addr);
 
