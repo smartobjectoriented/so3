@@ -175,7 +175,7 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
  */
 typedef struct {
 	unsigned int slotID;
-	unsigned int capsuleID;
+	unsigned int capsuleID; /* ID handled by emiso engine */
 	uint64_t spid;
 
 	ME_state_t state;

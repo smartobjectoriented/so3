@@ -114,23 +114,25 @@ void secondary_start_kernel(void)
 #ifdef CONFIG_CPU_SPIN_TABLE
 	switch (cpu) {
 	case 1:
-		pre_ret_to_el1_with_spin(CPU1_RELEASE_ADDR);
+		pre_ret_to_el1_spin(CPU1_RELEASE_ADDR);
 		break;
 	case 2:
-		pre_ret_to_el1_with_spin(CPU2_RELEASE_ADDR);
+		pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
 		break;
 	case 3:
-		pre_ret_to_el1_with_spin(CPU3_RELEASE_ADDR);
+		pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);
 		break;
 	default:
 		printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 	}
 #endif
 
+#ifdef CONFIG_CPU_PSCI
 #ifdef CONFIG_SOO
 	if (cpu != ME_CPU)
-#endif
+#endif /* CONFIG_SOO */
 		pre_ret_to_el1();
+#endif /* CONFIG_CPU_PCSI */
 
 	secondary_timer_init();
 

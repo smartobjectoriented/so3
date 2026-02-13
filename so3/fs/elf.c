@@ -219,8 +219,9 @@ void elf_load_segments(elf_img_info_t *elf_img_info)
 		elf_img_info->segment_end_vaddr = 0;
 	}
 
+#ifndef CONFIG_AVZ
 	LOG_DEBUG("segments use %d virtual pages\n", elf_img_info->segment_page_count);
-
+#endif
 	for (i = 0; i < elf_img_info->header->e_phnum; i++) {
 		LOG_DEBUG("[0x%08x] vaddr: 0x%08x; paddr: 0x%08x; filesize: 0x%08x; memsize: 0x%08x flags: 0x%08x\n",
 			  elf_img_info->segments[i].p_offset, elf_img_info->segments[i].p_vaddr,

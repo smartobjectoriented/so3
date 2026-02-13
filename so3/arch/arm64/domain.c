@@ -116,9 +116,9 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	__create_mapping(new_pt, memslot[slotID].ipa_addr, paddr_start, map_size, false, S2);
 
 	if (d->avz_shared->domID == DOMID_AGENCY)
-		do_ipamap(new_pt, linux_ipamap, ARRAY_SIZE(linux_ipamap));
+		do_ipamap(new_pt, agency_ipamap, ARRAY_SIZE(agency_ipamap));
 	else
-		do_ipamap(new_pt, guest_ipamap, ARRAY_SIZE(guest_ipamap));
+		do_ipamap(new_pt, capsule_ipamap, ARRAY_SIZE(capsule_ipamap));
 
 	/* Map the shared page in the IPA space; the shared page is located right after the domain area
 	 * in the IPA space, and if any, the RT shared page follows the shared page (in IPA space).

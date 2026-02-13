@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,13 @@ static void init_dev_info(dev_t *dev)
 	dev->fdt = 0;
 }
 
-/* Get memory informations from a device tree */
+/**
+ * @brief Get memory informations from a device tree 
+ * 
+ * @param fdt Virtual address of the device tree
+ * @param info Memory info structure which will be filled up by this function
+ * @return int Offset of the memory node in the device tree
+ */
 int get_mem_info(const void *fdt, mem_info_t *info)
 {
 	int offset;
@@ -81,6 +87,9 @@ int get_mem_info(const void *fdt, mem_info_t *info)
 
 	/* For some platform, address-cells and size-cells are set to 2 (64-bit)
 	 * even for a 32-bit platform, probably to support LPAE.
+	 * Additionally, on Raspberry Pi 4, the device tree has its memory node 
+	 * with a 64-bit address cell and a 32-bit size cell. That's why we need
+	 * to consider a 12 bytes <reg> property.
 	 */
 
 	if (prop) {
@@ -88,7 +97,7 @@ int get_mem_info(const void *fdt, mem_info_t *info)
 			info->phys_base = fdt32_to_cpu(((const fdt32_t *) prop->data)[0]);
 			info->size = fdt32_to_cpu(((const fdt32_t *) prop->data)[1]);
 		} else {
-			BUG_ON(prop_len != 16);
+			BUG_ON((prop_len != 16) && (prop_len != 12));
 
 			/* Keep a possible conversion from 64-bit to 32-bit if the address & size are
 			 * on 64-bit for aarch32 platforms.
@@ -110,10 +119,15 @@ int get_mem_info(const void *fdt, mem_info_t *info)
 
 			info->phys_base = fdt64_to_cpu(val);
 
-			for (i = 0; i < 8; i++)
-				*(((char *) &val) + i) = *ptr++;
-
-			info->size = fdt64_to_cpu(val);
+			if (prop_len == 16) {
+				for (i = 0; i < 8; i++)
+					*(((char *) &val) + i) = *ptr++;
+				info->size = fdt64_to_cpu(val);
+			} else {
+				for (i = 0; i < 4; i++)
+					*(((char *) &val) + i) = *ptr++;
+				info->size = fdt32_to_cpu(val);
+			}
 
 #endif /* !CONFIG_ARCH_ARM32 */
 		}
