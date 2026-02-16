@@ -22,5 +22,8 @@ config VSENSEJ_FRONTEND
 config VLOGS_FRONTEND
     bool "vlogs serial driver"
 
+config VFBDEV_FRONTEND
+    bool "vfbdev framebuffer driver"
+
 endmenu
 

@@ -114,6 +114,11 @@
 				compatible = "vlogs,frontend";
 				status = "ok";
 			};
+
+			vfbdev {
+				compatible = "vfbdev,frontend";
+				status = "ok";
+			};
 		};
 	};
 

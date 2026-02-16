@@ -32,6 +32,11 @@ struct gnttab {
 	/* (Real) physical frame number to be granted */
 	addr_t pfn;
 
+	/* Page count to be granted, if set to 0 then normal granting is used
+	 * mapping one page.
+	 */
+	size_t page_count;
+
 	/* Unique ref ID used by the domain which refers to this page */
 	grant_ref_t ref;
 };

@@ -131,6 +131,16 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		d->grant_pfn[i].pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + i;
 		d->grant_pfn[i].free = true;
 	}
+
+	/* Initialize the long grant pfn area. As page count for them is unknown, they will all be mapped
+	 * contiguously from a starting point, which is behind the last normal grant pfn.
+	 */
+	for (i = 0; i < NR_LONG_GRANT_PFN; i++) {
+		d->long_grant_pfn[i].pfn = 0;
+		d->long_grant_pfn[i].page_count = 0;
+		d->long_grant_pfn[i].free = true;
+	}
+	d->long_grant_start_pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + NR_GRANT_PFN;
 #endif /* CONFIG_SOO */
 }
 

@@ -470,6 +470,7 @@ static int do_write(int fd, const void *buffer, size_t count)
 static long do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 {
 	int gfd;
+	int ret;
 	struct file_operations *fops;
 
 	/* Get the fops associated to the file descriptor. */
@@ -494,8 +495,14 @@ static long do_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 		return -EACCES;
 	}
 
+	if (virt_addr == 0) {
+		virt_addr = current()->pcb->next_anon_start;
+		current()->pcb->next_anon_start += page_count * PAGE_SIZE;
+	}
+
 	/* Call the mmap fops that will do the actual mapping. */
-	return (long) fops->mmap(fd, virt_addr, page_count, offset);
+	ret = fops->mmap(fd, virt_addr, page_count, offset);
+	return (ret == 0) ? virt_addr : (long) ret;
 }
 
 /* Low Level mmap - Anonymous case */

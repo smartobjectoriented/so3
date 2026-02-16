@@ -64,6 +64,7 @@ struct gnttab_op {
 
 	/* pfn to be granted or pfn associated to an existing ref */
 	addr_t pfn;
+	size_t page_count;
 
 	/* Grant reference */
 	grant_ref_t ref;

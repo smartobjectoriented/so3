@@ -54,9 +54,11 @@
 #include <list.h>
 
 #define NR_GRANT_PFN 32
+#define NR_LONG_GRANT_PFN 8
 
 typedef struct {
 	addr_t pfn;
+	size_t page_count;
 	bool free;
 } grant_pfn_t;
 
@@ -117,6 +119,10 @@ struct domain {
 
 	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
+
+	/* IPA reserved information for long mapping granted pages belonging to other domains */
+	grant_pfn_t long_grant_pfn[NR_LONG_GRANT_PFN];
+	addr_t long_grant_start_pfn;
 #endif /* CONFIG_SOO */
 
 	int processor;
