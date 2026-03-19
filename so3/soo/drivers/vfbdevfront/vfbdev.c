@@ -31,11 +31,8 @@ typedef struct {
 	uint32_t hres;
 	uint32_t vres;
 	size_t size;
-	addr_t gnt_paddr[VFBDEV_MAX_REF];
-	size_t page_count[VFBDEV_MAX_REF];
+	addr_t fb_paddr;
 
-	uint64_t count_ref;
-	grant_ref_t fb_ref[VFBDEV_MAX_REF];
 } vfbdev_priv_t;
 
 /* Our unique uart instance. */
@@ -199,9 +196,9 @@ static int retrieve_data(vfbdev_priv_t *priv)
 {
 	vfbdev_request_t *ring_req;
 	vfbdev_response_t *ring_rsp;
-	size_t i;
+	avz_hyp_t hyp_args;
 
-	if (priv->count_ref != 0) {
+	if (priv->size != 0) {
 		return 1;
 	}
 
@@ -225,18 +222,12 @@ static int retrieve_data(vfbdev_priv_t *priv)
 	priv->hres = ring_rsp->hres;
 	priv->vres = ring_rsp->vres;
 	priv->size = ring_rsp->size;
-	priv->count_ref = ring_rsp->count_ref;
-	memcpy(priv->fb_ref, ring_rsp->fb_ref, sizeof(ring_rsp->fb_ref));
 
 	vdevfront_processing_end(vfbdev_dev);
 
-	if (priv->count_ref == 0) {
-		return 0;
-	}
-
-	for (i = 0; i < priv->count_ref; i++) {
-		gnttab_long_get(vfbdev_dev->otherend_id, priv->fb_ref[i], (void*)&priv->gnt_paddr[i], &priv->page_count[i]);
-	}
+	hyp_args.cmd = AVZ_FBDEV_GET_ADDR;
+	avz_hypercall(&hyp_args);
+	priv->fb_paddr = hyp_args.u.avz_fbdev_addr_args.paddr;
 
 	return 1;
 }
@@ -246,8 +237,6 @@ static int vfbdev_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offs
 	pcb_t *pcb = current()->pcb;
 	struct devclass *dev;
 	vfbdev_priv_t *priv;
-	size_t i;
-	size_t next_page;
 
 	dev = devclass_by_fd(fd);
 	priv = devclass_get_priv(dev);
@@ -260,11 +249,7 @@ static int vfbdev_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offs
 		return -1;
 	}
 
-	next_page = 0;
-	for (i = 0; i < priv->count_ref; i++) {
-		create_mapping(pcb->pgtable, virt_addr + offset, priv->gnt_paddr[i], priv->page_count[i] * PAGE_SIZE, false);
-		offset += priv->page_count[i] * PAGE_SIZE;
-	}
+	create_mapping(pcb->pgtable, virt_addr, priv->fb_paddr, priv->size, true);
 
 	return 0;
 }

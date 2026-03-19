@@ -8,8 +8,6 @@
 #define VFBDEV_NAME "vfbdev"
 #define VFBDEV_PREFIX "[" VFBDEV_NAME "] "
 
-#define VFBDEV_MAX_REF 8
-
 typedef struct {
 	/* Nothing */
 } vfbdev_request_t;
@@ -18,8 +16,6 @@ typedef struct {
 	uint32_t hres;
 	uint32_t vres;
 	uint64_t size;
-	uint64_t count_ref;
-	grant_ref_t fb_ref[VFBDEV_MAX_REF];
 } vfbdev_response_t;
 
 DEFINE_RING_TYPES(vfbdev, vfbdev_request_t, vfbdev_response_t);
