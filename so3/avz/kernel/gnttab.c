@@ -85,9 +85,8 @@ gnttab_t *pick_granted_entry(grant_ref_t ref, domid_t origin_domid)
  * @param d The domain containing the grant table
  * @param target_domid The domain concerned by this grant
  * @param pfn The real frame number of the page to be granted
- * @param page_count The number of page to grant
  */
-gnttab_t *new_gnttab_entry(struct domain *d, domid_t target_domid, addr_t pfn, size_t page_count)
+gnttab_t *new_gnttab_entry(struct domain *d, domid_t target_domid, addr_t pfn)
 {
 	gnttab_t *gnttab;
 
@@ -97,7 +96,6 @@ gnttab_t *new_gnttab_entry(struct domain *d, domid_t target_domid, addr_t pfn, s
 	gnttab->origin_domid = d->avz_shared->domID;
 	gnttab->target_domid = target_domid;
 	gnttab->pfn = pfn;
-	gnttab->page_count = page_count;
 
 	/* Determine the ref number for this entry */
 	gnttab->ref = get_ref_max(&d->gnttab) + 1;
@@ -142,31 +140,6 @@ addr_t allocate_grant_pfn(struct domain *d)
 	BUG();
 
 	return 0; /* Make gcc happy :-) */
-}
-
-/**
- * @brief Find a free long grant pfn
- *
- * @param d Domain to search for the free pfn
- * @return grant pfn object to be used for mapping the granted pages
- */
-grant_pfn_t *allocate_long_grant_pfn(struct domain *d)
-{
-	int i;
-	addr_t start_pfn = d->long_grant_start_pfn;
-
-	for (i = 0; i < NR_LONG_GRANT_PFN; i++) {
-		if (d->long_grant_pfn[i].free) {
-			d->long_grant_pfn[i].free = false;
-			d->long_grant_pfn[i].pfn = start_pfn;
-			return &d->long_grant_pfn[i];
-		}
-
-		start_pfn += d->long_grant_pfn[i].page_count;
-	}
-
-	BUG();
-	return NULL;
 }
 
 /**
@@ -220,9 +193,7 @@ void do_gnttab(gnttab_op_t *args)
 {
 	struct domain *d;
 	addr_t paddr, grant_paddr;
-	size_t page_count;
 	gnttab_t *gnttab;
-	grant_pfn_t *grant_pfn;
 
 	spin_lock(&gnttab_lock);
 
@@ -234,9 +205,8 @@ void do_gnttab(gnttab_op_t *args)
 		/* Create a new entry in the list of gnttab page */
 
 		paddr = ipa_to_pa(DOM_TO_MEMSLOT(d->avz_shared->domID), pfn_to_phys(args->pfn));
-		page_count = args->page_count == 0 ? 1 : args->page_count;
 
-		gnttab = new_gnttab_entry(d, args->domid, phys_to_pfn(paddr), page_count);
+		gnttab = new_gnttab_entry(d, args->domid, phys_to_pfn(paddr));
 
 		args->ref = gnttab->ref;
 
@@ -252,23 +222,13 @@ void do_gnttab(gnttab_op_t *args)
 		gnttab = pick_granted_entry(args->ref, args->domid);
 		BUG_ON(!gnttab);
 
-		page_count = gnttab->page_count;
-		if (page_count == 1) {
-			/* Here, we get an IPA address corresponding to the grant page */
-			grant_paddr = pfn_to_phys(allocate_grant_pfn(d));
-		} else {
-			grant_pfn = allocate_long_grant_pfn(d);
-
-			grant_pfn->page_count = page_count;
-			grant_paddr = pfn_to_phys(grant_pfn->pfn);
-		}
+		/* Here, we get an IPA address corresponding to the grant page */
+		grant_paddr = pfn_to_phys(allocate_grant_pfn(d));
 
 		/* This pfn will be exported to the domain */
 		args->pfn = phys_to_pfn(grant_paddr);
-		args->page_count = page_count;
 
-		__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(gnttab->pfn), PAGE_SIZE * page_count,
-				 true, S2);
+		__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(gnttab->pfn), PAGE_SIZE, true, S2);
 
 		break;
 

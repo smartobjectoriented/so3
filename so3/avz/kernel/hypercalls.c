@@ -41,6 +41,7 @@
 #ifdef CONFIG_SOO
 
 #include <soo/uapi/soo.h>
+#include <avz/fbdev_gnt.h>
 
 /**
  * Return the state of the ME corresponding to the ME_slotID.
@@ -200,6 +201,18 @@ void do_avz_hypercall(void *__args)
 		set_ME_state(args->u.avz_me_state_args.slotID, args->u.avz_me_state_args.state);
 		break;
 	}
+
+	case AVZ_FBDEV_SET_INFO:
+		fbdev_set_info(&args->u.avz_fbdev_info_args.fbdev, args->u.avz_fbdev_info_args.fake_pfn);
+		break;
+
+	case AVZ_FBDEV_CHANGE_FOCUS:
+		fbdev_change_focus(args->u.avz_fbdev_focus_args.new_slotID);
+		break;
+
+	case AVZ_FBDEV_GET_ADDR:
+		args->u.avz_fbdev_addr_args.paddr = fbdev_get_addr();
+		break;
 
 #endif /* CONFIG_SOO */
 

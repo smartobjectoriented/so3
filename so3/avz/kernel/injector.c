@@ -165,8 +165,7 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
 	domctxt->pause_flags = me->pause_flags;
 
 	memcpy(&domctxt->grant_pfn, &me->grant_pfn, sizeof(me->grant_pfn));
-	memcpy(&domctxt->long_grant_pfn, &me->long_grant_pfn, sizeof(me->long_grant_pfn));
-	memcpy(&domctxt->long_grant_start_pfn, &me->long_grant_start_pfn, sizeof(me->long_grant_start_pfn));
+	memcpy(&domctxt->fbdev_start_pfn, &me->fbdev_start_pfn, sizeof(me->fbdev_start_pfn));
 
 	memcpy(&(domctxt->pause_count), &(me->pause_count), sizeof(me->pause_count));
 
@@ -283,8 +282,7 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 	me->pause_flags = domctxt->pause_flags;
 
 	memcpy(&me->grant_pfn, &domctxt->grant_pfn, sizeof(me->grant_pfn));
-	memcpy(&me->long_grant_pfn, &domctxt->long_grant_pfn, sizeof(me->long_grant_pfn));
-	memcpy(&me->long_grant_start_pfn, &domctxt->long_grant_start_pfn, sizeof(me->long_grant_start_pfn));
+	memcpy(&me->fbdev_start_pfn, &domctxt->fbdev_start_pfn, sizeof(me->fbdev_start_pfn));
 
 	memcpy(&(me->pause_count), &(domctxt->pause_count), sizeof(me->pause_count));
 

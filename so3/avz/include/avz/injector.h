@@ -56,8 +56,7 @@ struct dom_context {
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
 	/* IPA reserved page frame numbers for long granted pages */
-	grant_pfn_t long_grant_pfn[NR_LONG_GRANT_PFN];
-	addr_t long_grant_start_pfn;
+	addr_t fbdev_start_pfn;
 
 	/* Stack frame of this domain */
 	struct cpu_regs stack_frame;

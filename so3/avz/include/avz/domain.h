@@ -19,6 +19,8 @@
 #ifndef DOMAIN_H
 #define DOMAIN_H
 
+#include <generated/autoconf.h>
+
 #ifndef __ASSEMBLY__
 #ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
@@ -54,11 +56,9 @@
 #include <list.h>
 
 #define NR_GRANT_PFN 32
-#define NR_LONG_GRANT_PFN 8
 
 typedef struct {
 	addr_t pfn;
-	size_t page_count;
 	bool free;
 } grant_pfn_t;
 
@@ -121,8 +121,7 @@ struct domain {
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
 	/* IPA reserved information for long mapping granted pages belonging to other domains */
-	grant_pfn_t long_grant_pfn[NR_LONG_GRANT_PFN];
-	addr_t long_grant_start_pfn;
+	addr_t fbdev_start_pfn;
 #endif /* CONFIG_SOO */
 
 	int processor;

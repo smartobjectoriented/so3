@@ -30,6 +30,10 @@
 #include <mach/ipamap.h>
 #endif
 
+#ifdef CONFIG_SOO
+#include <avz/fbdev_gnt.h>
+#endif
+
 /**
  * @brief Initialize the content of the EL2 stack associated to this domain.
  *
@@ -132,15 +136,8 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		d->grant_pfn[i].free = true;
 	}
 
-	/* Initialize the long grant pfn area. As page count for them is unknown, they will all be mapped
-	 * contiguously from a starting point, which is behind the last normal grant pfn.
-	 */
-	for (i = 0; i < NR_LONG_GRANT_PFN; i++) {
-		d->long_grant_pfn[i].pfn = 0;
-		d->long_grant_pfn[i].page_count = 0;
-		d->long_grant_pfn[i].free = true;
-	}
-	d->long_grant_start_pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + NR_GRANT_PFN;
+	d->fbdev_start_pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + NR_GRANT_PFN;
+	fbdev_set_pgtable(d, slotID);
 #endif /* CONFIG_SOO */
 }
 

@@ -16,6 +16,7 @@ obj-y += sched_flip.o
 obj-y += schedule.o
 obj-y += hypercalls.o
 obj-${CONFIG_SOO} += gnttab.o
+obj-${CONFIG_SOO} += fbdev_gnt.o
 
 obj-y += image-fit.o
 obj-y += domain_utils.o

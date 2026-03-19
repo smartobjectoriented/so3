@@ -606,6 +606,15 @@ static inline int pte_type(u64 *pte)
 		ttbr;                                                  \
 	})
 
+#ifdef CONFIG_AVZ
+#define cpu_get_vttbr()                                                 \
+	({                                                              \
+		unsigned long vttbr;                                    \
+		__asm__("mrs	%0, vttbr_el2" : "=r"(vttbr) : : "cc"); \
+		vttbr;                                                  \
+	})
+#endif
+
 /**
  * Check if a virtual address is within the user space range.
  *
@@ -703,6 +712,7 @@ void *new_root_pgtable(void);
 
 void __create_mapping(void *pgtable, addr_t virt_base, addr_t phys_base, size_t size, bool nocache, mmu_stage_t stage);
 void __mmu_switch_kernel(void *pgtable, bool vttbr);
+void mmu_get_current_domain_pgtable(addr_t *pgtable_paddr);
 
 #endif /* CONFIG_AVZ */
 

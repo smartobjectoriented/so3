@@ -303,7 +303,7 @@ ENTRY(pre_ret_to_el1)
 
 #endif /* CONFIG_CPU_PSCI */
 
-// Enter macro to jump into EL1 from EL0 *or* from EL1
+// Enter macro to jump into EL2 from EL0 or from EL1
 .macro prepare_to_enter_to_el2
 	mrs	x0, elr_el2
 	str	x0, [sp, #OFFSET_PC]
@@ -313,11 +313,23 @@ ENTRY(pre_ret_to_el1)
 
 	mrs	x0, spsr_el2
 	str	x0, [sp, #OFFSET_PSTATE]
+
+	// Save userspace register. Use OFFSET_SP as it is not used on the stack frame.
+	mrs	x0, sp_el0
+	str	x0, [sp, #OFFSET_SP]
+	mrs	x0, tpidr_el0
+	str	x0, [sp, #OFFSET_TLS_USR]
+
+	// Save EL1 exception register as they may not yet be saved.
+	mrs	x0, spsr_el1
+	str	x0, [sp, #OFFSET_SPSR_EL1]
+	mrs	x0, elr_el1
+	str	x0, [sp, #OFFSET_ELR_EL1]
+
 .endm
 
 
-// Exit macro at the end of an exception routine
-// It restores the sp_el0 as well.
+// Exit macro at the end of an exception routine to restore all saved registers
 .macro prepare_to_exit_to_el1
 	ldr	x0, [sp, #OFFSET_PC]
 	msr	elr_el2, x0
@@ -327,6 +339,18 @@ ENTRY(pre_ret_to_el1)
 
 	ldr	x0, [sp, #OFFSET_PSTATE]
 	msr	spsr_el2, x0
+
+	// Restore userspace register
+	ldr	x0, [sp, #OFFSET_SP]
+	msr	sp_el0, x0
+	ldr	x0, [sp, #OFFSET_TLS_USR]
+	msr	tpidr_el0, x0
+
+	// Restore EL1 exception register as they may not yet be saved.
+	ldr	x0, [sp, #OFFSET_SPSR_EL1]
+	msr	spsr_el1, x0
+	ldr	x0, [sp, #OFFSET_ELR_EL1]
+	msr	elr_el1, x0
 .endm
 
 .align 5

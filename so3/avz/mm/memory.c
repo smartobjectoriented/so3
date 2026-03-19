@@ -101,7 +101,7 @@ void switch_mm_domain(struct domain *d)
 {
 	addr_t current_pgtable_paddr;
 
-	mmu_get_current_pgtable(&current_pgtable_paddr);
+	mmu_get_current_domain_pgtable(&current_pgtable_paddr);
 
 	if (current_pgtable_paddr == d->pagetable_paddr)
 		/* Check if the current page table is identical to the next one. */
