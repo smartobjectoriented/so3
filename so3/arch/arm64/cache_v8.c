@@ -101,7 +101,7 @@ void mmu_setup(void *pgtable)
 	invalidate_dcache_all();
 	__asm_invalidate_tlb_all();
 
-#endif /* !CONFIG_ARM64VT */
+#endif /* !CONFIG_AVZ */
 }
 
 /*

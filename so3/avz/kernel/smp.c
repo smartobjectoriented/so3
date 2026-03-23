@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -105,13 +105,21 @@ void secondary_start_kernel(void)
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
-#ifndef CONFIG_SOO
+#ifdef CONFIG_SOO
+	if (cpu != ME_CPU)
+#endif /* CONFIG_SOO */
 	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
-#endif /* !CONFIG_SOO */
-
+ 
 	booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
+#ifdef CONFIG_SOO
+	/* Agency secondary CPUs are handed directly to Linux via spin-table.
+	 * Set current_domain to agency so HVC calls from EL1 are correctly dispatched.
+	 */
+	if (cpu != ME_CPU)
+		set_current_domain(agency);
+#endif /* CONFIG_SOO */
 	switch (cpu) {
 	case 1:
 		pre_ret_to_el1_spin(CPU1_RELEASE_ADDR);
@@ -119,9 +127,13 @@ void secondary_start_kernel(void)
 	case 2:
 		pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
 		break;
+	/* CPU #3 is dedicated to capsules in case of CONFIG_SOO */
+#ifndef CONFIG_SOO
 	case 3:
 		pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);
 		break;
+#endif /* !CONFIG_SOO*/
+
 	default:
 		printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 	}
@@ -213,6 +225,10 @@ void smp_init(void)
 
 #ifdef CONFIG_SOO
 
+	/* Boot agency secondary CPUs so they enter spin-table wait for Linux */
+	for (i = 1; i < ME_CPU; i++)
+		cpu_up(i);
+
 	printk("Starting ME CPU...\n");
 
 	cpu_up(ME_CPU);
@@ -221,7 +237,7 @@ void smp_init(void)
 
 #else /* CONFIG_SOO */
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	/* With VT support, we prepare the CPU to be started through a HVC call
 	 * from the domain.
 	 */

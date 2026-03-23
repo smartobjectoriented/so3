@@ -20,6 +20,8 @@
 #include <bitops.h>
 #include <heap.h>
 
+#include <asm/mmu.h>
+
 #include <avz/uapi/avz.h>
 
 #include <soo/console.h>
@@ -45,6 +47,16 @@ void avz_get_shared(void)
 
 	avz_shared = (avz_shared_t *) io_map(args.u.avz_domctl_args.domctl.avz_shared_paddr, PAGE_SIZE);
 	BUG_ON(!avz_shared);
+
+	/*
+	 * io_map() uses Device-nGnRnE memory attributes. The AVZ shared page
+	 * must be Normal (cacheable) memory: exclusive/atomic operations (xchg)
+	 * on Device memory are CONSTRAINED UNPREDICTABLE on Cortex-A72 and
+	 * generate a deferred SError (ESR: bf000002).
+	 * Override the PTE with Normal cacheable attributes.
+	 */
+	create_mapping(NULL, (addr_t) avz_shared,
+		       args.u.avz_domctl_args.domctl.avz_shared_paddr, PAGE_SIZE, false);
 }
 
 void avz_printch(char c)

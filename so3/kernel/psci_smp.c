@@ -69,7 +69,7 @@ void cpu_on(unsigned long cpuid, addr_t entry_point)
 {
 	int ret;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	ret = __invoke_psci_fn_smc(PSCI_0_2_FN_CPU_ON, cpuid, entry_point, 0);
 #else
 	ret = __invoke_psci_fn_hvc(PSCI_0_2_FN_CPU_ON, cpuid, entry_point, 0);

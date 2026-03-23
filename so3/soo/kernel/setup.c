@@ -97,6 +97,17 @@ void post_init_setup(void)
 	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
 	BUG_ON(!__intf);
 
+	/*
+	 * io_map() uses Device-nGnRnE memory attributes (Stage-1). The vbstore
+	 * ring buffer is shared with the agency which maps it as Normal cacheable.
+	 * Both Stage-1 and Stage-2 must be Normal so the combined effective
+	 * memory type is Normal cacheable, enabling hardware cache coherency
+	 * (inner-shareable) for the ring buffer protocol.
+	 * Override the Stage-1 PTE with Normal cacheable attributes.
+	 */
+	create_mapping(NULL, (addr_t) __intf,
+		       pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE, false);
+
 	LOG_INFO("SOO Mobile Entity booting ...\n");
 
 	soo_guest_activity_init();

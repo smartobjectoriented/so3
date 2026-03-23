@@ -523,7 +523,7 @@ typedef enum { S1, S2 } mmu_stage_t;
 #define VA2PA_WR "w"
 #define va2pa_at(stage, el, rw, va) asm volatile("at " stage el rw ", %0" : : "r"(va) : "memory", "cc");
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 typedef struct {
 	addr_t ipa_addr;
@@ -556,7 +556,7 @@ static inline void set_pte_page_S2(u64 *pte, enum dcache_option option)
 		*pte |= S2_PTE_FLAG_NORMAL;
 }
 
-#endif /* CONFIG_ARM64_VT */
+#endif /* CONFIG_AVZ */
 
 static inline void set_pte_table(u64 *pte, enum dcache_option option)
 {
@@ -620,7 +620,7 @@ static inline bool user_space_vaddr(addr_t addr)
 		return true;
 }
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 static inline unsigned int get_sctlr(void)
 {
@@ -637,7 +637,7 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
-#else
+#else /* CONFIG_AVZ */
 
 static inline unsigned int get_sctlr(void)
 {
@@ -654,7 +654,7 @@ static inline void set_sctlr(unsigned int val)
 	asm volatile("isb");
 }
 
-#endif
+#endif /* !CONFIG_AVZ */
 
 extern addr_t __sys_root_pgtable[], __sys_idmap_l1pgtable[], __sys_linearmap_l1pgtable[], __sys_linearmap_l2pgtable[];
 
@@ -678,7 +678,7 @@ extern void __mmu_switch_vttbr(void *root_pgtable_phys);
 
 void __mmu_setup(void *pgtable);
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 void do_ipamap(void *pgtable, ipamap_t ipamap[], int nbelement);
 #endif
 

@@ -259,7 +259,6 @@ void loadAgency(void)
 
 /**
  * The ITB image will be parsed and the components placed in their target memory location.
- * This work only with ARM64VT support.
  *
  * @param slotID
  * @param itb	ITB image

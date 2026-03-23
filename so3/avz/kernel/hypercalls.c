@@ -209,5 +209,6 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
-	flush_dcache_all();
+	dsb(ish);   /* inner shareable */
+    	isb();
 }
