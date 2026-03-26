@@ -38,7 +38,7 @@ static void next_event(u32 next)
 {
 	unsigned long ctrl;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
 #else
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
@@ -47,7 +47,7 @@ static void next_event(u32 next)
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_TVAL, next);
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
 #else
@@ -65,7 +65,7 @@ static irq_return_t timer_isr(int irq, void *dev)
 
 	/* Clear the interrupt */
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
 #else
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
@@ -74,7 +74,7 @@ static irq_return_t timer_isr(int irq, void *dev)
 	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
 		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 		arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
 #else
 		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
@@ -116,13 +116,13 @@ void secondary_timer_init(void)
 {
 	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
 
-#ifndef CONFIG_ARM64VT
+#ifndef CONFIG_AVZ
 	unsigned long ctrl;
 #endif
 
 	/* Shutdown the timer */
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
 
@@ -140,7 +140,7 @@ void secondary_timer_init(void)
  */
 static int periodic_timer_init(dev_t *dev, int fdt_offset)
 {
-#ifndef CONFIG_ARM64VT
+#ifndef CONFIG_AVZ
 	unsigned long ctrl;
 #endif
 	arm_timer_t *arm_timer;
@@ -167,7 +167,7 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset)
 
 	/* Shutdown the timer */
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
 

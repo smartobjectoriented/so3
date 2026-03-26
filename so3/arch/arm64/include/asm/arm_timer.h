@@ -24,7 +24,7 @@
 #include <asm/processor.h>
 
 /**
- * In AVZ and ARM64VT we are using the ARM physical timer. The guest domains will
+ * In AVZ we are using the ARM physical timer. The guest domains will
  * rely on virtual timer where an offset can be added.
  */
 
@@ -53,7 +53,7 @@
  * nicely work out which register we want, and chuck away the rest of
  * the code. At least it does so with a recent GCC (4.6.3).
  */
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 static inline void arch_timer_reg_write_el2(enum arch_timer_reg reg, u32 val)
 {
@@ -161,7 +161,7 @@ static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 	return 0;
 }
 
-#endif /* CONFIG_ARM64VT */
+#endif /* CONFIG_AVZ */
 
 /**
  * Get the timer frequency
@@ -183,7 +183,7 @@ static inline u64 arch_counter_get_cntvct(void)
 	u64 cnt;
 
 	isb();
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 	cnt = read_sysreg(cntpct_el0);
 #else
 	cnt = read_sysreg(cntvct_el0);

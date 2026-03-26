@@ -78,10 +78,19 @@ void trap_handle_error(addr_t lr)
 {
 #ifdef CONFIG_AVZ
 	unsigned long esr = read_sysreg(esr_el2);
+	unsigned long far = read_sysreg(far_el2);
+	unsigned long elr = read_sysreg(elr_el2);
+	unsigned long hpfar = read_sysreg(hpfar_el2);
 #else
 	unsigned long esr = read_sysreg(esr_el1);
+	unsigned long far = read_sysreg(far_el1);
+	unsigned long elr = 0;
+	unsigned long hpfar = 0;
 #endif
 
+	printk("  FAR:   %lx\n", far);
+	printk("  ELR:   %lx\n", elr);
+	printk("  HPFAR: %lx (IPA: %lx)\n", hpfar, (hpfar >> 4) << 12);
 	show_invalid_entry_message(ESR_ELx_EC(esr), esr, lr);
 }
 
@@ -123,7 +132,7 @@ void trap_handle(cpu_regs_t *regs)
 	syscall_args_t sys_args;
 #endif
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 	unsigned long esr = read_sysreg(esr_el2);
 	unsigned long hvc_code;
@@ -137,7 +146,7 @@ void trap_handle(cpu_regs_t *regs)
 
 #else
 	unsigned long esr = read_sysreg(esr_el1);
-#endif /* CONFIG_ARM64VT */
+#endif /* CONFIG_AVZ */
 
 	switch (ESR_ELx_EC(esr)) {
 	case ESR_ELx_EC_DABT_LOW:

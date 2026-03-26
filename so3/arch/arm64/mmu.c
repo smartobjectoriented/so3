@@ -88,7 +88,7 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			/* Attach the L2 PTE to this L3 page table */
 			*l2pte = __pa((addr_t) l3pgtable) & TTB_L2_TABLE_ADDR_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 			if (stage == S1)
 				set_pte_table(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			else
@@ -105,7 +105,7 @@ static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 		*l3pte = phys & TTB_L3_PAGE_ADDR_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 		if (stage == S1)
 			set_pte_page(l3pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 		else
@@ -161,7 +161,7 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 			/* Attach the L1 PTE to this L2 page table */
 			*l1pte = __pa((addr_t) l2pgtable) & TTB_L1_TABLE_ADDR_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 			if (stage == S1)
 				set_pte_table(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			else
@@ -183,7 +183,7 @@ static void alloc_init_l2(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 		if (((addr | next | phys) & ~BLOCK_2M_MASK) == 0) {
 			*l2pte = phys & TTB_L2_BLOCK_ADDR_MASK;
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 			if (stage == S1)
 				set_pte_block(l2pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			else
@@ -239,7 +239,7 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 			/* Attach the L0 PTE to this L1 page table */
 			*l0pte = __pa((addr_t) l1pgtable) & TTB_L0_TABLE_ADDR_MASK;
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 			if (stage == S1)
 				set_pte_table(l0pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			else
@@ -260,7 +260,7 @@ static void alloc_init_l1(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, 
 
 		if (((addr | next | phys) & ~BLOCK_1G_MASK) == 0) {
 			*l1pte = phys & TTB_L1_BLOCK_ADDR_MASK;
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 			if (stage == S1)
 				set_pte_block(l1pte, (nocache ? DCACHE_OFF : DCACHE_WRITEALLOC));
 			else
@@ -712,9 +712,6 @@ void __mmu_switch_kernel(void *pgtable_paddr, bool vttbr)
 	if (vttbr)
 		__mmu_switch_vttbr(pgtable_paddr);
 	else
-#endif
-
-#ifdef CONFIG_ARM64VT
 		__mmu_switch_ttbr0(pgtable_paddr);
 #else
 	__mmu_switch_ttbr1(pgtable_paddr);
@@ -968,6 +965,7 @@ addr_t virt_to_phys_pt(addr_t vaddr)
 
 	l1pte = l1pte_offset(l0pte, vaddr);
 	BUG_ON(!*l1pte);
+
 #elif CONFIG_VA_BITS_39
 	if (user_space_vaddr(vaddr))
 		l1pte = l1pte_offset((u64 *) current_pgtable(), vaddr);
@@ -1000,7 +998,6 @@ addr_t virt_to_phys_pt(addr_t vaddr)
 
 #ifdef CONFIG_AVZ
 
-#ifdef CONFIG_ARM64VT
 /**
  * Perform a mapping of IPA regions to physical regions
  *
@@ -1016,5 +1013,3 @@ void do_ipamap(void *pgtable, ipamap_t ipamap[], int nbelement)
 }
 
 #endif /* CONFIG_AVZ */
-
-#endif

@@ -71,7 +71,7 @@ gic_t *gic;
 
 DEFINE_PER_CPU(spinlock_t, intc_lock);
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 #define MAX_PENDING_IRQS 256
 
@@ -112,7 +112,7 @@ void display_lr(unsigned int n)
 	printk("  - hw: %x\n", lr & GICH_LR_HW_BIT);
 }
 
-#endif /* CONFIG_ARM64VT */
+#endif /* CONFIG_AVZ */
 
 /**
  * Retrieve the information related to an interrupt entry from the DT.
@@ -218,7 +218,7 @@ int irq_set_affinity(unsigned int irq, int cpu)
 	return 0;
 }
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 
 static void gic_enable_maint_irq(bool enable)
 {
@@ -298,7 +298,7 @@ void gic_inject_pending(void)
                  */
 		dmb(ish);
 
-		pending_irqs.head = (pending_irqs.head + -1) % MAX_PENDING_IRQS;
+		pending_irqs.head = (pending_irqs.head + 1) % MAX_PENDING_IRQS;
 	}
 
 	/*
@@ -359,9 +359,6 @@ void gic_clear_pending_irqs(void)
 	iowrite32(&gic->gich->apr, 0);
 }
 
-#endif /* CONFIG_ARM64VT */
-
-#ifdef CONFIG_AVZ
 void gich_init(void)
 {
 	u32 gicc_ctlr, gicc_pmr;

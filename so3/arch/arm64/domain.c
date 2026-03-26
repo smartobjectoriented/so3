@@ -26,7 +26,7 @@
 #include <asm/mmu.h>
 #include <asm/processor.h>
 
-#ifdef CONFIG_ARM64VT
+#ifdef CONFIG_AVZ
 #include <mach/ipamap.h>
 #endif
 
@@ -123,7 +123,7 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	/* Map the shared page in the IPA space; the shared page is located right after the domain area
 	 * in the IPA space, and if any, the RT shared page follows the shared page (in IPA space).
 	 */
-	__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size, __pa(d->avz_shared), PAGE_SIZE, true, S2);
+	__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size, __pa(d->avz_shared), PAGE_SIZE, false, S2);
 
 #ifdef CONFIG_SOO
 	/* Initialize the grant pfn (ipa address) area */

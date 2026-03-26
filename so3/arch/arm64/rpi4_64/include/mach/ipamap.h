@@ -25,9 +25,9 @@ ipamap_t agency_ipamap[] = {
 
 	/* I/O Memory space*/
 	{
-		.ipa_addr = 0xf0000000,
-		.phys_addr = 0xf0000000,
-		.size = 0x10000000,
+		.ipa_addr = 0xfc000000,
+		.phys_addr = 0xfc000000,
+		.size = 0x04000000,
 	},
 
 	/* Null pointer exception */
@@ -46,12 +46,14 @@ ipamap_t agency_ipamap[] = {
 ipamap_t capsule_ipamap[] = {
 
 	{
-		/* Only mapping the CPU interface to the vGIC CPU interface.
-	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
-	 */
-		.ipa_addr = 0x08010000,
-		.phys_addr = 0x08040000,
-		.size = 0x10000,
+		/* Only mapping the CPU interface to the vGIC CPU interface (GICV).
+	 	* Access to the distributor must lead to a trap and be handled by the hypervisor.
+	 	* BCM2711 GIC-400: GICV (virtual CPU interface) at 0xFF846000.
+	 	*/
+
+		.ipa_addr = 0xff842000,
+		.phys_addr = 0xff846000,
+		.size = 0x2000,
 	},
 };
 
