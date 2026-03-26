@@ -8,8 +8,7 @@ ifeq ($(CONFIG_SOO),y)
 
 ifeq ($(CONFIG_AVZ),)
 
-dtb-$(CONFIG_VIRT64) += virt64_capsule.dtb
-dtb-$(CONFIG_RPI4_64) += rpi4_64_capsule.dtb
+dtb-$(CONFIG_VIRT64) += virt64_capsule.dtb rpi4_64_capsule.dtb
 
 ifeq ($(CONFIG_SOO_REFSO3),y)
 ifeq ($(CONFIG_RAMDEV),y)
