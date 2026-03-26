@@ -46,10 +46,11 @@ ipamap_t agency_ipamap[] = {
 ipamap_t capsule_ipamap[] = {
 
 	{
-	/* Only mapping the CPU interface to the vGIC CPU interface (GICV).
-	 * Access to the distributor must lead to a trap and be handled by the hypervisor.
-	 * BCM2711 GIC-400: GICV (virtual CPU interface) at 0xFF846000.
-	 */
+		/* Only mapping the CPU interface to the vGIC CPU interface (GICV).
+	 	* Access to the distributor must lead to a trap and be handled by the hypervisor.
+	 	* BCM2711 GIC-400: GICV (virtual CPU interface) at 0xFF846000.
+	 	*/
+		
 		.ipa_addr = 0xff842000,
 		.phys_addr = 0xff846000,
 		.size = 0x2000,

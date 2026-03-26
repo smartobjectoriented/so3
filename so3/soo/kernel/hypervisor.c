@@ -55,8 +55,7 @@ void avz_get_shared(void)
 	 * generate a deferred SError (ESR: bf000002).
 	 * Override the PTE with Normal cacheable attributes.
 	 */
-	create_mapping(NULL, (addr_t) avz_shared,
-		       args.u.avz_domctl_args.domctl.avz_shared_paddr, PAGE_SIZE, false);
+	create_mapping(NULL, (addr_t) avz_shared, args.u.avz_domctl_args.domctl.avz_shared_paddr, PAGE_SIZE, false);
 }
 
 void avz_printch(char c)

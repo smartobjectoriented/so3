@@ -105,8 +105,7 @@ void post_init_setup(void)
 	 * (inner-shareable) for the ring buffer protocol.
 	 * Override the Stage-1 PTE with Normal cacheable attributes.
 	 */
-	create_mapping(NULL, (addr_t) __intf,
-		       pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE, false);
+	create_mapping(NULL, (addr_t) __intf, pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE, false);
 
 	LOG_INFO("SOO Mobile Entity booting ...\n");
 

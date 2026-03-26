@@ -209,6 +209,6 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
-	dsb(ish);   /* inner shareable */
+	dsb(ish);  /* inner shareable */
     	isb();
 }

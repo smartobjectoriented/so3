@@ -108,8 +108,8 @@ void secondary_start_kernel(void)
 #ifdef CONFIG_SOO
 	if (cpu != ME_CPU)
 #endif /* CONFIG_SOO */
-	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
- 
+		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+
 	booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
