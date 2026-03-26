@@ -127,7 +127,7 @@ void secondary_start_kernel(void)
 	case 2:
 		pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
 		break;
-	/* CPU #3 is dedicated to capsules in case of CONFIG_SOO */
+		/* CPU #3 is dedicated to capsules in case of CONFIG_SOO */
 #ifndef CONFIG_SOO
 	case 3:
 		pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);

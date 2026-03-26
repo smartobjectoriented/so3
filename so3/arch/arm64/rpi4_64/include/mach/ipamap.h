@@ -50,7 +50,7 @@ ipamap_t capsule_ipamap[] = {
 	 	* Access to the distributor must lead to a trap and be handled by the hypervisor.
 	 	* BCM2711 GIC-400: GICV (virtual CPU interface) at 0xFF846000.
 	 	*/
-		
+
 		.ipa_addr = 0xff842000,
 		.phys_addr = 0xff846000,
 		.size = 0x2000,

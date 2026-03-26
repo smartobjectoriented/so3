@@ -965,7 +965,7 @@ addr_t virt_to_phys_pt(addr_t vaddr)
 
 	l1pte = l1pte_offset(l0pte, vaddr);
 	BUG_ON(!*l1pte);
-	
+
 #elif CONFIG_VA_BITS_39
 	if (user_space_vaddr(vaddr))
 		l1pte = l1pte_offset((u64 *) current_pgtable(), vaddr);
@@ -1013,4 +1013,3 @@ void do_ipamap(void *pgtable, ipamap_t ipamap[], int nbelement)
 }
 
 #endif /* CONFIG_AVZ */
-
