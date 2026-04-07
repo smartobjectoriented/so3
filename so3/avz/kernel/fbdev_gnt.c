@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2026 Clément Dieperink <clement.dieperink@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
 #include <heap.h>
 #include <avz/fbdev_gnt.h>
 #include <avz/domain.h>
@@ -5,7 +22,7 @@
 #include <avz/sched.h>
 
 typedef struct {
-	fbdev_pfns_t fbdev;
+	fbdev_pfns_t fbdev_pfns;
 	void *fake_fbdev;
 	int current_slotID;
 } fbdev_priv_t;
@@ -69,16 +86,16 @@ void fbdev_ipamap_domain(struct domain *d, int slotID)
 		return;
 
 	if (slotID == priv.current_slotID)
-		__map_fbdev(d, &priv.fbdev);
+		__map_fbdev(d, &priv.fbdev_pfns);
 	else
-		__map_fake_fbdev(d, &priv.fbdev);
+		__map_fake_fbdev(d, &priv.fbdev_pfns);
 }
 
 void fbdev_set_pfns(fbdev_pfns_t *fbdev)
 {
 	int slotID;
 
-	memcpy(&priv.fbdev, fbdev, sizeof(*fbdev));
+	memcpy(&priv.fbdev_pfns, fbdev, sizeof(*fbdev));
 
 	/* Map framebuffer to all capsules. */
 	for (slotID = MEMSLOT_BASE; slotID < MEMSLOT_NR; slotID++)
@@ -90,11 +107,11 @@ void fbdev_change_focus(int new_slotID)
 {
 	/* Remap old capsule to fake framebuffer */
 	if ((priv.current_slotID >= MEMSLOT_BASE) && memslot[priv.current_slotID].busy)
-		__map_fake_fbdev(domains[priv.current_slotID], &priv.fbdev);
+		__map_fake_fbdev(domains[priv.current_slotID], &priv.fbdev_pfns);
 
 	/* Map the new capsule to the framebuffer */
 	if ((new_slotID >= MEMSLOT_BASE) && memslot[new_slotID].busy)
-		__map_fbdev(domains[new_slotID], &priv.fbdev);
+		__map_fbdev(domains[new_slotID], &priv.fbdev_pfns);
 
 	priv.current_slotID = new_slotID;
 }

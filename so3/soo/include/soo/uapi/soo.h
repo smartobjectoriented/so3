@@ -73,7 +73,7 @@ typedef struct gnttab_op gnttab_op_t;
 void do_gnttab(gnttab_op_t *args);
 
 /*
- * Framebuffer to set the framebuffer addresses.
+ * Page frame number to set the framebuffer addresses.
  * The physical addresses may be splitted in multiple parts, which requires to have
  * multiple set of strating page frame and page count
  */

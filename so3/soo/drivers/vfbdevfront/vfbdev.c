@@ -50,7 +50,6 @@ typedef struct {
 	uint32_t vres;
 	size_t memory_size;
 	addr_t fb_paddr;
-
 } vfbdev_priv_t;
 
 /* Our unique vfbdev instance. */
@@ -210,16 +209,22 @@ vdrvfront_t vfbdevdrv = { .probe = vfbdev_probe,
 			 .resume = vfbdev_resume,
 			 .connected = vfbdev_connected };
 
+/* Char device associated to the framebuffer */
+
+/**
+ * Retrieve data (resolution, size, fb address) from peer and AVZ.
+ */
 static void retrieve_data(vfbdev_priv_t *priv)
 {
 	vfbdev_request_t *ring_req;
 	vfbdev_response_t *ring_rsp;
 	avz_hyp_t hyp_args;
 
-	if ((priv->memory_size != 0) && (priv->fb_paddr != 0)) {
+	/* Data have already been retrieved */
+	if ((priv->memory_size != 0) && (priv->fb_paddr != 0))
 		return;
-	}
 
+	/* Retrieve resolution and size from peer */
 	vdevfront_processing_begin(vfbdev_dev);
 
 	ring_req = vfbdev_new_ring_request(&priv->vfbdev.ring);
@@ -243,6 +248,7 @@ static void retrieve_data(vfbdev_priv_t *priv)
 
 	vdevfront_processing_end(vfbdev_dev);
 
+	/* Retrieve fb address from AVZ */
 	hyp_args.cmd = AVZ_FBDEV_GET_ME_ADDR;
 	avz_hypercall(&hyp_args);
 	priv->fb_paddr = hyp_args.u.avz_fbdev_addr_args.paddr;
@@ -288,6 +294,7 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 
 	retrieve_data(priv);
 
+	/* Set returned value accordingly to the command */
 	switch (cmd) {
 	case IOCTL_FB_HRES:
 		*((uint32_t *) args) = priv->hres;
@@ -303,7 +310,7 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 
 	default:
 		/* Unknown command. */
-		return -1;
+		return -EINVAL;
 	}
 }
 
