@@ -27,7 +27,6 @@ int gnttab_suspend(void);
 int gnttab_resume(void);
 
 int gnttab_grant_foreign_access(domid_t domid, unsigned long frame);
-int gnttab_long_grant_foreign_access(domid_t domid, unsigned long frame, size_t page_count);
 
 /*
  * Eventually end access through the given grant reference, and once that
@@ -38,7 +37,6 @@ int gnttab_long_grant_foreign_access(domid_t domid, unsigned long frame, size_t 
 void gnttab_end_foreign_access(grant_ref_t ref);
 
 void gnttab_map(domid_t domid, grant_ref_t grant_ref, void **vaddr);
-void gnttab_long_get(domid_t domid, grant_ref_t grant_ref, void **paddr, size_t *page_count);
 
 void postmig_gnttab_update(void);
 

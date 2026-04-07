@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2026 Clément Dieperink <clement.dieperink@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
 #if 0
 #define DEBUG
 #endif
@@ -30,12 +48,12 @@ typedef struct {
 
 	uint32_t hres;
 	uint32_t vres;
-	size_t size;
+	size_t memory_size;
 	addr_t fb_paddr;
 
 } vfbdev_priv_t;
 
-/* Our unique uart instance. */
+/* Our unique vfbdev instance. */
 static struct vbus_device *vfbdev_dev = NULL;
 
 irq_return_t vfbdev_interrupt(int irq, void *dev_id)
@@ -192,14 +210,14 @@ vdrvfront_t vfbdevdrv = { .probe = vfbdev_probe,
 			 .resume = vfbdev_resume,
 			 .connected = vfbdev_connected };
 
-static int retrieve_data(vfbdev_priv_t *priv)
+static void retrieve_data(vfbdev_priv_t *priv)
 {
 	vfbdev_request_t *ring_req;
 	vfbdev_response_t *ring_rsp;
 	avz_hyp_t hyp_args;
 
-	if (priv->size != 0) {
-		return 1;
+	if ((priv->memory_size != 0) && (priv->fb_paddr != 0)) {
+		return;
 	}
 
 	vdevfront_processing_begin(vfbdev_dev);
@@ -221,15 +239,13 @@ static int retrieve_data(vfbdev_priv_t *priv)
 
 	priv->hres = ring_rsp->hres;
 	priv->vres = ring_rsp->vres;
-	priv->size = ring_rsp->size;
+	priv->memory_size = ring_rsp->memory_size;
 
 	vdevfront_processing_end(vfbdev_dev);
 
 	hyp_args.cmd = AVZ_FBDEV_GET_ADDR;
 	avz_hypercall(&hyp_args);
 	priv->fb_paddr = hyp_args.u.avz_fbdev_addr_args.paddr;
-
-	return 1;
 }
 
 static int vfbdev_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
@@ -239,17 +255,23 @@ static int vfbdev_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offs
 	vfbdev_priv_t *priv;
 
 	dev = devclass_by_fd(fd);
+	BUG_ON(!dev);
 	priv = devclass_get_priv(dev);
+	BUG_ON(!priv);
 
-	if (!retrieve_data(priv)) {
-		return -1;
+	retrieve_data(priv);
+
+	/* Ensure that we got a framebuffer */
+	if ((priv->memory_size == 0) || (priv->fb_paddr == 0)) {
+		return -ENODEV;
 	}
 
-	if (page_count > (priv->size / PAGE_SIZE)) {
-		return -1;
+	/* Ensure requested mapping size doesn't overflow actual framebuffer size */
+	if (page_count > (priv->memory_size / PAGE_SIZE)) {
+		return -EINVAL;
 	}
 
-	create_mapping(pcb->pgtable, virt_addr, priv->fb_paddr, priv->size, true);
+	create_mapping(pcb->pgtable, virt_addr, priv->fb_paddr, page_count * PAGE_SIZE, true);
 
 	return 0;
 }
@@ -260,11 +282,11 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 	vfbdev_priv_t *priv;
 
 	dev = devclass_by_fd(fd);
+	BUG_ON(!dev);
 	priv = devclass_get_priv(dev);
+	BUG_ON(!priv);
 
-	if (!retrieve_data(priv)) {
-		return -EINVAL;
-	}
+	retrieve_data(priv);
 
 	switch (cmd) {
 	case IOCTL_FB_HRES:
@@ -276,7 +298,7 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return 0;
 
 	case IOCTL_FB_SIZE:
-		*((uint32_t *) args) = priv->size;
+		*((uint32_t *) args) = priv->memory_size;
 		return 0;
 
 	default:
@@ -300,7 +322,6 @@ static struct devclass vfbdev_cdev = {
 static int vfbdev_init(dev_t *dev, int fdt_offset)
 {
 	vfbdev_priv_t *vfbdev_priv;
-
 
 	vfbdev_priv = malloc(sizeof(vfbdev_priv_t));
 	BUG_ON(!vfbdev_priv);

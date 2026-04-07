@@ -314,7 +314,7 @@ ENTRY(pre_ret_to_el1)
 	mrs	x0, spsr_el2
 	str	x0, [sp, #OFFSET_PSTATE]
 
-	// Save userspace register. Use OFFSET_SP as it is not used on the stack frame.
+	// Save EL0 register. Use OFFSET_SP as it is not used on the stack frame.
 	mrs	x0, sp_el0
 	str	x0, [sp, #OFFSET_SP]
 	mrs	x0, tpidr_el0
@@ -340,7 +340,7 @@ ENTRY(pre_ret_to_el1)
 	ldr	x0, [sp, #OFFSET_PSTATE]
 	msr	spsr_el2, x0
 
-	// Restore userspace register
+	// Restore EL0 register
 	ldr	x0, [sp, #OFFSET_SP]
 	msr	sp_el0, x0
 	ldr	x0, [sp, #OFFSET_TLS_USR]

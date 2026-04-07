@@ -203,7 +203,7 @@ void do_avz_hypercall(void *__args)
 	}
 
 	case AVZ_FBDEV_SET_INFO:
-		fbdev_set_info(&args->u.avz_fbdev_info_args.fbdev, args->u.avz_fbdev_info_args.fake_pfn);
+		fbdev_set_info(&args->u.avz_fbdev_info_args.fbdev);
 		break;
 
 	case AVZ_FBDEV_CHANGE_FOCUS:

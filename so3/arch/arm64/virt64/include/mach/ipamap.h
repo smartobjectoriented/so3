@@ -28,19 +28,19 @@ ipamap_t agency_ipamap[] = {
 		.size = 0x3000000,
 	},
 	{
-		/* PCIe mapping */
+		/* PCIe configuration ranges */
 		.ipa_addr = 0x4010000000,
 		.phys_addr = 0x4010000000,
 		.size = 0x10000000
 	},
 	{
-		/* PCIe mapping */
+		/* PCIe devices IO and 32 bits memory ranges */
 		.ipa_addr = 0x10000000,
 		.phys_addr = 0x10000000,
-		.size = 0x40000000
+		.size = 0x2f000000
 	},
 	{
-		/* PCIe mapping */
+		/* PCIe devices 64 bits memory ranges */
 		.ipa_addr = 0x8000000000,
 		.phys_addr = 0x8000000000,
 		.size = 0x8000000000

@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2026 Clément Dieperink <clement.dieperink@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
 #ifndef VFBDEV_H
 #define VFBDEV_H
 
@@ -15,7 +33,7 @@ typedef struct {
 typedef struct {
 	uint32_t hres;
 	uint32_t vres;
-	uint64_t size;
+	uint64_t memory_size;
 } vfbdev_response_t;
 
 DEFINE_RING_TYPES(vfbdev, vfbdev_request_t, vfbdev_response_t);

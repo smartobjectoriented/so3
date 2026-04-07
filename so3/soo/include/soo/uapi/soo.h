@@ -64,7 +64,6 @@ struct gnttab_op {
 
 	/* pfn to be granted or pfn associated to an existing ref */
 	addr_t pfn;
-	size_t page_count;
 
 	/* Grant reference */
 	grant_ref_t ref;
@@ -73,10 +72,15 @@ typedef struct gnttab_op gnttab_op_t;
 
 void do_gnttab(gnttab_op_t *args);
 
-#define MAX_FBDEV_PFN 8
+/*
+ * Framebuffer to set the framebuffer addresses.
+ * The physical addresses may be splitted in multiple parts, which requires to have
+ * multiple set of strating page frame and page count
+ */
 
+#define MAX_FBDEV_PFN 8
 typedef struct fbdev_info {
-	size_t count;
+	size_t pfn_count;
 	addr_t pfn[MAX_FBDEV_PFN];
 	size_t page_count[MAX_FBDEV_PFN];
 } fbdev_info_t;
@@ -378,7 +382,6 @@ typedef struct {
 /* AVZ_FBDEV_SET_INFO */
 typedef struct {
 	fbdev_info_t fbdev;
-	addr_t fake_pfn;
 } avz_fbdev_info_t;
 
 /* AVZ_FBDEV_CHANGE_FOCUS */

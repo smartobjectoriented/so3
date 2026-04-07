@@ -115,6 +115,7 @@
 				status = "ok";
 			};
 
+			/* Enabling framebuffer support */
 			vfbdev {
 				compatible = "vfbdev,frontend";
 				status = "ok";
