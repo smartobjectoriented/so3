@@ -108,7 +108,8 @@ void vfbdev_probe(struct vbus_device *vdev)
 
 	/* Prepare the shared to page to be visible on the other end */
 
-	vfbdev_priv->vfbdev.ring_ref = vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vfbdev_priv->vfbdev.ring.sring)));
+	vfbdev_priv->vfbdev.ring_ref =
+		vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vfbdev_priv->vfbdev.ring.sring)));
 
 	vbus_transaction_start(&vbt);
 
@@ -201,13 +202,15 @@ void vfbdev_connected(struct vbus_device *vdev)
 	DBG0("[vfbdev] Frontend connected\n");
 }
 
-vdrvfront_t vfbdevdrv = { .probe = vfbdev_probe,
-			 .reconfiguring = vfbdev_reconfiguring,
-			 .shutdown = vfbdev_shutdown,
-			 .closed = vfbdev_closed,
-			 .suspend = vfbdev_suspend,
-			 .resume = vfbdev_resume,
-			 .connected = vfbdev_connected };
+vdrvfront_t vfbdevdrv = {
+	.probe = vfbdev_probe,
+	.reconfiguring = vfbdev_reconfiguring,
+	.shutdown = vfbdev_shutdown,
+	.closed = vfbdev_closed,
+	.suspend = vfbdev_suspend,
+	.resume = vfbdev_resume,
+	.connected = vfbdev_connected,
+};
 
 /* Char device associated to the framebuffer */
 
@@ -313,7 +316,6 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return -EINVAL;
 	}
 }
-
 
 static struct file_operations vfbdev_fops = {
 	.mmap = vfbdev_mmap,
