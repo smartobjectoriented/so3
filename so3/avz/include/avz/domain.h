@@ -19,8 +19,6 @@
 #ifndef DOMAIN_H
 #define DOMAIN_H
 
-#include <generated/autoconf.h>
-
 #ifndef __ASSEMBLY__
 #ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
@@ -120,7 +118,7 @@ struct domain {
 	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
 
-	/* IPA reserved information for long mapping granted pages belonging to other domains */
+	/* IPA reserved starting address for framebuffer mapping */
 	addr_t fbdev_start_pfn;
 #endif /* CONFIG_SOO */
 

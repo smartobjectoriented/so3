@@ -202,16 +202,16 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
-	case AVZ_FBDEV_SET_INFO:
-		fbdev_set_info(&args->u.avz_fbdev_info_args.fbdev);
+	case AVZ_FBDEV_SET_PFNS:
+		fbdev_set_pfns(&args->u.avz_fbdev_pfns_args.fbdev);
 		break;
 
 	case AVZ_FBDEV_CHANGE_FOCUS:
 		fbdev_change_focus(args->u.avz_fbdev_focus_args.new_slotID);
 		break;
 
-	case AVZ_FBDEV_GET_ADDR:
-		args->u.avz_fbdev_addr_args.paddr = fbdev_get_addr();
+	case AVZ_FBDEV_GET_ME_ADDR:
+		args->u.avz_fbdev_addr_args.paddr = fbdev_get_domain_ipa();
 		break;
 
 #endif /* CONFIG_SOO */

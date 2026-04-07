@@ -5,14 +5,14 @@
 #include <avz/sched.h>
 
 typedef struct {
-	fbdev_info_t fbdev;
+	fbdev_pfns_t fbdev;
 	void *fake_fbdev;
 	int current_slotID;
 } fbdev_priv_t;
 
 static fbdev_priv_t priv = {};
 
-static void __map_fbdev(struct domain *d, const fbdev_info_t *pfn_info)
+static void __map_fbdev(struct domain *d, const fbdev_pfns_t *pfn_info)
 {
 	size_t i;
 	addr_t phys_addr;
@@ -21,7 +21,7 @@ static void __map_fbdev(struct domain *d, const fbdev_info_t *pfn_info)
 	void *pgtable;
 
 	pgtable = (void *)d->pagetable_vaddr;
-	ipa_addr = d->fbdev_start_pfn << PAGE_SHIFT;
+	ipa_addr = pfn_to_phys(d->fbdev_start_pfn);
 
 	/* Map all distincts ranges of the framebuffer to the capsule */
 	for (i = 0; i < pfn_info->pfn_count; i++) {
@@ -34,7 +34,7 @@ static void __map_fbdev(struct domain *d, const fbdev_info_t *pfn_info)
 	}
 }
 
-static void __map_fake_fbdev(struct domain *d, const fbdev_info_t *real_fb)
+static void __map_fake_fbdev(struct domain *d, const fbdev_pfns_t *real_fb)
 {
 	size_t i, j;
 	addr_t phys_addr;
@@ -62,7 +62,7 @@ static void __map_fake_fbdev(struct domain *d, const fbdev_info_t *real_fb)
 	}
 }
 
-void fbdev_set_pgtable(struct domain *d, int slotID)
+void fbdev_ipamap_domain(struct domain *d, int slotID)
 {
 	/* Only capsules have virtual framebuffer */
 	if ((slotID < MEMSLOT_BASE) && !memslot[slotID].busy)
@@ -74,7 +74,7 @@ void fbdev_set_pgtable(struct domain *d, int slotID)
 		__map_fake_fbdev(d, &priv.fbdev);
 }
 
-void fbdev_set_info(fbdev_info_t *fbdev)
+void fbdev_set_pfns(fbdev_pfns_t *fbdev)
 {
 	int slotID;
 
@@ -83,7 +83,7 @@ void fbdev_set_info(fbdev_info_t *fbdev)
 	/* Map framebuffer to all capsules. */
 	for (slotID = MEMSLOT_BASE; slotID < MEMSLOT_NR; slotID++)
 		if (memslot[slotID].busy)
-			fbdev_set_pgtable(domains[slotID], slotID);
+			fbdev_ipamap_domain(domains[slotID], slotID);
 }
 
 void fbdev_change_focus(int new_slotID)
@@ -99,7 +99,7 @@ void fbdev_change_focus(int new_slotID)
 	priv.current_slotID = new_slotID;
 }
 
-addr_t fbdev_get_addr(void)
+addr_t fbdev_get_domain_ipa(void)
 {
 	return pfn_to_phys(current_domain->fbdev_start_pfn);
 }

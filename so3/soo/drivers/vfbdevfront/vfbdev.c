@@ -243,7 +243,7 @@ static void retrieve_data(vfbdev_priv_t *priv)
 
 	vdevfront_processing_end(vfbdev_dev);
 
-	hyp_args.cmd = AVZ_FBDEV_GET_ADDR;
+	hyp_args.cmd = AVZ_FBDEV_GET_ME_ADDR;
 	avz_hypercall(&hyp_args);
 	priv->fb_paddr = hyp_args.u.avz_fbdev_addr_args.paddr;
 }

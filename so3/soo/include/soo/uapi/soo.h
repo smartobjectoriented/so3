@@ -79,11 +79,11 @@ void do_gnttab(gnttab_op_t *args);
  */
 
 #define MAX_FBDEV_PFN 8
-typedef struct fbdev_info {
+typedef struct fbdev_pfns {
 	size_t pfn_count;
 	addr_t pfn[MAX_FBDEV_PFN];
 	size_t page_count[MAX_FBDEV_PFN];
-} fbdev_info_t;
+} fbdev_pfns_t;
 
 #define AVZ_SCHEDULER_FLIP 0
 
@@ -314,9 +314,9 @@ typedef struct agency_ioctl_args {
 #define AVZ_SET_ME_STATE 11
 #define AVZ_GET_DOM_DESC 12
 #define AVZ_GRANT_TABLE_OP 13
-#define AVZ_FBDEV_SET_INFO 14
+#define AVZ_FBDEV_SET_PFNS 14
 #define AVZ_FBDEV_CHANGE_FOCUS 15
-#define AVZ_FBDEV_GET_ADDR 16
+#define AVZ_FBDEV_GET_ME_ADDR 16
 
 /* AVZ_INJECT_CAPSULE */
 typedef struct {
@@ -379,17 +379,17 @@ typedef struct {
 	gnttab_op_t gnttab_op;
 } avz_gnttab_t;
 
-/* AVZ_FBDEV_SET_INFO */
+/* AVZ_FBDEV_SET_PFNS */
 typedef struct {
-	fbdev_info_t fbdev;
-} avz_fbdev_info_t;
+	fbdev_pfns_t fbdev;
+} avz_fbdev_pfns_t;
 
 /* AVZ_FBDEV_CHANGE_FOCUS */
 typedef struct {
 	int new_slotID;
 } avz_fbdev_focus_t;
 
-/* AVZ_FBDEV_GET_ADDR */
+/* AVZ_FBDEV_GET_ME_ADDR */
 typedef struct {
 	addr_t paddr;
 } avz_fbdev_addr_t;
@@ -413,7 +413,7 @@ typedef struct {
 		avz_console_io_t avz_console_io_args;
 		avz_domctl_t avz_domctl_args;
 		avz_gnttab_t avz_gnttab_args;
-		avz_fbdev_info_t avz_fbdev_info_args;
+		avz_fbdev_pfns_t avz_fbdev_pfns_args;
 		avz_fbdev_focus_t avz_fbdev_focus_args;
 		avz_fbdev_addr_t avz_fbdev_addr_args;
 	} u;

@@ -1129,6 +1129,7 @@ typedef struct __attribute__((packed, aligned(8))) cpu_regs {
 	u64 tls_usr;
 
 #ifdef CONFIG_AVZ
+	/* Used to keep track of EL1 exception registers in case they haven't been saved by the domain yet */
 	u64 elr_el1;
 	u64 spsr_el1;
 #endif

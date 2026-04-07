@@ -81,7 +81,7 @@ gnttab_t *pick_granted_entry(grant_ref_t ref, domid_t origin_domid)
 
 /**
  * @brief Create a new grant table entry in the gnttab of a domain
- *
+ * 
  * @param d The domain containing the grant table
  * @param target_domid The domain concerned by this grant
  * @param pfn The real frame number of the page to be granted
@@ -186,7 +186,7 @@ addr_t map_vbstore_pfn(int target_domid, int pfn)
 
 /**
  * @brief Hypercall entry for grant table related operations.
- *
+ * 
  * @param args gnttab detail structure
  */
 void do_gnttab(gnttab_op_t *args)
