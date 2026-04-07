@@ -37,7 +37,7 @@ static void __map_fbdev(struct domain *d, const fbdev_pfns_t *pfn_info)
 	size_t size;
 	void *pgtable;
 
-	pgtable = (void *)d->pagetable_vaddr;
+	pgtable = (void *) d->pagetable_vaddr;
 	ipa_addr = pfn_to_phys(d->fbdev_start_pfn);
 
 	/* Map all distincts ranges of the framebuffer to the capsule */
@@ -64,15 +64,14 @@ static void __map_fake_fbdev(struct domain *d, const fbdev_pfns_t *real_fb)
 		BUG_ON(!priv.fake_fbdev);
 	}
 
-	pgtable = (void *)d->pagetable_vaddr;
+	pgtable = (void *) d->pagetable_vaddr;
 	ipa_addr = pfn_to_phys(d->fbdev_start_pfn);
 	phys_addr = __pa(priv.fake_fbdev);
 
 	/* Map the capsule framebuffer to the fake one */
 	for (i = 0; i < real_fb->pfn_count; i++) {
 		for (j = 0; j < real_fb->page_count[i]; j++) {
-			__create_mapping(pgtable, ipa_addr, phys_addr, PAGE_SIZE,
-					 true, S2);
+			__create_mapping(pgtable, ipa_addr, phys_addr, PAGE_SIZE, true, S2);
 
 			ipa_addr += PAGE_SIZE;
 		}
