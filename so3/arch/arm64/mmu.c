@@ -46,12 +46,15 @@ void *current_pgtable(void)
  */
 void mmu_get_current_pgtable(addr_t *pgtable_paddr)
 {
-	int cpu;
-
-	cpu = smp_processor_id();
-
 	*pgtable_paddr = cpu_get_ttbr1();
 }
+
+#ifdef CONFIG_AVZ
+void mmu_get_current_domain_pgtable(addr_t *pgtable_paddr)
+{
+	*pgtable_paddr = cpu_get_vttbr();
+}
+#endif
 
 static void alloc_init_l3(u64 *l0pgtable, addr_t addr, addr_t end, addr_t phys, bool nocache, mmu_stage_t stage)
 {

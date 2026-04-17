@@ -281,7 +281,7 @@ int fb_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 	}
 #endif
 
-	return virt_addr;
+	return 0;
 }
 
 int fb_ioctl(int fd, unsigned long cmd, unsigned long args)

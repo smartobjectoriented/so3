@@ -30,6 +30,10 @@
 #include <mach/ipamap.h>
 #endif
 
+#ifdef CONFIG_SOO
+#include <avz/fbdev_gnt.h>
+#endif
+
 /**
  * @brief Initialize the content of the EL2 stack associated to this domain.
  *
@@ -131,6 +135,10 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		d->grant_pfn[i].pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + i;
 		d->grant_pfn[i].free = true;
 	}
+
+	/* Set staring framebuffer ipa address after the grant pfn area */
+	d->fbdev_start_pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + NR_GRANT_PFN;
+	fbdev_ipamap_domain(d, slotID);
 #endif /* CONFIG_SOO */
 }
 

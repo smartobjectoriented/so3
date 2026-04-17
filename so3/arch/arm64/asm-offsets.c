@@ -86,6 +86,11 @@ int main(void)
 	DEFINE(OFFSET_PC, offsetof(struct cpu_regs, pc));
 	DEFINE(OFFSET_PSTATE, offsetof(struct cpu_regs, pstate));
 	DEFINE(OFFSET_TLS_USR, offsetof(struct cpu_regs, tls_usr));
+#ifdef CONFIG_AVZ
+	DEFINE(OFFSET_ELR_EL1, offsetof(struct cpu_regs, elr_el1));
+	DEFINE(OFFSET_SPSR_EL1, offsetof(struct cpu_regs, spsr_el1));
+#endif
+	DEFINE(S_FRAME_SIZE, sizeof(struct cpu_regs));
 
 	BLANK();
 

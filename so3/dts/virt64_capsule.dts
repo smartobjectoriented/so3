@@ -114,6 +114,12 @@
 				compatible = "vlogs,frontend";
 				status = "ok";
 			};
+
+			/* Enabling framebuffer support */
+			vfbdev {
+				compatible = "vfbdev,frontend";
+				status = "ok";
+			};
 		};
 	};
 

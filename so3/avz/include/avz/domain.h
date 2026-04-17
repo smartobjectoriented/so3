@@ -117,6 +117,9 @@ struct domain {
 
 	/* IPA reserved page frame numbers for mapping granted pages belonging to other domains */
 	grant_pfn_t grant_pfn[NR_GRANT_PFN];
+
+	/* IPA reserved starting page frame number for framebuffer mapping */
+	addr_t fbdev_start_pfn;
 #endif /* CONFIG_SOO */
 
 	int processor;

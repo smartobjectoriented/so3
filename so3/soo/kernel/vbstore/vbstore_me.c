@@ -247,6 +247,12 @@ void remove_vbstore_entries(void)
 		DBG("%s: removing vsensej from vbstore...\n", __func__);
 		vbstore_dev_remove(ME_domID(), "vsensej");
 	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: removing vfbdev from vbstore...\n", __func__);
+		vbstore_dev_remove(ME_domID(), "vfbdev");
+	}
 }
 
 /*
@@ -292,6 +298,12 @@ void vbstore_devices_populate(void)
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vlogs...\n", __func__);
 		vbstore_dev_init(ME_domID(), "vlogs", false, "vlogs,frontend");
+	}
+
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vfbdev...\n", __func__);
+		vbstore_dev_init(ME_domID(), "vfbdev", false, "vfbdev,frontend");
 	}
 }
 
