@@ -52,6 +52,10 @@
 #define O_TMPFILE 020040000
 #define O_NDELAY O_NONBLOCK
 
+/* fcntl command and args for masking CLOEXEC */
+#define F_SETFD 2
+#define FD_CLOEXEC 1
+
 #define MAX_FDS 128
 
 #define FILENAME_MAX 100
@@ -183,6 +187,7 @@ SYSCALL_DECLARE(lseek, int fd, off_t off, int whence);
 SYSCALL_DECLARE(_llseek, int fd, unsigned long offset_high, unsigned long offset_low, off_t *result, unsigned whence);
 SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
+SYSCALL_DECLARE(fcntl, unsigned int fd, unsigned int cmd, unsigned long arg);
 
 /* VFS common interface */
 

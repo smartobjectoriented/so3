@@ -295,6 +295,10 @@ int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 		*((uint32_t *) args) = RAMFB_DRIVER_VIDEO_HEIGHT;
 		return 0;
 
+	case IOCTL_FB_BPP:
+		*((uint32_t *) args) = __fbi->mode.bpp;
+		return 0;
+
 	case IOCTL_FB_SIZE:
 		*((uint32_t *) args) =
 			RAMFB_DRIVER_VIDEO_HEIGHT * RAMFB_DRIVER_VIDEO_WIDTH * __fbi->mode.bpp / 8; /* assume 32bpp */

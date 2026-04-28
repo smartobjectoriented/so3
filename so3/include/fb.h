@@ -30,4 +30,6 @@
  */
 #define IOCTL_FB_IS_REAL 4
 
+#define IOCTL_FB_BPP 5 /* Bit per pixel. */
+
 #endif /* FB_H */

@@ -33,6 +33,7 @@ typedef struct {
 typedef struct {
 	uint32_t hres;
 	uint32_t vres;
+	uint32_t bpp;
 	uint64_t memory_size;
 } vfbdev_response_t;
 

@@ -48,6 +48,7 @@ typedef struct {
 
 	uint32_t hres;
 	uint32_t vres;
+	uint32_t bpp;
 	size_t memory_size;
 	addr_t fb_paddr;
 } vfbdev_priv_t;
@@ -247,6 +248,7 @@ static void retrieve_data(vfbdev_priv_t *priv)
 
 	priv->hres = ring_rsp->hres;
 	priv->vres = ring_rsp->vres;
+	priv->bpp = ring_rsp->bpp;
 	priv->memory_size = ring_rsp->memory_size;
 
 	vdevfront_processing_end(vfbdev_dev);
@@ -305,6 +307,10 @@ static int vfbdev_ioctl(int fd, unsigned long cmd, unsigned long args)
 
 	case IOCTL_FB_VRES:
 		*((uint32_t *) args) = priv->vres;
+		return 0;
+
+	case IOCTL_FB_BPP:
+		*((uint32_t *) args) = priv->bpp;
 		return 0;
 
 	case IOCTL_FB_SIZE:
