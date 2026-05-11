@@ -175,7 +175,8 @@ static void vinput_probe(struct vbus_device *vdev)
 
 	/* Prepare the shared to page to be visible on the other end */
 
-	vinput_priv->vinput.ring_ref = vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vinput_priv->vinput.ring.sring)));
+	vinput_priv->vinput.ring_ref =
+		vbus_grant_ring(vdev, phys_to_pfn(virt_to_phys_pt((addr_t) vinput_priv->vinput.ring.sring)));
 
 	vbus_transaction_start(&vbt);
 
@@ -271,12 +272,12 @@ static void vinput_connected(struct vbus_device *vdev)
 }
 
 vdrvfront_t vinputdrv = { .probe = vinput_probe,
-			 .reconfiguring = vinput_reconfiguring,
-			 .shutdown = vinput_shutdown,
-			 .closed = vinput_closed,
-			 .suspend = vinput_suspend,
-			 .resume = vinput_resume,
-			 .connected = vinput_connected };
+			  .reconfiguring = vinput_reconfiguring,
+			  .shutdown = vinput_shutdown,
+			  .closed = vinput_closed,
+			  .suspend = vinput_suspend,
+			  .resume = vinput_resume,
+			  .connected = vinput_connected };
 
 static int vinput_init(dev_t *dev, int fdt_offset)
 {

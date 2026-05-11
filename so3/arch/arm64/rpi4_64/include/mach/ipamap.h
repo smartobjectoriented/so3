@@ -30,7 +30,6 @@ ipamap_t agency_ipamap[] = {
 		.size = 0x04000000,
 	},
 
-
 	/* VC memory*/
 	{
 		.ipa_addr = 0x3ea00000,
