@@ -35,6 +35,8 @@
 
 #include <uapi/linux/input-event-codes.h>
 
+#include <soo/dev/vinput.h>
+
 /*
  * Maximal horizontal and vertical resolution of the display.
  * To be set via the ioctl SET_SIZE command.
@@ -54,7 +56,7 @@ struct ps2_mouse state = { .x = 0, .y = 0, .left = 0, .right = 0, .middle = 0 };
 #define GET_STATE 0
 #define SET_SIZE 1
 
-int ioctl_mouse(int fd, unsigned long cmd, unsigned long args);
+static int ioctl_mouse(int fd, unsigned long cmd, unsigned long args);
 
 /* Device info. */
 
@@ -66,7 +68,7 @@ struct devclass vmse_cdev = {
 	.fops = &vmse_fops,
 };
 
-void so3virt_mse_event(unsigned int type, unsigned int code, int value)
+void soo_mse_event(unsigned int type, unsigned int code, int value)
 {
 	DBG("Input event: %u %u %d\n", type, code, value);
 
@@ -83,36 +85,25 @@ void so3virt_mse_event(unsigned int type, unsigned int code, int value)
 			state.y = value * res.v / 10000;
 		}
 	} else if (type == EV_KEY) {
-		/*
-		 * Here we only set the button states to "pressed". Their state
-		 * will be changed to "released" once the state has been read,
-		 * e.g. in the ioctl. So the client has the time to read the
-		 * button states.
-		 */
-		if ((code == BTN_LEFT || code == BTN_TOUCH) && value) {
+		if ((code == BTN_LEFT || code == BTN_TOUCH)) {
 			state.left = value;
-		} else if (code == BTN_MIDDLE && value) {
+		} else if (code == BTN_MIDDLE) {
 			state.middle = value;
-		} else if (code == BTN_RIGHT && value) {
+		} else if (code == BTN_RIGHT) {
 			state.right = value;
 		}
 	}
 
-	DBG("xy[%04d, %04d]; %03s %03s %03s\n", state.x, state.y, state.left ? "LFT" : "", state.middle ? "MID" : "",
+	DBG("xy[%04d, %04d]; %3s %3s %3s\n", state.x, state.y, state.left ? "LFT" : "", state.middle ? "MID" : "",
 	    state.right ? "RGT" : "");
 }
 
-int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
+static int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
 {
 	switch (cmd) {
 	case GET_STATE:
 		/* Return the mouse coordinates and button states. */
 		*((struct ps2_mouse *) args) = state;
-
-		/* Reset the button states. */
-		state.left = 0;
-		state.right = 0;
-		state.middle = 0;
 		break;
 
 	case SET_SIZE:
@@ -128,11 +119,11 @@ int ioctl_mouse(int fd, unsigned long cmd, unsigned long args)
 	return 0;
 }
 
-int init_mouse(dev_t *dev)
+static int init_mouse(dev_t *dev, int fdt_offset)
 {
 	/* Register the input device so it can be accessed from user space. */
 	devclass_register(dev, &vmse_cdev);
 	return 0;
 }
 
-REGISTER_DRIVER_POSTCORE("mouse,so3virt", init_mouse);
+REGISTER_DRIVER_POSTCORE("soo-input,mouse", init_mouse);

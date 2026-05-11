@@ -27,6 +27,7 @@
 #define IOCTL_FB_VRES 2
 #define IOCTL_FB_SIZE 3
 #define IOCTL_FB_IS_REAL 4
+#define IOCTL_FB_BPP 5
 
 #define FB_DEV "/dev/fb"
 
