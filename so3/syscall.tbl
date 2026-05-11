@@ -71,6 +71,9 @@ sendto                  sendto                  NET
 setsockopt              setsockopt              NET
 brk                     brk                     PROC_ENV
 
+# Only used to suppress warning about setting CLOEXEC flags
+fcntl                   fcntl
+
 # TODO: implement. Heavily used in MUSL, so remove warning about it for now.
 munmap                  empty
 

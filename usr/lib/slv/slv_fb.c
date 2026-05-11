@@ -35,6 +35,7 @@ typedef struct {
 	int fd;
 	void *fbp;
 	size_t fb_size;
+	uint32_t bpp;
 	bool is_real;
 } slv_fb_priv_t;
 
@@ -64,7 +65,8 @@ int slv_fb_init(slv_fb_t *fb)
 	/* Get screen resolution. */
 	if (ioctl(priv->fd, IOCTL_FB_HRES, &fb->hres) ||
 	    ioctl(priv->fd, IOCTL_FB_VRES, &fb->vres) ||
-	    ioctl(priv->fd, IOCTL_FB_SIZE, &priv->fb_size)) {
+	    ioctl(priv->fd, IOCTL_FB_SIZE, &priv->fb_size) ||
+	    ioctl(priv->fd, IOCTL_FB_BPP, &priv->bpp)) {
 		printf("Couldn't get framebuffer resolution.\n");
 		return -1;
 	}
@@ -108,6 +110,22 @@ int slv_fb_init(slv_fb_t *fb)
 	 * the lvgl buffer (buf) into our real framebuffer.
 	 */
 	lv_display_t *disp = lv_display_create(fb->hres, fb->vres);
+
+	switch (priv->bpp) {
+	case 16:
+		lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB565);
+		break;
+	case 24:
+		lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB888);
+		break;
+	case 32:
+		lv_display_set_color_format(disp, LV_COLOR_FORMAT_XRGB8888);
+		break;
+	default:
+		printf("Not supported color format (%d bits)\n", priv->bpp);
+		return -1;
+	}
+
 	lv_display_set_buffers(disp, buf, NULL, priv->fb_size,
 			       LV_DISPLAY_RENDER_MODE_DIRECT);
 

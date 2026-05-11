@@ -7,3 +7,4 @@ obj-$(CONFIG_VSENSELED_FRONTEND) += vsenseledfront/
 obj-$(CONFIG_VSENSEJ_FRONTEND) += vsensejfront/
 obj-$(CONFIG_VLOGS_FRONTEND) += vlogsfront/
 obj-$(CONFIG_VFBDEV_FRONTEND) += vfbdevfront/
+obj-$(CONFIG_VINPUT_FRONTEND) += vinputfront/

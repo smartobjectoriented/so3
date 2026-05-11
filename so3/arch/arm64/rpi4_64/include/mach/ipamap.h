@@ -30,6 +30,52 @@ ipamap_t agency_ipamap[] = {
 		.size = 0x04000000,
 	},
 
+	/* VC memory*/
+	{
+		.ipa_addr = 0x3ea00000,
+		.phys_addr = 0x3ea00000,
+		.size = 0x600000,
+	},
+
+	/* HDMI 0 memory spaces */
+	{
+		.ipa_addr = 0x7ef00000,
+		.phys_addr = 0x7ef00000,
+		.size = 0x3000,
+	},
+	{
+		.ipa_addr = 0x7ef04000,
+		.phys_addr = 0x7ef04000,
+		.size = 0x1000,
+	},
+	{
+		.ipa_addr = 0x7ef20000,
+		.phys_addr = 0x7ef20000,
+		.size = 0x1000,
+	},
+	{
+		.ipa_addr = 0x7e206000,
+		.phys_addr = 0x7e206000,
+		.size = 0x1000,
+	},
+	{
+		.ipa_addr = 0xf0000000,
+		.phys_addr = 0xf0000000,
+		.size = 0x10000000,
+	},
+
+	/* PCI */
+	{
+		.ipa_addr = 0x7d500000,
+		.phys_addr = 0x7d500000,
+		.size = 0x10000,
+	},
+	{
+		.ipa_addr = 0x600000000,
+		.phys_addr = 0x600000000,
+		.size = 0x40000000,
+	},
+
 	/* Null pointer exception */
 	{
 		.ipa_addr = 0x0,

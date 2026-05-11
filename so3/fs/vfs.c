@@ -1096,6 +1096,21 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec *, vec, unsigned lo
 		return total;
 }
 
+/**
+ * TODO: implement the function, currently only used to mask message
+ * when the flags CLOEXEC is set due to user-space function opendir
+ * calling fcntl with CLOEXEC flag (used by ls).
+ */
+SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
+{
+	if ((cmd == F_SETFD) && (arg == FD_CLOEXEC)) {
+		return 0;
+	}
+
+	printk("%s: unsupported command and args %x - %lx\n", __func__, cmd, arg);
+	return -ENOSYS;
+}
+
 static void vfs_gfd_init(void)
 {
 	memset(open_fds, 0, MAX_FDS * sizeof(struct fd *));

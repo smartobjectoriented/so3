@@ -22,6 +22,8 @@
 
 #include <device/driver.h>
 
+#define BPP 32 /* assume 32bpp */
+
 typedef struct {
 	void *vaddr;
 	uint32_t hres, vres;
@@ -48,7 +50,11 @@ static int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 		return 0;
 
 	case IOCTL_FB_SIZE:
-		*((uint32_t *) args) = priv->hres * priv->vres * 4; /* assume 24bpp */
+		*((uint32_t *) args) = priv->hres * priv->vres * BPP / 8;
+		return 0;
+
+	case IOCTL_FB_BPP:
+		*((uint32_t *) args) = BPP;
 		return 0;
 
 	case IOCTL_FB_IS_REAL:

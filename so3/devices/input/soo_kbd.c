@@ -35,13 +35,15 @@
 
 #include <uapi/linux/input-event-codes.h>
 
+#include <soo/dev/vinput.h>
+
 /* Value of the last pressed key. */
 struct ps2_key last_key = { .value = 0, .state = 0 };
 
 /* ioctl commands. */
 
 #define GET_KEY 0
-int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args);
+static int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args);
 
 /* Device info. */
 
@@ -97,24 +99,24 @@ void soo_input_event(unsigned int type, unsigned int code, int value)
 		return;
 	}
 
-	/*
-	 * Ignore "key released" events. A key is released in the ioctl so the
-	 * client can read it.
-	 */
-	if (!value) {
-		return;
-	}
-
 	if (last_key.state & KEY_ST_SHIFT) {
-		last_key.value = s_eta[code];
+		if (code <= sizeof(s_eta)) {
+			last_key.value = s_eta[code];
+		}
 	} else {
-		last_key.value = eta[code];
+		if (code <= sizeof(eta)) {
+			last_key.value = eta[code];
+		}
 	}
 
-	last_key.state |= KEY_ST_PRESSED;
+	if (value == 1) {
+		last_key.state |= KEY_ST_PRESSED;
+	} else if (value == 0) {
+		last_key.state &= ~KEY_ST_PRESSED;
+	}
 }
 
-int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)
+static int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)
 {
 	switch (cmd) {
 	case GET_KEY:
@@ -131,11 +133,11 @@ int ioctl_keyboard(int fd, unsigned long cmd, unsigned long args)
 	return 0;
 }
 
-int init_keyboard(dev_t *dev)
+static int init_keyboard(dev_t *dev, int fdt_offset)
 {
 	/* Register the input device so it can be accessed from user space. */
 	devclass_register(dev, &vkbd_cdev);
 	return 0;
 }
 
-REGISTER_DRIVER_POSTCORE("keyboard,soo_input", init_keyboard);
+REGISTER_DRIVER_POSTCORE("soo-input,keyboard", init_keyboard);

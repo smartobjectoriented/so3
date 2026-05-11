@@ -35,6 +35,7 @@
 
 #define HRES 1024
 #define VRES 768
+#define BPP 32 /* assume 32bpp */
 
 /* Register address offsets */
 #define CLCD_TIM0 0x000
@@ -120,8 +121,12 @@ int fb_ioctl(int fd, unsigned long cmd, unsigned long args)
 		*((uint32_t *) args) = VRES;
 		return 0;
 
+	case IOCTL_FB_BPP:
+		*((uint32_t *) args) = BPP;
+		return 0;
+
 	case IOCTL_FB_SIZE:
-		*((uint32_t *) args) = HRES * VRES * 4; /* assume 24bpp */
+		*((uint32_t *) args) = HRES * VRES * BPP / 8;
 		return 0;
 
 	default:

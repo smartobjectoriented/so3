@@ -16,38 +16,45 @@
  *
  */
 
-#ifndef VFBDEV_H
-#define VFBDEV_H
+#ifndef VINPUT_H
+#define VINPUT_H
 
 #include <soo/ring.h>
 #include <soo/vdevfront.h>
 #include <soo/gnttab.h>
 
-#define VFBDEV_NAME "vfbdev"
-#define VFBDEV_PREFIX "[" VFBDEV_NAME "] "
+#define VINPUT_NAME "vinput"
+#define VINPUT_PREFIX "[" VINPUT_NAME "] "
+
+#define SRC_UNKNOWN -1
+#define SRC_MOUSE 0
+#define SRC_KEYBOARD 1
 
 typedef struct {
-	/* Nothing */
-} vfbdev_request_t;
+	/* No request */
+} vinput_request_t;
 
 typedef struct {
-	uint32_t hres;
-	uint32_t vres;
-	uint32_t bpp;
-	uint64_t memory_size;
-} vfbdev_response_t;
+	unsigned int type;
+	unsigned int code;
+	int value;
+} vinput_response_t;
 
-DEFINE_RING_TYPES(vfbdev, vfbdev_request_t, vfbdev_response_t);
+DEFINE_RING_TYPES(vinput, vinput_request_t, vinput_response_t);
 
 typedef struct {
 	/* Must be the first field */
 	vdevfront_t vdevfront;
 
-	vfbdev_front_ring_t ring;
+	vinput_front_ring_t ring;
 	unsigned int irq;
 
 	grant_ref_t ring_ref;
 	uint32_t evtchn;
-} vfbdev_t;
 
-#endif /* VFBDEV_H */
+} vinput_t;
+
+void soo_mse_event(unsigned int type, unsigned int code, int value);
+void soo_input_event(unsigned int type, unsigned int code, int value);
+
+#endif /* VINPUT_H */

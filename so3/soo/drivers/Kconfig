@@ -25,5 +25,10 @@ config VLOGS_FRONTEND
 config VFBDEV_FRONTEND
     bool "vfbdev framebuffer driver"
 
+config VINPUT_FRONTEND
+    bool "vinput driver for mouse and keyboard"
+    select INPUT
+    select SOO_INPUT
+
 endmenu
 

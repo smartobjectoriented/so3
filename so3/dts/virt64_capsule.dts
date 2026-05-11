@@ -63,6 +63,16 @@
 		status = "ok";
 	};
 
+	soo-keyboard {
+		compatible = "soo-input,keyboard";
+		status = "ok";
+	};
+
+	soo-mouse {
+		compatible = "soo-input,mouse";
+		status = "ok";
+	};
+
 	/* GIC interrupt controller */
 	gic: interrupt-controller@0x08000000 {
 		compatible = "intc,gic";
@@ -118,6 +128,12 @@
 			/* Enabling framebuffer support */
 			vfbdev {
 				compatible = "vfbdev,frontend";
+				status = "ok";
+			};
+
+			/* Enabling input support */
+			vinput {
+				compatible = "vinput,frontend";
 				status = "ok";
 			};
 		};
