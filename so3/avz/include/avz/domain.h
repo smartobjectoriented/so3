@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016,2017 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -151,8 +151,8 @@ extern struct domain *domains[MAX_DOMAINS];
 extern int construct_agency(struct domain *d);
 
 #ifdef CONFIG_SOO
-extern int construct_ME(struct domain *d);
-ME_state_t get_ME_state(unsigned int ME_slotID);
+extern int construct_S3C(struct domain *d);
+S3C_state_t get_S3C_state(unsigned int S3C_slotID);
 #endif /* CONFIG_SOO */
 
 void do_domctl(domctl_t *args);

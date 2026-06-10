@@ -128,7 +128,7 @@ void secondary_start_kernel(void)
 
 #ifdef CONFIG_CPU_PSCI
 #ifdef CONFIG_SOO
-	if (cpu != ME_CPU)
+	if (cpu != S3C_CPU)
 #endif /* CONFIG_SOO */
 	{
 		pre_ret_to_el1();
@@ -213,11 +213,11 @@ void smp_init(void)
 
 #ifdef CONFIG_SOO
 
-	printk("Starting ME CPU...\n");
+	printk("Starting capsule CPU...\n");
 
-	cpu_up(ME_CPU);
+	cpu_up(S3C_CPU);
 
-	printk("Brought secondary CPU %d for running SO3 capsules...\n", ME_CPU);
+	printk("Brought secondary CPU %d for running SO3 capsules...\n", S3C_CPU);
 
 #else /* CONFIG_SOO */
 

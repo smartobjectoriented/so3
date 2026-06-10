@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,10 +23,10 @@
 
 #include <avz/uapi/avz.h>
 
-/* This signature is used to check the coherency of the ME image, after a migration
+/* This signature is used to check the coherency of the capsule image, after a migration
  * or a restoration for example.
  */
-#define SOO_ME_SIGNATURE "SooZ"
+#define SOO_S3C_SIGNATURE "SooZ"
 
 #endif /* __ASSEMBLY__ */
 
@@ -88,51 +88,51 @@ typedef struct fbdev_pfns {
 #define AVZ_SCHEDULER_FLIP 0
 
 /*
- * ME states:
- * - ME_state_stopped:		Capsule is stopped (right after start or later)
- * - ME_state_living:		ME is full-functional and activated (all frontend devices are consistent)
- * - ME_state_suspended:	ME is suspended before migrating. This state is maintained for the resident ME instance
- * - ME_state_hibernate:	ME is in a state of hibernate snapshot
- * - ME_state_resuming:         ME ready to perform resuming (after recovering)
- * - ME_state_awakened:         ME is just being awakened
- * - ME_state_terminated:	ME has been terminated (by a shutdown)
- * - ME_state_dead:		ME does not exist
+ * capsule states:
+ * - S3C_state_stopped:		Capsule is stopped (right after start or later)
+ * - S3C_state_living:		capsule is full-functional and activated (all frontend devices are consistent)
+ * - S3C_state_suspended:	capsule is suspended before migrating. This state is maintained for the resident capsule instance
+ * - S3C_state_hibernate:	capsule is in a state of hibernate snapshot
+ * - S3C_state_resuming:         capsule ready to perform resuming (after recovering)
+ * - S3C_state_awakened:         capsule is just being awakened
+ * - S3C_state_terminated:	capsule has been terminated (by a shutdown)
+ * - S3C_state_dead:		capsule does not exist
  */
 typedef enum {
-	ME_state_stopped,
-	ME_state_living,
-	ME_state_suspended,
-	ME_state_hibernate,
-	ME_state_resuming,
-	ME_state_awakened,
-	ME_state_killed,
-	ME_state_terminated,
-	ME_state_dead
-} ME_state_t;
+	S3C_state_stopped,
+	S3C_state_living,
+	S3C_state_suspended,
+	S3C_state_hibernate,
+	S3C_state_resuming,
+	S3C_state_awakened,
+	S3C_state_killed,
+	S3C_state_terminated,
+	S3C_state_dead
+} S3C_state_t;
 
 /* Keep information about slot availability
- * FREE:	the slot is available (no ME)
- * BUSY:	the slot is allocated a ME
+ * FREE:	the slot is available (no capsule)
+ * BUSY:	the slot is allocated a capsule
  */
-typedef enum { ME_SLOT_FREE, ME_SLOT_BUSY } ME_slotState_t;
+typedef enum { S3C_SLOT_FREE, S3C_SLOT_BUSY } S3C_slotState_t;
 
-/* ME ID related information */
-#define ME_NAME_SIZE 40
-#define ME_SHORTDESC_SIZE 1024
+/* capsule ID related information */
+#define S3C_NAME_SIZE 40
+#define S3C_SHORTDESC_SIZE 1024
 
 /*
- * Definition of ME ID information used by functions which need
+ * Definition of capsule ID information used by functions which need
  * to get a list of running MEs with their information.
  */
 typedef struct {
 	uint32_t slotID;
-	ME_state_t state;
+	S3C_state_t state;
 
 	uint64_t spid;
 
-	char name[ME_NAME_SIZE];
-	char shortdesc[ME_SHORTDESC_SIZE];
-} ME_id_t;
+	char name[S3C_NAME_SIZE];
+	char shortdesc[S3C_SHORTDESC_SIZE];
+} S3C_id_t;
 
 struct work_struct;
 struct semaphore;
@@ -175,25 +175,25 @@ extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
 #define AGENCY_IOCTL_SHUTDOWN _IOW('S', 3, agency_ioctl_args_t)
 #define AGENCY_IOCTL_INJECT_CAPSULE _IOWR('S', 4, agency_ioctl_args_t)
 #define AGENCY_IOCTL_START_CAPSULE _IOWR('S', 5, agency_ioctl_args_t)
-#define AGENCY_IOCTL_GET_ME_ID _IOWR('S', 6, agency_ioctl_args_t)
-#define AGENCY_IOCTL_GET_ME_ID_ARRAY _IOR('S', 7, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_S3C_ID _IOWR('S', 6, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_S3C_ID_ARRAY _IOR('S', 7, agency_ioctl_args_t)
 
 #define SOO_NAME_SIZE 16
 
 /*
- * ME descriptor
+ * capsule descriptor
  *
  * WARNING !! Be careful when modifying this structure. It *MUST* be aligned with
- * the same structure used in the ME.
+ * the same structure used in the capsule.
  */
 typedef struct {
 	unsigned int slotID;
 	unsigned int capsuleID; /* ID handled by emiso engine */
 	uint64_t spid;
 
-	ME_state_t state;
+	S3C_state_t state;
 
-	unsigned int size; /* Size of the ME with the struct dom_context size */
+	unsigned int size; /* Size of the capsule with the struct dom_context size */
 	unsigned int dc_evtchn;
 
 	unsigned int vbstore_revtchn, vbstore_levtchn;
@@ -201,7 +201,7 @@ typedef struct {
 
 	void (*resume_fn)(void);
 
-} ME_desc_t;
+} S3C_desc_t;
 
 /*
  * Agency descriptor
@@ -214,7 +214,7 @@ typedef struct {
 
 	uint64_t agencyUID; /* Agency UID */
 
-	/* Event channels used for directcomm channel between agency and agency-RT or ME */
+	/* Event channels used for directcomm channel between agency and agency-RT or capsule */
 	unsigned int dc_evtchn[MAX_DOMAINS];
 
 	/* Event channels used by vbstore */
@@ -226,13 +226,13 @@ typedef struct {
 } agency_desc_t;
 
 /*
- * SOO agency & ME descriptor - This structure is used in the shared info page of the agency or ME domain.
+ * SOO agency & capsule descriptor - This structure is used in the shared info page of the agency or capsule domain.
  */
 
 typedef struct {
 	union {
 		agency_desc_t agency;
-		ME_desc_t ME;
+		S3C_desc_t S3C;
 	} u;
 } dom_desc_t;
 
@@ -266,7 +266,7 @@ struct avz_shared {
 	 */
 	u64 current_s_time;
 
-	/* Agency or ME descriptor */
+	/* Agency or capsule descriptor */
 	dom_desc_t dom_desc;
 
 	/* Used to store a signature for consistency checking, for example after a migration/restoration */
@@ -304,19 +304,19 @@ typedef struct agency_ioctl_args {
 
 /* AVZ hypercalls devoted to SOO */
 
-#define AVZ_ME_READ_SNAPSHOT 4
-#define AVZ_ME_WRITE_SNAPSHOT 5
+#define AVZ_S3C_READ_SNAPSHOT 4
+#define AVZ_S3C_WRITE_SNAPSHOT 5
 #define AVZ_START_CAPSULE 6
 #define AVZ_INJECT_CAPSULE 7
-#define AVZ_KILL_ME 8
+#define AVZ_KILL_S3C 8
 #define AVZ_DC_EVENT_SET 9
-#define AVZ_GET_ME_STATE 10
-#define AVZ_SET_ME_STATE 11
+#define AVZ_GET_S3C_STATE 10
+#define AVZ_SET_S3C_STATE 11
 #define AVZ_GET_DOM_DESC 12
 #define AVZ_GRANT_TABLE_OP 13
 #define AVZ_FBDEV_SET_PFNS 14
 #define AVZ_FBDEV_CHANGE_FOCUS 15
-#define AVZ_FBDEV_GET_ME_ADDR 16
+#define AVZ_FBDEV_GET_S3C_ADDR 16
 
 /* AVZ_INJECT_CAPSULE */
 typedef struct {
@@ -337,12 +337,12 @@ typedef struct {
 	int state;
 } avz_dc_event_t;
 
-/* AVZ_GET_ME_STATE */
-/* AVZ_SET_ME_STATE */
+/* AVZ_GET_S3C_STATE */
+/* AVZ_SET_S3C_STATE */
 typedef struct {
 	uint32_t slotID;
 	int state;
-} avz_me_state_t;
+} avz_s3c_state_t;
 
 /* AVZ_GET_DOM_DESC */
 typedef struct {
@@ -350,7 +350,7 @@ typedef struct {
 	dom_desc_t dom_desc;
 } avz_dom_desc_t;
 
-/* AVZ_GET_ME_FREE_SLOT */
+/* AVZ_GET_S3C_FREE_SLOT */
 typedef struct {
 	int slotID;
 	int size;
@@ -369,10 +369,10 @@ typedef struct {
 	int size;
 } avz_snapshot_t;
 
-/* AVZ_KILL_ME */
+/* AVZ_KILL_S3C */
 typedef struct {
 	uint32_t slotID;
-} avz_kill_me_t;
+} avz_kill_s3c_t;
 
 /* AVZ_GRANT_TABLE_OP */
 typedef struct {
@@ -389,7 +389,7 @@ typedef struct {
 	int new_slotID;
 } avz_fbdev_focus_t;
 
-/* AVZ_FBDEV_GET_ME_ADDR */
+/* AVZ_FBDEV_GET_S3C_ADDR */
 typedef struct {
 	addr_t paddr;
 } avz_fbdev_addr_t;
@@ -404,12 +404,12 @@ typedef struct {
 		avz_inject_capsule_t avz_inject_capsule_args;
 		avz_start_capsule_t avz_start_capsule_args;
 		avz_dc_event_t avz_dc_event_args;
-		avz_me_state_t avz_me_state_args;
+		avz_s3c_state_t avz_s3c_state_args;
 		avz_dom_desc_t avz_dom_desc_args;
 		avz_free_slot_t avz_free_slot_args;
 		avz_mig_init_t avz_mig_init_args;
 		avz_snapshot_t avz_snapshot_args;
-		avz_kill_me_t avz_kill_me_args;
+		avz_kill_s3c_t avz_kill_s3c_args;
 		avz_console_io_t avz_console_io_args;
 		avz_domctl_t avz_domctl_args;
 		avz_gnttab_t avz_gnttab_args;
@@ -438,7 +438,7 @@ typedef struct {
 /*
  * SOO callback functions.
  * The following definitions are used as argument in domcalls or in the
- * agency_ctl() function as a callback to be propagated to a specific ME.
+ * agency_ctl() function as a callback to be propagated to a specific capsule.
  *
  */
 
@@ -449,7 +449,7 @@ typedef struct {
 
 typedef struct soo_domcall_arg {
 	/* Stores the agency ctl function.
-	 * Possibly, the agency_ctl function can be associated to a callback operation asked by a ME
+	 * Possibly, the agency_ctl function can be associated to a callback operation asked by a capsule
 	 */
 	unsigned int cmd;
 	unsigned int slotID; /* Origin of the domcall */
@@ -459,7 +459,7 @@ typedef struct soo_domcall_arg {
 		pre_resume_args_t pre_resume_args;
 
 		post_activate_args_t post_activate_args;
-		ME_state_t set_me_state_args;
+		S3C_state_t set_s3c_state_args;
 	} u;
 
 } soo_domcall_arg_t;
@@ -488,7 +488,7 @@ void do_async_dom(int slotID, dc_event_t);
 
 void perform_task(dc_event_t dc_event);
 
-void shutdown_ME(unsigned int ME_slotID);
+void shutdown_S3C(unsigned int S3C_slotID);
 
 void cache_flush_all(void);
 

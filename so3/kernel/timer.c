@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -359,8 +359,8 @@ static void dump_timerq(unsigned char key)
 
 	printk("Dumping timer queues:\n");
 
-	ts = &per_cpu(timers, ME_CPU);
-	printk("CPU #%d:\n", ME_CPU);
+	ts = &per_cpu(timers, S3C_CPU);
+	printk("CPU #%d:\n", S3C_CPU);
 
 	spin_lock(&ts->lock);
 

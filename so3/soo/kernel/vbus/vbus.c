@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,7 +44,7 @@
 
 #define VBUS_TIMEOUT 120
 
-/* Event channels used for directcomm channel between agency and ME */
+/* Event channels used for directcomm channel between agency and capsule */
 spinlock_t dc_lock;
 
 /* List of device drivers */
@@ -174,7 +174,7 @@ void vbus_otherend_changed(struct vbus_watch *watch)
 
 	state = vbus_read_driver_state(vdev->otherend);
 
-	DBG("On domID: %d, otherend changed / device: %s  state: %d, CPU %d\n", ME_domID(), vdev->nodename, state,
+	DBG("On domID: %d, otherend changed / device: %s  state: %d, CPU %d\n", S3C_domID(), vdev->nodename, state,
 	    smp_processor_id());
 
 	/*
@@ -257,7 +257,7 @@ int vbus_dev_probe(struct vbus_device *vdev)
 	init_completion(&vdev->down);
 	init_completion(&vdev->sync_backfront);
 
-	DBG("ME #%d  talk_to_otherend: %s\n", ME_domID(), vdev->nodename);
+	DBG("capsule #%d  talk_to_otherend: %s\n", S3C_domID(), vdev->nodename);
 
 	talk_to_otherend(vdev);
 
@@ -271,7 +271,7 @@ int vbus_dev_remove(struct vbus_device *vdev)
 	unsigned int dir_exists;
 
 	/*
-	 * If the ME is running on a Smart Object which does not offer all the backends matching the ME's frontends,
+	 * If the capsule is running on a Smart Object which does not offer all the backends matching the capsule's frontends,
 	 * some frontend related entries may not have been created. We must check here if the entry matching the dev
 	 * to remove exists.
 	 */
@@ -444,7 +444,7 @@ void vbus_dev_changed(const char *node, char *type, struct vbus_type *bus, const
 		add_new_dev(vdev);
 
 	} else {
-		BUG_ON(ME_domID() == DOMID_AGENCY);
+		BUG_ON(S3C_domID() == DOMID_AGENCY);
 
 		/* Update the our state in vbstore. */
 		/* We force the update, this will not trigger a watch since the watch is set right afterwards */
@@ -483,14 +483,14 @@ static irq_return_t directcomm_isr(int irq, void *data)
 
 	dc_event = atomic_read(&avz_shared->dc_event);
 
-	DBG("(ME domid %d): Received directcomm interrupt for event: %d\n", ME_domID(), avz_shared->dc_event);
+	DBG("(capsule domid %d): Received directcomm interrupt for event: %d\n", S3C_domID(), avz_shared->dc_event);
 
 	/* We should not receive twice a same dc_event, before it has been fully processed. */
 	BUG_ON(atomic_read(&dc_incoming_domID[dc_event]) != -1);
 
 	atomic_set(&dc_incoming_domID[dc_event], DOMID_AGENCY); /* At the moment, only from the agency */
 
-	/* Work to be done in ME */
+	/* Work to be done in capsule */
 
 	switch (dc_event) {
 	case DC_RESUME:
@@ -511,7 +511,7 @@ static irq_return_t directcomm_isr(int irq, void *data)
 		return IRQ_BOTTOM;
 
 	default:
-		printk("(ME) %s: something weird happened, directcomm interrupt was triggered, but no DC event was configured !\n",
+		printk("(capsule) %s: something weird happened, directcomm interrupt was triggered, but no DC event was configured !\n",
 		       __func__);
 		break;
 	}
@@ -533,7 +533,7 @@ void vbus_init(void)
 
 	spin_lock_init(&dc_lock);
 
-	vbstore_me_init();
+	vbstore_s3c_init();
 
 	/* Set up the direct communication channel for post-migration activities
 	 * previously established by dom0.
@@ -541,9 +541,9 @@ void vbus_init(void)
 
 	vbus_transaction_start(&vbt);
 
-	sprintf(buf, "soo/directcomm/%d", ME_domID());
+	sprintf(buf, "soo/directcomm/%d", S3C_domID());
 
-	res = vbus_scanf(vbt, buf, "event-channel", "%d", &avz_shared->dom_desc.u.ME.dc_evtchn);
+	res = vbus_scanf(vbt, buf, "event-channel", "%d", &avz_shared->dom_desc.u.S3C.dc_evtchn);
 
 	if (res != 1) {
 		printk("%s: reading soo/directcomm failed. Error code: %d\n", __func__, res);
@@ -553,8 +553,8 @@ void vbus_init(void)
 	vbus_transaction_end(vbt);
 
 	/* Binding the irqhandler to the eventchannel */
-	DBG("%s: setting up the direct comm event channel (%d) ...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
-	res = bind_interdomain_evtchn_to_irqhandler(DOMID_AGENCY, avz_shared->dom_desc.u.ME.dc_evtchn, directcomm_isr,
+	DBG("%s: setting up the direct comm event channel (%d) ...\n", __func__, avz_shared->dom_desc.u.S3C.dc_evtchn);
+	res = bind_interdomain_evtchn_to_irqhandler(DOMID_AGENCY, avz_shared->dom_desc.u.S3C.dc_evtchn, directcomm_isr,
 						    directcomm_isr_thread, NULL);
 
 	if (res <= 0) {
@@ -562,9 +562,9 @@ void vbus_init(void)
 		BUG();
 	}
 
-	avz_shared->dom_desc.u.ME.dc_evtchn = evtchn_from_irq(res);
+	avz_shared->dom_desc.u.S3C.dc_evtchn = evtchn_from_irq(res);
 	DBG("%s: local event channel bound to directcomm towards non-RT Agency : %d\n", __func__,
-	    avz_shared->dom_desc.u.ME.dc_evtchn);
+	    avz_shared->dom_desc.u.S3C.dc_evtchn);
 
 	DBG("vbus_init OK!\n");
 }

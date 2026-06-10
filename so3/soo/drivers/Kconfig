@@ -1,8 +1,8 @@
 #
-# SOO Mobile Entity configuration
+# SOO SO3 capsule configuration
 #
 
-menu "SOO Mobile Entity frontend drivers"
+menu "SOO SO3 capsule frontend drivers"
 
 config VDUMMY_FRONTEND
         bool "vdummy Dummy driver support debugging and testing"

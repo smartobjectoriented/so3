@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -81,7 +81,7 @@ void evtchn_destroy_final(struct domain *d); /* from complete_domain_destroy */
 #define DOMAIN_DESTROYED (1 << 31) /* assumes atomic_t is >= 32 bits */
 
 /*
- * Creation of new domain context associated to the agency or a Mobile Entity.
+ * Creation of new domain context associated to the agency or a SO3 capsule.
  * @domid is the domain number
  * @partial tells if the domain creation remains partial, without the creation of the vcpu structure which may intervene in a second step
  */

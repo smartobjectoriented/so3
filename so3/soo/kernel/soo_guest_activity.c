@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -67,7 +67,7 @@ void dc_stable(int dc_event)
  * To perform a ping from the RT domain, please use rtdm_do_sync_agency() in rtdm_vbus.c
  *
  * As for the domain table, the index 0 and 1 are for the agency and the indexes 2..MAX_DOMAINS
- * are for the MEs. If a ME_slotID is provided, the proper index is given by ME_slotID.
+ * are for the MEs. If a S3C_slotID is provided, the proper index is given by S3C_slotID.
  *
  * @domID: the target domain
  * @dc_event: type of event used in the synchronization
@@ -83,8 +83,8 @@ void do_sync_dom(int domID, dc_event_t dc_event)
 
 	set_dc_event(domID, dc_event);
 
-	DBG("%s: notifying via evtchn %d...\n", __func__, avz_shared->dom_desc.u.ME.dc_evtchn);
-	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
+	DBG("%s: notifying via evtchn %d...\n", __func__, avz_shared->dom_desc.u.S3C.dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.S3C.dc_evtchn);
 
 	/* Wait for the response from the outgoing domain */
 	DBG("%s: waiting for completion on dc_event %d...\n", __func__, dc_event);
@@ -117,12 +117,12 @@ void tell_dc_stable(int dc_event)
 
 	atomic_set(&dc_incoming_domID[dc_event], -1);
 
-	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.dc_evtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.S3C.dc_evtchn);
 }
 
 /*
- * Prepare a remote ME to react to a ping event.
- * @domID: the target ME
+ * Prepare a remote capsule to react to a ping event.
+ * @domID: the target capsule
  */
 void set_dc_event(domid_t domID, dc_event_t dc_event)
 {
@@ -144,22 +144,22 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 }
 
 /*
- * Get the state of a ME.
+ * Get the state of a capsule.
  */
-int get_ME_state(void)
+int get_S3C_state(void)
 {
-	return avz_shared->dom_desc.u.ME.state;
+	return avz_shared->dom_desc.u.S3C.state;
 }
 
-void set_ME_state(ME_state_t state)
+void set_S3C_state(S3C_state_t state)
 {
-	/* Be careful if the ME is in living state and suddently is set to killed.
+	/* Be careful if the capsule is in living state and suddently is set to killed.
 	 * Backends will be in a weird state.
 	 */
-	if ((state == ME_state_killed) && (avz_shared->dom_desc.u.ME.state == ME_state_living))
-		lprintk("## WARNING ! ME %d is set to killed while living!\n", ME_domID());
+	if ((state == S3C_state_killed) && (avz_shared->dom_desc.u.S3C.state == S3C_state_living))
+		lprintk("## WARNING ! capsule %d is set to killed while living!\n", S3C_domID());
 
-	avz_shared->dom_desc.u.ME.state = state;
+	avz_shared->dom_desc.u.S3C.state = state;
 }
 
 void postmig_setup(void);
@@ -169,15 +169,15 @@ void perform_task(dc_event_t dc_event)
 
 	switch (dc_event) {
 	case DC_SHUTDOWN:
-		/* The ME will initiate the shutdown processing on its own. */
+		/* The capsule will initiate the shutdown processing on its own. */
 
-		DBG("perform a CB_SHUTDOWN on capsule %d\n", ME_domID());
+		DBG("perform a CB_SHUTDOWN on capsule %d\n", S3C_domID());
 
-		BUG_ON(get_ME_state() == ME_state_stopped);
+		BUG_ON(get_S3C_state() == S3C_state_stopped);
 
 		cb_shutdown();
 
-		if (get_ME_state() == ME_state_terminated) {
+		if (get_S3C_state() == S3C_state_terminated) {
 			/* Prepare vbus to stop everything with the frontend */
 			/* (interactions with vbus) */
 			DBG("Device shutdown...\n");
@@ -187,7 +187,7 @@ void perform_task(dc_event_t dc_event)
 			DBG("Removing devices ...\n");
 			remove_devices();
 
-			/* Remove vbstore entries related to this ME */
+			/* Remove vbstore entries related to this capsule */
 			DBG("Removing vbstore entries ...\n");
 			remove_vbstore_entries();
 		}
@@ -197,7 +197,7 @@ void perform_task(dc_event_t dc_event)
 	case DC_RESUME:
 		DBG("resuming vbstore...\n");
 
-		BUG_ON((get_ME_state() != ME_state_resuming) && (get_ME_state() != ME_state_awakened));
+		BUG_ON((get_S3C_state() != S3C_state_resuming) && (get_S3C_state() != S3C_state_awakened));
 
 		/* Giving a chance to perform actions before resuming devices */
 		args.cmd = CB_PRE_RESUME;
@@ -207,7 +207,7 @@ void perform_task(dc_event_t dc_event)
 		vbs_resume();
 
 		/* During a resuming after an awakened snapshot, re-init watch for device/<domID> */
-		if (get_ME_state() == ME_state_awakened)
+		if (get_S3C_state() == S3C_state_awakened)
 			postmig_setup();
 
 		DBG("vbstore resumed.\n");
@@ -252,29 +252,29 @@ void do_soo_activity(void *arg)
 
 	switch (args->cmd) {
 	case CB_PRE_SUSPEND: /* Called by perform_pre_suspend */
-		DBG("Pre-suspend callback for ME %d\n", ME_domID());
+		DBG("Pre-suspend callback for capsule %d\n", S3C_domID());
 
 		cb_pre_suspend(arg);
 		break;
 
 	case CB_PRE_RESUME: /* Called from vbus/vbs.c */
-		DBG("Pre-resume callback for ME %d\n", ME_domID());
+		DBG("Pre-resume callback for capsule %d\n", S3C_domID());
 
 		cb_pre_resume(arg);
 		break;
 
 	case CB_POST_ACTIVATE: /* Called by perform_post_activate() */
 
-		DBG("Post_activate callback for ME %d\n", ME_domID());
+		DBG("Post_activate callback for capsule %d\n", S3C_domID());
 
 		cb_post_activate(args);
 		break;
 	}
 }
 
-ME_desc_t *get_ME_desc(void)
+S3C_desc_t *get_S3C_desc(void)
 {
-	return (ME_desc_t *) &avz_shared->dom_desc.u.ME;
+	return (S3C_desc_t *) &avz_shared->dom_desc.u.S3C;
 }
 
 agency_desc_t *get_agency_desc(void)

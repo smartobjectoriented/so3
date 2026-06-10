@@ -52,8 +52,8 @@
 #ifdef CONFIG_AVZ
 
 /* Start of the container memory base */
-#define ME_BASE UL(0x0000200000000000)
-#define ME_ID_SHIFT 32
+#define S3C_BASE UL(0x0000200000000000)
+#define S3C_ID_SHIFT 32
 
 #define AGENCY_VOFFSET UL(0x0000110000000000)
 

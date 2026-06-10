@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef ME_COMMON_H
-#define ME_COMMON_H
+#ifndef S3C_COMMON_H
+#define S3C_COMMON_H
 
 #include <soo/uapi/soo.h>
 
@@ -61,7 +61,7 @@ typedef struct {
 	 */
 	uint8_t soohosts[0];
 
-} me_common_t;
+} s3c_common_t;
 
 int concat_hosts(struct list_head *hosts, uint8_t *hosts_array);
 
@@ -75,7 +75,7 @@ void del_host(struct list_head *hosts, uint64_t agencyUID);
 /**
  * Add a new entry in the host list.
  *
- * @param me_common
+ * @param s3c_common
  * @param agencyUID
  */
 void new_host(struct list_head *hosts, uint64_t agencyUID, void *priv, int priv_len);
@@ -148,4 +148,4 @@ void dump_hosts(struct list_head *hosts);
  */
 void do_local_cooperation(int domID);
 
-#endif /* ME_COMMON_H */
+#endif /* S3C_COMMON_H */

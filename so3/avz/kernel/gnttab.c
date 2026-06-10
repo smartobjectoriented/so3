@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2024-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -143,9 +143,9 @@ addr_t allocate_grant_pfn(struct domain *d)
 }
 
 /**
- * @brief Map the grant page associated to vbstore in the IPA domain of the ME
+ * @brief Map the grant page associated to vbstore in the IPA domain of the capsule
  *
- * @param target_domid the ME which needs the vbstore pfn
+ * @param target_domid the capsule which needs the vbstore pfn
  * @param pfn 
  * @return 
  */

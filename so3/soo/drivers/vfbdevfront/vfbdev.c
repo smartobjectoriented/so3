@@ -254,7 +254,7 @@ static void retrieve_data(vfbdev_priv_t *priv)
 	vdevfront_processing_end(vfbdev_dev);
 
 	/* Retrieve fb address from AVZ */
-	hyp_args.cmd = AVZ_FBDEV_GET_ME_ADDR;
+	hyp_args.cmd = AVZ_FBDEV_GET_S3C_ADDR;
 	avz_hypercall(&hyp_args);
 	priv->fb_paddr = hyp_args.u.avz_fbdev_addr_args.paddr;
 }

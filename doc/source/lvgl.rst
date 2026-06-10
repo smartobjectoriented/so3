@@ -1,41 +1,42 @@
+.. _lvgl:
 
-LVGL - Light and Versatile Embedded Graphics Library
-====================================================
+LVGL — Light and Versatile Embedded Graphics Library
+####################################################
 
-LVGL is a free and open-source library providing an efficient GUI for embedded systems.
-More information is available on the `official site <https://lvgl.io/>`__.
+`LVGL <https://lvgl.io/>`__ is a free and open-source library providing an
+efficient GUI for embedded systems.
 
 Integration of LVGL in SO3
---------------------------
+==========================
 
-The major work of porting LVGL in SO3 has been done by Nikolaos Garanis in the context of 
-his `Bachelor project <https://nyg.gitlab.io/so3-support-graphique>`_.
+The initial port of LVGL to SO3 was done by Nikolaos Garanis in the context of
+his `Bachelor project <https://nyg.gitlab.io/so3-support-graphique>`__; some
+details are available on our `discussion forum
+<https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18>`__ and in
+`a short video <LVGL_qemu_>`__.
 
-Some details about the porting can be found in our `discussion forum <https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18>`__.
-
-There is `a small video <LVGL_qemu_>`__ to show LVGL running in the QEMU/vExpress framebuffer emulated environment.
-
-In addition, from LVGL v8, the ``lv_demo_widgets`` is now fully supported. And yes, SO3 integrates LVGL v8.
-
-This part will be completed very soon...
-
+SO3 integrates **LVGL v8**, and the ``lv_demo_widgets`` demo is fully supported.
+On the kernel side LVGL draws to the SO3 framebuffer device (``devices/fb/``,
+exposed through ``/dev`` — see :ref:`kernel`); the LVGL library itself is built
+into the user space (``usr/lib/lvgl``) and used by the ``lvgl_demo``,
+``lvgl_perf`` and ``lvgl_benchmark`` applications.
 
 .. _LVGL_qemu: https://youtu.be/skn_mp3ZBhI
 
-Using LVGL in the emulated environment
---------------------------------------
+Running LVGL under QEMU
+=======================
 
 .. note::
 
-   First, make sure you compiled the kernel with a configuration
-   which has the framebuffer enabled (for example, *vexpress_fb_defconfig*)
-   
-In order to have a graphical framebuffer in the emulated QEMU/vExpress 
-environment, it is necessary to start the emulator with the ``stg`` script:
+   Build the kernel with a framebuffer-enabled configuration, for example
+   ``virt64_fb_defconfig``, and the user space with the LVGL apps.
+
+The framebuffer needs a real display window, so start the emulator with the
+graphical launch script instead of ``./st``:
 
 .. code-block:: bash
 
    ./stg
-   
-QEMU will start a new GUI window used as framebuffer.
 
+QEMU opens a window that acts as the framebuffer; launch an LVGL application from
+the ``so3%`` prompt to draw into it.

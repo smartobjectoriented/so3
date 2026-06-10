@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -21,12 +21,12 @@
 #include <soo/uapi/soo.h>
 
 /* Device tree features */
-#define ME_FEAT_ROOT "/me_features"
+#define S3C_FEAT_ROOT "/s3c_features"
 
 void soo_activity_init(void);
-void shutdown_ME(unsigned int ME_slotID);
+void shutdown_S3C(unsigned int S3C_slotID);
 
-ME_state_t get_ME_state(uint32_t ME_slotID);
-void set_ME_state(uint32_t slotID, ME_state_t state);
+S3C_state_t get_S3C_state(uint32_t S3C_slotID);
+void set_S3C_state(uint32_t slotID, S3C_state_t state);
 
 #endif /* SOO_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2015-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -28,7 +28,7 @@
 #ifdef CONFIG_AVZ
 
 #define AGENCY_VOFFSET UL(0xc0000000)
-#define ME_VOFFSET UL(0xc0000000)
+#define S3C_VOFFSET UL(0xc0000000)
 
 #endif
 

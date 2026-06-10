@@ -5,7 +5,7 @@ obj-y	+= console.o
 
 obj-y += agency_build.o 
 
-obj-${CONFIG_SOO} += ME_build.o
+obj-${CONFIG_SOO} += capsule_build.o
 
 obj-y += domain.o
 obj-y += setup.o

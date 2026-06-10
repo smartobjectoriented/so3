@@ -55,7 +55,7 @@ ipamap_t agency_ipamap[] = {
  * the hypervisor's domain setup code; the GICv3 compat GICC is mapped
  * at its physical address.
  */
-ipamap_t capsule_ipamap[] = {
+ipamap_t S3C_ipamap[] = {
 	{
 		/* GICv3 CPU interface compatibility register frame */
 		.ipa_addr  = 0x38C20000,

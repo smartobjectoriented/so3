@@ -75,7 +75,7 @@ void avz_start(void)
 	loadAgency();
 
 	lprintk("\n\n********** Smart Object Oriented technology - AVZ Hypervisor  **********\n");
-	lprintk("Copyright (c) 2014-2025 REDS Institute, HEIG-VD, Yverdon-les-Bains\n");
+	lprintk("Copyright (c) 2014-2026 REDS Institute, HEIG-VD, Yverdon-les-Bains\n");
 	lprintk("Version %s\n", SO3_KERNEL_VERSION);
 
 	LOG_INFO("\n\nNow bootstraping the hypervisor kernel ...\n");

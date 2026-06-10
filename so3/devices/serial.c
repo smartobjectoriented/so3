@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017 Alexandre Malki <alexandre.malki@heig-vd.ch>
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -66,7 +66,7 @@ char serial_getc(void)
 
 /*
  * Emergency printk() or very early printk() before the real uart driver is ready.
- * It may be used in the context of the virtualized ME SO3 as well.
+ * It may be used in the context of the virtualized capsule SO3 as well.
  */
 int ll_serial_write(char *str, int len)
 {

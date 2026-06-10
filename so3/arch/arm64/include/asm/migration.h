@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,10 +19,10 @@
 #ifndef ASM_MIGRATION_H
 #define ASM_MIGRATION_H
 
-void fix_kernel_boot_page_table_ME(unsigned int ME_slotID);
+void fix_kernel_boot_page_table_S3C(unsigned int S3C_slotID);
 
-/* Start of ME RAM in virtual address space of idle domain */
-extern unsigned long vaddr_start_ME;
+/* Start of capsule RAM in virtual address space of idle domain */
+extern unsigned long vaddr_start_S3C;
 
 extern volatile long pfn_offset;
 

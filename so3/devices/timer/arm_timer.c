@@ -84,7 +84,7 @@ static irq_return_t timer_isr(int irq, void *dev)
 		next_event(arm_timer->reload);
 
 #ifdef CONFIG_AVZ
-		timer_interrupt((smp_processor_id() == ME_CPU) ? true : false);
+		timer_interrupt((smp_processor_id() == S3C_CPU) ? true : false);
 #else
 		jiffies++;
 
@@ -128,7 +128,7 @@ void avz_el2_timer_tick(void)
 	/* Re-arm the timer for the next period. */
 	next_event(arm_timer->reload);
 
-	/* Agency tick (non-ME path). */
+	/* Agency tick (non-capsule path). */
 	timer_interrupt(false);
 }
 #endif /* CONFIG_AVZ */

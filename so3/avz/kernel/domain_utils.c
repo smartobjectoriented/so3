@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -264,20 +264,20 @@ void loadAgency(void)
  * @param slotID
  * @param itb	ITB image
  */
-void loadME(unsigned int slotID, void *itb)
+void load_S3C(unsigned int slotID, void *itb)
 {
-	void *ME_vaddr;
+	void *S3C_vaddr;
 	uint32_t dom_addr, entry_addr, fdt_paddr;
-	size_t ME_size, fdt_size, initrd_size;
+	size_t S3C_size, fdt_size, initrd_size;
 	void *fdt_vaddr, *initrd_vaddr;
-	void *dest_ME_vaddr;
+	void *dest_S3C_vaddr;
 	uint32_t initrd_start, initrd_end;
 	int nodeoffset, next_node, depth = 0;
 	int ret;
 	const char *propstring;
 	mem_info_t guest_mem_info;
 
-	/* Look for a node of ME type in the fit image */
+	/* Look for a node of capsule type in the fit image */
 	nodeoffset = 0;
 	depth = 0;
 	while (nodeoffset >= 0) {
@@ -300,9 +300,9 @@ void loadME(unsigned int slotID, void *itb)
 			lprintk("ITB: Domain entry addr = 0x%x\n", entry_addr);
 
 			/* Get the pointer to the OS binary image from the ITB we got from the user space. */
-			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &ME_vaddr, &ME_size);
+			ret = fit_image_get_data_and_size(itb, nodeoffset, (const void **) &S3C_vaddr, &S3C_size);
 			if (ret) {
-				lprintk("!! The properties in the ME node does not look good !!\n");
+				lprintk("!! The properties in the capsule node does not look good !!\n");
 				BUG();
 			} else
 				break;
@@ -312,7 +312,7 @@ void loadME(unsigned int slotID, void *itb)
 	}
 
 	if (nodeoffset < 0) {
-		lprintk("!! Unable to find a node with type ME in the FIT image... !!\n");
+		lprintk("!! Unable to find a node with type capsule in the FIT image... !!\n");
 		BUG();
 	};
 
@@ -378,12 +378,12 @@ void loadME(unsigned int slotID, void *itb)
 		nodeoffset = next_node;
 	}
 
-	dest_ME_vaddr = (void *) memslot[slotID].base_vaddr;
+	dest_S3C_vaddr = (void *) memslot[slotID].base_vaddr;
 
-	dest_ME_vaddr += L_TEXT_OFFSET;
+	dest_S3C_vaddr += L_TEXT_OFFSET;
 
 	/* Move the kernel binary within the domain slotID. */
-	memcpy(dest_ME_vaddr, ME_vaddr, ME_size);
+	memcpy(dest_S3C_vaddr, S3C_vaddr, S3C_size);
 
 	memslot[slotID].fdt_paddr = ipa_to_pa(slotID, fdt_paddr);
 

@@ -93,11 +93,11 @@ CONFIG_SOO=y
 CONFIG_MMU=y
 
 #
-# SOO Mobile Entity - Smart Object Oriented subsystem
+# SOO SO3 capsule - Smart Object Oriented subsystem
 #
 
 #
-# SOO Mobile Entity frontend drivers
+# SOO SO3 capsule frontend drivers
 #
 CONFIG_VDUMMY_FRONTEND=y
 CONFIG_VUART_FRONTEND=y

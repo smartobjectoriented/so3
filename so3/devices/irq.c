@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -194,7 +194,7 @@ void irq_handle(cpu_regs_t *regs)
 
 	/*
 	 * We do not check if IRQs were disabled before the handler in case of an hypercall
-	 * path which may happen in AVZ and in the ME because hypercalls are executed during
+	 * path which may happen in AVZ and in the capsule because hypercalls are executed during
 	 * their initialization along which a timer IRQ can be raised up and lead to their processing
 	 * here.
 	 */

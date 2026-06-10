@@ -46,14 +46,14 @@ static DEFINE_SPINLOCK(domctl_lock);
 /*
  * We don't care of the IDLE domain here...
  * In the domain table, the index 0 and 1 are dedicated to the non-RT and RT agency domains.
- * The indexes 1..MAX_DOMAINS are for the MEs. ME_slotID should correspond to domain ID.
+ * The indexes 1..MAX_DOMAINS are for the MEs. S3C_slotID should correspond to domain ID.
  */
 struct domain *domains[MAX_DOMAINS];
 
 struct domain *agency;
 
 /*
- * Creation of new domain context associated to the agency or a Mobile Entity.
+ * Creation of new domain context associated to the agency or a SO3 capsule.
  *
  * @domid is the domain number
  * @cpu_id the CPU on which this domain is allowed to run
@@ -113,7 +113,7 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 	if (is_idle_domain(d) && (cpu_id == AGENCY_CPU))
 		d->sched = &sched_agency;
 	else {
-		if (cpu_id == ME_CPU) {
+		if (cpu_id == S3C_CPU) {
 			d->sched = &sched_flip;
 			d->need_periodic_timer = true;
 
@@ -289,14 +289,14 @@ void do_domctl(domctl_t *args)
 	d = domains[args->domain];
 
 	switch (args->cmd) {
-	case DOMCTL_pauseME:
+	case DOMCTL_pause_S3C:
 
 		domain_pause_by_systemcontroller(d);
 		break;
 
-	case DOMCTL_unpauseME:
+	case DOMCTL_unpause_S3C:
 
-		LOG_DEBUG("%s: unpausing ME\n", __func__);
+		LOG_DEBUG("%s: unpausing capsule\n", __func__);
 
 		domain_unpause_by_systemcontroller(d);
 		break;

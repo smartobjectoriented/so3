@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,21 +24,21 @@
 
 #include <soo/uapi/soo.h>
 
-int get_ME_state(void);
-void set_ME_state(ME_state_t state);
+int get_S3C_state(void);
+void set_S3C_state(S3C_state_t state);
 
-bool get_ME_id(uint32_t slotID, ME_id_t *ME_id);
+bool get_S3C_id(uint32_t slotID, S3C_id_t *S3C_id);
 
-void get_ME_id_array(ME_id_t *ME_id_array);
-char *xml_prepare_id_array(ME_id_t *ME_id_array);
+void get_S3C_id_array(S3C_id_t *S3C_id_array);
+char *xml_prepare_id_array(S3C_id_t *S3C_id_array);
 
-ME_desc_t *get_ME_desc(void);
+S3C_desc_t *get_S3C_desc(void);
 
-/* ME ID management */
-const char *get_me_shortdesc(void);
+/* capsule ID management */
+const char *get_s3c_shortdesc(void);
 const char *get_me_name(void);
 u64 get_spid(void);
 
-void vbstore_ME_ID_populate(void);
+void vbstore_S3C_ID_populate(void);
 
 #endif /* SOO_H */

@@ -530,7 +530,7 @@ __prepare_to_sig_el1_handler:
 
 /*
  * This glue code will be called to prepare a resuming
- * of a ME.
+ * of a capsule.
  */
 ENTRY(resume_to_guest)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -66,7 +66,7 @@ struct vbs_handle {
 
 	struct completion watch_wait;
 
-	/* To manage ongoing transactions when the ME must be suspended */
+	/* To manage ongoing transactions when the capsule must be suspended */
 	struct mutex transaction_group_mutex;
 
 	/* Protect watch (de)register against save/restore. */
@@ -236,7 +236,7 @@ static void *vbs_talkv(struct vbus_transaction t, vbus_msg_type_t type, const ms
 
 	smp_mb();
 
-	notify_remote_via_evtchn(avz_shared->dom_desc.u.ME.vbstore_levtchn);
+	notify_remote_via_evtchn(avz_shared->dom_desc.u.S3C.vbstore_levtchn);
 
 	/* Now we are waiting for the answer from vbstore */
 	DBG("Now, we wait for the reply / msg ID: %d (0x%lx)\n", msg.id, &msg.list);
@@ -882,20 +882,20 @@ void vbus_vbstore_init(void)
 	int vbus_irq;
 
 	/*
-	 * Bind evtchn for interdomain communication: must be executed from the agency or from a ME.
+	 * Bind evtchn for interdomain communication: must be executed from the agency or from a capsule.
 	 */
 
 	/* dev temporary used to set up event channel used by vbstore. */
 
 	dev.otherend_id = 0;
 	DBG("%s: binding a local event channel to the remote evtchn %d in Agency (intf: %lx) ...\n", __func__,
-	    avz_shared->dom_desc.u.ME.vbstore_revtchn, __intf);
+	    avz_shared->dom_desc.u.S3C.vbstore_revtchn, __intf);
 
-	vbus_bind_evtchn(&dev, avz_shared->dom_desc.u.ME.vbstore_revtchn,
-			 (uint32_t *) &avz_shared->dom_desc.u.ME.vbstore_levtchn);
+	vbus_bind_evtchn(&dev, avz_shared->dom_desc.u.S3C.vbstore_revtchn,
+			 (uint32_t *) &avz_shared->dom_desc.u.S3C.vbstore_levtchn);
 
-	DBG("Local vbstore_evtchn is %d (remote is %d)\n", avz_shared->dom_desc.u.ME.vbstore_levtchn,
-	    avz_shared->dom_desc.u.ME.vbstore_revtchn);
+	DBG("Local vbstore_evtchn is %d (remote is %d)\n", avz_shared->dom_desc.u.S3C.vbstore_levtchn,
+	    avz_shared->dom_desc.u.S3C.vbstore_revtchn);
 
 	INIT_LIST_HEAD(&vbs_state.reply_list);
 
@@ -911,7 +911,7 @@ void vbus_vbstore_init(void)
 	init_completion(&vbs_state.watch_wait);
 
 	/* Initialize the shared memory rings to talk to vbstore */
-	vbus_irq = bind_evtchn_to_irq_handler(avz_shared->dom_desc.u.ME.vbstore_levtchn, vbus_vbstore_isr, NULL, NULL);
+	vbus_irq = bind_evtchn_to_irq_handler(avz_shared->dom_desc.u.S3C.vbstore_levtchn, vbus_vbstore_isr, NULL, NULL);
 	if (vbus_irq < 0) {
 		printk("VBus request irq failed %i\n", vbus_irq);
 		BUG();

@@ -24,7 +24,7 @@
 #include <avz/sched.h>
 
 /*
- * Called on every EL2 timer tick (CNTHP, PPI 26) on agency CPUs (non-ME).
+ * Called on every EL2 timer tick (CNTHP, PPI 26) on agency CPUs (non-capsule).
  * Per-CPU tick counter so each CPU emits its own 5s heartbeat — without
  * this, CPU0's heartbeat would mask whether secondary CPUs are ticking.
  */

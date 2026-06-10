@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,12 +16,12 @@
  *
  */
 
-#ifndef VBSTORE_ME_H
-#define VBSTORE_ME_H
+#ifndef VBSTORE_S3C_H
+#define VBSTORE_S3C_H
 
 #include <completion.h>
 
 extern struct completion vbstore_populated_sync;
 extern bool vbstore_populated;
 
-#endif /* VBSTORE_ME_H */
+#endif /* VBSTORE_S3C_H */

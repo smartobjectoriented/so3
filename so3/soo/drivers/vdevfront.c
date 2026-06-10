@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -35,7 +35,7 @@
  *
  * Assumptions:
  * - If the frontend is suspended during processing_start, it is for a short time, until the FE gets connected.
- * - If the frontend is suspended and a shutdown operation is in progress, the ME will disappear! Therefore,
+ * - If the frontend is suspended and a shutdown operation is in progress, the capsule will disappear! Therefore,
  *   we do not take care about ongoing activities. All will disappear...
  *
  */
@@ -129,7 +129,7 @@ static void __otherend_changed(struct vbus_device *vdev, enum vbus_state backend
 		vdrvfront->closed(vdev);
 
 		/* The processing_lock is kept forever, since it has to keep all processing activities suspended.
-		 * Until the ME disappears...
+		 * Until the capsule disappears...
 		 */
 
 		break;

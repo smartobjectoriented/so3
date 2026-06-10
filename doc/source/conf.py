@@ -35,15 +35,14 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.plantuml',
     'rstFlatTable',
-#    'sphinxcontrib.bibtex',
     'sphinx.ext.extlinks',
     'sphinx.ext.imgmath'
 ]
 
-plantuml = 'java -jar %s -t' % os.path.join(os.path.dirname(__file__), "../utils", "plantuml.jar")
-plantuml_output_format = 'png'
+# Diagrams are authored in source/img/so3.drawio and exported to PNG
+# (see source/img/gen_so3_diagrams.py and source/img/export_png.sh). The
+# PlantUML extension was removed: it was unused and required a missing JAR.
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -60,7 +59,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'SO3 Operating System'
 
-copyright = u'2014-2025, HEIG-VD - REDS Institute'
+copyright = u'2014-2026, HEIG-VD - REDS Institute'
 
 
 # The version info for the project you're documenting, acts as replacement for

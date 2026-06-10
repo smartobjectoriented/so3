@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -144,7 +144,7 @@ void sched_flip_init(void)
 
 #ifdef CONFIG_SOO
 	/* Initiate a timer to trigger the schedule function */
-	init_timer(&sched_flip.sched_data.s_timer, s_timer_fn, NULL, ME_CPU);
+	init_timer(&sched_flip.sched_data.s_timer, s_timer_fn, NULL, S3C_CPU);
 
 	set_timer(&sched_flip.sched_data.s_timer, NOW() + MILLISECS(CONFIG_SCHED_FLIP_SCHEDFREQ));
 #endif /* CONFIG_SOO */

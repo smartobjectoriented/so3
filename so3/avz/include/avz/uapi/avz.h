@@ -50,10 +50,10 @@
 /* DOMID_SELF is used in certain contexts to refer to oneself. */
 #define DOMID_SELF (0x7FF0U)
 
-#define MAX_ME_DOMAINS 5
+#define MAX_S3C_DOMAINS 5
 
 /* We include the (non-RT & RT) agency domain */
-#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
+#define MAX_DOMAINS (2 + MAX_S3C_DOMAINS)
 
 /* Agency */
 #define DOMID_AGENCY 0
@@ -116,8 +116,8 @@ typedef struct {
 	console_t console;
 } avz_console_io_t;
 
-#define DOMCTL_pauseME 1
-#define DOMCTL_unpauseME 2
+#define DOMCTL_pause_S3C 1
+#define DOMCTL_unpause_S3C 2
 #define DOMCTL_get_AVZ_shared 3
 
 struct domctl {

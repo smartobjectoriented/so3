@@ -71,7 +71,7 @@ void inject_capsule(avz_hyp_t *args);
 /* Start the execution of a capsule */
 void start_capsule(avz_hyp_t *args);
 
-void read_ME_snapshot(avz_hyp_t *args);
-void write_ME_snapshot(avz_hyp_t *args);
+void read_S3C_snapshot(avz_hyp_t *args);
+void write_S3C_snapshot(avz_hyp_t *args);
 
 #endif /* INJECTOR_H */

@@ -89,7 +89,7 @@ ipamap_t agency_ipamap[] = {
  * which will be trapped and handled by the hypervisor.
  */
 
-ipamap_t capsule_ipamap[] = {
+ipamap_t S3C_ipamap[] = {
 
 	{
 		/* Only mapping the CPU interface to the vGIC CPU interface (GICV).

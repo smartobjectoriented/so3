@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -22,7 +22,7 @@
 #include <completion.h>
 #include <spinlock.h>
 
-#include <me/common.h>
+#include <capsule/common.h>
 
 /*
  * Never use lock (completion, spinlock, etc.) in the shared page since
@@ -36,7 +36,7 @@ typedef struct {
 	 * MUST BE the last field, since it contains a field at the end which is used
 	 * as "payload" for a concatened list of hosts.
 	 */
-	me_common_t me_common;
+	s3c_common_t s3c_common;
 
 } sh_refso3_t;
 

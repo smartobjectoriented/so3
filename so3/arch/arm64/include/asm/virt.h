@@ -199,7 +199,7 @@
  * Group 0 channel in the CPU interface. */
 #define HCR_AGENCY_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_RW_MASK | HCR_AMO_MASK | HCR_IMO_MASK | HCR_FMO_MASK)
 
-#define HCR_ME_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_AMO_MASK | HCR_RW_MASK | HCR_FMO_MASK | HCR_IMO_MASK)
+#define HCR_S3C_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_AMO_MASK | HCR_RW_MASK | HCR_FMO_MASK | HCR_IMO_MASK)
 
 #define HCR_GUEST_FLAGS                                                                                                  \
 	(HCR_TSC | HCR_TSW | HCR_TWE | HCR_TWI | HCR_VM | HCR_TVM | HCR_BSU_IS | HCR_FB | HCR_TAC | HCR_AMO | HCR_SWIO | \
