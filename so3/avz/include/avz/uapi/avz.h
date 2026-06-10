@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -83,6 +83,7 @@
 
 #ifndef DOMID_T
 #define DOMID_T
+
 typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
@@ -138,6 +139,7 @@ typedef struct domctl domctl_t;
 #define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
 #define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
 #define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
+
 /*
  * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
  * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn

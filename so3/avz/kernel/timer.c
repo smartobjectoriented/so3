@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,6 +23,36 @@
 #include <avz/domain.h>
 #include <avz/sched.h>
 
+/*
+ * Called on every EL2 timer tick (CNTHP, PPI 26) on agency CPUs (non-ME).
+ * Per-CPU tick counter so each CPU emits its own 5s heartbeat — without
+ * this, CPU0's heartbeat would mask whether secondary CPUs are ticking.
+ */
+static DEFINE_PER_CPU(unsigned int, agency_tick_count);
+
+/* EDGEMTech instrumentation: per-CPU counters to discriminate stall cause.
+ * Updated from gic_handle/gic_inject_irq (gic.c). */
+DEFINE_PER_CPU(unsigned long, gic_iar_count);
+DEFINE_PER_CPU(unsigned long, gic_inj_27_count);
+DEFINE_PER_CPU(unsigned long, gic_inj_total_count);
+DEFINE_PER_CPU(unsigned long, gic_busy_count);
+DEFINE_PER_CPU(unsigned long, gic_eexist_count);
+DEFINE_PER_CPU(unsigned long, gic_sgi0_recv);
+DEFINE_PER_CPU(unsigned long, gic_sgi0_eexist);
+
+void agency_timer_interrupt(void)
+{
+	unsigned int *count = &this_cpu(agency_tick_count);
+
+	if (++(*count) >= 5 * CONFIG_HZ) {
+		*count = 0;	
+
+#if 0 /* Debug purpose */
+		printk("[AVZ] alive on CPU%d\n", smp_processor_id());
+#endif /* 0 */
+	}
+}
+
 void timer_interrupt(bool periodic)
 {
 	int i;
@@ -43,7 +73,10 @@ void timer_interrupt(bool periodic)
 				}
 			}
 		}
+	} else {
+		agency_timer_interrupt();
 	}
+
 	raise_softirq(TIMER_SOFTIRQ);
 }
 

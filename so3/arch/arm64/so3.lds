@@ -15,7 +15,7 @@ SECTIONS
      /* where some locations at low addresses are reserved */
      /* for spin tables used for starting cores. */
      
-     . = ENTRY_ADDR + 0x80000;
+     . = ENTRY_ADDR + LOAD_OFFSET;
     
     __vectors_start = .;
 
@@ -64,27 +64,27 @@ SECTIONS
         *(.sbss*)
     }
 
-    .bss (NOLOAD) : 
-    { 
-        *(.bss*) 
-        
-        . = ALIGN(4096); 
+    .bss (NOLOAD) :
+    {
+        *(.bss .bss.*)
+
+        . = ALIGN(4096);
 
     	__per_cpu_start = .;
-    	
-    	*(.bss.percpu)
-    
+
+    	*(.percpu_data)
+
      	. = ALIGN(128);
-    	*(.bss.percpu.read_mostly)
-    
+    	*(.percpu_data.read_mostly)
+
      	. = ALIGN(128);
-    	
+
     	__per_cpu_data_end = .;
-       
+
      	. = ALIGN(128);
-     	
+
      	__per_cpu_end = .;
-     	
+
     } :data
 
     __bss_end = .;

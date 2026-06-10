@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -262,6 +262,32 @@ struct __attribute__((packed)) gich_regs {
 #define GICH_LR_PHYS_ID_SHIFT 10
 #define GICH_LR_VIRT_ID_MASK 0x3ff
 
+/* GICv3 ICH_LR*_EL2 64-bit field definitions (ARM GICv3 spec IHI0069):
+ * [63]    RES0
+ * [62:61] State: 00=Invalid, 01=Pending, 10=Active, 11=Active+Pending
+ * [60]    HW: hardware-backed interrupt
+ * [59]    Group: 0=Group0 (FIQ), 1=Group1 (IRQ)
+ * [55:48] Priority
+ * [47:32] pINTID (physical INTID, valid when HW=1)
+ * [19:0]  vINTID (virtual INTID)
+ */
+/* ICH_LR<n>_EL2 layout (per ARM ARM, matches Linux's arch_gicv3.h):
+ *   [63]    State[1] = Active
+ *   [62]    State[0] = Pending
+ *   [61]    HW
+ *   [60]    Group (1 = Group 1)
+ *   [55:48] Priority
+ *   [41:32] pINTID (when HW=1)
+ *   [31:0]  vINTID
+ */
+#define GICH_LR_STATE_PENDING64   (1ULL << 62)  /* State[63:62]=01 */
+#define GICH_LR_STATE_ACTIVE64    (1ULL << 63)  /* State[63:62]=10 */
+#define GICH_LR_HW_BIT64          (1ULL << 61)
+#define GICH_LR_GRP1_BIT64        (1ULL << 60)
+#define GICH_LR_PRIORITY_SHIFT64  48
+#define GICH_LR_PHYS_ID_SHIFT64   32
+#define GICH_LR_DEFAULT_PRIORITY  0xa0
+
 #define GIC_SGI_UNKNOWN 0
 #define GIC_SGI_EVENT 1
 
@@ -299,7 +325,13 @@ typedef struct __attribute__((packed)) {
 #ifdef CONFIG_AVZ
 
 void gic_set_pending(u16 irq_id);
+void gic_inject_pending(void);
 void gic_clear_pending_irqs(void);
+
+#ifdef CONFIG_GIC_V3
+void gich_secondary_init(void);
+void gic_clear_ppi_pending(u16 id);
+#endif
 
 #endif /* CONFIG_AVZ */
 

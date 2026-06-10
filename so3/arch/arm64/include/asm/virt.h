@@ -191,7 +191,13 @@
  * FMO:		Override CPSR.F and enable signaling with VF
  * SWIO:	Turn set/way invalidates into set/way clean+invalidate
  */
-#define HCR_AGENCY_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_RW_MASK)
+/* FMO=1 is required so that ICV_AP0Rn_EL1 (virtual Group 0 active priority
+ * registers) are DEFINED at NS EL1.  Per GICv3 spec, ICV_AP0Rn_EL1 at NS EL1
+ * requires HCR_EL2.FMO=1 when SCR_EL3.FIQ=1 (which OPTEE sets on this
+ * platform).  Physical FIQs still go to EL3 due to SCR_EL3.FIQ=1 so AVZ
+ * never actually handles a physical FIQ; FMO=1 only enables the virtual
+ * Group 0 channel in the CPU interface. */
+#define HCR_AGENCY_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_RW_MASK | HCR_AMO_MASK | HCR_IMO_MASK | HCR_FMO_MASK)
 
 #define HCR_ME_FLAGS (HCR_VM_MASK | HCR_API_MASK | HCR_APK_MASK | HCR_AMO_MASK | HCR_RW_MASK | HCR_FMO_MASK | HCR_IMO_MASK)
 

@@ -10,7 +10,11 @@ config PL011_UART
 config BCM283x_MU_UART
 	bool "BCM283x mini-UART"
 	depends on RPI4 || RPI4_64
-	
+
+config IMX_UART
+	bool "Freescale i.MX UART (fsl,imx6q-uart)"
+	depends on VERDIN_IMX8MP
+
 config UART_LL_PADDR
 	hex "Low-level UART base physical address"
 

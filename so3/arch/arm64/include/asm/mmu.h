@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2015-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,7 +29,6 @@
 
 #define USER_SPACE_VADDR UL(0x1000)
 
-#ifdef CONFIG_VA_BITS_48
 #define RAMDEV_VADDR UL(0xffffa00000000000)
 
 /* Fixmap page used for temporary mapping */
@@ -42,22 +41,6 @@
  * as main L0 page table.
  */
 #define USER_STACK_TOP_VADDR UL(0x0001000000000000)
-#elif CONFIG_VA_BITS_39
-#define RAMDEV_VADDR UL(0xffffffd000000000)
-
-/* Fixmap page used for temporary mapping */
-#define FIXMAP_MAPPING UL(0xffffffd800000000)
-
-/* Anonymous start virtual address */
-#define USER_ANONYMOUS_VADDR UL(0x0000000100000000)
-
-/* The user space can be up to bits [38:0] and uses ttbr0_el1
- * as main L0 page table.
- */
-#define USER_STACK_TOP_VADDR UL(0x0000008000000000)
-#else
-#error "Wrong VA_BITS configuration."
-#endif
 
 #define SZ_256G (256UL * SZ_1G)
 
@@ -72,14 +55,7 @@
 #define ME_BASE UL(0x0000200000000000)
 #define ME_ID_SHIFT 32
 
-#ifdef CONFIG_VA_BITS_48
 #define AGENCY_VOFFSET UL(0x0000110000000000)
-
-#elif CONFIG_VA_BITS_39
-#define AGENCY_VOFFSET UL(0xffffffc010000000)
-#else
-#error "Wrong VA_BITS configuration."
-#endif
 
 #endif /* CONFIG_AVZ */
 
@@ -467,18 +443,10 @@ enum dcache_option {
 
 #define pte_index_to_vaddr(i0, i1, i2, i3) ((i0 << TTB_I0_SHIFT) | i1 << TTB_I1_SHIFT) | (i2 << TTB_I2_SHIFT) | (i3 << TTB_I3_SHIFT))
 
-#ifdef CONFIG_VA_BITS_48
 #define l0pte_offset(pgtable, addr) ((u64 *) ((u64 *) pgtable + l0pte_index(addr)))
 #define l1pte_offset(l0pte, addr) ((u64 *) (__va(*l0pte & TTB_L0_TABLE_ADDR_MASK)) + l1pte_index(addr))
 #define l2pte_offset(l1pte, addr) ((u64 *) (__va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + l2pte_index(addr))
 #define l3pte_offset(l2pte, addr) ((u64 *) (__va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l3pte_index(addr))
-#elif CONFIG_VA_BITS_39
-#define l1pte_offset(pgtable, addr) ((u64 *) ((u64 *) pgtable + l1pte_index(addr)))
-#define l2pte_offset(l1pte, addr) ((u64 *) (__va(*l1pte & TTB_L1_TABLE_ADDR_MASK)) + l2pte_index(addr))
-#define l3pte_offset(l2pte, addr) ((u64 *) (__va(*l2pte & TTB_L2_TABLE_ADDR_MASK)) + l3pte_index(addr))
-#else
-#error "Wrong VA_BITS configuration."
-#endif
 
 #define l1pte_first(l0pte) ((u64 *) __va(*l0pte & TTB_L0_TABLE_ADDR_MASK))
 #define l2pte_first(l1pte) ((u64 *) __va(*l1pte & TTB_L1_TABLE_ADDR_MASK))

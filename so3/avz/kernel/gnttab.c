@@ -165,14 +165,7 @@ addr_t map_vbstore_pfn(int target_domid, int pfn)
 			else
 				grant_paddr = pfn_to_phys(pfn);
 
-			/*
-			 * The vbstore ring buffer is shared Normal memory between agency
-			 * and ME. Map it Normal cacheable (nocache=false) so that both
-			 * sides see coherent writes via the inner-shareable cache domain.
-			 * Using Device attributes here would break ring-buffer coherency
-			 * with the agency which maps the same page as Normal cacheable.
-			 */
-			__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(cur->pfn), PAGE_SIZE, false,
+			__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(cur->pfn), PAGE_SIZE, true,
 					 S2);
 
 			return phys_to_pfn(grant_paddr);

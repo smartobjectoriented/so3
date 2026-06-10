@@ -2,7 +2,7 @@
  *  linux/include/asm-arm/processor.h
  *
  *  Copyright (C) 1995-2002 Russell King
- *  Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *  Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -103,6 +103,7 @@
 
 #define ESR_ELx_EC_UNKNOWN	(0x00)
 #define ESR_ELx_EC_WFx		(0x01)
+
 /* Unallocated EC: 0x02 */
 #define ESR_ELx_EC_CP15_32	(0x03)
 #define ESR_ELx_EC_CP15_64	(0x04)
@@ -111,14 +112,17 @@
 #define ESR_ELx_EC_FP_ASIMD	(0x07)
 #define ESR_ELx_EC_CP10_ID	(0x08)	/* EL2 only */
 #define ESR_ELx_EC_PAC		(0x09)	/* EL2 and above */
+
 /* Unallocated EC: 0x0A - 0x0B */
 #define ESR_ELx_EC_CP14_64	(0x0C)
 #define ESR_ELx_EC_BTI		(0x0D)
 #define ESR_ELx_EC_ILL		(0x0E)
+
 /* Unallocated EC: 0x0F - 0x10 */
 #define ESR_ELx_EC_SVC32	(0x11)
 #define ESR_ELx_EC_HVC32	(0x12)	/* EL2 only */
 #define ESR_ELx_EC_SMC32	(0x13)	/* EL2 and above */
+
 /* Unallocated EC: 0x14 */
 #define ESR_ELx_EC_SVC64	(0x15)
 #define ESR_ELx_EC_HVC64	(0x16)	/* EL2 and above */
@@ -126,6 +130,7 @@
 #define ESR_ELx_EC_SYS64	(0x18)
 #define ESR_ELx_EC_SVE		(0x19)
 #define ESR_ELx_EC_ERET		(0x1a)	/* EL2 only */
+
 /* Unallocated EC: 0x1B */
 #define ESR_ELx_EC_FPAC		(0x1C)	/* EL1 and above */
 /* Unallocated EC: 0x1D - 0x1E */
@@ -133,10 +138,12 @@
 #define ESR_ELx_EC_IABT_LOW	(0x20)
 #define ESR_ELx_EC_IABT_CUR	(0x21)
 #define ESR_ELx_EC_PC_ALIGN	(0x22)
+
 /* Unallocated EC: 0x23 */
 #define ESR_ELx_EC_DABT_LOW	(0x24)
 #define ESR_ELx_EC_DABT_CUR	(0x25)
 #define ESR_ELx_EC_SP_ALIGN	(0x26)
+
 /* Unallocated EC: 0x27 */
 #define ESR_ELx_EC_FP_EXC32	(0x28)
 /* Unallocated EC: 0x29 - 0x2B */
@@ -149,6 +156,7 @@
 #define ESR_ELx_EC_SOFTSTP_CUR	(0x33)
 #define ESR_ELx_EC_WATCHPT_LOW	(0x34)
 #define ESR_ELx_EC_WATCHPT_CUR	(0x35)
+
 /* Unallocated EC: 0x36 - 0x37 */
 #define ESR_ELx_EC_BKPT32	(0x38)
 /* Unallocated EC: 0x39 */
@@ -553,6 +561,8 @@
 
 #define SYS_ICH_VSEIR_EL2		sys_reg(3, 4, 12, 9, 4)
 #define SYS_ICC_SRE_EL2			sys_reg(3, 4, 12, 9, 5)
+#define SYS_ICC_CTLR_EL2		sys_reg(3, 4, 12, 12, 4)
+#define ICC_CTLR_EL2_EOImode_BIT	(1 << 1)
 #define SYS_ICH_HCR_EL2			sys_reg(3, 4, 12, 11, 0)
 #define SYS_ICH_VTR_EL2			sys_reg(3, 4, 12, 11, 1)
 #define SYS_ICH_MISR_EL2		sys_reg(3, 4, 12, 11, 2)
@@ -870,6 +880,10 @@
 
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL	(BIT(31))
+
+/* The stack must be 16-byte aligned */
+
+#define S_FRAME_SIZE	(8 * 36)
 
 #ifdef __ASSEMBLY__
 
@@ -1266,6 +1280,7 @@ void ret_to_user(void);
 void pre_ret_to_user(void);
 void pre_ret_to_el1(void);
 void pre_ret_to_el1_spin(addr_t release_addr);
+void pre_ret_to_el1_diag(unsigned long cpu_id, unsigned long entry_point, int phase);
 
 #endif /* CONFIG_AVZ */
 

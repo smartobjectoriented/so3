@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -27,6 +27,8 @@
 
 #include <asm/processor.h>
 #include <asm/vfp.h>
+#include <asm/mmu.h>
+#include <asm/cacheflush.h>
 
 #include <avz/domain.h>
 #include <avz/sched.h>

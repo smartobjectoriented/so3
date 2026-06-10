@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -133,6 +133,8 @@ void secondary_timer_init(void);
 
 #ifdef CONFIG_AVZ
 void timer_interrupt(bool periodic);
+void agency_timer_interrupt(void);
+void avz_el2_timer_tick(void);
 #endif /* CONFIG_AVZ */
 
 #endif /* DEVICE_TIMER_H */

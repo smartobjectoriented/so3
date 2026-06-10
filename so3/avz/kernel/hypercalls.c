@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -222,8 +222,5 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
-	/* inner shareable */
-	dsb(ish);
-
-	isb();
+	flush_dcache_all();
 }

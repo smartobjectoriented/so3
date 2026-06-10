@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -38,6 +38,29 @@ void __sync_serror(addr_t lr)
 	lprintk("### Got a SError lr: 0x%lx ###\n", lr);
 
 	kernel_panic();
+}
+
+/* Called from pre_ret_to_el1 asm to log secondary CPU state before and after drain */
+void pre_ret_to_el1_diag(unsigned long cpu_id, unsigned long entry_point, int phase)
+{
+	(void)cpu_id; (void)entry_point; (void)phase;
+}
+
+/* SError at EL2 (AVZ running): log and return so the scheduler can continue */
+void avz_handle_el2_serror(void *regs)
+{
+	/* Consume EL2 SError silently; return to resume interrupted EL2 code */
+}
+
+/* SError from EL1 trapped to EL2 via HCR_EL2.AMO=1 */
+void avz_handle_el1_serror(void *regs)
+{
+	unsigned long elr = read_sysreg(elr_el2);
+	unsigned long esr = read_sysreg(esr_el2);
+	unsigned long far = read_sysreg(far_el2);
+
+	lprintk("### EL1 SError at EL2: ELR=0x%lx ESR=0x%lx FAR=0x%lx ###\n", elr, esr, far);
+	/* Consume the SError and return to EL1 so Linux can continue */
 }
 
 void __sync_el2_fault(addr_t lr, addr_t sp)

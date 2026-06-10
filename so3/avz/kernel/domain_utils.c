@@ -259,6 +259,7 @@ void loadAgency(void)
 
 /**
  * The ITB image will be parsed and the components placed in their target memory location.
+ * This works in AVZ context.
  *
  * @param slotID
  * @param itb	ITB image

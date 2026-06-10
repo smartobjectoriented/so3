@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -103,6 +103,36 @@ void periodic_timer_start(void)
 	next_event(arm_timer->reload);
 }
 
+#ifdef CONFIG_AVZ
+
+/* Called from the EL2 IRQ handler when CNTHP (PPI 26) fires while Linux
+ * runs at EL1.  Used by both GIC versions: the dispatch in gic.c
+ * special-cases INTID 26 and invokes this directly, bypassing the
+ * irq_desc action table.  This guarantees CNTHP gets re-armed even if a
+ * spurious early CNTHP IRQ arrives before periodic_timer_init binds the
+ * action — which would otherwise route the IRQ to the guest and leave
+ * the timer one-shot.  Safe to call before periodic_timer.dev is set:
+ * dev_get_drvdata returns NULL and we skip. 
+ */
+void avz_el2_timer_tick(void)
+{
+	arm_timer_t *arm_timer;
+
+	if (!periodic_timer.dev)
+		return;
+
+	arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
+	if (!arm_timer)
+		return;
+
+	/* Re-arm the timer for the next period. */
+	next_event(arm_timer->reload);
+
+	/* Agency tick (non-ME path). */
+	timer_interrupt(false);
+}
+#endif /* CONFIG_AVZ */
+
 /*
  * Read the clocksource timer value taking into account a time reference.
  *
@@ -125,7 +155,6 @@ void secondary_timer_init(void)
 #ifdef CONFIG_AVZ
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
-
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
 	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
@@ -170,7 +199,6 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset)
 #ifdef CONFIG_AVZ
 	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
 #else
-
 	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
 	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
 	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);

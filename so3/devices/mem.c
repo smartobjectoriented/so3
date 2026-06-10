@@ -72,7 +72,7 @@ static int mem_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 	if (remaining_size > 0)
 		create_mapping(pcb->pgtable, next_virt_addr, next_phys_addr, remaining_size, true);
 
-	return 0;
+	return virt_addr;
 }
 
 static struct file_operations mem_fops = {

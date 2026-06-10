@@ -18,7 +18,6 @@
 
 #include <process.h>
 #include <thread.h>
-#include <generated/asm-offsets.h>
 
 /**
  * Set the CPU registers with thread related information

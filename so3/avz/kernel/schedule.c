@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -199,8 +199,12 @@ static void domain_schedule(void)
 	struct task_slice next_slice;
 
 	ASSERT(local_irq_is_disabled());
-
 	ASSERT(prev->runstate == RUNSTATE_running);
+
+	if (!prev->sched) {
+		while (1)
+			cpu_do_idle();
+	}
 
 	/* To avoid that another CPU manipulates scheduler data structures */
 	/* Maybe the lock is already acquired from do_sleep() for example */
@@ -209,7 +213,8 @@ static void domain_schedule(void)
 
 	sd = &current_domain->sched->sched_data;
 
-	stop_timer(&sd->s_timer);
+	if (active_timer(&sd->s_timer))
+		stop_timer(&sd->s_timer);
 
 	/* get policy-specific decision on scheduling... */
 	next_slice = prev->sched->do_schedule();
