@@ -27,6 +27,6 @@
  * - Upgrade U-boot to 2022.04
  */
 
-#define SO3_KERNEL_VERSION "6.1.0"
+#define SO3_KERNEL_VERSION "6.2.0"
 
 #endif /* VERSION_H */
