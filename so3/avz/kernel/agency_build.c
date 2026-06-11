@@ -69,8 +69,7 @@ int construct_agency(struct domain *d)
 	printk("Agency FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
 	printk("Shared AVZ page is located at: %p\n", d->avz_shared);
-	printk("Agency entry IPA: 0x%lx  FDT IPA: 0x%lx\n",
-	       pa_to_ipa(MEMSLOT_AGENCY, memslot[MEMSLOT_AGENCY].entry_addr),
+	printk("Agency entry IPA: 0x%lx  FDT IPA: 0x%lx\n", pa_to_ipa(MEMSLOT_AGENCY, memslot[MEMSLOT_AGENCY].entry_addr),
 	       pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr));
 
 	/* Dump the first 4 instructions at the guest entry point to confirm the kernel is loaded */
@@ -78,11 +77,11 @@ int construct_agency(struct domain *d)
 		u32 *insns = (u32 *) __xva(MEMSLOT_AGENCY, memslot[MEMSLOT_AGENCY].entry_addr);
 
 		printk("Guest entry (PA 0x%lx, VA 0x%p): [0]=0x%08x [1]=0x%08x [2]=0x%08x [3]=0x%08x\n",
-		       memslot[MEMSLOT_AGENCY].entry_addr, insns,
-		       insns[0], insns[1], insns[2], insns[3]);
+		       memslot[MEMSLOT_AGENCY].entry_addr, insns, insns[0], insns[1], insns[2], insns[3]);
 	}
 
-	initialize_hyp_dom_stack(d, pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr), pa_to_ipa(MEMSLOT_AGENCY, memslot[MEMSLOT_AGENCY].entry_addr));
+	initialize_hyp_dom_stack(d, pa_to_ipa(MEMSLOT_AGENCY, d->avz_shared->fdt_paddr),
+				 pa_to_ipa(MEMSLOT_AGENCY, memslot[MEMSLOT_AGENCY].entry_addr));
 
 	return 0;
 }

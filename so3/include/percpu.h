@@ -44,7 +44,8 @@ extern unsigned long __per_cpu_offset[CONFIG_NR_CPUS];
  *
  * Also fixed: the `suffix` arg now actually affects the section name,
  * so DEFINE_PER_CPU_READ_MOSTLY properly lands in .percpu_data.read_mostly. */
-#define __DEFINE_PER_CPU(type, name, suffix) __attribute__((__section__(".percpu_data" #suffix))) __typeof__(type) per_cpu_##name
+#define __DEFINE_PER_CPU(type, name, suffix) \
+	__attribute__((__section__(".percpu_data" #suffix))) __typeof__(type) per_cpu_##name
 
 #define DECLARE_PER_CPU(type, name) extern __typeof__(type) per_cpu__##name
 

@@ -83,14 +83,13 @@ void trap_handle_error(addr_t lr)
 	unsigned long elr = read_sysreg(elr_el2);
 	unsigned long far = read_sysreg(far_el2);
 	unsigned long hpfar = read_sysreg(hpfar_el2);
-	printk("CPU%d: ELR: %lx, FAR: %lx, HPFAR: %lx (IPA=0x%lx), LR(x30): %lx\n",
-	       smp_processor_id(), elr, far, hpfar, hpfar << 8, lr);
+	printk("CPU%d: ELR: %lx, FAR: %lx, HPFAR: %lx (IPA=0x%lx), LR(x30): %lx\n", smp_processor_id(), elr, far, hpfar,
+	       hpfar << 8, lr);
 #else
 	unsigned long esr = read_sysreg(esr_el1);
 	unsigned long elr = read_sysreg(elr_el1);
 	unsigned long far = read_sysreg(far_el1);
-	printk("CPU%d: ELR: %lx, FAR: %lx, LR(x30): %lx\n",
-	       smp_processor_id(), elr, far, lr);
+	printk("CPU%d: ELR: %lx, FAR: %lx, LR(x30): %lx\n", smp_processor_id(), elr, far, lr);
 #endif
 
 	show_invalid_entry_message(ESR_ELx_EC(esr), esr, lr);
@@ -102,14 +101,14 @@ extern addr_t cpu_entrypoints[4];
 /* Called from pre_ret_to_el1 assembly before entering the WFI poll loop */
 void pre_ret_debug_wfi(u32 cpu_id)
 {
-	(void)cpu_id;
+	(void) cpu_id;
 }
 
 /* Called from pre_ret_to_el1 assembly when entrypoint becomes non-zero */
 void pre_ret_debug_woke(u32 cpu_id, u64 ep)
 {
-	(void)cpu_id;
-	(void)ep;
+	(void) cpu_id;
+	(void) ep;
 }
 #endif
 
@@ -138,7 +137,7 @@ void pre_ret_debug_woke(u32 cpu_id, u64 ep)
 void avz_el2_irq_handle(cpu_regs_t *regs)
 {
 	u64 intid = read_sysreg_s(SYS_ICC_IAR1_EL1);
-	u32 id = (u32)(intid & 0x3ff);
+	u32 id = (u32) (intid & 0x3ff);
 
 	/* Spurious — no EOI required */
 	if (id >= 1020)
@@ -150,9 +149,8 @@ void avz_el2_irq_handle(cpu_regs_t *regs)
 	 * every IRQ entry — the write is idempotent and per-CPU. */
 	{
 		int cpu_id = smp_processor_id();
-		u8 *gicr_sgi = (u8 *)gic->gicc + cpu_id * 0x20000 + 0x10000;
-		iowrite32(gicr_sgi + 0x100,
-			  (1u << IRQ_ARCH_ARM_MAINT) | (1u << CNTHP_PPI_INTID));
+		u8 *gicr_sgi = (u8 *) gic->gicc + cpu_id * 0x20000 + 0x10000;
+		iowrite32(gicr_sgi + 0x100, (1u << IRQ_ARCH_ARM_MAINT) | (1u << CNTHP_PPI_INTID));
 	}
 
 	if (id == CNTHP_PPI_INTID) {
@@ -174,7 +172,7 @@ void avz_el2_irq_handle(cpu_regs_t *regs)
 		write_sysreg_s(intid, SYS_ICC_EOIR1_EL1);
 		write_sysreg_s(intid, SYS_ICC_DIR_EL1);
 		isb();
-		gic_set_pending((u16)id);
+		gic_set_pending((u16) id);
 	} else {
 		/* PPIs (16–31, except 25/26) and SPIs (32+) destined for Linux.
 		 * Drop priority at EL2 so further physical IRQs can be taken;
@@ -182,7 +180,7 @@ void avz_el2_irq_handle(cpu_regs_t *regs)
 		 * writes ICV_EOIR1_EL1 — DO NOT call DIR here, otherwise
 		 * level-triggered IRQs storm before Linux clears the device's
 		 * level source. */
-		gic_set_pending((u16)id);
+		gic_set_pending((u16) id);
 		write_sysreg_s(intid, SYS_ICC_EOIR1_EL1);
 		isb();
 	}
@@ -296,7 +294,7 @@ void trap_handle(cpu_regs_t *regs)
 			/* GICv3: targeted SGI via ICC_SGI1R_EL1 system register.
 			 * ICC_SGI1R_EL1: [3:0]=SGI_ID, [23:16]=Aff1 target list (bit per Aff0). */
 			{
-				u64 sgi1r = ((u64)(1U << target_cpu) << 16) | IPI_EVENT_CHECK;
+				u64 sgi1r = ((u64) (1U << target_cpu) << 16) | IPI_EVENT_CHECK;
 				write_sysreg_s(sgi1r, SYS_ICC_SGI1R_EL1);
 				isb();
 			}
@@ -307,8 +305,7 @@ void trap_handle(cpu_regs_t *regs)
 			 * Earlier code used (1u << 24) which is mode 01b
 			 * (all-but-self) and ignores the TargetList — broadcasting
 			 * IPI_EVENT_CHECK to every other CPU during PSCI_CPU_ON. */
-			iowrite32(&gic->gicd->sgir,
-				  ((1u << target_cpu) << 16) | IPI_EVENT_CHECK);
+			iowrite32(&gic->gicd->sgir, ((1u << target_cpu) << 16) | IPI_EVENT_CHECK);
 			dsb(ish);
 #endif
 
@@ -346,8 +343,7 @@ void trap_handle(cpu_regs_t *regs)
 			break;
 #endif /* CONFIG_SOO */
 		default:
-			lprintk("[AVZ] HVC caught from EL1: x0=0x%lx ELR_EL2=0x%lx\n",
-				hvc_code, read_sysreg(elr_el2));
+			lprintk("[AVZ] HVC caught from EL1: x0=0x%lx ELR_EL2=0x%lx\n", hvc_code, read_sysreg(elr_el2));
 			regs->x0 = PSCI_RET_NOT_SUPPORTED;
 			break;
 		}
@@ -399,21 +395,21 @@ void trap_handle(cpu_regs_t *regs)
 		 * ICC_SGI1R_EL1 writes, which the GICv3 spec mandates trap to EL2
 		 * when HCR_EL2.IMO=1 so the hypervisor can route the IPI. */
 		u64 elr = read_sysreg(elr_el2);
-		u32 iss = (u32)(esr & 0x1ffffff);
+		u32 iss = (u32) (esr & 0x1ffffff);
 		u32 dir = iss & 1;
 		u32 crm = (iss >> 1) & 0xf;
-		u32 rt  = (iss >> 5) & 0x1f;
+		u32 rt = (iss >> 5) & 0x1f;
 		u32 crn = (iss >> 10) & 0xf;
 		u32 op1 = (iss >> 14) & 0x7;
 		u32 op2 = (iss >> 17) & 0x7;
 		u32 op0 = (iss >> 20) & 0x3;
 
 		if (!dir && op0 == 3 && op1 == 0 && crn == 12 && crm == 11 && op2 == 5) {
-			u64 sgi_val = (rt != 31) ? ((u64 *)regs)[rt] : 0;
+			u64 sgi_val = (rt != 31) ? ((u64 *) regs)[rt] : 0;
 			write_sysreg_s(sgi_val, SYS_ICC_SGI1R_EL1);
 			isb();
 		} else if (dir && rt != 31) {
-			((u64 *)regs)[rt] = 0;
+			((u64 *) regs)[rt] = 0;
 		}
 
 		regs->pc = elr + 4;

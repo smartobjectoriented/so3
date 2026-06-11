@@ -103,7 +103,6 @@ void secondary_start_kernel(void)
 
 	gicc_init();
 
-
 #ifndef CONFIG_SOO
 	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
 #endif /* !CONFIG_SOO */
@@ -187,7 +186,6 @@ void cpu_up(unsigned int cpu)
 
 	while (!booted[cpu])
 		;
-
 
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;

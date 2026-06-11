@@ -103,46 +103,96 @@ DEFINE_PER_CPU(struct pending_irqs, pending_irqs);
 static u64 gic_read_lr(unsigned int n)
 {
 	switch (n) {
-	case 0:  return read_sysreg_s(SYS_ICH_LR0_EL2);
-	case 1:  return read_sysreg_s(SYS_ICH_LR1_EL2);
-	case 2:  return read_sysreg_s(SYS_ICH_LR2_EL2);
-	case 3:  return read_sysreg_s(SYS_ICH_LR3_EL2);
-	case 4:  return read_sysreg_s(SYS_ICH_LR4_EL2);
-	case 5:  return read_sysreg_s(SYS_ICH_LR5_EL2);
-	case 6:  return read_sysreg_s(SYS_ICH_LR6_EL2);
-	case 7:  return read_sysreg_s(SYS_ICH_LR7_EL2);
-	case 8:  return read_sysreg_s(SYS_ICH_LR8_EL2);
-	case 9:  return read_sysreg_s(SYS_ICH_LR9_EL2);
-	case 10: return read_sysreg_s(SYS_ICH_LR10_EL2);
-	case 11: return read_sysreg_s(SYS_ICH_LR11_EL2);
-	case 12: return read_sysreg_s(SYS_ICH_LR12_EL2);
-	case 13: return read_sysreg_s(SYS_ICH_LR13_EL2);
-	case 14: return read_sysreg_s(SYS_ICH_LR14_EL2);
-	case 15: return read_sysreg_s(SYS_ICH_LR15_EL2);
-	default: return 0;
+	case 0:
+		return read_sysreg_s(SYS_ICH_LR0_EL2);
+	case 1:
+		return read_sysreg_s(SYS_ICH_LR1_EL2);
+	case 2:
+		return read_sysreg_s(SYS_ICH_LR2_EL2);
+	case 3:
+		return read_sysreg_s(SYS_ICH_LR3_EL2);
+	case 4:
+		return read_sysreg_s(SYS_ICH_LR4_EL2);
+	case 5:
+		return read_sysreg_s(SYS_ICH_LR5_EL2);
+	case 6:
+		return read_sysreg_s(SYS_ICH_LR6_EL2);
+	case 7:
+		return read_sysreg_s(SYS_ICH_LR7_EL2);
+	case 8:
+		return read_sysreg_s(SYS_ICH_LR8_EL2);
+	case 9:
+		return read_sysreg_s(SYS_ICH_LR9_EL2);
+	case 10:
+		return read_sysreg_s(SYS_ICH_LR10_EL2);
+	case 11:
+		return read_sysreg_s(SYS_ICH_LR11_EL2);
+	case 12:
+		return read_sysreg_s(SYS_ICH_LR12_EL2);
+	case 13:
+		return read_sysreg_s(SYS_ICH_LR13_EL2);
+	case 14:
+		return read_sysreg_s(SYS_ICH_LR14_EL2);
+	case 15:
+		return read_sysreg_s(SYS_ICH_LR15_EL2);
+	default:
+		return 0;
 	}
 }
 
 void gic_write_lr(unsigned int n, u64 value)
 {
 	switch (n) {
-	case 0:  write_sysreg_s(value, SYS_ICH_LR0_EL2);  break;
-	case 1:  write_sysreg_s(value, SYS_ICH_LR1_EL2);  break;
-	case 2:  write_sysreg_s(value, SYS_ICH_LR2_EL2);  break;
-	case 3:  write_sysreg_s(value, SYS_ICH_LR3_EL2);  break;
-	case 4:  write_sysreg_s(value, SYS_ICH_LR4_EL2);  break;
-	case 5:  write_sysreg_s(value, SYS_ICH_LR5_EL2);  break;
-	case 6:  write_sysreg_s(value, SYS_ICH_LR6_EL2);  break;
-	case 7:  write_sysreg_s(value, SYS_ICH_LR7_EL2);  break;
-	case 8:  write_sysreg_s(value, SYS_ICH_LR8_EL2);  break;
-	case 9:  write_sysreg_s(value, SYS_ICH_LR9_EL2);  break;
-	case 10: write_sysreg_s(value, SYS_ICH_LR10_EL2); break;
-	case 11: write_sysreg_s(value, SYS_ICH_LR11_EL2); break;
-	case 12: write_sysreg_s(value, SYS_ICH_LR12_EL2); break;
-	case 13: write_sysreg_s(value, SYS_ICH_LR13_EL2); break;
-	case 14: write_sysreg_s(value, SYS_ICH_LR14_EL2); break;
-	case 15: write_sysreg_s(value, SYS_ICH_LR15_EL2); break;
-	default: break;
+	case 0:
+		write_sysreg_s(value, SYS_ICH_LR0_EL2);
+		break;
+	case 1:
+		write_sysreg_s(value, SYS_ICH_LR1_EL2);
+		break;
+	case 2:
+		write_sysreg_s(value, SYS_ICH_LR2_EL2);
+		break;
+	case 3:
+		write_sysreg_s(value, SYS_ICH_LR3_EL2);
+		break;
+	case 4:
+		write_sysreg_s(value, SYS_ICH_LR4_EL2);
+		break;
+	case 5:
+		write_sysreg_s(value, SYS_ICH_LR5_EL2);
+		break;
+	case 6:
+		write_sysreg_s(value, SYS_ICH_LR6_EL2);
+		break;
+	case 7:
+		write_sysreg_s(value, SYS_ICH_LR7_EL2);
+		break;
+	case 8:
+		write_sysreg_s(value, SYS_ICH_LR8_EL2);
+		break;
+	case 9:
+		write_sysreg_s(value, SYS_ICH_LR9_EL2);
+		break;
+	case 10:
+		write_sysreg_s(value, SYS_ICH_LR10_EL2);
+		break;
+	case 11:
+		write_sysreg_s(value, SYS_ICH_LR11_EL2);
+		break;
+	case 12:
+		write_sysreg_s(value, SYS_ICH_LR12_EL2);
+		break;
+	case 13:
+		write_sysreg_s(value, SYS_ICH_LR13_EL2);
+		break;
+	case 14:
+		write_sysreg_s(value, SYS_ICH_LR14_EL2);
+		break;
+	case 15:
+		write_sysreg_s(value, SYS_ICH_LR15_EL2);
+		break;
+	default:
+		break;
 	}
 }
 #else /* GICv2: list registers are GICH MMIO */
@@ -162,13 +212,8 @@ void display_lr(unsigned int n)
 #ifdef CONFIG_GIC_V3
 	u64 lr = gic_read_lr(n);
 
-	printk("LR%u: virq=%lx state=%lx hw=%lx grp=%lx prio=%lx pirq=%lx\n", n,
-	       lr & 0xfffff,
-	       (lr >> 61) & 0x3,
-	       (lr >> 60) & 0x1,
-	       (lr >> 59) & 0x1,
-	       (lr >> 48) & 0xff,
-	       (lr >> 32) & 0xffff);
+	printk("LR%u: virq=%lx state=%lx hw=%lx grp=%lx prio=%lx pirq=%lx\n", n, lr & 0xfffff, (lr >> 61) & 0x3,
+	       (lr >> 60) & 0x1, (lr >> 59) & 0x1, (lr >> 48) & 0xff, (lr >> 32) & 0xffff);
 #else
 	u32 lr = gic_read_lr(n);
 
@@ -320,8 +365,8 @@ static void gic_enable_maint_irq(bool enable)
  * gic_set_pending() while still letting the GICv2 vGIC LR carry the real
  * source CPU instead of smp_processor_id() of the receiving CPU. */
 #define GIC_SGI_SRC_CPU_SHIFT 13
-#define GIC_SGI_SRC_CPU_MASK  (0x7 << GIC_SGI_SRC_CPU_SHIFT)
-#define GIC_SGI_PACK(intid, src_cpu)  ((u16)((intid) | (((src_cpu) & 0x7) << GIC_SGI_SRC_CPU_SHIFT)))
+#define GIC_SGI_SRC_CPU_MASK (0x7 << GIC_SGI_SRC_CPU_SHIFT)
+#define GIC_SGI_PACK(intid, src_cpu) ((u16) ((intid) | (((src_cpu) & 0x7) << GIC_SGI_SRC_CPU_SHIFT)))
 
 static int gic_inject_irq(u16 irq_id_packed)
 {
@@ -351,18 +396,16 @@ static int gic_inject_irq(u16 irq_id_packed)
 
 	if (is_sgi(irq_id)) {
 		/* SGIs are software-backed: EL2 already wrote EOIR before injection */
-		lr64 = GICH_LR_STATE_PENDING64 | GICH_LR_GRP1_BIT64
-		     | ((u64)GICH_LR_DEFAULT_PRIORITY << GICH_LR_PRIORITY_SHIFT64)
-		     | (u64)irq_id;
+		lr64 = GICH_LR_STATE_PENDING64 | GICH_LR_GRP1_BIT64 |
+		       ((u64) GICH_LR_DEFAULT_PRIORITY << GICH_LR_PRIORITY_SHIFT64) | (u64) irq_id;
 	} else {
 		/* PPIs and SPIs: hardware-backed (HW=1). EL2 does NOT write EOIR.
 		 * The physical INTID stays Active, preventing level-triggered re-delivery
 		 * storms. The vGIC hardware deactivates the physical INTID automatically
 		 * when Linux writes ICV_EOIR1_EL1. pINTID = vINTID (1:1 pass-through). */
-		lr64 = GICH_LR_STATE_PENDING64 | GICH_LR_GRP1_BIT64 | GICH_LR_HW_BIT64
-		     | ((u64)GICH_LR_DEFAULT_PRIORITY << GICH_LR_PRIORITY_SHIFT64)
-		     | ((u64)irq_id << GICH_LR_PHYS_ID_SHIFT64)
-		     | (u64)irq_id;
+		lr64 = GICH_LR_STATE_PENDING64 | GICH_LR_GRP1_BIT64 | GICH_LR_HW_BIT64 |
+		       ((u64) GICH_LR_DEFAULT_PRIORITY << GICH_LR_PRIORITY_SHIFT64) |
+		       ((u64) irq_id << GICH_LR_PHYS_ID_SHIFT64) | (u64) irq_id;
 	}
 
 	u64 hcr = read_sysreg_s(SYS_ICH_HCR_EL2);
@@ -474,7 +517,6 @@ void gic_set_pending(u16 irq_id)
 	gic_enable_maint_irq(true);
 }
 
-
 void gic_clear_pending_irqs(void)
 {
 	unsigned int n;
@@ -506,7 +548,7 @@ void gich_init(void)
 
 	/* Read physical CPU interface state via GICv3 system registers. */
 	gicc_ctlr = (u32) read_sysreg(icc_ctlr_el1);
-	gicc_pmr  = (u32) read_sysreg(icc_pmr_el1);
+	gicc_pmr = (u32) read_sysreg(icc_pmr_el1);
 
 	/* Reset virtual machine control register. */
 	write_sysreg_s(0UL, SYS_ICH_VMCR_EL2);
@@ -572,14 +614,14 @@ void gich_secondary_init(void)
 	pirqs->head = 0;
 	pirqs->tail = 0;
 
-	vmcr = (u64)0xf0 << 24;
+	vmcr = (u64) 0xf0 << 24;
 	vmcr |= GICH_VMCR_ENABLE_GRP0_MASK | GICH_VMCR_ENABLE_GRP1_MASK;
 	/* VEOIM=0: see comment in gich_init(). */
-	(void)gicc_ctlr;
+	(void) gicc_ctlr;
 
 	write_sysreg_s(vmcr, SYS_ICH_VMCR_EL2);
 	isb();
-	write_sysreg_s((u64)GICH_HCR_EN, SYS_ICH_HCR_EL2);
+	write_sysreg_s((u64) GICH_HCR_EN, SYS_ICH_HCR_EL2);
 	isb();
 }
 
@@ -590,7 +632,7 @@ void gich_secondary_init(void)
 void gic_clear_ppi_pending(u16 id)
 {
 	int cpu_id = smp_processor_id();
-	u8 *gicr_sgi = (u8 *)gic->gicc + cpu_id * 0x20000 + 0x10000;
+	u8 *gicr_sgi = (u8 *) gic->gicc + cpu_id * 0x20000 + 0x10000;
 
 	iowrite32(gicr_sgi + 0x280, 1u << id); /* GICR_ICPENDR0 */
 	dsb(sy);
@@ -684,7 +726,7 @@ void gich_secondary_init(void)
 {
 	struct pending_irqs *pirqs = &this_cpu(pending_irqs);
 	u32 gicc_ctlr = ioread32(&gic->gicc->ctlr);
-	u32 gicc_pmr  = ioread32(&gic->gicc->pmr);
+	u32 gicc_pmr = ioread32(&gic->gicc->pmr);
 	u32 vmcr;
 
 	/* Enable banked SGIs/PPIs on this CPU (mirrors gic_init's CPU0 setup). */
@@ -701,7 +743,7 @@ void gich_secondary_init(void)
 		vmcr |= GICH_VMCR_EOI_MODE_MASK;
 
 	iowrite32(&gic->gich->vmcr, vmcr);
-	iowrite32(&gic->gich->hcr,  GICH_HCR_EN);
+	iowrite32(&gic->gich->hcr, GICH_HCR_EN);
 }
 
 #endif /* CONFIG_GIC_V3 */
@@ -720,7 +762,7 @@ void gicc_init(void)
 	{
 		int i;
 		int cpu_id = smp_processor_id();
-		u8 *gicr_rd  = (u8 *)gic->gicc + cpu_id * 0x20000;
+		u8 *gicr_rd = (u8 *) gic->gicc + cpu_id * 0x20000;
 		u8 *gicr_sgi = gicr_rd + 0x10000;
 		u32 waker;
 
@@ -745,9 +787,7 @@ void gicc_init(void)
 		 * is registered, which would leave the LR Active forever. */
 		iowrite32(gicr_sgi + 0x280, GICD_INT_EN_CLR_PPI);
 		/* GICR_ISENABLER0 (0x100): enable SGIs + maintenance IRQ (PPI 25) + CNTHP (PPI 26) */
-		iowrite32(gicr_sgi + 0x100, GICD_INT_EN_SET_SGI
-					   | (1u << IRQ_ARCH_ARM_MAINT)
-					   | (1u << 26u));
+		iowrite32(gicr_sgi + 0x100, GICD_INT_EN_SET_SGI | (1u << IRQ_ARCH_ARM_MAINT) | (1u << 26u));
 		/* GICR_IPRIORITYR[0..7] (0x400): priority 0 for all SGIs/PPIs */
 		for (i = 0; i < 32; i += 4)
 			iowrite32(gicr_sgi + 0x400 + i, 0);
@@ -790,12 +830,11 @@ void gicc_init(void)
 		 * single EOIR write both drops priority and deactivates. Setting
 		 * EOImode=1 here would leave every IRQ Active forever (the EL1
 		 * handler never writes DIR), blocking all subsequent interrupts. */
-		iowrite32(&gic->gicc->ctlr,
-			  bypass | GICC_ENABLE | GIC_CPU_EOI
+		iowrite32(&gic->gicc->ctlr, bypass | GICC_ENABLE | GIC_CPU_EOI
 #ifdef CONFIG_AVZ
-			  | GICC_CTLR_EOImode
+						    | GICC_CTLR_EOImode
 #endif
-			 );
+		);
 	}
 #endif /* CONFIG_GIC_V3 */
 
@@ -862,8 +901,7 @@ static void gic_handle(void *data)
 	 * of pending vIRQs (queued on -EEXIST/-EBUSY) never fires —
 	 * causing RCU stalls when back-to-back SGIs arrive.  Idempotent.
 	 * GICD_ISENABLER0 is banked per-CPU on GICv2 for INTIDs 0-31. */
-	iowrite32(&gic->gicd->isenabler,
-		  (1u << IRQ_ARCH_ARM_MAINT) | (1u << 26));
+	iowrite32(&gic->gicd->isenabler, (1u << IRQ_ARCH_ARM_MAINT) | (1u << 26));
 #endif
 
 	do {
@@ -947,7 +985,7 @@ void smp_cross_call(long cpu_mask, unsigned int irq)
 	{
 		/* GICv3: GICD_SGIR is RAZ/WI when ARE=1; use ICC_SGI1R_EL1 instead.
 		 * Format: [3:0]=INTID, [23:16]=Aff1 target list (one bit per CPU in cluster). */
-		u64 sgi1r = ((u64)(cpu_mask & 0xffff) << 16) | (irq & 0xf);
+		u64 sgi1r = ((u64) (cpu_mask & 0xffff) << 16) | (irq & 0xf);
 		write_sysreg_s(sgi1r, SYS_ICC_SGI1R_EL1);
 		isb();
 	}

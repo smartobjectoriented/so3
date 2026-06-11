@@ -377,7 +377,8 @@ void write_S3C_snapshot(avz_hyp_t *args)
 						 agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID]);
 
 		LOG_DEBUG("%s: Rebinding directcomm event channels: %d (agency) <-> %d (capsule)\n", __func__,
-			  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID], dom_S3C->avz_shared->dom_desc.u.S3C.dc_evtchn);
+			  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID],
+			  dom_S3C->avz_shared->dom_desc.u.S3C.dc_evtchn);
 
 		evtchn_bind_existing_interdomain(dom_S3C, agency, dom_S3C->avz_shared->dom_desc.u.S3C.dc_evtchn,
 						 agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID]);

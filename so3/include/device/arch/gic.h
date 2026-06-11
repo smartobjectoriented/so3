@@ -280,13 +280,13 @@ struct __attribute__((packed)) gich_regs {
  *   [41:32] pINTID (when HW=1)
  *   [31:0]  vINTID
  */
-#define GICH_LR_STATE_PENDING64   (1ULL << 62)  /* State[63:62]=01 */
-#define GICH_LR_STATE_ACTIVE64    (1ULL << 63)  /* State[63:62]=10 */
-#define GICH_LR_HW_BIT64          (1ULL << 61)
-#define GICH_LR_GRP1_BIT64        (1ULL << 60)
-#define GICH_LR_PRIORITY_SHIFT64  48
-#define GICH_LR_PHYS_ID_SHIFT64   32
-#define GICH_LR_DEFAULT_PRIORITY  0xa0
+#define GICH_LR_STATE_PENDING64 (1ULL << 62) /* State[63:62]=01 */
+#define GICH_LR_STATE_ACTIVE64 (1ULL << 63) /* State[63:62]=10 */
+#define GICH_LR_HW_BIT64 (1ULL << 61)
+#define GICH_LR_GRP1_BIT64 (1ULL << 60)
+#define GICH_LR_PRIORITY_SHIFT64 48
+#define GICH_LR_PHYS_ID_SHIFT64 32
+#define GICH_LR_DEFAULT_PRIORITY 0xa0
 
 #define GIC_SGI_UNKNOWN 0
 #define GIC_SGI_EVENT 1

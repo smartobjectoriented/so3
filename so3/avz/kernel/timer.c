@@ -45,7 +45,7 @@ void agency_timer_interrupt(void)
 	unsigned int *count = &this_cpu(agency_tick_count);
 
 	if (++(*count) >= 5 * CONFIG_HZ) {
-		*count = 0;	
+		*count = 0;
 
 #if 0 /* Debug purpose */
 		printk("[AVZ] alive on CPU%d\n", smp_processor_id());

@@ -79,7 +79,7 @@ static char imx_uart_get_byte(bool polling)
 		while (!(ioread32(imx_uart.base + IMX_UART_USR2) & (1 << 0)))
 			;
 
-		return (char)(ioread32(imx_uart.base + IMX_UART_URXD) & 0xFF);
+		return (char) (ioread32(imx_uart.base + IMX_UART_URXD) & 0xFF);
 	} else {
 		while (prod == cons) {
 			schedule();
@@ -102,10 +102,10 @@ static irq_return_t imx_uart_int(int irq, void *dummy)
 	u32 val;
 
 	val = ioread32(imx_uart.base + IMX_UART_URXD);
-	if (!(val & (1 << 15)))  /* CHARRDY bit */
+	if (!(val & (1 << 15))) /* CHARRDY bit */
 		return IRQ_COMPLETED;
 
-	serial_buffer[prod] = (char)(val & 0xFF);
+	serial_buffer[prod] = (char) (val & 0xFF);
 
 	if (serial_buffer[prod] == 3) {
 		imx_uart_put_byte('^');
@@ -143,7 +143,7 @@ static int imx_uart_init(dev_t *dev, int fdt_offset)
 	serial_ops.put_byte = imx_uart_put_byte;
 	serial_ops.get_byte = imx_uart_get_byte;
 
-	serial_ops.enable_irq  = imx_uart_enable_irq;
+	serial_ops.enable_irq = imx_uart_enable_irq;
 	serial_ops.disable_irq = imx_uart_disable_irq;
 
 	prop = fdt_get_property(__fdt_addr, fdt_offset, "reg", &prop_len);
@@ -151,8 +151,7 @@ static int imx_uart_init(dev_t *dev, int fdt_offset)
 
 	BUG_ON(prop_len != 2 * sizeof(unsigned long));
 
-	new_base_vaddr =
-		io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), PAGE_SIZE);
+	new_base_vaddr = io_map(fdt64_to_cpu(((const fdt64_t *) prop->data)[0]), PAGE_SIZE);
 	BUG_ON(!new_base_vaddr);
 
 	imx_uart.base = new_base_vaddr;

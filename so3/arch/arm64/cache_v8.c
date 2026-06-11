@@ -54,8 +54,7 @@ void mmu_setup(void *pgtable)
 	 * (single L1 root table, no concatenation), which covers all iMX8MP physical
 	 * addresses.  VTTBR_EL2 must therefore point to the L1 table directly.
 	 */
-	tcr = VTCR_T0SZ_VAL(39) | VTCR_SL0_L1 | VTCR_PS_40BITS |
-	      TCR_IRGN0_WBWA | TCR_ORGN0_WBWA | TCR_SH0_INNER | VTCR_RES1;
+	tcr = VTCR_T0SZ_VAL(39) | VTCR_SL0_L1 | VTCR_PS_40BITS | TCR_IRGN0_WBWA | TCR_ORGN0_WBWA | TCR_SH0_INNER | VTCR_RES1;
 
 	asm volatile("msr vtcr_el2, %0" : : "r"(tcr) : "memory");
 	asm volatile("isb");

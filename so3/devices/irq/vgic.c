@@ -75,8 +75,7 @@ static enum mmio_result gicv2_handle_dist_access(struct mmio_access *mmio)
 	switch (mmio->address) {
 	case GICD_SGIR:
 		if (mmio->is_write)
-			smp_cross_call((mmio->value >> 16) & 0xff,
-				       mmio->value & 0xf);
+			smp_cross_call((mmio->value >> 16) & 0xff, mmio->value & 0xf);
 		return MMIO_HANDLED;
 
 	default:

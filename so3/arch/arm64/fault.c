@@ -43,7 +43,9 @@ void __sync_serror(addr_t lr)
 /* Called from pre_ret_to_el1 asm to log secondary CPU state before and after drain */
 void pre_ret_to_el1_diag(unsigned long cpu_id, unsigned long entry_point, int phase)
 {
-	(void)cpu_id; (void)entry_point; (void)phase;
+	(void) cpu_id;
+	(void) entry_point;
+	(void) phase;
 }
 
 /* SError at EL2 (AVZ running): log and return so the scheduler can continue */

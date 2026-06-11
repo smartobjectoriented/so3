@@ -36,16 +36,16 @@
 ipamap_t agency_ipamap[] = {
 	{
 		/* AIPS1/2/3 peripherals below the GIC distributor */
-		.ipa_addr  = 0x30000000,
+		.ipa_addr = 0x30000000,
 		.phys_addr = 0x30000000,
-		.size      = 0x08800000,	/* 0x30000000 – 0x387FFFFF */
+		.size = 0x08800000, /* 0x30000000 – 0x387FFFFF */
 	},
 	/* GICD @ 0x38800000 size 0x10000 intentionally omitted */
 	{
 		/* GICR, CPU interface compat, and all peripherals above GICD */
-		.ipa_addr  = 0x38810000,
+		.ipa_addr = 0x38810000,
 		.phys_addr = 0x38810000,
-		.size      = 0x077F0000,	/* 0x38810000 – 0x3FFFFFFF */
+		.size = 0x077F0000, /* 0x38810000 – 0x3FFFFFFF */
 	},
 };
 
@@ -58,9 +58,9 @@ ipamap_t agency_ipamap[] = {
 ipamap_t S3C_ipamap[] = {
 	{
 		/* GICv3 CPU interface compatibility register frame */
-		.ipa_addr  = 0x38C20000,
+		.ipa_addr = 0x38C20000,
 		.phys_addr = 0x38C20000,
-		.size      = 0x10000,
+		.size = 0x10000,
 	},
 };
 
