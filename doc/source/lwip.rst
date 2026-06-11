@@ -16,15 +16,22 @@ resolver.
 
 SO3 exposes a BSD-style **socket API** to user space: the ``net/`` glue maps VFS
 file descriptors onto lwIP sockets so that ``socket()``, ``bind()``,
-``connect()``, ``send()`` and ``recv()`` work from applications. The underlying
-network interface is a **virtio-net** device under QEMU (or an ``smc911x`` MAC on
-hardware), wired into lwIP through the network driver in ``devices/net/``. See
-the :ref:`networking section <kernel>` of the kernel chapter.
+``connect()``, ``send()`` and ``recv()`` work from applications. The network
+interface driver lives in ``devices/net/`` — currently an **smc911x**
+(``smsc,smc911x``) MAC. See the :ref:`networking section <kernel>` of the kernel
+chapter.
+
+.. note::
+
+   Networking is **opt-in**: it is enabled with ``CONFIG_NET`` and is *off* in
+   the default ``virt64_defconfig``. The smc911x MAC is present on boards such as
+   the ARM Versatile Express; QEMU's ``virt`` machine does not provide one, so a
+   different NIC driver is needed to exercise the stack there.
 
 Trying it out
 =============
 
-The ``ping`` application exercises the stack end to end. Under QEMU the launch
-scripts attach a tap network device (``scripts/qemu-ifup.sh`` /
-``qemu-ifdown.sh``), so the guest can reach the host network once the tap bridge
-is configured.
+With ``CONFIG_NET`` enabled and a supported NIC, the ``ping`` application
+exercises the stack end to end. Under QEMU the launch scripts attach a tap
+network device (``scripts/qemu-ifup.sh`` / ``qemu-ifdown.sh``), so the guest can
+reach the host network once the tap bridge is configured.

@@ -136,7 +136,7 @@ for i, (t, d) in enumerate(subs):
     x = 70 + i*188
     p.box(x, 310, 175, 80, f"{t}\n\n{d}", KERNEL, 10)
 p.box(70, 410, 940, 80, "Device model & drivers   (devices/)\n"
-      "FDT probe · GIC (irq) · timer · pl011 serial · mmc · framebuffer · input · virtio-net · ramdev",
+      "FDT probe · GIC (irq) · timer · pl011 serial · mmc · framebuffer · input · net (smc911x) · ramdev",
       KERNEL, 10)
 p.box(40, 540, 1000, 60, "Hardware  —  described by a Device Tree (dts/*.dtb)", HW, 12)
 pages.append(p)

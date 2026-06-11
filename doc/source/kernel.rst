@@ -175,11 +175,11 @@ The tree contains drivers for the main device classes:
    * - storage (``mmc/``, ``ramdev/``)
      - SD/MMC controller, in-memory RAM disk
    * - framebuffer (``fb/``)
-     - PL111, ramfb, virtio-fb (used by LVGL)
+     - PL111, ramfb, virtfb (used by LVGL)
    * - input (``input/``)
-     - PS/2 (PL050), virtio input
+     - PS/2 (PL050, KMI), virtio keyboard/mouse
    * - network (``net/``)
-     - virtio-net / smc911x, wired to lwIP
+     - smc911x (``smsc,smc911x``), wired to lwIP — optional (``CONFIG_NET``)
    * - i2c, rpisense (``i2c/``, ``rpisense/``)
      - I²C bus and Raspberry Pi Sense HAT
 
@@ -205,6 +205,6 @@ Networking
 SO3 integrates the **lwIP** TCP/IP stack (``net/lwip/``). The kernel exposes a
 BSD-style socket API; the ``net/`` glue maps VFS file descriptors onto lwIP
 sockets so that ``socket()`` / ``bind()`` / ``connect()`` / ``send()`` /
-``recv()`` work from user space. TCP, UDP, IPv4/IPv6 and a DNS resolver are
-available; the underlying NIC is a virtio-net (QEMU) or smc911x (hardware)
-driver. See :ref:`lwip`.
+``recv()`` work from user space. Networking is **opt-in** (``CONFIG_NET``, off in
+the default ``virt64_defconfig``); the NIC driver in ``devices/net/`` is an
+smc911x (``smsc,smc911x``) MAC. See :ref:`lwip`.
