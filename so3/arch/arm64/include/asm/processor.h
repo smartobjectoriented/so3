@@ -881,10 +881,6 @@
 /* Safe value for MPIDR_EL1: Bit31:RES1, Bit30:U:0, Bit24:MT:0 */
 #define SYS_MPIDR_SAFE_VAL	(BIT(31))
 
-/* The stack must be 16-byte aligned */
-
-#define S_FRAME_SIZE	(8 * 36)
-
 #ifdef __ASSEMBLY__
 
 .macro current_cpu reg

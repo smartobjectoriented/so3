@@ -28,6 +28,10 @@
 
 #include <mach/ipamap.h>
 
+#ifdef CONFIG_SOO
+#include <avz/fbdev_gnt.h>
+#endif
+
 /**
  * @brief Initialize the content of the EL2 stack associated to this domain.
  *
