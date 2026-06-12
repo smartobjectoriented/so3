@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -55,11 +55,11 @@ void inject_capsule(avz_hyp_t *args)
 	int slotID;
 	size_t fdt_size;
 	void *fdt_vaddr;
-	struct domain *domME, *__current;
+	struct domain *dom_S3C, *__current;
 	void *itb_vaddr;
 	mem_info_t guest_mem_info;
 
-	LOG_DEBUG("%s: Preparing ME injection, source image vaddr = %lx\n", __func__,
+	LOG_DEBUG("%s: Preparing capsule injection, source image vaddr = %lx\n", __func__,
 		  ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_capsule_args.itb_paddr));
 
 	BUG_ON(local_irq_is_enabled());
@@ -68,7 +68,7 @@ void inject_capsule(avz_hyp_t *args)
 
 	LOG_DEBUG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
 
-	/* Retrieve the domain size of this ME through its device tree. */
+	/* Retrieve the domain size of this capsule through its device tree. */
 	fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr, &fdt_size);
 	if (!fdt_vaddr) {
 		printk("### %s: wrong device tree.\n", __func__);
@@ -78,38 +78,38 @@ void inject_capsule(avz_hyp_t *args)
 	get_mem_info(fdt_vaddr, &guest_mem_info);
 
 	/* Find a slotID to store this capsule */
-	slotID = get_ME_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
+	slotID = get_S3C_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
 	if (slotID == -1)
 		goto out;
 
-	domME = domains[slotID];
+	dom_S3C = domains[slotID];
 
 	/* At the beginning, the capsule is stopped */
-	domME->avz_shared->dom_desc.u.ME.state = ME_state_stopped;
+	dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_stopped;
 
 	/* Store slotID & capsuleID */
-	domME->avz_shared->dom_desc.u.ME.slotID = slotID;
-	domME->avz_shared->dom_desc.u.ME.capsuleID = args->u.avz_inject_capsule_args.capsuleID;
+	dom_S3C->avz_shared->dom_desc.u.S3C.slotID = slotID;
+	dom_S3C->avz_shared->dom_desc.u.S3C.capsuleID = args->u.avz_inject_capsule_args.capsuleID;
 
-	/* Set the size of this ME in its own descriptor with the dom_context size */
-	domME->avz_shared->dom_desc.u.ME.size = memslot[slotID].size;
+	/* Set the size of this capsule in its own descriptor with the dom_context size */
+	dom_S3C->avz_shared->dom_desc.u.S3C.size = memslot[slotID].size;
 
 	__current = current_domain;
 
 	/* Clear the RAM allocated to this capsule */
 	memset((void *) __xva(slotID, memslot[slotID].base_paddr), 0, memslot[slotID].size);
 
-	loadME(slotID, itb_vaddr);
+	load_S3C(slotID, itb_vaddr);
 
-	if (construct_ME(domains[slotID]) != 0)
-		panic("Could not set up ME guest OS\n");
+	if (construct_S3C(domains[slotID]) != 0)
+		panic("Could not set up capsule guest OS\n");
 
 out:
 	/* Prepare to return the slotID to the caller. */
 	args->u.avz_inject_capsule_args.slotID = slotID;
 
-	domME->avz_shared->dom_desc.u.ME.vbstore_pfn = map_vbstore_pfn(slotID, 0);
-	domME->avz_shared->dom_desc.u.ME.vbstore_revtchn = agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID];
+	dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_pfn = map_vbstore_pfn(slotID, 0);
+	dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_revtchn = agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID];
 }
 
 /**
@@ -135,7 +135,7 @@ build_domain_migration_info
 build_vcpu_migration_info
     Build the structures holding the key info to be migrated over
 ------------------------------------------------------------------------------*/
-static void build_domain_context(unsigned int ME_slotID, struct domain *me, struct dom_context *domctxt)
+static void build_domain_context(unsigned int S3C_slotID, struct domain *me, struct dom_context *domctxt)
 {
 	/* Event channel info */
 	memcpy(domctxt->evtchn, me->evtchn, sizeof(me->evtchn));
@@ -145,17 +145,17 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
 
 	/* Get the start_info structure */
 	domctxt->avz_shared = *(me->avz_shared);
-	strcpy(domctxt->avz_shared.signature, SOO_ME_SIGNATURE);
+	strcpy(domctxt->avz_shared.signature, SOO_S3C_SIGNATURE);
 
-	/* The snapshot will contain a capsule with the state ME_state_suspended only
-	 * if the capsule was living, otherwise it has to be in ME_state_stopped, right
+	/* The snapshot will contain a capsule with the state S3C_state_suspended only
+	 * if the capsule was living, otherwise it has to be in S3C_state_stopped, right
 	 * before its execution. 
 	*/
-	if (me->avz_shared->dom_desc.u.ME.state == ME_state_suspended)
-		domctxt->avz_shared.dom_desc.u.ME.state = ME_state_hibernate;
+	if (me->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended)
+		domctxt->avz_shared.dom_desc.u.S3C.state = S3C_state_hibernate;
 
-	BUG_ON((me->avz_shared->dom_desc.u.ME.state != ME_state_stopped) &&
-	       (me->avz_shared->dom_desc.u.ME.state != ME_state_suspended));
+	BUG_ON((me->avz_shared->dom_desc.u.S3C.state != S3C_state_stopped) &&
+	       (me->avz_shared->dom_desc.u.S3C.state != S3C_state_suspended));
 
 	domctxt->pause_count = me->pause_count;
 
@@ -173,7 +173,7 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
 	memcpy(domctxt->virq_to_evtchn, me->virq_to_evtchn, sizeof(me->virq_to_evtchn));
 
 	/* Store the IPA physical address base */
-	domctxt->ipa_addr = memslot[ME_slotID].ipa_addr;
+	domctxt->ipa_addr = memslot[S3C_slotID].ipa_addr;
 
 	/*
          * CPU regs context along the exception path in the hypervisor
@@ -193,10 +193,10 @@ static void build_domain_context(unsigned int ME_slotID, struct domain *me, stru
   * 
   * @param args provided from the Linux kernel
   */
-void read_ME_snapshot(avz_hyp_t *args)
+void read_S3C_snapshot(avz_hyp_t *args)
 {
 	unsigned int slotID = args->u.avz_snapshot_args.slotID;
-	struct domain *domME = domains[slotID];
+	struct domain *dom_S3C = domains[slotID];
 	void *snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
 
 	/* If the size is 0, we return the snapshot size. */
@@ -205,17 +205,17 @@ void read_ME_snapshot(avz_hyp_t *args)
 		return;
 	}
 
-	/* If the capsule is living, it will be put in ME_state_suspended state by Linux
+	/* If the capsule is living, it will be put in S3C_state_suspended state by Linux
 	 * before being entering this function.  
 	*/
-	if (domME->avz_shared->dom_desc.u.ME.state == ME_state_suspended) {
+	if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
 		/* Pause the capsule */
-		domain_pause_by_systemcontroller(domME);
+		domain_pause_by_systemcontroller(dom_S3C);
 	}
 
 	/* Gather all the info we need into structures */
 	/* This will put the capsule snapshot in HIBERNATE state */
-	build_domain_context(slotID, domME, &domain_context);
+	build_domain_context(slotID, dom_S3C, &domain_context);
 
 	/* Copy the size of the payload which is made of the dom_info structure and the capsule */
 	args->u.avz_snapshot_args.size = memslot[slotID].size + sizeof(domain_context);
@@ -226,26 +226,26 @@ void read_ME_snapshot(avz_hyp_t *args)
 	/* Copy the dom_info structure */
 	memcpy(snapshot_buffer + sizeof(uint32_t), &domain_context, sizeof(domain_context));
 
-	/* Finally copy the ME */
+	/* Finally copy the capsule */
 	memcpy(snapshot_buffer + sizeof(uint32_t) + sizeof(domain_context), (void *) __xva(slotID, memslot[slotID].base_paddr),
 	       memslot[slotID].size);
 
-	if (domME->avz_shared->dom_desc.u.ME.state == ME_state_suspended) {
-		/* Now, this ME is suspended and must be resumed by the agency */
-		domME->avz_shared->dom_desc.u.ME.state = ME_state_resuming;
+	if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
+		/* Now, this capsule is suspended and must be resumed by the agency */
+		dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_resuming;
 
-		domain_unpause_by_systemcontroller(domME);
+		domain_unpause_by_systemcontroller(dom_S3C);
 	}
 }
 
 /**
  * @brief Recover the dom_context structure from a pre-saved capsule
  * 
- * @param ME_slotID 
+ * @param S3C_slotID 
  * @param me 
  * @param domctxt 
  */
-void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct dom_context *domctxt)
+void restore_domain_context(unsigned int S3C_slotID, struct domain *me, struct dom_context *domctxt)
 {
 	int i;
 
@@ -254,11 +254,11 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 	*(me->avz_shared) = domctxt->avz_shared;
 
 	/* Check that our signature is valid so that the image transfer should be good. */
-	if (strcmp(me->avz_shared->signature, SOO_ME_SIGNATURE))
-		panic("%s: Cannot find the correct signature in the shared page (" SOO_ME_SIGNATURE ")...\n", __func__);
+	if (strcmp(me->avz_shared->signature, SOO_S3C_SIGNATURE))
+		panic("%s: Cannot find the correct signature in the shared page (" SOO_S3C_SIGNATURE ")...\n", __func__);
 
 	/* Update the domID of course */
-	me->avz_shared->domID = ME_slotID;
+	me->avz_shared->domID = S3C_slotID;
 
 	memcpy(me->evtchn, domctxt->evtchn, sizeof(me->evtchn));
 
@@ -268,7 +268,7 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 	 * want that the local event channel gets changed.
 	 *
 	 * Re-binding is performed during the resuming via vbus (backend side) OR
-	 * if the ME gets killed, the event channel will be closed without any effect to a remote domain.
+	 * if the capsule gets killed, the event channel will be closed without any effect to a remote domain.
 	 */
 
 	for (i = 0; i < NR_EVTCHN; i++)
@@ -290,7 +290,7 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
 	memcpy(me->virq_to_evtchn, domctxt->virq_to_evtchn, sizeof((me->virq_to_evtchn)));
 
 	/* IPA physical address base */
-	memslot[ME_slotID].ipa_addr = domctxt->ipa_addr;
+	memslot[S3C_slotID].ipa_addr = domctxt->ipa_addr;
 
 	/* Fields related to CPU */
 	me->vcpu = domctxt->vcpu;
@@ -300,12 +300,12 @@ void restore_domain_context(unsigned int ME_slotID, struct domain *me, struct do
  * 
  * @param args If args->u.avz_snapshot_args.size == 0, the function will try to find an empty slot.
  */
-void write_ME_snapshot(avz_hyp_t *args)
+void write_S3C_snapshot(avz_hyp_t *args)
 {
 	uint32_t snapshot_size;
 	void *snapshot_buffer;
 	uint32_t slotID;
-	struct domain *domME;
+	struct domain *dom_S3C;
 	struct dom_context *domctxt;
 	void *dom_stack;
 	struct cpu_regs *frame;
@@ -319,7 +319,7 @@ void write_ME_snapshot(avz_hyp_t *args)
 	LOG_DEBUG("Looking for an available slot for a capsule of %d bytes...\n",
 		  snapshot_size - sizeof(uint32_t) - sizeof(struct dom_context));
 
-	slotID = get_ME_free_slot(snapshot_size - sizeof(uint32_t) - sizeof(struct dom_context), slotID);
+	slotID = get_S3C_free_slot(snapshot_size - sizeof(uint32_t) - sizeof(struct dom_context), slotID);
 	if (slotID > 0)
 		args->u.avz_snapshot_args.slotID = slotID;
 	else
@@ -330,16 +330,16 @@ void write_ME_snapshot(avz_hyp_t *args)
 	LOG_DEBUG("Writing the snapshot into memory...\n");
 	snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
 
-	domME = domains[slotID];
+	dom_S3C = domains[slotID];
 	domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
 
 	LOG_DEBUG("Restoring the domain context...\n");
-	restore_domain_context(slotID, domME, domctxt);
+	restore_domain_context(slotID, dom_S3C, domctxt);
 
 	LOG_DEBUG("Set up the page tables...\n");
-	__setup_dom_pgtable(domME, memslot[slotID].base_paddr, memslot[slotID].size);
+	__setup_dom_pgtable(dom_S3C, memslot[slotID].base_paddr, memslot[slotID].size);
 
-	/* Copy the ME content */
+	/* Copy the capsule content */
 	memcpy((void *) __xva(slotID, memslot[slotID].base_paddr),
 	       snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context), memslot[slotID].size);
 
@@ -349,7 +349,7 @@ void write_ME_snapshot(avz_hyp_t *args)
 	BUG_ON(!dom_stack);
 
 	/* Keep the reference for future removal */
-	domME->domain_stack = dom_stack;
+	dom_S3C->domain_stack = dom_stack;
 
 	/* Reserve the frame which will be restored later */
 	frame = dom_stack + DOMAIN_STACK_SIZE - sizeof(cpu_regs_t);
@@ -358,38 +358,39 @@ void write_ME_snapshot(avz_hyp_t *args)
 	memcpy(frame, &domctxt->stack_frame, sizeof(struct cpu_regs));
 
 	/* We need to re-map the vbstore page corresponding to this slotID */
-	map_vbstore_pfn(domME->avz_shared->domID, domME->avz_shared->dom_desc.u.ME.vbstore_pfn);
-	LOG_DEBUG("State of the saved capsule: %d\n", domME->avz_shared->dom_desc.u.ME.state);
+	map_vbstore_pfn(dom_S3C->avz_shared->domID, dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_pfn);
+	LOG_DEBUG("State of the saved capsule: %d\n", dom_S3C->avz_shared->dom_desc.u.S3C.state);
 
-	if (domME->avz_shared->dom_desc.u.ME.state != ME_state_stopped) {
-		BUG_ON(domME->avz_shared->dom_desc.u.ME.state != ME_state_hibernate);
+	if (dom_S3C->avz_shared->dom_desc.u.S3C.state != S3C_state_stopped) {
+		BUG_ON(dom_S3C->avz_shared->dom_desc.u.S3C.state != S3C_state_hibernate);
 
 		/* As we will be resumed from the schedule function, we need to update the
 		 * CPU registers from the VCPU regs.
 		 */
-		domME->vcpu.regs.sp = (unsigned long) frame;
-		domME->vcpu.regs.x21 = (unsigned long) domME->avz_shared->dom_desc.u.ME.resume_fn;
+		dom_S3C->vcpu.regs.sp = (unsigned long) frame;
+		dom_S3C->vcpu.regs.x21 = (unsigned long) dom_S3C->avz_shared->dom_desc.u.S3C.resume_fn;
 
-		domME->vcpu.regs.lr = (unsigned long) resume_to_guest;
+		dom_S3C->vcpu.regs.lr = (unsigned long) resume_to_guest;
 
 		/* Now restoring event channel configuration */
-		evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.vbstore_levtchn,
+		evtchn_bind_existing_interdomain(dom_S3C, agency, dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_levtchn,
 						 agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID]);
 
-		LOG_DEBUG("%s: Rebinding directcomm event channels: %d (agency) <-> %d (ME)\n", __func__,
-			  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID], domME->avz_shared->dom_desc.u.ME.dc_evtchn);
+		LOG_DEBUG("%s: Rebinding directcomm event channels: %d (agency) <-> %d (capsule)\n", __func__,
+			  agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID],
+			  dom_S3C->avz_shared->dom_desc.u.S3C.dc_evtchn);
 
-		evtchn_bind_existing_interdomain(domME, agency, domME->avz_shared->dom_desc.u.ME.dc_evtchn,
+		evtchn_bind_existing_interdomain(dom_S3C, agency, dom_S3C->avz_shared->dom_desc.u.S3C.dc_evtchn,
 						 agency->avz_shared->dom_desc.u.agency.dc_evtchn[slotID]);
 	}
-	LOG_DEBUG("%s: Now, resuming ME slotID %d...\n", __func__, slotID);
+	LOG_DEBUG("%s: Now, resuming capsule slotID %d...\n", __func__, slotID);
 
-	domain_unpause_by_systemcontroller(domME);
+	domain_unpause_by_systemcontroller(dom_S3C);
 }
 
 void __sigreturn(void)
 {
-	current_domain->avz_shared->dom_desc.u.ME.state = ME_state_awakened;
+	current_domain->avz_shared->dom_desc.u.S3C.state = S3C_state_awakened;
 
 	send_timer_event(current_domain);
 }

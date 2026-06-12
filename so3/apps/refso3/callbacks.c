@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) March 2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 #include <soo/console.h>
 #include <soo/debug.h>
 
-#include <me/refso3.h>
+#include <capsule/refso3.h>
 
 #include <asm/mmu.h>
 
@@ -49,19 +49,19 @@ sh_refso3_t *sh_refso3;
  */
 void cb_pre_suspend(soo_domcall_arg_t *args)
 {
-	DBG(">> ME %d: cb_pre_suspend...\n", ME_domID());
+	DBG(">> capsule %d: cb_pre_suspend...\n", S3C_domID());
 }
 
 /**
  * PRE_RESUME
  *
- * This callback is executed right before resuming the frontend drivers, right after ME activation
+ * This callback is executed right before resuming the frontend drivers, right after capsule activation
  *
  * Returns 0 if no propagation to the user space is required, 1 otherwise
  */
 void cb_pre_resume(soo_domcall_arg_t *args)
 {
-	DBG(">> ME %d: cb_pre_resume...\n", ME_domID());
+	DBG(">> capsule %d: cb_pre_resume...\n", S3C_domID());
 }
 
 /**
@@ -74,7 +74,7 @@ void cb_post_activate(soo_domcall_arg_t *args)
 	static uint32_t count = 0;
 #endif
 
-	DBG(">> ME %d: cb_post_activate...\n", ME_domID());
+	DBG(">> capsule %d: cb_post_activate...\n", S3C_domID());
 }
 
 /**
@@ -86,14 +86,14 @@ void cb_post_activate(soo_domcall_arg_t *args)
 
 void cb_shutdown(void)
 {
-	DBG(">> ME %d: cb_shutdown...\n", ME_domID());
-	DBG("ME state: %d\n", get_ME_state());
+	DBG(">> capsule %d: cb_shutdown...\n", S3C_domID());
+	DBG("capsule state: %d\n", get_S3C_state());
 
-	/* We do nothing particular here for this ME,
+	/* We do nothing particular here for this capsule,
 	 * however we proceed with the normal termination of execution.
 	 */
 
-	set_ME_state(ME_state_terminated);
+	set_S3C_state(S3C_state_terminated);
 }
 
 void callbacks_init(void)

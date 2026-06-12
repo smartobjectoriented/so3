@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2024-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -27,33 +27,59 @@
 
 DEFINE_SPINLOCK(dist_lock);
 
-static enum mmio_result gicv2_handle_dist_access(struct mmio_access *mmio)
-{
-	unsigned long val = mmio->value;
-	struct sgi;
+#ifdef CONFIG_GIC_V3
 
+/*
+ * GICv3 distributor MMIO handler.
+ *
+ * The physical GICD is not mapped in the guest Stage-2 tables, so every
+ * Linux GICD access causes a Stage-2 data abort that lands here.  For a
+ * single NS Linux guest with HCR_EL2.IMO=1 the simplest correct policy is
+ * to pass all reads and writes directly to the physical GICD.  Physical SPIs
+ * enabled by Linux via GICD_ISENABLER will fire, be intercepted at EL2, and
+ * forwarded to Linux as virtual IRQs via ICH_LR*.
+ *
+ * GICD_SGIR is the GICv2-compatibility SGI register.  GICv3 Linux uses
+ * ICC_SGI1R_EL1 instead, but handle it anyway for robustness.
+ */
+static enum mmio_result gicv3_handle_dist_access(struct mmio_access *mmio)
+{
 	switch (mmio->address) {
 	case GICD_SGIR:
-		if (!mmio->is_write)
-			return MMIO_HANDLED;
-
-		smp_cross_call((val >> 16) & 0xff, val & 0xf);
-
+		if (mmio->is_write)
+			smp_cross_call((mmio->value >> 16) & 0xff, mmio->value & 0xf);
 		return MMIO_HANDLED;
 
-	case GICD_CTLR:
-	case GICD_TYPER:
-	case GICD_IIDR:
-	case REG_RANGE(GICDv2_PIDR0, 4, 4):
-	case REG_RANGE(GICDv2_PIDR4, 4, 4):
-	case REG_RANGE(GICDv2_CIDR0, 4, 4):
-		/* Allow read access, ignore write */
-		if (!mmio->is_write)
-			mmio_perform_access(gic->gicd, mmio);
-
-		/* fall through */
 	default:
-		/* Ignore access. */
+		mmio_perform_access(gic->gicd, mmio);
+		return MMIO_HANDLED;
+	}
+}
+
+#else /* CONFIG_GIC_V2 */
+
+/*
+ * Single-guest GICv2 distributor handler — mirrors the GICv3 trap+forward
+ * model.  The physical GICD is unmapped from the agency Stage-2 tables, so
+ * every Linux GICD access faults here.  For a single non-secure Linux
+ * guest with HCR_EL2.IMO=1, the simplest correct policy is to forward all
+ * reads and writes directly to the physical GICD; SPIs Linux enables via
+ * GICD_ISENABLER will fire, be intercepted at EL2, and forwarded to Linux
+ * as virtual IRQs via the GICH list registers.  Special cases:
+ *   - GICD_SGIR is translated into smp_cross_call so SGIs are routed via
+ *     AVZ's targeted-SGI helper (and visible to the maintenance/dispatch
+ *     paths) rather than going straight to the physical distributor.
+ */
+static enum mmio_result gicv2_handle_dist_access(struct mmio_access *mmio)
+{
+	switch (mmio->address) {
+	case GICD_SGIR:
+		if (mmio->is_write)
+			smp_cross_call((mmio->value >> 16) & 0xff, mmio->value & 0xf);
+		return MMIO_HANDLED;
+
+	default:
+		mmio_perform_access(gic->gicd, mmio);
 		return MMIO_HANDLED;
 	}
 }
@@ -123,8 +149,13 @@ static enum mmio_result gicv2_handle_irq_target(struct mmio_access *mmio, unsign
 	return MMIO_HANDLED;
 }
 
+#endif /* CONFIG_GIC_V3 */
+
 enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 {
+#ifdef CONFIG_GIC_V3
+	return gicv3_handle_dist_access(mmio);
+#else
 	unsigned long reg = mmio->address;
 	enum mmio_result ret;
 
@@ -143,8 +174,6 @@ enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 	case REG_RANGE(GICD_ISPENDR, 32, 4):
 	case REG_RANGE(GICD_ICACTIVER, 32, 4):
 	case REG_RANGE(GICD_ISACTIVER, 32, 4):
-
-		/* Currently, the guest has no way to handle a physical IRQ*/
 		ret = gicv2_handle_dist_access(mmio);
 		break;
 
@@ -153,4 +182,5 @@ enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 	}
 
 	return ret;
+#endif /* CONFIG_GIC_V3 */
 }

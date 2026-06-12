@@ -14,9 +14,15 @@
 ENTRY(__flush_tlb_all)
 
 	dsb 	nshst
-	tlbi 	vmalle1
+#ifdef CONFIG_AVZ
+	tlbi 	alle2		/* AVZ runs at EL2 */
+#else
+	tlbi 	vmalle1		/* standalone SO3 runs at EL1 */
+#endif
 	dsb		nsh
 	isb
+
+	ret
 
 
 /*
@@ -26,9 +32,12 @@ ENTRY(__asm_invalidate_tlb)
 
 	dsb ish         	// Barrier instructions
 
-	tlbi vaae1is, x0	// Invalidate VA specified by X0, in EL0/1
-                     	// virtual address space for all ASIDs
-	dsb ish	            // Barrier instructions - not covered in this guide
+#ifdef CONFIG_AVZ
+	tlbi vae2is, x0		// AVZ runs at EL2: invalidate EL2 VA, inner shareable
+#else
+	tlbi vaae1is, x0	// standalone SO3 runs at EL1: invalidate VA for all ASIDs
+#endif
+	dsb ish	            // Barrier instructions
 	isb					// Synchronize context on this processor
 
 	ret
@@ -43,7 +52,11 @@ ENTRY(__asm_invalidate_tlb)
 ENTRY(__asm_invalidate_tlb_all)
 
 	dsb		sy
-	tlbi	vmalle1is
+#ifdef CONFIG_AVZ
+	tlbi	alle2is		/* AVZ runs at EL2: invalidate all EL2 TLBs, inner shareable */
+#else
+	tlbi	vmalle1is	/* standalone SO3 runs at EL1: invalidate all EL1 TLBs, inner shareable */
+#endif
 
 	dsb		ish
 	isb

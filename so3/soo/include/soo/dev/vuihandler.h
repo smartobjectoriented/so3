@@ -61,9 +61,9 @@ typedef struct __attribute__((packed)) {
 
 #define VUIHANDLER_BEACON 0
 #define VUIHANDLER_DATA 1
-#define VUIHANDLER_ASK_LIST 4 /* Ask for the XML ME list */
-#define VUIHANDLER_SEND 5 /* Specify that the packet contains an event data to be forwarded to the ME */
-#define VUIHANDLER_SELECT 6 /* Ask for the ME model */
+#define VUIHANDLER_ASK_LIST 4 /* Ask for the XML capsule list */
+#define VUIHANDLER_SEND 5 /* Specify that the packet contains an event data to be forwarded to the capsule */
+#define VUIHANDLER_SELECT 6 /* Ask for the capsule model */
 #define VUIHANDLER_POST 7
 
 #define VUIHANDLER_BT_PKT_HEADER_SIZE sizeof(vuihandler_pkt_t)
@@ -153,7 +153,7 @@ typedef void (*ui_send_model_t)(void);
 /** 
  * @brief Allows to register two callbacks to the vuihandler. 
  * 
- * @param ui_send_model: callbacks to send the model. It is a function to let the ME app do whatever it
+ * @param ui_send_model: callbacks to send the model. It is a function to let the capsule app do whatever it
  * wants and not just pass a model char *.
  * @param ui_interrupt: callbacks to be called when receiving a VUIHANDLER_POST or VUIHANDLER_DATA packet.
  *

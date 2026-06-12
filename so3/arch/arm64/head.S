@@ -226,7 +226,7 @@ agency:
 	ldr 	x0, =HCR_AGENCY_FLAGS
 	b	99f
 guest:
-	ldr 	x0, =HCR_ME_FLAGS
+	ldr 	x0, =HCR_S3C_FLAGS
 99:
 
 	msr	hcr_el2, x0

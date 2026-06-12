@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -77,7 +77,7 @@ void avz_setup(void)
 {
 	avz_get_shared();
 
-	avz_shared->dom_desc.u.ME.resume_fn = resume_fn;
+	avz_shared->dom_desc.u.S3C.resume_fn = resume_fn;
 
 	LOG_INFO("SOO Virtualizer (avz) shared page:\n\n");
 
@@ -92,9 +92,9 @@ void avz_setup(void)
 
 void post_init_setup(void)
 {
-	LOG_INFO("Mapping VBstore shared page pfn %lx\n", avz_shared->dom_desc.u.ME.vbstore_pfn);
+	LOG_INFO("Mapping VBstore shared page pfn %lx\n", avz_shared->dom_desc.u.S3C.vbstore_pfn);
 
-	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE);
+	__intf = (void *) io_map(pfn_to_phys(avz_shared->dom_desc.u.S3C.vbstore_pfn), PAGE_SIZE);
 	BUG_ON(!__intf);
 
 	/*
@@ -105,9 +105,9 @@ void post_init_setup(void)
 	 * (inner-shareable) for the ring buffer protocol.
 	 * Override the Stage-1 PTE with Normal cacheable attributes.
 	 */
-	create_mapping(NULL, (addr_t) __intf, pfn_to_phys(avz_shared->dom_desc.u.ME.vbstore_pfn), PAGE_SIZE, false);
+	create_mapping(NULL, (addr_t) __intf, pfn_to_phys(avz_shared->dom_desc.u.S3C.vbstore_pfn), PAGE_SIZE, false);
 
-	LOG_INFO("SOO Mobile Entity booting ...\n");
+	LOG_INFO("SOO SO3 capsule booting ...\n");
 
 	soo_guest_activity_init();
 
@@ -116,15 +116,15 @@ void post_init_setup(void)
 	/* Initialize the Vbus subsystem */
 	vbus_init();
 
-	/* Write the entries related to the ME ID in vbstore */
-	vbstore_ME_ID_populate();
+	/* Write the entries related to the capsule ID in vbstore */
+	vbstore_S3C_ID_populate();
 
 	/* How create all vbstore entries required by the frontend drivers */
 	vbstore_init_dev_populate();
 
 	LOG_INFO("%s", SO3_BANNER);
 
-	LOG_DEBUG("ME running as domain %d\n", ME_domID());
+	LOG_DEBUG("capsule running as domain %d\n", S3C_domID());
 }
 
 REGISTER_POSTINIT(post_init_setup)

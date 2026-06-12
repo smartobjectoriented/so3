@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2017,2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -35,8 +35,8 @@
 
 #define DCM_N_RECV_BUFFERS 10
 
-/* Max ME size in bytes */
-#define DATACOMM_ME_MAX_SIZE (32 * 1024 * 1024)
+/* Max capsule size in bytes */
+#define DATACOMM_S3C_MAX_SIZE (32 * 1024 * 1024)
 
 #endif /* __KERNEL__ */
 
@@ -49,15 +49,15 @@
 #define DCM_IOCTL_SET_AGENCY_UID _IOWR(0x5000DC30, 5, char)
 
 typedef struct {
-	void *ME_data; /* Reference to the uncompressed ME */
-	size_t size; /* Size of this ME ready to be compressed */
-	uint32_t prio; /* Priority of this ME (unused at the moment) */
+	void *S3C_data; /* Reference to the uncompressed capsule */
+	size_t size; /* Size of this capsule ready to be compressed */
+	uint32_t prio; /* Priority of this capsule (unused at the moment) */
 } dcm_ioctl_send_args_t;
 
 typedef struct {
-	void *ME_data;
+	void *S3C_data;
 	size_t buffer_size;
-	size_t ME_size;
+	size_t S3C_size;
 } dcm_ioctl_recv_args_t;
 
 /*
@@ -69,7 +69,7 @@ typedef enum { DCM_BUFFER_SEND = 0, DCM_BUFFER_RECV } dcm_buffer_direction_t;
 
 /*
  * - DCM_BUFFER_FREE means the buffer is ready for send/receive operations.
- * - DCM_BUFFER_BUSY means the buffer is reserved for a ME.
+ * - DCM_BUFFER_BUSY means the buffer is reserved for a capsule.
  * - DCM_BUFFER_SENDING means the buffer is currently along the path for being sent out.
  *   The buffer can still be altered depending on the steps of sending (See SOOlink/Coder).
  */
@@ -86,9 +86,9 @@ typedef struct {
 	dcm_buffer_status_t status;
 
 	/*
-	 * Reference to the ME buffer.
+	 * Reference to the capsule buffer.
 	 */
-	void *ME_data;
+	void *S3C_data;
 	size_t size;
 
 	uint32_t prio;
@@ -98,7 +98,7 @@ typedef struct {
 #endif /* __KERNEL__ */
 
 #ifdef __KERNEL__
-int dcm_ME_rx(void *ME_buffer, size_t size);
+int dcm_S3C_rx(void *S3C_buffer, size_t size);
 #endif /* __KERNEL__ */
 
 #endif /* DCM_H */

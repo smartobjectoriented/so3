@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -31,10 +31,10 @@
 #include <asm/cacheflush.h>
 
 /*
- * construct_ME sets up a new Mobile Entity.
+ * construct_S3C sets up a new SO3 capsule.
  */
 
-int construct_ME(struct domain *d)
+int construct_S3C(struct domain *d)
 {
 	unsigned int slotID;
 	unsigned long alloc_spfn;
@@ -44,12 +44,12 @@ int construct_ME(struct domain *d)
 	printk("***************************** Loading SO3 Guest Container *****************************\n");
 
 	if (memslot[slotID].size == 0)
-		panic("No ME image supplied\n");
+		panic("No capsule image supplied\n");
 
 	/* We are already on the swapper_pg_dir page table to have full access to RAM */
 
 	/* Put the signature for consistency checking */
-	strcpy(d->avz_shared->signature, SOO_ME_SIGNATURE);
+	strcpy(d->avz_shared->signature, SOO_S3C_SIGNATURE);
 
 	d->max_pages = ~0U;
 
@@ -68,7 +68,7 @@ int construct_ME(struct domain *d)
 
 	d->avz_shared->fdt_paddr = pa_to_ipa(slotID, memslot[slotID].fdt_paddr);
 
-	printk("ME FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
+	printk("capsule FDT device tree: 0x%lx (phys)\n", d->avz_shared->fdt_paddr);
 
 	initialize_hyp_dom_stack(d, d->avz_shared->fdt_paddr, memslot[slotID].ipa_addr + L_TEXT_OFFSET);
 

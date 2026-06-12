@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,21 +28,21 @@
 #include <soo/hypervisor.h>
 #include <soo/vbstore.h>
 #include <soo/evtchn.h>
-#include <soo/vbstore_me.h>
+#include <soo/vbstore_capsule.h>
 
 #include <soo/debug.h>
 
-static void vbs_me_rmdir(const char *dir, const char *node)
+static void vbs_s3c_rmdir(const char *dir, const char *node)
 {
 	vbus_rm(VBT_NIL, dir, node);
 }
 
-static void vbs_me_mkdir(const char *dir, const char *node)
+static void vbs_s3c_mkdir(const char *dir, const char *node)
 {
 	vbus_mkdir(VBT_NIL, dir, node);
 }
 
-static void vbs_me_write(const char *dir, const char *node, const char *string)
+static void vbs_s3c_write(const char *dir, const char *node, const char *string)
 {
 	vbus_write(VBT_NIL, dir, node, string);
 }
@@ -76,41 +76,41 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 
 	/* Virtualized interface of dev config */
 	sprintf(propname, "%d", domID);
-	vbs_me_mkdir("device", propname);
+	vbs_s3c_mkdir("device", propname);
 
 	strcpy(devrootname, "device/%d");
 
 	sprintf(rootname, devrootname, domID);
-	vbs_me_mkdir(rootname, devname);
+	vbs_s3c_mkdir(rootname, devname);
 
 	strcat(devrootname, "/");
 	strcat(devrootname, devname);
 
 	sprintf(rootname, devrootname, domID); /* "/device/%d/vuart"  */
-	vbs_me_mkdir(rootname, "0");
+	vbs_s3c_mkdir(rootname, "0");
 
 	strcat(devrootname, "/0"); /*  "/device/%d/vuart/0"   */
 
 	sprintf(rootname, devrootname, domID);
-	vbs_me_write(rootname, "state", "1"); /* = VBusStateInitialising */
+	vbs_s3c_write(rootname, "state", "1"); /* = VBusStateInitialising */
 
 	switch (realtime) {
 	case true:
-		vbs_me_write(rootname, "realtime", "1");
+		vbs_s3c_write(rootname, "realtime", "1");
 		break;
 
 	case false:
-		vbs_me_write(rootname, "realtime", "0");
+		vbs_s3c_write(rootname, "realtime", "0");
 	}
 
-	vbs_me_write(rootname, "backend-id", "0");
+	vbs_s3c_write(rootname, "backend-id", "0");
 
 	strcpy(devrootname, "backend/");
 	strcat(devrootname, devname);
 	strcat(devrootname, "/%d/0"); /* "backend/vuart/%d/0" */
 
 	sprintf(propname, devrootname, domID);
-	vbs_me_write(rootname, "backend", propname);
+	vbs_s3c_write(rootname, "backend", propname);
 
 	/* Create the vbstore entries for the backend side */
 
@@ -118,30 +118,30 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	strcpy(devrootname, "backend/");
 	strcat(devrootname, devname); /* "/backend/vuart"  */
 
-	vbs_me_mkdir(devrootname, propname);
+	vbs_s3c_mkdir(devrootname, propname);
 
 	strcat(devrootname, "/%d"); /* "/backend/vuart/%d" */
 
 	sprintf(rootname, devrootname, domID);
-	vbs_me_mkdir(rootname, "0");
+	vbs_s3c_mkdir(rootname, "0");
 
 	strcat(devrootname, "/0"); /* "/backend/vuart/%d/state/1" */
 	sprintf(rootname, devrootname, domID);
-	vbs_me_write(rootname, "state", "1");
+	vbs_s3c_write(rootname, "state", "1");
 
 	switch (realtime) {
 	case true:
-		vbs_me_write(rootname, "realtime", "1");
+		vbs_s3c_write(rootname, "realtime", "1");
 
 		/* The two next entries are used to synchronize RT and non-RT vbus/vbstore. */
-		vbs_me_write(rootname, "sync_backfront", "0");
+		vbs_s3c_write(rootname, "sync_backfront", "0");
 
-		vbs_me_write(rootname, "sync_backfront_rt", "0");
+		vbs_s3c_write(rootname, "sync_backfront_rt", "0");
 
 		break;
 
 	case false:
-		vbs_me_write(rootname, "realtime", "0");
+		vbs_s3c_write(rootname, "realtime", "0");
 	}
 
 	strcpy(devrootname, "device/%d/");
@@ -149,10 +149,10 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	strcat(devrootname, "/0"); /* "device/%d/vuart/0" */
 
 	sprintf(propname, devrootname, domID);
-	vbs_me_write(rootname, "frontend", propname);
+	vbs_s3c_write(rootname, "frontend", propname);
 
 	sprintf(propname, "%d", domID);
-	vbs_me_write(rootname, "frontend-id", propname);
+	vbs_s3c_write(rootname, "frontend-id", propname);
 
 	/* Now, we create the corresponding device on the frontend side */
 	strcpy(devrootname, "device/%d/");
@@ -191,7 +191,7 @@ static void vbstore_dev_remove(unsigned int domID, const char *devname)
 	strcat(devrootname, propname);
 	strcat(devrootname, devname); /* "/device/vuart/" */
 
-	vbs_me_rmdir(devrootname, "0");
+	vbs_s3c_rmdir(devrootname, "0");
 
 	/* Remove the vbstore entries for the backend side */
 
@@ -201,63 +201,63 @@ static void vbstore_dev_remove(unsigned int domID, const char *devname)
 	strcat(devrootname, devname); /* "/backend/vuart/" */
 	strcat(devrootname, propname); /* "/backend/vuart/2" */
 
-	vbs_me_rmdir(devrootname, "0");
+	vbs_s3c_rmdir(devrootname, "0");
 }
 
 /*
- * Remove all vbstore entries related to this ME.
+ * Remove all vbstore entries related to this capsule.
  */
 void remove_vbstore_entries(void)
 {
 	int fdt_node;
 	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
-	/* Remove the vbstore entries related to the ME */
+	/* Remove the vbstore entries related to the capsule */
 	strcpy(rootname, "soo/me");
-	sprintf(entry, "%d", ME_domID());
+	sprintf(entry, "%d", S3C_domID());
 
 	vbus_rm(VBT_NIL, rootname, entry);
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Removing vUIHandler from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vuihandler");
+		vbstore_dev_remove(S3C_domID(), "vuihandler");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuart,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vuart from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vuart");
+		vbstore_dev_remove(S3C_domID(), "vuart");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vdummy from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vdummy");
+		vbstore_dev_remove(S3C_domID(), "vdummy");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsenseled,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vsenseled from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vsenseled");
+		vbstore_dev_remove(S3C_domID(), "vsenseled");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsensej,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vsensej from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vsensej");
+		vbstore_dev_remove(S3C_domID(), "vsensej");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vfbdev from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vfbdev");
+		vbstore_dev_remove(S3C_domID(), "vfbdev");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vinput,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: removing vinput from vbstore...\n", __func__);
-		vbstore_dev_remove(ME_domID(), "vinput");
+		vbstore_dev_remove(S3C_domID(), "vinput");
 	}
 }
 
@@ -273,49 +273,49 @@ void vbstore_devices_populate(void)
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vdummy...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vdummy", false, "vdummy,frontend");
+		vbstore_dev_init(S3C_domID(), "vdummy", false, "vdummy,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Init vUIHandler...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vuihandler", false, "vuihandler,frontend");
+		vbstore_dev_init(S3C_domID(), "vuihandler", false, "vuihandler,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuart,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vuart...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vuart", false, "vuart,frontend");
+		vbstore_dev_init(S3C_domID(), "vuart", false, "vuart,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsenseled,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsenseled...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vsenseled", false, "vsenseled,frontend");
+		vbstore_dev_init(S3C_domID(), "vsenseled", false, "vsenseled,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsensej,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsensej...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vsensej", false, "vsensej,frontend");
+		vbstore_dev_init(S3C_domID(), "vsensej", false, "vsensej,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vlogs,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vlogs...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vlogs", false, "vlogs,frontend");
+		vbstore_dev_init(S3C_domID(), "vlogs", false, "vlogs,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vfbdev...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vfbdev", false, "vfbdev,frontend");
+		vbstore_dev_init(S3C_domID(), "vfbdev", false, "vfbdev,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vinput,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vinput...\n", __func__);
-		vbstore_dev_init(ME_domID(), "vinput", false, "vinput,frontend");
+		vbstore_dev_init(S3C_domID(), "vinput", false, "vinput,frontend");
 	}
 }
 
@@ -328,9 +328,9 @@ void vbstore_trigger_dev_probe(void)
 }
 
 /*
- * Prepare the vbstore entries used by this ME.
+ * Prepare the vbstore entries used by this capsule.
  */
-void vbstore_me_init(void)
+void vbstore_s3c_init(void)
 {
 	vbus_probe_frontend_init();
 
@@ -346,9 +346,9 @@ void vbstore_init_dev_populate(void)
 	/* Now, we are ready to register vbstore entries */
 	vbstore_devices_populate();
 
-	if (get_ME_state() == ME_state_stopped) {
+	if (get_S3C_state() == S3C_state_stopped) {
 		/*
-		 * If the ME is in ME_state_booting state, this means that the ME has been locally injected.
+		 * If the capsule is in S3C_state_booting state, this means that the capsule has been locally injected.
 		 * There is no need to adjust the grant tables. The TRIGGER_DEV_PROBE event can be sent.
 		 */
 		vbstore_trigger_dev_probe();

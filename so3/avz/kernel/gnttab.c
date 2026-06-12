@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2024-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -143,9 +143,9 @@ addr_t allocate_grant_pfn(struct domain *d)
 }
 
 /**
- * @brief Map the grant page associated to vbstore in the IPA domain of the ME
+ * @brief Map the grant page associated to vbstore in the IPA domain of the capsule
  *
- * @param target_domid the ME which needs the vbstore pfn
+ * @param target_domid the capsule which needs the vbstore pfn
  * @param pfn 
  * @return 
  */
@@ -165,14 +165,7 @@ addr_t map_vbstore_pfn(int target_domid, int pfn)
 			else
 				grant_paddr = pfn_to_phys(pfn);
 
-			/*
-			 * The vbstore ring buffer is shared Normal memory between agency
-			 * and ME. Map it Normal cacheable (nocache=false) so that both
-			 * sides see coherent writes via the inner-shareable cache domain.
-			 * Using Device attributes here would break ring-buffer coherency
-			 * with the agency which maps the same page as Normal cacheable.
-			 */
-			__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(cur->pfn), PAGE_SIZE, false,
+			__create_mapping((addr_t *) d->pagetable_vaddr, grant_paddr, pfn_to_phys(cur->pfn), PAGE_SIZE, true,
 					 S2);
 
 			return phys_to_pfn(grant_paddr);

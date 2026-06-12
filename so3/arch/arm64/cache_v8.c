@@ -43,20 +43,18 @@ void mmu_setup(void *pgtable)
 
 	tcr = TCR_CACHE_FLAGS | TCR_SMP_FLAGS | TCR_TG_FLAGS | TCR_ASID16 | TCR_A1;
 
-#ifdef CONFIG_VA_BITS_48
 	tcr |= TCR_TxSZ(48) | (TCR_PS_BITS_256TB << TCR_IPS_SHIFT);
-#elif CONFIG_VA_BITS_39
-	tcr |= TCR_TxSZ(39) | (TCR_PS_BITS_1TB << TCR_IPS_SHIFT);
-#else
-#error "Wrong VA_BITS configuration."
-#endif
 
 #ifdef CONFIG_AVZ
 	asm volatile("msr tcr_el2, %0" : : "r"(tcr) : "memory");
 
-	/* Prepare the stage-2 configuration */
-	tcr = VTCR_T0SZ_VAL(48) | VTCR_SL0_L0 | TCR_PS_BITS_256TB | (TCR_ORGN0_WBWA << TCR_IRGN0_SHIFT) |
-	      (TCR_ORGN0_WBWA << TCR_ORGN0_SHIFT) | TCR_SH0_INNER | VTCR_RES1;
+	/* Stage-2 configuration for Cortex-A53 (PARange=0b0010 = 40-bit PA).
+	 * SL0=L0 (starting level 0) requires ARMv8.2-LPA which Cortex-A53 lacks —
+	 * use SL0=L1 (starting level 1) instead.  T0SZ=25 gives a 39-bit IPA space
+	 * (single L1 root table, no concatenation), which covers all iMX8MP physical
+	 * addresses.  VTTBR_EL2 must therefore point to the L1 table directly.
+	 */
+	tcr = VTCR_T0SZ_VAL(39) | VTCR_SL0_L1 | VTCR_PS_40BITS | TCR_IRGN0_WBWA | TCR_ORGN0_WBWA | TCR_SH0_INNER | VTCR_RES1;
 
 	asm volatile("msr vtcr_el2, %0" : : "r"(tcr) : "memory");
 	asm volatile("isb");
@@ -152,7 +150,7 @@ void flush_dcache_range(unsigned long start, unsigned long end)
 void flush_pte_entry(addr_t va, u64 *pte)
 {
 	__asm_invalidate_tlb(va);
-	invalidate_dcache_range((u64) pte, (u64) (pte + 1));
+	flush_dcache_range((u64) pte, (u64) (pte + 1));
 }
 
 void dcache_enable(void)

@@ -183,10 +183,20 @@ static int pl011_init(dev_t *dev, int fdt_offset)
 
 	fdt_interrupt_node(fdt_offset, &pl011.irq_def);
 
-	/* Bind ISR into interrupt controller */
+#ifndef CONFIG_AVZ
+	/* When AVZ runs as hypervisor, the PL011 RX interrupt belongs to
+	 * the agency guest — its console driver attaches its own handler.
+	 * If we bind one here, gic_handle's irq_desc->action != NULL
+	 * branch fires AVZ's pl011_int and EOIs the IRQ before it ever
+	 * reaches the guest, freezing input at the guest login prompt.
+	 * AVZ uses pl011_put_byte for output only and does not need RX. */
 	irq_bind(pl011.irq_def.irqnr, pl011_int, NULL, NULL);
+#endif
 
-	/* Enable interrupt (IRQ controller) */
+	/* Enable interrupt (IRQ controller) — done unconditionally so the
+	 * hardware-level state of IMSC and the GIC SPI enable is identical
+	 * in CONFIG_AVZ and non-AVZ builds; only the AVZ-side action is
+	 * skipped above. */
 	iowrite16(pl011.base + UART011_IMSC, UART011_RXIM | UART011_RTIM);
 
 	serial_ops.enable_irq();

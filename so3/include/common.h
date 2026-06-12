@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -36,13 +36,13 @@
  * CPU #0 is the primary (non-RT) Agency CPU.
  * CPU #1 is the hard RT Agency CPU.
  * CPU #2 is the second (SMP) Agency CPU.
- * CPU #3 is the ME CPU.
+ * CPU #3 is the capsule CPU.
  */
 
 #define AGENCY_CPU 0
 #define AGENCY_RT_CPU 1
 
-#define ME_CPU 3
+#define S3C_CPU 3
 
 #endif /* CONFIG_AVZ */
 

@@ -103,23 +103,13 @@ void secondary_start_kernel(void)
 
 	gicc_init();
 
-	printk("CPU%u: Booted secondary processor\n", cpu);
-
-#ifdef CONFIG_SOO
-	if (cpu != ME_CPU)
-#endif /* CONFIG_SOO */
-		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+#ifndef CONFIG_SOO
+	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+#endif /* !CONFIG_SOO */
 
 	booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
-#ifdef CONFIG_SOO
-	/* Agency secondary CPUs are handed directly to Linux via spin-table.
-	 * Set current_domain to agency so HVC calls from EL1 are correctly dispatched.
-	 */
-	if (cpu != ME_CPU)
-		set_current_domain(agency);
-#endif /* CONFIG_SOO */
 	switch (cpu) {
 	case 1:
 		pre_ret_to_el1_spin(CPU1_RELEASE_ADDR);
@@ -127,13 +117,9 @@ void secondary_start_kernel(void)
 	case 2:
 		pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
 		break;
-		/* CPU #3 is dedicated to capsules in case of CONFIG_SOO */
-#ifndef CONFIG_SOO
 	case 3:
 		pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);
 		break;
-#endif /* !CONFIG_SOO*/
-
 	default:
 		printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
 	}
@@ -141,9 +127,11 @@ void secondary_start_kernel(void)
 
 #ifdef CONFIG_CPU_PSCI
 #ifdef CONFIG_SOO
-	if (cpu != ME_CPU)
+	if (cpu != S3C_CPU)
 #endif /* CONFIG_SOO */
+	{
 		pre_ret_to_el1();
+	}
 #endif /* CONFIG_CPU_PCSI */
 
 	secondary_timer_init();
@@ -199,8 +187,6 @@ void cpu_up(unsigned int cpu)
 	while (!booted[cpu])
 		;
 
-	printk("%s CPU %d finished waiting...\n", __func__, smp_processor_id());
-
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;
 }
@@ -225,25 +211,16 @@ void smp_init(void)
 
 #ifdef CONFIG_SOO
 
-	/* Boot agency secondary CPUs so they enter spin-table wait for Linux */
-	for (i = 1; i < ME_CPU; i++)
-		cpu_up(i);
+	printk("Starting capsule CPU...\n");
 
-	printk("Starting ME CPU...\n");
+	cpu_up(S3C_CPU);
 
-	cpu_up(ME_CPU);
-
-	printk("Brought secondary CPU %d for running SO3 capsules...\n", ME_CPU);
+	printk("Brought secondary CPU %d for running SO3 capsules...\n", S3C_CPU);
 
 #else /* CONFIG_SOO */
 
-#ifdef CONFIG_AVZ
-	/* With VT support, we prepare the CPU to be started through a HVC call
-	 * from the domain.
-	 */
 	for (i = 1; i < CONFIG_NR_CPUS; i++)
 		cpu_up(i);
-#endif
 
 #endif /* !CONFIG_SOO */
 }

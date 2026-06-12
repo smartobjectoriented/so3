@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2021-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -32,7 +32,7 @@
 
 #include <avz/domain.h>
 
-.global cpu_entrypoint
+.global cpu_entrypoints
 
 #endif /* CONFIG_AVZ */
 
@@ -41,6 +41,8 @@
 
 .extern current_thread
 .extern __sync_serror
+.extern avz_handle_el1_serror
+.extern avz_handle_el2_serror
 .extern do_exit
 .extern sig_check
 
@@ -92,7 +94,21 @@
  */
 .section ".vectors.text", "ax"
 
-	b __start  // To be compliant with reset vector (unavailable in aarch64)
+	b	__start				/* ARM64 Image header code0 / reset vector */
+	.long	0				/* code1: reserved */
+#ifdef CONFIG_VERDIN_IMX8MP
+	.quad	LOAD_OFFSET			/* text_offset: DRAM_base + LOAD_OFFSET = load address */
+	.quad	0x800000			/* image_size: non-zero → U-Boot reads text_offset */
+#else
+	.quad	0				/* text_offset: U-Boot uses hardcoded 0x80000 */
+	.quad	0				/* image_size: 0 → U-Boot uses hardcoded defaults */
+#endif
+	.quad	0				/* flags: reserved */
+	.quad	0				/* reserved */
+	.quad	0				/* reserved */
+	.quad	0				/* reserved */
+	.ascii	"ARM\x64"			/* magic = 0x644d5241 at offset 56 */
+	.long	0				/* reserved */
 
 .align 12
 ENTRY(__vectors)
@@ -145,10 +161,17 @@ ENTRY(__vectors)
 	// Current EL with SPx / SError
 	.align 7
 
+#ifdef CONFIG_AVZ
+	b	avz_el2_serror_handler
+#else
+	/* This slot MUST be emitted in every build: omitting it (e.g. behind
+	 * a bare #ifdef CONFIG_AVZ) shifts every subsequent Lower-EL vector up
+	 * by 0x80, so an EL0 `svc` lands in the IRQ handler instead of
+	 * el01_sync_handler and no syscall is ever serviced. */
 	mov	x0, lr
 	mrs	x1, esr_el1
-
 	b	__sync_serror
+#endif /* CONFIG_AVZ */
 
 	// Lower EL using AArch64 / Synchronous
 	.align 7
@@ -179,8 +202,12 @@ ENTRY(__vectors)
 	// Lower EL using AArch64 / SError
 	.align 7
 
+#ifdef CONFIG_AVZ
+	b	el1_serror_handler
+#else
 	mov	x0, lr
 	b 	trap_handle_error
+#endif
 
 	// Lower EL using AArch32 / Synchronous
 	.align 7
@@ -262,29 +289,86 @@ ENTRY(pre_ret_to_el1_spin)
 #ifdef CONFIG_CPU_PSCI
 ENTRY(pre_ret_to_el1)
 
-	wfi
+	/*
+	 * Bao-inspired per-CPU entrypoint pattern:
+	 * Each secondary CPU reads its own slot in cpu_entrypoints[] indexed
+	 * by the Aff0 field of MPIDR_EL1.  CPU0 writes only the target CPU's
+	 * slot before sending a targeted IPI via smp_trigger_event(), so no
+	 * atomic operations are needed and no other CPU races for the same slot.
+	 */
+	mrs	x1, mpidr_el1
+	and	x1, x1, #0xff			/* Aff0 = logical CPU index */
 
-	ldr x0, cpu_entrypoint
+	/* pre_ret_debug_wfi(cpu_id) */
+	mov	x0, x1
+	bl	pre_ret_debug_wfi
+	mrs	x1, mpidr_el1
+	and	x1, x1, #0xff
+
+	/* Busy-poll on cpu_entrypoints[cpu_id] until CPU0's PSCI_CPU_ON handler
+	 * writes the entry point.  Using a spin loop (no WFI) to diagnose
+	 * whether WFI wakeup is the bottleneck. */
+1:
+	dsb	ish
+	isb
+
+	adr	x2, cpu_entrypoints
+	ldr	x0, [x2, x1, lsl #3]		/* cpu_entrypoints[cpu_id] */
+	cbz	x0, 1b				/* not yet written — spin */
+
+	/* pre_ret_debug_woke(cpu_id, ep) — x0=ep, x1=cpu_id */
+	mov	x19, x0			/* save ep across the call */
+	mov	x20, x1			/* save cpu_id across the call */
+	mov	x1, x0
+	mov	x0, x20
+	bl	pre_ret_debug_woke
+	mov	x0, x19			/* restore ep */
+	mov	x1, x20			/* restore cpu_id (not needed further) */
+
+	/*
+	 * Drain any SError pending from flush_dcache_all() inside
+	 * __mmu_switch_vttbr (called by secondary_start_kernel).
+	 * On Cortex-A53, DC CISW cache maintenance can leave a deferred
+	 * physical SError.  With HCR_EL2.AMO=1 it would otherwise fire
+	 * the instant we ERET to EL1, hitting el1_serror_handler before
+	 * Linux is initialised.  Force it here at EL2 instead so it is
+	 * consumed by avz_el2_serror_handler and the EL1 entry is clean.
+	 *
+	 * NOTE: the SError handler overwrites ELR_EL2, so we must set
+	 * ELR_EL2 AFTER the drain.  x0 (entrypoint) is preserved through
+	 * kernel_entry/kernel_exit used by avz_el2_serror_handler.
+	 */
+	msr	daifclr, #4			/* unmask SErrors at EL2 */
+	isb					/* pending SError fires → avz_el2_serror_handler */
+	msr	daifset, #4			/* re-mask */
+	isb
+
+	/* Set ELR_EL2 after the drain so the SError handler cannot clobber it */
 	msr	elr_el2, x0
 
-	// Set the CPU in EL1 mode to proceed with
-	// the bootstrap of the domain
-
-	mov	x2, #PSR_MODE_EL1h
-
-	// Make sure no interrupt coming from CPU #0 is
-	// interferring with other CPU bootstrap
-	orr	x2, x2, #PSR_I_BIT
-
+	/* EL1h mode, all exceptions masked on EL1 entry */
+	mov	x2, #(PSR_MODE_EL1h | PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT)
 	msr	spsr_el2, x2
 
-	// According to boot protocol
-	mov	x1, #0
+	/* Initialise the virtual CPU interface for this secondary CPU so it
+	 * can receive vIRQs (timer PPI 27, IPIs, SPIs).  Without this, the
+	 * vGIC on secondaries stays disabled (HCR.EN=0) and Linux ends up
+	 * with no scheduler tick, hitting an RCU stall a few seconds in.
+	 * gich_secondary_init() is a leaf call that preserves callee-saved
+	 * registers (x19=ep) but clobbers x0-x18. */
+	bl	gich_secondary_init
+
+	/* Disable EL1 physical timer (CNTP) to clear any stale U-Boot compare
+	 * value; prevents spurious id=27 storm before Linux programs its own CVAL. */
+	msr	cntp_ctl_el0, xzr
+
+	/* ARM64 PSCI secondary boot protocol: x0–x3 = 0 */
+	mov	x0, #0
 	mov	x1, #0
 	mov	x2, #0
 	mov	x3, #0
 
-	// Ready to jump into the Linux domain...
+	/* Ready to jump into the Linux domain... */
 
 	eret
 
@@ -329,7 +413,8 @@ ENTRY(pre_ret_to_el1)
 .endm
 
 
-// Exit macro at the end of an exception routine to restore all saved registers
+// Exit macro at the end of an exception routine
+// It restores the sp_el0 as well.
 .macro prepare_to_exit_to_el1
 	ldr	x0, [sp, #OFFSET_PC]
 	msr	elr_el2, x0
@@ -386,15 +471,67 @@ el12_2_irq_handler:
 
 	// Make sure r0 refers to the base of the stack frame
 	mov	x0, sp
+#ifdef CONFIG_GIC_V3
+	bl	avz_el2_irq_handle
+#else
     	bl 	irq_handle
+#endif
 
 	prepare_to_exit_to_el1
   	kernel_exit
 
 	eret
 
-cpu_entrypoint:
-	.quad 0x0
+#ifdef CONFIG_AVZ
+/*
+ * SError while AVZ itself is running at EL2 (Current EL with SPx).
+ * Save registers, log ESR_EL2/ELR_EL2, and ERET to resume the
+ * interrupted EL2 code (e.g. the scheduler).
+ */
+.align 5
+avz_el2_serror_handler:
+
+	kernel_entry
+
+	mov	x0, sp
+	bl	avz_handle_el2_serror
+
+	kernel_exit
+
+	eret
+
+	dsb nsh
+	isb
+
+	nop
+	nop
+	nop
+#endif /* CONFIG_AVZ */
+
+.align 5
+el1_serror_handler:
+
+	kernel_entry
+	prepare_to_enter_to_el2
+
+	mov 	x0, sp
+	bl	avz_handle_el1_serror
+
+	prepare_to_exit_to_el1
+	kernel_exit
+
+	eret
+
+	dsb nsh
+	isb
+
+	nop
+	nop
+	nop
+
+/* Per-CPU PSCI entry points — indexed by Aff0 of MPIDR_EL1 */
+cpu_entrypoints:
+	.quad 0x0, 0x0, 0x0, 0x0
 
 __prepare_to_sig_el1_handler:
 
@@ -418,7 +555,7 @@ __prepare_to_sig_el1_handler:
 
 /*
  * This glue code will be called to prepare a resuming
- * of a ME.
+ * of a capsule.
  */
 ENTRY(resume_to_guest)
 
@@ -478,6 +615,14 @@ ENTRY(pre_ret_to_user)
 	msr	spsr_el2, x2
 
 	kernel_exit
+
+	// Ensure all page-table writes are visible to the hardware table walker
+	// before handing off to the guest at EL1.
+	dsb	sy
+	isb
+
+	/* Disable EL1 physical timer (CNTP) to clear stale U-Boot compare value. */
+	msr	cntp_ctl_el0, xzr
 
 	// Ready to jump into the domain...
 

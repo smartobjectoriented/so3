@@ -1,0 +1,90 @@
+/*
+ * Copyright (C) 2026 EDGEMTech SA <info@edgemtech.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	model = "AVZ Toradex Verdin iMX8MP";
+	compatible = "arm,verdin-imx8mp";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+	};
+
+	/*
+	 * Full DRAM managed by AVZ: 0x40000000–0xBDFFFFFF (minus OP-TEE at top).
+	 * AVZ itself runs at 0x40200000 (placed by U-Boot: DRAM_base + text_offset).
+	 * Linux guest occupies 0x41000000 upward via the memslot mechanism.
+	 */
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x0 0x7e000000>;
+	};
+
+	mem {
+		compatible = "mem";
+		status = "ok";
+	};
+
+	/*
+	 * GICv3 — ARM Generic Interrupt Controller v3.
+	 *   GICD (distributor)   @ 0x38800000  size 0x10000
+	 *   GICR (redistributor) @ 0x38880000  size 0xc0000
+	 *   GICC (compat CPU if) @ 0x38C20000  size 0x10000
+	 *
+	 * AVZ uses the GICv2 compatibility interface (GICC) exposed by
+	 * GICv3 when ARE_NS = 0 in GICD_CTLR.
+	 */
+	gic: interrupt-controller@38800000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		/* GICD, GICR, GICC */
+		reg = <0x0 0x38800000 0x0 0x10000
+		       0x0 0x38880000 0x0 0xc0000
+		       0x0 0x38C20000 0x0 0x10000>;
+		status = "ok";
+	};
+
+	/* UART3 — debug console, already initialised by ATF/U-Boot */
+	serial@30880000 {
+		compatible = "serial,imx";
+		reg = <0x0 0x30880000 0x0 0x10000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 28 4>;
+		status = "ok";
+	};
+
+	/* Periodic timer — ARM CP15 virtual timer PPI #10 */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 10 4>;
+		status = "ok";
+	};
+
+	/* Clocksource — ARM CP15 physical counter */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+};

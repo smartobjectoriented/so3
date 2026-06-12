@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2019 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,13 +38,13 @@
 #include <soo/debug.h>
 #include <soo/evtchn.h>
 
-#include <me/refso3.h>
+#include <capsule/refso3.h>
 
 /**
- * This ME does nothing particular. It is aimed at giving a template to develop
- * a new ME.
+ * This capsule does nothing particular. It is aimed at giving a template to develop
+ * a new capsule.
  *
- * Please, have a look at the SOO.ledctrl which is an example of ME intended to
+ * Please, have a look at the SOO.ledctrl which is an example of capsule intended to
  * pilot LEDs on the Sense HAT extension.
  *
  * Note that SOO.refso3 can be configured with a rootfs (ramfs) which contains
@@ -58,7 +58,7 @@ void *app_thread_main(void *args)
 	while (1) {
 		msleep(500);
 
-		lprintk("(%d)", ME_domID());
+		lprintk("(%d)", S3C_domID());
 		printk("%c ", sh_refso3->cur_letter);
 	}
 

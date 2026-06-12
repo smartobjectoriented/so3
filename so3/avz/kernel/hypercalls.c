@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -44,41 +44,41 @@
 #include <avz/fbdev_gnt.h>
 
 /**
- * Return the state of the ME corresponding to the ME_slotID.
- * If the ME does not exist anymore (for example, following a KILL_ME),
- * the state is set to ME_state_dead.
+ * Return the state of the capsule corresponding to the S3C_slotID.
+ * If the capsule does not exist anymore (for example, following a KILL_S3C),
+ * the state is set to S3C_state_dead.
  */
-ME_state_t get_ME_state(unsigned int ME_slotID)
+S3C_state_t get_S3C_state(unsigned int S3C_slotID)
 {
-	if (domains[ME_slotID] == NULL)
-		return ME_state_dead;
+	if (domains[S3C_slotID] == NULL)
+		return S3C_state_dead;
 	else
-		return domains[ME_slotID]->avz_shared->dom_desc.u.ME.state;
+		return domains[S3C_slotID]->avz_shared->dom_desc.u.S3C.state;
 }
 
-void set_ME_state(unsigned int ME_slotID, ME_state_t state)
+void set_S3C_state(unsigned int S3C_slotID, S3C_state_t state)
 {
-	domains[ME_slotID]->avz_shared->dom_desc.u.ME.state = state;
+	domains[S3C_slotID]->avz_shared->dom_desc.u.S3C.state = state;
 }
 
-void shutdown_ME(unsigned int ME_slotID)
+void shutdown_S3C(unsigned int S3C_slotID)
 {
 	struct domain *dom;
 
-	dom = domains[ME_slotID];
+	dom = domains[S3C_slotID];
 
-	/* Perform a removal of ME */
+	/* Perform a removal of capsule */
 	dom->is_dying = DOMDYING_dead;
-	DBG("Shutdowning slotID: %d - Domain pause nosync ...\n", ME_slotID);
+	DBG("Shutdowning slotID: %d - Domain pause nosync ...\n", S3C_slotID);
 
 	vcpu_pause(dom);
 
-	DBG("Destroy evtchn if necessary - state: %d\n", get_ME_state(ME_slotID));
+	DBG("Destroy evtchn if necessary - state: %d\n", get_S3C_state(S3C_slotID));
 	evtchn_destroy(dom);
 
 	DBG("Wiping domain area...\n");
 
-	memset((void *) memslot[ME_slotID].base_vaddr, 0, memslot[ME_slotID].size);
+	memset((void *) memslot[S3C_slotID].base_vaddr, 0, memslot[S3C_slotID].size);
 
 	DBG("Destroying domain structure ...\n");
 
@@ -86,28 +86,28 @@ void shutdown_ME(unsigned int ME_slotID)
 
 	DBG("Now resetting domains to NULL.\n");
 
-	/* bye bye dear ME ! */
-	domains[ME_slotID] = NULL;
+	/* bye bye dear capsule ! */
+	domains[S3C_slotID] = NULL;
 
 	/* Reset the slot availability */
-	put_ME_slot(ME_slotID);
+	put_S3C_slot(S3C_slotID);
 }
 
 /**
- * Return the descriptor of a domain (agency or ME).
- * A size of 0 means there is no ME in the slot.
+ * Return the descriptor of a domain (agency or capsule).
+ * A size of 0 means there is no capsule in the slot.
  */
 void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc)
 {
 	/* Check for authorization... (to be done) */
 
 	/*
-	 * If no ME is present in the slot specified by slotID, we assign a size of 0 in the ME descriptor.
+	 * If no capsule is present in the slot specified by slotID, we assign a size of 0 in the capsule descriptor.
 	 * We presume that the slotID of agency is never free...
 	 */
 
 	if ((slotID > 1) && !memslot[slotID].busy)
-		dom_desc->u.ME.size = 0;
+		dom_desc->u.S3C.size = 0;
 	else
 		/* Copy the content to the target desc */
 		memcpy(dom_desc, &domains[slotID]->avz_shared->dom_desc, sizeof(dom_desc_t));
@@ -152,12 +152,12 @@ void do_avz_hypercall(void *__args)
 		get_dom_desc(args->u.avz_dom_desc_args.slotID, &args->u.avz_dom_desc_args.dom_desc);
 		break;
 
-	case AVZ_ME_READ_SNAPSHOT:
-		read_ME_snapshot(args);
+	case AVZ_S3C_READ_SNAPSHOT:
+		read_S3C_snapshot(args);
 		break;
 
-	case AVZ_ME_WRITE_SNAPSHOT:
-		write_ME_snapshot(args);
+	case AVZ_S3C_WRITE_SNAPSHOT:
+		write_S3C_snapshot(args);
 		break;
 
 	case AVZ_INJECT_CAPSULE:
@@ -188,17 +188,17 @@ void do_avz_hypercall(void *__args)
 			args->u.avz_dc_event_args.state = ESUCCESS;
 		break;
 
-	case AVZ_KILL_ME:
+	case AVZ_KILL_S3C:
 
-		shutdown_ME(args->u.avz_kill_me_args.slotID);
+		shutdown_S3C(args->u.avz_kill_s3c_args.slotID);
 		break;
 
-	case AVZ_GET_ME_STATE:
-		args->u.avz_me_state_args.state = get_ME_state(args->u.avz_me_state_args.slotID);
+	case AVZ_GET_S3C_STATE:
+		args->u.avz_s3c_state_args.state = get_S3C_state(args->u.avz_s3c_state_args.slotID);
 		break;
 
-	case AVZ_SET_ME_STATE: {
-		set_ME_state(args->u.avz_me_state_args.slotID, args->u.avz_me_state_args.state);
+	case AVZ_SET_S3C_STATE: {
+		set_S3C_state(args->u.avz_s3c_state_args.slotID, args->u.avz_s3c_state_args.state);
 		break;
 	}
 
@@ -210,7 +210,7 @@ void do_avz_hypercall(void *__args)
 		fbdev_change_focus(args->u.avz_fbdev_focus_args.new_slotID);
 		break;
 
-	case AVZ_FBDEV_GET_ME_ADDR:
+	case AVZ_FBDEV_GET_S3C_ADDR:
 		args->u.avz_fbdev_addr_args.paddr = fbdev_get_domain_ipa();
 		break;
 
@@ -222,8 +222,5 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
-	/* inner shareable */
-	dsb(ish);
-
-	isb();
+	flush_dcache_all();
 }

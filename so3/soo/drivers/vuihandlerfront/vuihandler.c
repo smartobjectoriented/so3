@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2020-2022 David Truan <david.truan@heig-vd.ch>
- * Copyright (C) 2018-2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2018-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2018-2019 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,7 +39,7 @@
 
 #include <soo/dev/vuihandler.h>
 
-/* Callbacks to be set by the ME app */
+/* Callbacks to be set by the capsule app */
 ui_interrupt_t __ui_interrupt = NULL;
 ui_send_model_t __ui_send_model = NULL;
 

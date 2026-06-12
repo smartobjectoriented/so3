@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,9 +26,7 @@
 #include <asm/mmu.h>
 #include <asm/processor.h>
 
-#ifdef CONFIG_AVZ
 #include <mach/ipamap.h>
-#endif
 
 #ifdef CONFIG_SOO
 #include <avz/fbdev_gnt.h>
@@ -111,10 +109,7 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	printk("   Map size (bytes) 		: 0x%lx\n", map_size);
 
 	printk("   Intermediate phys address    : 0x%lx\n", memslot[slotID].ipa_addr);
-	printk("   Stage-2 vttbr 		: (va) 0x%p - (pa) 0x%lx\n", new_pt, __pa(new_pt));
-
-	d->pagetable_vaddr = (addr_t) new_pt;
-	d->pagetable_paddr = __pa(new_pt);
+	printk("   Stage-2 L0 root (unused as VTTBR): (va) 0x%p - (pa) 0x%lx\n", new_pt, __pa(new_pt));
 
 	/* Prepare the IPA -> PA translation for this domain */
 	__create_mapping(new_pt, memslot[slotID].ipa_addr, paddr_start, map_size, false, S2);
@@ -122,12 +117,19 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	if (d->avz_shared->domID == DOMID_AGENCY)
 		do_ipamap(new_pt, agency_ipamap, ARRAY_SIZE(agency_ipamap));
 	else
-		do_ipamap(new_pt, capsule_ipamap, ARRAY_SIZE(capsule_ipamap));
+		do_ipamap(new_pt, S3C_ipamap, ARRAY_SIZE(S3C_ipamap));
 
 	/* Map the shared page in the IPA space; the shared page is located right after the domain area
 	 * in the IPA space, and if any, the RT shared page follows the shared page (in IPA space).
 	 */
-	__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size, __pa(d->avz_shared), PAGE_SIZE, false, S2);
+	__create_mapping(new_pt, memslot[slotID].ipa_addr + map_size, __pa(d->avz_shared), PAGE_SIZE, true, S2);
+
+	/* VTCR_EL2 uses SL0=L1 (Cortex-A53 requires this; SL0=L0 needs LVA extension).
+	 * VTTBR_EL2 must therefore point to the L1 table, not the L0 root.
+	 * All iMX8MP IPAs have bits[47:39]=0, so L0[0] is the sole L0 entry.
+	 */
+	d->pagetable_paddr = *((u64 *) new_pt) & TTB_L0_TABLE_ADDR_MASK;
+	d->pagetable_vaddr = (addr_t) __va(d->pagetable_paddr);
 
 #ifdef CONFIG_SOO
 	/* Initialize the grant pfn (ipa address) area */
@@ -136,7 +138,7 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 		d->grant_pfn[i].free = true;
 	}
 
-	/* Set staring framebuffer ipa address after the grant pfn area */
+	/* Set staring framebuffer IPA address after the grant pfn area */
 	d->fbdev_start_pfn = phys_to_pfn(memslot[slotID].ipa_addr + map_size + 2 * PAGE_SIZE) + NR_GRANT_PFN;
 	fbdev_ipamap_domain(d, slotID);
 #endif /* CONFIG_SOO */

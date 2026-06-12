@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016,2017 Daniel Rossier <daniel.rossier@edgemtech.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,12 +16,28 @@
  *
  */
 
-#ifndef VBSTORE_ME_H
-#define VBSTORE_ME_H
+/*
+ * Secondary CPU bring-up for Toradex Verdin iMX8MP.
+ * ATF provides PSCI; cpu_on() issues an SMC to bring secondaries to
+ * secondary_startup via PSCI_CPU_ON.
+ */
 
-#include <completion.h>
+#include <smp.h>
+#include <spinlock.h>
+#include <memory.h>
 
-extern struct completion vbstore_populated_sync;
-extern bool vbstore_populated;
+#include <asm/cacheflush.h>
+#include <asm/processor.h>
 
-#endif /* VBSTORE_ME_H */
+#include <device/arch/gic.h>
+
+extern void secondary_startup(void);
+
+static DEFINE_SPINLOCK(cpu_lock);
+
+void smp_boot_secondary(unsigned int cpu)
+{
+	spin_lock(&cpu_lock);
+	cpu_on(cpu, (u32) __pa(secondary_startup));
+	spin_unlock(&cpu_lock);
+}

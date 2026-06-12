@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 /*
  * Timestamp and delay measurement facility.
  *
- * There are two sets of functions: one for a non RT domain (non RT agency or ME), one for the
+ * There are two sets of functions: one for a non RT domain (non RT agency or capsule), one for the
  * RT agency. The RT version is prefixed with rtdm_.
  *
  * Typical usage:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016,2017 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -20,7 +20,7 @@
 
 /* Number of possible MEs in the local SOO */
 #define MEMSLOT_BASE 2
-#define MEMSLOT_NR (MEMSLOT_BASE + MAX_ME_DOMAINS)
+#define MEMSLOT_NR (MEMSLOT_BASE + MAX_S3C_DOMAINS)
 
 /* Basic memslots. */
 #define MEMSLOT_AVZ 0
@@ -56,11 +56,11 @@ extern memslot_entry_t memslot[];
  * that the domain_build will be able to elf-parse and load to their final destination.
  */
 void loadAgency(void);
-void loadME(unsigned int slotID, void *itb);
+void load_S3C(unsigned int slotID, void *itb);
 
 void memslot_init(void);
 
-int get_ME_free_slot(unsigned int size, int slotID);
-void put_ME_slot(unsigned int ME_slotID);
+int get_S3C_free_slot(unsigned int size, int slotID);
+void put_S3C_slot(unsigned int S3C_slotID);
 
 #endif /* MEMSLOT_H */

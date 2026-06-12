@@ -9,6 +9,7 @@
 # o  use make's built-in rules and variables
 #    (this increases performance and avoids hard-to-debug behaviour);
 # o  print "Entering directory ...";
+
 MAKEFLAGS += -rR --no-print-directory
 
 # To put more focus on warnings, be less verbose as default
@@ -42,10 +43,12 @@ _all:
 
 # KBUILD_SRC is set on invocation of make in OBJ directory
 # KBUILD_SRC is not intended to be used by the regular user (for now)
+
 ifeq ($(KBUILD_SRC),)
 
 # OK, Make called in directory where kernel src resides
 # Do we want to locate output files in a separate directory?
+
 ifeq ("$(origin O)", "command line")
   KBUILD_OUTPUT := $(O)/
 endif
@@ -60,6 +63,7 @@ $(CURDIR)/Makefile Makefile: ;
 ifneq ($(KBUILD_OUTPUT),)
 # Invoke a second make in the output directory, passing relevant variables
 # check that the output directory actually exists
+
 saved-output := $(KBUILD_OUTPUT)
 export saved-output
 KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)/
@@ -89,6 +93,7 @@ ifeq ($(skip-makefile),)
 
 # If building an external module we do not care about the all: rule
 # but instead _all depend on modules
+
 PHONY += all
 _all: all
 
@@ -189,6 +194,7 @@ PHONY += outputmakefile
 # outputmakefile generates a Makefile in the output directory, if using a
 # separate output directory. This allows convenient use of make in the
 # output directory.
+
 outputmakefile:
 ifneq ($(KBUILD_SRC),)
 	$(Q)ln -fsn $(srctree) source
@@ -245,6 +251,7 @@ ifeq ($(config-targets),1)
 # KBUILD_DEFCONFIG may point out an alternative default configuration
 # used for 'make defconfig'
 #include $(srctree)/arch/$(SRCARCH)/Makefile
+
 export KBUILD_DEFCONFIG KBUILD_KCONFIG
 
 config: scripts_basic outputmakefile FORCE
@@ -265,6 +272,7 @@ ifeq ($(dot-config),1)
 
 # Read in dependencies to all Kconfig* files, make sure to run
 # oldconfig if changes are detected.
+
 -include include/config/auto.conf.cmd
 
 # To avoid any implicit rule to kick in, define an empty command
@@ -274,6 +282,7 @@ $(KCONFIG_CONFIG) include/config/auto.conf.cmd: ;
 # with it and forgot to run make oldconfig.
 # if auto.conf.cmd is missing then we are probably in a cleaned tree so
 # we execute the config step to be sure to catch updated Kconfig files
+
 include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
 	$(Q)set -e
 	$(Q)$(MAKE) -f $(srctree)/Makefile silentoldconfig
@@ -323,8 +332,14 @@ DEFSYM_FLAGS = \
   --defsym=CONFIG_MAX_THREADS=$(CONFIG_MAX_THREADS) \
   --defsym=CONFIG_THREAD_STACK_SIZE_KB=$(CONFIG_THREAD_STACK_SIZE_KB) \
   --defsym=ENTRY_ADDR=$(CONFIG_KERNEL_VADDR)
- 
-  
+
+#ifeq ($(CONFIG_VERDIN_IMX8MP),y)
+#LDFLAGS += --defsym=LOAD_OFFSET=0x200000
+#else
+
+LDFLAGS += --defsym=LOAD_OFFSET=0x80000
+#endif
+
 
 # Specific CFLAGS/AFLAGS according to ARCH
 
@@ -365,6 +380,9 @@ endif
 ifeq ($(CONFIG_VIRT64),y)
 TARGET = virt64
 endif
+ifeq ($(CONFIG_VERDIN_IMX8MP),y)
+TARGET = verdin-imx8mp
+endif
 
 
 # The all: target is the default when no target is given on the
@@ -402,6 +420,7 @@ so3-all		:= $(so3-objs) $(so3-libs)
 #quiet_cmd_so3 = LD      $@
 #     cmd_so3 = $(CC) $(LDFLAGS) -o $@                          \
 #      -Wl,--start-group $(so3-libs) $(so3-objs) -Wl,--end-group
+
 LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
@@ -457,6 +476,7 @@ $(ELF): $(so3-all) arch/$(SRCARCH)/so3.lds
 
 # The actual objects are generated when descending, 
 # make sure no implicit rule kicks in
+
 $(sort $(so3-all)): $(so3-dirs) ;
 
 # Handle descending into subdirectories listed in $(so3-dirs)
@@ -492,6 +512,7 @@ MRPROPER_FILES += .config .config.old tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS
 
 # clean - Delete most, but leave enough to build external modules
 #
+
 clean: rm-dirs  := $(CLEAN_DIRS)
 clean: rm-files := $(CLEAN_FILES)
 clean-dirs      := $(addprefix _clean_, $(so3-dirs))
@@ -511,6 +532,7 @@ clean: $(clean-dirs)
 
 # mrproper - Delete all generated files, including .config
 #
+
 mrproper: rm-dirs  := $(wildcard $(MRPROPER_DIRS))
 mrproper: rm-files := $(wildcard $(MRPROPER_FILES))
 mrproper-dirs      := $(addprefix _mrproper_, scripts)
@@ -525,6 +547,7 @@ mrproper: clean $(mrproper-dirs)
 
 # distclean
 #
+
 PHONY += distclean
 distclean: mrproper
 	@find $(srctree) $(RCS_FIND_IGNORE) \
@@ -547,6 +570,7 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
 # Shorthand for $(Q)$(MAKE) -f scripts/Makefile.clean obj=dir
 # Usage:
 # $(Q)$(MAKE) $(clean)=dir
+
 clean := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.clean obj
 
 
@@ -613,4 +637,5 @@ FORCE:
 
 # Declare the contents of the .PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
+
 .PHONY: $(PHONY)

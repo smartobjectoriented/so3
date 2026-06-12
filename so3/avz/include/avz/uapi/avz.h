@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -50,10 +50,10 @@
 /* DOMID_SELF is used in certain contexts to refer to oneself. */
 #define DOMID_SELF (0x7FF0U)
 
-#define MAX_ME_DOMAINS 5
+#define MAX_S3C_DOMAINS 5
 
 /* We include the (non-RT & RT) agency domain */
-#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
+#define MAX_DOMAINS (2 + MAX_S3C_DOMAINS)
 
 /* Agency */
 #define DOMID_AGENCY 0
@@ -83,6 +83,7 @@
 
 #ifndef DOMID_T
 #define DOMID_T
+
 typedef uint16_t domid_t;
 typedef unsigned long addr_t;
 #endif
@@ -115,8 +116,8 @@ typedef struct {
 	console_t console;
 } avz_console_io_t;
 
-#define DOMCTL_pauseME 1
-#define DOMCTL_unpauseME 2
+#define DOMCTL_pause_S3C 1
+#define DOMCTL_unpause_S3C 2
 #define DOMCTL_get_AVZ_shared 3
 
 struct domctl {
@@ -138,6 +139,7 @@ typedef struct domctl domctl_t;
 #define EVTCHNSTAT_unbound 1 /* Channel is waiting interdom connection.*/
 #define EVTCHNSTAT_interdomain 2 /* Channel is connected to remote domain. */
 #define EVTCHNSTAT_virq 3 /* Channel is bound to a virtual IRQ line */
+
 /*
  * EVTCHNOP_alloc_unbound: Allocate a evtchn in domain <dom> and mark as
  * accepting interdomain bindings from domain <remote_dom>. A fresh evtchn

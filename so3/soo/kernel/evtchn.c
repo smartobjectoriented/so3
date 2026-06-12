@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) 2014-2016 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2016 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -66,7 +66,7 @@ void dump_evtchn_pending(void)
 {
 	int i;
 
-	printk("   Evtchn info in Agency/ME domain %d\n\n", ME_domID());
+	printk("   Evtchn info in Agency/capsule domain %d\n\n", S3C_domID());
 	for (i = 0; i < NR_EVTCHN; i++)
 		printk("e:%d m:%d p:%d  ", i, evtchn_info.evtchn_mask[i], avz_shared->evtchn_pending[i]);
 
@@ -109,7 +109,7 @@ retry:
 
 		if (loopmax > 500) /* Probably something wrong ;-) */
 			printk("%s: Warning trying to process evtchn: %d IRQ: %d for quite a long time (dom ID: %d) on CPU %d / masked: %d...\n",
-			       __func__, evtchn, evtchn_info.evtchn_to_irq[evtchn], ME_domID(), smp_processor_id(),
+			       __func__, evtchn, evtchn_info.evtchn_to_irq[evtchn], S3C_domID(), smp_processor_id(),
 			       evtchn_is_masked(evtchn));
 
 		virq = evtchn_info.evtchn_to_irq[evtchn];

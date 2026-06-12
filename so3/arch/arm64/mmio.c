@@ -23,6 +23,7 @@
 #include <device/arch/vgic.h>
 
 #include <asm/io.h>
+#include <asm/processor.h>
 
 /*
  * These definitions are heavly borrowed from jailhouse hypervisor
@@ -80,8 +81,18 @@ void mmio_perform_access(void *base, struct mmio_access *mmio)
  */
 enum mmio_result mmio_handle_access(struct mmio_access *mmio)
 {
-	/* Currently, only GIC access is handled via a data abort exception */
-	mmio->address -= (addr_t) gic->gicd_paddr;
+	addr_t gicd_base = (addr_t) gic->gicd_paddr;
+
+	/* Only GIC distributor accesses are handled via trap-and-emulate.
+	 * Without this guard a Stage-2 fault on any other IPA (e.g. PCIe
+	 * high MMIO beyond the 39-bit IPA limit, or a fault that hardware
+	 * reports with HPFAR=0) underflows the subtraction below and
+	 * dereferences a wild EL2 VA in mmio_perform_access — turning a
+	 * guest fault into an EL2 panic. */
+	if (mmio->address < gicd_base || mmio->address >= gicd_base + 0x10000)
+		return MMIO_UNHANDLED;
+
+	mmio->address -= gicd_base;
 
 	return gic_handle_dist_access(mmio);
 }
@@ -151,8 +162,17 @@ int mmio_dabt_decode(cpu_regs_t *regs, unsigned long esr)
 	if (mmio_result == MMIO_ERROR)
 		return TRAP_FORBIDDEN;
 
-	if (mmio_result == MMIO_UNHANDLED)
-		goto error_unhandled;
+	/* Stage-2 faults outside the GIC distributor range come from guest
+	 * accesses to IPAs we don't model (e.g. QEMU virt PFlash, PCIe high
+	 * MMIO beyond the 39-bit IPA limit).  Treat them as accesses to
+	 * non-existent memory: reads return 0, writes are dropped, PC
+	 * advances.  Linux's CFI flash probe gets back zeros and gives up
+	 * cleanly instead of taking a synchronous external abort.  Without
+	 * this any unmapped guest IPA would panic the hypervisor. */
+	if (mmio_result == MMIO_UNHANDLED) {
+		if (!is_write)
+			mmio.value = 0;
+	}
 
 	/* Put the read value into the dest register */
 	if (!is_write && (srt != 31)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include <soo/hypervisor.h>
 #include <soo/vbus.h>
 #include <soo/vbstore.h>
-#include <soo/vbstore_me.h>
+#include <soo/vbstore_capsule.h>
 #include <soo/debug.h>
 #include <soo/console.h>
 
@@ -164,7 +164,7 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 
 	/* Process entry "device/<domID>/.. */
 	sscanf(vdev->nodename, "device/%d/%s", &domID, item);
-	sprintf(vdev->nodename, "device/%d/%s", ME_domID(), item);
+	sprintf(vdev->nodename, "device/%d/%s", S3C_domID(), item);
 
 	/*
 	 * It may happen that the related watches have been already removed during a visit on a smart
@@ -179,7 +179,7 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 
 	/*
 	 * Rename the device name stored in the bus so that we avoid to re-probe a same device (possibly
-	 * in a different ME slot.
+	 * in a different capsule slot.
 	 */
 
 	/* Process entry "backend/<type>/<domID>/.. */
@@ -192,7 +192,7 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 	ptr_item++;
 
 	sscanf(ptr_item, "%d/%s", &domID, item);
-	sprintf(ptr_item, "%d/%s", ME_domID(), item);
+	sprintf(ptr_item, "%d/%s", S3C_domID(), item);
 
 	DBG("%s: removing watches for %s\n", __func__, vdev->nodename);
 
@@ -214,16 +214,16 @@ void postmig_setup(void)
 
 	DBG0("Waiting for vbstore dev to be populated\n");
 
-	sprintf(root_name, "%s/%d", initial_rootname, ME_domID());
-	DBG("vbus_frontend: %s ... for domID: %d\n", root_name, ME_domID());
+	sprintf(root_name, "%s/%d", initial_rootname, S3C_domID());
+	DBG("vbus_frontend: %s ... for domID: %d\n", root_name, S3C_domID());
 
 	DBG0("Re-adjusting watches....\n");
 
 	/* Walk through all devices and readjust watches */
 	frontend_for_each(NULL, remove_dev_watches);
 
-	/* Write the entries related to the ME ID in vbstore */
-	vbstore_ME_ID_populate();
+	/* Write the entries related to the capsule ID in vbstore */
+	vbstore_S3C_ID_populate();
 
 	/* Re-create the vbstore entries for devices */
 
@@ -269,7 +269,7 @@ void vbus_probe_frontend_init(void)
 
 	/* Re-adjust the root node name with the dom ID */
 
-	sprintf(root_name, "%s/%d", vbus_frontend.root, ME_domID());
+	sprintf(root_name, "%s/%d", vbus_frontend.root, S3C_domID());
 
 	vbus_frontend.root = root_name;
 

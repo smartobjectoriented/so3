@@ -90,7 +90,7 @@ config LOG_LEVEL
 
 if !AVZ && !ARCH_ARM32
 config SOO
-	bool "Configure SO3 as a Mobile Entity (ME)"
+	bool "Configure SO3 as a SO3 capsule (capsule)"
 endif
 
 if AVZ

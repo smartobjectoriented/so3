@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,30 +27,30 @@
 #include <soo/debug.h>
 #include <soo/vbus.h>
 
-/* ME ID related information management */
+/* capsule ID related information management */
 
 /**
- * Get the short description related to this ME.
+ * Get the short description related to this capsule.
  * (not mandatory)
  *
  * @return a pointer to the string in the DT if it exists, NULL otherwise.
  */
-const char *get_me_shortdesc(void)
+const char *get_s3c_shortdesc(void)
 {
 	const char *str = NULL;
 	int node;
 
 	/* Get the short description */
-	node = fdt_find_node_by_name(__fdt_addr, 0, "ME");
+	node = fdt_find_node_by_name(__fdt_addr, 0, "capsule");
 	ASSERT(node >= 0);
 
-	fdt_property_read_string(__fdt_addr, node, "me_shortdesc", &str);
+	fdt_property_read_string(__fdt_addr, node, "s3c_shortdesc", &str);
 
 	return str;
 }
 
 /**
- * Get the name of this ME.
+ * Get the name of this capsule.
  * (not mandatory)
  *
  * @return a pointer to the string in the DT if it exists, NULL otherwise.
@@ -61,7 +61,7 @@ const char *get_me_name(void)
 	int node;
 
 	/* Get the short description */
-	node = fdt_find_node_by_name(__fdt_addr, 0, "ME");
+	node = fdt_find_node_by_name(__fdt_addr, 0, "capsule");
 	ASSERT(node >= 0);
 
 	fdt_property_read_string(__fdt_addr, node, "me_name", &str);
@@ -70,7 +70,7 @@ const char *get_me_name(void)
 }
 
 /**
- * Get the SPID related to this ME.
+ * Get the SPID related to this capsule.
  * (mandatory)
  *
  * @param what  Either "spid"
@@ -82,9 +82,9 @@ u64 get_spid(void)
 	int node;
 
 	/* Get the short description */
-	node = fdt_find_node_by_name(__fdt_addr, 0, "ME");
+	node = fdt_find_node_by_name(__fdt_addr, 0, "capsule");
 	if (node < 0) {
-		printk("%s: node \"ME\" not found\n", __func__);
+		printk("%s: node \"capsule\" not found\n", __func__);
 		BUG();
 	}
 
@@ -98,33 +98,33 @@ u64 get_spid(void)
 }
 
 /**
- * Write the entries related to the ME ID in vbstore
+ * Write the entries related to the capsule ID in vbstore
  */
-void vbstore_ME_ID_populate(void)
+void vbstore_S3C_ID_populate(void)
 {
 	const char *name, *shortdesc;
 	u64 spid;
 	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
-	/* Set all ME ID related information */
+	/* Set all capsule ID related information */
 
-	/* Set the SPID of this ME */
+	/* Set the SPID of this capsule */
 	spid = get_spid();
 
-	avz_shared->dom_desc.u.ME.spid = spid;
+	avz_shared->dom_desc.u.S3C.spid = spid;
 
 	/* Set the name */
 	name = get_me_name();
 
 	/* And set a short description which can be used on the user GUI */
-	shortdesc = get_me_shortdesc();
+	shortdesc = get_s3c_shortdesc();
 
 	strcpy(rootname, "soo/me");
 
-	sprintf(entry, "%d", ME_domID());
+	sprintf(entry, "%d", S3C_domID());
 	vbus_mkdir(VBT_NIL, rootname, entry);
 
-	sprintf(rootname, "soo/me/%d", ME_domID());
+	sprintf(rootname, "soo/me/%d", S3C_domID());
 	sprintf(entry, "%lx", spid);
 
 	vbus_write(VBT_NIL, rootname, "spid", entry);

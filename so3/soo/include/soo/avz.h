@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2016-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -18,6 +18,6 @@
 
 #include <avz/uapi/avz.h>
 
-#define ME_domID() (avz_shared->domID)
+#define S3C_domID() (avz_shared->domID)
 
 void avz_setup(void);

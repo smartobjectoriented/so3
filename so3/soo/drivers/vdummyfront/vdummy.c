@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2018-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2018-2019 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -54,7 +54,7 @@ irq_return_t vdummy_interrupt(int irq, void *dev_id)
 	vdummy_priv_t *vdummy_priv = dev_get_drvdata(vdev->dev);
 	vdummy_response_t *ring_rsp;
 
-	DBG("%s, %d\n", __func__, ME_domID());
+	DBG("%s, %d\n", __func__, S3C_domID());
 
 	while ((ring_rsp = vdummy_get_ring_response(&vdummy_priv->vdummy.ring)) != NULL) {
 		DBG("%s, cons=%d\n", __func__, i);

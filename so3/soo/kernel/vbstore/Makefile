@@ -1,3 +1,3 @@
 
  
-obj-y	+= vbstore_me.o
+obj-y	+= vbstore_capsule.o

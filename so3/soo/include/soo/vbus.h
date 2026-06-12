@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@soo.tech>
  * Copyright (C) 2016, 2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -79,7 +79,7 @@ struct vbus_device {
 
 	enum vbus_state state;
 
-	/* So far, only the ME use this completion struct. On the agency side,
+	/* So far, only the capsule use this completion struct. On the agency side,
 	 * the device can not be shutdown on live.
 	 */
 	struct completion down;
@@ -147,7 +147,7 @@ bool vbus_gather(struct vbus_transaction t, const char *dir, ...);
 void free_otherend_watch(struct vbus_device *dev, bool with_vbus);
 
 extern void vbstore_init(void);
-extern void vbstore_me_init(void);
+extern void vbstore_s3c_init(void);
 
 bool is_vbstore_populated(void);
 
