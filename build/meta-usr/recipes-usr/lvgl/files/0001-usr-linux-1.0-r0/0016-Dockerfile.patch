@@ -1,0 +1,29 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/graphic/fb_benchmark/Dockerfile	1970-01-01 01:00:00.000000000 +0100
++++ ./src/graphic/fb_benchmark/Dockerfile	2025-08-28 13:15:04.926403118 +0200
+@@ -0,0 +1,26 @@
++FROM debian:12
++
++# Set environment variables to avoid interactive prompts during package installations
++ENV DEBIAN_FRONTEND=noninteractive
++
++# Update package list and install necessary packages, including Git
++RUN apt-get update && \
++    apt-get install -y --no-install-recommends \
++    gcc \
++    g++ \
++    cmake \
++    libdrm-dev \
++    libsdl2-dev \
++    libsdl2-image-dev \
++    wayland-protocols \
++    build-essential \
++    ca-certificates \
++    curl \
++    git \
++    && apt-get clean \
++    && rm -rf /var/lib/apt/lists/*
++
++# Verify that GCC, G++, and CMake are installed
++RUN gcc --version && g++ --version && cmake --version
++
++CMD ["/app/scripts/build_app.sh"]

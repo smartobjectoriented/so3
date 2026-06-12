@@ -1,0 +1,17 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-so3-1.0-r0/usr-so3-1.0/lib/CMakeLists.txt	2025-10-07 20:27:00.958574608 +0200
++++ ./lib/CMakeLists.txt	2025-10-07 20:27:50.973255666 +0200
+@@ -3,14 +3,7 @@
+ string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+
+-set(LV_BUILD_CONF_DIR
+-    ${CMAKE_CURRENT_SOURCE_DIR}
+-    CACHE PATH "Directory containing lv_conf.h")
+-add_subdirectory(lvgl)
+
+ set(CMAKE_C_FLAGS "${ORIGINAL_C_FLAGS}")
+
+-# Non external libs
+-add_subdirectory(slv)
+-
+ # logs functionality - it only works with SOO environment
+ add_subdirectory(logs)

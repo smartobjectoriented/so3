@@ -1,0 +1,15 @@
+--- /home/rossierd/edgemtech/customer/cybelec_linux/cybelec_linux/ib/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/modules/modtry.c	2025-12-05 09:33:33.322687311 +0100
++++ ./src/modules/modtry.c	2025-12-05 09:36:10.665011509 +0100
+@@ -24,9 +24,11 @@
+ 
+ }
+ 
+-static void senseled_remove(struct platform_device *pdev) {
++static int senseled_remove(struct platform_device *pdev) {
+ 
+ 	printk("%s: releasing all...\n", __func__);
++	
++	return 0;
+ }
+ 
+ static const struct of_device_id senseled_of_ids[] = {

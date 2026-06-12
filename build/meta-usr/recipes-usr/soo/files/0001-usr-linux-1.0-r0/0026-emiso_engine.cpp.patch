@@ -1,0 +1,71 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/emiso_engine.cpp	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/emiso_engine.cpp	2025-10-10 17:28:33.593796339 +0200
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (C) 2023 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++// EMISO Engine - Start the engine on port '2375'. It can be started in secure
++// mode (HTTPS/TLS) with '-s' option
++// The interactive mode ('-i' option) starts a cli interface instead of the web
++// server
++
++#include <iostream>
++#include <httpserver.hpp>
++
++#include "webserver/webserver.hpp"
++// #include "cli/cli.hpp"
++#include "daemon/daemon.hpp"
++
++#define SERVER_PORT    2375
++
++int main(int argc, char **argv)
++{
++    int c;
++    bool secure = false;
++    bool interactive = false;
++
++    // TODO - Use C++ parameter handler lib !
++    while ((c = getopt(argc, argv, "is")) != EOF) {
++        switch (c) {
++            case 'i':
++                interactive = true;
++                break;
++            case 's':
++                secure = true;
++                break;
++            default:
++                // usage();
++                exit(1);
++                break;
++        }
++    }
++
++    emiso::Daemon *daemon = emiso::Daemon::getInstance();
++
++//    if (interactive) {
++//        emiso::Cli cli;
++//        cli.start();
++//
++//    } else {
++        // TODO - in interactive mode, also start the webserver !
++        emiso::WebServer server(SERVER_PORT, secure, daemon);
++        server.start(true);
++//    }
++
++    return 0;
++}

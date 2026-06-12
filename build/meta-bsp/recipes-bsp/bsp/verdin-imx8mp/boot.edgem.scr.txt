@@ -1,0 +1,14 @@
+echo "=== EDGEMTech Boot Script ==="
+
+# Import uEnv.txt created by TorizonOS receipe
+ext4load mmc 2:1 ${loadaddr} /boot/loader/uEnv.txt
+env import ${loadaddr}
+
+# Set the bootargs (from uEnv.txt) and add some more bootargs
+run set_bootargs
+env set bootargs root=LABEL=otaroot rootfstype=ext4 ${bootargs}
+
+# Load the ITB and boot from it. The ITB must contain all overlays if needed
+env set itb_addr 0x40000000
+load mmc 2:1 ${itb_addr} verdin-imx8mp.itb
+bootm ${itb_addr}

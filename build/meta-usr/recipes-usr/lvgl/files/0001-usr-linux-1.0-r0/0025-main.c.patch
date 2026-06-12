@@ -1,0 +1,206 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/graphic/fb_benchmark/main.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/graphic/fb_benchmark/main.c	2025-08-28 13:15:04.926533204 +0200
+@@ -0,0 +1,203 @@
++/*******************************************************************
++ *
++ * main.c - fb_benchmark, derived from kmscube but doesn't use
++ * OpenGL - so instead it draws a solid color to framebuffer.
++ *
++ * Copyright (c) 2025 EDGEMTech Ltd.
++ *
++ * Author: EDGEMTech Ltd, Erik Tagirov (erik.tagirov@edgemtech.ch)
++ *
++ ******************************************************************/
++#include <string.h>
++#include <stdio.h>
++#include <getopt.h>
++#include <stdbool.h>
++#include <stdlib.h>
++
++#include "common.h"
++#include "drm-common.h"
++#include "fb.h"
++
++static int frame_count = 5000;
++static bool use_drm = true;
++static char *device_path = NULL;
++
++/* DRM options */
++static bool drm_use_gbm = true;
++static int drm_atomic = true;
++static int drm_atomic_page_flip_enabled = false;
++static bool drm_gbm_use_surface = false;
++
++/* FBDEV options */
++bool fbdev_wait_vsync = false;
++bool fbdev_force_refresh = true;
++
++static void pr_usage(void);
++static void pr_help(void);
++static void parse_opts(int argc, char **argv);
++
++static void pr_usage(void)
++{
++	printf("fb_benchmark [-t drm|fbdev] [-f frame_count] [MODE_OPTS] [-p device_name]\n");
++}
++
++static void pr_help(void)
++{
++	printf("fb_benchmark [-t device type] [-f frame_count] [MODE_OPTS] [-p device_path]\n\n");
++
++	printf("General options: \n\n");
++	printf("-f Sets the number of frames (duration of the benchmark)\n\n");
++	printf("-t Set the device type, available device types: drm, fbdev\n\n");
++
++	printf("Options for DRM devices: \n\n");
++
++	printf("Default configuration: atomic KMS with GBM buffers\n\n");
++
++	printf("-l use legacy mode instead of the atomic DRM API\n");
++	printf("-d use dumb buffers instead of GBM buffer objects\n");
++	printf("-s obtains GBM buffers through a GBM surface API calls\n");
++	printf("-e non blocking atomic commit, wait for page flip event\n\n");
++
++	printf("Options for FBDEV devices: \n\n");
++	printf("-n do not force refresh \n");
++	printf("-v wait for VSYNC event \n\n");
++
++}
++
++static void set_device_path(const char *path)
++{
++	device_path = malloc(strlen(path));
++	if (device_path == NULL) {
++		fprintf(stderr, "Failed to allocate string\n");
++		exit(EXIT_FAILURE);
++	}
++	strncpy(device_path, path, strlen(path));
++}
++
++static void parse_opts(int argc, char **argv) {
++	int opt;
++
++	while ((opt = getopt(argc, argv, "hp:f:lvndset:")) != -1) {
++		switch(opt) {
++			case 'h':
++				pr_help();
++				exit(EXIT_SUCCESS);
++			case 'p':
++				set_device_path(optarg);
++				break;
++			case 'f':
++				frame_count = atoi(optarg);
++				break;
++			case 'l':
++				drm_atomic = false;
++				break;
++			case 'v':
++				fbdev_wait_vsync = true;
++				break;
++			case 'n':
++				fbdev_force_refresh = false;
++				break;
++			case 'd':
++				drm_use_gbm = false;
++				break;
++			case 's':
++				drm_gbm_use_surface = true;
++				break;
++			case 'e':
++				drm_atomic_page_flip_enabled = true;
++				break;
++			case 't':
++				if (strcmp(optarg, "drm") == 0) {
++					use_drm = true;
++
++				} else if(strcmp(optarg, "fbdev") == 0) {
++
++					use_drm = false;
++
++				} else {
++
++					fprintf(stderr, "Unknown device %s\n", device_path);
++				}
++
++				break;
++			case '?':
++				fprintf(stderr, "Unknown option -%c\n", optopt);
++				break;
++		}
++	}
++
++	if (frame_count == 0) {
++		fprintf(stderr, "Illegal amount for frame count\n");
++		exit(EXIT_FAILURE);
++	}
++
++}
++
++int main(int argc, char **argv)
++{
++	/* Adjust the variables manually */
++	int connector_id = -1;
++	char *mode_str = NULL;
++	int vrefresh = 0;
++	uint32_t format = DRM_FORMAT_XRGB8888;
++	uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
++	struct drm *drm;
++	const struct gbm *gbm = NULL;
++	struct dumb_buf *dumb_buf = NULL;
++
++
++	if (argc == 1) {
++		pr_usage();
++		exit(EXIT_SUCCESS);
++	}
++
++	parse_opts(argc, argv);
++
++	if (use_drm == false) {
++
++		/* FBDEV - useful as a reference */
++		if (init_fbdev(device_path) == -1) {
++			exit(EXIT_FAILURE);
++		}
++
++		return run_fb();
++
++	} else {
++
++		/* DRM */
++		if (drm_atomic == true) {
++			drm = init_drm_atomic(device_path, mode_str, connector_id, vrefresh, frame_count);
++		} else {
++			drm = init_drm_legacy(device_path, mode_str, connector_id, vrefresh, frame_count);
++		}
++
++		if (!drm) {
++			printf("failed to initialize %s DRM\n",
++					drm_atomic ? "atomic" : "legacy");
++
++			exit(EXIT_FAILURE);
++		}
++
++		drm->drm_atomic_page_flip_enabled = drm_atomic_page_flip_enabled;
++
++		if (drm_use_gbm == true) {
++			gbm = init_gbm(drm->fd, drm->mode->hdisplay, drm->mode->vdisplay,
++					format, modifier,  !drm_gbm_use_surface);
++
++			if (gbm == NULL) {
++				exit(EXIT_FAILURE);
++			}
++		} else {
++
++			dumb_buf = init_dumb_buffers(drm->fd, drm->mode->hdisplay, drm->mode->vdisplay,
++					format);
++
++			if (dumb_buf == NULL) {
++				exit(EXIT_FAILURE);
++			}
++		}
++
++		return drm->run(gbm, dumb_buf);
++	}
++}
++

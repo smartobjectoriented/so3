@@ -1,0 +1,1 @@
+bootcmd=mmc dev 2; if test -e mmc 2:1 /verdin-imx8mp.itb; then echo 'ITB found, booting...'; ext4load mmc 2:1 ${loadaddr} /boot.edgem.scr; source ${loadaddr}; else echo 'No ITB found'; fi

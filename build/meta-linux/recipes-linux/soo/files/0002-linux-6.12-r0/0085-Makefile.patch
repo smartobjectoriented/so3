@@ -1,0 +1,30 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/kernel/Makefile	2025-08-29 08:46:41.394827303 +0200
+@@ -0,0 +1,27 @@
++#
++# Makefile for the linux kernel.
++#
++#
++obj-y += setup.o
++obj-y += sysfs.o
++obj-y += hypervisor.o
++obj-y += evtchn.o
++obj-y += gnttab.o
++obj-y += soo_guest_activity.o
++
++obj-y += core.o  
++obj-y += capsule.o
++ 
++obj-y += console/ debug/  
++obj-y += vbus/ vbstore/
++
++obj-$(CONFIG_SOO_CORE_ASF) += asf/
++
++obj-$(CONFIG_ARM64) += arm64/
++
++# dependencies on generated files need to be listed explicitly
++
++mrproper clean:
++	@find . -name "*.o" | xargs rm -f
++
++

@@ -1,0 +1,17 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/CMakeLists.txt	2025-10-10 17:28:33.593542342 +0200
+@@ -0,0 +1,14 @@
++
++
++add_executable(injector injector.c)
++
++add_executable(saveme saveme.c)
++add_executable(restoreme restoreme.c)
++add_executable(shutdownme shutdownme.c)
++
++add_executable(melist melist.c)
++
++add_subdirectory(emiso_engine)
++
++target_link_libraries(saveme zip)
++target_link_libraries(restoreme zip)

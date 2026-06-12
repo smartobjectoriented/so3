@@ -1,0 +1,59 @@
+/dts-v1/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			brcm,overclock-50 = <0x00>;
+			brcm,pio-limit = <0x01>;
+			status = "okay";
+			phandle = <0x01>;
+		};
+	};
+
+	fragment@1 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@2 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	__overrides__ {
+		overclock_50 = <0x01 0x6272636d 0x2c6f7665 0x72636c6f 0x636b2d35 0x303a3000>;
+		force_pio = <0x01 0x6272636d 0x2c666f72 0x63652d70 0x696f3f00>;
+		pio_limit = [00 00 00 01 62 72 63 6d 2c 70 69 6f 2d 6c 69 6d 69 74 3a 30 00];
+		debug = <0x01 0x6272636d 0x2c646562 0x75673f00>;
+	};
+
+	__symbols__ {
+		frag0 = "/fragment@0/__overlay__";
+	};
+
+	__fixups__ {
+		sdhost = "/fragment@0:target:0";
+		mmc = "/fragment@1:target:0";
+		mmcnr = "/fragment@2:target:0";
+	};
+
+	__local_fixups__ {
+
+		__overrides__ {
+			overclock_50 = <0x00>;
+			force_pio = <0x00>;
+			pio_limit = <0x00>;
+			debug = <0x00>;
+		};
+	};
+};

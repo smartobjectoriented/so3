@@ -1,0 +1,29 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm64/boot/dts/broadcom/bcm271x-rpi-bt.dtsi	1970-01-01 01:00:00.000000000 +0100
++++ ./arch/arm64/boot/dts/broadcom/bcm271x-rpi-bt.dtsi	2025-05-05 20:19:23.871333855 +0200
+@@ -0,0 +1,26 @@
++// SPDX-License-Identifier: GPL-2.0
++
++&uart0 {
++	bt: bluetooth {
++		compatible = "brcm,bcm43438-bt";
++		max-speed = <3000000>;
++		shutdown-gpios = <&expgpio 0 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++};
++
++&uart1 {
++	minibt: bluetooth {
++		compatible = "brcm,bcm43438-bt";
++		max-speed = <460800>;
++		shutdown-gpios = <&expgpio 0 GPIO_ACTIVE_HIGH>;
++		status = "disabled";
++	};
++};
++
++/ {
++	__overrides__ {
++		krnbt = <&bt>,"status";
++		krnbt_baudrate = <&bt>,"max-speed:0";
++	};
++};

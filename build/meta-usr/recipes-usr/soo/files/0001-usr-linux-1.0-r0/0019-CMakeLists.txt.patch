@@ -1,0 +1,28 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/CMakeLists.txt	2025-10-10 17:28:33.593608138 +0200
+@@ -0,0 +1,25 @@
++project(emiso_engine LANGUAGES C CXX)
++
++set(CMAKE_CXX_STANDARD 20)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++
++add_executable(${PROJECT_NAME} emiso_engine.cpp
++                               utils.cpp
++                               webserver/webserver.cpp
++                               webserver/system/system.cpp
++                               webserver/container/container.cpp
++                               webserver/image/image.cpp
++                               webserver/network/network.cpp
++                               webserver/volume/volume.cpp
++                               webserver/plugins/plugins.cpp
++                               daemon/image.cpp
++                               daemon/capsule.cpp
++                               daemon/daemon.cpp
++                               #cli/cli.cpp
++)
++
++target_include_directories(${PROJECT_NAME} PRIVATE include)
++
++target_link_libraries(${PROJECT_NAME} httpserver jsoncpp readline zip)
++
++install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_BINARY_DIR}/bin)

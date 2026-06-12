@@ -1,0 +1,11 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/lvgl/lv_port_linux/CMakeLists.txt	2025-09-03 19:47:12.723696673 +0200
++++ ./src/lvgl/lv_port_linux/CMakeLists.txt	2025-09-03 19:51:34.726439840 +0200
+@@ -21,6 +21,8 @@
+ set(LV_BUILD_SET_CONFIG_OPTS ON CACHE BOOL
+     "create CMAKE variables from lv_conf_internal.h" FORCE)
+ 
++set(LV_BUILD_CONF_DIR "src/lvgl/lv_port_linux" CACHE PATH "Default lv_conf.h path")
++
+ add_subdirectory(lvgl)
+ 
+ if (CONFIG_LV_USE_EVDEV)

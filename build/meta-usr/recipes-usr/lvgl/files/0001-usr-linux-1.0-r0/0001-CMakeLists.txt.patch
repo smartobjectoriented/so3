@@ -1,0 +1,8 @@
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1 +1,3 @@
+ add_subdirectory(examples)
++add_subdirectory(lvgl)
++add_subdirectory(graphic)
+
+ 

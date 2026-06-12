@@ -1,0 +1,33 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/graphic/drm_tool/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./src/graphic/drm_tool/Makefile	2025-08-28 13:15:04.926341688 +0200
+@@ -0,0 +1,30 @@
++CC=gcc
++LD=gcc
++RM=rm
++INSTALL=install
++
++OUTPUT=drm_tool
++OUTPUT_PATH=.
++INSTALL_PATH=/usr/bin/
++OBJECTS=$(SRC_PATH)/drm_tool.o
++
++SRC_PATH=src
++
++CFLAGS=-Wall -D_FILE_OFFSET_BITS=64 `pkg-config --cflags libdrm` 
++LDFLAGS=`pkg-config --libs libdrm`
++
++.PHONY: all
++
++all: $(OUTPUT)
++
++$(OUTPUT): $(OBJECTS) $(OUTPUT_PATH)
++	$(CC) $(OBJECTS) -o "$(OUTPUT_PATH)/$@" $(LDFLAGS)
++
++clean:
++	- $(RM) $(OUTPUT) $(OBJECTS) *~ $(SRC_PATH)/*~
++
++install: $(OUTPUT)
++	$(INSTALL) $(OUTPUT) $(INSTALL_PATH)
++
++%.o: %.c
++	$(CC) -c $(CFLAGS) -o "$@" "$<"

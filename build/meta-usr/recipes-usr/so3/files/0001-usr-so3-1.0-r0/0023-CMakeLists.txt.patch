@@ -1,0 +1,17 @@
+--- build/tmp/work/usr-so3-1.0-r0/usr-so3-1.0/src/CMakeLists.txt	2026-01-23 09:36:01.597923863 +0100
++++ ./src/CMakeLists.txt	2026-01-23 09:37:14.223976325 +0100
+@@ -7,14 +7,8 @@
+ add_executable(thread_example.elf thread_example.c)
+ add_executable(ping.elf ping.c)
+ add_executable(mydev_test.elf mydev_test.c)
+-add_executable(lvgl_demo.elf lvgl_demo.c)
+-add_executable(lvgl_perf.elf lvgl_perf.c)
+-add_executable(lvgl_benchmark.elf lvgl_benchmark.c)
+ add_executable(logs_example.elf logs_example.c)
+
+-target_link_libraries(lvgl_demo.elf slv lvgl lvgl_demos)
+-target_link_libraries(lvgl_perf.elf slv lvgl lvgl_demos)
+-target_link_libraries(lvgl_benchmark.elf slv lvgl lvgl_demos)
+ target_link_libraries(logs_example.elf capsule_logs)
+
+ if (MICROPYTHON AND (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))

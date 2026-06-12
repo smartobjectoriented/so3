@@ -1,0 +1,4 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/tools/boot/image-cipher.c	1970-01-01 01:00:00.000000000 +0100
++++ ./tools/boot/image-cipher.c	2025-09-11 16:34:43.027343942 +0200
+@@ -0,0 +1 @@
++#include <../boot/image-cipher.c>

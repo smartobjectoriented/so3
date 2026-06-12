@@ -1,0 +1,17 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/common/Kconfig	2025-09-11 16:44:26.717830853 +0200
++++ ./common/Kconfig	2025-09-11 16:34:39.289787151 +0200
+@@ -850,6 +850,14 @@
+ 
+ endmenu
+ 
++# EDGEMTech (DT)
++config USE_RPI4_DTB_WITH_FIT
++	bool "Activate this config to be able to use a FIT image without a DTB specified"
++	depends on BCM2711
++	default false
++	help
++	  Indicate to U-Boot that it must use the RPi4 SPL DTB and not a DTB from the FIT
++	
+ source "common/spl/Kconfig"
+ 
+ config IMAGE_SIGN_INFO

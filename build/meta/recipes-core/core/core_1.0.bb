@@ -1,0 +1,3 @@
+
+DESCRIPTION = "Core recipe"
+

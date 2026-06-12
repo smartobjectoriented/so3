@@ -1,0 +1,28 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/arch/arm/cpu/armv7/lowlevel_init.S	2025-09-11 16:44:26.426711278 +0200
++++ ./arch/arm/cpu/armv7/lowlevel_init.S	2025-09-11 16:34:39.293214469 +0200
+@@ -22,6 +22,25 @@
+ 
+ .pushsection .text.lowlevel_init, "ax"
+ WEAK(lowlevel_init)
++
++	/* heig-vd */
++
++	/*
++	 * Examine if we are running on CPU > #0
++	 * If yes, we suspend the CPU with wfi instruction.
++	 */
++
++	 mrc p15, 0, r0, c0, c0, 5
++	 ands r0, r0, #3
++
++	 beq cont
++
++loop:
++	 wfi
++	 b loop
++
++cont:
++
+ 	/*
+ 	 * Setup a temporary stack. Global data is not available yet.
+ 	 */

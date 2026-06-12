@@ -1,0 +1,49 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/daemon/daemon.hpp	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/daemon/daemon.hpp	2025-10-10 17:28:33.593796339 +0200
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (C) 2024 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++
++#ifndef EMISO_DAEMON_H
++#define EMISO_DAEMON_H
++
++#include "image.hpp"
++#include "capsule.hpp"
++
++
++namespace emiso {
++
++    class Daemon {
++
++    public:
++        Image   image;
++        Capsule container;
++
++        static Daemon* getInstance();
++
++    private:
++        Daemon();
++        ~Daemon();
++
++        static Daemon* _daemon;
++    };
++}
++
++#endif // EMISO_DAEMON_H
++

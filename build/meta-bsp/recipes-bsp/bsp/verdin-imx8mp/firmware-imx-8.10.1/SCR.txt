@@ -1,0 +1,25 @@
+NXP Software Content Register
+
+--------------------------------------------
+
+Package:                   firmware-imx-*.bin
+Outgoing License:          LA_OPT_NXP_Software_License - Production Use, Section 2.3 applies
+License File:              COPYING
+Package Category:          BSP
+Type of content:           Binaries
+Description and comments:  BSP firmware
+Release Location:          i.MX Yocto Project mirror
+Origin:                    NXP (proprietary)
+
+                         In addition, these components contain code from the companies listed below.
+                           DDR:   Synopsys (proprietary)
+                           EPDC:  E Ink Corporation (proprietary)
+                           HDMI:  Cadence Design Systems, Inc. (proprietary)
+                           SECO:  NXP (proprietary)
+                           SDMA:  NXP (proprietary)
+                           VPU:   Chips & Media, Inc.  (proprietary)
+                           EASRC: NXP (proprietary)
+                           XCVR:  NXP (proprietary)
+                           XUVI:  NXP (proprietary)
+
+--------------------------------------------

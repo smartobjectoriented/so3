@@ -1,0 +1,11 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/Makefile	2025-09-11 16:44:26.419020533 +0200
++++ ./Makefile	2025-09-11 16:34:39.187252108 +0200
+@@ -268,6 +268,8 @@
+ 
+ #########################################################################
+ 
++CROSS_COMPILE = aarch64-none-linux-gnu-
++
+ # set default to nothing for native builds
+ ifeq ($(HOSTARCH),$(ARCH))
+ CROSS_COMPILE ?=

@@ -1,0 +1,71 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/webserver/plugins/plugins.hpp	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/webserver/plugins/plugins.hpp	2025-10-10 17:28:33.594256882 +0200
+@@ -0,0 +1,68 @@
++/*
++ * Copyright (C) 2023 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#ifndef EMISO_PLUGINS_H
++#define EMISO_PLUGINS_H
++
++#include <iostream>
++#include <httpserver.hpp>
++#include <json/json.h>
++
++namespace emiso {
++namespace plugins {
++
++    class ListHandler : public httpserver::http_resource {
++    public:
++
++        std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) {
++            std::cout << "[WEBERVER] '" << req.get_path()  << "' (" << req.get_method() << ") called" << std::endl;
++
++            std::string payload_str = "";
++            Json::Value payload_json;
++
++            payload_json = Json::arrayValue; // empty array
++
++            Json::StreamWriterBuilder builder;
++            payload_str = Json::writeString(builder, payload_json);
++
++            auto response = std::make_shared<httpserver::string_response>(payload_str,
++                       httpserver::http::http_utils::http_ok, "application/json");
++            return response;
++        }
++    };
++
++    class PluginsApi {
++    public:
++        // Constructor
++        PluginsApi(httpserver::webserver *server);
++
++        // Destructor
++        ~PluginsApi();
++
++    private:
++        httpserver::webserver *_server;
++
++        // Handler for the different 'list' routes
++        ListHandler *_listHandler;
++
++    };
++
++} // plugins
++} // emiso
++
++#endif /* EMISO_PLUGINS_H */

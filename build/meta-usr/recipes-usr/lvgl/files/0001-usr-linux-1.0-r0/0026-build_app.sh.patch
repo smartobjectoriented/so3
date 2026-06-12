@@ -1,0 +1,13 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/graphic/fb_benchmark/scripts/build_app.sh	1970-01-01 01:00:00.000000000 +0100
++++ ./src/graphic/fb_benchmark/scripts/build_app.sh	2025-08-28 13:15:04.926567294 +0200
+@@ -0,0 +1,10 @@
++#!/bin/bash
++
++cd /app
++cmake -B build-arm64 -S . \
++      -DCMAKE_CXX_FLAGS="-O3" \
++      -DCMAKE_C_FLAGS="-g -O0" \
++      -DCMAKE_BUILD_TYPE=Release
++
++# -DCMAKE_C_FLAGS="-I/usr/include/libdrm" \
++make -j -C build-arm64

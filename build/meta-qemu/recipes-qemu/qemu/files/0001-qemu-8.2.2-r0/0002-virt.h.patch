@@ -1,0 +1,14 @@
+--- /home/rossierd/edgemtech/infrabase/build/tmp/work/qemu-8.0.0-r0/qemu-8.0.0/include/hw/arm/virt.h	2023-04-19 18:31:47.000000000 +0200
++++ ./include/hw/arm/virt.h	2023-06-06 18:46:06.923080803 +0200
+@@ -68,6 +68,11 @@
+     VIRT_GIC_VCPU,
+     VIRT_GIC_ITS,
+     VIRT_GIC_REDIST,
++
++	VIRT_CLCD,
++	VIRT_KMI0,
++	VIRT_KMI1,
++
+     VIRT_SMMU,
+     VIRT_UART,
+     VIRT_MMIO,
