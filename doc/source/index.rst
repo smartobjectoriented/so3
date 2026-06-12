@@ -6,10 +6,9 @@
    :height: 70px
    :target: http://reds.heig-vd.ch/en/rad
 
-.. image:: img/SO3-Logo.png
+.. image:: img/SO3_with_text.png
    :align: center
-   :width: 200px
-   :height: 150px
+   :width: 420px
 
 .. toctree::
    :maxdepth: 2
