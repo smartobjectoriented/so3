@@ -72,6 +72,39 @@ operating systems and virtualization frameworks. It is mainly inspired by Linux
 definitions) come from Linux. This is also why SO3 is released under the
 **GPLv2** licence.
 
+Well suited to certification
+============================
+
+The same compactness that makes SO3 a good teaching platform also makes it a
+convenient base for **safety- or security-certified** products (for example in
+the spirit of IEC 61508, ISO 26262 or Common Criteria). The cost of a
+certification campaign — code review, requirements traceability, structural
+coverage, static analysis — grows with the amount of code that ends up in the
+final binary, so a small, well-understood kernel is a real advantage:
+
+* **Small, auditable code base.** The kernel is compact enough to be read and
+  reviewed in its entirety, which keeps requirement-to-code traceability and
+  coverage analysis tractable.
+
+* **No unused code in the image.** Thanks to the Kconfig/Kbuild configuration,
+  every subsystem and driver is opt-in: an SO3 build contains *only* the
+  features that were selected. Dead or unreachable code — a recurring pain point
+  for certification — is kept out of the binary instead of being disabled at
+  runtime.
+
+* **Minimal, well-bounded footprint.** A clear user/kernel separation, a single
+  code base and a deterministic, reproducible build (defconfigs, FIT images)
+  reduce the verification surface and make the certified artifact easy to
+  characterise.
+
+* **Self-contained dependencies.** The kernel pulls in only a handful of small,
+  in-tree libraries and a MUSL-based user space, avoiding large third-party
+  stacks that would otherwise have to be qualified.
+
+In short, SO3 lets a project include just what it needs and nothing more, which
+keeps the certification evidence — and the effort to produce it — proportional
+to the actual functionality.
+
 Emulation is a key concept
 ==========================
 
