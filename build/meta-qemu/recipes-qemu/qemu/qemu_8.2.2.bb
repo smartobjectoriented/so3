@@ -23,8 +23,12 @@ require files/0001-${PF}-patches.inc
 # Where the working directory will be placed in infrabase root dir
 IB_TARGET = "${IB_DIR}/qemu"
 
-QEMU_CONFIGURE:virt32 = "--target-list=arm-softmmu --enable-slirp --disable-attr --disable-werror --disable-docs"
-QEMU_CONFIGURE:virt64 = "--target-list=aarch64-softmmu --enable-slirp --disable-attr --disable-werror --disable-docs --enable-sdl"
+# Softmmu target per platform (resolved via IB_PLATFORM/OVERRIDES). The
+# bbclass builds this target and keeps any other arch already built, so
+# building one platform's qemu doesn't wipe the other's.
+QEMU_TARGET:virt32 = "arm-softmmu"
+QEMU_TARGET:virt64 = "aarch64-softmmu"
+QEMU_OPTS = "--enable-slirp --disable-attr --disable-werror --disable-docs --enable-sdl"
 
 do_clean[nostamp] = "1"
 do_clean () {
