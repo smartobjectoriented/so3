@@ -87,9 +87,12 @@ do_configure () {
 do_build[nostamp] = "1"
 do_build () {
 
-	bbplain "Building U-boot with ${CORES} cores..."
+	bbplain "Building U-boot with ${CORES} cores (CROSS_COMPILE=${IB_TOOLCHAIN}-)..."
 	cd ${IB_TARGET}
-	make -j${CORES}
+	# Pin the cross compiler per platform (IB_TOOLCHAIN) so the build does
+	# not depend on a CROSS_COMPILE inherited from the caller's shell —
+	# e.g. virt32 (arm-linux-gnueabihf) vs virt64 (aarch64-none-linux-gnu).
+	make CROSS_COMPILE=${IB_TOOLCHAIN}- -j${CORES}
 
 	if [ "${IB_PLATFORM}" = "virt64" ]; then
 		mkdir -p ${IB_DIR}/filesystem
