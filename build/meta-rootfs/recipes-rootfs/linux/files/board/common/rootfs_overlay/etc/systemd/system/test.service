@@ -1,0 +1,15 @@
+[Unit]
+Description=Test Service
+
+[Service]
+Type=simple
+ExecStart=/root/test_service
+TimeoutStartSec=0
+RemainAfterExit=yes
+StandardError=journal
+StandardOutput=journal
+StandardInput=null
+
+
+[Install]
+WantedBy=default.target

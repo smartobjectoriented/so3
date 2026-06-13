@@ -1,0 +1,31 @@
+--- /home/rossierd/edgemtech/infrabase/build/tmp/work/buildroot-2024.11-r0/buildroot-2024.11/package/auto-getty/src/S91auto-getty	1970-01-01 01:00:00.000000000 +0100
++++ ./package/auto-getty/src/S91auto-getty	2024-11-13 15:28:29.606258950 +0100
+@@ -0,0 +1,28 @@
++#!/bin/sh
++
++PATH=/sbin:/bin:/usr/sbin:/usr/bin
++DAEMON=/usr/bin/auto-getty
++NAME="auto-getty"
++
++case "$1" in
++  start)
++        echo -n "Starting ${NAME}... "
++        start-stop-daemon -S -b -n $NAME --exec $DAEMON
++        echo "done"
++        ;;
++  stop)
++        echo -n "Stopping ${NAME}... "
++        start-stop-daemon -K -n $NAME
++        echo "done"
++        ;;
++  restart)
++        $0 stop
++        $0 start
++        ;;
++  *)
++        echo "Usage: S91S{NAME} { start | stop | restart }" >&2
++        exit 1
++        ;;
++esac
++
++exit 0

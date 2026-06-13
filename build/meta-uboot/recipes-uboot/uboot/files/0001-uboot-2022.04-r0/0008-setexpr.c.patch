@@ -1,0 +1,11 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/cmd/setexpr.c	2025-09-11 16:44:26.716036695 +0200
++++ ./cmd/setexpr.c	2025-09-11 16:34:39.229143872 +0200
+@@ -11,7 +11,7 @@
+ #include <common.h>
+ #include <config.h>
+ #include <command.h>
+-#include <ctype.h>
++#include <linux/ctype.h>
+ #include <env.h>
+ #include <log.h>
+ #include <malloc.h>

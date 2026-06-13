@@ -1,0 +1,12 @@
+--- /home/rossierd/edgemtech/infrabase/build/tmp/work/buildroot-2024.11-r0/buildroot-2024.11/package/Config.in	2024-12-08 11:18:01.000000000 +0100
++++ ./package/Config.in	2024-12-15 17:13:00.370627268 +0100
+@@ -2756,6 +2756,9 @@
+ 	source "package/apg/Config.in"
+ 	source "package/at/Config.in"
+ 	source "package/bash-completion/Config.in"
++
++	source "package/auto-getty/Config.in"
++
+ 	source "package/catatonit/Config.in"
+ 	source "package/ccrypt/Config.in"
+ 	source "package/crudini/Config.in"

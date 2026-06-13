@@ -1,0 +1,19 @@
+--- /home/rossierd/edgemtech/customer/cybelec_linux/cybelec_linux/ib/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/CMakeLists.txt	2025-12-07 19:15:22.590913687 +0100
++++ ./src/CMakeLists.txt	2025-12-07 20:16:53.354806937 +0100
+@@ -1,6 +1,15 @@
+ 
+-add_subdirectory(examples)
++# add_subdirectory(examples)
+ 
++include_directories(
++    ../lib/evl/include
++	../lib/evl/build/include
++)
+ 
++add_executable(evl evl.c)
++
++target_link_libraries(evl 
++    PRIVATE
++        ${CMAKE_SOURCE_DIR}/lib/evl/build/lib/libevl.a)
+ 
+ 

@@ -1,0 +1,10 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-so3-1.0-r0/usr-so3-1.0/lib/slv/CMakeLists.txt	2025-10-07 20:27:00.958492385 +0200
++++ ./lib/slv/CMakeLists.txt	1970-01-01 01:00:00.000000000 +0100
+@@ -1,7 +0,0 @@
+-add_library(slv STATIC 
+-	slv.c 
+-	slv_fb.c
+-	slv_fs.c
+-	slv_keyboard.c
+-	slv_mouse.c
+-)

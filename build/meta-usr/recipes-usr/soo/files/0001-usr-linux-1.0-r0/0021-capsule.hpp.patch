@@ -1,0 +1,75 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/daemon/capsule.hpp	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/daemon/capsule.hpp	2025-10-10 17:28:33.593796339 +0200
+@@ -0,0 +1,72 @@
++/*
++ * Copyright (C) 2023 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#ifndef EMISO_DAEMON_CAPSULE_H
++#define EMISO_DAEMON_CAPSULE_H
++
++#include <string>
++#include <map>
++#include <vector>
++
++using namespace std;
++
++namespace emiso {
++
++    struct CapsuleInfo {
++        int id;
++        string name;
++        string state;
++        string image;
++        uint64_t created;
++        int slotId;
++    };
++
++    class Capsule {
++
++    public:
++        Capsule();
++        ~Capsule();
++
++        void info(map<int, CapsuleInfo> &capsuleList);
++        void info(int id, CapsuleInfo &info);
++
++        int create(string imageName, string capsuleName);
++        int start(unsigned capsuleId);
++        int stop(unsigned capsuleId);
++        int restart(unsigned capsuleId);
++        int pause(unsigned capsuleId);
++        int unpause(unsigned capsuleId);
++        int remove(unsigned capsuleId);
++
++        vector<string> retrieveLogs(unsigned capsuleId, unsigned lineNr);
++
++    private:
++        uint64_t createdTime();
++        int inject(string imageName, bool start_capsule, unsigned capsuleId);
++        int saveSnapshot(int slotId, string snapshotName);
++        int restoreSnapshot(string snapshotName);
++        int shutdown(int slotId);
++
++        // List of the Capsules - running or paused
++        static map<int, CapsuleInfo> _capsules;
++        // Capsule Idx, used with the map
++        static unsigned _capsuleIdx;
++    };
++}
++
++#endif // EMISO_DAEMON_CAPSULE_H

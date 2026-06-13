@@ -1,0 +1,193 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/graphic/fb_benchmark/common.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/graphic/fb_benchmark/common.c	2025-08-28 13:15:04.926413403 +0200
+@@ -0,0 +1,190 @@
++/*
++ * Copyright (c) 2017 Rob Clark <rclark@redhat.com>
++ * Copyright © 2013 Intel Corporation
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sub license,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial portions
++ * of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
++
++#include <assert.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include <unistd.h>
++
++#include "common.h"
++
++static struct gbm gbm;
++
++struct gbm_surface *
++gbm_surface_create_with_modifiers(struct gbm_device *gbm,
++		uint32_t width, uint32_t height,
++		uint32_t format,
++		const uint64_t *modifiers,
++		const unsigned int count);
++struct gbm_bo *
++gbm_bo_create_with_modifiers(struct gbm_device *gbm,
++		uint32_t width, uint32_t height,
++		uint32_t format,
++		const uint64_t *modifiers,
++		const unsigned int count);
++
++static struct gbm_bo * init_bo(uint64_t modifier)
++{
++	struct gbm_bo *bo = NULL;
++
++	if (gbm_bo_create_with_modifiers) {
++		bo = gbm_bo_create_with_modifiers(gbm.dev,
++				gbm.width, gbm.height,
++				gbm.format,
++				&modifier, 1);
++	}
++
++	if (!bo) {
++		if (modifier != DRM_FORMAT_MOD_LINEAR) {
++			fprintf(stderr, "Modifiers requested but support isn't available\n");
++			return NULL;
++		}
++
++		bo = gbm_bo_create(gbm.dev,
++				gbm.width, gbm.height,
++				gbm.format,
++				GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
++	}
++
++	if (!bo) {
++		printf("failed to create gbm bo\n");
++		return NULL;
++	}
++
++	return bo;
++}
++
++static struct gbm * init_surfaceless(uint64_t modifier)
++{
++	for (unsigned i = 0; i < ARRAY_SIZE(gbm.bos); i++) {
++		gbm.bos[i] = init_bo(modifier);
++		if (!gbm.bos[i])
++			return NULL;
++	}
++	return &gbm;
++}
++
++static struct gbm * init_surface(uint64_t modifier)
++{
++	if (gbm_surface_create_with_modifiers) {
++		gbm.surface = gbm_surface_create_with_modifiers(gbm.dev,
++				gbm.width, gbm.height,
++				gbm.format,
++				&modifier, 1);
++
++	}
++
++	if (!gbm.surface) {
++		if (modifier != DRM_FORMAT_MOD_LINEAR) {
++			fprintf(stderr, "Modifiers requested but support isn't available\n");
++			return NULL;
++		}
++		gbm.surface = gbm_surface_create(gbm.dev,
++				gbm.width, gbm.height,
++				gbm.format,
++				GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
++
++	}
++
++	if (!gbm.surface) {
++		printf("failed to create gbm surface\n");
++		return NULL;
++	}
++
++	return &gbm;
++}
++
++const struct gbm * init_gbm(int drm_fd, int w, int h, uint32_t format,
++		uint64_t modifier, bool surfaceless)
++{
++	gbm.dev = gbm_create_device(drm_fd);
++	if (!gbm.dev)
++		return NULL;
++
++	gbm.format = format;
++	gbm.surface = NULL;
++
++	gbm.width = w;
++	gbm.height = h;
++
++	if (surfaceless)
++		return init_surfaceless(modifier);
++
++	return init_surface(modifier);
++}
++
++static bool has_ext(const char *extension_list, const char *ext)
++{
++	const char *ptr = extension_list;
++	int len = strlen(ext);
++
++	if (ptr == NULL || *ptr == '\0')
++		return false;
++
++	while (true) {
++		ptr = strstr(ptr, ext);
++		if (!ptr)
++			return false;
++
++		if (ptr[len] == ' ' || ptr[len] == '\0')
++			return true;
++
++		ptr += len;
++	}
++}
++
++int64_t get_time_ns(void)
++{
++	struct timespec tv;
++	clock_gettime(CLOCK_MONOTONIC, &tv);
++	return tv.tv_nsec + tv.tv_sec * NSEC_PER_SEC;
++}
++
++struct dumb_buf *init_dumb_buffers(int drm_fd, int w, int h, uint32_t format)
++{
++
++	struct dumb_buf *dumb_buf;
++
++	dumb_buf = malloc(sizeof(struct dumb_buf));
++
++	if (dumb_buf == NULL) {
++		printf("Failed to allocate dumb buffer descriptor\n");
++		return NULL;
++	}
++
++	dumb_buf->width = w;
++	dumb_buf->height = h;
++	dumb_buf->format = format;
++	dumb_buf->drm_fd = drm_fd;
++	dumb_buf->buffers[0] = NULL;
++	dumb_buf->buffers[1] = NULL;
++
++	return dumb_buf;
++
++}

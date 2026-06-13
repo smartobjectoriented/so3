@@ -1,0 +1,22 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/include/configs/qemu-arm.h	2025-09-11 16:44:26.946034153 +0200
++++ ./include/configs/qemu-arm.h	2025-09-07 09:29:44.733688605 +0200
+@@ -45,6 +45,8 @@
+ # define BOOT_TARGET_DHCP(func)
+ #endif
+ 
++#if 0 /* EDGEMTech */
++
+ #define BOOT_TARGET_DEVICES(func) \
+ 	BOOT_TARGET_USB(func) \
+ 	BOOT_TARGET_SCSI(func) \
+@@ -62,6 +64,10 @@
+ 	"kernel_addr_r=0x40400000\0" \
+ 	"ramdisk_addr_r=0x44000000\0" \
+ 	BOOTENV
++#endif /* 0 */
++
++#define CONFIG_BOOTCOMMAND \
++        "load virtio 0 0x40000000 uEnv.txt; env import 0x40000000; run start\0" 
+ 
+ #define CONFIG_SYS_CBSIZE 512
+ 

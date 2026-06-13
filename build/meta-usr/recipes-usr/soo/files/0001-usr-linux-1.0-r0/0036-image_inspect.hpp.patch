@@ -1,0 +1,94 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/emiso_engine/webserver/image/image_inspect.hpp	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/emiso_engine/webserver/image/image_inspect.hpp	2025-10-10 17:28:33.594158860 +0200
+@@ -0,0 +1,90 @@
++/*
++ * Copyright (C) 2023 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#ifndef EMISO_INSPECT_IMAGE_H
++#define EMISO_INSPECT_IMAGE_H
++
++#include <iostream>
++#include <httpserver.hpp>
++#include <json/json.h>
++
++#include "../../daemon/image.hpp"
++#include "../../daemon/daemon.hpp"
++
++namespace emiso {
++namespace image {
++
++    class InspectHandler : public httpserver::http_resource {
++    public:
++        InspectHandler(Daemon *daemon) : _daemon(daemon){};
++
++        std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) {
++            std::string payload_str = "";
++            Json::Value payload_json;
++            int error;
++
++            std::cout << "[WEBERVER] '" << std::string(req.get_path())  << "' (" << std::string(req.get_method()) << ") called" << std::endl;
++
++            // Retrieve the image 'name' form the path (the 'name' correspond
++            // here to the image ID)
++            string path = string(req.get_path());
++            smatch match;
++            regex rgx("(/v[0-9]+.[0-9]+)?/images/([a-zA-Z0-9_:-]+)/json");
++
++            string imageName;
++            if (regex_match(path, match, rgx)) {
++                imageName = match[2];
++
++                // The name/id has been found - get the image info
++                ImageInfo info;
++                int ret = _daemon->image.info(imageName, info);
++
++                if (ret == 0) {
++                    payload_json["Id"]          = info.id;
++                    payload_json["Created"]     = info.date;
++                    payload_json["Size"]        = info.size;
++                    payload_json["Created"]     = info.date;
++                    payload_json["RepoTags"][0] = info.name + ":latest";
++
++                    Json::StreamWriterBuilder builder;
++                    payload_str = Json::writeString(builder, payload_json);
++                    error = httpserver::http::http_utils::http_ok;
++                } else {
++                    payload_str = "Image '" + imageName + "' not found";
++                    error = httpserver::http::http_utils::http_not_found;
++                }
++            } else {
++                // The name/id has not been found - error
++                payload_str = "Server Error - Failed to extract the image name from the path";
++                error = httpserver::http::http_utils::http_internal_server_error;
++            }
++
++            auto response = std::make_shared<httpserver::string_response>(payload_str,
++                    error, "application/json");
++
++            return response;
++        }
++
++    private:
++        Daemon *_daemon;
++    };
++
++} // image
++} // emiso
++
++#endif // EMISO_INSPECT_IMAGE_H
+\ No newline at end of file

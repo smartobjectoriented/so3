@@ -1,0 +1,78 @@
+--- /home/rossierd/edgemtech/infrabase/build/tmp/work/qemu-8.0.0-r0/qemu-8.0.0/hw/arm/virt.c	2023-04-19 18:31:47.000000000 +0200
++++ ./hw/arm/virt.c	2023-06-06 18:46:06.848082559 +0200
+@@ -81,6 +81,8 @@
+ #include "hw/char/pl011.h"
+ #include "qemu/guest-random.h"
+ 
++#include "hw/input/ps2.h"
++
+ #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
+     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
+                                                     void *data) \
+@@ -144,6 +146,11 @@
+     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
+     /* This redistributor space allows up to 2*64kB*123 CPUs */
+     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
++
++	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
++	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
++	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
++
+     [VIRT_UART] =               { 0x09000000, 0x00001000 },
+     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
+     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
+@@ -198,6 +205,11 @@
+     [VIRT_SECURE_UART] = 8,
+     [VIRT_ACPI_GED] = 9,
+     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
++
++	[VIRT_CLCD] = 35,
++	[VIRT_KMI0] = 36,
++	[VIRT_KMI1] = 37,
++
+     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
+     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
+     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
+@@ -2018,6 +2030,14 @@
+     }
+ }
+ 
++struct IRQState {
++    Object parent_obj;
++
++    qemu_irq_handler handler;
++    void *opaque;
++    int n;
++};
++
+ static void machvirt_init(MachineState *machine)
+ {
+     VirtMachineState *vms = VIRT_MACHINE(machine);
+@@ -2326,6 +2346,27 @@
+                                vms->fw_cfg, OBJECT(vms));
+     }
+ 
++    {
++    	   MemoryRegion *sysmem = get_system_memory();
++    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
++    	   ram_addr_t vram_size;
++
++    	   vram_size = 0x800000;
++
++    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
++    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
++
++    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
++
++    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
++
++
++    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
++
++    }
++
+     vms->bootinfo.ram_size = machine->ram_size;
+     vms->bootinfo.board_id = -1;
+     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;

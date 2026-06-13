@@ -1,0 +1,13 @@
+--- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/arch/arm/dts/am335x-osd335x-common.dtsi	2025-09-11 16:44:26.431474397 +0200
++++ ./arch/arm/dts/am335x-osd335x-common.dtsi	2025-09-11 16:34:39.337910988 +0200
+@@ -16,6 +16,10 @@
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x20000000>; /* 512 MB */
+ 	};
++
++	chosen {
++		tick-timer = &timer2;
++	};
+ };
+ 
+ &cpu0_opp_table {

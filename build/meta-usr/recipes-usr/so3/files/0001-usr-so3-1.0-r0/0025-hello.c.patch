@@ -1,0 +1,10 @@
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-so3-1.0-r0/usr-so3-1.0/src/hello.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/hello.c	2025-10-07 20:29:00.058136840 +0200
+@@ -0,0 +1,7 @@
++#include <stdio.h>
++
++int main(int argc, char **argv) {
++
++        printf("Hello World\n");
++
++}
