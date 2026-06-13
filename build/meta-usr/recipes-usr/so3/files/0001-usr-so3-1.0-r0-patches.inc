@@ -1,3 +1,5 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 SRC_URI += "\ 
     file://0026-lvgl_benchmark.c.patch \ 
     file://0023-CMakeLists.txt.patch \ 

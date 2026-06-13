@@ -21,15 +21,15 @@ IB_TARGET = "${IB_DIR}/so3/usr"
 
 IB_TOOLCHAIN_PATH = "${IB_TARGET}/${IB_PLAT_CPU}-linux-musl.cmake"
 
-# This repo IS the SO3 source tree: the user space under usr/ is already
-# in its final form (the slv/lvgl integration patches are committed, and
-# lvgl is checked out as a git submodule at usr/lib/lvgl). It is built in
-# place — no fetch/unpack/patch/attach, which would either re-apply the
-# already-applied patches (reversed-patch failure) or clobber usr/.
-do_fetch[noexec] = "1"
-do_unpack[noexec] = "1"
+# lvgl is FETCHED at build time (see the meta-usr/recipes-usr/lvgl
+# usr-so3 bbappend, gated on the :lvgl override) into usr/lib/lvgl — it is
+# NOT a committed git submodule. do_fetch/do_unpack/do_attach therefore run
+# so the bbappend's do_handle_fetch_git can pull lvgl into the workdir and
+# attach it back into usr/.
+#
+# do_patch stays noexec: the slv/lvgl integration patches are already baked
+# into the in-tree usr/ source, so re-applying them fails (reversed patch).
 do_patch[noexec] = "1"
-do_attach_infrabase[noexec] = "1"
 
 do_build[depends] = "rootfs-so3:do_build"
 

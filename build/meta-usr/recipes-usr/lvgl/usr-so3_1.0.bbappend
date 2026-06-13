@@ -35,8 +35,11 @@ python do_handle_fetch_git() {
 
     target_dir = d.getVar('S')
     dst_dir = os.path.join(target_dir, 'lib', 'lvgl')
-  
-    # Fetch the submodules using full path
+
+    # lvgl is no longer a committed submodule, so lib/lvgl may not exist
+    # in the workdir copy of usr/ — create it before copying lvgl in.
+    os.makedirs(dst_dir, exist_ok=True)
+
     # Copy everything except .git, preserving symlinks/metadata
     cmd = (
         "find . -mindepth 1 -path './.git' -prune -o "

@@ -60,6 +60,8 @@ so3/so3/so3
 so3/so3/so3.bin
 so3/usr/lib/libc/include/asm
 so3/rootfs/rootfs.fat
+# lvgl is fetched at build time (meta-usr lvgl bbappend, :lvgl override), not a submodule
+so3/usr/lib/lvgl/
 so3/so3/scripts/basic/fixdep
 so3/so3/scripts/dtc/dtc
 so3/so3/scripts/kconfig/conf
