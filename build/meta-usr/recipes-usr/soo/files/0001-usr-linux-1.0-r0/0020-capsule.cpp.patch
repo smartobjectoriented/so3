@@ -173,7 +173,7 @@
 +        return EXIT_FAILURE;
 +    }
 +
-+    args.buffer = malloc(args.value);
++    args.buffer = new (std::nothrow) char[args.value];
 +    if (args.buffer == NULL) {
 +        printf(LOG_PREFIX " %s - malloc failed\n", __func__);
 +        close(fd);
@@ -183,7 +183,7 @@
 +    ret = ioctl(fd, AGENCY_IOCTL_READ_SNAPSHOT, &args);
 +    if (ret < 0) {
 +        printf(LOG_PREFIX "Read the snapshot IOCTL_READ_SNAPSHOT failed.\n");
-+        free(args.buffer);
++        delete[] args.buffer;
 +        close(fd);
 +        return EXIT_FAILURE;
 +    }
@@ -199,7 +199,7 @@
 +    if (!zip) {
 +        printf(LOG_PREFIX "Failed to open the zip file. Is there a bad sync after saving the snapshot?...\n");
 +        perror("");
-+        free(args.buffer);
++        delete[] args.buffer;
 +        close(fd);
 +        return EXIT_FAILURE;
 +    }
@@ -208,7 +208,7 @@
 +    zip_entry_close(zip);
 +
 +    zip_close(zip);
-+    free(args.buffer);
++    delete[] args.buffer;
 +
 +    return 0;
 +}

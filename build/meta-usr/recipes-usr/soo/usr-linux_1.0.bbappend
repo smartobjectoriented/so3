@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "Add-ons for SOO user space environment"
 DESCRIPTION = "Additional applications are used to manage SO3 capsules"

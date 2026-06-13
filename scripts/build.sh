@@ -1,11 +1,24 @@
 #!/bin/sh
 
 # General build script for the infrabase infrastructure.
+#
+# bitbake runs as the unprivileged user. The only build invocation that
+# needs root (the filesystem image creation, `-f`) still runs bitbake
+# unprivileged — its recipe calls `sudo -n` for the privileged ops
+# (losetup/fdisk/mkfs) via the sudo timestamp opened by
+# sudo_session_start.
 
-# Copyright (c) 2014-2023 REDS Institute, HEIG-VD
-# Copyright (c) 2023-2025 EDGEMTech
+# Copyright (c) 2014-2026 REDS Institute, HEIG-VD
+# Copyright (c) 2023-2026 EDGEMTech
 
 progname=$(basename $0)
+
+# Resolve the project root from this script's own location, cd there,
+# and source env.sh — prompting the user first if the parent shell is
+# wired to a different tree. Lets build.sh be invoked from anywhere
+# (sibling worktree, build/, etc.) without silently switching shells
+# between trees.
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/setup_env.sh"
 
 pr_usage()
 {
@@ -25,13 +38,15 @@ pr_help()
 	printf "    -r <rootfs_recipe_name>      Build rootfs\n"
 	printf "    -f                           Create and format filesystem image\n"
 	printf "    -b                           Build uboot only\n"
+	printf "                                 of the selected base BSP (e.g. fc, dev-lvgl)\n"
 	printf "    -v                           Emit verbose build logs\n"
 	printf "    -c                           Clean before rebuilding\n\n"
 	printf "Examples: \n\n"
-	printf "$progname -l                     Print all recipes\n"
-	printf "$progname -l -a                  Print all BSP recipes\n"
-	printf "$progname -l -k                  Print all kernel recipes\n"
-	printf "$progname -v -a bsp-linux -c     Clean and rebuild all emitting verbose logs\n"
+	printf "$progname -l                              Print all recipes\n"
+	printf "$progname -l -a                           Print all BSP recipes\n"
+	printf "$progname -l -k                           Print all kernel recipes\n"
+	printf "$progname -a bsp-linux                    Build the bare bsp-linux BSP (no capsule)\n"
+	printf "$progname -v -a bsp-linux -c              Clean and rebuild all emitting verbose logs\n"
 }
 
 if test $# -eq 0
@@ -41,8 +56,8 @@ then
 	exit 1
 fi
 
-. ./env.sh
 . ./scripts/common/bblayers.sh
+. ./scripts/common/sudo_session.sh
 
 layernames=''
 recipename=''
@@ -52,19 +67,18 @@ doclean=0
 optverbose=0
 rootprivs=0
 
-while test $# -gt 0
-do
-	case "$1" in
-		-l)
+while getopts "abcfhklrvx" o; do
+	case "$o" in
+		l)
 			dolist=1
 			;;
-		-h)
+		h)
 			# Help summary
 			pr_usage
 			pr_help
 			exit
 			;;
-		-a)
+		a)
 			if ! test -n "$2"
 			then
 				# List all recipes in 'meta-bsp'
@@ -72,9 +86,15 @@ do
 			else
 				recipename="$2"
 				dobuild=1
+				# `-a` pulls do_itb (now wired `before do_build`) which
+				# transitively triggers do_prepare_initrd →
+				# usr-linux:do_deploy → __do_rootfs_mount, all of which
+				# need root via `sudo -n`. Open a session upfront so
+				# bitbake doesn't hang on an interactive prompt mid-build.
+				rootprivs=1
 			fi
 			;;
-		-r)
+		r)
 			if ! test -n "$2"
 			then
 				layernames="meta-rootfs"
@@ -83,12 +103,12 @@ do
 				dobuild=1
 			fi
 			;;
-		-b)
+		b)
 			layernames="meta-uboot"
 			recipename="uboot"
 			dobuild=1
 			;;
-		-x)
+		x)
 			if test -n "$2"
 			then
 				recipename="$2"
@@ -97,13 +117,14 @@ do
 				layernames="$IB_AUX_LAYERS"
 			fi
 			;;
-		-c)
+		c)
+			recipename="$2"
 			doclean=1
 			;;
-		-v)
+		v)
 			optverbose=1
 			;;
-		-k)
+		k)
 			if ! test -n "$2"
 			then
 				layernames="meta-linux meta-so3"
@@ -112,20 +133,19 @@ do
 				dobuild=1
 			fi
 			;;
-		-f)
+		f)
 			recipename="filesystem"
 			rootprivs=1
+			dobuild=1
 			;;
-		-*)
-			printf "Error: unknown option: $1\n"
-			pr_usage
+		*)
+			pr_usage;
 			exit 1
 			;;
 	esac
-	shift
 done
 
-show_platform
+show_env "$recipename"
 
 if test -z $recipename && test $dolist -eq 0
 then
@@ -136,6 +156,7 @@ fi
 
 # The user is willing to list available recipes
 # dolist action is available for component options
+
 if test $dolist -eq 1
 then
 	if test -z "$layernames"
@@ -165,12 +186,14 @@ if test $dobuild -eq 1
 then
 	if test $rootprivs -eq 1
 	then
-		printf "\n *** NOTE: *** '$recipename' requires root access\n"
-		printf "you may be prompted for the password\n\n"
+		printf "\n *** NOTE: *** '$recipename' invokes privileged tools\n"
+		printf "You may be prompted for the sudo password once.\n\n"
 
-		preservedvars='IB_TOOLCHAIN_PATH,IB_UNPRIVILEDGED_USER_ID,IB_UNPRIVILEDGED_GROUP_ID'
-		sudo --preserve-env=$preservedvars sh -c ". $(pwd)/env.sh; bitbake $recipename ${IB_BB_OPTS}"
-	else
-		bitbake $recipename $IB_BB_OPTS
+		# Open a sudo session: validate timestamp upfront + keep alive
+		# in the background. Recipes escalate individual commands via
+		# `sudo -n`. bitbake itself stays unprivileged.
+		sudo_session_start || exit 1
 	fi
+
+	bitbake $recipename $IB_BB_OPTS
 fi

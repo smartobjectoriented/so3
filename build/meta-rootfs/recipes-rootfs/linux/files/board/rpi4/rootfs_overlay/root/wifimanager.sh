@@ -1,4 +1,7 @@
 #!/bin/sh
+
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 iw reg set CH
 iw wlan0 set type ibss
 iwconfig wlan0 essid "soo-wifi"

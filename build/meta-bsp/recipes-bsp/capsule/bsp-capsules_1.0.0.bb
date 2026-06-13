@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "SO3 capsule Deployment"
 DESCRIPTION = "SO3 capsules are aimed to run with Linux as guest on top of the AVZ hypervisor."

@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 # Deployment of ITB for all ARM platforms
 

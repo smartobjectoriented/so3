@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 source_dir=$1
 target_dir=$2
 output_dir=$3

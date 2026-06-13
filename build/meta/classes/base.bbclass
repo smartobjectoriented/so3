@@ -15,6 +15,7 @@ FILESPATH = "${@base_set_filespath(["${FILE_DIRNAME}/${P}", "${FILE_DIRNAME}/${P
 
 # THISDIR only works properly with imediate expansion as it has to run
 # in the context of the location its used (:=)
+
 THISDIR = "${@os.path.dirname(d.getVar('FILE'))}"
 
 python () {
@@ -55,6 +56,7 @@ DEPENDS:prepend = "${BASEDEPENDS} "
  
 # THISDIR only works properly with imediate expansion as it has to run
 # in the context of the location its used (:=)
+
 THISDIR = "${@os.path.dirname(d.getVar('FILE'))}"
 
 addtask fetch

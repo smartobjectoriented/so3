@@ -1,3 +1,5 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 SOO_URI:append = "\ 
     file://0020-capsule.cpp.patch \ 
     file://0040-plugins.hpp.patch \ 

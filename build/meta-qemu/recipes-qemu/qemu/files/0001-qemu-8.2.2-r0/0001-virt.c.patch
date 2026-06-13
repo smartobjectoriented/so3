@@ -26,9 +26,9 @@
      [VIRT_ACPI_GED] = 9,
      [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
 +
-+	[VIRT_CLCD] = 35,
-+	[VIRT_KMI0] = 36,
-+	[VIRT_KMI1] = 37,
++	[VIRT_CLCD] = 10,
++	[VIRT_KMI0] = 11,
++	[VIRT_KMI1] = 12,
 +
      [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
      [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
@@ -48,7 +48,7 @@
  static void machvirt_init(MachineState *machine)
  {
      VirtMachineState *vms = VIRT_MACHINE(machine);
-@@ -2326,6 +2346,27 @@
+@@ -2326,5 +2346,27 @@
                                 vms->fw_cfg, OBJECT(vms));
      }
  
@@ -62,7 +62,8 @@
 +    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
 +    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
 +
-+    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base, NULL);
++    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_CLCD]));
 +
 +    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
 +    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));

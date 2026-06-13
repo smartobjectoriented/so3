@@ -1,3 +1,5 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 SRC_URI += "\ 
     file://0012-bcm283x-rpi-i2c0mux_0_44.dtsi.patch \ 
     file://0008-bcm2835-rpi.dtsi.patch \ 

@@ -1,3 +1,5 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 SUMMARY = "LVGL Library for SO3"
 DESCRIPTION = "LVGL SO3 with framebuffer"
 LICENSE = "MIT"

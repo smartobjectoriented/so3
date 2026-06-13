@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "Filesystem management"
 DESCRIPTION = "This is the core filesystem recipe to create a virtual or physical \

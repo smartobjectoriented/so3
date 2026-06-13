@@ -1,5 +1,7 @@
 #! /bin/bash
 
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 # Here, you can do something after the rootfs images has been
 # generated.
 # See post_build.sh script if you want to do something just before
