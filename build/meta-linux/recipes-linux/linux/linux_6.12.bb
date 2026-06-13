@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "Linux Operating System"
 DESCRIPTION = "Linux OS used as main domain running on the embedded platform"

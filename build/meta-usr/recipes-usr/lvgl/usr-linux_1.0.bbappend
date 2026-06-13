@@ -1,78 +1,56 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 SUMMARY = "LVGL Library for Linux"
-DESCRIPTION = "LVGL Linux port"
+DESCRIPTION = "LVGL Linux port as a library for user space applications"
 LICENSE = "MIT"
 
-# Fetch LVGL
-
+# Fetch lv_port_linux from upstream
 LVGL_URI = "git://github.com/lvgl/lv_port_linux.git;branch=master;protocol=https;name=lvgl"
-SRCREV_lvgl = "e9b4a18331c6087ac01fcd17f026ec2f0b1f2bc8"
+SRCREV_lvgl = "5cc6069f7abbfc99dfcb7271049cccfc57fec23d"
+
+# Patch CMakeLists.txt to work as an add_subdirectory target
+LVGL_URI:append = " file://0001-lv-port-linux-CMakeLists-subdirectory-support.patch"
 
 SRC_URI += " ${@ d.expand(d.getVar('LVGL_URI') or '') \
                  if 'lvgl' in (d.getVar('OVERRIDES') or '').split(':') else '' }"
- 
-# These patches bring lv_port_linux/lvgl in the usr structure
-FILESPATH:prepend = "${THISDIR}/../lvgl/files/0001-${PF}:"
 
-require files/0001-${PF}-patches.inc
 
-# Prepare to set up lv_port_linux in our user space environment
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# Once the lv_port_linux git has been fetched, we pursue
-# with the retrieval of the LVGL submodule
-# Then, we move all the git contents in the consolidated working directory
+# Once lv_port_linux is fetched, initialise the lvgl submodule and
+# move everything into lib/lv_port_linux in the usr working tree
 
 python do_handle_fetch_git:prepend() {
 
     import os
     import subprocess
-    import shlex
-     
+
     ovrs = (d.getVar('OVERRIDES') or '').replace(' ', '').split(':')
     if 'lvgl' not in ovrs:
         return
-    
-    # Now fetch the submodule to get lvgl within lv_port_linux
-    bb.plain("Now, fetching submodule for lv_port_linux ...")
+
+    bb.plain("Fetching lv_port_linux submodule (lvgl)...")
 
     gitdir = os.path.join(d.getVar('WORKDIR'), 'git')
 
-    # Fetch the submodules using full path
     subprocess.check_call(
         ['git', '-C', gitdir, 'submodule', 'update', '--init', '--recursive']
     )
-  
-    move_gitdir(d, 'src/lvgl/lv_port_linux')    
+
+    move_gitdir(d, 'lib/lv_port_linux')
 }
 
-# Install the lvglsim application into the deploy directory
 do_install_apps:append () {
 
     if echo ":${OVERRIDES}:" | grep -q ":lvgl"; then
-        # Installation of the deploy/ content
-        usr_do_install_file_root "${IB_TARGET}/build/src/graphic/drm-utils/drm-info"
-        usr_do_install_file_root "${IB_TARGET}/build/src/graphic/drm_tool/drm_tool"
-    
-        usr_do_install_file_root "${IB_TARGET}/build/src/graphic/kmscube/kmscube"
-        usr_do_install_file_root "${IB_TARGET}/build/src/graphic/gbmtest/gbmtest"
-        usr_do_install_file_root "${IB_TARGET}/build/src/graphic/fb_benchmark/fb_benchmark"
-
-        usr_do_install_file_root "${IB_TARGET}/build/bin/lvglsim"         
+        usr_do_install_file_root "${IB_TARGET}/build/bin/fc-frontpage"
     fi
 }
 
 do_clean:append () {
-   
+
     if echo ":${OVERRIDES}:" | grep -q ":lvgl"; then
-      
-        rm -rf ${IB_TARGET}/src/lvgl
-        rm -rf ${IB_TARGET}/src/graphic
-
-        if [ -f ${IB_TARGET}.back/src/CMakeLists.txt ]; then
-            cp ${IB_TARGET}.back/src/CMakeLists.txt ${IB_TARGET}/src/
-        fi
-    
-        rm -rf ${S}
-
+        rm -rf ${IB_TARGET}/lib/lv_port_linux
         rm -rf ${WORKDIR}/git
     fi
 }

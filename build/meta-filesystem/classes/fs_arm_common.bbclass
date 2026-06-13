@@ -1,18 +1,22 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
-# Specific task description for formatting
-# the storage of ARM platform with 3 partitions
-
-# Partition layout is as follows:
-# - Partition #1: 128 MB (u-boot, kernel, etc.)
-# - Partition #2: 400 MB (Main rootfs)
-# - Partition #3: 100 MB (A data partition used for SO3 capsules for example)
+# Storage layout for ARM platforms (sdcard.img, IB_ROOTFS_SIZE total).
+#
+# Two partitions:
+# - p1, FAT, 128 MiB — boot partition
+#       uEnv.txt, AVZ ITB (small), legacy firmware artefacts
+# - p2, ext4, ~rest of IB_ROOTFS_SIZE — rootfs partition (label "rootfs1")
+#       /          — Linux rootfs proper (deployed by rootfs-linux).
+#
+# bitbake itself runs as the unprivileged user. Each privileged op
+# (losetup/fdisk/mkfs/mount/umount) goes through utils_sudo (`sudo -n`)
+# and assumes the caller pre-opened a sudo session.
 
 def __platform_init_storage(d):
     import os
     import subprocess
-    from bb.process import run
 
-    IB_STORAGE = d.getVar('IB_STORAGE')
+    IB_STORAGE_MODE = d.getVar('IB_STORAGE_MODE')
     IB_ROOTFS_SIZE = d.getVar('IB_ROOTFS_SIZE')
     IB_PLATFORM = d.getVar('IB_PLATFORM')
     IB_STORAGE_DEVICE = d.getVar('IB_STORAGE_DEVICE')
@@ -24,9 +28,9 @@ def __platform_init_storage(d):
     store_path = os.path.join(WORKDIR, store_filename)
     devname = IB_STORAGE_DEVICE
 
-    if IB_STORAGE == "soft":
-        # Make sure the filesystem dir exists
-        run(f"sudo mkdir -p {IB_FILESYSTEM_PATH}")
+    if IB_STORAGE_MODE == "soft":
+        # Make sure the filesystem dir exists (user-owned)
+        os.makedirs(IB_FILESYSTEM_PATH, exist_ok=True)
 
         # Create image first
         print(f"Creating {store_path}")
@@ -34,7 +38,7 @@ def __platform_init_storage(d):
         dd_size = IB_ROOTFS_SIZE
         subprocess.run(["truncate", "-s", dd_size, store_path])
 
-        devname = subprocess.run(["losetup", "--partscan", "--find", "--show", store_path],
+        devname = utils_sudo(["losetup", "--partscan", "--find", "--show", store_path],
                 capture_output=True, text=True).stdout.strip()
         print(devname)
 
@@ -67,7 +71,7 @@ def __platform_init_storage(d):
     # Create the partition layout this way
     # TODO: use sfdisk(8) which is more suitable for scripting
     fdisk_input = "o\nn\np\n\n\n+128M\nt\nc\na\nn\np\n\n\n+1600M\nw\n"
-    subprocess.run(["fdisk", f"/dev/{devname}"], input=fdisk_input.encode())
+    utils_sudo(["fdisk", f"/dev/{devname}"], input=fdisk_input.encode())
 
     print("Waiting ...")
 
@@ -78,11 +82,11 @@ def __platform_init_storage(d):
     if devname[-1].isdigit():
         devname += "p"
 
-    subprocess.run(["mkfs.fat", "-F32", "-a", "-v", "-n", "boot", f"/dev/{devname}1"])
-    subprocess.run(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"])
+    utils_sudo(["mkfs.fat", "-F32", "-a", "-v", "-n", "boot", f"/dev/{devname}1"])
+    utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"])
 
-    if IB_STORAGE == "soft":
-        subprocess.run(["losetup", "-D"])
+    if IB_STORAGE_MODE == "soft":
+        utils_sudo(["losetup", "-D"])
 
     print("Done! The storage is now initialized")
 
@@ -91,21 +95,15 @@ def __platform_init_storage(d):
 # Create and initialize the storage (including formatting partitions)
 def __do_fs_init_storage(d):
 
-    IB_STORAGE = d.getVar('IB_STORAGE')
+    IB_STORAGE_MODE = d.getVar('IB_STORAGE_MODE')
     IB_STORAGE_DEVICE = d.getVar('IB_STORAGE_DEVICE')
 
     WORKDIR = d.getVar("WORKDIR")
 
-    # Perform the check as this task can also be executed from a
-    # script or directly using bitbake
-    if utils_chk_is_root_user(d) == False:
-        bb.fatal(("Please re-run the task/script as root - "
-                  "It is required to access loop devices"))
-
-    if IB_STORAGE == "remote":
+    if IB_STORAGE_MODE == "remote":
         return None
 
-    if IB_STORAGE == "hard" and IB_STORAGE_DEVICE == "":
+    if IB_STORAGE_MODE == "hard" and IB_STORAGE_DEVICE == "":
         bb.fatal(("No device found; please edit conf/local.conf"
                   " IB_STORAGE_DEVICE is not set"))
 
@@ -121,40 +119,27 @@ def __do_fs_init_storage(d):
         # Remove the existing symbolic link
         os.unlink(target_link)
 
-    # Restore the ownership of the filesystem workdir to
-    # the user that ran the task - note that this is done before the filesystem
-    # is mounted to avoid touching the mounted rootfs
-    utils_chown_dir(d, WORKDIR)
-
     os.symlink(WORKDIR, target_link)
-
-    utils_restore_user_ownership(d)
 
 
 # Check the presence of the virtual disk image
 # if the deployment is done on the virtual ("soft") storage
 # and call filesystem:fs_init_storage() if it does not exist
+
 def __do_fs_check(d):
     import subprocess
 
     IB_PLATFORM = d.getVar('IB_PLATFORM')
-    IB_STORAGE = d.getVar('IB_STORAGE')
+    IB_STORAGE_MODE = d.getVar('IB_STORAGE_MODE')
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
 
-    uid = utils_get_user_uid(d)
-
-    # Check if the user is running the filesystem recipe as root
-    if utils_chk_is_root_user(d) == False:
-        bb.fatal("Please re-run the task/script as root")
-
-    if IB_STORAGE == "soft":
+    if IB_STORAGE_MODE == "soft":
         image_path = os.path.join(IB_FILESYSTEM_PATH , "work", f"sdcard.img.{IB_PLATFORM}")
         if not os.path.isfile(image_path):
             bb.plain((f"The filesystem image: sdcard.img.{IB_PLATFORM} "
                       "does not exist - creating it"))
             __do_fs_init_storage(d)
 
-    utils_restore_user_ownership(d)
 
 # Mount the partitions to p1, p2 respectively
 def __do_fs_mount(d):
@@ -164,17 +149,13 @@ def __do_fs_mount(d):
     import errno
 
     WORKDIR = d.getVar('IB_FILESYSTEM_PATH') + "/work"
-    IB_STORAGE = d.getVar('IB_STORAGE')
+    IB_STORAGE_MODE = d.getVar('IB_STORAGE_MODE')
     IB_PLATFORM = d.getVar('IB_PLATFORM')
     IB_STORAGE_DEVICE = d.getVar('IB_STORAGE_DEVICE')
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
     TMPDIR = d.getVar("TMPDIR")
 
-    # Check if the user is running the filesystem recipe as root
-    if utils_chk_is_root_user(d) == False:
-        bb.fatal("Please re-run the task/script as root")
-
-    if IB_STORAGE == "soft":
+    if IB_STORAGE_MODE == "soft":
         img_path = f"{WORKDIR}/sdcard.img.{IB_PLATFORM}"
 
         # Check if image exists before running losetup
@@ -189,23 +170,20 @@ def __do_fs_mount(d):
 
     if os.path.ismount(p1):
         bb.warn(f"{p1} is already mounted - avoid remount")
-        utils_restore_user_ownership(d)
         return
 
     if os.path.ismount(p2):
         bb.warn(f"{p2} is already mounted - avoid remount")
-        utils_restore_user_ownership(d)
         return
 
     os.makedirs(p1, exist_ok=True)
     os.makedirs(p2, exist_ok=True)
 
-    if IB_STORAGE == "soft":
+    if IB_STORAGE_MODE == "soft":
 
         try:
-            devname = subprocess.check_output(
-                f"losetup --partscan --find --show {img_path}", shell=True,
-                text=True).strip()
+            devname = utils_sudo(["losetup", "--partscan", "--find", "--show", img_path],
+                                 capture_output=True, text=True, check=True).stdout.strip()
         except Exception as e:
             bb.fatal((f"Could not attach image: {img_path}"
                       f" to a loop device error: {e}"))
@@ -225,21 +203,34 @@ def __do_fs_mount(d):
         json.dump(shdata, f);
 
     f.close()
-    utils_chown_file(d, path)
 
     if devname[-1].isdigit():
         devname += "p"
 
+    # bitbake runs unprivileged in the post-refactor architecture (cf.
+    # utils_sudo). The subsequent __do_platform_deploy needs to write
+    # uEnv.txt, ITBs and rootfs payloads to both partitions WITHOUT
+    # escalating each cp/tar call. Make the mounts user-writable:
+    #   - FAT (p1): pass uid=/gid= mount opts so every file appears
+    #     owned by the invoking user (vfat has no on-disk uid/gid).
+    #   - ext4 (p2): mount normally, then chown the root inode to the
+    #     user (mkfs.ext4 sets / to root:root by default; chowning just
+    #     the top inode is enough — children inherit the new owner).
+    uid = os.getuid()
+    gid = os.getgid()
+
     # TODO: handle more than 2 partitions
     try:
-        subprocess.run(['mount', f'/dev/{devname}1', os.path.join(WORKDIR, 'p1')], check=True)
+        utils_sudo(['mount', '-o', f'uid={uid},gid={gid}',
+                    f'/dev/{devname}1', os.path.join(WORKDIR, 'p1')], check=True)
 
     except Exception as e:
         bb.fatal((f"Could not mount image: {IB_FILESYSTEM_PATH}"
                   f" on /dev/{devname}1 error: {e}"))
 
     try:
-        subprocess.run(['mount', f'/dev/{devname}2', os.path.join(WORKDIR, 'p2')], check=True)
+        utils_sudo(['mount', f'/dev/{devname}2', os.path.join(WORKDIR, 'p2')], check=True)
+        utils_sudo(['chown', f'{uid}:{gid}', os.path.join(WORKDIR, 'p2')], check=True)
 
     except Exception as e:
         bb.fatal((f"Could not mount image: {IB_FILESYSTEM_PATH}"
@@ -257,21 +248,13 @@ def __do_fs_mount(d):
             os.remove(IB_FILESYSTEM_PATH + "/p2")
         os.symlink(os.path.join(WORKDIR, 'p2'), IB_FILESYSTEM_PATH+"/p2")
 
-    utils_restore_user_ownership(d)
-
 
 def __do_fs_umount(d):
 
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
     WORKDIR = d.getVar('WORKDIR')
 
-    # Check if the user is running the filesystem recipe as root
-    if utils_chk_is_root_user(d) == False:
-        bb.fatal("Please re-run the task/script as root")
-
     __do_main_umount(d, 1)
     __do_main_umount(d, 2)
 
-    os.system("losetup -D")
-
-    utils_restore_user_ownership(d)
+    utils_sudo(["losetup", "-D"])

@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 inherit filesystem
 inherit logging
@@ -11,20 +12,20 @@ usr_do_install_file_root () {
 	echo "Installing $1"
 	
 	mkdir -p ${IB_TARGET}/build/deploy/root
-	cp $1 ${IB_TARGET}/build/deploy/root
+	cp $1 ${IB_TARGET}/build/deploy/root 2>/dev/null || true
 }
 
 usr_do_install_directory_root () {
 	echo "Installing $1"
 	
 	mkdir -p ${IB_TARGET}/build/deploy/root
-	cp -R "$1" "${IB_TARGET}/build/deploy/root"
+	cp -R "$1" "${IB_TARGET}/build/deploy/root" 2>/dev/null || true
 }
 
 usr_do_install_file_dir () {
 	echo "Installing $1 into $2" 
 	mkdir -p ${IB_TARGET}/build/deploy/$2 
-	cp -r $1 ${IB_TARGET}/build/deploy/$2
+	cp -r $1 ${IB_TARGET}/build/deploy/$2 2>/dev/null || true
 }
 
 
@@ -54,6 +55,41 @@ def __retrieve_usr_dir(d):
 python retrieve_usr_dir() {
     __retrieve_usr_dir(d)
 }
+
+# De-duplicate add_subdirectory() lines in CMakeLists.txt files.
+# Implemented as a separate Python function and attached to do_configure via
+# [prefuncs] — using `python do_configure:prepend()` directly mixes badly
+# with the shell do_configure on some bitbake versions and the parser
+# treats the python body as shell code.
+
+python usr_dedup_add_subdirectory() {
+    import os
+    import glob
+
+    target = d.getVar('IB_TARGET')
+    for cmake_file in glob.glob(os.path.join(target, '**', 'CMakeLists.txt'), recursive=True):
+        with open(cmake_file, 'r') as f:
+            lines = f.readlines()
+
+        seen = set()
+        deduped = []
+        removed = []
+        for line in lines:
+            key = line.strip()
+            if key.startswith('add_subdirectory(') and key in seen:
+                removed.append(key)
+            else:
+                if key.startswith('add_subdirectory('):
+                    seen.add(key)
+                deduped.append(line)
+
+        if removed:
+            bb.warn("Duplicate add_subdirectory removed in %s: %s" % (cmake_file, ', '.join(removed)))
+            with open(cmake_file, 'w') as f:
+                f.writelines(deduped)
+}
+
+do_configure[prefuncs] += "usr_dedup_add_subdirectory"
 
 do_configure () {
     mkdir -p ${IB_TARGET}/build

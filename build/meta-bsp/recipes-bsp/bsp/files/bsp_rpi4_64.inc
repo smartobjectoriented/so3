@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 # Deployment on RPi4_64 (64-bit) platform
 

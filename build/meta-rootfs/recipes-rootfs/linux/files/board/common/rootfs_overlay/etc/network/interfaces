@@ -2,15 +2,6 @@
 auto lo
 iface lo inet loopback
 
-# Physical eth0 interface 
+# Ethernet — DHCP
 auto eth0
-#iface eth0 inet dhcp
-iface eth0 inet6 manual
-up ip link set eth0 up
-down ip link set eth0 down
-
-# wifi
-#auto wlan0
-#allow-hotplug wlan0
-
-
+iface eth0 inet dhcp

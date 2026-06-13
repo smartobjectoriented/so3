@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 other_qemu=`sudo brctl show | grep tap | wc -l`
 if [[ ${other_qemu} -eq 1 ]]
 then

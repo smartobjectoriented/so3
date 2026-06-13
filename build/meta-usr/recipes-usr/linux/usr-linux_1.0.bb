@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "User space applications for Linux"
 DESCRIPTION = "All (Linux) user space custom applications which take place in the rootfs of Linux"
@@ -29,64 +30,70 @@ do_deploy[nostamp] = "1"
 python do_deploy() {
 
     import os
- 
+
     __do_fs_mount(d)
-    
+
     IB_USR_PATH = d.getVar('IB_USR_PATH')
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
     IB_ROOTFS_PARTITION = d.getVar('IB_ROOTFS_PARTITION')
 
     if not os.path.isdir(os.path.join(IB_USR_PATH, "build", "deploy")):
-     
+
         __do_fs_umount(d)
         bb.fatal("The {} does not exist; please build usr first...".format(IB_USR_PATH))
 
     if not os.path.isdir(os.path.join(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION, "root")):
         __do_fs_umount(d)
         bb.fatal("The root directory is not present in the second partition; please deploy rootfs...")
-      
- 
+
+
     os.system("cp -r {}/build/deploy/* {}/{}/".format(IB_USR_PATH, IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION))
-	
+
     __do_fs_umount(d)
 }
- 
-addtask do_deploy
+
+# `after do_build` is required: do_deploy expects ${IB_USR_PATH}/build/deploy/
+# (populated by do_build) to exist. Without explicit ordering, bitbake
+# schedules do_deploy as soon as its declared depends (rootfs-linux:do_deploy)
+# are met — which can be before this recipe's own do_build has run.
+addtask do_deploy after do_build
 
 # Build extra components which is not in src/ directory like modules
 do_build:prepend () {
 
 	# Modules
- 
-	if [ ! -f ${IB_LINUX_PATH}/Module.symvers ]; then 
-        	echo "Generating Module.symvers..." ; 
-        	make -j${CORES} -C ${IB_LINUX_PATH} modules ; 
+
+	if [ ! -f ${IB_LINUX_PATH}/Module.symvers ]; then
+        	echo "Generating Module.symvers..." ;
+        	make -j${CORES} -C ${IB_LINUX_PATH} modules ;
             make INSTALL_MOD_PATH=${IB_ROOTFS_PATH}/target -C ${IB_LINUX_PATH} modules_install ; \
     fi
 
-	make -C ${IB_LINUX_PATH} M=${IB_TARGET}/src/modules modules
-}	
+	make -C ${IB_LINUX_PATH} M=${IB_TARGET}/src/modules modules IB_PLATFORM=${IB_PLATFORM}
+}
 
 # Installing usr apps mean to move the binary and all files which need to
 # be copied to the rootfs. Be aware that it is a deploy directory and not
 # the rootfs itself; this is achieved with the do_deploy task (by the bsp recipe)
 
 do_install_apps () {
-    
-    usr_do_install_file_root "${IB_TARGET}/build/src/examples/hello"
-    
+
+    usr_do_install_file_root "${IB_TARGET}/build/src/applications/examples/hello"
+    usr_do_install_file_root "${IB_TARGET}/build/bin/capsule-flash-test"
+    usr_do_install_file_root "${IB_TARGET}/build/bin/capsule-http-test"
+
     # Installation of modules if any
-    
+
     usr_do_install_file_root "${IB_TARGET}/src/modules/*.ko"
 }
 
 do_clean:append () {
-    
+
     # Clean the modules
     if [ -d ${IB_TARGET}/src/modules ]; then
 	    make -C ${IB_LINUX_PATH} M=${IB_TARGET}/src/modules clean
     fi
-    
+
     rm -f ${TMPDIR}/stamps/usr-linux*
 
     # Remove the usr organization in the build directory to avoid
@@ -96,7 +103,7 @@ do_clean:append () {
 
    # Remove all patches
    rm -rf ${IB_TARGET}/patches
-	
+
    # Clean the user space apps
    rm -rf ${IB_TARGET}/build
 }

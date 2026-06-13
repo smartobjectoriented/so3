@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# bitbake wrapper: prints the active infrabase environment to stderr
+# before delegating to the real bitbake binary. Picked up automatically
+# because env.sh puts $IB_ROOT_DIR/scripts ahead of bitbake/bin in PATH.
+# Helps catch the case where the wrong env.sh is loaded for the
+# project being worked on.
+
+if test -z "$IB_ROOT_DIR" || test -z "$BUILDDIR"; then
+	echo "bitbake wrapper: IB_ROOT_DIR/BUILDDIR not set; source env.sh first." >&2
+	exit 1
+fi
+
+. "$IB_ROOT_DIR/scripts/common/bblayers.sh"
+
+# Walk argv to extract the recipe and the task (-c <task>). Skip the
+# arguments to bitbake options that take a value (-c, -b, -e, -r, -R,
+# -u, -T, --read, --runall, --runonly, --postfile, --prefile, --token).
+# We pick the last positional argument as the recipe, which matches
+# the common forms `bitbake recipe`, `bitbake -c task recipe`, and
+# `bitbake recipe -c task`.
+_recipe=
+_task=
+_skip_next=
+for _arg in "$@"; do
+	if test -n "$_skip_next"; then
+		case "$_skip_next" in
+			task) _task="$_arg" ;;
+		esac
+		_skip_next=
+		continue
+	fi
+	case "$_arg" in
+		-c)
+			_skip_next=task
+			;;
+		--cmd=*)
+			_task="${_arg#--cmd=}"
+			;;
+		-b|-e|-r|-R|-u|-T|--read|--runall|--runonly|--postfile|--prefile|--token)
+			_skip_next=other
+			;;
+		--*=*|-*)
+			;;
+		*)
+			_recipe="$_arg"
+			;;
+	esac
+done
+
+show_env "$_recipe" "$_task"
+
+exec "$BUILDDIR/bitbake/bin/bitbake" "$@"

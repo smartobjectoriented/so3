@@ -1,9 +1,0 @@
---- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/Kconfig	2024-11-17 23:15:08.000000000 +0100
-+++ ./Kconfig	2025-08-29 08:46:41.313994652 +0200
-@@ -30,3 +30,6 @@
- source "lib/Kconfig.debug"
- 
- source "Documentation/Kconfig"
-+
-+# SOO subsystems and drivers
-+source "soo/Kconfig"

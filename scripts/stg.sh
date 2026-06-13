@@ -1,8 +1,19 @@
 #!/bin/bash
- 
+
+# Copyright (c) 2025-2026 EDGEMTech SA
+
+# Resolve project root from this script's own location, cd there, and
+# source env.sh — prompting the user first if the parent shell points
+# at a different tree. Every relative path below (filesystem/...,
+# build/conf/local.conf) is anchored on that root. See
+# scripts/common/setup_env.sh.
+
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/setup_env.sh"
+
 QEMU_AUDIO_DRV="none"
-USR_OPTION=$1
 GDB_PORT_BASE=1234
+USR_OPTION=$1
+QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
 
 N_QEMU_INSTANCES=`ps -A | grep qemu-system-arm | wc -l`
 
@@ -26,42 +37,46 @@ launch_qemu() {
       fi     
     done < build/conf/local.conf
 
-  if [ "$IB_PLATFORM" == "virt64" ]; then
-	echo Starting on virt64
-    sudo qemu/build/aarch64-softmmu/qemu-system-aarch64 $@ ${USR_OPTION} \
- 	-smp 4  \
-	-m 1024 \
-	-serial mon:stdio  \
-	-M virt,gic-version=2 -cpu cortex-a72  \
-	-device virtio-blk-device,drive=hd0 \
-	-device virtio-gpu-pci \
-	-device virtio-keyboard-pci \
-	-device virtio-mouse-pci \
-	-display sdl \
-	-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
-	-kernel u-boot/u-boot \
-	-display sdl \
-	-netdev tap,id=n1,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh \
-	-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
-     	-gdb tcp::${GDB_PORT} 
-  fi
-
-    if [ "$IB_PLATFORM" == "virt32" ]; then
-  	echo Starting on virt32
-	echo $1
-	sudo qemu/build/arm-softmmu/qemu-system-arm $@  \
-		-smp 4 \
-		-serial mon:stdio  \
-		-M virt  -cpu cortex-a15 \
-		-device virtio-blk-device,drive=hd0 \
-		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
-		-m 1024 \
-		-kernel u-boot/u-boot \
-		-net tap,script=scripts/qemu-ifup.sh,downscript=scripts/qemu-ifdown.sh -net nic,macaddr=${QEMU_MAC_ADDR} \
-		-gdb tcp::${GDB_PORT}
+    if [ "$IB_PLATFORM" != "virt64" ]; then
+        echo "ERROR: stg.sh only supports IB_PLATFORM=virt64, but" >&2
+        echo "       build/conf/local.conf has IB_PLATFORM=\"$IB_PLATFORM\"." >&2
+        echo "" >&2
+        echo "       Edit build/conf/local.conf to set" >&2
+        echo "           IB_PLATFORM ?= \"virt64\"" >&2
+        echo "       then rebuild+redeploy before retrying stg.sh." >&2
+        exit 1
     fi
-    
+
+    echo Starting on virt64
+    # See st.sh for rationale and for the flash0.img-presence boot-mode
+    # heuristic (AVZ chain vs bare U-Boot). stg.sh is the graphical
+    # sibling: same machine/boot selection, plus virtio GPU / keyboard /
+    # mouse and an SDL window.
+
+    if [ -f filesystem/flash0.img ]; then
+        MACHINE_OPT="-M virt,virtualization=on,gic-version=2,secure=on"
+        BOOT_OPT="-drive if=pflash,format=raw,file=filesystem/flash0.img"
+    else
+        MACHINE_OPT="-M virt,gic-version=2"
+        BOOT_OPT="-kernel u-boot/u-boot"
+    fi
+    ${QEMU_BIN} $@ ${USR_OPTION} \
+		-smp 4  \
+		-serial mon:stdio  \
+		${MACHINE_OPT} -cpu cortex-a72  \
+		${BOOT_OPT} \
+		-device virtio-blk-device,drive=hd0 \
+		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
+		-device virtio-gpu-pci \
+		-device virtio-keyboard-pci \
+		-device virtio-mouse-pci \
+		-display sdl \
+		-m 1024 \
+		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+        	-gdb tcp::${GDB_PORT}
+
     QEMU_RESULT=$?
 }
 
-launch_qemu $0
+launch_qemu

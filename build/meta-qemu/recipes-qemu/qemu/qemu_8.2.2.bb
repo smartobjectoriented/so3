@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "QEMU EMulator"
 DESCRIPTION = "QEMU emulation environment core receipt"
@@ -22,8 +23,8 @@ require files/0001-${PF}-patches.inc
 # Where the working directory will be placed in infrabase root dir
 IB_TARGET = "${IB_DIR}/qemu"
 
-QEMU_CONFIGURE:virt32 = "--target-list=arm-softmmu --disable-attr --disable-werror --disable-docs"
-QEMU_CONFIGURE:virt64 = "--target-list=aarch64-softmmu --disable-attr --disable-werror --disable-docs --enable-sdl"
+QEMU_CONFIGURE:virt32 = "--target-list=arm-softmmu --enable-slirp --disable-attr --disable-werror --disable-docs"
+QEMU_CONFIGURE:virt64 = "--target-list=aarch64-softmmu --enable-slirp --disable-attr --disable-werror --disable-docs --enable-sdl"
 
 do_clean[nostamp] = "1"
 do_clean () {

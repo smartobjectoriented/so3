@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Copyright (c) 2025-2026 EDGEMTech SA
+
 # User-controllable options
 grub_modinfo_target_cpu=i386
 grub_modinfo_platform=pc
