@@ -9,7 +9,11 @@ inherit usr
 PR = "r0"
 PV = "1.0"
 
-OVERRIDES += ":so3"
+# Use :append (not +=) so no space is inserted before ":so3". With +=,
+# OVERRIDES becomes "...:arm :so3" and the CPU token parses as "arm "
+# (trailing space), so :arm overrides like IB_MUSL_TARGET:arm never
+# collapse — breaking the musl toolchain PATH on virt32.
+OVERRIDES:append = ":so3"
 
 # These patches bring lv_port_linux/lvgl in the usr structure
 FILESPATH:prepend = "${THISDIR}/files/0001-${PF}:"
@@ -40,6 +44,20 @@ do_build[depends] = "rootfs-so3:do_build"
 do_build[depends] += "musl-toolchain:do_build"
 do_build:prepend () {
 	export PATH="${IB_MUSL_TOOLCHAIN_DIR}/${IB_MUSL_TARGET}/bin:$PATH"
+
+	# The cmake build dir caches the toolchain (CMakeCache.txt pins the
+	# compiler), so switching IB_PLATFORM between virt64 and virt32
+	# (aarch64<->arm) would otherwise keep producing wrong-arch user
+	# binaries (e.g. an aarch64 init.elf on a 32-bit kernel -> prefetch
+	# abort at boot). Wipe build/ when the arch changes; same-arch
+	# rebuilds stay incremental. The marker lives at the usr/ root so it
+	# survives the build/ wipe.
+	_arch_marker="${IB_TARGET}/.ib_last_arch"
+	if [ -f "$_arch_marker" ] && [ "$(cat $_arch_marker)" != "${IB_PLAT_CPU}" ]; then
+		echo "SO3 usr arch changed ($(cat $_arch_marker) -> ${IB_PLAT_CPU}); wiping build/"
+		rm -rf ${IB_TARGET}/build
+	fi
+	echo "${IB_PLAT_CPU}" > "$_arch_marker"
 }
 
 # Make sure so3 has been installed correctly to fetch other components if required

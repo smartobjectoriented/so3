@@ -14,7 +14,10 @@ inherit uboot
 inherit logging
 inherit bsp
 
-OVERRIDES += ":so3"
+# :append (not +=) so no space is inserted before ":so3" — otherwise the
+# preceding CPU token parses as "arm "/"aarch64 " and :<cpu> overrides
+# stop matching. See usr-so3_1.0.bb for the full rationale.
+OVERRIDES:append = ":so3"
 
 do_configure[noexec] = "1"
 do_attach_infrabase[noexec] = "1"

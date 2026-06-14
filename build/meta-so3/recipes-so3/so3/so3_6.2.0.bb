@@ -9,7 +9,10 @@ inherit so3
 PR = "r0"
 PV = "6.2.0"
 
-OVERRIDES += ":so3"
+# :append (not +=) so no space is inserted before ":so3" — otherwise the
+# preceding CPU token parses as "arm "/"aarch64 " and :<cpu> overrides
+# stop matching. See usr-so3_1.0.bb for the full rationale.
+OVERRIDES:append = ":so3"
 
 # This repository IS the SO3 source tree, so the kernel is built in
 # place — there is no upstream fetch. The fetch/unpack/attach tasks
