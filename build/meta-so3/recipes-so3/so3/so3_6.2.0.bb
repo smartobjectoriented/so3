@@ -23,7 +23,21 @@ do_attach_infrabase[noexec] = "1"
 do_configure[nostamp] = "1"
 do_configure () {
 	cd ${IB_SO3_PATH}/so3
+
+	# The kernel is built in place, so a stale .config/objects from the
+	# other architecture (virt64<->virt32, i.e. aarch64<->arm) would
+	# otherwise survive and produce a wrong-arch kernel. Track the last
+	# built arch in a marker file and distclean only when it changes —
+	# so same-arch rebuilds stay incremental.
+	_arch_marker=".ib_last_arch"
+	if [ -f "$_arch_marker" ] && [ "$(cat $_arch_marker)" != "${IB_PLAT_CPU}" ]; then
+		echo "SO3 arch changed ($(cat $_arch_marker) -> ${IB_PLAT_CPU}); running make distclean"
+		make distclean
+	fi
+
 	make ${IB_CONFIG}
+
+	echo "${IB_PLAT_CPU}" > "$_arch_marker"
 }
 
 do_build () {
