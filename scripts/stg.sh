@@ -13,9 +13,10 @@
 QEMU_AUDIO_DRV="none"
 GDB_PORT_BASE=1234
 USR_OPTION=$1
-QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
+# QEMU_BIN is selected per IB_PLATFORM below (qemu-system-aarch64 for
+# virt64, qemu-system-arm for virt32).
 
-N_QEMU_INSTANCES=`ps -A | grep qemu-system-arm | wc -l`
+N_QEMU_INSTANCES=`ps -A | grep qemu-system | wc -l`
 
 launch_qemu() {
     QEMU_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
@@ -37,16 +38,18 @@ launch_qemu() {
       fi     
     done < build/conf/local.conf
 
-    if [ "$IB_PLATFORM" != "virt64" ]; then
-        echo "ERROR: stg.sh only supports IB_PLATFORM=virt64, but" >&2
+    if [ "$IB_PLATFORM" != "virt64" ] && [ "$IB_PLATFORM" != "virt32" ]; then
+        echo "ERROR: stg.sh only supports IB_PLATFORM=virt64 or virt32, but" >&2
         echo "       build/conf/local.conf has IB_PLATFORM=\"$IB_PLATFORM\"." >&2
         echo "" >&2
         echo "       Edit build/conf/local.conf to set" >&2
-        echo "           IB_PLATFORM ?= \"virt64\"" >&2
+        echo "           IB_PLATFORM ?= \"virt64\"   (or \"virt32\")" >&2
         echo "       then rebuild+redeploy before retrying stg.sh." >&2
         exit 1
     fi
 
+    if [ "$IB_PLATFORM" == "virt64" ]; then
+    QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
     echo Starting on virt64
     # See st.sh for rationale and for the flash0.img-presence boot-mode
     # heuristic (AVZ chain vs bare U-Boot). stg.sh is the graphical
@@ -75,6 +78,30 @@ launch_qemu() {
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
         	-gdb tcp::${GDB_PORT}
+	fi
+
+    if [ "$IB_PLATFORM" == "virt32" ]; then
+    QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-arm"
+    echo Starting on virt32
+    # Graphical sibling of st.sh's virt32 branch: bare U-Boot chain
+    # (no ATF / flash on this platform), cortex-a15, plus virtio GPU /
+    # keyboard / mouse and an SDL window.
+    ${QEMU_BIN} $@ ${USR_OPTION} \
+		-smp 4  \
+		-serial mon:stdio  \
+		-M virt -cpu cortex-a15  \
+		-kernel u-boot/u-boot \
+		-device virtio-blk-device,drive=hd0 \
+		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
+		-device virtio-gpu-pci \
+		-device virtio-keyboard-pci \
+		-device virtio-mouse-pci \
+		-display sdl \
+		-m 1024 \
+		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+        	-gdb tcp::${GDB_PORT}
+	fi
 
     QEMU_RESULT=$?
 }
