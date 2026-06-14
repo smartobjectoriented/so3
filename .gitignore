@@ -75,6 +75,11 @@ so3/so3/scripts/kconfig/zconf.tab.c
 !/avz/build.sh
 !/avz/README.md
 
+# u-boot is FETCHED (meta-uboot recipe: github 2022.04 @ pinned SRCREV +
+# the SO3 patch set), like qemu/avz — not kept in-tree. The build attaches
+# the fetched tree here (backing any prior copy up to u-boot.back).
+/u-boot/
+
 # filesystem/ is entirely build output (sdcard images, u-boot.bin, work symlink)
 /filesystem/
 
