@@ -102,9 +102,15 @@ int fb_mmap(int fd, addr_t virt_addr, uint32_t page_count, off_t offset)
 	pcb_t *pcb = current()->pcb;
 
 	for (i = 0; i < page_count; i++) {
-		/* Map a process' virtual page to the physical one (here the VRAM). */
+		/* Map a process' virtual page to the physical one (here the VRAM).
+		 * The framebuffer must be mapped NON-CACHEABLE (nocache=true):
+		 * otherwise CPU writes linger in the data cache and never reach
+		 * the scanout VRAM on real hardware, and under QEMU they bypass
+		 * the dirty-page tracking that drives the PL110 live refresh -
+		 * the screen then stays black even though a forced redraw
+		 * (monitor 'screendump') shows the correct content. */
 		page = LCDUPBASE + i * PAGE_SIZE;
-		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, false);
+		create_mapping(pcb->pgtable, virt_addr + (i * PAGE_SIZE), page, PAGE_SIZE, true);
 	}
 
 	return 0;
