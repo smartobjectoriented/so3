@@ -71,8 +71,11 @@ sendto                  sendto                  NET
 setsockopt              setsockopt              NET
 brk                     brk                     PROC_ENV
 
-# Only used to suppress warning about setting CLOEXEC flags
+# Only used to suppress warning about setting CLOEXEC flags.
+# arm64 musl uses fcntl (NR 25); arm32 (virt32) musl uses fcntl64 (NR 221)
+# for the very same call (ls sets CLOEXEC) — route both to the handler.
 fcntl                   fcntl
+fcntl64                 fcntl
 
 # TODO: implement. Heavily used in MUSL, so remove warning about it for now.
 munmap                  empty
