@@ -1,0 +1,4 @@
+--- a/tools/common/hash.c
++++ b/tools/common/hash.c
+@@ -0,0 +1 @@
++#include <../common/hash.c>

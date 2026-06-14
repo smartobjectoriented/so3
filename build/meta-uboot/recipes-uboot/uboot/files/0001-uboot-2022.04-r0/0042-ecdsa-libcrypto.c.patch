@@ -1,0 +1,4 @@
+--- a/tools/lib/ecdsa/ecdsa-libcrypto.c
++++ b/tools/lib/ecdsa/ecdsa-libcrypto.c
+@@ -0,0 +1 @@
++#include <../lib/ecdsa/ecdsa-libcrypto.c>

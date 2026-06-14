@@ -1,0 +1,4 @@
+--- a/tools/lib/crc8.c
++++ b/tools/lib/crc8.c
+@@ -0,0 +1 @@
++#include <../lib/crc8.c>

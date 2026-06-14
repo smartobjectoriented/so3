@@ -1,5 +1,5 @@
---- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/boot/bootm.c	2025-09-11 16:44:26.707884622 +0200
-+++ ./boot/bootm.c	2025-09-11 16:34:39.288174907 +0200
+--- a/boot/bootm.c
++++ b/boot/bootm.c
 @@ -251,6 +251,13 @@
  {
  	int ret;

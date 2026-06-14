@@ -288,6 +288,11 @@ python patch_do_diffcompose() {
         'u-boot', 'u-boot.cfg*', 'u-boot.sym', 'u-boot.srec',
         'u-boot.map', 'u-boot.lds', 'u-boot.bin', 'u-boot.bin.*',
         'u-boot-dtb*', 'u-boot-nodtb*',
+        # u-boot kbuild-generated config + example/efi build outputs that
+        # leak into IB_TARGET after a `make` (include/generated and
+        # include/config are dir-excluded below; these live elsewhere).
+        'autoconf.mk', 'autoconf.mk.dep', '*.srec',
+        'efi_miniapp_*.h',
         # initramfs build deps
         '.initramfs_*',
     ]

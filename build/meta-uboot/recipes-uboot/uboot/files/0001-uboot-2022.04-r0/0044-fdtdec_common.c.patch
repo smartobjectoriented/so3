@@ -1,0 +1,4 @@
+--- a/tools/lib/fdtdec_common.c
++++ b/tools/lib/fdtdec_common.c
+@@ -0,0 +1 @@
++#include <../lib/fdtdec_common.c>

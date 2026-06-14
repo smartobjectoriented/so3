@@ -1,0 +1,4 @@
+--- a/tools/lib/aes/aes-decrypt.c
++++ b/tools/lib/aes/aes-decrypt.c
+@@ -0,0 +1 @@
++#include <../lib/aes/aes-decrypt.c>

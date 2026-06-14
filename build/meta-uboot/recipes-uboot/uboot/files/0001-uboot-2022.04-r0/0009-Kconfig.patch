@@ -1,17 +1,19 @@
---- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/common/Kconfig	2025-09-11 16:44:26.717830853 +0200
-+++ ./common/Kconfig	2025-09-11 16:34:39.289787151 +0200
-@@ -850,6 +850,14 @@
+--- a/cmd/Kconfig
++++ b/cmd/Kconfig
+@@ -213,6 +213,16 @@
+ 	help
+ 	  Boot an AArch64 Linux Kernel image from memory.
  
- endmenu
- 
-+# EDGEMTech (DT)
-+config USE_RPI4_DTB_WITH_FIT
-+	bool "Activate this config to be able to use a FIT image without a DTB specified"
-+	depends on BCM2711
-+	default false
++config CMD_E1C_BOOT
++	bool "e1c-boot"
++	depends on ARM64 && FIT
 +	help
-+	  Indicate to U-Boot that it must use the RPi4 SPL DTB and not a DTB from the FIT
-+	
- source "common/spl/Kconfig"
- 
- config IMAGE_SIGN_INFO
++	  Boot the AVZ hypervisor together with an e1c capsule (Linux guest)
++	  from two separate FIT images. Each FIT is parsed individually; every
++	  declared kernel/fdt/ramdisk/loadable is copied to its load address,
++	  then control is transferred to the AVZ entry point with the AVZ FIT
++	  base in x0 and the capsule FIT base in x1.
++
+ config BOOTM_LINUX
+ 	bool "Support booting Linux OS images"
+ 	depends on CMD_BOOTM || CMD_BOOTZ || CMD_BOOTI

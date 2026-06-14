@@ -1,5 +1,5 @@
---- /home/rossierd/soo/git/infrabase/build/tmp/work/uboot-2022.04-r0/uboot-2022.04/arch/arm/mach-omap2/am33xx/board.c	2025-09-11 16:44:26.547693906 +0200
-+++ ./arch/arm/mach-omap2/am33xx/board.c	2025-09-11 16:34:39.358932745 +0200
+--- a/arch/arm/mach-omap2/am33xx/board.c
++++ b/arch/arm/mach-omap2/am33xx/board.c
 @@ -417,6 +417,8 @@
  {
  }

@@ -1,0 +1,4 @@
+--- a/tools/lib/rc4.c
++++ b/tools/lib/rc4.c
+@@ -0,0 +1 @@
++#include <../lib/rc4.c>

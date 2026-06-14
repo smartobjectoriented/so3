@@ -1,0 +1,4 @@
+--- a/tools/lib/rsa/rsa-verify.c
++++ b/tools/lib/rsa/rsa-verify.c
+@@ -0,0 +1 @@
++#include <../lib/rsa/rsa-verify.c>

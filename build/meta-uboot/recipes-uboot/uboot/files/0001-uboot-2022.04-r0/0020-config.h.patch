@@ -1,0 +1,10 @@
+--- a/include/config.h
++++ b/include/config.h
+@@ -0,0 +1,7 @@
++/* Automatically generated - do not edit */
++#define CONFIG_BOARDDIR board/emulation/qemu-arm
++#include <config_uncmd_spl.h>
++#include <configs/qemu-arm.h>
++#include <asm/config.h>
++#include <linux/kconfig.h>
++#include <config_fallbacks.h>

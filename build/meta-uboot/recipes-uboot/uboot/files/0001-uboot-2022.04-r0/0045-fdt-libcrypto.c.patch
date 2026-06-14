@@ -1,0 +1,4 @@
+--- a/tools/lib/fdt-libcrypto.c
++++ b/tools/lib/fdt-libcrypto.c
+@@ -0,0 +1 @@
++#include <../lib/fdt-libcrypto.c>
