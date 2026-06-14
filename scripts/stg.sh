@@ -52,9 +52,14 @@ launch_qemu() {
     QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
     echo Starting on virt64
     # See st.sh for rationale and for the flash0.img-presence boot-mode
-    # heuristic (AVZ chain vs bare U-Boot). stg.sh is the graphical
-    # sibling: same machine/boot selection, plus virtio GPU / keyboard /
-    # mouse and an SDL window.
+    # heuristic (AVZ chain vs bare U-Boot).
+    # Like virt32, SO3 drives the PL111 CLCD + PL050 keyboard/mouse that the
+    # so3 QEMU patch wires unconditionally into '-M virt' (virt64.dts has the
+    # clcd@08800000 / pl050 nodes). It has NO virtio-gpu driver, so we do not
+    # add virtio-gpu/keyboard/mouse here. Use the GTK backend: SDL does not
+    # present the PL111 console's surface (the window stays black even though
+    # the framebuffer is rendered); GTK shows it and its View menu lists every
+    # console.
 
     if [ -f filesystem/flash0.img ]; then
         MACHINE_OPT="-M virt,virtualization=on,gic-version=2,secure=on"
@@ -70,10 +75,7 @@ launch_qemu() {
 		${BOOT_OPT} \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
-		-device virtio-gpu-pci \
-		-device virtio-keyboard-pci \
-		-device virtio-mouse-pci \
-		-display sdl \
+		-display gtk \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
