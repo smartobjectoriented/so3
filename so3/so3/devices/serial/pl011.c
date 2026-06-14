@@ -20,6 +20,7 @@
 #include <heap.h>
 #include <process.h>
 #include <signal.h>
+#include <mutex.h>
 
 #include <device/device.h>
 #include <device/driver.h>
@@ -73,6 +74,13 @@ static char pl011_get_byte(bool polling)
 		return ioread16(pl011.base + UART01x_DR);
 	} else {
 		while (prod == cons) {
+			/* Ctrl-C arrived while we were blocked reading: abandon the
+			 * read and report ETX so console_getc cancels the line. */
+			if (serial_intr) {
+				serial_intr = false;
+				return 3; /* ETX */
+			}
+
 			schedule();
 
 			smp_mb();
@@ -118,8 +126,24 @@ static irq_return_t pl011_int(int irq, void *dummy)
 					prod--; /* Already sent out to the serial interface */
 
 #ifdef CONFIG_IPC_SIGNAL
-					if (current()->pcb != NULL)
-						sys_do_kill(current()->pcb->pid, SIGINT);
+					if (mutex_is_locked(&read_lock)) {
+						/* A thread (e.g. the shell) is blocked reading the
+						 * console: cancel its current line so it returns an
+						 * empty line and reprints its prompt, rather than
+						 * killing it. */
+						serial_intr = true;
+					} else {
+						/* No console read in progress -> a foreground app is
+						 * running. Deliver SIGINT to it. Use fg_pcb (the
+						 * shell's foreground job), NOT current(): in IRQ
+						 * context current() is just the thread running when
+						 * the key arrived (usually the idle thread, since the
+						 * foreground app is typically asleep). Fall back to
+						 * current() if no foreground is tracked yet. */
+						pcb_t *target = fg_pcb ? fg_pcb : current()->pcb;
+						if (target != NULL)
+							sys_do_kill(target->pid, SIGINT);
+					}
 #endif
 				}
 

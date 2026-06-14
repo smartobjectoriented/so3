@@ -74,6 +74,17 @@ static uint32_t pid_current = 1;
 static pcb_t *root_process = NULL; /* root process */
 
 /*
+ * Foreground console process: the process that should receive console-driven
+ * signals (e.g. SIGINT on Ctrl-C). It is updated to the child a process is
+ * blocked waiting on (see sys_do_wait4) — i.e. the shell's foreground job —
+ * and restored to the waiter when that child exits. Used by the serial IRQ
+ * (devices/serial/pl011.c) instead of current(), which at IRQ time is merely
+ * whatever thread happened to be running (usually the idle thread when the
+ * foreground app is asleep). NULL until the first foreground wait.
+ */
+pcb_t *fg_pcb = NULL;
+
+/*
  * Find a process (pcb_t) from its pid.
  * Return NULL if no process has been found.
  */
@@ -992,9 +1003,18 @@ SYSCALL_DEFINE4(wait4, int, pid, uint32_t *, wstatus, uint32_t, options, void *,
 		if (child->state != PROC_STATE_ZOMBIE)
 			return 0;
 
-	if (child->state != PROC_STATE_WAITING)
+	if (child->state != PROC_STATE_WAITING) {
+		/* This child is now the foreground process: console signals
+		 * (e.g. Ctrl-C -> SIGINT) must target it while we block on it.
+		 * Restore the foreground to ourselves (the waiter, e.g. the
+		 * shell) once it has finished. */
+		fg_pcb = child;
+
 		/* Wait on the main_thread of this process */
 		thread_join(child->main_thread);
+
+		fg_pcb = current()->pcb;
+	}
 
 	/* Free the page tables used for this process */
 	reset_root_pgtable(child->pgtable, true);

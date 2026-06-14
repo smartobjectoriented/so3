@@ -75,6 +75,17 @@ static int console_getc(int fd, void *buffer, int count)
 		do {
 			/* Read and handle next byte  */
 			c = console_get_next_c();
+
+			/* ETX (Ctrl-C, signalled by the serial IRQ while reading):
+			 * discard whatever was typed and return an empty line, so the
+			 * reader (e.g. the shell) reprints its prompt. The IRQ has
+			 * already echoed "^C\n". */
+			if (c == 3) {
+				total = 0;
+				c_buf[total++] = '\n';
+				break;
+			}
+
 			icanon_handle_char(fd, c, c_buf, &total);
 		} while (c != '\n' && total < count);
 	} else {

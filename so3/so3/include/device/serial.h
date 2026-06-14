@@ -45,6 +45,11 @@ typedef struct {
 
 extern serial_ops_t serial_ops;
 
+/* Set by the serial IRQ on Ctrl-C when a console read is in progress, to
+ * cancel the current line (the blocked reader returns an empty line). See
+ * the serial IRQ (pl011.c) and console_getc (console.c). */
+extern volatile bool serial_intr;
+
 struct winsize {
 	unsigned short ws_row; /* rows, in characters */
 	unsigned short ws_col; /* columns, in characters */

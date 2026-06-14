@@ -151,6 +151,10 @@ typedef struct pcb pcb_t;
 
 extern struct list_head proc_list;
 
+/* Foreground console process — target of console-driven signals (Ctrl-C).
+ * Maintained by sys_do_wait4(); see process.c. */
+extern pcb_t *fg_pcb;
+
 void add_page_to_proc(pcb_t *pcb, page_t *page);
 
 void create_root_process(void);

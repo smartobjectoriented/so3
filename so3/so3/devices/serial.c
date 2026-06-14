@@ -32,6 +32,7 @@
 serial_ops_t serial_ops;
 mutex_t read_lock;
 tcb_t *tcb_owner;
+volatile bool serial_intr = false;
 
 /* Outputs an ASCII string to console */
 int serial_putc(char c)
