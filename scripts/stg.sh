@@ -84,8 +84,13 @@ launch_qemu() {
     QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-arm"
     echo Starting on virt32
     # Graphical sibling of st.sh's virt32 branch: bare U-Boot chain
-    # (no ATF / flash on this platform), cortex-a15, plus virtio GPU /
-    # keyboard / mouse and an SDL window.
+    # (no ATF / flash on this platform), cortex-a15.
+    # NOTE: SO3 drives the PL111 CLCD + PL050 keyboard/mouse that the
+    # so3 QEMU patch wires unconditionally into '-M virt' (see boot log:
+    # pl111_init / pl050_init_*). It has NO virtio-gpu driver, so we must
+    # NOT add virtio-gpu/keyboard/mouse here.
+    # Use the GTK backend: its View menu lists every graphic console, so the
+    # PL111 panel is reachable even if QEMU registers more than one console.
     ${QEMU_BIN} $@ ${USR_OPTION} \
 		-smp 4  \
 		-serial mon:stdio  \
@@ -93,10 +98,7 @@ launch_qemu() {
 		-kernel u-boot/u-boot \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
-		-device virtio-gpu-pci \
-		-device virtio-keyboard-pci \
-		-device virtio-mouse-pci \
-		-display sdl \
+		-display gtk \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
