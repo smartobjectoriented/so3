@@ -87,6 +87,9 @@ void remove_tcb_from_pcb(tcb_t *tcb)
 	}
 }
 
+/* Defined below; needed by discard_tcb_in_pcb(). */
+uint32_t active_threads(pcb_t *pcb);
+
 /*
  * Discarding all tcb spawned in a process (except the main_thread of course)
  */
@@ -95,15 +98,50 @@ void discard_tcb_in_pcb(pcb_t *pcb)
 	tcb_t *cur;
 	struct list_head *pos, *q;
 
+	/* First pass: dispose of each spawned (non-main) thread.
+	 *
+	 *  - READY   : pull it off the ready list and free it right away. It
+	 *              must NOT be resumed: exit_group() has already released
+	 *              the user pages, so returning to user space would fault.
+	 *  - WAITING : the thread is blocked *inside* the kernel (typically in
+	 *              __sleep(), with a timer living on its own kernel stack).
+	 *              Freeing it from here would leave that timer/wait-queue
+	 *              entry dangling. Instead we cooperatively cancel it: flag
+	 *              it killed and wake it. It resumes in the kernel, unwinds
+	 *              its own wait state (e.g. stops its timer) and then
+	 *              self-terminates via the tcb->killed check in the blocking
+	 *              primitive (see __sleep()).
+	 *  - ZOMBIE  : already finished, just reap it.
+	 */
 	list_for_each_safe(pos, q, &pcb->threads) {
 		cur = list_entry(pos, tcb_t, list);
 
-		/* Check if the tcb is in a ready thread ? */
-		if (cur->state == THREAD_STATE_READY)
+		if (cur->state == THREAD_STATE_READY) {
 			remove_ready(cur);
-		else if (cur->state == THREAD_STATE_WAITING)
-			BUG(); /* Not handled yet... */
+			list_del(pos);
+			clean_thread(cur);
+		} else if (cur->state == THREAD_STATE_WAITING) {
+			cur->killed = true;
+			wake_up(cur);
+		} else if (cur->state == THREAD_STATE_ZOMBIE) {
+			list_del(pos);
+			clean_thread(cur);
+		}
+	}
 
+	/* Second pass: wait for the cooperatively-killed threads to terminate.
+	 * They signal pcb->threads_active when the last one exits, exactly like
+	 * the graceful exit path in thread_exit(). If none were woken,
+	 * active_threads() is already 0 and we skip the wait. */
+	while (active_threads(pcb) > 0) {
+		local_irq_enable();
+		wait_for_completion(&pcb->threads_active);
+		local_irq_disable();
+	}
+
+	/* Reap the threads that just reached the zombie state. */
+	list_for_each_safe(pos, q, &pcb->threads) {
+		cur = list_entry(pos, tcb_t, list);
 		list_del(pos);
 		clean_thread(cur);
 	}

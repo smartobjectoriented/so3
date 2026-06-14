@@ -92,6 +92,16 @@ static void __sleep(u64 ns)
 		stop_timer(&__timer);
 	}
 
+	/* If the process is being torn down (discard_tcb_in_pcb woke us with
+	 * the killed flag set), the per-thread timer above has now been
+	 * stopped, so there is no longer any dangling reference into our
+	 * kernel stack. It is safe to terminate the thread cleanly here
+	 * instead of returning up towards (already freed) user space. */
+	if (current()->killed) {
+		local_irq_restore(flags);
+		thread_exit(0);
+	}
+
 	local_irq_restore(flags);
 }
 

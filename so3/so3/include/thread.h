@@ -83,6 +83,13 @@ struct tcb {
 	int exit_status;
 	int *clear_child_tid;
 
+	/* Set when the thread is being force-terminated (e.g. the process is
+	 * killed while this thread is blocked in the kernel). Blocking
+	 * primitives check it after they resume and self-terminate cleanly
+	 * once their own wait state has been unwound. See discard_tcb_in_pcb()
+	 * and __sleep(). */
+	bool killed;
+
 #ifdef CONFIG_IPC_SIGNAL
 	/* Mask for thread's disabled signals */
 	sigset_t sig_mask;
