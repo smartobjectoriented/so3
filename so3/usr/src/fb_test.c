@@ -135,21 +135,39 @@ int main(int argc, char **argv)
 
 	printf("fb_test: drawing colour bars + moving square, Ctrl-C to quit\n");
 
+	/* Paint the static background once. */
+	memcpy(fbp, bg, fb_size);
+
 	const int sq = 120;
 	int x = 0, dx = 6;
 	uint32_t orange = pack(bpp, 255, 140, 0);
 	int y = (vres - sq) / 2;
+	int prev_x = x;
 
+	/* Helper: copy one rectangle of background rows back into the fb to
+	 * erase the square's previous position (cheap, vs a full-screen copy). */
 	while (1) {
-		/* Repaint the background, then the square at its new position. */
-		memcpy(fbp, bg, fb_size);
+		/* Erase the square at its previous position by restoring bg. */
+		for (int row = y; row < y + sq && row < (int) vres; row++) {
+			size_t off = (size_t) row * hres + (prev_x < 0 ? 0 : prev_x);
+			size_t n = sq;
+			if (prev_x + sq > (int) hres)
+				n = hres - prev_x;
+			if (bpp == 16)
+				memcpy((uint16_t *) fbp + off, (uint16_t *) bg + off, n * 2);
+			else
+				memcpy((uint32_t *) fbp + off, (uint32_t *) bg + off, n * 4);
+		}
+
+		/* Draw the square at its new position. */
 		fill_rect(fbp, hres, vres, bpp, x, y, x + sq, y + sq, orange);
 
+		prev_x = x;
 		x += dx;
 		if (x <= 0 || x + sq >= (int) hres)
 			dx = -dx;
 
-		usleep(16000); /* ~60 fps */
+		usleep(16000); /* ~60 fps; loop is now mostly spent here */
 	}
 
 	return EXIT_SUCCESS;
