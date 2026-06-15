@@ -177,6 +177,24 @@ then
 	IB_BB_OPTS='-vDDD'
 fi
 
+# Repair stale recipe workdirs first. An interrupted task (e.g. Ctrl-C
+# during a clean) can leave a recipe WORKDIR that exists but is missing
+# its temp/ subdir; bitbake then can't create that task's fifo and fails
+# with "No such file or directory: .../temp/fifo.NNNN" (typically on
+# do_clean). Such a workdir holds nothing useful, so remove it and let
+# bitbake recreate it cleanly.
+if test -d "$BUILDDIR/tmp/work"
+then
+	for _wd in "$BUILDDIR"/tmp/work/*/
+	do
+		if test -d "$_wd" && ! test -d "${_wd}temp"
+		then
+			echo "[infrabase] removing stale workdir (no temp/): $_wd"
+			rm -rf "$_wd"
+		fi
+	done
+fi
+
 if test $doclean -eq 1
 then
 	bitbake $recipename -c clean $IB_BB_OPTS
