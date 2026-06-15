@@ -35,8 +35,12 @@ launch_qemu() {
     	  # Set the IB_PLATFORM variable to the extracted value
     	  IB_PLATFORM="$value"
     	  break
-      fi     
+      fi
     done < build/conf/local.conf
+
+    # Detect a SO3-on-AVZ boot from the selected (uncommented) so3 ITS — AVZ
+    # is an EL2 hypervisor, so QEMU must expose EL2 (virtualization=on).
+    SO3_ITS=$(grep -E "^IB_TARGET_ITS:so3:${IB_PLATFORM}\b" build/conf/local.conf | awk -F'"' '{print $2}' | tail -1)
 
     if [ "$IB_PLATFORM" != "virt64" ] && [ "$IB_PLATFORM" != "virt32" ]; then
         echo "ERROR: stg.sh only supports IB_PLATFORM=virt64 or virt32, but" >&2
@@ -62,8 +66,16 @@ launch_qemu() {
     # console.
 
     if [ -f filesystem/flash0.img ]; then
+        # ATF/OP-TEE chain (flash0/FIP): EL3 (secure=on) + EL2.
         MACHINE_OPT="-M virt,virtualization=on,gic-version=2,secure=on"
         BOOT_OPT="-drive if=pflash,format=raw,file=filesystem/flash0.img"
+    elif [[ "$SO3_ITS" == *avz* ]]; then
+        # SO3-on-AVZ via the ITS, no ATF: AVZ runs at EL2, so QEMU must
+        # expose it (virtualization=on). U-Boot here is virt64_defconfig
+        # (EL2-aware) and hands off to AVZ at EL2.
+        echo "AVZ guest (ITS=$SO3_ITS) — enabling EL2 (virtualization=on)"
+        MACHINE_OPT="-M virt,gic-version=2,virtualization=on"
+        BOOT_OPT="-kernel u-boot/u-boot"
     else
         MACHINE_OPT="-M virt,gic-version=2"
         BOOT_OPT="-kernel u-boot/u-boot"
