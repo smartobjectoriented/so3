@@ -53,14 +53,19 @@ launch_qemu() {
     fi
 
     # SO3's mouse is a RELATIVE PS/2 device (PL050) with NO absolute (tablet)
-    # fallback. With an ungrabbed GTK pointer, QEMU only sees motion deltas
-    # while the host cursor is inside the window, so the guest cursor can only
-    # be "walked" across the screen and never reaches the far edges in one pass.
-    # 'grab-on-hover=on' (set on -display gtk below) makes GTK capture/warp the
-    # host pointer on hover and feed QEMU raw, unbounded relative motion (1:1),
-    # so the guest cursor tracks correctly and reaches every edge. Release the
-    # grab with Ctrl+Alt+G. Pinning GDK to 1x keeps the window at native size on
-    # HiDPI panels (cosmetic; the grab is what actually fixes the pointer).
+    # fallback, so QEMU must warp/grab the host pointer to feed raw 1:1 deltas
+    # ('grab-on-hover=on' on -display gtk below; release with Ctrl+Alt+G).
+    #
+    # GDK_BACKEND=x11 is REQUIRED on Wayland: native Wayland forbids clients
+    # from warping the pointer, so QEMU's GTK relative-pointer grab is a no-op
+    # there — the guest cursor only "walks" within the window and FREEZES when
+    # it reaches an edge (it never warps back). Forcing the GTK backend onto
+    # XWayland restores pointer warp, so the relative cursor tracks correctly
+    # and reaches every edge. The SO3 driver itself clamps and recovers fine
+    # at both edges (verified by injecting deltas via the QEMU monitor); the
+    # freeze was purely this host-side Wayland warp limitation. Harmless on a
+    # real X11 session. GDK_SCALE=1 keeps the window native-sized on HiDPI.
+    export GDK_BACKEND=x11
     export GDK_SCALE=1
     export GDK_DPI_SCALE=1
 
