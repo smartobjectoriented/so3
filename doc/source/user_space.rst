@@ -4,7 +4,7 @@ User Space
 ##########
 
 The SO3 user space is a small, self-contained set of applications built against
-the **MUSL** C library. Everything lives under ``usr/``.
+the **MUSL** C library. Everything lives under ``so3/usr/``.
 
 The MUSL C library
 ==================
@@ -20,28 +20,26 @@ self-contained.
 Build system (CMake)
 ====================
 
-The user space is built with **CMake** and the MUSL cross toolchain. The build
-is driven by ``usr/build.sh``, which:
-
-* reads ``PLATFORM`` from ``../build.conf`` and selects the matching toolchain
-  file — ``usr/aarch64-linux-musl.cmake`` for 64-bit platforms (virt64,
-  rpi4_64), ``usr/arm-linux-musl.cmake`` for 32-bit ones;
-* configures and builds the tree under ``usr/build/``;
-* separates debug information (a stripped ``*.elf`` plus a ``*.elf.debug``) and
-  collects the deployable binaries in ``usr/build/deploy/``.
+The user space is built with **CMake** and the MUSL cross toolchain by the
+``usr-so3`` recipe (``meta-usr``). The MUSL toolchain (``aarch64-linux-musl`` for
+64-bit platforms, ``arm-linux-musleabihf`` for 32-bit ones) is produced by
+``meta-toolchain``, so there is no manual toolchain step. Build and (re)deploy the
+user space with:
 
 .. code-block:: bash
 
-   cd usr
-   ./build.sh
+   ./scripts/build.sh -x usr-so3      # configure + cross-compile (CMake + MUSL)
+   ./scripts/deploy.sh -k bsp-so3     # repack the rootfs into the FIT image
 
-Adding an application means dropping a C file in ``usr/src/`` and referencing it
-from the relevant ``CMakeLists.txt``.
+The recipe configures and builds under ``so3/usr/build/`` and gathers the
+deployable, statically-linked ``*.elf`` binaries for the root filesystem. Adding
+an application means dropping a C file in ``so3/usr/src/`` and referencing it from
+the relevant ``CMakeLists.txt``.
 
 Applications
 ============
 
-The standard applications in ``usr/src/`` include:
+The standard applications in ``so3/usr/src/`` include:
 
 .. flat-table::
    :header-rows: 1
@@ -63,8 +61,10 @@ The standard applications in ``usr/src/`` include:
      - minimal example
    * - ``thread_example`` / ``logs_example`` / ``mydev_test``
      - API and subsystem demonstrations
-   * - ``lvgl_demo`` / ``lvgl_perf`` / ``lvgl_benchmark``
+   * - ``lvgl_widgets`` / ``lvgl_demo`` / ``lvgl_perf`` / ``lvgl_benchmark``
      - LVGL graphical demos (framebuffer builds — see :ref:`lvgl`)
+   * - ``fb_test``
+     - minimal framebuffer test, straight to ``/dev/fb`` (see :ref:`display_input`)
    * - MicroPython
      - the MicroPython interpreter (ARM64 — see :ref:`micropython`)
 
@@ -96,17 +96,11 @@ Root filesystem
 ===============
 
 The applications are delivered through a root filesystem. In the default
-(ramfs) configuration this is a FAT image, ``rootfs/rootfs.fat``, created by:
-
-.. code-block:: bash
-
-   cd rootfs
-   ./create_ramfs.sh
-
-``deploy.sh -u`` copies the freshly built user binaries from
-``usr/build/deploy/`` into this image, which is then packed into the FIT image
-and written to the SD-card (:ref:`user_guide`). The same FAT image can be
-inspected on the host by mounting its partition — useful when debugging what
-actually ended up on the target.
+(ramfs) configuration this is a FAT image, ``so3/rootfs/rootfs.fat``, built by the
+``rootfs-so3`` recipe (``meta-rootfs``) from the freshly built user binaries.
+``./scripts/deploy.sh -k bsp-so3`` packs it into the FIT image and writes it to
+the SD-card (:ref:`user_guide`); ``./scripts/build.sh -a bsp-so3`` does the whole
+build + image in one step. The FAT image can be inspected on the host (e.g. with
+``mtools``) — useful when debugging what actually ended up on the target.
 
 .. _MUSL: https://musl.libc.org

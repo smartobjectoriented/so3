@@ -31,6 +31,7 @@
    build_system
    user_guide
    user_space
+   display_input
    debugging
    so3_jtag_rpi4
 

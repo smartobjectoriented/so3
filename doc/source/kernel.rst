@@ -177,7 +177,8 @@ The tree contains drivers for the main device classes:
    * - framebuffer (``fb/``)
      - PL111, ramfb, virtfb (used by LVGL)
    * - input (``input/``)
-     - PS/2 (PL050, KMI), virtio keyboard/mouse
+     - PL050 KMI keyboard; ``so3,absmouse`` absolute pointer; PL050 relative
+       mouse (legacy, disabled in the dts). See :ref:`display_input`.
    * - network (``net/``)
      - smc911x (``smsc,smc911x``), wired to lwIP — optional (``CONFIG_NET``)
    * - i2c, rpisense (``i2c/``, ``rpisense/``)

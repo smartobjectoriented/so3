@@ -136,7 +136,8 @@ for i, (t, d) in enumerate(subs):
     x = 70 + i*188
     p.box(x, 310, 175, 80, f"{t}\n\n{d}", KERNEL, 10)
 p.box(70, 410, 940, 80, "Device model & drivers   (devices/)\n"
-      "FDT probe · GIC (irq) · timer · pl011 serial · mmc · framebuffer · input · net (smc911x) · ramdev",
+      "FDT probe · GIC (irq) · timer · pl011 serial · mmc · framebuffer (PL111) · "
+      "input (PL050 kbd, absmouse) · net (smc911x) · ramdev",
       KERNEL, 10)
 p.box(40, 540, 1000, 60, "Hardware  —  described by a Device Tree (dts/*.dtb)", HW, 12)
 pages.append(p)
@@ -303,6 +304,80 @@ p.label(60, 360, 1000, 60,
         "Drivers register with REGISTER_DRIVER_CORE / _POSTCORE, which place an initcall entry in a dedicated "
         "linker section. At boot parse_dtb() matches each FDT node's “compatible” string to a driver and calls its "
         "init() callback; the driver then publishes a devclass that VFS/devfs makes reachable as a /dev entry.", 10)
+pages.append(p)
+
+# =========================================================================
+# 10. Infrabase build & deploy flow
+# =========================================================================
+p = Page("build")
+p.label(0, 10, 1080, 30, "Infrabase build & deploy flow", 16, True)
+# top row: config -> build.sh -> bitbake
+cfg = p.box(40, 60, 300, 110,
+            "build/conf/local.conf\n\nIB_PLATFORM · IB_CONFIG:so3\nIB_TARGET_ITS:so3 · IB_BOOT_CHAIN",
+            NEUTRAL, 10)
+bsh = p.box(390, 78, 230, 74, "scripts/build.sh\n-a bsp-so3  (-k / -x / -c)", WHITE, 11)
+bb  = p.box(670, 78, 230, 74, "bitbake\nmeta-* layers + recipes", AVZ, 11)
+p.edge(cfg, bsh); p.edge(bsh, bb)
+# recipes band
+p.box(40, 200, 1020, 175, "Recipes (meta-* layers)", CONT, 12, 1)
+so3 = p.box(70, 245, 150, 110,
+            "so3 kernel\n(meta-so3)\n\nIN-TREE\nKconfig + dts", KERNEL, 10)
+avz = p.box(235, 245, 150, 110,
+            "avz\n(meta-so3)\n\nfetched\n+ patched", AVZ, 10)
+ub  = p.box(400, 245, 150, 110,
+            "u-boot\n(meta-uboot)\n\nfetched\n+ patched", NEUTRAL, 10)
+qm  = p.box(565, 245, 150, 110,
+            "qemu\n(meta-qemu)\n\nfetched\n+ patched", NEUTRAL, 10)
+usr = p.box(730, 245, 150, 110,
+            "usr-so3\n(meta-usr)\n\nCMake + MUSL\n(meta-toolchain)", USER, 10)
+rf  = p.box(895, 245, 145, 50, "rootfs-so3\n(meta-rootfs)", USER, 9)
+bsp = p.box(895, 305, 145, 50, "bsp-so3\n(meta-bsp)", CAPS, 9)
+p.edge(bb, so3)
+# bottom row: itb -> deploy -> run
+itb = p.box(70, 420, 250, 64,
+            "do_itb → mkimage\nso3/target/*.its  →  .itb", WHITE, 10)
+dep = p.box(420, 420, 250, 64,
+            "scripts/deploy.sh -a/-k\n→ sdcard FAT  (+ flash0.img)", WHITE, 10)
+run = p.box(770, 420, 270, 64,
+            "scripts/st.sh  /  stg.sh\n→ QEMU (EL1 / EL2 / ATF)", WHITE, 10)
+p.edge(bsp, itb); p.edge(itb, dep, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
+p.edge(dep, run, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
+p.label(40, 520, 1020, 70,
+        "SO3 kernel and user space are built IN-TREE (committed sources). u-boot, qemu and avz are "
+        "FETCHED and local edits are kept as patches: edit the source, then 'scripts/updiff.sh <recipe>' "
+        "regenerates files/000N-*.patch (diff of S.pristine vs the working tree).", 10)
+pages.append(p)
+
+# =========================================================================
+# 11. Display & input under QEMU
+# =========================================================================
+p = Page("io")
+p.label(0, 10, 1080, 30, "Display & input under QEMU (virt machine + so3 patch)", 16, True)
+# Guest column
+p.box(40, 60, 320, 470, "SO3 guest  (EL0/EL1)", CONT, 12, 1)
+gapp = p.box(70, 105, 260, 46, "LVGL app (slv) · fb_test", USER, 10)
+gfb  = p.box(70, 165, 260, 60, "/dev/fb  —  PL111 driver\nmmap VRAM · ioctl HRES/VRES/BPP", KERNEL, 9)
+gkb  = p.box(70, 240, 260, 46, "/dev/keyboard  —  PL050", KERNEL, 9)
+gms  = p.box(70, 300, 260, 60, "/dev/mouse  —  so3,absmouse\nabsolute · polled · scaled to res", KERNEL, 9)
+gcon = p.box(70, 375, 260, 60, "/dev/console  —  PL011\nCtrl-C → SIGINT to fg job (fg_pcb)", KERNEL, 9)
+# QEMU column
+p.box(400, 60, 340, 470, "QEMU “virt”  (so3 patch)", CONT, 12, 1)
+qfb  = p.box(430, 105, 280, 60, "pl111 @ 0x08800000\nVRAM @ 0x30000000  (8 MB)", HW, 9)
+qkb  = p.box(430, 180, 280, 46, "pl050 kbd @ 0x08801000  (SPI 11)", HW, 9)
+qms  = p.box(430, 240, 280, 64, "so3.absmouse @ 0x08803000\nabsolute input handler (no grab)", HW, 9)
+qmsd = p.box(430, 320, 280, 44, "pl050 mouse @ 0x08802000  (disabled)", NONE, 9)
+quart= p.box(430, 380, 280, 46, "pl011 UART @ 0x09000000  (SPI 1)", HW, 9)
+# Host column
+p.box(780, 60, 300, 470, "Host  (scripts/stg.sh)", CONT, 12, 1)
+hwin = p.box(810, 110, 240, 80, "GTK window\n-display gtk,zoom-to-fit=off\nGDK_BACKEND=x11 (HiDPI/Wayland)", NEUTRAL, 9)
+hptr = p.box(810, 250, 240, 64, "host pointer → absolute\n1:1 mapping, no grab / no warp", NEUTRAL, 9)
+hterm= p.box(810, 380, 240, 46, "terminal (-serial mon:stdio)", NEUTRAL, 9)
+# wiring
+EXr = ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;"
+p.edge(gfb, qfb, "", EXr); p.edge(qfb, hwin, "", EXr)
+p.edge(gkb, qkb, "", EXr)
+p.edge(gms, qms, "", EXr); p.edge(qms, hptr, "", EXr)
+p.edge(gcon, quart, "", EXr); p.edge(quart, hterm, "", EXr)
 pages.append(p)
 
 # ---- emit ----------------------------------------------------------------
