@@ -107,7 +107,14 @@ do_install_apps () {
         usr_do_install_file_dir "${IB_TARGET}/out/*" .
 }
 
-do_clean:append () {
-    rm -f ${TMPDIR}/stamps/usr-so3*
+# Python (not shell) to match the Python do_clean in usr.bbclass and to
+# avoid the shell-task temp/fifo failure. Removes this recipe's stamps.
+python do_clean:append() {
+    import glob, os
+    for f in glob.glob(d.getVar('TMPDIR') + '/stamps/usr-so3*'):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 }
 

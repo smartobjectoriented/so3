@@ -49,14 +49,17 @@ python do_handle_fetch_git() {
     result = subprocess.run(cmd, shell=True, check=True, cwd=gitdir)
 }
 
-do_clean:append () {
-
-     if echo ":${OVERRIDES}:" | grep -q ":lvgl"; then
-        rm -rf ${IB_TARGET}/lib/lvgl/*
-        rm -rf ${IB_TARGET}/src/lib
-
-        rm -rf ${WORKDIR}/*
-     
-        rm -rf ${S}/lib/lvgl/*
-    fi
+# Python to match the Python do_clean in usr.bbclass (a shell append on a
+# Python task breaks parsing). NOTE: the old shell version also ran
+# 'rm -rf ${WORKDIR}/*', which deleted the running clean task's own temp/
+# (and its fifo) mid-run, leaving an empty workdir that made the next clean
+# fail with "No such file or directory: .../temp/fifo.NNNN". Dropped:
+# bitbake owns WORKDIR; we only purge the fetched lvgl tree.
+python do_clean:append() {
+    import shutil
+    if 'lvgl' in (d.getVar('OVERRIDES') or '').split(':'):
+        target = d.getVar('IB_TARGET')
+        shutil.rmtree(target + '/lib/lvgl', ignore_errors=True)
+        shutil.rmtree(target + '/src/lib', ignore_errors=True)
+        shutil.rmtree(d.getVar('S') + '/lib/lvgl', ignore_errors=True)
 }

@@ -121,13 +121,17 @@ do_build () {
 
 do_clean[nostamp] = "1"
 addtask do_clean
-do_clean () {
-
-	# Remove all patches
-	rm -rf ${IB_TARGET}/patches
-	
-	# Clean the user space apps
-	rm -rf ${IB_TARGET}/build
+# Implemented in Python on purpose: a *shell* task needs ${WORKDIR}/temp to
+# exist so bitbake can create its output fifo there, but do_clean often runs
+# when that dir is absent (fresh tree / already-cleaned), giving
+# "No such file or directory: .../temp/fifo.NNNN". Python tasks create the
+# temp dir themselves and use no fifo, so they are robust here.
+python do_clean() {
+    import shutil
+    target = d.getVar('IB_TARGET')
+    # Remove the applied patches and the (in-tree) user-space build dir.
+    shutil.rmtree(target + '/patches', ignore_errors=True)
+    shutil.rmtree(target + '/build', ignore_errors=True)
 }
 
 
