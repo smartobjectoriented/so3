@@ -17,3 +17,12 @@ max-width: none;
 	max-height:300px;
 	overflow:auto;
 }
+
+/* The SO3 logo is blue + orange, which has poor contrast against the RTD
+ * theme's blue sidebar search area. Sit the logo on a white rounded card so
+ * it stands out clearly. */
+.wy-side-nav-search img.logo {
+	background-color: #ffffff;
+	padding: 8px 14px;
+	border-radius: 8px;
+}
