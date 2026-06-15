@@ -115,7 +115,10 @@
 		compatible = "arm,pl050,keyboard";
 		reg = <0x0 0x08801000 0x0 0x1000>;
 		interrupt-parent = <&gic>;
-		interrupts = <0 36 4>;
+		/* SPI 11 — matches the so3 QEMU patch irqmap[VIRT_KMI0]=11
+		 * (hw/arm/virt.c). Was 36 (a vexpress-era number) that QEMU
+		 * never raises here, so keyboard events were silently lost. */
+		interrupts = <0 11 4>;
 
 		status = "ok";
 	};
@@ -126,9 +129,12 @@
 	kmi@0x08802000 { /* mouse */
 		compatible = "arm,pl050,mouse";
 		reg = <0x0 0x08802000 0x0 0x1000>;
-		
+
 		interrupt-parent = <&gic>;
-		interrupts = <0 37 4>;
+		/* SPI 12 — matches the so3 QEMU patch irqmap[VIRT_KMI1]=12
+		 * (hw/arm/virt.c). Was 37 (vexpress-era) that QEMU never raises
+		 * here, so mouse events were silently lost. */
+		interrupts = <0 12 4>;
 
 		status = "ok";
 	};
