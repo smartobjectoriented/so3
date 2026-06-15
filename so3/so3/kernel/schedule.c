@@ -388,7 +388,24 @@ static tcb_t *next_thread(void)
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
-		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY) || (tcb->pcb->state == PROC_STATE_RUNNING)) {
+		/* A thread is schedulable if it belongs to a live process
+		 * (kernel thread, or a pcb in READY/RUNNING state). In addition,
+		 * the threads driving a process teardown must still be scheduled
+		 * even though the pcb is already ZOMBIE: sys_do_exit_group() marks
+		 * the pcb ZOMBIE *before* discard_tcb_in_pcb() tears the threads
+		 * down. Two kinds of thread run during that window, both only in
+		 * the kernel (they never return to user space):
+		 *   - a cooperatively-cancelled thread (tcb->killed), which must
+		 *     run to reach its killed-check and self-terminate; and
+		 *   - the main thread itself, which drives discard_tcb_in_pcb()
+		 *     and is re-readied by the last spawned thread's
+		 *     complete(threads_active).
+		 * Without this, Ctrl-C on a multi-threaded LVGL/slv app hangs
+		 * instead of killing it (the teardown waits on a thread the
+		 * scheduler refuses to pick). */
+		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY) ||
+		    (tcb->pcb->state == PROC_STATE_RUNNING) || tcb->killed ||
+		    (tcb->pcb->main_thread == tcb)) {
 			spin_unlock(&schedule_lock);
 
 			/* Warning ! entry will be freed in remove_ready() */

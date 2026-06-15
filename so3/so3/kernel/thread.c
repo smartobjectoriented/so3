@@ -126,6 +126,10 @@ void discard_tcb_in_pcb(pcb_t *pcb)
 		} else if (cur->state == THREAD_STATE_ZOMBIE) {
 			list_del(pos);
 			clean_thread(cur);
+		} else {
+			/* RUNNING (e.g. on resume) — flag it so it self-terminates
+			 * at its next killed-check point. */
+			cur->killed = true;
 		}
 	}
 
@@ -295,14 +299,18 @@ void thread_exit(int exit_status)
 
 				/* The entry will be freed by a joining thread, i.e. the last one to be woken up. */
 			}
-
-			/* Special case for handling the treads_active completion. If we are the last thread (apart main), we
-			 * have to release the completion.
-			 */
-
-			if (pcb && (active_threads(pcb) == 1)) /* We are the last one, and we will be put in zombie state... */
-				complete(&pcb->threads_active);
 		}
+
+		/* If we are the last spawned (non-main) thread to exit, release the
+		 * main thread which may be blocked waiting for all spawned threads to
+		 * terminate (thread_exit() main branch / discard_tcb_in_pcb()). This
+		 * MUST run whether or not anyone is joining on us: a thread
+		 * cooperatively killed during process teardown (e.g. Ctrl-C on a
+		 * multi-threaded LVGL/slv app) has no joiner, yet the main thread is
+		 * still waiting on threads_active. Waiters re-check active_threads()
+		 * after each completion, so a spurious complete() is harmless. */
+		if (pcb && (current() != pcb->main_thread) && (active_threads(pcb) == 1))
+			complete(&pcb->threads_active);
 
 		/* If clear child tid is set, inform waiting thread */
 		if (pcb && current() != pcb->main_thread) {

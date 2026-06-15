@@ -79,9 +79,30 @@ __sigaction_t *sig_check(void)
 			bit_pos = find_first_bit(&pending, _NSIG_BPE);
 			sig_nr = bit_pos + (i * _NSIG_BPE) + 1;
 
+			/* Always advance our local working copy so the loop
+			 * terminates, even when we leave the signal pending below. */
+			pending &= ~(1UL << bit_pos);
+
+			/* A fatal default action terminates the *whole* process via
+			 * sys_do_exit_group(), whose multi-thread teardown
+			 * (discard_tcb_in_pcb) is only performed when driven by the
+			 * process main thread. sig_check() runs on whichever thread
+			 * happens to return to user space first, so if a spawned
+			 * thread (e.g. an LVGL/slv tick pthread, which wakes far more
+			 * often than the main loop) handled it, it would exit_group
+			 * from a non-main thread: it would zombie only itself and the
+			 * main thread would survive (with its pages already freed) —
+			 * i.e. Ctrl-C would appear to do nothing. Defer such signals
+			 * to the main thread by leaving them pending; the main thread
+			 * will act on its next return to user space. */
+			if ((current()->pcb->sa[sig_nr].sa_handler == SIG_DFL) &&
+			    ((sig_nr == SIGINT) || (sig_nr == SIGTERM) || (sig_nr == SIGKILL))) {
+				if (current() != current()->pcb->main_thread)
+					continue; /* keep signal->sigmap bit set for the main thread */
+			}
+
 			/* Reset pending state of the handled signal. */
 			signal->sigmap[i] &= ~(1UL << bit_pos);
-			pending &= ~(1UL << bit_pos);
 
 			/* Check if a handler was specified for this signal */
 			if (current()->pcb->sa[sig_nr].sa_handler == SIG_DFL) {
