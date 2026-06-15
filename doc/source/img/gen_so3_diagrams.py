@@ -155,9 +155,12 @@ load= p.box(780, 78, 270, 44, "Loading Guest Domain — stage-2 → agency", AVZ
 so  = p.box(540, 168, 190, 44, "SO3 kernel (EL1)\n__start → kernel_start()", KERNEL, 10)
 p.edge(ub, fit, "", EX)
 p.edge(fit, av, "AVZ config")
-p.edge(fit, so, "standalone")
+# "standalone": drop out of FIT's bottom and enter SO3's left, staying below the
+# AVZ row so the arrow does not cross the AVZ box.
+p.edge(fit, so, "standalone", ARR + "exitX=0.5;exitY=1;entryX=0;entryY=0.5;")
 p.edge(av, load, "", EX)
-p.edge(load, so)
+# AVZ hands the loaded guest to SO3: drop below the AVZ row, then into SO3's right.
+p.edge(load, so, "", ARR + "exitX=0.5;exitY=1;entryX=1;entryY=0.5;")
 # kernel bring-up — snake: row A left→right, row B right→left
 rowA = [
     ("memory_init()", "frame table + MMU"),
@@ -295,11 +298,16 @@ a = p.box(60, 90, 200, 80, "Device Tree blob\n(dts/*.dtb)\nloaded by U-Boot", NE
 b = p.box(320, 90, 200, 80, "parse_dtb()\nwalk FDT nodes\nmatch “compatible”", KERNEL, 10)
 c = p.box(580, 90, 220, 80, "initcall sections\n(.initcall_driver_*\ncore / postcore)\nvia ll_entry", KERNEL, 10)
 d = p.box(860, 90, 200, 80, "driver .init(dev,\nfdt_offset)\nprobe hardware", KERNEL, 10)
-e = p.box(580, 230, 220, 80, "devclass_register()\nclass + fops + id\n(fb, input, serial,\nnic, char, …)", KERNEL, 10)
-f = p.box(320, 230, 200, 80, "devfs\nexposes /dev/<name>", KERNEL, 10)
+# 'e' sits directly under 'd' so the snake (a→b→c→d top, e→f→g bottom) turns
+# with a clean vertical drop instead of an arrow cutting back across box 'c'.
+e = p.box(850, 230, 220, 80, "devclass_register()\nclass + fops + id\n(fb, input, serial,\nnic, char, …)", KERNEL, 10)
+f = p.box(320, 230, 220, 80, "devfs\nexposes /dev/<name>", KERNEL, 10)
 g = p.box(60, 230, 200, 80, "User space\nopen(\"/dev/...\")\nread/write/ioctl", USER, 10)
-for s, t in [(a,b),(b,c),(c,d),(d,e),(e,f),(f,g)]:
+for s, t in [(a,b),(b,c),(c,d)]:
     p.edge(s, t)
+p.edge(d, e, "", ARR + "exitX=0.5;exitY=1;entryX=0.5;entryY=0;")   # vertical drop
+p.edge(e, f, "", ARR + "exitX=0;exitY=0.5;entryX=1;entryY=0.5;")   # leftward
+p.edge(f, g, "", ARR + "exitX=0;exitY=0.5;entryX=1;entryY=0.5;")   # leftward
 p.label(60, 360, 1000, 60,
         "Drivers register with REGISTER_DRIVER_CORE / _POSTCORE, which place an initcall entry in a dedicated "
         "linker section. At boot parse_dtb() matches each FDT node's “compatible” string to a driver and calls its "
@@ -319,7 +327,7 @@ bsh = p.box(390, 78, 230, 74, "scripts/build.sh\n-a bsp-so3  (-k / -x / -c)", WH
 bb  = p.box(670, 78, 230, 74, "bitbake\nmeta-* layers + recipes", AVZ, 11)
 p.edge(cfg, bsh); p.edge(bsh, bb)
 # recipes band
-p.box(40, 200, 1020, 175, "Recipes (meta-* layers)", CONT, 12, 1)
+rec = p.box(40, 200, 1020, 175, "Recipes (meta-* layers)", CONT, 12, 1)
 so3 = p.box(70, 245, 150, 110,
             "so3 kernel\n(meta-so3)\n\nIN-TREE\nKconfig + dts", KERNEL, 10)
 avz = p.box(235, 245, 150, 110,
@@ -332,7 +340,9 @@ usr = p.box(730, 245, 150, 110,
             "usr-so3\n(meta-usr)\n\nCMake + MUSL\n(meta-toolchain)", USER, 10)
 rf  = p.box(895, 245, 145, 50, "rootfs-so3\n(meta-rootfs)", USER, 9)
 bsp = p.box(895, 305, 145, 50, "bsp-so3\n(meta-bsp)", CAPS, 9)
-p.edge(bb, so3)
+# bitbake drops straight into the recipes band (connect to the band border,
+# not to an individual recipe box, so the arrow doesn't cross any rectangle).
+p.edge(bb, rec, "", ARR + "exitX=0.5;exitY=1;entryX=0.73;entryY=0;")
 # bottom row: itb -> deploy -> run
 itb = p.box(70, 420, 250, 64,
             "do_itb → mkimage\nso3/target/*.its  →  .itb", WHITE, 10)
@@ -340,7 +350,9 @@ dep = p.box(420, 420, 250, 64,
             "scripts/deploy.sh -a/-k\n→ sdcard FAT  (+ flash0.img)", WHITE, 10)
 run = p.box(770, 420, 270, 64,
             "scripts/st.sh  /  stg.sh\n→ QEMU (EL1 / EL2 / ATF)", WHITE, 10)
-p.edge(bsp, itb); p.edge(itb, dep, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
+# the band feeds do_itb: drop from the band's lower-left border straight down.
+p.edge(rec, itb, "", ARR + "exitX=0.15;exitY=1;entryX=0.5;entryY=0;")
+p.edge(itb, dep, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
 p.edge(dep, run, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
 p.label(40, 520, 1020, 70,
         "SO3 kernel and user space are built IN-TREE (committed sources). u-boot, qemu and avz are "
