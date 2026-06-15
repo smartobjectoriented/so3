@@ -41,14 +41,19 @@ docker run -it --privileged -v /dev:/dev so3-lvperf64b   # or so3-lvperf32b
 
 ## Technical Details
 
-- **At image-build time** (non-privileged), Infrabase warms the component builds:
-  the MUSL toolchain (`meta-toolchain`), QEMU (`meta-qemu`), U-Boot, the kernel and
-  the user space (`build.sh -x qemu / -b / -k so3 / -x usr-so3`).
-- **At container-run time** (privileged), the entrypoint rebuilds the user space
-  (picking up a mounted LVGL), assembles and deploys the FIT/SD-card, then launches
-  QEMU:
+- **At image-build time** (non-privileged), Infrabase builds the emulator and the
+  full BSP. `build.sh -a bsp-so3` is privilege-free: it only compiles (the MUSL
+  toolchain via `meta-toolchain`, the kernel, the user space, U-Boot) and creates
+  an empty `rootfs.fat`. The privileged rootfs loop-mount is deferred to
+  `deploy.sh`.
   ```
-  build.sh -x usr-so3  &&  build.sh -a bsp-so3  &&  deploy.sh -a bsp-so3  &&  docker/scripts/run.sh
+  build.sh -x qemu  &&  build.sh -a bsp-so3
+  ```
+- **At container-run time** (privileged), the entrypoint rebuilds the user space
+  (picking up a mounted LVGL), then `deploy.sh` assembles the FIT, populates the
+  rootfs and writes the SD-card, and finally QEMU runs:
+  ```
+  build.sh -x usr-so3  &&  deploy.sh -a bsp-so3  &&  docker/scripts/run.sh
   ```
 
 With `virtXX_lvperf_defconfig` the kernel runs the LVGL benchmark as its init

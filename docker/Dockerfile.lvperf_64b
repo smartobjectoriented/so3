@@ -42,13 +42,16 @@ RUN { \
       echo 'IB_BOOT_CHAIN = ""'; \
     } >> build/conf/local.conf
 
-# Warm the non-privileged component builds (no losetup/mount here — those happen
-# at run time in the privileged container).
-RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh -b; build.sh -k so3; build.sh -x usr-so3'
+# Build everything non-privileged: the emulator (meta-qemu) plus the full BSP.
+# `build.sh -a bsp-so3` is privilege-free — it only compiles (usr, u-boot, the
+# kernel, the MUSL toolchain) and creates an empty rootfs.fat; the privileged
+# rootfs loop-mount happens later, in deploy.sh.
+RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh -a bsp-so3'
 
 # Hook to add extra dependencies at run time without rebuilding the image.
 RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
 
-# Run time (privileged): pick up a mounted LVGL, (re)build usr, assemble + deploy
-# the FIT/sdcard, then run the perf QEMU.
-CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -a bsp-so3; deploy.sh -a bsp-so3; docker/scripts/run.sh"]
+# Run time (REQUIRES --privileged): rebuild usr (picks up a mounted LVGL), then
+# deploy.sh assembles the FIT, populates the rootfs (loop-mount) and writes the
+# sdcard; finally run the perf QEMU.
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; deploy.sh -a bsp-so3; docker/scripts/run.sh"]

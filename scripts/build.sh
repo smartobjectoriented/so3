@@ -86,12 +86,22 @@ while getopts "abcfhklrvx" o; do
 			else
 				recipename="$2"
 				dobuild=1
-				# `-a` pulls do_itb (now wired `before do_build`) which
-				# transitively triggers do_prepare_initrd →
-				# usr-linux:do_deploy → __do_rootfs_mount, all of which
-				# need root via `sudo -n`. Open a session upfront so
-				# bitbake doesn't hang on an interactive prompt mid-build.
-				rootprivs=1
+				# do_build is pure compilation for most BSPs, so `-a` needs
+				# NO privileges. The privileged rootfs loop-mount lives in
+				# usr-*:do_deploy, which a BSP pulls in via do_itb. Whether
+				# that happens at *build* time depends on how the recipe
+				# wires do_itb:
+				#   - bsp-so3 / bsp-capsules: `do_itb before do_deploy` only
+				#       -> do_build is privilege-free; the mount happens in
+				#         deploy.sh. `build.sh -a` must NOT prompt for sudo.
+				#   - bsp-linux: `do_itb before do_build` (so `-a` also
+				#       produces the .itb) -> do_build DOES pull the mount and
+				#         needs root at build time.
+				# Only open a sudo session for the recipes that actually need
+				# it at build time (extend this match if more are added).
+				case "$recipename" in
+					bsp-linux*) rootprivs=1 ;;
+				esac
 			fi
 			;;
 		r)
