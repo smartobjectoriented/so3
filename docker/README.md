@@ -24,19 +24,25 @@ to run [LVGL](https://lvgl.io/) performance tests under the patched QEMU.
 
 ## Getting Started
 
-**Build** the images from the repository root:
+**Build** the images from the repository root. Use **`--network=host`**: the
+image build fetches the components (QEMU tarball, U-Boot/AVZ git) via
+Infrabase, and on hosts where the Docker *bridge* network can't resolve/reach
+external mirrors (common with systemd-resolved or a VPN), the build's
+`do_fetch` fails with a wget network error — host networking uses the host
+resolver and works.
 ```bash
 # 32-bit
-docker build . -f docker/Dockerfile.lvperf_32b -t so3-lvperf32b
+docker build --network=host . -f docker/Dockerfile.lvperf_32b -t so3-lvperf32b
 # 64-bit
-docker build . -f docker/Dockerfile.lvperf_64b -t so3-lvperf64b
+docker build --network=host . -f docker/Dockerfile.lvperf_64b -t so3-lvperf64b
 ```
 
 **Run** them. `--privileged` is **required**: the SD-card image is created with
 `losetup`/`mkfs`/`mount` (this cannot be done during `docker build`, which is not
-privileged — hence the build-time / run-time split below):
+privileged — hence the build-time / run-time split below). Add `--network=host`
+too (same reason as the build — the run-time `usr-so3` rebuild may fetch LVGL):
 ```bash
-docker run -it --privileged -v /dev:/dev so3-lvperf64b   # or so3-lvperf32b
+docker run -it --privileged --network=host -v /dev:/dev so3-lvperf64b   # or so3-lvperf32b
 ```
 
 ## Technical Details
