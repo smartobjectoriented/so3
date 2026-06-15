@@ -54,12 +54,18 @@ launch_qemu() {
 
     # SO3 now uses the ABSOLUTE pointer (so3,absmouse — see the so3 QEMU patch
     # and devices/input/absmouse.c), so QEMU runs in absolute pointer mode: the
-    # host pointer maps 1:1 onto the guest with NO grab and NO warp. That sheds
-    # all the relative-mouse workarounds we used to need (grab-on-hover, the
-    # GDK_BACKEND=x11/XWayland warp trick, edge-freeze/drift handling). Plain
-    # '-display gtk' works correctly on Wayland and X11 and across monitors.
-    # GDK_SCALE=1 just keeps the window native-sized on HiDPI panels (cosmetic;
-    # the absolute mapping is correct at any scale).
+    # host pointer maps 1:1 onto the guest with NO grab and NO warp. This sheds
+    # the relative-mouse grab workaround (grab-on-hover) entirely.
+    #
+    # GDK_BACKEND=x11 is still needed on a FRACTIONALLY-SCALED HiDPI Wayland
+    # panel: there QEMU's GTK reports pointer coordinates in a different scale
+    # than the framebuffer surface, so the absolute mapping comes out OFFSET
+    # (host vs guest cursor shifted) — fine on a 1x external monitor, shifted
+    # on the laptop. Routing GTK through XWayland gives a uniform pointer-to-
+    # surface mapping, so the cursors line up on every monitor. (GDK_SCALE just
+    # keeps the window native-sized; not load-bearing for the mapping.)
+    # Harmless on a real X11 session.
+    export GDK_BACKEND=x11
     export GDK_SCALE=1
     export GDK_DPI_SCALE=1
 
