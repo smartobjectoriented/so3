@@ -304,6 +304,15 @@ python patch_do_diffcompose() {
     excludes = ' '.join(f'-x "{p}"' for p in exclude_patterns)
     excludes += ' --exclude=.git --exclude=patches'
     excludes += ' --exclude=generated --exclude=config'
+    # Recipe-supplied extra excludes — space-separated directory/file
+    # basenames (glob), matched by `diff --exclude` at any depth. Used for
+    # things that vary per recipe and would otherwise flood the patchset,
+    # most notably an out-of-tree build directory (e.g. QEMU's meson/ninja
+    # `build/`, which holds 1000+ generated files). A blanket exclude in
+    # this shared class would be unsafe (another recipe might ship real
+    # source under such a name), so each recipe opts in via IB_UPDIFF_EXCLUDE.
+    for x in (d.getVar('IB_UPDIFF_EXCLUDE') or '').split():
+        excludes += f' --exclude={shlex.quote(x)}'
     statement = (
         f'diff -Nrq {excludes} --no-dereference '
         f'{shlex.quote(source_dir)} . > {shlex.quote(diff_files_tmp)}'
@@ -391,11 +400,13 @@ python patch_do_diffcompose() {
 def generate_src_uri(patch_directory):
     patches = sorted(p for p in os.listdir(patch_directory)
                      if p.endswith(".patch"))
-    src_uri = "SRC_URI += \"\\ \n"
+    # Standard header so repeated updiff runs don't churn it out of the .inc.
+    src_uri = "# Copyright (c) 2025-2026 EDGEMTech SA\n\n"
+    src_uri += "SRC_URI += \"\\ \n"
     for patch in patches:
         src_uri += "    file://" + patch + " \\ \n"
     src_uri += "\"\n"
-    return src_uri.strip()
+    return src_uri
 
 
 def patch_identifier(path):
