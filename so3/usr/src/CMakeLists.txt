@@ -11,11 +11,13 @@ add_executable(fb_test.elf fb_test.c)
 add_executable(lvgl_demo.elf lvgl_demo.c)
 add_executable(lvgl_perf.elf lvgl_perf.c)
 add_executable(lvgl_benchmark.elf lvgl_benchmark.c)
+add_executable(lvgl_widgets.elf lvgl_widgets.c)
 add_executable(logs_example.elf logs_example.c)
 
 target_link_libraries(lvgl_demo.elf slv lvgl lvgl_demos)
 target_link_libraries(lvgl_perf.elf slv lvgl lvgl_demos)
 target_link_libraries(lvgl_benchmark.elf slv lvgl lvgl_demos)
+target_link_libraries(lvgl_widgets.elf slv lvgl lvgl_demos)
 target_link_libraries(logs_example.elf capsule_logs)
 
 if (MICROPYTHON AND (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64"))
