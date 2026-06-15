@@ -117,8 +117,14 @@ void get_mouse_state(uint8_t *packet, struct ps2_mouse *state, uint16_t max_x, u
 		state->x += GET_DX(packet[PS2_STATE], packet[PS2_X]);
 		state->y -= GET_DY(packet[PS2_STATE], packet[PS2_Y]);
 
-		state->x = CLAMP(state->x, 0, max_x);
-		state->y = CLAMP(state->y, 0, max_y);
+		/*
+		 * max_x/max_y are the screen resolution (e.g. 1024x768); the
+		 * last addressable pixel is resolution - 1. Clamping to the
+		 * resolution itself let x reach 1024, which LVGL rejects with
+		 * "X is 1024 which is greater than hor. res" on every poll.
+		 */
+		state->x = CLAMP(state->x, 0, max_x ? max_x - 1 : 0);
+		state->y = CLAMP(state->y, 0, max_y ? max_y - 1 : 0);
 
 		LOG_DEBUG("sign_dxy[%s, %s], dxy_val[%03u, %03u], computed_dxy[%03d, %03d]; xy[%03d, %03d]; %03s %03s %03s\n",
 			  packet[PS2_STATE] & X_BS ? "neg" : "pos", packet[PS2_STATE] & Y_BS ? "neg" : "pos", packet[PS2_X],

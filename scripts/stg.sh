@@ -52,6 +52,18 @@ launch_qemu() {
         exit 1
     fi
 
+    # SO3's mouse is a RELATIVE PS/2 device (PL050) with NO absolute (tablet)
+    # fallback. With an ungrabbed GTK pointer, QEMU only sees motion deltas
+    # while the host cursor is inside the window, so the guest cursor can only
+    # be "walked" across the screen and never reaches the far edges in one pass.
+    # 'grab-on-hover=on' (set on -display gtk below) makes GTK capture/warp the
+    # host pointer on hover and feed QEMU raw, unbounded relative motion (1:1),
+    # so the guest cursor tracks correctly and reaches every edge. Release the
+    # grab with Ctrl+Alt+G. Pinning GDK to 1x keeps the window at native size on
+    # HiDPI panels (cosmetic; the grab is what actually fixes the pointer).
+    export GDK_SCALE=1
+    export GDK_DPI_SCALE=1
+
     if [ "$IB_PLATFORM" == "virt64" ]; then
     QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
     echo Starting on virt64
@@ -87,7 +99,7 @@ launch_qemu() {
 		${BOOT_OPT} \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
-		-display gtk \
+		-display gtk,grab-on-hover=on,zoom-to-fit=off \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
@@ -112,7 +124,7 @@ launch_qemu() {
 		-kernel u-boot/u-boot \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
-		-display gtk \
+		-display gtk,grab-on-hover=on,zoom-to-fit=off \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
