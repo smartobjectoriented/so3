@@ -25,7 +25,7 @@ max-width: none;
  * that selector and use !important to win. */
 .wy-side-nav-search a img.logo,
 .wy-side-nav-search img.logo {
-	background-color: #ffffff !important;
+	background-color: #e6f2ff !important;   /* light blue card */
 	padding: 8px 14px;
 	border-radius: 8px;
 }
