@@ -52,20 +52,14 @@ launch_qemu() {
         exit 1
     fi
 
-    # SO3's mouse is a RELATIVE PS/2 device (PL050) with NO absolute (tablet)
-    # fallback, so QEMU must warp/grab the host pointer to feed raw 1:1 deltas
-    # ('grab-on-hover=on' on -display gtk below; release with Ctrl+Alt+G).
-    #
-    # GDK_BACKEND=x11 is REQUIRED on Wayland: native Wayland forbids clients
-    # from warping the pointer, so QEMU's GTK relative-pointer grab is a no-op
-    # there — the guest cursor only "walks" within the window and FREEZES when
-    # it reaches an edge (it never warps back). Forcing the GTK backend onto
-    # XWayland restores pointer warp, so the relative cursor tracks correctly
-    # and reaches every edge. The SO3 driver itself clamps and recovers fine
-    # at both edges (verified by injecting deltas via the QEMU monitor); the
-    # freeze was purely this host-side Wayland warp limitation. Harmless on a
-    # real X11 session. GDK_SCALE=1 keeps the window native-sized on HiDPI.
-    export GDK_BACKEND=x11
+    # SO3 now uses the ABSOLUTE pointer (so3,absmouse — see the so3 QEMU patch
+    # and devices/input/absmouse.c), so QEMU runs in absolute pointer mode: the
+    # host pointer maps 1:1 onto the guest with NO grab and NO warp. That sheds
+    # all the relative-mouse workarounds we used to need (grab-on-hover, the
+    # GDK_BACKEND=x11/XWayland warp trick, edge-freeze/drift handling). Plain
+    # '-display gtk' works correctly on Wayland and X11 and across monitors.
+    # GDK_SCALE=1 just keeps the window native-sized on HiDPI panels (cosmetic;
+    # the absolute mapping is correct at any scale).
     export GDK_SCALE=1
     export GDK_DPI_SCALE=1
 
@@ -104,7 +98,7 @@ launch_qemu() {
 		${BOOT_OPT} \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
-		-display gtk,grab-on-hover=on,zoom-to-fit=off \
+		-display gtk,zoom-to-fit=off \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
@@ -129,7 +123,7 @@ launch_qemu() {
 		-kernel u-boot/u-boot \
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
-		-display gtk,grab-on-hover=on,zoom-to-fit=off \
+		-display gtk,zoom-to-fit=off \
 		-m 1024 \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \

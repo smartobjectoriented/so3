@@ -124,6 +124,19 @@
 		/* SPI 12 — matches the so3 QEMU patch irqmap[VIRT_KMI1]=12. */
 		interrupts = <0 12 4>;
 
+		/* Disabled: superseded by the absolute pointer below (the PL050
+		 * mouse is relative -> QEMU pointer-grab/warp, broken on Wayland
+		 * and prone to drift). */
+		status = "disabled";
+	};
+
+	/* SO3 absolute pointer — polled MMIO device fed by QEMU's absolute
+	 * input handler (so3 QEMU patch, VIRT_ABSMOUSE @ 0x08803000). Maps the
+	 * guest cursor 1:1 to the host pointer. Owns /dev/mouse. */
+	absmouse@08803000 {
+		compatible = "so3,absmouse";
+		reg = <0x08803000 0x1000>;
+
 		status = "ok";
 	};
 	

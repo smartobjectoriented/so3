@@ -136,6 +136,22 @@
 		 * here, so mouse events were silently lost. */
 		interrupts = <0 12 4>;
 
+		/* Disabled: superseded by the absolute pointer below. The PL050
+		 * mouse is RELATIVE, which forces QEMU into pointer-grab/warp mode
+		 * (broken under Wayland, and prone to host/guest drift). Re-enable
+		 * (and disable absmouse) only if you specifically need the
+		 * relative PS/2 path. */
+		status = "disabled";
+	};
+
+	/* SO3 absolute pointer — polled MMIO device fed by QEMU's absolute
+	 * input handler (so3 QEMU patch, VIRT_ABSMOUSE @ 0x08803000). Reports
+	 * absolute coordinates, so the guest cursor maps 1:1 to the host
+	 * pointer with no grab/warp/drift. Owns /dev/mouse (DEV_CLASS_MOUSE). */
+	absmouse@08803000 {
+		compatible = "so3,absmouse";
+		reg = <0x0 0x08803000 0x0 0x1000>;
+
 		status = "ok";
 	};
 	
