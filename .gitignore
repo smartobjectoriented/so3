@@ -16,6 +16,7 @@
 
 **/build
 
+atf
 #vmlinux*
 uImage*
 domains*
