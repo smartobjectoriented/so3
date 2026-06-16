@@ -52,8 +52,9 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr)
 	bool found = false;
 	volatile char *ptr;
 	u64 val;
+	u32 val32;
 	const fdt64_t *fdt_val;
-	int i;
+	int i, len;
 
 	nodeoffset = 0;
 	depth = 0;
@@ -65,9 +66,16 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr)
 
 		/* Process the type "avz" to get the AVZ device tree. This node comes from SO3 (AVZ) ITS but is merged in the linux DTS afterwards */
 		if ((ret != -1) && !strcmp(propstring, "avz_dt")) {
-			/* According to U-boot, the <load> and <entry> properties are both on 64-bit even for aarch32 configuration. */
+			/* The FIT <load> cell width follows the ITS: mkimage emits a
+			 * 32-bit (4-byte) property for an address that fits in 32 bits
+			 * (e.g. 0x46000000) and a 64-bit (8-byte) one otherwise. Read
+			 * according to the actual property length — a fixed 8-byte read
+			 * of a 4-byte cell pulls in the following FDT token
+			 * (FDT_END_NODE = 0x00000002) and yields a bogus pointer such as
+			 * 0x4600000000000002.
+			 */
 
-			fdt_val = fdt_getprop(agency_fdt_paddr, nodeoffset, "load", NULL);
+			fdt_val = fdt_getprop(agency_fdt_paddr, nodeoffset, "load", &len);
 
 			/* We avoid to make a memory access beyond the byte,
 			 * since the function is called from head.S with MMU off
@@ -76,10 +84,17 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr)
 
 			ptr = (char *) fdt_val;
 
-			for (i = 0; i < 8; i++)
-				*(((char *) &val) + i) = *ptr++;
+			if (len >= 8) {
+				for (i = 0; i < 8; i++)
+					*(((char *) &val) + i) = *ptr++;
 
-			avz_dt_paddr = fdt64_to_cpu(val);
+				avz_dt_paddr = fdt64_to_cpu(val);
+			} else {
+				for (i = 0; i < 4; i++)
+					*(((char *) &val32) + i) = *ptr++;
+
+				avz_dt_paddr = fdt32_to_cpu(val32);
+			}
 
 			found = true;
 		}

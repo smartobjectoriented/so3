@@ -193,12 +193,21 @@ int fdt_property_read_u32(void *fdt_addr, int offset, const char *propname, u32 
 
 int fdt_property_read_u64(void *fdt_addr, int offset, const char *propname, u64 *out_value)
 {
-	const fdt64_t *val;
+	const void *val;
+	int len;
 
-	val = fdt_getprop(fdt_addr, offset, propname, NULL);
+	val = fdt_getprop(fdt_addr, offset, propname, &len);
 
 	if (val) {
-		*out_value = fdt64_to_cpu(val[0]);
+		/* The FIT <load>/<entry> cell width follows the ITS: mkimage emits
+		 * a 32-bit (4-byte) property for an address that fits in 32 bits
+		 * and a 64-bit (8-byte) one otherwise. A fixed 8-byte read of a
+		 * 4-byte cell pulls in the next FDT token and yields a bogus value.
+		 */
+		if (len >= 8)
+			*out_value = fdt64_to_cpu(*(const fdt64_t *) val);
+		else
+			*out_value = fdt32_to_cpu(*(const fdt32_t *) val);
 		return 0;
 	}
 
