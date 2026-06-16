@@ -35,6 +35,8 @@ chdir                   chdir
 getcwd                  getcwd
 mkdirat                 mkdirat
 unlinkat                unlinkat
+renameat                renameat
+renameat2               renameat2
 stat64                  stat64
 fstatat64               fstatat64
 newfstatat              newfstatat

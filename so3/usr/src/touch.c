@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,42 +19,36 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
-/* Copy a file descriptor to stdout. Returns 0 on success, -1 on error. */
-static int cat_fd(int fd)
-{
-	char buf[1024];
-	ssize_t n;
-
-	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		if (write(STDOUT_FILENO, buf, n) != n)
-			return -1;
-	}
-
-	return (n < 0) ? -1 : 0;
-}
-
-/* Concatenate files (or stdin when no argument is given) to stdout. */
+/*
+ * Create each file if it does not exist. (SO3 has no utimensat, so an existing
+ * file is simply left untouched rather than having its timestamp refreshed.)
+ */
 int main(int argc, char **argv)
 {
 	int i, rc = 0;
 
-	if (argc < 2)
-		return cat_fd(STDIN_FILENO) < 0 ? 1 : 0;
+	if (argc < 2) {
+		printf("usage: touch FILE...\n");
+		return 1;
+	}
 
 	for (i = 1; i < argc; i++) {
-		int fd = open(argv[i], O_RDONLY);
+		int fd = open(argv[i], O_WRONLY | O_CREAT, 0644);
+		struct stat st;
 
-		if (fd < 0) {
-			printf("cat: %s: cannot open\n", argv[i]);
-			rc = 1;
+		if (fd >= 0) {
+			close(fd);
 			continue;
 		}
 
-		if (cat_fd(fd) < 0)
-			rc = 1;
+		/* open(O_CREAT) fails if the file already exists — that is fine. */
+		if (stat(argv[i], &st) == 0)
+			continue;
 
-		close(fd);
+		printf("touch: cannot create '%s'\n", argv[i]);
+		rc = 1;
 	}
 
 	return rc;

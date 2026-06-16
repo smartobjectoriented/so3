@@ -51,7 +51,7 @@ The standard applications in ``so3/usr/src/`` include:
      - the **init** process: reads ``commands.ini`` and launches the shell
    * - ``sh.elf``
      - the interactive **shell** (the ``so3%`` prompt)
-   * - ``ls`` / ``more`` / ``mkdir`` / ``rmdir`` / ``rm``
+   * - ``ls`` / ``more`` / ``cat`` / ``touch`` / ``mkdir`` / ``rmdir`` / ``rm`` / ``mv`` / ``cp``
      - basic file utilities (``rm`` supports ``-r`` / ``-f``)
    * - ``ping``
      - ICMP ping (exercises the lwIP stack)

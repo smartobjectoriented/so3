@@ -425,6 +425,19 @@ int fat_mkdir(int fd, void *path)
 	return 0;
 }
 
+int fat_rename(const char *oldpath, const char *newpath)
+{
+	FRESULT res;
+
+	if (!oldpath || !newpath)
+		return -EINVAL;
+
+	if ((res = f_rename(oldpath, newpath)))
+		return -fresult_to_errno(res);
+
+	return 0;
+}
+
 int fat_stat(const char *path, struct stat *st)
 {
 	FILINFO finfo;
@@ -547,6 +560,7 @@ static struct file_operations fatops = { .open = fat_open,
 					 .ioctl = fat_ioctl,
 					 .mkdir = fat_mkdir,
 					 .unlink = fat_unlink,
+					 .rename = fat_rename,
 					 .lseek = fat_lseek };
 
 struct file_operations *register_fat(void)

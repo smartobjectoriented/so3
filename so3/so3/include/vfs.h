@@ -136,6 +136,7 @@ struct file_operations {
 	int (*stat)(const char *path, struct stat *st);
 	int (*mmap)(int fd, addr_t virt_addr, uint32_t page_count, off_t offset);
 	int (*unlink)(int fd, void *);
+	int (*rename)(const char *oldpath, const char *newpath);
 	int (*mount)(const char *);
 	int (*unmount)(const char *);
 	void (*clone)(int fd);
@@ -195,6 +196,9 @@ SYSCALL_DECLARE(chdir, const char *path);
 SYSCALL_DECLARE(getcwd, char *buf, size_t size);
 SYSCALL_DECLARE(mkdirat, int dirfd, const char *path, mode_t mode);
 SYSCALL_DECLARE(unlinkat, int dirfd, const char *path, int flags);
+SYSCALL_DECLARE(renameat, int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
+SYSCALL_DECLARE(renameat2, int olddirfd, const char *oldpath, int newdirfd, const char *newpath,
+		unsigned int flags);
 
 /* VFS common interface */
 

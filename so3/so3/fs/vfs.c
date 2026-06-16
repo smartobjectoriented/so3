@@ -1155,6 +1155,51 @@ SYSCALL_DEFINE3(unlinkat, int, dirfd, const char *, path, int, flags)
 	return do_fs_path_op(path, registered_fs_ops[FS_FAT]->unlink);
 }
 
+/* Resolve both paths and rename old -> new on the backing filesystem. */
+static long do_rename(const char *oldpath, const char *newpath)
+{
+	char rold[VFS_PATH_MAX], rnew[VFS_PATH_MAX];
+	long ret;
+
+	if (!registered_fs_ops[FS_FAT] || !registered_fs_ops[FS_FAT]->rename)
+		return -ENOSYS;
+	if (!vfs_resolve_path(oldpath, rold, sizeof(rold)) ||
+	    !vfs_resolve_path(newpath, rnew, sizeof(rnew)))
+		return -ENOENT;
+
+	mutex_lock(&vfs_lock);
+	ret = registered_fs_ops[FS_FAT]->rename(rold, rnew);
+	mutex_unlock(&vfs_lock);
+
+	return ret;
+}
+
+/**
+ * @brief Rename / move a file or directory (backs rename() via renameat[2]).
+ */
+SYSCALL_DEFINE4(renameat, int, olddirfd, const char *, oldpath, int, newdirfd, const char *, newpath)
+{
+	if (olddirfd != AT_FDCWD || newdirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	return do_rename(oldpath, newpath);
+}
+
+SYSCALL_DEFINE5(renameat2, int, olddirfd, const char *, oldpath, int, newdirfd, const char *, newpath,
+		unsigned int, flags)
+{
+	(void) flags; /* RENAME_NOREPLACE/EXCHANGE not modelled */
+
+	if (olddirfd != AT_FDCWD || newdirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	return do_rename(oldpath, newpath);
+}
+
 /**
  * An mmap() implementation in VFS.
  */

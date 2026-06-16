@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -20,42 +20,46 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-/* Copy a file descriptor to stdout. Returns 0 on success, -1 on error. */
-static int cat_fd(int fd)
+/* Copy the regular file SRC to DST (truncating/creating DST). */
+int main(int argc, char **argv)
 {
 	char buf[1024];
 	ssize_t n;
+	int in, out, rc = 0;
 
-	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		if (write(STDOUT_FILENO, buf, n) != n)
-			return -1;
+	if (argc != 3) {
+		printf("usage: cp SRC DST\n");
+		return 1;
 	}
 
-	return (n < 0) ? -1 : 0;
-}
+	in = open(argv[1], O_RDONLY);
+	if (in < 0) {
+		printf("cp: cannot open '%s'\n", argv[1]);
+		return 1;
+	}
 
-/* Concatenate files (or stdin when no argument is given) to stdout. */
-int main(int argc, char **argv)
-{
-	int i, rc = 0;
+	out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (out < 0) {
+		printf("cp: cannot create '%s'\n", argv[2]);
+		close(in);
+		return 1;
+	}
 
-	if (argc < 2)
-		return cat_fd(STDIN_FILENO) < 0 ? 1 : 0;
-
-	for (i = 1; i < argc; i++) {
-		int fd = open(argv[i], O_RDONLY);
-
-		if (fd < 0) {
-			printf("cat: %s: cannot open\n", argv[i]);
+	while ((n = read(in, buf, sizeof(buf))) > 0) {
+		if (write(out, buf, n) != n) {
+			printf("cp: write error\n");
 			rc = 1;
-			continue;
+			break;
 		}
-
-		if (cat_fd(fd) < 0)
-			rc = 1;
-
-		close(fd);
 	}
+
+	if (n < 0) {
+		printf("cp: read error\n");
+		rc = 1;
+	}
+
+	close(in);
+	close(out);
 
 	return rc;
 }
