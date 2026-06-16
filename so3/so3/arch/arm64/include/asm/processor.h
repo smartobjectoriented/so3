@@ -2,7 +2,7 @@
  *  linux/include/asm-arm/processor.h
  *
  *  Copyright (C) 1995-2002 Russell King
- *  Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *  Copyright (C) 2014-2026 REDS Institute from HEIG-VD <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

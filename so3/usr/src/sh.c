@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 REDS Institute from HEIG-VD <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017-2018 Xavier Ruppen <xavier.ruppen@heig-vd.ch>
  * Copyright (C) 2017 Alexandre Malki <alexandre.malki@heig-vd.ch>
  *
