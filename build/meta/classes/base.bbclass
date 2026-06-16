@@ -182,16 +182,47 @@ python do_handle_fetch_git() {
 }
 do_unpack[postfuncs] = "do_handle_fetch_git"
  
+# Default to the safe behaviour; set IB_FORCE_ATTACH=1 (env or local.conf)
+# to override the dirty-tree guard below.
+IB_FORCE_ATTACH ??= "0"
+
 do_attach_infrabase () {
+	ib_manifest="${IB_TARGET}.attach.sha256"
+
+	# Guard against silently clobbering local edits.
+	#
+	# do_attach_infrabase regenerates ${IB_TARGET} from the freshly
+	# fetched+patched ${S}. The fetched component trees (avz/, u-boot/,
+	# qemu/, ...) are gitignored, so an edit made directly in ${IB_TARGET}
+	# that hasn't been folded back into the patch set (via do_updiff) has no
+	# version-control safety net — re-attaching would destroy it. After each
+	# attach we record a sha256 manifest of the files we wrote; on the next
+	# attach we verify those files are still untouched and abort if any were
+	# modified or removed. Build artefacts produced by a later `make` are not
+	# in the manifest, so a freshly-built tree still verifies clean. Newly
+	# *added* source files are not tracked by the manifest — the ${IB_TARGET}.back
+	# copy remains the last-resort net for that case.
+	if [ -d "${IB_TARGET}" ] && [ -f "$ib_manifest" ] && [ "${IB_FORCE_ATTACH}" != "1" ]; then
+		ib_dirty=$(cd "${IB_TARGET}" && LC_ALL=C sha256sum -c --quiet "$ib_manifest" 2>/dev/null | sed -n 's/: FAILED.*$//p')
+		if [ -n "$ib_dirty" ]; then
+			bbwarn "Local modifications detected in ${IB_TARGET}, not captured in the ${PN} patch set:"
+			echo "$ib_dirty" | sed 's|^\./|    |' >&2
+			bbfatal "Refusing to re-attach ${PN} (would overwrite the files above). Run 'bitbake ${PN} -c updiff' to fold them into the patch set, or set IB_FORCE_ATTACH=1 to discard them and re-attach (prior tree is kept in ${IB_TARGET}.back)."
+		fi
+	fi
+
 	echo "Attaching ${PN} to ${IB_TARGET}"
-	
+
 	if [ -d "${IB_TARGET}" ]; then
 		rm -rf ${IB_TARGET}.back
 		mv ${IB_TARGET} ${IB_TARGET}.back
 	fi
-	
+
 	mkdir -p ${IB_TARGET}
 	cp -r ${S}/. ${IB_TARGET}
+
+	# Record what we just wrote so the next attach can detect local edits.
+	( cd "${IB_TARGET}" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum ) > "$ib_manifest" 2>/dev/null || rm -f "$ib_manifest"
 }
 
 addtask cleansstate after do_clean

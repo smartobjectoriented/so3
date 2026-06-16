@@ -19,7 +19,7 @@ inherit atf
 
 OVERRIDES += ":linux"
 
-COMPATIBLE_PLATFORM = "virt32|virt64|rpi4_64|x86_qemu"
+COMPATIBLE_PLATFORM = "virt32|virt64|rpi4_64"
 
 do_attach_infrabase[noexec] = "1"
 

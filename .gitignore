@@ -87,5 +87,8 @@ so3/so3/scripts/kconfig/zconf.tab.c
 # Junk / build backups
 *.deb
 *.back
+# do_attach_infrabase dirty-tree guard manifests (sibling of each attached
+# component tree, e.g. avz.attach.sha256, u-boot.attach.sha256)
+*.attach.sha256
 __pycache__/
 /scripts.old/
