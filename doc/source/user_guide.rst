@@ -169,12 +169,13 @@ Running with Docker
 ===================
 
 SO3 can also be built and run inside a container. The Dockerfiles live under
-``docker/`` and two helpers at the repository root start a container:
+``docker/`` and two helpers under ``docker/scripts/`` start the lv_perf image:
 
 .. code-block:: bash
 
-   ./drun            # run the container
-   ./drunit          # run it interactively
+   docker/scripts/lvperf-run.sh      # run the LVGL benchmark (container exits with the output)
+   docker/scripts/lvperf-shell.sh    # open an interactive shell in the container
 
-Inside the container the same ``source env.sh`` / ``build.sh`` / ``deploy.sh`` /
-``st.sh`` workflow applies.
+Both default to ``so3-lvperf64b``; pass ``so3-lvperf32b`` as an argument for the
+32-bit image. Inside the container the same ``source env.sh`` / ``build.sh`` /
+``deploy.sh`` / ``st.sh`` workflow applies.

@@ -1,2 +1,0 @@
-docker run -it --privileged -v /dev:/dev so3/virt64
-
