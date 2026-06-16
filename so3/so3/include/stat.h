@@ -22,6 +22,14 @@
 
 #include <types.h>
 
+/* File type bits of st_mode (subset of the POSIX/Linux values). */
+#define S_IFMT 0170000 /* type mask */
+#define S_IFDIR 0040000 /* directory */
+#define S_IFREG 0100000 /* regular file */
+
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+
 /* Stat structure copied from Linux include/uapi/asm-generic/stat.h */
 struct stat {
 	unsigned long st_dev; /* Device. */

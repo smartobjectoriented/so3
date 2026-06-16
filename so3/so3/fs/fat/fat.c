@@ -444,6 +444,7 @@ int fat_stat(const char *path, struct stat *st)
 	time_fat_fat2so3(finfo.fdate, finfo.ftime, &tm);
 	st->st_mtime = tm.tv_sec;
 	st->st_size = finfo.fsize;
+	st->st_mode = (finfo.fattrib & AM_DIR) ? S_IFDIR : S_IFREG;
 
 	return 0;
 }

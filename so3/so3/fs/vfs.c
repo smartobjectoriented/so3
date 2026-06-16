@@ -1127,7 +1127,8 @@ SYSCALL_DEFINE3(mkdirat, int, dirfd, const char *, path, mode_t, mode)
  */
 SYSCALL_DEFINE3(unlinkat, int, dirfd, const char *, path, int, flags)
 {
-	(void) flags; /* AT_REMOVEDIR: f_unlink handles files and empty dirs alike */
+	struct stat st;
+	long ret;
 
 	if (dirfd != AT_FDCWD) {
 		LOG_WARNING("dirfd parameters isn't supported\n");
@@ -1136,6 +1137,20 @@ SYSCALL_DEFINE3(unlinkat, int, dirfd, const char *, path, int, flags)
 
 	if (!registered_fs_ops[FS_FAT])
 		return -ENOSYS;
+
+	/* Enforce the file/directory distinction: unlink() (flags == 0) must
+	 * refuse directories, rmdir() (AT_REMOVEDIR) must refuse non-directories.
+	 * The actual removal (f_unlink) then only ever sees the expected type. */
+	ret = do_stat(path, &st);
+	if (ret < 0)
+		return ret;
+
+	if (flags & AT_REMOVEDIR) {
+		if (!S_ISDIR(st.st_mode))
+			return -ENOTDIR;
+	} else if (S_ISDIR(st.st_mode)) {
+		return -EISDIR;
+	}
 
 	return do_fs_path_op(path, registered_fs_ops[FS_FAT]->unlink);
 }

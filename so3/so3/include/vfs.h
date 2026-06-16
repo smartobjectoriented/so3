@@ -102,6 +102,9 @@
    should use the current working directory. */
 #define AT_FDCWD (-100)
 
+/* unlinkat() flag: operate on a directory (rmdir) rather than a file. */
+#define AT_REMOVEDIR 0x200
+
 /* Return error values */
 #define MAP_FAILED ((void *) -1) /* mmap fail */
 
