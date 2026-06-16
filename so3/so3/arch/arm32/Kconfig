@@ -14,10 +14,6 @@ choice
     		bool "QEMU virt 32-bit machine"
 			select GIC_V2
 
-	config RPI4
-    		bool "Raspberry Pi 4 Model B support"
-			select GIC_V2
- 		
 endchoice
 
 endmenu
