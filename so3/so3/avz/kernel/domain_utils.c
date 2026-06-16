@@ -126,7 +126,6 @@ void loadAgency(void)
 	u64 dom_addr, avz_dt_addr, flat_dt_addr;
 	int count;
 	int nodeoffset, next_node;
-	addr_t base;
 	int depth, ret;
 	const char *propstring;
 	mem_info_t guest_mem_info;
@@ -134,9 +133,7 @@ void loadAgency(void)
 	void *guest_itb = (void *) __agency_itb_paddr; /* guest ITB (x1): guest + flat_dt + ramdisk */
 	void *guest_fdt;                               /* the agency guest's own device tree (flat_dt) */
 
-	const struct fdt_property *initrd_start, *initrd_end;
 	u64 entry_addr;
-	int lenp;
 
 	ret = fdt_check_header(fdt_vaddr);
 	if (ret) {
@@ -265,25 +262,48 @@ void loadAgency(void)
 	depth = 0;
 
 	while (nodeoffset >= 0) {
-		next_node = fdt_next_node(guest_fdt, nodeoffset, &depth);
+		next_node = fdt_next_node(guest_itb, nodeoffset, &depth);
+		ret = fdt_property_read_string(guest_itb, nodeoffset, "type", &propstring);
 
-		initrd_start = fdt_get_property(guest_fdt, nodeoffset, "linux,initrd-start", &lenp);
+		if ((ret != -1) && !strcmp(propstring, "ramdisk")) {
+			u64 initrd_pa, initrd_end_pa;
+			const void *initrd_data;
+			size_t initrd_size;
+			int chosen_off;
 
-		if (initrd_start) {
-			initrd_end = fdt_get_property(guest_fdt, nodeoffset, "linux,initrd-end", &lenp);
-			BUG_ON(!initrd_end);
+			/* The ramdisk loadable is already placed in RAM at its load
+			 * address by the bootloader; we only need its real PA + size. */
+			ret = fdt_property_read_u64(guest_itb, nodeoffset, "load", (u64 *) &initrd_pa);
+			if (ret == -1) {
+				lprintk("!! Missing load-addr in the ramdisk node !!\n");
+				BUG();
+			}
 
-			base = fdt64_to_cpu(((const fdt64_t *) initrd_start->data)[0]);
-			base = pa_to_ipa(MEMSLOT_AGENCY, base);
-			lprintk("IPA Layout: initrd start at 0x%lx\n", base);
+			ret = fit_image_get_data_and_size(guest_itb, nodeoffset, &initrd_data, &initrd_size);
+			if (ret) {
+				lprintk("!! Bad ramdisk node in the agency ITB !!\n");
+				BUG();
+			}
 
-			fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-start", base);
+			initrd_end_pa = initrd_pa + initrd_size;
 
-			base = fdt64_to_cpu(((const fdt64_t *) initrd_end->data)[0]);
-			base = pa_to_ipa(MEMSLOT_AGENCY, base);
-			lprintk("IPA Layout: initrd end at 0x%lx\n", base);
+			/* Linux expects IPA addresses in its virtualized RAM. */
+			initrd_pa = pa_to_ipa(MEMSLOT_AGENCY, initrd_pa);
+			initrd_end_pa = pa_to_ipa(MEMSLOT_AGENCY, initrd_end_pa);
 
-			fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-end", base);
+			lprintk("IPA Layout: initrd start at 0x%lx, end at 0x%lx\n", initrd_pa, initrd_end_pa);
+
+			/* Publish into /chosen (already created by e1c-boot with the
+			 * bootargs). Grow the guest flat_dt first to be safe. */
+			fdt_open_into(guest_fdt, guest_fdt, fdt_totalsize(guest_fdt) + 256);
+
+			nodeoffset = fdt_find_or_add_subnode(guest_fdt, 0, "chosen");
+			BUG_ON(nodeoffset < 0);
+
+			ret = fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-start", initrd_pa);
+			BUG_ON(ret != 0);
+			ret = fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-end", initrd_end_pa);
+			BUG_ON(ret != 0);
 
 			break;
 		}
