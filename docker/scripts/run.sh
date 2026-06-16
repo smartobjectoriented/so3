@@ -18,8 +18,8 @@
 set -e
 
 case "$QEMU_ARCH" in
-    aarch64) CPU="cortex-a72" ;;
-    arm)     CPU="cortex-a15" ;;
+    aarch64) CPU="cortex-a72"; PLATFORM="${PLATFORM:-virt64}" ;;
+    arm)     CPU="cortex-a15"; PLATFORM="${PLATFORM:-virt32}" ;;
     *)
         echo "Error: unsupported QEMU_ARCH='$QEMU_ARCH' (expected arm or aarch64)" >&2
         exit 1
@@ -28,6 +28,12 @@ esac
 
 FILESYSTEM_PATH="filesystem/sdcard.img.${PLATFORM}"
 QEMU_BIN="qemu/build/qemu-system-${QEMU_ARCH}"
+
+if [ ! -f "$FILESYSTEM_PATH" ]; then
+    echo "Error: SD-card image '$FILESYSTEM_PATH' not found." >&2
+    echo "       Build & deploy it first: build.sh -a bsp-so3 && deploy.sh -a bsp-so3" >&2
+    exit 1
+fi
 
 # Optional GDB stub when SO3_USR_DEBUG is set.
 QEMU_DEBUG_ARGS=""
