@@ -710,8 +710,11 @@ SYSCALL_DEFINE3(open, const char *, filename, int, flags, mode_t, mode)
 	uint32_t type;
 	struct file_operations *fops;
 
+	/* A creation mode is accepted but ignored: the FAT backing store has no
+	 * Unix permission bits. This is normal for open(O_CREAT)/touch/cp, so it
+	 * is only a debug note, not a warning. */
 	if (mode != 0) {
-		LOG_WARNING("mode parameters isn't supported\n");
+		LOG_DEBUG("mode parameter ignored (no permission bits on FAT)\n");
 	}
 
 	/* Resolve relative paths against the process cwd (no-op at cwd "/"). */
