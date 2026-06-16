@@ -107,12 +107,13 @@ supports:
      - single quotes (literal) / double quotes (with expansion)
    * - ``$VAR`` / ``${VAR}``
      - environment variable expansion
-   * - ``exit`` / ``env`` / ``setenv`` / ``kill`` / ``history``
+   * - ``exit`` / ``env`` / ``setenv`` / ``kill`` / ``history`` / ``cd`` / ``pwd``
      - builtins
 
 Operators (``| < > >> &``) must be surrounded by whitespace. Built-in
 ``setenv NAME VALUE`` sets a variable (``setenv NAME`` unsets it) and ``env``
-lists the environment.
+lists the environment. ``cd`` / ``pwd`` change and print the working directory
+(see the note below).
 
 When stdin is the console the shell provides **interactive line editing**: a
 ``HIST_MAX``-entry command **history** (Up / Down arrows, listed by the
@@ -126,9 +127,13 @@ line reading.
 
 .. note::
 
-   The shell does not implement ``cd``: there is no per-process working
-   directory in the kernel yet, so all executables and data files live in the
-   root directory of the filesystem (except the device nodes under ``dev/``).
+   Each process now has a **current working directory** (``pcb->cwd``, default
+   ``/``, inherited across ``fork()`` and preserved across ``execve()``). The
+   ``chdir`` / ``getcwd`` syscalls back the ``cd`` / ``pwd`` builtins, and the
+   VFS resolves relative paths (and ``.`` / ``..``) against the cwd before
+   handing an absolute path to the filesystem. With the default cwd ``/`` a bare
+   ``foo`` still resolves to ``/foo``, so existing absolute-from-root behaviour
+   is unchanged.
 
 Root filesystem
 ===============

@@ -542,12 +542,102 @@ static long do_mmap_anon(int fd, addr_t virt_addr, uint32_t page_count, off_t of
 	return virt_addr;
 }
 
+/*
+ * Resolve a (possibly relative) user path against the calling process's current
+ * working directory into a canonical absolute path in out[outsz], collapsing
+ * ".", ".." and duplicate '/'. Returns out on success, NULL on overflow or bad
+ * input. With the default cwd "/", a relative "foo" becomes "/foo" — equivalent
+ * to the previous (always-absolute-from-root) behaviour.
+ */
+static char *vfs_resolve_path(const char *path, char *out, size_t outsz)
+{
+	char joined[VFS_PATH_MAX];
+	const char *cwd = "/";
+	const char *p;
+	size_t off[VFS_PATH_MAX / 2];
+	size_t olen = 0;
+	int nc = 0;
+
+	if (!path || path[0] == '\0')
+		return NULL;
+
+	if (current() && current()->pcb && current()->pcb->cwd[0] == '/')
+		cwd = current()->pcb->cwd;
+
+	/* Build a raw absolute path into joined[]. */
+	if (path[0] == '/') {
+		if (strlen(path) >= sizeof(joined))
+			return NULL;
+		strcpy(joined, path);
+	} else {
+		if (strlen(cwd) + 1 + strlen(path) >= sizeof(joined))
+			return NULL;
+		strcpy(joined, cwd);
+		if (joined[strlen(joined) - 1] != '/')
+			strcat(joined, "/");
+		strcat(joined, path);
+	}
+
+	/* Normalise it component by component. */
+	out[0] = '\0';
+	p = joined;
+	while (*p) {
+		const char *start;
+		size_t len;
+
+		while (*p == '/')
+			p++;
+		if (!*p)
+			break;
+
+		start = p;
+		while (*p && *p != '/')
+			p++;
+		len = p - start;
+
+		if (len == 1 && start[0] == '.')
+			continue;
+		if (len == 2 && start[0] == '.' && start[1] == '.') {
+			if (nc > 0) { /* pop the last component */
+				nc--;
+				olen = off[nc];
+				out[olen] = '\0';
+			}
+			continue;
+		}
+
+		if (nc >= (int) (sizeof(off) / sizeof(off[0])))
+			return NULL;
+		if (olen + 1 + len >= outsz)
+			return NULL;
+
+		off[nc++] = olen;
+		out[olen++] = '/';
+		memcpy(out + olen, start, len);
+		olen += len;
+		out[olen] = '\0';
+	}
+
+	if (olen == 0) { /* everything collapsed away -> root */
+		if (outsz < 2)
+			return NULL;
+		strcpy(out, "/");
+	}
+
+	return out;
+}
+
 /**
  * @brief Low level stat implementation.
  */
 static long do_stat(const char *path, struct stat *st)
 {
+	char resolved[VFS_PATH_MAX];
 	int ret;
+
+	path = vfs_resolve_path(path, resolved, sizeof(resolved));
+	if (!path)
+		return -ENOENT;
 
 	memset(st, 0, sizeof(*st));
 
@@ -615,6 +705,7 @@ SYSCALL_DEFINE3(write, int, fd, const void *, buffer, size_t, count)
  */
 SYSCALL_DEFINE3(open, const char *, filename, int, flags, mode_t, mode)
 {
+	char resolved[VFS_PATH_MAX];
 	int fd, gfd, ret = -1;
 	uint32_t type;
 	struct file_operations *fops;
@@ -622,6 +713,11 @@ SYSCALL_DEFINE3(open, const char *, filename, int, flags, mode_t, mode)
 	if (mode != 0) {
 		LOG_WARNING("mode parameters isn't supported\n");
 	}
+
+	/* Resolve relative paths against the process cwd (no-op at cwd "/"). */
+	filename = vfs_resolve_path(filename, resolved, sizeof(resolved));
+	if (!filename)
+		return -ENOENT;
 
 	mutex_lock(&vfs_lock);
 
@@ -945,6 +1041,49 @@ SYSCALL_DEFINE4(newfstatat, int, fd, const char *, path, struct stat *, st, int,
 	}
 
 	return do_stat(path, st);
+}
+
+/**
+ * @brief Change the calling process's current working directory.
+ */
+SYSCALL_DEFINE1(chdir, const char *, path)
+{
+	char resolved[VFS_PATH_MAX];
+	int fd;
+
+	if (!vfs_resolve_path(path, resolved, sizeof(resolved)))
+		return -ENAMETOOLONG;
+
+	/* Root always exists; otherwise confirm the target is a directory by
+	 * opening it (f_opendir fails on files / missing paths). */
+	if (strcmp(resolved, "/") != 0) {
+		fd = sys_do_open(resolved, O_DIRECTORY, 0);
+		if (fd < 0)
+			return -ENOENT;
+		sys_do_close(fd);
+	}
+
+	strcpy(current()->pcb->cwd, resolved);
+
+	return 0;
+}
+
+/**
+ * @brief Copy the current working directory into the user buffer.
+ */
+SYSCALL_DEFINE2(getcwd, char *, buf, size_t, size)
+{
+	const char *cwd = current()->pcb->cwd;
+	size_t len = strlen(cwd) + 1;
+
+	if (!buf || size == 0)
+		return -EINVAL;
+	if (len > size)
+		return -ERANGE;
+
+	strcpy(buf, cwd);
+
+	return (long) len;
 }
 
 /**

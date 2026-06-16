@@ -247,6 +247,10 @@ pcb_t *new_process(void)
          * for pthread_exit()) */
 	init_completion(&pcb->threads_active);
 
+	/* Default current working directory (overridden in duplicate_process()
+	 * for a fork()ed child). */
+	strcpy(pcb->cwd, "/");
+
 	return pcb;
 }
 
@@ -770,6 +774,9 @@ pcb_t *duplicate_process(pcb_t *parent)
 		LOG_CRITICAL("!! Error while cloning fds\n");
 		kernel_panic();
 	}
+
+	/* Inherit the parent's current working directory */
+	strcpy(pcb->cwd, parent->cwd);
 
 	return pcb;
 }

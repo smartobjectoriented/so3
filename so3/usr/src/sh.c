@@ -553,14 +553,39 @@ static int builtin_history(int argc, char *argv[])
 	return 0;
 }
 
+static int builtin_cd(int argc, char *argv[])
+{
+	const char *dir = (argc >= 2) ? argv[1] : "/";
+
+	if (chdir(dir) < 0)
+		printf("cd: %s: no such directory\n", dir);
+
+	return 0;
+}
+
+static int builtin_pwd(int argc, char *argv[])
+{
+	char buf[256];
+
+	(void) argc;
+	(void) argv;
+
+	if (getcwd(buf, sizeof(buf)) != NULL)
+		printf("%s\n", buf);
+	else
+		printf("pwd: cannot determine current directory\n");
+
+	return 0;
+}
+
 struct builtin {
 	const char *name;
 	int (*fn)(int argc, char *argv[]);
 };
 
 static const struct builtin builtins[] = {
-	{ "exit", builtin_exit }, { "env", builtin_env },	  { "setenv", builtin_setenv },
-	{ "kill", builtin_kill }, { "history", builtin_history }, { NULL, NULL },
+	{ "exit", builtin_exit },	{ "env", builtin_env }, { "setenv", builtin_setenv }, { "kill", builtin_kill },
+	{ "history", builtin_history }, { "cd", builtin_cd },	{ "pwd", builtin_pwd },	      { NULL, NULL },
 };
 
 /* Run argv[0] as a builtin if it is one. Returns 1 if handled, else 0. */

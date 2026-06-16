@@ -80,6 +80,9 @@ typedef struct {
 	page_t *page;
 } page_list_t;
 
+/* Maximum length (incl. NUL) of a process current-working-directory path. */
+#define PCB_CWD_MAX 256
+
 struct pcb {
 	int pid;
 	char name[PROC_NAME_LEN];
@@ -128,6 +131,10 @@ struct pcb {
 
 	/* Local file descriptors belonging to the process */
 	int fd_array[FD_MAX];
+
+	/* Current working directory (absolute, normalised). Defaults to "/",
+	 * inherited across fork() and preserved across execve(). */
+	char cwd[PCB_CWD_MAX];
 
 	/* Used to integrate a global system list of all existing process (declared in schedule.c) */
 	struct list_head list;

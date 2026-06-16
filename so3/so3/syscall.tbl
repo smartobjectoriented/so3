@@ -31,6 +31,8 @@ dup                     dup
 dup2                    dup2
 dup3                    dup3
 getdents64              getdents64
+chdir                   chdir
+getcwd                  getcwd
 stat64                  stat64
 fstatat64               fstatat64
 newfstatat              newfstatat

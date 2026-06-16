@@ -188,8 +188,14 @@ SYSCALL_DECLARE(_llseek, int fd, unsigned long offset_high, unsigned long offset
 SYSCALL_DECLARE(writev, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long vlen);
 SYSCALL_DECLARE(fcntl, unsigned int fd, unsigned int cmd, unsigned long arg);
+SYSCALL_DECLARE(chdir, const char *path);
+SYSCALL_DECLARE(getcwd, char *buf, size_t size);
 
 /* VFS common interface */
+
+/* Longest absolute path the VFS manipulates (must be >= PCB_CWD_MAX). */
+#define VFS_PATH_MAX 256
+
 
 char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
