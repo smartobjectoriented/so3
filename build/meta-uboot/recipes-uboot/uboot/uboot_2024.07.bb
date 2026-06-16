@@ -47,6 +47,13 @@ do_configure () {
 	cd ${IB_TARGET}
 	make ${IB_PLATFORM}_defconfig
 
+	# Hand the OS off at EL1 instead of EL2 (SO3 standalone is EL1-native;
+	# AVZ needs EL2, so this is opt-in via IB_UBOOT_SWITCH_EL1 in local.conf).
+	if [ "${IB_UBOOT_SWITCH_EL1}" = "1" ]; then
+		echo "CONFIG_ARMV8_SWITCH_TO_EL1=y" >> .config
+		make olddefconfig
+	fi
+
     # NXP DDR training firmware (lpddr4 PMU), vendored capsule-free under
     # meta-bsp; IB_IMX_FIRMWARE_PATH (local.conf) is one flat directory.
     IMX8MP_FW_PATH="${IB_IMX_FIRMWARE_PATH}"

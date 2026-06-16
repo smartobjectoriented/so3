@@ -3,10 +3,14 @@
 config GIC
 	bool "Generic IRQ Controller"
 
+# GIC version. Most platforms force one via `select` (see arch/*/Kconfig);
+# verdin-imx8mp selects GIC only and lets its defconfig pick the version:
+# GIC_V3 for the AVZ guest (virtual GICv3 at EL1), GIC_V2 for standalone SO3
+# (the GICv2-compatibility MMIO interface the iMX8MP GICv3 exposes).
 config GIC_V2
-	bool
+	bool "GICv2 (or GICv3 in GICv2-compat mode)"
 	depends on GIC
 
 config GIC_V3
-	bool
+	bool "GICv3 (native — AVZ EL2 hypervisor path)"
 	depends on GIC

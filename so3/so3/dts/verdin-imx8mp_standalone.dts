@@ -1,0 +1,88 @@
+/*
+ * Copyright (C) 2026 EDGEMTech SA <info@edgemtech.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/*
+ * SO3 standalone (bare-metal) device tree for the Toradex Verdin iMX8MP.
+ *
+ * No AVZ: SO3 owns the whole machine, so the memory node starts at the DRAM
+ * base (0x40000000). Devices (GICv3, i.MX UART3, CP15 timer) are the real
+ * hardware addresses, already initialised by ATF/U-Boot (imx-boot).
+ */
+
+/dts-v1/;
+
+/ {
+	model = "SO3 standalone on Verdin iMX8MP";
+	compatible = "arm,verdin-imx8mp";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+	};
+
+	/* Full DRAM from the base (minus the OP-TEE-reserved top 32 MiB). */
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x0 0x7e000000>;
+	};
+
+	mem {
+		compatible = "mem";
+		status = "ok";
+	};
+
+	/*
+	 * GICv2 compatibility view of the iMX8MP GICv3, used by standalone SO3:
+	 *   GICD (distributor) @ 0x38800000, GICC (CPU interface) @ 0x38C20000.
+	 * (GICv2 layout: reg = <GICD, GICC>, no GICR — requires ARE_NS=0.)
+	 */
+	gic: interrupt-controller@38800000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		reg = <0x0 0x38800000 0x0 0x10000
+		       0x0 0x38C20000 0x0 0x10000>;
+		status = "ok";
+	};
+
+	/* UART3 — debug console, already initialised by ATF/U-Boot */
+	serial@30880000 {
+		compatible = "serial,imx";
+		reg = <0x0 0x30880000 0x0 0x10000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 28 4>;
+		status = "ok";
+	};
+
+	/* Periodic timer — ARM CP15 timer, PPI #10 */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 10 4>;
+		status = "ok";
+	};
+
+	/* Clocksource — ARM CP15 physical counter */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+};

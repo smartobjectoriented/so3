@@ -10,5 +10,7 @@ echo "=== SO3 on AVZ (Verdin iMX8MP) ==="
 
 env set itb_addr 0x90000000
 
-ext4load mmc 2:1 ${itb_addr} /verdin_imx8mp_avz_so3.itb
+# The deploy stages the selected ITB (AVZ+SO3 guest *or* SO3 standalone) under
+# the fixed name boot.itb, so this script is the same for both variants.
+ext4load mmc 2:1 ${itb_addr} /boot.itb
 bootm ${itb_addr}

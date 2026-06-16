@@ -126,9 +126,11 @@ def __do_platform_deploy(d):
     # Base TEZI image (image.json + the stock imx-boot/env we overwrite).
     __fetch_torizon_tezi_image(d, staging)
 
-    # Our firmware, boot script and ITB.
+    # Our firmware, boot script and ITB. The ITB is staged under the fixed name
+    # boot.itb (the selected ITS — AVZ+SO3 guest or SO3 standalone — both work),
+    # so boot.scr and image.json stay variant-agnostic.
     subprocess.run(['cp', flashbin, f"{staging}/imx-boot"], check=True)
-    subprocess.run(['cp', itb, f"{staging}/{IB_TARGET_ITS}.itb"], check=True)
+    subprocess.run(['cp', itb, f"{staging}/boot.itb"], check=True)
     subprocess.run(['mkimage', '-A', 'arm64', '-T', 'script', '-C', 'none',
                     '-d', d.getVar('IB_VERDIN_BOOTSCR'), f"{staging}/boot.scr"], check=True)
 
@@ -137,7 +139,7 @@ def __do_platform_deploy(d):
         f.write(f"bootcmd={d.getVar('IB_VERDIN_BOOTCMD')}\nbootdelay=1\n")
 
     modify_image_json(f"{staging}/image.json", f"{staging}/image.json",
-                      files_to_add=["boot.scr", f"{IB_TARGET_ITS}.itb"])
+                      files_to_add=["boot.scr", "boot.itb"])
 
     if IB_STORAGE_MODE == "http":
         final_dest = d.getVar('IB_HTTP_DEPLOY_PATH')
@@ -149,5 +151,5 @@ def __do_platform_deploy(d):
     utils_sudo(["mkdir", "-p", final_dest], check=True)
     utils_sudo(["rsync", "-a", "--delete", f"{staging}/", f"{final_dest}/"], check=True)
 
-    bb.plain("verdin: TEZI image staged at %s (imx-boot + boot.scr + %s.itb)"
+    bb.plain("verdin: TEZI image staged at %s (imx-boot + boot.scr + boot.itb=%s)"
              % (final_dest, IB_TARGET_ITS))

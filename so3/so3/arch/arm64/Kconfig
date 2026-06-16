@@ -16,7 +16,7 @@ menu "Platform"
 
 		config VERDIN_IMX8MP
 			bool "Toradex Verdin iMX8MP"
-			select GIC_V3
+			select GIC
 
 	endchoice
 		
