@@ -62,6 +62,13 @@
 		status = "ok";
 	};
 
+	/* Real-time clock (PL031), seeded from the host wall-clock by QEMU */
+	rtc@09010000 {
+		compatible = "arm,pl031";
+		reg = <0x0 0x09010000 0x0 0x1000>;
+		status = "ok";
+	};
+
 	/* Periodic timer based on ARM CP15 timer */
 	periodic-timer@0 {
 		compatible = "arm,periodic-timer";

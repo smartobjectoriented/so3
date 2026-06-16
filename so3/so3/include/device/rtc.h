@@ -16,37 +16,15 @@
  *
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
+#ifndef RTC_H
+#define RTC_H
+
+#include <types.h>
 
 /*
- * Create each file if it does not exist, and set its modification time to the
- * current time (utimensat with a NULL times argument).
+ * Return the current wall-clock time as seconds since the Unix epoch, or 0 if
+ * no real-time clock has been probed. Backed by the PL031 driver on QEMU virt.
  */
-int main(int argc, char **argv)
-{
-	int i, rc = 0;
+uint32_t rtc_get_time(void);
 
-	if (argc < 2) {
-		printf("usage: touch FILE...\n");
-		return 1;
-	}
-
-	for (i = 1; i < argc; i++) {
-		int fd = open(argv[i], O_WRONLY | O_CREAT, 0644);
-
-		if (fd >= 0)
-			close(fd); /* created (or would have been) */
-
-		/* Refresh the modification time to now (NULL => current time).
-		 * This also confirms the file exists when open() failed. */
-		if (utimensat(AT_FDCWD, argv[i], NULL, 0) < 0) {
-			printf("touch: cannot touch '%s'\n", argv[i]);
-			rc = 1;
-		}
-	}
-
-	return rc;
-}
+#endif /* RTC_H */

@@ -16,7 +16,7 @@ obj-$(CONFIG_NET) += net/
 obj-$(CONFIG_FB) += fb/
 obj-$(CONFIG_INPUT) += input/
 
-obj-y += timer/ irq/
+obj-y += timer/ irq/ rtc/
 
 obj-y += mydev.o
 obj-y += mem.o

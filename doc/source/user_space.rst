@@ -71,6 +71,12 @@ The standard applications in ``so3/usr/src/`` include:
 User-space libraries used by the applications live in ``usr/lib/`` (the LVGL
 graphics library, logging helpers, and so on).
 
+File timestamps are real: the kernel reads a **PL031 real-time clock** (QEMU
+virt exposes one at ``0x09010000``, seeded from the host) so ``gettimeofday`` /
+``clock_gettime(CLOCK_REALTIME)`` return wall-clock time. Newly written files get
+the current time (FatFS ``get_fattime``), and ``touch`` refreshes an existing
+file's modification time via the ``utimensat`` syscall.
+
 Init and the shell
 ==================
 

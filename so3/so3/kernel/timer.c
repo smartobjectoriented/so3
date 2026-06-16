@@ -35,8 +35,14 @@
 
 #include <avz/keyhandler.h>
 
+#include <device/rtc.h>
+
 #include <asm/backtrace.h>
 #include <asm/div64.h>
+
+/* POSIX clock ids (matching the user-space values). */
+#define CLOCK_REALTIME 0
+#define CLOCK_MONOTONIC 1
 
 #include <device/timer.h>
 #include <device/irq.h>
@@ -429,14 +435,18 @@ SYSCALL_DEFINE2(gettimeofday_time32, struct timeval32 *, ts, void *, tz)
 SYSCALL_DEFINE2(gettimeofday, struct timeval *, ts, void *, tz)
 {
 	u64 time;
+	uint32_t epoch;
 
 	if (!ts) {
 		return -EINVAL;
 	}
 
 	time = NOW();
+	epoch = rtc_get_time();
 
-	ts->tv_sec = time / SECONDS(1);
+	/* Wall-clock seconds from the RTC when present, otherwise time since
+	 * boot; the sub-second part comes from the monotonic timer either way. */
+	ts->tv_sec = epoch ? epoch : time / SECONDS(1);
 	ts->tv_usec = (time % SECONDS(1)) / MICROSECS(1);
 
 	return 0;
@@ -468,6 +478,7 @@ SYSCALL_DEFINE2(clock_gettime32, int, clk_id, struct timespec32 *, ts)
 SYSCALL_DEFINE2(clock_gettime, int, clk_id, struct timespec *, ts)
 {
 	u64 time;
+	uint32_t epoch;
 
 	if (!ts) {
 		return -EINVAL;
@@ -475,7 +486,11 @@ SYSCALL_DEFINE2(clock_gettime, int, clk_id, struct timespec *, ts)
 
 	time = NOW();
 
-	ts->tv_sec = time / SECONDS(1);
+	/* CLOCK_REALTIME reports wall-clock time from the RTC (if any);
+	 * CLOCK_MONOTONIC (and the fallback) stays on the boot-relative timer. */
+	epoch = (clk_id == CLOCK_REALTIME) ? rtc_get_time() : 0;
+
+	ts->tv_sec = epoch ? epoch : time / SECONDS(1);
 	ts->tv_nsec = time % SECONDS(1);
 
 	return 0;

@@ -37,6 +37,7 @@ mkdirat                 mkdirat
 unlinkat                unlinkat
 renameat                renameat
 renameat2               renameat2
+utimensat               utimensat
 stat64                  stat64
 fstatat64               fstatat64
 newfstatat              newfstatat

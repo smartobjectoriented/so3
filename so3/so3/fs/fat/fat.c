@@ -28,6 +28,7 @@
 
 #include <device/timer.h>
 #include <device/serial.h>
+#include <device/rtc.h>
 
 #define TYPE_FILE 0
 #define TYPE_FOLDER 1
@@ -438,6 +439,68 @@ int fat_rename(const char *oldpath, const char *newpath)
 	return 0;
 }
 
+/*
+ * Convert Unix epoch seconds (UTC) to the FAT date/time word pair. Uses the
+ * standard civil-from-days algorithm; clamps to 1980-01-01 (FAT epoch) below.
+ */
+static void epoch_to_fat(uint32_t epoch, WORD *fdate, WORD *ftime)
+{
+	uint32_t rem = epoch % 86400;
+	int hh = rem / 3600, mm = (rem % 3600) / 60, ss = rem % 60;
+	long z = (long) (epoch / 86400) + 719468;
+	long era = (z >= 0 ? z : z - 146096) / 146097;
+	unsigned long doe = z - era * 146097;
+	unsigned long yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+	long y = (long) yoe + era * 400;
+	unsigned long doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+	unsigned long mp = (5 * doy + 2) / 153;
+	unsigned long d = doy - (153 * mp + 2) / 5 + 1;
+	unsigned long m = mp < 10 ? mp + 3 : mp - 9;
+
+	y += (m <= 2);
+
+	if (y < 1980) {
+		y = 1980;
+		m = 1;
+		d = 1;
+		hh = mm = ss = 0;
+	}
+
+	*fdate = (WORD) (((y - 1980) << 9) | (m << 5) | d);
+	*ftime = (WORD) ((hh << 11) | (mm << 5) | (ss >> 1));
+}
+
+/* FatFS timestamp hook (FF_FS_NORTC == 0): current time for written objects. */
+DWORD get_fattime(void)
+{
+	WORD fdate, ftime;
+	uint32_t epoch = rtc_get_time();
+
+	if (epoch == 0) /* no RTC: a fixed but valid FAT timestamp (1980-01-01) */
+		return (DWORD) 0x00210000;
+
+	epoch_to_fat(epoch, &fdate, &ftime);
+
+	return ((DWORD) fdate << 16) | ftime;
+}
+
+int fat_utime(const char *path, time_t mtime)
+{
+	FILINFO fno;
+	FRESULT res;
+
+	if (!path)
+		return -EINVAL;
+
+	memset(&fno, 0, sizeof(fno));
+	epoch_to_fat((uint32_t) mtime, &fno.fdate, &fno.ftime);
+
+	if ((res = f_utime(path, &fno)))
+		return -fresult_to_errno(res);
+
+	return 0;
+}
+
 int fat_stat(const char *path, struct stat *st)
 {
 	FILINFO finfo;
@@ -561,6 +624,7 @@ static struct file_operations fatops = { .open = fat_open,
 					 .mkdir = fat_mkdir,
 					 .unlink = fat_unlink,
 					 .rename = fat_rename,
+					 .utime = fat_utime,
 					 .lseek = fat_lseek };
 
 struct file_operations *register_fat(void)

@@ -137,6 +137,7 @@ struct file_operations {
 	int (*mmap)(int fd, addr_t virt_addr, uint32_t page_count, off_t offset);
 	int (*unlink)(int fd, void *);
 	int (*rename)(const char *oldpath, const char *newpath);
+	int (*utime)(const char *path, time_t mtime);
 	int (*mount)(const char *);
 	int (*unmount)(const char *);
 	void (*clone)(int fd);
@@ -172,6 +173,8 @@ typedef enum {
 
 /* Syscall accessible from userspace */
 
+struct timespec; /* for utimensat() below */
+
 SYSCALL_DECLARE(openat, int dirfd, const char *filename, int flags, mode_t mode)
 SYSCALL_DECLARE(open, const char *filename, int flags, mode_t mode);
 SYSCALL_DECLARE(read, int fd, void *buffer, size_t count);
@@ -199,6 +202,11 @@ SYSCALL_DECLARE(unlinkat, int dirfd, const char *path, int flags);
 SYSCALL_DECLARE(renameat, int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
 SYSCALL_DECLARE(renameat2, int olddirfd, const char *oldpath, int newdirfd, const char *newpath,
 		unsigned int flags);
+SYSCALL_DECLARE(utimensat, int dirfd, const char *path, const struct timespec *times, int flags);
+
+/* Special tv_nsec values for utimensat() (matching Linux/musl). */
+#define UTIME_NOW 0x3fffffff
+#define UTIME_OMIT 0x3ffffffe
 
 /* VFS common interface */
 

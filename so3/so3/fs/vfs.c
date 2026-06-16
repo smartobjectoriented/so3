@@ -34,6 +34,7 @@
 #include <devfs/devfs.h>
 
 #include <device/device.h>
+#include <device/rtc.h>
 #include <asm/mmu.h>
 
 /* The VFS abstract subsystem manages a table of open file descriptors where indexes are known as gfd (global file descriptor).
@@ -1201,6 +1202,45 @@ SYSCALL_DEFINE5(renameat2, int, olddirfd, const char *, oldpath, int, newdirfd, 
 	}
 
 	return do_rename(oldpath, newpath);
+}
+
+/**
+ * @brief Set a file's modification time (backs utime()/touch via utimensat).
+ *
+ * Only the modification time is modelled (FAT stores a single timestamp). A
+ * NULL times argument, or UTIME_NOW, means "current time" from the RTC.
+ */
+SYSCALL_DEFINE4(utimensat, int, dirfd, const char *, path, const struct timespec *, times, int, flags)
+{
+	char resolved[VFS_PATH_MAX];
+	time_t mtime;
+	long ret;
+
+	(void) flags;
+
+	if (dirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	if (!registered_fs_ops[FS_FAT] || !registered_fs_ops[FS_FAT]->utime)
+		return -ENOSYS;
+
+	if (times == NULL || times[1].tv_nsec == UTIME_NOW)
+		mtime = rtc_get_time();
+	else if (times[1].tv_nsec == UTIME_OMIT)
+		return 0; /* nothing to change */
+	else
+		mtime = times[1].tv_sec;
+
+	if (!vfs_resolve_path(path, resolved, sizeof(resolved)))
+		return -ENOENT;
+
+	mutex_lock(&vfs_lock);
+	ret = registered_fs_ops[FS_FAT]->utime(resolved, mtime);
+	mutex_unlock(&vfs_lock);
+
+	return ret;
 }
 
 /**
