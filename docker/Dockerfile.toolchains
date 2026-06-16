@@ -7,6 +7,9 @@
 #   - the SO3-specific build tools (dtc, u-boot-tools, mtools, qemu build deps, ...)
 #   - the bare-metal KERNEL cross toolchains: aarch64-none-elf (downloaded) and
 #     gcc-arm-none-eabi (apt, for 32-bit).
+#   - the GNU/Linux cross toolchains used to build U-Boot (IB_TOOLCHAIN):
+#     aarch64-none-linux-gnu (downloaded, virt64/rpi4_64) and arm-linux-gnueabihf
+#     (apt, virt32).
 #
 # The MUSL user-space toolchains are NOT built here anymore: they are produced by
 # the `meta-toolchain` layer during the Infrabase build itself.
@@ -30,7 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         #     and the GTK display for the graphical launcher) ---
         libglib2.0-dev libpixman-1-dev libgtk-3-dev libslirp-dev libsdl2-dev \
         # --- 32-bit kernel toolchain ---
-        gcc-arm-none-eabi && \
+        gcc-arm-none-eabi \
+        # --- 32-bit GNU/Linux toolchain for U-Boot (IB_TOOLCHAIN:arm) ---
+        gcc-arm-linux-gnueabihf && \
     locale-gen en_US.UTF-8 && \
     pip3 install --break-system-packages pcpp && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -42,4 +47,12 @@ RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binr
     tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz -C /opt && \
     rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
 
-ENV PATH="/opt/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin:$PATH"
+# aarch64 GNU/Linux toolchain for U-Boot (IB_TOOLCHAIN:virt64 / :rpi4_64 =
+# "aarch64-none-linux-gnu"). Ubuntu's gcc-aarch64-linux-gnu uses a different
+# prefix (aarch64-linux-gnu-), so download the Arm GNU Toolchain to get the
+# exact "aarch64-none-linux-gnu-" prefix the recipes expect.
+RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz && \
+    tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt && \
+    rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+
+ENV PATH="/opt/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin:/opt/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu/bin:$PATH"
