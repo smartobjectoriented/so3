@@ -9,7 +9,33 @@
 require bsp_arm_common.inc
 
 def __do_platform_deploy(d):
-    __deploy_arm_common(d)
+    import os
+    import subprocess
+
+    IB_ITB_PATH = d.getVar('IB_ITB_PATH')
+    IB_PLATFORM = d.getVar('IB_PLATFORM')
+    guest_itb = f"{IB_ITB_PATH}/{IB_PLATFORM}_so3_guest.itb"
+
+    # AVZ boot: a separate guest ITB exists -> stage the AVZ ITB + guest ITB
+    # on the boot partition and use the e1c-boot uEnv (loads both, jumps to
+    # AVZ with the guest ITB in x1). Otherwise fall back to the single-ITB
+    # bootm deploy (bare standalone SO3 / Linux).
+    if os.path.isfile(guest_itb):
+        IB_UENV   = d.getVar("IB_UENV")
+        avz_uenv  = os.path.join(os.path.dirname(IB_UENV), f"uEnv_{IB_PLATFORM}_avz.txt")
+        p1        = d.getVar('IB_FILESYSTEM_PATH') + "/p1"
+        avz_itb   = f"{IB_ITB_PATH}/{d.getVar('IB_TARGET_ITS')}.itb"
+
+        if not os.path.isfile(avz_uenv):
+            bb.fatal(avz_uenv + " is missing ...")
+        subprocess.run(['cp', avz_uenv, p1 + "/uEnv.txt"], check=True)
+
+        if not os.path.isfile(avz_itb):
+            bb.fatal(avz_itb + " is missing ...")
+        subprocess.run(['cp', avz_itb, f"{p1}/{IB_PLATFORM}_avz.itb"], check=True)
+        subprocess.run(['cp', guest_itb, f"{p1}/{IB_PLATFORM}_guest.itb"], check=True)
+    else:
+        __deploy_arm_common(d)
 
 
 def __do_platform_boot_chain(d):

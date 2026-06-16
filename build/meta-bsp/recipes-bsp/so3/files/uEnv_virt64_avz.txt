@@ -1,0 +1,9 @@
+fdt_high=ffffffffffffffff
+initrd_high=ffffffffffffffff
+
+# AVZ boot on virt64: two ITBs (AVZ + SO3 guest) loaded to staging
+# addresses, then jumped via the e1c-boot U-Boot command which passes the
+# AVZ FIT in x0 and the guest ITB in x1 (AVZ loadAgency loads the guest
+# from x1). EL2 is required (st.sh enables -M virt,virtualization=on).
+
+start=load virtio 0 0x65000000 virt64_avz.itb; load virtio 0 0x70000000 virt64_guest.itb; e1c-boot 0x65000000 0x70000000

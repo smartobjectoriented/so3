@@ -50,7 +50,13 @@ do_itb () {
 	else
 		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 	fi
-	
+
+	# AVZ boot uses a SEPARATE guest ITB (loaded alongside the AVZ ITB by
+	# the e1c-boot U-Boot command). Build it too when its ITS is present.
+	if [ -f ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.its ]; then
+		mkimage -f ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.its ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.itb
+	fi
+
 }
 
 do_deploy[depends] = "usr-so3:do_deploy"
