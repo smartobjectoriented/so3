@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2017 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2017-2018 Xavier Ruppen <xavier.ruppen@heig-vd.ch>
  * Copyright (C) 2017 Alexandre Malki <alexandre.malki@heig-vd.ch>
  *
@@ -18,348 +18,406 @@
  *
  */
 
+/*
+ * so3 shell: read a line, tokenize it, then either run a builtin or fork+exec
+ * an external program (looked up as "<name>.elf"). Supports a trailing '&' for
+ * background, a single '|' pipe and a single '>' redirection.
+ */
+
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <syscall.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <syscall.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <fcntl.h>
 
-#define TOKEN_NR 10
-#define ARGS_MAX 16
+#define MAX_LINE 256 /* longest command line accepted              */
+#define MAX_TOKENS 64 /* most whitespace-separated tokens per line   */
+#define MAX_ARGS 64 /* most arguments passed to one program        */
+#define MAX_PATH 128 /* longest "<name>.elf" path                  */
 
-char tokens[TOKEN_NR][80];
-char prompt[] = "so3% ";
-char file_buff[500];
+#define ELF_SUFFIX ".elf"
 
-void parse_token(char *str)
+extern char **environ; /* current environment (POSIX) */
+
+static const char prompt[] = "so3% ";
+
+/* Set by the SIGINT handler so the main loop can react outside signal ctx. */
+static volatile sig_atomic_t got_sigint;
+
+/*
+ * SIGINT (Ctrl-C): the shell itself must not die. Only note the event with an
+ * async-signal-safe write; the main loop reprints the prompt.
+ */
+static void sigint_handler(int sig)
 {
-	int i = 0;
-	char *next_token;
-
-	next_token = strtok(str, " ");
-	if (!next_token)
-		return;
-
-	strcpy(tokens[i++], next_token);
-
-	while ((next_token = strtok(NULL, " ")) != NULL)
-		strcpy(tokens[i++], next_token);
+	(void) sig;
+	got_sigint = 1;
+	write(STDOUT_FILENO, "\n", 1);
 }
 
-/**
- * Remove 0 before command
+/* Reap any finished background children without blocking. */
+static void reap_children(void)
+{
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+}
+
+/*
+ * Strip CSI escape sequences (ESC '[' ... final-byte) in place, so e.g. arrow
+ * keys do not end up inside the command. Bounded: never reads past the NUL.
  */
-void trim(char *buffer, int n)
+static void strip_escapes(char *s)
+{
+	char *r = s, *w = s;
+
+	while (*r) {
+		if (r[0] == '\x1b' && r[1] == '[') {
+			r += 2;
+			while (*r && (*r < '@' || *r > '~'))
+				r++;
+			if (*r)
+				r++; /* skip the final byte */
+		} else
+			*w++ = *r++;
+	}
+	*w = '\0';
+}
+
+/*
+ * Read one line from stdin into buf (NUL-terminated, newline removed).
+ * Returns the line length, or -1 on EOF / interrupted read.
+ */
+static int read_line(char *buf, int size)
+{
+	size_t len;
+
+	if (fgets(buf, size, stdin) == NULL) {
+		clearerr(stdin); /* clear EINTR/EOF state for the next read */
+		return -1;
+	}
+
+	strip_escapes(buf);
+
+	len = strlen(buf);
+	if (len > 0 && buf[len - 1] == '\n')
+		buf[--len] = '\0';
+
+	return (int) len;
+}
+
+/* Split line on spaces/tabs into tok[] (pointers into line). Returns count. */
+static int tokenize(char *line, char *tok[], int max)
+{
+	int n = 0;
+	char *p = strtok(line, " \t");
+
+	while (p != NULL && n < max) {
+		tok[n++] = p;
+		p = strtok(NULL, " \t");
+	}
+
+	return n;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Builtins                                                                   */
+/* -------------------------------------------------------------------------- */
+
+static int builtin_exit(int argc, char *argv[])
+{
+	(void) argc;
+	(void) argv;
+
+	/* The root shell (pid 1) cannot exit: nothing would reap it. */
+	if (getpid() == 1) {
+		printf("The shell root process can not be terminated...\n");
+		return 0;
+	}
+
+	exit(0);
+}
+
+static int builtin_env(int argc, char *argv[])
 {
 	int i;
-	char *new_buff = calloc(80, sizeof(char));
-	for (i = 0; i < n; i++) {
-		if (buffer[i] != 0) {
-			break;
-		}
-	}
-	memcpy(new_buff, buffer + i, n - i);
-	memcpy(buffer, new_buff, n);
-	free(new_buff);
+
+	(void) argc;
+	(void) argv;
+
+	for (i = 0; environ[i] != NULL; i++)
+		printf("%s\n", environ[i]);
+
+	return 0;
 }
 
-/**
- * Detect if its a escape sequence
- */
-int is_escape_sequence(const char *str)
+static int builtin_setenv(int argc, char *argv[])
 {
-	return str[0] == '\x1b' && str[1] == '[';
-}
-
-/**
- * Escape arrow key sequence to avoid interpret them
- */
-void escape_arrow_key(char *buffer, int size)
-{
-	int i, j;
-	char *new_buff = calloc(size, sizeof(char));
-	i = j = 0;
-	while (i < size) {
-		if (is_escape_sequence(&buffer[i])) {
-			i += 3;
-		} else {
-			new_buff[j++] = buffer[i++];
-		}
-	}
-	memcpy(buffer, new_buff, size);
-	free(new_buff);
-}
-
-/**
- * More secure way and escaped way to get user input
- */
-void get_user_input(char *buffer, int buf_size)
-{
-	if (buffer == NULL || buf_size <= 0) {
-		return;
-	}
-
-	memset(buffer, 0, buf_size);
-
-	if (fgets(buffer, buf_size, stdin) != NULL) {
-		escape_arrow_key(buffer, buf_size);
-		trim(buffer, buf_size);
-		size_t len = strlen(buffer);
-		if (len > 0 && buffer[len - 1] == '\n') {
-			buffer[len - 1] = '\0';
-		}
-	}
-}
-
-/*
- * Process the command with the different tokens
- */
-void process_cmd(void)
-{
-	int i, pid_child, background, arg_pos, arg_pos2, redirection, byte_read;
-	char *argv[ARGS_MAX], *argv2[ARGS_MAX];
-	char filename[30];
-	int pid, sig, pid_child2, fd;
-	int pipe_on = 0;
-	int pipe_fd[2];
-
-#if 0 /* MICOFE - sys_info is not a valid syscall - code needs to be updated */
-	if (!strcmp(tokens[0], "dumpsched")) {
-		sys_info(1, 0);
-		return;
-	}
-
-	if (!strcmp(tokens[0], "dumpproc")) {
-		sys_info(4, 0);
-		return;
-	}
-#endif
-
-	if (!strcmp(tokens[0], "exit")) {
-		if (getpid() == 1) {
-			printf("The shell root process can not be terminated...\n");
-			return;
-		} else
-			exit(0);
-
-		/* If the shell is the root shell, there is a failure on exit() */
-		return;
-	}
-
-	/* setenv */
-	if (!strcmp(tokens[0], "setenv")) {
-		/* second arg present ? */
-		if (tokens[1][0] != 0) {
-			/* third arg present gets(user_input);? */
-			if (tokens[2][0] != 0) {
-				/* Set the env. var. (always overwrite) */
-				setenv(tokens[1], tokens[2], 1);
-			} else
-				unsetenv(tokens[1]);
-		}
-		return;
-	}
-
-	/* env */
-	if (!strcmp(tokens[0], "env")) {
-		/* This function print the environment vars */
-		for (i = 0; environ[i] != NULL; i++)
-			printf("%s\n", environ[i]);
-
-		return;
-	}
-
-	/* kill */
-	if (!strcmp(tokens[0], "kill")) {
-		/* Send a signal to a process */
-		sig = 0;
-
-		if (tokens[2][0] == 0) {
-			sig = SIGTERM;
-			pid = atoi(tokens[1]);
-		} else {
-			if (!strcmp(tokens[1], "-USR1")) {
-				sig = SIGUSR1;
-				pid = atoi(tokens[2]);
-			} else if (!strcmp(tokens[1], "-9")) {
-				sig = SIGKILL;
-				pid = atoi(tokens[2]);
-			}
-		}
-
-		kill(pid, sig);
-
-		return;
-	}
-
-	/* General case - prepare to launch the application */
-
-	/* Prepare the arguments to be passed to exec() syscall */
-	arg_pos = 0;
-	arg_pos2 = 0;
-	background = 0;
-	redirection = 0;
-	while (!background && tokens[arg_pos][0] != 0) {
-		/* Check for & */
-		if (!strcmp(tokens[arg_pos], "&"))
-			background = 1;
-		else {
-			if (!strcmp(tokens[arg_pos], "|")) {
-				pipe_on = 1;
-				argv[arg_pos] = NULL;
-			} else if (!strcmp(tokens[arg_pos], ">")) {
-				redirection = 1;
-				argv[arg_pos] = NULL;
-			} else {
-				if (pipe_on) {
-					argv2[arg_pos2] = tokens[arg_pos];
-					arg_pos2++;
-				} else if (redirection) {
-					argv2[0] = tokens[arg_pos];
-				} else
-					argv[arg_pos] = tokens[arg_pos];
-			}
-			arg_pos++;
-		}
-	}
-	/* Terminate the list of args properly */
-	if (pipe_on)
-		argv2[arg_pos2] = NULL;
+	if (argc == 3)
+		setenv(argv[1], argv[2], 1); /* always overwrite */
+	else if (argc == 2)
+		unsetenv(argv[1]);
 	else
-		argv[arg_pos] = NULL;
+		printf("usage: setenv NAME [VALUE]\n");
 
-	pid_child = fork();
-
-	if (!pid_child) { /* Execution in the child */
-
-		if (pipe_on) {
-			pipe(pipe_fd);
-			pid_child2 = fork();
-
-			if (!pid_child2) {
-				close(pipe_fd[0]);
-
-				dup2(pipe_fd[1], STDOUT_FILENO);
-
-				strcpy(filename, argv[0]);
-				strcat(filename, ".elf");
-
-				if (execv(filename, argv) == -1) {
-					printf("%s: exec failed.\n", argv[0]);
-					exit(-1);
-				}
-
-			} else {
-				close(pipe_fd[1]);
-
-				dup2(pipe_fd[0], STDIN_FILENO);
-
-				strcpy(filename, argv2[0]);
-				strcat(filename, ".elf");
-
-				if (execv(filename, argv2) == -1) {
-					printf("%s: exec failed.\n", argv2[0]);
-					exit(-1);
-				}
-			}
-
-		} else if (redirection) {
-			fd = open(argv2[0], O_WRONLY | O_CREAT);
-			if (fd < 0) {
-				printf("Error opening/creating output file...\n");
-				return;
-			}
-
-			pipe(pipe_fd);
-			pid_child2 = fork();
-			if (!pid_child2) {
-				close(pipe_fd[0]);
-				dup2(pipe_fd[1], STDOUT_FILENO);
-				strcpy(filename, argv[0]);
-				strcat(filename, ".elf");
-
-				if (execv(filename, argv) == -1) {
-					printf("%s: exec failed.\n", argv[0]);
-					exit(-1);
-				}
-
-			} else {
-				close(pipe_fd[1]);
-				while ((byte_read = read(pipe_fd[0], file_buff, 500)) > 0) {
-					write(fd, file_buff, byte_read);
-				}
-				close(fd);
-			}
-
-		} else {
-			strcpy(filename, tokens[0]);
-			argv[0] = tokens[0];
-
-			/* We are looking for an executable with .elf extension */
-			strcat(filename, ".elf");
-
-			if (execv(filename, argv) == -1) {
-				printf("%s: exec failed.\n", argv[0]);
-				exit(-1);
-			}
-		}
-	} else { /* Execution in the parent */
-
-		/* If the process is running in background, waitpid() will
-		 * be called when the SIGCHLD signal is received.
-		 */
-		if (!background)
-			/* Wait for our child to be finished. */
-			waitpid(pid_child, NULL, 0);
-		else
-			/* Display the PID */
-			printf("[%d]\n", pid_child);
-	}
+	return 0;
 }
 
-/*
- * Ignore the SIGINT signal, but we re-display the prompt to be elegant ;-)
- */
-void sigint_sh_handler(int sig)
+/* Map a "kill" signal flag ("-9", "-USR1", ...) to a signal number, or -1. */
+static int parse_signal(const char *flag)
 {
-	printf("%s", prompt);
-	fflush(stdout);
+	if (!strcmp(flag, "-9") || !strcmp(flag, "-KILL"))
+		return SIGKILL;
+	if (!strcmp(flag, "-15") || !strcmp(flag, "-TERM"))
+		return SIGTERM;
+	if (!strcmp(flag, "-USR1"))
+		return SIGUSR1;
+	if (!strcmp(flag, "-USR2"))
+		return SIGUSR2;
+
+	return -1;
 }
+
+static int builtin_kill(int argc, char *argv[])
+{
+	int sig, pid;
+
+	if (argc == 2) {
+		sig = SIGTERM;
+		pid = atoi(argv[1]);
+	} else if (argc == 3) {
+		sig = parse_signal(argv[1]);
+		pid = atoi(argv[2]);
+		if (sig < 0) {
+			printf("kill: unknown signal '%s'\n", argv[1]);
+			return 0;
+		}
+	} else {
+		printf("usage: kill [-9|-15|-USR1|-USR2] PID\n");
+		return 0;
+	}
+
+	if (pid <= 0) {
+		printf("kill: invalid pid\n");
+		return 0;
+	}
+
+	if (kill(pid, sig) < 0)
+		printf("kill: failed to signal pid %d\n", pid);
+
+	return 0;
+}
+
+struct builtin {
+	const char *name;
+	int (*fn)(int argc, char *argv[]);
+};
+
+static const struct builtin builtins[] = {
+	{ "exit", builtin_exit }, { "env", builtin_env }, { "setenv", builtin_setenv },
+	{ "kill", builtin_kill }, { NULL, NULL },
+};
+
+/* Run argv[0] as a builtin if it is one. Returns 1 if handled, else 0. */
+static int run_builtin(int argc, char *argv[])
+{
+	const struct builtin *b;
+
+	for (b = builtins; b->name != NULL; b++) {
+		if (!strcmp(argv[0], b->name)) {
+			b->fn(argc, argv);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* External commands                                                          */
+/* -------------------------------------------------------------------------- */
+
 /*
- * Main entry point of the shell application.
+ * Replace the current (child) process image with "<argv[0]>.elf". Never
+ * returns on success; on failure it prints an error and exits the child.
  */
+static void exec_elf(char *argv[])
+{
+	char path[MAX_PATH];
+
+	snprintf(path, sizeof(path), "%s%s", argv[0], ELF_SUFFIX);
+
+	execv(path, argv);
+
+	printf("%s: exec failed.\n", argv[0]);
+	exit(127);
+}
+
+/* left | right : connect left's stdout to right's stdin. */
+static void run_pipe(char *left[], char *right[])
+{
+	int fds[2];
+	pid_t pl, pr;
+
+	if (pipe(fds) < 0) {
+		printf("sh: pipe failed.\n");
+		return;
+	}
+
+	pl = fork();
+	if (pl == 0) {
+		dup2(fds[1], STDOUT_FILENO);
+		close(fds[0]);
+		close(fds[1]);
+		exec_elf(left);
+	}
+
+	pr = fork();
+	if (pr == 0) {
+		dup2(fds[0], STDIN_FILENO);
+		close(fds[0]);
+		close(fds[1]);
+		exec_elf(right);
+	}
+
+	close(fds[0]);
+	close(fds[1]);
+
+	waitpid(pl, NULL, 0);
+	waitpid(pr, NULL, 0);
+}
+
+/* cmd > file : send cmd's stdout to file (created/truncated). */
+static void run_redirect(char *argv[], const char *outfile)
+{
+	pid_t pid = fork();
+
+	if (pid == 0) {
+		int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (fd < 0) {
+			printf("sh: cannot open '%s'.\n", outfile);
+			exit(1);
+		}
+		dup2(fd, STDOUT_FILENO);
+		close(fd);
+		exec_elf(argv);
+	}
+
+	waitpid(pid, NULL, 0);
+}
+
+/* Plain command, optionally in background. */
+static void run_simple(char *argv[], int background)
+{
+	pid_t pid = fork();
+
+	if (pid < 0) {
+		printf("sh: fork failed.\n");
+		return;
+	}
+
+	if (pid == 0)
+		exec_elf(argv);
+
+	if (background)
+		printf("[%d]\n", pid);
+	else
+		waitpid(pid, NULL, 0);
+}
+
+/*
+ * Split the token list around the '&', '|' and '>' operators and dispatch to
+ * the right runner. Pipe and redirection are mutually exclusive here.
+ */
+static void run_external(int n, char *tok[])
+{
+	char *argv[MAX_ARGS], *rhs[MAX_ARGS];
+	char *outfile = NULL;
+	int background = 0, has_pipe = 0, has_redir = 0;
+	int ai = 0, ri = 0, i;
+
+	for (i = 0; i < n; i++) {
+		if (!strcmp(tok[i], "&")) {
+			background = 1;
+			break; /* anything after '&' is ignored */
+		} else if (!strcmp(tok[i], "|")) {
+			has_pipe = 1;
+		} else if (!strcmp(tok[i], ">")) {
+			has_redir = 1;
+		} else if (has_redir) {
+			outfile = tok[i];
+		} else if (has_pipe) {
+			if (ri < MAX_ARGS - 1)
+				rhs[ri++] = tok[i];
+		} else {
+			if (ai < MAX_ARGS - 1)
+				argv[ai++] = tok[i];
+		}
+	}
+
+	argv[ai] = NULL;
+	rhs[ri] = NULL;
+
+	if (ai == 0) {
+		printf("sh: syntax error.\n");
+		return;
+	}
+
+	if (has_pipe) {
+		if (ri == 0) {
+			printf("sh: expected command after '|'.\n");
+			return;
+		}
+		run_pipe(argv, rhs);
+	} else if (has_redir) {
+		if (outfile == NULL) {
+			printf("sh: expected file after '>'.\n");
+			return;
+		}
+		run_redirect(argv, outfile);
+	} else
+		run_simple(argv, background);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main loop                                                                  */
+/* -------------------------------------------------------------------------- */
+
 int main(int argc, char *argv[])
 {
-	char user_input[80];
-	int i;
+	char line[MAX_LINE];
+	char *tok[MAX_TOKENS];
 	struct sigaction sa;
+	int n;
 
-	memset(&sa, 0, sizeof(struct sigaction));
+	(void) argc;
+	(void) argv;
 
-	sa.sa_handler = sigint_sh_handler;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sigint_handler;
 	sigaction(SIGINT, &sa, NULL);
 
 	while (1) {
-		/* Reset all tokens */
-		for (i = 0; i < TOKEN_NR; i++)
-			tokens[i][0] = 0;
+		reap_children();
 
+		got_sigint = 0;
 		printf("%s", prompt);
 		fflush(stdout);
 
-		get_user_input(user_input, 80);
+		n = read_line(line, sizeof(line));
+		if (n < 0) /* EOF or interrupted (e.g. Ctrl-C): just reprompt */
+			continue;
 
-		if (strcmp(user_input, ""))
-			parse_token(user_input);
+		n = tokenize(line, tok, MAX_TOKENS);
+		if (n == 0)
+			continue;
 
-		/* Check if there is at least one token to be processed */
-		if (tokens[0][0] != 0)
-			process_cmd();
+		if (!run_builtin(n, tok))
+			run_external(n, tok);
 	}
+
+	return 0;
 }
