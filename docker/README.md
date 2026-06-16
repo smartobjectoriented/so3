@@ -56,10 +56,12 @@ docker run -it --privileged --network=host -v /dev:/dev so3-lvperf64b   # or so3
   build.sh -x qemu  &&  build.sh -a bsp-so3
   ```
 - **At container-run time** (privileged), the entrypoint rebuilds the user space
-  (picking up a mounted LVGL), then `deploy.sh` assembles the FIT, populates the
-  rootfs and writes the SD-card, and finally QEMU runs:
+  (picking up a mounted LVGL), creates+formats the SD-card image (`build.sh -f` —
+  `losetup`/`fdisk`/`mkfs`, the privileged step that cannot run at build time),
+  then `deploy.sh` assembles the FIT, populates the rootfs and writes the SD-card,
+  and finally QEMU runs:
   ```
-  build.sh -x usr-so3  &&  deploy.sh -a bsp-so3  &&  docker/scripts/run.sh
+  build.sh -x usr-so3  &&  build.sh -f  &&  deploy.sh -a bsp-so3  &&  docker/scripts/run.sh
   ```
 
 With `virtXX_lvperf_defconfig` the kernel runs the LVGL benchmark as its init

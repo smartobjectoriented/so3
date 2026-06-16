@@ -51,7 +51,8 @@ RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh -a bsp-so3'
 # Hook to add extra dependencies at run time without rebuilding the image.
 RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
 
-# Run time (REQUIRES --privileged): rebuild usr (picks up a mounted LVGL), then
-# deploy.sh assembles the FIT, populates the rootfs (loop-mount) and writes the
-# sdcard; finally run the perf QEMU.
-CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; deploy.sh -a bsp-so3; docker/scripts/run.sh"]
+# Run time (REQUIRES --privileged): rebuild usr (picks up a mounted LVGL),
+# create+format the SD-card image (build.sh -f: losetup/fdisk/mkfs — privileged,
+# hence deferred here), then deploy.sh assembles the FIT, populates the rootfs
+# (loop-mount) and writes the sdcard; finally run the perf QEMU.
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -f; deploy.sh -a bsp-so3; docker/scripts/run.sh"]

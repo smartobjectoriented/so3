@@ -26,8 +26,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         xz-utils debianutils iputils-ping file locales zstd lz4 \
         ca-certificates sudo \
         # --- SO3 / kernel / u-boot / image tooling ---
+        # (deploy.sh populates the rootfs/sdcard with rsync + parted + losetup +
+        #  sfdisk + mkfs.{fat,ext4}; the rest come from util-linux/dosfstools.)
         bc flex bison libssl-dev device-tree-compiler u-boot-tools \
-        mtools dosfstools fdisk util-linux libncurses-dev \
+        mtools dosfstools fdisk util-linux libncurses-dev rsync parted \
         cmake ninja-build make patch pkg-config \
         # --- QEMU build deps (meta-qemu builds with --enable-sdl --enable-slirp
         #     and the GTK display for the graphical launcher) ---
