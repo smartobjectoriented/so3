@@ -1,0 +1,7 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/doc/board/toradex/index.rst	2025-11-21 14:56:51.590210899 +0100
++++ ./doc/board/toradex/index.rst	2025-11-21 14:54:55.307180811 +0100
+@@ -12,3 +12,4 @@
+    verdin-am62
+    verdin-imx8mm
+    verdin-imx8mp
++   smarc-imx8mp

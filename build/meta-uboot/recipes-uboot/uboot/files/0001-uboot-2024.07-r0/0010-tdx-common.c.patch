@@ -1,0 +1,20 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/board/toradex/common/tdx-common.c	2025-11-21 14:56:51.518386446 +0100
++++ ./board/toradex/common/tdx-common.c	2025-11-21 14:54:55.266838468 +0100
+@@ -191,13 +191,16 @@
+ static int tdx_get_str(struct udevice *dev, int id, size_t size, char *val)
+ {
+ 	int ret = -ENOTSUPP;
++	int idx;
+ 
+ 	switch (id) {
+ 	case SYSINFO_ID_BOARD_MODEL:
++		idx = get_toradex_modules_idx(tdx_hw_tag.prodid);
++
+ 		snprintf(val, size,
+ 			 "Toradex %04d %s %s",
+ 			 tdx_hw_tag.prodid,
+-			 toradex_modules[tdx_hw_tag.prodid].name,
++			 toradex_modules[idx].name,
+ 			 tdx_board_rev_str);
+ 
+ 		ret = 0;

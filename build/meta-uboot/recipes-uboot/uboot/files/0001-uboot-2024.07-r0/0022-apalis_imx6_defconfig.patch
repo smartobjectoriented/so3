@@ -1,0 +1,11 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/configs/apalis_imx6_defconfig	2025-11-21 14:56:51.554341987 +0100
++++ ./configs/apalis_imx6_defconfig	2025-11-21 14:54:55.283301958 +0100
+@@ -33,7 +33,7 @@
+ CONFIG_BOOTDELAY=1
+ CONFIG_BOOTCOMMAND="run distro_bootcmd; usb start; setenv stdout serial,vidconsole; setenv stdin serial,usbkbd"
+ CONFIG_USE_PREBOOT=y
+-CONFIG_PREBOOT="test -n ${fdtfile} || setenv fdtfile imx6q-apalis-${fdt_board}.dtb"
++CONFIG_PREBOOT="test -n ${fdtfile} || setenv fdtfile imx6q-apalis${variant}-${fdt_board}.dtb"
+ CONFIG_SYS_CBSIZE=1024
+ CONFIG_SYS_PBSIZE=1055
+ CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE=y

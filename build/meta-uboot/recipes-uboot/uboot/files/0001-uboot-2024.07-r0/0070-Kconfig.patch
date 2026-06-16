@@ -1,0 +1,19 @@
+--- a/cmd/Kconfig
++++ b/cmd/Kconfig
+@@ -333,6 +333,16 @@
+ 	help
+ 	  Boot an AArch64 Linux Kernel image from memory.
+ 
++config CMD_E1C_BOOT
++	bool "e1c-boot"
++	depends on ARM64 && FIT
++	help
++	  Boot the AVZ hypervisor together with an e1c capsule (Linux guest)
++	  from two separate FIT images. Each FIT is parsed individually; every
++	  declared kernel/fdt/ramdisk/loadable is copied to its load address,
++	  then control is transferred to the AVZ entry point with the AVZ FIT
++	  base in x0 and the capsule FIT base in x1.
++
+ config BOOTM_LINUX
+ 	bool "Support booting Linux OS images"
+ 	depends on CMD_BOOTM || CMD_BOOTZ || CMD_BOOTI

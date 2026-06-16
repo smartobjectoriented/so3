@@ -24,9 +24,15 @@ include ../bsp/files/bsp_${IB_PLATFORM}.inc
 do_configure[noexec] = "1"
 do_attach_infrabase[noexec] = "1"
 
-# Building all components
-
-do_build[depends] = "usr-so3:do_build uboot:do_build" 
+# Building all components.
+#
+# Every platform needs U-Boot: on QEMU it is the bare U-Boot payload, on
+# verdin-imx8mp it is U-Boot wrapped into imx-boot/flash.bin (ATF + OP-TEE +
+# U-Boot) by the uboot recipe. verdin additionally needs the AVZ hypervisor
+# (bundled by the AVZ+SO3 ITS), so its dependency set is overridden to add it.
+IB_BSP_BUILD_DEPENDS = "usr-so3:do_build uboot:do_build"
+IB_BSP_BUILD_DEPENDS:verdin-imx8mp = "usr-so3:do_build uboot:do_build avz:do_build"
+do_build[depends] = "${IB_BSP_BUILD_DEPENDS}"
 
 do_build () {
 	bbplain "Everything built OK ..."

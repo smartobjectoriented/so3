@@ -1,0 +1,11 @@
+--- /home/rossierd/edgemtech/products/edgem1/edgem1/30/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/configs/verdin-imx8mp_defconfig	2026-04-17 12:12:41.987694841 +0200
++++ ./configs/verdin-imx8mp_defconfig	2026-04-17 17:04:17.189200957 +0200
+@@ -41,6 +41,8 @@
+ CONFIG_SPL_LOAD_FIT_ADDRESS=0x44000000
+ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_BOOTDELAY=1
++CONFIG_USE_BOOTCOMMAND=y
++CONFIG_BOOTCOMMAND="ext4load mmc 2:1 0x50280000 uEnv.txt; env import 0x50280000; run start"
+ CONFIG_OF_SYSTEM_SETUP=y
+ CONFIG_USE_PREBOOT=y
+ CONFIG_PREBOOT="test -n ${fdtfile} || setenv fdtfile imx8mp-verdin-${variant}-${fdt_board}.dtb"

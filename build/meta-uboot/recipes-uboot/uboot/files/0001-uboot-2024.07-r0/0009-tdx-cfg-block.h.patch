@@ -1,0 +1,35 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/board/toradex/common/tdx-cfg-block.h	2025-11-21 14:56:51.518386446 +0100
++++ ./board/toradex/common/tdx-cfg-block.h	2025-11-21 14:54:55.266914032 +0100
+@@ -21,6 +21,7 @@
+ } __attribute__((__packed__));
+ 
+ struct toradex_som {
++	int pid4;
+ 	const char *name;
+ 	int is_enabled;
+ };
+@@ -113,6 +114,16 @@
+ 	APALIS_IMX6Q_IT_NOWINCE, /* 85 */
+ 	VERDIN_IMX8MMDL_2G_IT,
+ 	VERDIN_IMX8MMQ_2G_IT_NO_CAN,
++	AQUILA_AM69O_32G_WIFI_BT_IT,
++	VERDIN_IMX95H_16G_WIFI_BT_IT,
++	VERDIN_IMX8MMQ_4G_WIFI_BT_ET, /* 90 */
++	APALIS_IMX8QM_WIFI_BT_IT_1300MHZ,
++	APALIS_IMX8QM_IT_1300MHZ,
++	APALIS_IMX8QP_WIFI_BT_1300MHZ,
++	APALIS_IMX8QP_1300MHZ,
++	APALIS_IMX8QM_8GB_WIFI_BT_IT_1300MHZ, /* 95 */
++	SMARC_IMX95_HEXA_8GB_WB_IT,
++	SMARC_IMX8MPQ_4GB_WB_IT,
+ };
+ 
+ enum {
+@@ -136,6 +147,7 @@
+ 
+ int read_tdx_cfg_block(void);
+ int read_tdx_cfg_block_carrier(void);
++int get_toradex_modules_idx(int pid4);
+ const char * const get_toradex_carrier_boards(int pid4);
+ const char * const get_toradex_display_adapters(int pid4);
+ int try_migrate_tdx_cfg_block_carrier(void);

@@ -1,0 +1,215 @@
+--- /dev/null
++++ b/cmd/e1c_boot.c
+@@ -0,0 +1,212 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright (C) 2026 EDGEMTech SA <info@edgemtech.ch>
++ *
++ * e1c-boot: load an AVZ FIT image and an e1c capsule FIT image individually,
++ * place each declared loadable/kernel/fdt/ramdisk at its declared load address,
++ * then transfer control to the AVZ entry point.
++ *
++ * Argument convention to AVZ (aarch64):
++ *   x0 = AVZ FIT base (so AVZ can locate its avz_dt loadable inside it)
++ *   x1 = e1c capsule FIT base (so AVZ can later load the guest from it)
++ *   x2 = 0
++ *   x3 = 0
++ */
++
++#include <common.h>
++#include <command.h>
++#include <cpu_func.h>
++#include <fdt_support.h>
++#include <image.h>
++#include <linux/libfdt.h>
++#include <asm/system.h>
++#include <asm/u-boot-arm.h>
++
++static int e1c_place_image(const void *fit, int img_off, const char *desc,
++			   ulong *load_out, ulong *entry_out)
++{
++	const void *data;
++	size_t size;
++	ulong load;
++
++	if (fit_image_get_data_and_size(fit, img_off, &data, &size)) {
++		printf("e1c-boot: %s: missing data\n", desc);
++		return -1;
++	}
++
++	if (fit_image_get_load(fit, img_off, &load)) {
++		printf("e1c-boot: %s: missing load address\n", desc);
++		return -1;
++	}
++
++	debug("e1c-boot: %s -> 0x%lx (%zu bytes)\n", desc, load, size);
++	memmove((void *)load, data, size);
++	flush_cache(load, size);
++
++	if (load_out)
++		*load_out = load;
++
++	if (entry_out) {
++		ulong entry;
++
++		if (fit_image_get_entry(fit, img_off, &entry))
++			entry = load;
++		*entry_out = entry;
++	}
++	return 0;
++}
++
++static int e1c_place_named(const void *fit, int conf_off, const char *prop,
++			   ulong *load_out, ulong *entry_out, bool required)
++{
++	int img_off;
++
++	img_off = fit_conf_get_prop_node(fit, conf_off, prop, IH_PHASE_NONE);
++	if (img_off < 0) {
++		if (required) {
++			printf("e1c-boot: config has no '%s' image\n", prop);
++			return -1;
++		}
++		return 0;
++	}
++	return e1c_place_image(fit, img_off, prop, load_out, entry_out);
++}
++
++static int e1c_place_loadables(const void *fit, int conf_off)
++{
++	const char *uname;
++	int idx;
++
++	for (idx = 0;
++	     (uname = fdt_stringlist_get(fit, conf_off, FIT_LOADABLE_PROP,
++					 idx, NULL)) != NULL;
++	     idx++) {
++		int img_off = fit_image_get_node(fit, uname);
++
++		if (img_off < 0) {
++			printf("e1c-boot: loadable '%s' not found\n", uname);
++			return -1;
++		}
++		if (e1c_place_image(fit, img_off, uname, NULL, NULL))
++			return -1;
++	}
++	return 0;
++}
++
++static int e1c_load_fit(ulong fit_addr, const char *conf_name,
++			ulong *kernel_entry, ulong *fdt_load)
++{
++	const void *fit = (const void *)fit_addr;
++	int conf_off;
++
++	if (fit_check_format(fit, IMAGE_SIZE_INVAL)) {
++		printf("e1c-boot: invalid FIT at 0x%lx\n", fit_addr);
++		return -1;
++	}
++
++	conf_off = fit_conf_get_node(fit, conf_name);
++	if (conf_off < 0) {
++		printf("e1c-boot: config '%s' not found at 0x%lx\n",
++		       conf_name ? conf_name : "<default>", fit_addr);
++		return -1;
++	}
++
++	if (e1c_place_named(fit, conf_off, FIT_KERNEL_PROP, NULL,
++			    kernel_entry, kernel_entry != NULL))
++		return -1;
++
++	if (e1c_place_named(fit, conf_off, FIT_FDT_PROP, fdt_load,
++			    NULL, false))
++		return -1;
++
++	if (e1c_place_named(fit, conf_off, FIT_RAMDISK_PROP, NULL,
++			    NULL, false))
++		return -1;
++
++	if (e1c_place_loadables(fit, conf_off))
++		return -1;
++
++	return 0;
++}
++
++static int do_e1c_boot(struct cmd_tbl *cmdtp, int flag, int argc,
++		       char *const argv[])
++{
++	ulong avz_itb, e1c_itb, avz_entry = 0, capsule_fdt = 0;
++
++	if (argc != 3)
++		return CMD_RET_USAGE;
++
++	avz_itb = simple_strtoul(argv[1], NULL, 16);
++	e1c_itb = simple_strtoul(argv[2], NULL, 16);
++
++	printf("e1c-boot: AVZ ITB @ 0x%lx, e1c ITB @ 0x%lx\n",
++	       avz_itb, e1c_itb);
++
++	if (e1c_load_fit(avz_itb, "avz", &avz_entry, NULL))
++		return CMD_RET_FAILURE;
++	if (!avz_entry) {
++		printf("e1c-boot: AVZ config has no kernel entry\n");
++		return CMD_RET_FAILURE;
++	}
++
++	if (e1c_load_fit(e1c_itb, "capsule", NULL, &capsule_fdt))
++		return CMD_RET_FAILURE;
++
++	/* Propagate U-Boot's bootargs env into the guest FDT's /chosen so the
++	 * guest kernel sees the cmdline. e1c-boot replaces bootm's standard
++	 * fdt_chosen() call — without this, the guest kernel cmdline is empty
++	 * and OSTree-aware initramfs (e.g. TorizonOS) can't find its root. */
++	if (capsule_fdt) {
++		void *fdt = (void *)capsule_fdt;
++		const char *ba = env_get("bootargs");
++		int ret;
++
++		printf("e1c-boot: capsule fdt @ 0x%lx, bootargs=[%s]\n",
++		       capsule_fdt, ba ? ba : "<NULL>");
++
++		/* The guest DTB is tightly packed by mkimage and has no room
++		 * for fdt_chosen() to add bootargs (FDT_ERR_NOSPACE). Expand
++		 * in place with 4 KiB headroom — plenty for bootargs + any
++		 * extra props AVZ injects later. */
++		ret = fdt_open_into(fdt, fdt, fdt_totalsize(fdt) + 0x1000);
++		if (ret < 0) {
++			printf("e1c-boot: WARN: fdt_open_into failed (%d)\n",
++			       ret);
++		}
++
++		ret = fdt_chosen(fdt);
++		if (ret < 0)
++			printf("e1c-boot: WARN: fdt_chosen failed (%d)\n", ret);
++		else
++			flush_cache(capsule_fdt, fdt_totalsize(fdt));
++	}
++
++	printf("e1c-boot: jumping to AVZ at 0x%lx (capsule ITB @ 0x%lx)\n",
++	       avz_entry, e1c_itb);
++
++	cleanup_before_linux();
++
++	armv8_switch_to_el2(avz_itb, e1c_itb, 0, 0, avz_entry,
++			    ES_TO_AARCH64);
++
++	return CMD_RET_FAILURE;
++}
++
++#ifdef CONFIG_SYS_LONGHELP
++static char e1c_boot_help_text[] =
++	"<avz_itb_addr> <e1c_itb_addr>\n"
++	"    - Parse the AVZ FIT and the e1c capsule FIT loaded at the given\n"
++	"      addresses, place every kernel/fdt/ramdisk/loadable at its\n"
++	"      declared load address, then jump to the AVZ entry point with:\n"
++	"        x0 = avz_itb_addr  (AVZ scans this FIT for its avz_dt)\n"
++	"        x1 = e1c_itb_addr  (AVZ uses this FIT to load the guest)";
++#endif
++
++ll_entry_declare(struct cmd_tbl, e1c_boot, cmd) = {
++	"e1c-boot", 3, cmd_never_repeatable, do_e1c_boot,
++	"boot AVZ hypervisor with an e1c capsule",
++#ifdef CONFIG_SYS_LONGHELP
++	e1c_boot_help_text
++#endif
++};
