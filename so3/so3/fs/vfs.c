@@ -1086,6 +1086,60 @@ SYSCALL_DEFINE2(getcwd, char *, buf, size_t, size)
 	return (long) len;
 }
 
+/* Resolve path then dispatch a path-based FAT operation (mkdir / unlink). */
+static long do_fs_path_op(const char *path, int (*op)(int, void *))
+{
+	char resolved[VFS_PATH_MAX];
+	long ret;
+
+	if (!op)
+		return -ENOSYS;
+	if (!vfs_resolve_path(path, resolved, sizeof(resolved)))
+		return -ENOENT;
+
+	mutex_lock(&vfs_lock);
+	ret = op(-1, resolved);
+	mutex_unlock(&vfs_lock);
+
+	return ret;
+}
+
+/**
+ * @brief Create a directory (backs the mkdir() libc call via mkdirat).
+ */
+SYSCALL_DEFINE3(mkdirat, int, dirfd, const char *, path, mode_t, mode)
+{
+	(void) mode; /* permissions are not modelled */
+
+	if (dirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	if (!registered_fs_ops[FS_FAT])
+		return -ENOSYS;
+
+	return do_fs_path_op(path, registered_fs_ops[FS_FAT]->mkdir);
+}
+
+/**
+ * @brief Remove a file or empty directory (backs unlink()/rmdir() via unlinkat).
+ */
+SYSCALL_DEFINE3(unlinkat, int, dirfd, const char *, path, int, flags)
+{
+	(void) flags; /* AT_REMOVEDIR: f_unlink handles files and empty dirs alike */
+
+	if (dirfd != AT_FDCWD) {
+		LOG_WARNING("dirfd parameters isn't supported\n");
+		return -ENOSYS;
+	}
+
+	if (!registered_fs_ops[FS_FAT])
+		return -ENOSYS;
+
+	return do_fs_path_op(path, registered_fs_ops[FS_FAT]->unlink);
+}
+
 /**
  * An mmap() implementation in VFS.
  */

@@ -33,6 +33,8 @@ dup3                    dup3
 getdents64              getdents64
 chdir                   chdir
 getcwd                  getcwd
+mkdirat                 mkdirat
+unlinkat                unlinkat
 stat64                  stat64
 fstatat64               fstatat64
 newfstatat              newfstatat

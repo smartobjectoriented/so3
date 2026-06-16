@@ -190,6 +190,8 @@ SYSCALL_DECLARE(readv, unsigned long fd, const struct iovec *vec, unsigned long 
 SYSCALL_DECLARE(fcntl, unsigned int fd, unsigned int cmd, unsigned long arg);
 SYSCALL_DECLARE(chdir, const char *path);
 SYSCALL_DECLARE(getcwd, char *buf, size_t size);
+SYSCALL_DECLARE(mkdirat, int dirfd, const char *path, mode_t mode);
+SYSCALL_DECLARE(unlinkat, int dirfd, const char *path, int flags);
 
 /* VFS common interface */
 

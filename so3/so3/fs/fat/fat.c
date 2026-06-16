@@ -393,8 +393,35 @@ struct dirent *fat_readdir(int fd)
 	return (void *) dent;
 }
 
-int fat_unlink(int fd, const char *path)
+int fat_unlink(int fd, void *path)
 {
+	FRESULT res;
+
+	(void) fd;
+
+	if (!path)
+		return -EINVAL;
+
+	/* f_unlink removes a file or an *empty* directory (FR_DENIED on a
+	 * non-empty one), which gives rm / rmdir their expected semantics. */
+	if ((res = f_unlink((const char *) path)))
+		return -fresult_to_errno(res);
+
+	return 0;
+}
+
+int fat_mkdir(int fd, void *path)
+{
+	FRESULT res;
+
+	(void) fd;
+
+	if (!path)
+		return -EINVAL;
+
+	if ((res = f_mkdir((const char *) path)))
+		return -fresult_to_errno(res);
+
 	return 0;
 }
 
@@ -517,6 +544,8 @@ static struct file_operations fatops = { .open = fat_open,
 					 .readdir = fat_readdir,
 					 .stat = fat_stat,
 					 .ioctl = fat_ioctl,
+					 .mkdir = fat_mkdir,
+					 .unlink = fat_unlink,
 					 .lseek = fat_lseek };
 
 struct file_operations *register_fat(void)
