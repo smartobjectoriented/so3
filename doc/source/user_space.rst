@@ -107,7 +107,7 @@ supports:
      - single quotes (literal) / double quotes (with expansion)
    * - ``$VAR`` / ``${VAR}``
      - environment variable expansion
-   * - ``exit`` / ``env`` / ``setenv`` / ``kill``
+   * - ``exit`` / ``env`` / ``setenv`` / ``kill`` / ``history``
      - builtins
 
 Operators (``| < > >> &``) must be surrounded by whitespace. Built-in
@@ -115,8 +115,9 @@ Operators (``| < > >> &``) must be surrounded by whitespace. Built-in
 lists the environment.
 
 When stdin is the console the shell provides **interactive line editing**: a
-``HIST_MAX``-entry command **history** (Up / Down arrows), **cursor movement**
-(Left / Right) and mid-line insert/backspace. It does this by briefly switching
+``HIST_MAX``-entry command **history** (Up / Down arrows, listed by the
+``history`` builtin), **cursor movement** (Left / Right, Home / End) and mid-line
+insert/backspace. It does this by briefly switching
 the console to raw mode (clearing ``ICANON``/``ECHO`` via the ``TCSETS`` ioctl
 that :ref:`console.c <kernel>` implements) for the duration of the line edit,
 then restoring canonical mode so spawned programs see a normal cooked terminal.

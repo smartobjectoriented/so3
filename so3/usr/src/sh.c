@@ -254,15 +254,37 @@ static int read_line_edit(char *buf, int size)
 				outc(' ');
 				backspaces(len - pos + 1);
 			}
-		} else if (c == 27) { /* ESC: arrow keys */
-			char seq[2];
+		} else if (c == 27) { /* ESC: cursor / navigation keys */
+			char a, b;
 
-			if (read(STDIN_FILENO, &seq[0], 1) <= 0 || seq[0] != '[')
+			if (read(STDIN_FILENO, &a, 1) <= 0)
 				continue;
-			if (read(STDIN_FILENO, &seq[1], 1) <= 0)
+			if (a != '[' && a != 'O') /* unrecognised sequence */
+				continue;
+			if (read(STDIN_FILENO, &b, 1) <= 0)
 				continue;
 
-			switch (seq[1]) {
+			/* Extended form "ESC [ <digit> ~" (Home/End on many
+			 * terminals): consume up to the trailing '~'. */
+			if (a == '[' && b >= '0' && b <= '9') {
+				char t;
+
+				do {
+					if (read(STDIN_FILENO, &t, 1) <= 0)
+						break;
+				} while (t != '~');
+
+				if (b == '1' || b == '7') { /* Home */
+					backspaces(pos);
+					pos = 0;
+				} else if (b == '4' || b == '8') { /* End */
+					out(&buf[pos], len - pos);
+					pos = len;
+				}
+				continue;
+			}
+
+			switch (b) {
 			case 'A': /* up: older history */
 				if (hpos > 0) {
 					if (hpos == hist_count) {
@@ -290,6 +312,14 @@ static int read_line_edit(char *buf, int size)
 					outc('\b');
 					pos--;
 				}
+				break;
+			case 'H': /* Home (ESC [ H / ESC O H) */
+				backspaces(pos);
+				pos = 0;
+				break;
+			case 'F': /* End (ESC [ F / ESC O F) */
+				out(&buf[pos], len - pos);
+				pos = len;
 				break;
 			}
 		} else if (c >= 32 && c < 127) { /* printable: insert at cursor */
@@ -510,14 +540,27 @@ static int builtin_kill(int argc, char *argv[])
 	return 0;
 }
 
+static int builtin_history(int argc, char *argv[])
+{
+	int i;
+
+	(void) argc;
+	(void) argv;
+
+	for (i = 0; i < hist_count; i++)
+		printf("%5d  %s\n", i + 1, history[i]);
+
+	return 0;
+}
+
 struct builtin {
 	const char *name;
 	int (*fn)(int argc, char *argv[]);
 };
 
 static const struct builtin builtins[] = {
-	{ "exit", builtin_exit }, { "env", builtin_env }, { "setenv", builtin_setenv },
-	{ "kill", builtin_kill }, { NULL, NULL },
+	{ "exit", builtin_exit }, { "env", builtin_env },	  { "setenv", builtin_setenv },
+	{ "kill", builtin_kill }, { "history", builtin_history }, { NULL, NULL },
 };
 
 /* Run argv[0] as a builtin if it is one. Returns 1 if handled, else 0. */
