@@ -22,6 +22,44 @@ committed ``so3/`` sources). The other components — **U-Boot**, **QEMU**, the
 upstream and local changes are kept as patches (see
 :ref:`fetched components <fetched_components>`).
 
+Prerequisites
+=============
+
+Infrabase drives bitbake, so the **host** needs the usual Yocto/bitbake build
+dependencies plus the SO3 image tooling (``device-tree-compiler``,
+``u-boot-tools``, ``mtools``, ``dosfstools``, ``rsync``, ``parted``, the QEMU
+build dependencies, …) and a few **cross-toolchains** that are *not* built by the
+layers. The canonical, continuously-tested list is the base container recipe
+``docker/Dockerfile.toolchains`` — mirror it when setting up a bare host.
+
+The cross-toolchains that must be on ``PATH``:
+
+.. flat-table::
+   :header-rows: 1
+   :widths: 30 34 36
+
+   * - Used for
+     - Toolchain (prefix)
+     - Selected by
+   * - **Kernel** (and AVZ), bare-metal
+     - ``aarch64-none-elf-`` (64-bit) / ``arm-none-eabi-`` (32-bit)
+     - ``CONFIG_CROSS_COMPILE`` in the kernel defconfig
+   * - **U-Boot**, GNU/Linux
+     - ``aarch64-none-linux-gnu-`` (virt64/rpi4_64) / ``arm-linux-gnueabihf-`` (virt32)
+     - ``IB_TOOLCHAIN`` in ``local.conf``
+   * - **User space**, MUSL
+     - ``aarch64-linux-musl`` / ``arm-linux-musleabihf``
+     - built automatically by ``meta-toolchain`` — *no action*
+
+.. note::
+
+   The MUSL user-space toolchains are produced into the bitbake work tree by the
+   ``meta-toolchain`` layer; there is no manual step for them. Only the bare-metal
+   (kernel/AVZ) and GNU/Linux (U-Boot) toolchains must be installed on the host.
+
+To avoid installing anything on the host, build inside the container instead —
+see :ref:`Running with Docker <user_guide>`.
+
 Getting started
 ===============
 
