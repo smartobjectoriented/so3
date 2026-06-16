@@ -123,14 +123,16 @@ addr_t __get_avz_fdt_paddr(void *agency_fdt_paddr)
  */
 void loadAgency(void)
 {
-	u64 dom_addr, avz_dt_addr;
+	u64 dom_addr, avz_dt_addr, flat_dt_addr;
 	int count;
 	int nodeoffset, next_node;
 	addr_t base;
 	int depth, ret;
 	const char *propstring;
 	mem_info_t guest_mem_info;
-	void *fdt_vaddr = __fdt_addr;
+	void *fdt_vaddr = __fdt_addr;                  /* AVZ FIT (x0): carries avz_dt */
+	void *guest_itb = (void *) __agency_itb_paddr; /* guest ITB (x1): guest + flat_dt + ramdisk */
+	void *guest_fdt;                               /* the agency guest's own device tree (flat_dt) */
 
 	const struct fdt_property *initrd_start, *initrd_end;
 	u64 entry_addr;
@@ -138,21 +140,27 @@ void loadAgency(void)
 
 	ret = fdt_check_header(fdt_vaddr);
 	if (ret) {
-		lprintk("!! Bad device tree: ret = %x\n", ret);
+		lprintk("!! Bad AVZ device tree (FIT): ret = %x\n", ret);
+		BUG();
+	}
+
+	ret = fdt_check_header(guest_itb);
+	if (ret) {
+		lprintk("!! Bad agency/guest ITB: ret = %x\n", ret);
 		BUG();
 	}
 
 	memslot_init();
 
+	/* avz_dt lives in the AVZ FIT (x0). */
 	nodeoffset = 0;
 	depth = 0;
 	count = 0;
-	while ((count < 2) && (nodeoffset >= 0)) {
+	while ((count < 1) && (nodeoffset >= 0)) {
 		next_node = fdt_next_node(fdt_vaddr, nodeoffset, &depth);
 
 		ret = fdt_property_read_string(fdt_vaddr, nodeoffset, "type", &propstring);
 
-		/* Process the type "avz" to get the AVZ device tree */
 		if ((ret != -1) && !strcmp(propstring, "avz_dt")) {
 			ret = fdt_property_read_u64(fdt_vaddr, nodeoffset, "load", (u64 *) &avz_dt_addr);
 			if (ret == -1) {
@@ -162,32 +170,61 @@ void loadAgency(void)
 
 			count++;
 		}
+		nodeoffset = next_node;
+	}
 
-		/* Process the type "avz" to get the guest image */
+	if (count < 1) {
+		lprintk("!! Unable to find an avz_dt node in the AVZ FIT... !!\n");
+		BUG();
+	}
+
+	/* The agency guest (kernel + flat_dt + ramdisk) lives in the separate
+	 * guest ITB (x1). Its loadables are already placed in RAM at their
+	 * declared load addresses by the bootloader (e1c-boot / bootm), so we
+	 * only read their addresses here and point the memslots at them. */
+	nodeoffset = 0;
+	depth = 0;
+	count = 0;
+	while ((count < 2) && (nodeoffset >= 0)) {
+		next_node = fdt_next_node(guest_itb, nodeoffset, &depth);
+
+		ret = fdt_property_read_string(guest_itb, nodeoffset, "type", &propstring);
+
+		/* Guest kernel image */
 		if ((ret != -1) && !strcmp(propstring, "guest")) {
-			/* According to U-boot, the <load> and <entry> properties are both on 64-bit even for aarch32 configuration. */
-
-			ret = fdt_property_read_u64(fdt_vaddr, nodeoffset, "load", (u64 *) &dom_addr);
+			ret = fdt_property_read_u64(guest_itb, nodeoffset, "load", (u64 *) &dom_addr);
 			if (ret == -1) {
-				lprintk("!! Missing load-addr in the agency node !!\n");
+				lprintk("!! Missing load-addr in the guest node !!\n");
 				BUG();
 			}
 			lprintk("ITB: Domain load addr = 0x%lx\n", dom_addr);
 
-			ret = fdt_property_read_u64(fdt_vaddr, nodeoffset, "entry", (u64 *) &entry_addr);
+			ret = fdt_property_read_u64(guest_itb, nodeoffset, "entry", (u64 *) &entry_addr);
 			if (ret == -1) {
-				lprintk("!! Missing entry in the agency node !!\n");
+				lprintk("!! Missing entry in the guest node !!\n");
 				BUG();
 			}
 			lprintk("ITB: Domain entry addr = 0x%lx\n", entry_addr);
 
 			count++;
 		}
+
+		/* Guest device tree (the agency's own flat_dt) */
+		if ((ret != -1) && !strcmp(propstring, "flat_dt")) {
+			ret = fdt_property_read_u64(guest_itb, nodeoffset, "load", (u64 *) &flat_dt_addr);
+			if (ret == -1) {
+				lprintk("!! Missing load-addr in the flat_dt node !!\n");
+				BUG();
+			}
+			lprintk("ITB: Guest flat_dt addr = 0x%lx\n", flat_dt_addr);
+
+			count++;
+		}
 		nodeoffset = next_node;
 	}
 
-	if (nodeoffset < 0) {
-		lprintk("!! Unable to find a node with type avz and/or avz_dt in the FIT image... !!\n");
+	if (count < 2) {
+		lprintk("!! Unable to find guest and/or flat_dt nodes in the agency ITB... !!\n");
 		BUG();
 	}
 
@@ -197,10 +234,13 @@ void loadAgency(void)
 	memslot[MEMSLOT_AGENCY].base_paddr = dom_addr & ~(SZ_2M - 1);
 	memslot[MEMSLOT_AGENCY].base_vaddr = AGENCY_VOFFSET;
 
-	memslot[MEMSLOT_AGENCY].fdt_paddr = (addr_t) __fdt_addr;
+	/* The agency guest's device tree is its own flat_dt (placed by the
+	 * bootloader at flat_dt_addr), not the AVZ FIT. */
+	memslot[MEMSLOT_AGENCY].fdt_paddr = (addr_t) flat_dt_addr;
+	guest_fdt = (void *) (addr_t) flat_dt_addr;
 
-	/* Retrieve the memory addr and size of the guest */
-	get_mem_info(fdt_vaddr, &guest_mem_info);
+	/* Retrieve the memory addr and size of the guest from its flat_dt */
+	get_mem_info(guest_fdt, &guest_mem_info);
 
 	memslot[MEMSLOT_AGENCY].ipa_addr = (addr_t) guest_mem_info.phys_base;
 	memslot[MEMSLOT_AGENCY].size = guest_mem_info.size;
@@ -225,25 +265,25 @@ void loadAgency(void)
 	depth = 0;
 
 	while (nodeoffset >= 0) {
-		next_node = fdt_next_node(fdt_vaddr, nodeoffset, &depth);
+		next_node = fdt_next_node(guest_fdt, nodeoffset, &depth);
 
-		initrd_start = fdt_get_property(fdt_vaddr, nodeoffset, "linux,initrd-start", &lenp);
+		initrd_start = fdt_get_property(guest_fdt, nodeoffset, "linux,initrd-start", &lenp);
 
 		if (initrd_start) {
-			initrd_end = fdt_get_property(fdt_vaddr, nodeoffset, "linux,initrd-end", &lenp);
+			initrd_end = fdt_get_property(guest_fdt, nodeoffset, "linux,initrd-end", &lenp);
 			BUG_ON(!initrd_end);
 
 			base = fdt64_to_cpu(((const fdt64_t *) initrd_start->data)[0]);
 			base = pa_to_ipa(MEMSLOT_AGENCY, base);
 			lprintk("IPA Layout: initrd start at 0x%lx\n", base);
 
-			fdt_setprop_u64(fdt_vaddr, nodeoffset, "linux,initrd-start", base);
+			fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-start", base);
 
 			base = fdt64_to_cpu(((const fdt64_t *) initrd_end->data)[0]);
 			base = pa_to_ipa(MEMSLOT_AGENCY, base);
 			lprintk("IPA Layout: initrd end at 0x%lx\n", base);
 
-			fdt_setprop_u64(fdt_vaddr, nodeoffset, "linux,initrd-end", base);
+			fdt_setprop_u64(guest_fdt, nodeoffset, "linux,initrd-end", base);
 
 			break;
 		}

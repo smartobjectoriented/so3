@@ -30,6 +30,7 @@
 
 .global __start
 .global __fdt_addr
+.global __agency_itb_paddr
 .global __mmu_setup
 
 .extern clear_bss
@@ -57,11 +58,19 @@ __start:
 
 	// Preserve the fdt addr (device tree) which is stored in x0 by U-boot
 	mov	x9, x0
- 
+
 	// Store the DT addr in a safe place which can be accessed on a relocatable address
 	adr     x8, .LCfdt_addr_temp
 	str 	x9, [x8]
-	
+
+	// Preserve the agency/guest ITB addr passed in x1 by the bootloader
+	// (e1c-boot / launcher). AVZ loads the agency guest from this separate
+	// ITB (avz_dt stays in the x0 AVZ FIT). Save it now before x1 is
+	// clobbered by el2_setup / bss clear.
+	mov	x10, x1
+	adr	x8, .LCagency_itb_temp
+	str	x10, [x8]
+
 	// If SO3 is running as guest on top of AVZ, it must not setup EL2 mode
 	// TODO: enable trap of EL2 inst. to avoid this test.
 #if defined(CONFIG_AVZ) || !defined(CONFIG_SOO)
@@ -126,6 +135,13 @@ __kernel_main:
 	ldr	x0, =__fdt_addr
 	str	x9, [x0]
 
+	// Store the agency/guest ITB paddr
+	adr	x8, .LCagency_itb_temp
+	ldr	x10, [x8]
+
+	ldr	x0, =__agency_itb_paddr
+	str	x10, [x0]
+
 	// C main entry point
 #ifdef CONFIG_AVZ
 	b 	avz_start
@@ -142,6 +158,9 @@ __kernel_main:
 .align 3
 
 .LCfdt_addr_temp:
+	.quad 0
+
+.LCagency_itb_temp:
 	.quad 0
 
 .align 2
@@ -545,6 +564,9 @@ __secondary_data:
 .ltorg
 
 __fdt_addr:
+  .quad 	0
+
+__agency_itb_paddr:
   .quad 	0
 
 .align 13

@@ -64,6 +64,11 @@
 /* Virtual address of the current device tree */
 extern void *__fdt_addr;
 
+/* Physical address of the agency/guest ITB (the separate FIT carrying the
+ * guest kernel + flat_dt + ramdisk), passed in x1 by the bootloader. AVZ
+ * loads the agency guest from this ITB; avz_dt comes from the x0 AVZ FIT. */
+extern void *__agency_itb_paddr;
+
 int fdt_find_compatible_node(void *fdt_addr, char *compat);
 const struct fdt_property *fdt_find_property(void *fdt_addr, int offset, const char *propname);
 int fdt_find_node_by_name(void *fdt_addr, int parent, const char *nodename);
