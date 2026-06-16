@@ -63,6 +63,23 @@ static void print_long(const char *dir, struct dirent *e)
 	}
 }
 
+/* Print a long-format line from a stat result (used for a file argument). */
+static void print_long_stat(const char *name, const struct stat *st)
+{
+	char tbuf[24];
+	char type = S_ISDIR(st->st_mode) ? 'd' : '-';
+	const char *suffix = S_ISDIR(st->st_mode) ? "/" : "";
+	time_t t = st->st_mtime;
+	struct tm tm;
+
+	if (localtime_r(&t, &tm) != NULL)
+		strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M", &tm);
+	else
+		strcpy(tbuf, "----------------");
+
+	printf("%c %10ld  %s  %s%s\n", type, (long) st->st_size, tbuf, name, suffix);
+}
+
 /* Print one entry in the default (name-only) format. */
 static void print_short(struct dirent *e)
 {
@@ -113,7 +130,18 @@ int main(int argc, char **argv)
 
 	stream = opendir(dir);
 	if (stream == NULL) {
-		printf("ls: cannot open '%s'\n", dir);
+		/* Not a directory: list it as a single entry if it exists. */
+		struct stat st;
+
+		if (stat(dir, &st) == 0) {
+			if (long_format)
+				print_long_stat(dir, &st);
+			else
+				printf("%s\n", dir);
+			return 0;
+		}
+
+		printf("ls: cannot access '%s'\n", dir);
 		return 1;
 	}
 
