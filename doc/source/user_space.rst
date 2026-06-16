@@ -84,13 +84,41 @@ line; a typical script prints a banner and starts the shell:
    shell
 
 The shell then presents the ``so3%`` prompt and runs commands by forking and
-``execve()``\ -ing the corresponding ``.elf`` from the root filesystem.
+``execve()``\ -ing the corresponding ``.elf`` from the root filesystem. It
+supports:
+
+.. flat-table::
+   :header-rows: 1
+   :widths: 32 68
+
+   * - Syntax
+     - Meaning
+   * - ``cmd arg1 arg2``
+     - run ``cmd.elf`` with arguments
+   * - ``cmd1 | cmd2 | cmd3``
+     - pipeline (any number of stages)
+   * - ``cmd > file`` / ``cmd >> file``
+     - redirect stdout (truncate / append)
+   * - ``cmd < file``
+     - redirect stdin from a file
+   * - ``cmd &``
+     - run in the background (reaped on the next prompt)
+   * - ``'literal'`` / ``"…$VAR…"``
+     - single quotes (literal) / double quotes (with expansion)
+   * - ``$VAR`` / ``${VAR}``
+     - environment variable expansion
+   * - ``exit`` / ``env`` / ``setenv`` / ``kill``
+     - builtins
+
+Operators (``| < > >> &``) must be surrounded by whitespace. Built-in
+``setenv NAME VALUE`` sets a variable (``setenv NAME`` unsets it) and ``env``
+lists the environment.
 
 .. note::
 
-   The shell does not implement ``cd``: all executables and data files live in
-   the root directory of the filesystem (except the device nodes under
-   ``dev/``).
+   The shell does not implement ``cd``: there is no per-process working
+   directory in the kernel yet, so all executables and data files live in the
+   root directory of the filesystem (except the device nodes under ``dev/``).
 
 Root filesystem
 ===============

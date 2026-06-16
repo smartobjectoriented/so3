@@ -19,9 +19,19 @@
  */
 
 /*
- * so3 shell: read a line, tokenize it, then either run a builtin or fork+exec
- * an external program (looked up as "<name>.elf"). Supports a trailing '&' for
- * background, a single '|' pipe and a single '>' redirection.
+ * so3 shell: read a line, tokenize it (with quoting and $VAR expansion), then
+ * either run a builtin or fork+exec a pipeline of external programs (each
+ * looked up as "<name>.elf").
+ *
+ * Supported syntax (operators must be surrounded by whitespace):
+ *   cmd a b              run cmd with arguments
+ *   cmd1 | cmd2 | cmd3   pipeline (any number of stages)
+ *   cmd > file           stdout to file (truncate)
+ *   cmd >> file          stdout to file (append)
+ *   cmd < file           stdin from file
+ *   cmd &                run in background
+ *   'literal'  "with $VAR and \" escapes"   quoting
+ *   $VAR  ${VAR}         environment variable expansion
  */
 
 #include <sys/types.h>
@@ -35,9 +45,12 @@
 #include <fcntl.h>
 
 #define MAX_LINE 256 /* longest command line accepted              */
-#define MAX_TOKENS 64 /* most whitespace-separated tokens per line   */
+#define MAX_TOKENS 64 /* most tokens (words + operators) per line    */
 #define MAX_ARGS 64 /* most arguments passed to one program        */
+#define MAX_CMDS 16 /* most stages in a pipeline                   */
 #define MAX_PATH 128 /* longest "<name>.elf" path                  */
+#define TOK_STORE (MAX_LINE * 4) /* backing store for expanded tokens */
+#define VAR_NAME 64 /* longest environment variable name           */
 
 #define ELF_SUFFIX ".elf"
 
@@ -45,8 +58,14 @@ extern char **environ; /* current environment (POSIX) */
 
 static const char prompt[] = "so3% ";
 
-/* Set by the SIGINT handler so the main loop can react outside signal ctx. */
-static volatile sig_atomic_t got_sigint;
+/* One parsed pipeline stage: its argv plus optional redirections. */
+struct command {
+	char *argv[MAX_ARGS];
+	int argc;
+	char *in_file; /* < file            (NULL if none) */
+	char *out_file; /* > / >> file       (NULL if none) */
+	int append; /* out_file uses >>  (else >)       */
+};
 
 /*
  * SIGINT (Ctrl-C): the shell itself must not die. Only note the event with an
@@ -55,7 +74,6 @@ static volatile sig_atomic_t got_sigint;
 static void sigint_handler(int sig)
 {
 	(void) sig;
-	got_sigint = 1;
 	write(STDOUT_FILENO, "\n", 1);
 }
 
@@ -109,15 +127,110 @@ static int read_line(char *buf, int size)
 	return (int) len;
 }
 
-/* Split line on spaces/tabs into tok[] (pointers into line). Returns count. */
-static int tokenize(char *line, char *tok[], int max)
-{
-	int n = 0;
-	char *p = strtok(line, " \t");
+/* -------------------------------------------------------------------------- */
+/* Tokenizer (quoting + $VAR expansion)                                       */
+/* -------------------------------------------------------------------------- */
 
-	while (p != NULL && n < max) {
-		tok[n++] = p;
-		p = strtok(NULL, " \t");
+/* Append c to the token store if there is room. */
+static void put(char **w, char *end, char c)
+{
+	if (*w < end)
+		*(*w)++ = c;
+}
+
+/* Is c valid in an environment variable name? */
+static int is_name_char(char c)
+{
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+}
+
+/*
+ * Expand a $VAR or ${VAR} starting at *pp (which points at the '$'), writing
+ * the value into the token store. Advances *pp past the reference.
+ */
+static void expand_var(char **pp, char **w, char *end)
+{
+	char *p = *pp + 1; /* skip '$' */
+	char name[VAR_NAME];
+	int ni = 0, braced = 0;
+	char *val;
+
+	if (*p == '{') {
+		braced = 1;
+		p++;
+	}
+
+	while (*p && ni < VAR_NAME - 1 && is_name_char(*p))
+		name[ni++] = *p++;
+	name[ni] = '\0';
+
+	if (braced && *p == '}')
+		p++;
+
+	if (ni == 0)
+		put(w, end, '$'); /* lone '$' / empty ${} -> literal '$' */
+	else {
+		val = getenv(name);
+		while (val != NULL && *val)
+			put(w, end, *val++);
+	}
+
+	*pp = p;
+}
+
+/*
+ * Split line into tok[] (stored NUL-terminated in store), honouring single
+ * quotes (literal), double quotes (with $VAR + \ escapes) and backslash
+ * escaping. Operators (| < > >> &) must be whitespace-separated. Returns the
+ * token count.
+ */
+static int tokenize(char *line, char *tok[], int max, char *store, int store_size)
+{
+	char *p = line;
+	char *w = store;
+	char *end = store + store_size - 1;
+	int n = 0;
+
+	while (*p) {
+		while (*p == ' ' || *p == '\t')
+			p++;
+		if (!*p || n >= max)
+			break;
+
+		tok[n] = w;
+
+		while (*p && *p != ' ' && *p != '\t') {
+			if (*p == '\'') {
+				p++;
+				while (*p && *p != '\'')
+					put(&w, end, *p++);
+				if (*p == '\'')
+					p++;
+			} else if (*p == '"') {
+				p++;
+				while (*p && *p != '"') {
+					if (*p == '$')
+						expand_var(&p, &w, end);
+					else if (*p == '\\' && (p[1] == '"' || p[1] == '\\' || p[1] == '$')) {
+						p++;
+						put(&w, end, *p++);
+					} else
+						put(&w, end, *p++);
+				}
+				if (*p == '"')
+					p++;
+			} else if (*p == '\\') {
+				p++;
+				if (*p)
+					put(&w, end, *p++);
+			} else if (*p == '$') {
+				expand_var(&p, &w, end);
+			} else
+				put(&w, end, *p++);
+		}
+
+		put(&w, end, '\0');
+		n++;
 	}
 
 	return n;
@@ -237,8 +350,92 @@ static int run_builtin(int argc, char *argv[])
 }
 
 /* -------------------------------------------------------------------------- */
-/* External commands                                                          */
+/* Pipeline parsing and execution                                             */
 /* -------------------------------------------------------------------------- */
+
+/*
+ * Split the token list into pipeline stages around '|', recording '<', '>',
+ * '>>' redirections per stage and a trailing '&'. Returns the number of stages,
+ * or -1 on a syntax error (already reported).
+ */
+static int parse_commands(int n, char *tok[], struct command cmds[], int maxc, int *background)
+{
+	int k = 0, i;
+
+	*background = 0;
+	memset(&cmds[0], 0, sizeof(cmds[0]));
+
+	for (i = 0; i < n; i++) {
+		char *t = tok[i];
+
+		if (!strcmp(t, "&")) {
+			*background = 1;
+			break; /* anything after '&' is ignored */
+		} else if (!strcmp(t, "|")) {
+			if (cmds[k].argc == 0) {
+				printf("sh: syntax error near '|'.\n");
+				return -1;
+			}
+			if (++k >= maxc) {
+				printf("sh: too many pipeline stages.\n");
+				return -1;
+			}
+			memset(&cmds[k], 0, sizeof(cmds[k]));
+		} else if (!strcmp(t, "<")) {
+			if (++i >= n) {
+				printf("sh: expected file after '<'.\n");
+				return -1;
+			}
+			cmds[k].in_file = tok[i];
+		} else if (!strcmp(t, ">") || !strcmp(t, ">>")) {
+			int append = (t[1] == '>');
+			if (++i >= n) {
+				printf("sh: expected file after '%s'.\n", t);
+				return -1;
+			}
+			cmds[k].out_file = tok[i];
+			cmds[k].append = append;
+		} else if (cmds[k].argc < MAX_ARGS - 1)
+			cmds[k].argv[cmds[k].argc++] = t;
+	}
+
+	for (i = 0; i <= k; i++) {
+		if (cmds[i].argc == 0) {
+			printf("sh: syntax error.\n");
+			return -1;
+		}
+		cmds[i].argv[cmds[i].argc] = NULL;
+	}
+
+	return k + 1;
+}
+
+/* Apply a stage's file redirections in the child. exit()s on failure. */
+static void apply_redirections(const struct command *c)
+{
+	int fd;
+
+	if (c->in_file != NULL) {
+		fd = open(c->in_file, O_RDONLY);
+		if (fd < 0) {
+			printf("sh: cannot open '%s'.\n", c->in_file);
+			exit(1);
+		}
+		dup2(fd, STDIN_FILENO);
+		close(fd);
+	}
+
+	if (c->out_file != NULL) {
+		int flags = O_WRONLY | O_CREAT | (c->append ? O_APPEND : O_TRUNC);
+		fd = open(c->out_file, flags, 0644);
+		if (fd < 0) {
+			printf("sh: cannot open '%s'.\n", c->out_file);
+			exit(1);
+		}
+		dup2(fd, STDOUT_FILENO);
+		close(fd);
+	}
+}
 
 /*
  * Replace the current (child) process image with "<argv[0]>.elf". Never
@@ -256,130 +453,71 @@ static void exec_elf(char *argv[])
 	exit(127);
 }
 
-/* left | right : connect left's stdout to right's stdin. */
-static void run_pipe(char *left[], char *right[])
-{
-	int fds[2];
-	pid_t pl, pr;
-
-	if (pipe(fds) < 0) {
-		printf("sh: pipe failed.\n");
-		return;
-	}
-
-	pl = fork();
-	if (pl == 0) {
-		dup2(fds[1], STDOUT_FILENO);
-		close(fds[0]);
-		close(fds[1]);
-		exec_elf(left);
-	}
-
-	pr = fork();
-	if (pr == 0) {
-		dup2(fds[0], STDIN_FILENO);
-		close(fds[0]);
-		close(fds[1]);
-		exec_elf(right);
-	}
-
-	close(fds[0]);
-	close(fds[1]);
-
-	waitpid(pl, NULL, 0);
-	waitpid(pr, NULL, 0);
-}
-
-/* cmd > file : send cmd's stdout to file (created/truncated). */
-static void run_redirect(char *argv[], const char *outfile)
-{
-	pid_t pid = fork();
-
-	if (pid == 0) {
-		int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		if (fd < 0) {
-			printf("sh: cannot open '%s'.\n", outfile);
-			exit(1);
-		}
-		dup2(fd, STDOUT_FILENO);
-		close(fd);
-		exec_elf(argv);
-	}
-
-	waitpid(pid, NULL, 0);
-}
-
-/* Plain command, optionally in background. */
-static void run_simple(char *argv[], int background)
-{
-	pid_t pid = fork();
-
-	if (pid < 0) {
-		printf("sh: fork failed.\n");
-		return;
-	}
-
-	if (pid == 0)
-		exec_elf(argv);
-
-	if (background)
-		printf("[%d]\n", pid);
-	else
-		waitpid(pid, NULL, 0);
-}
-
 /*
- * Split the token list around the '&', '|' and '>' operators and dispatch to
- * the right runner. Pipe and redirection are mutually exclusive here.
+ * Fork+exec each stage, wiring stage i's stdout into stage i+1's stdin via
+ * pipes. Explicit redirections (applied after the pipe wiring) take precedence.
  */
-static void run_external(int n, char *tok[])
+static void run_pipeline(struct command cmds[], int ncmd, int background)
 {
-	char *argv[MAX_ARGS], *rhs[MAX_ARGS];
-	char *outfile = NULL;
-	int background = 0, has_pipe = 0, has_redir = 0;
-	int ai = 0, ri = 0, i;
+	pid_t pids[MAX_CMDS];
+	int prev_read = -1;
+	int started = 0;
+	int i;
 
-	for (i = 0; i < n; i++) {
-		if (!strcmp(tok[i], "&")) {
-			background = 1;
-			break; /* anything after '&' is ignored */
-		} else if (!strcmp(tok[i], "|")) {
-			has_pipe = 1;
-		} else if (!strcmp(tok[i], ">")) {
-			has_redir = 1;
-		} else if (has_redir) {
-			outfile = tok[i];
-		} else if (has_pipe) {
-			if (ri < MAX_ARGS - 1)
-				rhs[ri++] = tok[i];
-		} else {
-			if (ai < MAX_ARGS - 1)
-				argv[ai++] = tok[i];
+	for (i = 0; i < ncmd; i++) {
+		int pfd[2] = { -1, -1 };
+		pid_t pid;
+
+		if (i < ncmd - 1 && pipe(pfd) < 0) {
+			printf("sh: pipe failed.\n");
+			break;
+		}
+
+		pid = fork();
+		if (pid < 0) {
+			printf("sh: fork failed.\n");
+			if (pfd[0] != -1)
+				close(pfd[0]);
+			if (pfd[1] != -1)
+				close(pfd[1]);
+			break;
+		}
+
+		if (pid == 0) { /* child */
+			if (prev_read != -1)
+				dup2(prev_read, STDIN_FILENO);
+			if (i < ncmd - 1)
+				dup2(pfd[1], STDOUT_FILENO);
+
+			if (prev_read != -1)
+				close(prev_read);
+			if (pfd[0] != -1)
+				close(pfd[0]);
+			if (pfd[1] != -1)
+				close(pfd[1]);
+
+			apply_redirections(&cmds[i]);
+			exec_elf(cmds[i].argv);
+		}
+
+		/* parent */
+		pids[started++] = pid;
+		if (prev_read != -1)
+			close(prev_read);
+		if (i < ncmd - 1) {
+			close(pfd[1]);
+			prev_read = pfd[0];
 		}
 	}
 
-	argv[ai] = NULL;
-	rhs[ri] = NULL;
+	if (prev_read != -1)
+		close(prev_read);
 
-	if (ai == 0) {
-		printf("sh: syntax error.\n");
-		return;
-	}
-
-	if (has_pipe) {
-		if (ri == 0) {
-			printf("sh: expected command after '|'.\n");
-			return;
-		}
-		run_pipe(argv, rhs);
-	} else if (has_redir) {
-		if (outfile == NULL) {
-			printf("sh: expected file after '>'.\n");
-			return;
-		}
-		run_redirect(argv, outfile);
-	} else
-		run_simple(argv, background);
+	if (background && started > 0)
+		printf("[%d]\n", pids[started - 1]);
+	else
+		for (i = 0; i < started; i++)
+			waitpid(pids[i], NULL, 0);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -389,9 +527,11 @@ static void run_external(int n, char *tok[])
 int main(int argc, char *argv[])
 {
 	char line[MAX_LINE];
+	char store[TOK_STORE];
 	char *tok[MAX_TOKENS];
+	struct command cmds[MAX_CMDS];
 	struct sigaction sa;
-	int n;
+	int n, ncmd, background;
 
 	(void) argc;
 	(void) argv;
@@ -403,7 +543,6 @@ int main(int argc, char *argv[])
 	while (1) {
 		reap_children();
 
-		got_sigint = 0;
 		printf("%s", prompt);
 		fflush(stdout);
 
@@ -411,12 +550,21 @@ int main(int argc, char *argv[])
 		if (n < 0) /* EOF or interrupted (e.g. Ctrl-C): just reprompt */
 			continue;
 
-		n = tokenize(line, tok, MAX_TOKENS);
+		n = tokenize(line, tok, MAX_TOKENS, store, sizeof(store));
 		if (n == 0)
 			continue;
 
-		if (!run_builtin(n, tok))
-			run_external(n, tok);
+		ncmd = parse_commands(n, tok, cmds, MAX_CMDS, &background);
+		if (ncmd < 0)
+			continue;
+
+		/* A lone builtin runs in the shell itself; anything in a
+		 * pipeline or with redirection goes through the fork path. */
+		if (ncmd == 1 && !background && cmds[0].in_file == NULL && cmds[0].out_file == NULL &&
+		    run_builtin(cmds[0].argc, cmds[0].argv))
+			continue;
+
+		run_pipeline(cmds, ncmd, background);
 	}
 
 	return 0;
