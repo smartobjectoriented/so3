@@ -83,9 +83,12 @@ line; a typical script prints a banner and starts the shell:
    echo SO3 Init Program :)
    shell
 
-The shell then presents the ``so3%`` prompt and runs commands by forking and
-``execve()``\ -ing the corresponding ``.elf`` from the root filesystem. It
-supports:
+The shell then presents a prompt showing the current working directory (e.g.
+``/ %`` at the root, ``/dev %`` after ``cd dev``) and runs commands by forking
+and ``execve()``\ -ing the corresponding ``.elf``. A bare command name (no
+``/``) is looked up in the root filesystem — all executables live there and
+there is no ``PATH`` — while a name containing ``/`` is resolved against the
+current directory. It supports:
 
 .. flat-table::
    :header-rows: 1

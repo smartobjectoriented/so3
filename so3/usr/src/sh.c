@@ -53,6 +53,7 @@
 #define TOK_STORE (MAX_LINE * 4) /* backing store for expanded tokens */
 #define VAR_NAME 64 /* longest environment variable name           */
 #define HIST_MAX 16 /* most command lines remembered               */
+#define MAX_CWD 256 /* longest cwd shown in the prompt (kernel cap) */
 
 #define ELF_SUFFIX ".elf"
 
@@ -699,7 +700,13 @@ static void exec_elf(char *argv[])
 {
 	char path[MAX_PATH];
 
-	snprintf(path, sizeof(path), "%s%s", argv[0], ELF_SUFFIX);
+	/* A bare command name (no '/') is looked up in the root directory — all
+	 * executables live there and there is no PATH. A name containing '/' is
+	 * a path, resolved by the kernel against the current working directory. */
+	if (strchr(argv[0], '/') != NULL)
+		snprintf(path, sizeof(path), "%s%s", argv[0], ELF_SUFFIX);
+	else
+		snprintf(path, sizeof(path), "/%s%s", argv[0], ELF_SUFFIX);
 
 	execv(path, argv);
 
@@ -783,6 +790,7 @@ int main(int argc, char *argv[])
 	char line[MAX_LINE];
 	char store[TOK_STORE];
 	char *tok[MAX_TOKENS];
+	char cwd[MAX_CWD];
 	struct command cmds[MAX_CMDS];
 	struct sigaction sa;
 	int n, ncmd, background;
@@ -801,7 +809,11 @@ int main(int argc, char *argv[])
 	while (1) {
 		reap_children();
 
-		printf("%s", prompt);
+		/* Prompt shows the current working directory, e.g. "/dev % ". */
+		if (getcwd(cwd, sizeof(cwd)) != NULL)
+			printf("%s %% ", cwd);
+		else
+			printf("%s", prompt);
 		fflush(stdout);
 
 		if (raw_ok) {
