@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <termios.h>
 
 #define MAX_LINE 256 /* longest command line accepted              */
 #define MAX_TOKENS 64 /* most tokens (words + operators) per line    */
@@ -51,6 +52,7 @@
 #define MAX_PATH 128 /* longest "<name>.elf" path                  */
 #define TOK_STORE (MAX_LINE * 4) /* backing store for expanded tokens */
 #define VAR_NAME 64 /* longest environment variable name           */
+#define HIST_MAX 16 /* most command lines remembered               */
 
 #define ELF_SUFFIX ".elf"
 
@@ -125,6 +127,190 @@ static int read_line(char *buf, int size)
 		buf[--len] = '\0';
 
 	return (int) len;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Line editor: history + arrow keys (raw mode)                               */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The kernel console is line-disciplined (ICANON|ECHO) by default. For
+ * interactive editing we switch it to raw (no canonical line buffering, no
+ * echo) only while reading a line, do our own echo / cursor handling, and
+ * restore the original mode before running any command (so external programs
+ * see a normal cooked terminal). On a non-tty (e.g. piped input) tcgetattr
+ * fails and we fall back to fgets() via read_line().
+ */
+
+static int raw_ok; /* terminal supports raw mode (is a console) */
+static char history[HIST_MAX][MAX_LINE];
+static int hist_count;
+
+static void out(const char *s, int n)
+{
+	if (n > 0)
+		write(STDOUT_FILENO, s, n);
+}
+
+static void outc(char c)
+{
+	write(STDOUT_FILENO, &c, 1);
+}
+
+static void backspaces(int n)
+{
+	while (n-- > 0)
+		outc('\b');
+}
+
+/* Append a line to the history ring (drop oldest when full, skip dups). */
+static void history_add(const char *line)
+{
+	if (line[0] == '\0')
+		return;
+	if (hist_count > 0 && !strcmp(history[hist_count - 1], line))
+		return;
+
+	if (hist_count == HIST_MAX) {
+		memmove(history[0], history[1], (HIST_MAX - 1) * MAX_LINE);
+		hist_count--;
+	}
+
+	strncpy(history[hist_count], line, MAX_LINE - 1);
+	history[hist_count][MAX_LINE - 1] = '\0';
+	hist_count++;
+}
+
+/* Replace the on-screen line content with newl, fixing up the cursor. */
+static void replace_line(char *buf, int *len, int *pos, const char *newl)
+{
+	int nl = (int) strlen(newl);
+
+	backspaces(*pos); /* cursor back to the start of the input */
+	out(newl, nl);
+	if (*len > nl) { /* erase the tail of the previous (longer) line */
+		int diff = *len - nl;
+		while (diff-- > 0)
+			outc(' ');
+		backspaces(*len - nl);
+	}
+
+	memcpy(buf, newl, nl);
+	buf[nl] = '\0';
+	*len = nl;
+	*pos = nl;
+}
+
+static int enable_raw(struct termios *saved)
+{
+	struct termios raw;
+
+	if (tcgetattr(STDIN_FILENO, saved) < 0)
+		return -1;
+
+	raw = *saved;
+	raw.c_lflag &= ~(ICANON | ECHO);
+	return tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+}
+
+/*
+ * Read a line with in-place editing, history (Up/Down) and cursor movement
+ * (Left/Right). Returns the length, or -1 if raw mode is unavailable (caller
+ * should fall back to read_line), or -2 if the line was cancelled (Ctrl-C).
+ */
+static int read_line_edit(char *buf, int size)
+{
+	struct termios saved;
+	char curstash[MAX_LINE];
+	int len = 0, pos = 0, ret;
+	int hpos = hist_count; /* history cursor; == count means "new line" */
+
+	if (enable_raw(&saved) < 0)
+		return -1;
+
+	curstash[0] = '\0';
+
+	for (;;) {
+		char c;
+		int r = read(STDIN_FILENO, &c, 1);
+
+		if (r <= 0 || c == 3) { /* EINTR/EOF or Ctrl-C: cancel */
+			outc('\n');
+			ret = -2;
+			goto done;
+		}
+
+		if (c == '\r' || c == '\n') {
+			outc('\n');
+			ret = len;
+			goto done;
+		} else if (c == 127 || c == 8) { /* backspace */
+			if (pos > 0) {
+				memmove(&buf[pos - 1], &buf[pos], len - pos);
+				pos--;
+				len--;
+				outc('\b');
+				out(&buf[pos], len - pos);
+				outc(' ');
+				backspaces(len - pos + 1);
+			}
+		} else if (c == 27) { /* ESC: arrow keys */
+			char seq[2];
+
+			if (read(STDIN_FILENO, &seq[0], 1) <= 0 || seq[0] != '[')
+				continue;
+			if (read(STDIN_FILENO, &seq[1], 1) <= 0)
+				continue;
+
+			switch (seq[1]) {
+			case 'A': /* up: older history */
+				if (hpos > 0) {
+					if (hpos == hist_count) {
+						buf[len] = '\0';
+						strcpy(curstash, buf);
+					}
+					hpos--;
+					replace_line(buf, &len, &pos, history[hpos]);
+				}
+				break;
+			case 'B': /* down: newer history */
+				if (hpos < hist_count) {
+					hpos++;
+					replace_line(buf, &len, &pos, hpos == hist_count ? curstash : history[hpos]);
+				}
+				break;
+			case 'C': /* right */
+				if (pos < len) {
+					outc(buf[pos]);
+					pos++;
+				}
+				break;
+			case 'D': /* left */
+				if (pos > 0) {
+					outc('\b');
+					pos--;
+				}
+				break;
+			}
+		} else if (c >= 32 && c < 127) { /* printable: insert at cursor */
+			if (len < size - 1) {
+				memmove(&buf[pos + 1], &buf[pos], len - pos);
+				buf[pos] = c;
+				len++;
+				out(&buf[pos], len - pos);
+				backspaces(len - pos - 1);
+				pos++;
+			}
+		}
+	}
+
+done:
+	tcsetattr(STDIN_FILENO, TCSANOW, &saved);
+	if (ret >= 0) {
+		buf[ret] = '\0';
+		history_add(buf);
+	}
+	return ret;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -540,14 +726,25 @@ int main(int argc, char *argv[])
 	sa.sa_handler = sigint_handler;
 	sigaction(SIGINT, &sa, NULL);
 
+	/* Use the interactive line editor when stdin is the console; fall back
+	 * to plain line input (fgets) for piped/redirected input. */
+	raw_ok = (isatty(STDIN_FILENO) == 1);
+
 	while (1) {
 		reap_children();
 
 		printf("%s", prompt);
 		fflush(stdout);
 
-		n = read_line(line, sizeof(line));
-		if (n < 0) /* EOF or interrupted (e.g. Ctrl-C): just reprompt */
+		if (raw_ok) {
+			n = read_line_edit(line, sizeof(line));
+			if (n == -1) { /* raw mode unavailable after all */
+				raw_ok = 0;
+				n = read_line(line, sizeof(line));
+			}
+		} else
+			n = read_line(line, sizeof(line));
+		if (n < 0) /* EOF or cancelled (Ctrl-C): reprompt */
 			continue;
 
 		n = tokenize(line, tok, MAX_TOKENS, store, sizeof(store));

@@ -114,6 +114,15 @@ Operators (``| < > >> &``) must be surrounded by whitespace. Built-in
 ``setenv NAME VALUE`` sets a variable (``setenv NAME`` unsets it) and ``env``
 lists the environment.
 
+When stdin is the console the shell provides **interactive line editing**: a
+``HIST_MAX``-entry command **history** (Up / Down arrows), **cursor movement**
+(Left / Right) and mid-line insert/backspace. It does this by briefly switching
+the console to raw mode (clearing ``ICANON``/``ECHO`` via the ``TCSETS`` ioctl
+that :ref:`console.c <kernel>` implements) for the duration of the line edit,
+then restoring canonical mode so spawned programs see a normal cooked terminal.
+On non-tty input (e.g. ``init`` feeding ``commands.ini``) it falls back to plain
+line reading.
+
 .. note::
 
    The shell does not implement ``cd``: there is no per-process working
