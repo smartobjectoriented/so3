@@ -16,7 +16,22 @@
 
 **/build
 
-atf
+# The top-level infrabase metadata tree (/build) is matched by **/build above,
+# which used to force recipe sources (patches, .bb/.inc, conf) to be added with
+# `git add -f` — easy to forget, and a forgotten patch breaks CI parsing. Un-ignore
+# /build, re-ignore everything one level under it, then re-include only the source
+# dirs. Build output stays ignored: build/tmp (also build/.gitignore), build/cache,
+# build/bitbake.lock, logs/artifacts (*.log, *.o, *.dtb, *.itb, ... from the rules
+# above). Nested build/ dirs elsewhere (optee_os, agency, avz) remain ignored.
+!/build/
+/build/*
+!/build/conf/
+!/build/meta-*/
+
+# The fetched ATF source tree lives at the repo root (/atf), like /u-boot, /avz,
+# qemu. Anchor to /atf so the bare name doesn't also match the meta-atf recipe
+# directory (build/meta-atf/recipes-atf/atf), which holds tracked recipe sources.
+/atf/
 #vmlinux*
 uImage*
 domains*
@@ -87,6 +102,9 @@ so3/so3/scripts/kconfig/zconf.tab.c
 # Junk / build backups
 *.deb
 *.back
+# patch/quilt reject & backup files (e.g. do_updiff regeneration leftovers)
+*.orig
+*.rej
 # do_attach_infrabase dirty-tree guard manifests (sibling of each attached
 # component tree, e.g. avz.attach.sha256, u-boot.attach.sha256)
 *.attach.sha256
