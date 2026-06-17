@@ -24,7 +24,7 @@
 
 #define IOCTL_KB_GET_KEY 0
 
-#define KB_DEV		 "/dev/keyboard"
+#define KB_DEV "/dev/keyboard"
 
 struct ps2_key {
 	/* UTF-8 char */

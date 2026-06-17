@@ -45,14 +45,14 @@
 #include <device/input/ps2.h>
 
 /* MMIO register offsets (must match hw/arm/virt.c). */
-#define ABSMOUSE_REG_X   0x00
-#define ABSMOUSE_REG_Y   0x04
+#define ABSMOUSE_REG_X 0x00
+#define ABSMOUSE_REG_Y 0x04
 #define ABSMOUSE_REG_BTN 0x08
 #define ABSMOUSE_REG_MAX 0x0c
 
 /* ioctl commands (must match kmi1.c and usr/lib/slv/slv_mouse.h). */
 #define GET_STATE 0
-#define SET_SIZE  1
+#define SET_SIZE 1
 
 /* Display resolution, set via SET_SIZE; used to scale the absolute range. */
 struct display_res {

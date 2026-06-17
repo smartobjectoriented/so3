@@ -102,13 +102,13 @@ void slv_terminate(slv_t *slv)
 }
 static void *slv_loop_inner(void *args)
 {
-	slv_t *slv = (slv_t *)args;
+	slv_t *slv = (slv_t *) args;
 	while (!slv->terminate) {
 		const uint32_t next_timer = lv_timer_handler();
 		if (next_timer == LV_NO_TIMER_READY) {
 			usleep(LV_DEF_REFR_PERIOD * 1000);
 		} else {
-			usleep((uint64_t)next_timer * 1000);
+			usleep((uint64_t) next_timer * 1000);
 		}
 	}
 	return NULL;
@@ -116,7 +116,7 @@ static void *slv_loop_inner(void *args)
 
 static void *slv_tick(void *args)
 {
-	slv_t *slv = (slv_t *)args;
+	slv_t *slv = (slv_t *) args;
 	while (!slv->terminate) {
 		/* Tell LVGL that 10 milliseconds were elapsed */
 		usleep(10000);

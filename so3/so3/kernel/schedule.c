@@ -403,9 +403,8 @@ static tcb_t *next_thread(void)
 		 * Without this, Ctrl-C on a multi-threaded LVGL/slv app hangs
 		 * instead of killing it (the teardown waits on a thread the
 		 * scheduler refuses to pick). */
-		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY) ||
-		    (tcb->pcb->state == PROC_STATE_RUNNING) || tcb->killed ||
-		    (tcb->pcb->main_thread == tcb)) {
+		if ((tcb->pcb == NULL) || (tcb->pcb->state == PROC_STATE_READY) || (tcb->pcb->state == PROC_STATE_RUNNING) ||
+		    tcb->killed || (tcb->pcb->main_thread == tcb)) {
 			spin_unlock(&schedule_lock);
 
 			/* Warning ! entry will be freed in remove_ready() */

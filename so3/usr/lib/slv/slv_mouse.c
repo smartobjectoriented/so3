@@ -54,10 +54,9 @@ int slv_mouse_init(uint16_t h, uint16_t v)
 	lv_indev_t *mouse = lv_indev_create();
 	lv_indev_set_type(mouse, LV_INDEV_TYPE_POINTER);
 	lv_indev_set_read_cb(mouse, slv_mouse_cb);
-	lv_indev_set_user_data(mouse, (void *)(ssize_t)mfd);
+	lv_indev_set_user_data(mouse, (void *) (ssize_t) mfd);
 
-	lv_obj_t *cursor_obj =
-		lv_image_create(lv_display_get_screen_active(NULL));
+	lv_obj_t *cursor_obj = lv_image_create(lv_display_get_screen_active(NULL));
 	lv_image_set_src(cursor_obj, LV_SYMBOL_PLUS);
 	lv_indev_set_cursor(mouse, cursor_obj);
 
@@ -75,7 +74,7 @@ static void slv_mouse_cb(lv_indev_t *indev, lv_indev_data_t *data)
 {
 	/* Retrieve mouse state from the driver. */
 	static struct ps2_mouse mouse;
-	int mfd = (int)(ssize_t)lv_indev_get_user_data(indev);
+	int mfd = (int) (ssize_t) lv_indev_get_user_data(indev);
 
 	ioctl(mfd, IOCTL_MOUSE_GET_STATE, &mouse);
 

@@ -36,11 +36,11 @@
 
 /* Framebuffer device + ioctls, matching lib/slv/slv_fb.h and the kernel
  * drivers (devices/fb/pl111.c, virtfb.c). */
-#define FB_DEV		"/dev/fb"
-#define IOCTL_FB_HRES	1
-#define IOCTL_FB_VRES	2
-#define IOCTL_FB_SIZE	3
-#define IOCTL_FB_BPP	5
+#define FB_DEV "/dev/fb"
+#define IOCTL_FB_HRES 1
+#define IOCTL_FB_VRES 2
+#define IOCTL_FB_SIZE 3
+#define IOCTL_FB_BPP 5
 
 /* Pack an 8-bit-per-channel colour for the framebuffer's pixel depth. */
 static uint32_t pack(uint32_t bpp, uint8_t r, uint8_t g, uint8_t b)
@@ -53,8 +53,7 @@ static uint32_t pack(uint32_t bpp, uint8_t r, uint8_t g, uint8_t b)
 }
 
 /* Fill the rectangle [x0,x1[ x [y0,y1[ (clipped) with a packed colour. */
-static void fill_rect(void *fbp, uint32_t hres, uint32_t vres, uint32_t bpp,
-		      int x0, int y0, int x1, int y1, uint32_t color)
+static void fill_rect(void *fbp, uint32_t hres, uint32_t vres, uint32_t bpp, int x0, int y0, int x1, int y1, uint32_t color)
 {
 	if (x0 < 0)
 		x0 = 0;
@@ -90,8 +89,8 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (ioctl(fd, IOCTL_FB_HRES, &hres) || ioctl(fd, IOCTL_FB_VRES, &vres) ||
-	    ioctl(fd, IOCTL_FB_SIZE, &fb_size) || ioctl(fd, IOCTL_FB_BPP, &bpp)) {
+	if (ioctl(fd, IOCTL_FB_HRES, &hres) || ioctl(fd, IOCTL_FB_VRES, &vres) || ioctl(fd, IOCTL_FB_SIZE, &fb_size) ||
+	    ioctl(fd, IOCTL_FB_BPP, &bpp)) {
 		printf("fb_test: cannot query framebuffer geometry\n");
 		return EXIT_FAILURE;
 	}
@@ -118,12 +117,11 @@ int main(int argc, char **argv)
 	}
 
 	static const uint8_t bars[8][3] = {
-		{ 0, 0, 0 },     { 255, 0, 0 },   { 0, 255, 0 },   { 0, 0, 255 },
+		{ 0, 0, 0 },	 { 255, 0, 0 },	  { 0, 255, 0 },   { 0, 0, 255 },
 		{ 255, 255, 0 }, { 255, 0, 255 }, { 0, 255, 255 }, { 255, 255, 255 },
 	};
 	for (int i = 0; i < 8; i++)
-		fill_rect(bg, hres, vres, bpp, i * hres / 8, 0,
-			  (i + 1) * hres / 8, vres,
+		fill_rect(bg, hres, vres, bpp, i * hres / 8, 0, (i + 1) * hres / 8, vres,
 			  pack(bpp, bars[i][0], bars[i][1], bars[i][2]));
 
 	/* 4-pixel white border. */

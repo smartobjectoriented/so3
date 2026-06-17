@@ -39,11 +39,9 @@ typedef struct {
 	bool is_real;
 } slv_fb_priv_t;
 
-static void my_fb_cb(lv_display_t *disp, const lv_area_t *area,
-		     uint8_t *px_map);
+static void my_fb_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
 
-static void dummy_fb_cb(lv_display_t *disp, const lv_area_t *area,
-			uint8_t *px_map);
+static void dummy_fb_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
 
 int slv_fb_init(slv_fb_t *fb)
 {
@@ -53,7 +51,7 @@ int slv_fb_init(slv_fb_t *fb)
 		return -1;
 	}
 
-	slv_fb_priv_t *priv = (slv_fb_priv_t *)fb->priv;
+	slv_fb_priv_t *priv = (slv_fb_priv_t *) fb->priv;
 
 	/* Get file descriptor. */
 	priv->fd = open(FB_DEV, 0);
@@ -63,10 +61,8 @@ int slv_fb_init(slv_fb_t *fb)
 	}
 
 	/* Get screen resolution. */
-	if (ioctl(priv->fd, IOCTL_FB_HRES, &fb->hres) ||
-	    ioctl(priv->fd, IOCTL_FB_VRES, &fb->vres) ||
-	    ioctl(priv->fd, IOCTL_FB_SIZE, &priv->fb_size) ||
-	    ioctl(priv->fd, IOCTL_FB_BPP, &priv->bpp)) {
+	if (ioctl(priv->fd, IOCTL_FB_HRES, &fb->hres) || ioctl(priv->fd, IOCTL_FB_VRES, &fb->vres) ||
+	    ioctl(priv->fd, IOCTL_FB_SIZE, &priv->fb_size) || ioctl(priv->fd, IOCTL_FB_BPP, &priv->bpp)) {
 		printf("Couldn't get framebuffer resolution.\n");
 		return -1;
 	}
@@ -126,8 +122,7 @@ int slv_fb_init(slv_fb_t *fb)
 		return -1;
 	}
 
-	lv_display_set_buffers(disp, buf, NULL, priv->fb_size,
-			       LV_DISPLAY_RENDER_MODE_DIRECT);
+	lv_display_set_buffers(disp, buf, NULL, priv->fb_size, LV_DISPLAY_RENDER_MODE_DIRECT);
 
 	const lv_display_flush_cb_t cb = priv->is_real ? my_fb_cb : dummy_fb_cb;
 	lv_display_set_flush_cb(disp, cb);
@@ -137,7 +132,7 @@ int slv_fb_init(slv_fb_t *fb)
 }
 void slv_fb_terminate(slv_fb_t *data)
 {
-	slv_fb_priv_t *priv = (slv_fb_priv_t *)data->priv;
+	slv_fb_priv_t *priv = (slv_fb_priv_t *) data->priv;
 	if (priv->fd > 0) {
 		close(priv->fd);
 	}
@@ -153,12 +148,11 @@ void slv_fb_terminate(slv_fb_t *data)
  */
 static void my_fb_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
-	slv_fb_priv_t *priv = (slv_fb_priv_t *)lv_display_get_user_data(disp);
+	slv_fb_priv_t *priv = (slv_fb_priv_t *) lv_display_get_user_data(disp);
 	memcpy(priv->fbp, px_map, priv->fb_size);
 	lv_display_flush_ready(disp);
 }
-static void dummy_fb_cb(lv_display_t *disp, const lv_area_t *area,
-			uint8_t *px_map)
+static void dummy_fb_cb(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
 	lv_display_flush_ready(disp);
 }

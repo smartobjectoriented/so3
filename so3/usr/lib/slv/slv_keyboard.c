@@ -43,7 +43,7 @@ int slv_keyboard_init(void)
 	lv_indev_t *keyboard = lv_indev_create();
 	lv_indev_set_type(keyboard, LV_INDEV_TYPE_KEYPAD);
 	lv_indev_set_read_cb(keyboard, slv_keyboard_cb);
-	lv_indev_set_user_data(keyboard, (void *)(ssize_t)kfd);
+	lv_indev_set_user_data(keyboard, (void *) (ssize_t) kfd);
 
 	return kfd;
 }
@@ -59,7 +59,7 @@ static void slv_keyboard_cb(lv_indev_t *indev, lv_indev_data_t *data)
 {
 	/* Retrieve mouse state from the driver. */
 	static struct ps2_key key;
-	int kfd = (int)(ssize_t)lv_indev_get_user_data(indev);
+	int kfd = (int) (ssize_t) lv_indev_get_user_data(indev);
 
 	ioctl(kfd, IOCTL_KB_GET_KEY, &key);
 

@@ -1167,8 +1167,7 @@ static long do_rename(const char *oldpath, const char *newpath)
 
 	if (!registered_fs_ops[FS_FAT] || !registered_fs_ops[FS_FAT]->rename)
 		return -ENOSYS;
-	if (!vfs_resolve_path(oldpath, rold, sizeof(rold)) ||
-	    !vfs_resolve_path(newpath, rnew, sizeof(rnew)))
+	if (!vfs_resolve_path(oldpath, rold, sizeof(rold)) || !vfs_resolve_path(newpath, rnew, sizeof(rnew)))
 		return -ENOENT;
 
 	mutex_lock(&vfs_lock);
@@ -1191,8 +1190,7 @@ SYSCALL_DEFINE4(renameat, int, olddirfd, const char *, oldpath, int, newdirfd, c
 	return do_rename(oldpath, newpath);
 }
 
-SYSCALL_DEFINE5(renameat2, int, olddirfd, const char *, oldpath, int, newdirfd, const char *, newpath,
-		unsigned int, flags)
+SYSCALL_DEFINE5(renameat2, int, olddirfd, const char *, oldpath, int, newdirfd, const char *, newpath, unsigned int, flags)
 {
 	(void) flags; /* RENAME_NOREPLACE/EXCHANGE not modelled */
 

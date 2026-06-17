@@ -129,9 +129,9 @@ void loadAgency(void)
 	int depth, ret;
 	const char *propstring;
 	mem_info_t guest_mem_info;
-	void *fdt_vaddr = __fdt_addr;                  /* AVZ FIT (x0): carries avz_dt */
+	void *fdt_vaddr = __fdt_addr; /* AVZ FIT (x0): carries avz_dt */
 	void *guest_itb = (void *) __agency_itb_paddr; /* guest ITB (x1): guest + flat_dt + ramdisk */
-	void *guest_fdt;                               /* the agency guest's own device tree (flat_dt) */
+	void *guest_fdt; /* the agency guest's own device tree (flat_dt) */
 
 	u64 entry_addr;
 

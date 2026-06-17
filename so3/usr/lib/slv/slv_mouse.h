@@ -23,9 +23,9 @@
 #include <stdint.h>
 
 #define IOCTL_MOUSE_GET_STATE 0
-#define IOCTL_MOUSE_SET_RES   1
+#define IOCTL_MOUSE_SET_RES 1
 
-#define MOUSE_DEV	      "/dev/mouse"
+#define MOUSE_DEV "/dev/mouse"
 
 struct ps2_mouse {
 	uint16_t x, y;

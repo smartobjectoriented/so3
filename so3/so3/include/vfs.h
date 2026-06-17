@@ -200,8 +200,7 @@ SYSCALL_DECLARE(getcwd, char *buf, size_t size);
 SYSCALL_DECLARE(mkdirat, int dirfd, const char *path, mode_t mode);
 SYSCALL_DECLARE(unlinkat, int dirfd, const char *path, int flags);
 SYSCALL_DECLARE(renameat, int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
-SYSCALL_DECLARE(renameat2, int olddirfd, const char *oldpath, int newdirfd, const char *newpath,
-		unsigned int flags);
+SYSCALL_DECLARE(renameat2, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags);
 SYSCALL_DECLARE(utimensat, int dirfd, const char *path, const struct timespec *times, int flags);
 
 /* Special tv_nsec values for utimensat() (matching Linux/musl). */
@@ -212,7 +211,6 @@ SYSCALL_DECLARE(utimensat, int dirfd, const char *path, const struct timespec *t
 
 /* Longest absolute path the VFS manipulates (must be >= PCB_CWD_MAX). */
 #define VFS_PATH_MAX 256
-
 
 char *vfs_get_filename(int gfd);
 int vfs_get_gfd(int localfd);
