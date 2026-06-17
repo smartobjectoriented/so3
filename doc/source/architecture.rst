@@ -104,10 +104,10 @@ Boot flow
 
 SO3 is started by **U-Boot**, which loads a **FIT image** (``.itb``) containing
 the kernel, the device-tree blob and the root filesystem. In the AVZ
-configuration U-Boot loads the hypervisor and the agency guest; on ``virt64``
-these are **two separate ITBs** (the AVZ ITB and the SO3 guest ITB), whereas the
-``rpi4_64`` / ``verdin`` AVZ images still bundle both in one FIT
-(see :ref:`build_system`).
+configuration U-Boot loads the hypervisor and the agency guest as **two separate
+ITBs** — the AVZ ITB (``<plat>_avz``) and the SO3 guest ITB
+(``<plat>_so3_guest``) — on every AVZ platform (``virt64``, ``rpi4_64``,
+``verdin_imx8mp``); see :ref:`build_system`.
 
 .. figure:: img/so3_boot.png
    :width: 100%

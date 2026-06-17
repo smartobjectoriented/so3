@@ -37,7 +37,7 @@ hypervisor support for it:
 
 A capsule-capable guest is produced by ``virt64_capsule_defconfig`` (enabling
 ``CONFIG_SOO``). The AVZ demonstration shipped in this repository
-(the ``virt64_avz_so3.its`` AVZ ITB plus the separate ``virt64_so3_guest.its``
+(the ``virt64_avz.its`` AVZ ITB plus the separate ``virt64_so3_guest.its``
 guest ITB — see :ref:`two_itb_boot`) boots an **SO3** agency, which is enough to
 exercise the hypervisor; running actual capsules additionally requires the Linux
 agency from the soo repository.

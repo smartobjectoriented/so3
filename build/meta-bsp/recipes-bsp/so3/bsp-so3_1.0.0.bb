@@ -52,10 +52,18 @@ do_itb () {
 	fi
 
 	# AVZ boot uses a SEPARATE guest ITB (loaded alongside the AVZ ITB by
-	# the e1c-boot U-Boot command). Build it too when its ITS is present.
-	if [ -f ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.its ]; then
-		mkimage -f ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.its ${IB_ITB_PATH}/${IB_PLATFORM}_so3_guest.itb
-	fi
+	# the e1c-boot U-Boot command). The guest ITS is derived from the
+	# selected AVZ ITS: <plat>_avz -> <plat>_so3_guest (deriving from
+	# IB_TARGET_ITS, not IB_PLATFORM, keeps the underscore naming on
+	# platforms whose IB_PLATFORM carries a hyphen, e.g. verdin-imx8mp).
+	case "${IB_TARGET_ITS}" in
+	*_avz)
+		guest_its="${IB_TARGET_ITS%_avz}_so3_guest"
+		if [ -f ${IB_ITB_PATH}/${guest_its}.its ]; then
+			mkimage -f ${IB_ITB_PATH}/${guest_its}.its ${IB_ITB_PATH}/${guest_its}.itb
+		fi
+		;;
+	esac
 
 }
 

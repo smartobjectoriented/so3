@@ -1,0 +1,9 @@
+fdt_high=ffffffffffffffff
+initrd_high=ffffffffffffffff
+
+# AVZ boot on RPi4 64-bit: two ITBs (AVZ + SO3 guest) loaded to staging
+# addresses (above the 0x00080000-0x17c00000 sub-image extraction range),
+# then jumped via the e1c-boot U-Boot command which passes the AVZ FIT in
+# x0 and the guest ITB in x1 (AVZ loadAgency loads the guest from x1).
+
+start=fatload mmc 0 0x20000000 rpi4_64_avz.itb; fatload mmc 0 0x30000000 rpi4_64_guest.itb; e1c-boot 0x20000000 0x30000000

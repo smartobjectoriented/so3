@@ -4,17 +4,23 @@
 # of Torizon and the e1c capsules (edgem1 keeps the verdin BSP in meta-e1c; this
 # is the capsule-free equivalent).
 #
-# Boot image: do_itb (bsp-so3) mkimage's the verdin_imx8mp_avz_so3 ITS (AVZ +
-# SO3 guest + guest dtb + rootfs.fat) into one ITB. The firmware imx-boot
-# (flash.bin = SPL + ATF(BL31) + OP-TEE + U-Boot) is built by the uboot recipe.
+# Boot image: do_itb (bsp-so3) mkimage's two ITBs — the AVZ ITB
+# (verdin_imx8mp_avz.its = AVZ + avz_dt) and the SO3 guest ITB
+# (verdin_imx8mp_so3_guest.its = guest + dtb + rootfs.fat). The firmware
+# imx-boot (flash.bin = SPL + ATF(BL31) + OP-TEE + U-Boot) is built by the
+# uboot recipe.
 #
 # Deploy: assemble a Toradex TEZI image set (the official base image provides
 # image.json + the partition layout; we replace imx-boot with our flash.bin and
-# add a tiny boot.scr that bootm's the SO3 ITB). No capsule / OSTree rootfs —
-# SO3's rootfs rides inside the ITB.
+# add a boot.scr that loads both ITBs and jumps via the e1c-boot U-Boot command).
+# For SO3 standalone (non-AVZ ITS) a single ITB is staged and bootm'd instead.
+# No capsule / OSTree rootfs — SO3's rootfs rides inside the guest ITB.
 
-# Path to the SO3 boot script and the U-Boot bootcmd that sources it.
+# Path to the SO3 boot scripts and the U-Boot bootcmd that sources them.
+#   boot.scr.txt      single-ITB bootm (SO3 standalone)
+#   boot_avz.scr.txt  two-ITB AVZ boot (AVZ ITB + SO3 guest ITB via e1c-boot)
 IB_VERDIN_BOOTSCR = "${IB_DIR}/build/meta-bsp/recipes-bsp/bsp/verdin-imx8mp/boot.scr.txt"
+IB_VERDIN_BOOTSCR_AVZ = "${IB_DIR}/build/meta-bsp/recipes-bsp/bsp/verdin-imx8mp/boot_avz.scr.txt"
 IB_VERDIN_BOOTCMD = "mmc dev 2; ext4load mmc 2:1 0x48200000 /boot.scr; source 0x48200000"
 
 # Official Toradex TEZI image used as the deploy base (provides image.json +
@@ -126,20 +132,35 @@ def __do_platform_deploy(d):
     # Base TEZI image (image.json + the stock imx-boot/env we overwrite).
     __fetch_torizon_tezi_image(d, staging)
 
-    # Our firmware, boot script and ITB. The ITB is staged under the fixed name
-    # boot.itb (the selected ITS — AVZ+SO3 guest or SO3 standalone — both work),
-    # so boot.scr and image.json stay variant-agnostic.
+    # Our firmware, boot script and ITB(s).
+    #   * AVZ two-ITB boot (ITS ends in "_avz"): stage the AVZ ITB as
+    #     boot_avz.itb and the SO3 guest ITB (derived <its-without-_avz>_so3_guest)
+    #     as boot_guest.itb; boot_avz.scr.txt loads both and jumps via e1c-boot.
+    #   * Single-ITB bootm (any other ITS): stage it as boot.itb.
     subprocess.run(['cp', flashbin, f"{staging}/imx-boot"], check=True)
-    subprocess.run(['cp', itb, f"{staging}/boot.itb"], check=True)
+
+    if IB_TARGET_ITS.endswith("_avz"):
+        guest_itb = f"{IB_ITB_PATH}/{IB_TARGET_ITS[:-len('_avz')]}_so3_guest.itb"
+        if not os.path.isfile(guest_itb):
+            bb.fatal(f"verdin: guest ITB not found at {guest_itb} (run do_itb first)")
+        subprocess.run(['cp', itb, f"{staging}/boot_avz.itb"], check=True)
+        subprocess.run(['cp', guest_itb, f"{staging}/boot_guest.itb"], check=True)
+        bootscr_src = d.getVar('IB_VERDIN_BOOTSCR_AVZ')
+        files_to_add = ["boot.scr", "boot_avz.itb", "boot_guest.itb"]
+    else:
+        subprocess.run(['cp', itb, f"{staging}/boot.itb"], check=True)
+        bootscr_src = d.getVar('IB_VERDIN_BOOTSCR')
+        files_to_add = ["boot.scr", "boot.itb"]
+
     subprocess.run(['mkimage', '-A', 'arm64', '-T', 'script', '-C', 'none',
-                    '-d', d.getVar('IB_VERDIN_BOOTSCR'), f"{staging}/boot.scr"], check=True)
+                    '-d', bootscr_src, f"{staging}/boot.scr"], check=True)
 
     # U-Boot env: bootcmd sources boot.scr (text format, as TEZI imports it).
     with open(f"{staging}/u-boot-initial-env-sd", "w") as f:
         f.write(f"bootcmd={d.getVar('IB_VERDIN_BOOTCMD')}\nbootdelay=1\n")
 
     modify_image_json(f"{staging}/image.json", f"{staging}/image.json",
-                      files_to_add=["boot.scr", "boot.itb"])
+                      files_to_add=files_to_add)
 
     if IB_STORAGE_MODE == "http":
         final_dest = d.getVar('IB_HTTP_DEPLOY_PATH')
@@ -151,5 +172,5 @@ def __do_platform_deploy(d):
     utils_sudo(["mkdir", "-p", final_dest], check=True)
     utils_sudo(["rsync", "-a", "--delete", f"{staging}/", f"{final_dest}/"], check=True)
 
-    bb.plain("verdin: TEZI image staged at %s (imx-boot + boot.scr + boot.itb=%s)"
+    bb.plain("verdin: TEZI image staged at %s (imx-boot + boot.scr + ITB(s) for %s)"
              % (final_dest, IB_TARGET_ITS))

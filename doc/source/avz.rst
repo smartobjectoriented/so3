@@ -36,11 +36,10 @@ Boot and guest loading
 
 The hypervisor entry point is ``avz_start()`` (``avz/kernel/setup.c``). After
 early CPU, memory and device initialisation it prints its banner and *loads the
-guest domain*. On ``virt64`` U-Boot's ``e1c-boot`` command hands AVZ **two** FIT
-images — the AVZ ITB in ``x0`` and a separate SO3 guest ITB in ``x1`` — and
-``loadAgency()`` parses the guest from the ``x1`` ITB (on ``rpi4_64`` / ``verdin``
-the guest still travels in the same combined FIT; see
-:ref:`build_system`). AVZ places the agency's kernel and device tree in RAM,
+guest domain*. U-Boot's ``e1c-boot`` command hands AVZ **two** FIT images — the
+AVZ ITB in ``x0`` and a separate SO3 guest ITB in ``x1`` (see
+:ref:`build_system`) — and ``loadAgency()`` parses the guest from the ``x1``
+ITB. AVZ places the agency's kernel and device tree in RAM,
 injects the guest initrd (the ITB ``ramdisk`` node) into the guest's
 ``/chosen``, builds the agency's **stage-2** page tables and sets the guest entry
 point. AVZ then ``eret``\ s to EL1, and the agency boots as an ordinary SO3

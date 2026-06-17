@@ -130,7 +130,7 @@ To run SO3 as the **agency guest** on top of AVZ:
 
 .. code-block:: text
 
-   IB_TARGET_ITS:so3:virt64 = "virt64_avz_so3"
+   IB_TARGET_ITS:so3:virt64 = "virt64_avz"
    # IB_BOOT_CHAIN ?= "atf+uboot"     # or "full" (ATF + OP-TEE); default is bare U-Boot
 
 **2.** Build the hypervisor and (re)assemble the BSP, then deploy:
@@ -149,11 +149,11 @@ To run SO3 as the **agency guest** on top of AVZ:
 
 .. note::
 
-   On ``virt64`` the build produces **two ITBs** — the AVZ ITB
-   (``virt64_avz_so3.itb``) and the SO3 guest ITB (``virt64_so3_guest.itb``,
-   built automatically) — and the deploy stages both on the boot partition with
-   ``uEnv_virt64_avz.txt``; U-Boot loads them and jumps via its ``e1c-boot``
-   command. No extra step is needed, but see :ref:`two_itb_boot` for details.
+   AVZ boot produces **two ITBs** — the AVZ ITB (``virt64_avz.itb``) and the
+   SO3 guest ITB (``virt64_so3_guest.itb``, built automatically) — and the
+   deploy stages both on the boot partition with ``uEnv_virt64_avz.txt``; U-Boot
+   loads them and jumps via its ``e1c-boot`` command. No extra step is needed,
+   but see :ref:`two_itb_boot` for details.
 
 A successful run shows the **AVZ Hypervisor** banner, the *Loading Guest Domain*
 trace, and finally the agency reaching the ``so3%`` prompt. See :ref:`avz` for

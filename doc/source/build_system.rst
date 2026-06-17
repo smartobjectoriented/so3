@@ -146,7 +146,7 @@ without a per-platform ``IB_PLATFORM:so3`` override:
      - Deployment
    * - ``virt64_so3``
      - SO3 **standalone** (kernel at EL1)
-   * - ``virt64_avz_so3``
+   * - ``virt64_avz``
      - SO3 as the **AVZ agency guest** (AVZ at EL2, see :ref:`avz`)
    * - ``virt64_capsule``
      - an SO3 **capsule** (see :ref:`capsules`)
@@ -252,15 +252,15 @@ a root filesystem. Each image is described by an ``.its`` file in
      - Contents
    * - ``virt64_so3.its``
      - standalone: SO3 kernel + DTB + ramfs
-   * - ``virt64_avz_so3.its``
-     - **virt64 AVZ ITB**: the AVZ hypervisor binary + its device tree only —
-       the guest lives in a *separate* ITB (see :ref:`two_itb_boot`)
-   * - ``virt64_so3_guest.its``
-     - **virt64 SO3 guest ITB**: guest SO3 kernel + DTB + ramfs, loaded by AVZ
+   * - ``<plat>_avz.its``
+     - **AVZ ITB**: the AVZ hypervisor binary + its device tree only — the
+       guest lives in a *separate* ITB (see :ref:`two_itb_boot`). One per
+       platform: ``virt64_avz``, ``rpi4_64_avz``, ``verdin_imx8mp_avz``
+   * - ``<plat>_so3_guest.its``
+     - **SO3 guest ITB**: guest SO3 kernel + DTB + ramfs, loaded by AVZ.
+       Derived from the AVZ ITS (``<plat>_avz`` → ``<plat>_so3_guest``)
    * - ``virt64_capsule.its``
      - a capsule image
-   * - ``rpi4_64_avz_so3.its`` / ``verdin_imx8mp_avz_so3.its``
-     - **combined** AVZ ITB (single-ITB): hypervisor + guest SO3 + DTBs + ramfs
    * - ``virt32_so3.its`` / ``rpi4_64_so3.its``
      - the 32-bit / RPi4 standalone variants
 
@@ -273,26 +273,37 @@ QEMU loads as ``pflash``.
 
 .. _two_itb_boot:
 
-Two-ITB AVZ boot (virt64)
--------------------------
+Two-ITB AVZ boot
+----------------
 
-On ``virt64`` the hypervisor and its guest are packaged as **two separate FIT
-images** rather than one: the **AVZ ITB** (``virt64_avz_so3.itb`` — the
-hypervisor binary + ``avz_dt``) and the **SO3 guest ITB**
-(``virt64_so3_guest.itb`` — the guest kernel, its device tree and the ramfs).
-``do_itb`` builds the guest ITB automatically whenever a
-``<platform>_so3_guest.its`` exists next to the selected ITS.
+When SO3 runs as an AVZ guest, the hypervisor and its guest are packaged as
+**two separate FIT images** rather than one: the **AVZ ITB** (``<plat>_avz.itb``
+— the hypervisor binary + ``avz_dt``) and the **SO3 guest ITB**
+(``<plat>_so3_guest.itb`` — the guest kernel, its device tree and the ramfs).
+This holds on **all** AVZ platforms — ``virt64``, ``rpi4_64`` and
+``verdin_imx8mp`` — and mirrors the edge-m1 ``e1c`` component separation
+(``<plat>_avz.its`` + ``<plat>_e1c.its``).
 
-At deploy time ``__do_platform_deploy`` detects the guest ITB and stages **both**
-images on the boot partition (as ``virt64_avz.itb`` and ``virt64_guest.itb``)
-together with ``uEnv_virt64_avz.txt``. U-Boot loads both to staging addresses and
-jumps through its ``e1c-boot`` command, which enters AVZ with the **AVZ FIT in**
-``x0`` **and the guest ITB in** ``x1``; AVZ's ``loadAgency()`` then loads the
-agency guest from ``x1`` (see :ref:`avz`). When no guest ITB is present — a bare
-standalone SO3/Linux image, or the **combined** ``rpi4_64`` / ``verdin`` AVZ
-images that still bundle hypervisor and guest in one FIT — the deploy falls back
-to the single-ITB ``bootm`` path. This mirrors the edge-m1 ``e1c`` component
-separation on the so3 side.
+The trigger throughout is the selected ITS ending in ``_avz``. ``do_itb`` then
+also builds the guest ITB, whose name is *derived* from the AVZ ITS by replacing
+the ``_avz`` suffix with ``_so3_guest`` (so ``virt64_avz`` → ``virt64_so3_guest``;
+deriving from ``IB_TARGET_ITS`` rather than ``IB_PLATFORM`` keeps the underscore
+naming on platforms whose ``IB_PLATFORM`` carries a hyphen, e.g.
+``verdin-imx8mp``).
+
+At deploy time the platform glue stages **both** images plus a per-platform
+``uEnv_<plat>_avz.txt`` (or, on verdin, a ``boot_avz.scr`` boot script). U-Boot
+loads both ITBs to staging addresses and jumps through its ``e1c-boot`` command,
+which enters AVZ with the **AVZ FIT in** ``x0`` **and the guest ITB in** ``x1``;
+AVZ's ``loadAgency()`` then loads the agency guest from ``x1`` (see :ref:`avz`).
+When the selected ITS is *not* an ``_avz`` one (a bare standalone SO3/Linux
+image), the deploy falls back to the single-ITB ``bootm`` path.
+
+.. note::
+
+   Only the ``virt64`` two-ITB boot is runtime-verified (QEMU). The
+   ``rpi4_64`` and ``verdin_imx8mp`` ITS split + ``e1c-boot`` wiring is in
+   place but still to be validated on hardware.
 
 .. _fetched_components:
 
