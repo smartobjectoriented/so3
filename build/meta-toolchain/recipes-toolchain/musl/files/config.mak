@@ -19,3 +19,15 @@ GCC_VER = 12.4.0
 
 # Recommended options for a smaller toolchain / deployable binaries:
 COMMON_CONFIG += CFLAGS="-g -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
+
+# Disable autotools "maintainer mode" when configuring gcc and its in-tree
+# deps (gmp/mpfr/mpc/isl). Without this, if the extracted/copied source files
+# have inconsistent timestamps (configure.ac newer than configure — which
+# happens when the tree is copied without preserving mtimes, e.g. the CI
+# container's fresh build), make tries to regenerate configure/Makefile.in and
+# fails with "automake-1.17: command not found" / "autoconf: command not found".
+# The so3-env CI image has no autotools (and Ubuntu ships automake 1.16, not the
+# 1.17 mpfr wants), so the regen can never succeed there. Disabling maintainer
+# mode turns those regen rules into no-ops and makes the build environment- and
+# timestamp-independent.
+GCC_CONFIG += --disable-maintainer-mode
