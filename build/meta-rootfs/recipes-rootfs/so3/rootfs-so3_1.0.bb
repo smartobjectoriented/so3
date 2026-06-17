@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "SO3 root filesystem"
 DESCRIPTION = "SO3 root filesystem contents to be deployed on the target platform"

@@ -56,7 +56,6 @@ do_attach_infrabase () {
 	# copy but does NOT remove the dest-only productions, so the
 	# do_prepare_initrd content-hash guard (rootfs.cpio.sha256 +
 	# initrd.cpio.gz) keeps working across builds.
-    
 	mkdir -p ${WORKDIR}/board
 	cp -r ${FILE_DIRNAME}/files/board/. ${WORKDIR}/board
 

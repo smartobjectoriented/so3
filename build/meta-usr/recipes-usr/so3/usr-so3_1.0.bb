@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "User space applications for SO3"
 DESCRIPTION = "All (SO3) user space custom applications which take place in the rootfs of SO3"
@@ -89,7 +90,6 @@ python do_deploy() {
         
         __do_rootfs_umount(d)
     else:
-        utils_restore_user_ownership(d)
         bb.fatal("Hum, it seeems the so3 usr has not been built correctly - rootfs missing...")
     
 }

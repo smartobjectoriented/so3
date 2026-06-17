@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "SO3 kernel"
 DESCRIPTION = "Smart Object Oriented Operating System"

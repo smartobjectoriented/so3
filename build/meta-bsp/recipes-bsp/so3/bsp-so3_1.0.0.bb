@@ -1,3 +1,4 @@
+# Copyright (c) 2025-2026 EDGEMTech SA
 
 SUMMARY = "SO3 Board Support Package"
 DESCRIPTION = "SO3 Board Support Package (BSP) which builds the whole set of software components \
