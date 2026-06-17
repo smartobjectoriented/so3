@@ -8,6 +8,14 @@
 #   arm     -> arm-linux-musleabihf
 #
 
+# musl-cross-make downloads the gcc/binutils/gmp/mpfr/mpc/musl tarballs during
+# the build (do_build) from ftpmirror.gnu.org, which redirects to a random
+# mirror. The stock DL_CMD (wget -c -O) does not retry, so a single flaky mirror
+# fails the whole toolchain build — this caused an intermittent CI failure that
+# vanished on re-run. Add retries/timeouts so transient mirror errors recover.
+# (-O must stay last: the Makefile appends <outfile> <url> after DL_CMD.)
+DL_CMD = wget -c --tries=5 --waitretry=10 --timeout=30 -O
+
 BINUTILS_VER = 2.44
 GCC_VER = 12.4.0
 # MUSL_VER = git-master
