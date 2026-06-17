@@ -129,4 +129,4 @@ quick and cheap.
 .. _REDS: http://www.reds.ch
 .. _HEIG-VD: http://www.heig-vd.ch
 .. _heig-vd_news: https://heig-vd.ch/
-.. _DRE: https://reds.heig-vd.ch/en/team/details/daniel.rossier
+.. _DRE: https://people.hes-so.ch/en/profile/3817359-daniel-rossier
