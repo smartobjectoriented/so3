@@ -2,26 +2,41 @@
   <img src="doc/source/img/SO3_with_text.png" alt="SO3" width="420">
 </p>
 
-# Smart Object Oriented (SOO) Operating System — code name SO3
+# Welcome to SO3 — the Smart Object Oriented (SOO) Operating System
 
 SO3 is a compact, lightweight, full-featured and extensible operating system,
-particularly well suited to embedded systems. From a **single code base** it can
-be built in three ways:
+particularly well suited to embedded and IoT systems. It is the result of
+several years of research and development at the REDS Institute of HEIG-VD, has
+long been used as a teaching platform, and today forms the foundation of the
+**SOO** framework.
 
-- **Standalone OS** — running directly on the hardware (EL1 on ARM64).
-- **AVZ hypervisor** (*Agency VirtualiZer*) — running at EL2 and hosting a guest
-  *agency* domain.
-- **SO3 capsule** (S3C) — a lightweight guest running on top of AVZ alongside a
-  Linux *agency*, as part of the **SOO** framework.
+## A polymorphic operating system
 
-It targets ARM 32-bit and 64-bit, is multicore, and comes with a MUSL-based user
-space and integrations such as LVGL, lwIP and MicroPython.
+The most distinctive feature of SO3 is that it is **polymorphic**: from a
+**single source tree**, the very same code base can be configured and built into
+three different kinds of system.
+
+- **Standalone OS** — SO3 runs directly on the hardware as a conventional
+  monolithic OS (kernel at **EL1**, user applications at **EL0** on ARM64). This
+  is the configuration used for teaching and for plain embedded products.
+- **AVZ hypervisor** — built with `CONFIG_AVZ`, the same tree becomes **AVZ**
+  (*Agency VirtualiZer*), a lightweight type-1 hypervisor running at **EL2** that
+  hosts one or more guest *domains* — the primary guest being the *agency*.
+- **SO3 capsule (S3C)** — on top of AVZ, the **SOO** framework adds *SO3
+  capsules*: lightweight, self-contained guests running at EL1 beside a Linux
+  *agency* and cooperating with it through split (frontend/backend) drivers. The
+  capsule (guest) side lives in this repository; the Linux agency and the rest
+  of the SOO framework live in a separate one.
+
+SO3 targets ARM 32-bit and 64-bit, is multicore, and is kept *as compact as
+possible*. It ships with a MUSL-based user space and integrations such as LVGL,
+lwIP and MicroPython.
 
 ## Documentation
 
-The complete and up-to-date documentation — architecture, build system, user
-guide, debugging and more — is the source of truth. It lives in [`doc/`](doc/)
-and is published at:
+The complete and up-to-date documentation — philosophy, architecture, build
+system, user guide, debugging and more — is the source of truth. It lives in
+[`doc/`](doc/) and is published at:
 
 ### 👉 https://smartobjectoriented.github.io/so3
 
