@@ -147,6 +147,14 @@ To run SO3 as the **agency guest** on top of AVZ:
 
    ./scripts/st.sh
 
+.. note::
+
+   On ``virt64`` the build produces **two ITBs** — the AVZ ITB
+   (``virt64_avz_so3.itb``) and the SO3 guest ITB (``virt64_so3_guest.itb``,
+   built automatically) — and the deploy stages both on the boot partition with
+   ``uEnv_virt64_avz.txt``; U-Boot loads them and jumps via its ``e1c-boot``
+   command. No extra step is needed, but see :ref:`two_itb_boot` for details.
+
 A successful run shows the **AVZ Hypervisor** banner, the *Loading Guest Domain*
 trace, and finally the agency reaching the ``so3%`` prompt. See :ref:`avz` for
 what happens under the hood.

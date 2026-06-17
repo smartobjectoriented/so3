@@ -239,9 +239,9 @@ live here too (:ref:`display_input`).
 FIT image, ITS and boot media
 =============================
 
-SO3 is started by **U-Boot**, which loads a **FIT image** (``.itb``) — a single
-file bundling the kernel, device tree and root filesystem (and, for AVZ, the
-hypervisor and the guest). The image is described by an ``.its`` file in
+SO3 is started by **U-Boot**, which loads one or more **FIT images** (``.itb``)
+— each a single file bundling a payload, its device tree and, for the OS images,
+a root filesystem. Each image is described by an ``.its`` file in
 ``so3/target/`` and assembled by the ``do_itb`` task with ``mkimage``:
 
 .. flat-table::
@@ -253,11 +253,16 @@ hypervisor and the guest). The image is described by an ``.its`` file in
    * - ``virt64_so3.its``
      - standalone: SO3 kernel + DTB + ramfs
    * - ``virt64_avz_so3.its``
-     - AVZ hypervisor + guest SO3 + DTBs + ramfs
+     - **virt64 AVZ ITB**: the AVZ hypervisor binary + its device tree only —
+       the guest lives in a *separate* ITB (see :ref:`two_itb_boot`)
+   * - ``virt64_so3_guest.its``
+     - **virt64 SO3 guest ITB**: guest SO3 kernel + DTB + ramfs, loaded by AVZ
    * - ``virt64_capsule.its``
      - a capsule image
+   * - ``rpi4_64_avz_so3.its`` / ``verdin_imx8mp_avz_so3.its``
+     - **combined** AVZ ITB (single-ITB): hypervisor + guest SO3 + DTBs + ramfs
    * - ``virt32_so3.its`` / ``rpi4_64_so3.its``
-     - the 32-bit / RPi4 variants
+     - the 32-bit / RPi4 standalone variants
 
 ``do_deploy_boot`` writes the resulting ``.itb`` into the FAT (boot) partition of
 ``filesystem/sdcard.img.<platform>``. For the ARM-TF chains (``atf+uboot`` /
@@ -265,6 +270,29 @@ hypervisor and the guest). The image is described by an ``.its`` file in
 builds ``filesystem/flash0.img`` — ``BL1`` at offset 0 plus a FIP (``fiptool``)
 bundling ``BL2``/``BL31``/U-Boot (and OP-TEE for ``full``) at 256 KiB — which
 QEMU loads as ``pflash``.
+
+.. _two_itb_boot:
+
+Two-ITB AVZ boot (virt64)
+-------------------------
+
+On ``virt64`` the hypervisor and its guest are packaged as **two separate FIT
+images** rather than one: the **AVZ ITB** (``virt64_avz_so3.itb`` — the
+hypervisor binary + ``avz_dt``) and the **SO3 guest ITB**
+(``virt64_so3_guest.itb`` — the guest kernel, its device tree and the ramfs).
+``do_itb`` builds the guest ITB automatically whenever a
+``<platform>_so3_guest.its`` exists next to the selected ITS.
+
+At deploy time ``__do_platform_deploy`` detects the guest ITB and stages **both**
+images on the boot partition (as ``virt64_avz.itb`` and ``virt64_guest.itb``)
+together with ``uEnv_virt64_avz.txt``. U-Boot loads both to staging addresses and
+jumps through its ``e1c-boot`` command, which enters AVZ with the **AVZ FIT in**
+``x0`` **and the guest ITB in** ``x1``; AVZ's ``loadAgency()`` then loads the
+agency guest from ``x1`` (see :ref:`avz`). When no guest ITB is present — a bare
+standalone SO3/Linux image, or the **combined** ``rpi4_64`` / ``verdin`` AVZ
+images that still bundle hypervisor and guest in one FIT — the deploy falls back
+to the single-ITB ``bootm`` path. This mirrors the edge-m1 ``e1c`` component
+separation on the so3 side.
 
 .. _fetched_components:
 
