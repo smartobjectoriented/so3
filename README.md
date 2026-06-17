@@ -1,29 +1,58 @@
+<p align="center">
+  <img src="doc/source/img/SO3_with_text.png" alt="SO3" width="420">
+</p>
 
+# Smart Object Oriented (SOO) Operating System — code name SO3
 
-Welcome to the Smart Object Oriented (SOO) Operating System (code name SO3)
-***************************************************************************
+SO3 is a compact, lightweight, full-featured and extensible operating system,
+particularly well suited to embedded systems. From a **single code base** it can
+be built in three ways:
 
-For any information and discussions around SO3, please have a look at the [SO3 discussion forum](https://discourse.heig-vd.ch/c/so3).
+- **Standalone OS** — running directly on the hardware (EL1 on ARM64).
+- **AVZ hypervisor** (*Agency VirtualiZer*) — running at EL2 and hosting a guest
+  *agency* domain.
+- **SO3 capsule** (S3C) — a lightweight guest running on top of AVZ alongside a
+  Linux *agency*, as part of the **SOO** framework.
 
-Feel free to post any comments/suggestions/remarks about SO3. If you wish to participate to development, please simply ask us and we will manage separate branches of development. 
+It targets ARM 32-bit and 64-bit, is multicore, and comes with a MUSL-based user
+space and integrations such as LVGL, lwIP and MicroPython.
 
-Furthermore, the full documentation is available [here](https://smartobjectoriented.github.io/so3)
+## Documentation
 
+The complete and up-to-date documentation — architecture, build system, user
+guide, debugging and more — is the source of truth. It lives in [`doc/`](doc/)
+and is published at:
 
-We would like to extend our heartfelt thanks to our sponsors for their generous support in funding the development of the SO3 ecosystem, especially [HEIG-VD](http://www.heig-vd.ch) and the [Hasler Foundations](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation) 
+### 👉 https://smartobjectoriented.github.io/so3
 
+Start there for everything about building, configuring, running and debugging
+SO3.
 
-Be careful with the requirements of various configs.
+## Supported targets
 
-- If you use avz -> ./st must have virtualization on => use ./stv
-- If you use the framebuffer (LVGL case) -> ./stg to start QEMU with the graphic display
+- QEMU `virt` — ARM 32-bit and 64-bit
+- Raspberry Pi 4 (64-bit)
+- Toradex Verdin iMX8M Plus
 
-To build the patch related to the CI:
+## Contributing
 
-- diff -Naur <source> <result> > so3_ci.patch
-and put the ci/so3_ci.patch in ci/
+The `main` branch always holds the last released version.
 
-To apply the patch, in the root:
-- patch -p1 < ci/so3_ci.patch
+> [!IMPORTANT]
+> Do not push directly to `main`. Each development is tracked by an issue with
+> its own branch; open a merge/pull request as soon as it is stable enough for
+> review.
 
+If you would like to contribute, please first get in touch with the maintainer at
+[info@soo.tech](mailto:info@soo.tech).
 
+## Credits
+
+We warmly thank our sponsors for their generous support in funding the
+development of the SO3 ecosystem, in particular
+[HEIG-VD](https://www.heig-vd.ch) and the
+[Hasler Foundation](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation).
+
+## License
+
+SO3 is released under the [GNU General Public License v2](LICENSE).
