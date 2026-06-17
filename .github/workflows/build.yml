@@ -32,6 +32,14 @@ jobs:
               cd /so3
               echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
               . ./env.sh
+              echo "=== DIAG env: nproc=$(nproc) ==="
+              df -h / /so3 || true; free -m || true
               build.sh -k so3
-              build.sh -x usr-so3
+              build.sh -x usr-so3 || {
+                rc=$?
+                echo "=== DIAG: build failed rc=$rc — dumping musl-toolchain do_build log ==="
+                tail -n 150 build/tmp/work/musl-toolchain-1.0-r0/temp/log.do_build* 2>/dev/null || true
+                echo "=== DIAG: disk after failure ==="; df -h / /so3 || true
+                exit $rc
+              }
             '
