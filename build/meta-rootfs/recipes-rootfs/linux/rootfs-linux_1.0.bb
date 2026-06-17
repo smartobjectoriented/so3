@@ -115,7 +115,12 @@ python do_deploy () {
     cmd = f"ls {IB_TARGET}/fs/."
     result = subprocess.run(cmd, shell=True, check=True)
 
-    cmd = f"cp -rv {IB_TARGET}/fs/. {IB_FILESYSTEM_PATH}/{IB_ROOTFS_PARTITION}"
+    # Privileged + archive copy: the source IB_TARGET/fs is the rootfs image
+    # loop-mounted as root (so its files are root-owned, some unreadable to the
+    # unprivileged builder — a plain `cp` aborts with exit 1), and the ext4 p2
+    # rootfs needs ownership/perms/symlinks preserved (setuid bins, /etc/shadow,
+    # ...). `sudo cp -a` both reads the root-owned tree and reproduces it faithfully.
+    cmd = f"sudo cp -av {IB_TARGET}/fs/. {IB_FILESYSTEM_PATH}/{IB_ROOTFS_PARTITION}"
 
     result = subprocess.run(cmd, shell=True, check=True)
 
