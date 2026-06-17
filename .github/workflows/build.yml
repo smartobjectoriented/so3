@@ -33,5 +33,10 @@ jobs:
               echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
               . ./env.sh
               build.sh -k so3
-              build.sh -x usr-so3
+              build.sh -x usr-so3 || {
+                rc=$?
+                echo "=== build failed (rc=$rc); tail of musl-toolchain do_build log ==="
+                tail -n 120 build/tmp/work/musl-toolchain-1.0-r0/temp/log.do_build* 2>/dev/null || true
+                exit $rc
+              }
             '

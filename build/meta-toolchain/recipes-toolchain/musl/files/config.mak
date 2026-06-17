@@ -9,11 +9,14 @@
 #
 
 # musl-cross-make downloads the gcc/binutils/gmp/mpfr/mpc/musl tarballs during
-# the build (do_build) from ftpmirror.gnu.org, which redirects to a random
-# mirror. The stock DL_CMD (wget -c -O) does not retry, so a single flaky mirror
-# fails the whole toolchain build — this caused an intermittent CI failure that
-# vanished on re-run. Add retries/timeouts so transient mirror errors recover.
-# (-O must stay last: the Makefile appends <outfile> <url> after DL_CMD.)
+# the build (do_build). The stock GNU_SITE is ftpmirror.gnu.org, which 302-
+# redirects to a RANDOM mirror; some mirrors are incomplete (404) or stall, and
+# wget --tries just re-hits the same redirect, so the toolchain build failed
+# intermittently in CI (passed on re-run). Fetch GNU components from the
+# canonical, complete host instead of a random mirror, and still add retries/
+# timeouts as a safety net. (-O must stay last: the Makefile appends
+# <outfile> <url> after DL_CMD.)
+GNU_SITE = https://ftp.gnu.org/gnu
 DL_CMD = wget -c --tries=5 --waitretry=10 --timeout=30 -O
 
 BINUTILS_VER = 2.44
