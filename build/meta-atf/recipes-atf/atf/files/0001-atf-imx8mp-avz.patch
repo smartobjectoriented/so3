@@ -1,0 +1,49 @@
+ATF imx8mp adjustments for AVZ on EDGE-M1
+==========================================
+
+Two changes needed to run AVZ over OP-TEE on Verdin iMX8MP:
+
+  - plat/imx/imx8m/imx8mp/imx8mp_bl31_setup.c
+      Configure TZC380 region 0 as SP_S_RW so OP-TEE's
+      CFG_TZASC_REGION0_SECURE startup check passes. SPL enables TZASC
+      via GPR10 but leaves region 0 NS-accessible; OP-TEE adds proper
+      NS DRAM carve-outs after BL31 runs.
+
+  - plat/imx/imx8m/imx8m_psci_common.c
+      Relax imx_validate_ns_entrypoint to accept any DRAM address. AVZ's
+      secondary_startup lives below PLAT_NS_IMAGE_OFFSET, so the
+      stock check rejects it and PSCI_CPU_ON returns INVALID_PARAMS.
+
+Signed-off-by: EDGEMTech <info@edgemtech.ch>
+---
+--- a/plat/imx/imx8m/imx8mp/imx8mp_bl31_setup.c
++++ b/plat/imx/imx8m/imx8mp/imx8mp_bl31_setup.c
+@@ -252,6 +252,15 @@
+ 	plat_gic_init();
+ 
+ 	imx_gpc_init();
++
++	/* Configure TZASC region 0 as secure-only so OP-TEE passes its startup
++	 * security check (CFG_TZASC_REGION0_SECURE). SPL enables TZASC via GPR10
++	 * but leaves region 0 NS-accessible; OP-TEE adds proper NS DRAM regions
++	 * after this. */
++	tzc380_init(IMX_TZASC_BASE);
++	tzc380_configure_region(0, 0x00000000,
++				TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
++				TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+ }
+ 
+ entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
+--- a/plat/imx/imx8m/imx8m_psci_common.c
++++ b/plat/imx/imx8m/imx8m_psci_common.c
+@@ -31,8 +31,8 @@
+ 
+ int imx_validate_ns_entrypoint(uintptr_t ns_entrypoint)
+ {
+-	/* The non-secure entrypoint should be in RAM space */
+-	if (ns_entrypoint < PLAT_NS_IMAGE_OFFSET)
++	/* Accept any address in DRAM; AVZ secondary_startup lives below PLAT_NS_IMAGE_OFFSET */
++	if (ns_entrypoint < IMX_DRAM_BASE)
+ 		return PSCI_E_INVALID_PARAMS;
+ 
+ 	return PSCI_E_SUCCESS;

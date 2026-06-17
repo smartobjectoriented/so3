@@ -1,0 +1,104 @@
+--- a/lib/lv_port_linux/CMakeLists.txt
++++ b/lib/lv_port_linux/CMakeLists.txt
+@@ -1,5 +1,10 @@
+-cmake_minimum_required(VERSION 3.11)
+-project(lvgl)
++if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
++    cmake_minimum_required(VERSION 3.11)
++    project(lvgl)
++    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
++    set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic")
++endif()
+
+ option(WERROR "Treat warnings as errors for LVGL targets" OFF)
+ option(ASAN "Enable Sanitizer Options" OFF)
+@@ -15,13 +20,9 @@ cmake_policy(SET CMP0079 NEW)
+ # Uncomment if the program needs debugging
+ #set(CMAKE_BUILD_TYPE Debug)
+
+-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+-
+ set(CMAKE_C_STANDARD 99) # LVGL officially supports C99 and above
+ set(CMAKE_CXX_STANDARD 17) #C17
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic")
+
+ find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+@@ -33,11 +34,12 @@ endif()
+
+ set(CONFIG "default" CACHE STRING "Config name to use. Leave empty for default `lv_conf.defaults`")
+
+-set(LV_CONF_DEFAULTS_PATH "${CMAKE_SOURCE_DIR}/lv_conf.defaults")
+-
+-# If CONFIG is not default, update LV_CONF_DEFAULTS_PATH to the selected config
+-if(NOT CONFIG STREQUAL "default")
+-    set(LV_CONF_DEFAULTS_PATH "${CMAKE_SOURCE_DIR}/configs/${CONFIG}.defaults")
++if(NOT DEFINED LV_CONF_DEFAULTS_PATH)
++    set(LV_CONF_DEFAULTS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.defaults")
++    # If CONFIG is not default, update LV_CONF_DEFAULTS_PATH to the selected config
++    if(NOT CONFIG STREQUAL "default")
++        set(LV_CONF_DEFAULTS_PATH "${CMAKE_CURRENT_SOURCE_DIR}/configs/${CONFIG}.defaults")
++    endif()
+ endif()
+
+ if(NOT EXISTS "${LV_CONF_DEFAULTS_PATH}")
+@@ -52,8 +54,8 @@ set(LV_BUILD_CONF_PATH
+     "${CMAKE_BINARY_DIR}/lv_conf.h"
+     CACHE PATH "path to lv_conf.h" FORCE)
+
+-set(LVGL_TEMPLATE_PATH "${CMAKE_SOURCE_DIR}/lvgl/lv_conf_template.h")
+-set(GENERATE_SCRIPT_PATH "${CMAKE_SOURCE_DIR}/lvgl/scripts/generate_lv_conf.py")
++set(LVGL_TEMPLATE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/lv_conf_template.h")
++set(GENERATE_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/lvgl/scripts/generate_lv_conf.py")
+
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${LVGL_TEMPLATE_PATH})
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${LV_CONF_DEFAULTS_PATH})
+@@ -74,7 +76,9 @@ endif()
+
+ message(STATUS "${LV_BUILD_CONF_PATH} generated successfully")
+
+-add_subdirectory(lvgl)
++if(NOT TARGET lvgl)
++    add_subdirectory(lvgl)
++endif()
+
+ if (CONFIG_LV_USE_EVDEV)
+     message("Including EVDEV support")
+@@ -401,18 +405,22 @@ target_include_directories(lvgl_linux PUBLIC ${PKG_CONFIG_INC})
+ set_target_properties(lvgl_linux PROPERTIES COMPILE_DEFINITIONS "${LVGL_COMPILER_DEFINES}")
+ target_include_directories(lvgl_linux PUBLIC
+     ${LV_LINUX_INC} ${CMAKE_CURRENT_SOURCE_DIR}
+-    ${PROJECT_SOURCE_DIR}/src/lib ${LVGL_CONF_INC_DIR})
++    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib ${LVGL_CONF_INC_DIR})
+
+ # Link LVGL with external dependencies - Modern CMake/CMP0079 allows this
+ target_link_libraries(lvgl PUBLIC ${PKG_CONFIG_LIB} m pthread rt dl)
+
+-add_executable(lvglsim src/main.c)
+-
+-# Repeat lvgl_linux to resolve circular dependency with lvgl
+-target_link_libraries(lvglsim lvgl_linux lvgl lvgl_linux)
++if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
++    add_executable(lvglsim src/main.c)
++    # Repeat lvgl_linux to resolve circular dependency with lvgl
++    target_link_libraries(lvglsim lvgl_linux lvgl lvgl_linux)
++    add_custom_target(run COMMAND ${EXECUTABLE_OUTPUT_PATH}/lvglsim DEPENDS lvglsim)
++endif()
+
+ if(WERROR)
+-    target_compile_options(lvglsim PRIVATE -Werror)
++    if(TARGET lvglsim)
++        target_compile_options(lvglsim PRIVATE -Werror)
++    endif()
+     target_compile_options(lvgl PRIVATE -Werror)
+     target_compile_options(lvgl_linux PRIVATE -Werror)
+ endif()
+@@ -429,5 +437,3 @@ install(TARGETS lvgl_linux
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+ )
+-
+-add_custom_target(run COMMAND ${EXECUTABLE_OUTPUT_PATH}/lvglsim DEPENDS lvglsim)

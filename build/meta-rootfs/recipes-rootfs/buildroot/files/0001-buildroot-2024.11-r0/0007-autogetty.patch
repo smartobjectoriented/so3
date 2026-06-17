@@ -1,0 +1,5 @@
+--- a/package/auto-getty/src/autogetty
++++ b/package/auto-getty/src/autogetty
+@@ -0,0 +1,2 @@
++# here you can provide what to run instead of /bin/login
++AUTOGETTY_ARGS="-n -l /usr/bin/auto-root-login"
