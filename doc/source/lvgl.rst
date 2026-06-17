@@ -10,10 +10,8 @@ Integration of LVGL in SO3
 ==========================
 
 The initial port of LVGL to SO3 was done by Nikolaos Garanis in the context of
-his `Bachelor project <https://nyg.gitlab.io/so3-support-graphique>`__; some
-details are available on our `discussion forum
-<https://discourse.heig-vd.ch/t/graphics-support-for-so3/41/18>`__ and in
-`a short video <LVGL_qemu_>`__.
+his `Bachelor project <https://nyg.gitlab.io/so3-support-graphique>`__; a short
+demonstration is available in `this video <LVGL_qemu_>`__.
 
 SO3 integrates **LVGL v9**. The library is a pure user-space component: it is
 fetched into ``so3/usr/lib/lvgl`` at build time (the ``:lvgl`` override in

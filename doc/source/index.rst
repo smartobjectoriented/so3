@@ -99,11 +99,8 @@ The ``main`` branch contains the last released version.
 
 If you want to contribute, please first contact `the maintainer <SOO_mail_>`__.
 
-Discussion forum
+Acknowledgements
 ================
-
-A `dedicated discussion forum <https://discourse.heig-vd.ch/c/so3>`__ is
-available for all questions, remarks and suggestions related to SO3.
 
 We would like to thank our sponsors for their generous support in funding the
 development of the SO3 ecosystem, especially `HEIG-VD <http://www.heig-vd.ch>`__
