@@ -1,0 +1,502 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
+@@ -0,0 +1,498 @@
++/*
++ * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#if 0
++#define DEBUG
++#endif
++
++#include <linux/completion.h>
++#include <linux/dma-direct.h>
++#include <linux/export.h>
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/kthread.h>
++#include <linux/miscdevice.h>
++#include <linux/mutex.h>
++#include <linux/spinlock.h>
++#include <linux/uaccess.h>
++#include <linux/vmalloc.h>
++#include <linux/wait.h>
++
++#include <soo/device_access.h>
++#include <soo/soo.h>
++#include <soo/vbus.h>
++#include <soo/capsule.h>
++#include <soo/roxml.h>
++
++#include <soo/uapi/soo.h>
++#include <soo/uapi/console.h>
++#include <soo/uapi/debug.h>
++#include <soo/uapi/injector.h>
++
++/* Buffer in which the ME will be received. It is dynamically allocated
++in injector_prepare */
++uint8_t *ME_buffer;
++
++/* Full size of the me we are receiving */
++size_t ME_size;
++
++/* Current size received */
++size_t current_size = 0;
++
++struct device *capsule_dev = NULL;
++
++#define CMA_MALLOC_DEVICE_FILENAME "cma_malloc"
++
++static struct file_operations cma_malloc_fileops = {
++    .owner = THIS_MODULE,
++};
++
++static struct miscdevice cma_malloc_miscdevice = {
++    .minor = MISC_DYNAMIC_MINOR,
++    .name = CMA_MALLOC_DEVICE_FILENAME,
++    .fops = &cma_malloc_fileops,
++    .mode = S_IRUGO | S_IWUGO,
++};
++
++/**
++ * Initiate the injection of a capsule
++ *
++ * The capsule is allocated within the CMA-dedicated memory.
++ *
++ * @param buffer       pointer to a buffer
++ * @param size         Size of the capsule to load
++ * @param slotID       if not equal to -1, try to load in the specific slot
++ * @param capsuleID    ID of the capsule
++ * @return int slotID or -1 if no slotID available or not free.
++ */
++int inject_capsule(void *buffer, size_t size, int slotID, unsigned capsuleID) {
++        void *me = NULL;
++        dma_addr_t dma_handle;
++        avz_hyp_t args;
++
++        DBG("Original contents at address: 0x%08x\n with size %d bytes\n", (unsigned long) buffer, size);
++
++        /* Allocate a contiguous memory region to host the ME */
++        me = dma_alloc_coherent(capsule_dev, size, &dma_handle, GFP_KERNEL);
++        BUG_ON(!me);
++
++        memcpy(me, buffer, size);
++
++        /* Since the ME buffer is in the CMA zone and allocated via the
++         * dma_alloc_cohenrent() function, we cannot use virt_to_phys(). So, we
++         * take the CPU phys addr stored in dma_handle, and we force to a
++         * (wrong) virtual address to make sure the soo_hypercall() function
++         * gets the right physical address; indeeed, it uses virt_to_phys() there.
++         */
++
++        args.cmd = AVZ_INJECT_CAPSULE;
++
++        args.u.avz_inject_capsule_args.itb_paddr = (void *) dma_handle;
++        args.u.avz_inject_capsule_args.slotID = slotID;
++        args.u.avz_inject_capsule_args.capsuleID = capsuleID;
++
++        avz_hypercall(&args);
++
++        /* Deallocate the memory area reserved for the capsule */
++        dma_free_coherent(capsule_dev, size, me, dma_handle);
++
++        return args.u.avz_inject_capsule_args.slotID;
++}
++
++/**
++ * @brief Start the execution of a pre-loaded capsule (injected)
++ *
++ * @param slotID
++ */
++void start_capsule(int slotID) {
++        avz_hyp_t args;
++
++        BUG_ON(get_ME_state(slotID) != ME_state_stopped);
++
++        args.cmd = AVZ_START_CAPSULE;
++
++        args.u.avz_start_capsule_args.slotID = slotID;
++
++        avz_hypercall(&args);
++
++        /* Wait for all backend/frontend initialized. */
++        wait_for_completion(&backend_initialized);
++
++        DBG("Capsule in slot %d in state living...\n", slotID);
++
++        set_ME_state(slotID, ME_state_living);
++}
++
++/**
++ * Read a ME snapshot for migration or saving.
++ * The ME is read and stored in a vmalloc'd memory area.
++ *
++ * @param slotID
++ * @param buffer pointer to the ME buffer
++ */
++void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size) {
++        avz_hyp_t args;
++        void *me = NULL;
++        int ret;
++        dma_addr_t dma_handle;
++        ME_state_t ME_state;
++
++        /* Ask the size only */
++        if (*size == 0) {
++
++                DBG("%s: ask the snapshot size...\n", __func__);
++
++                args.cmd = AVZ_ME_READ_SNAPSHOT;
++                args.u.avz_snapshot_args.slotID = slotID;
++                args.u.avz_snapshot_args.size = 0;
++
++                avz_hypercall(&args);
++                *size = args.u.avz_snapshot_args.size;
++
++                return;
++        }
++
++        if (get_ME_state(slotID) == ME_state_living) {
++
++                /* Suspend the ME */
++                do_sync_dom(slotID, DC_PRE_SUSPEND);
++
++                /* Set the ME in suspended state */
++                set_ME_state(slotID, ME_state_suspended);
++
++                vbus_suspend_devices(slotID);
++
++                do_sync_dom(slotID, DC_SUSPEND);
++
++                printk("### state: %d\n", get_ME_state(slotID));
++        }
++
++        /*
++         * Prepare a buffer to store the ME and additional header information like migration structure.
++         */
++
++        me = dma_alloc_coherent(capsule_dev, *size, &dma_handle, GFP_KERNEL);
++        BUG_ON(!me);
++ 
++        args.cmd = AVZ_ME_READ_SNAPSHOT;
++
++        args.u.avz_snapshot_args.slotID = slotID;
++        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
++	args.u.avz_snapshot_args.size = *size;
++
++	avz_hypercall(&args);
++
++        /* Copy the snapshot to the user buffer */
++        ret = copy_to_user(buffer, me, *size);
++        BUG_ON(ret);
++	 
++	dma_free_coherent(capsule_dev, *size, me, dma_handle);
++
++        ME_state = get_ME_state(slotID);
++
++        if (ME_state == ME_state_resuming) {
++
++                DBG("Pinging ME %d for DC_RESUME...\n", slotID);
++                do_sync_dom(slotID, DC_RESUME);
++
++                DBG("Resuming all devices (resuming from backend devices) on domain %d...\n", slotID);
++                vbus_resume_devices(slotID);
++
++                DBG("Pinging ME %d for DC_POST_ACTIVATE...\n", slotID);
++                do_sync_dom(slotID, DC_POST_ACTIVATE);
++
++                DBG("Putting ME domid %d in state living...\n", slotID);
++                set_ME_state(slotID, ME_state_living);
++        }
++}
++
++/**
++ * Write a ME snapshot provided a ME_info_transfer_t descriptor.
++ *
++ * @param slotID
++ * @param buffer  Adresse of a buffer of ME_info_transfert_t
++ * @return slotID in case of success, -1 if no available slot
++ */
++int write_snapshot(void *buffer) {
++        avz_hyp_t args;
++        void *me = NULL;
++        int ret;
++        dma_addr_t dma_handle;
++        uint32_t snapshot_size;
++        uint32_t slotID;
++        ME_state_t ME_state;
++
++        snapshot_size = *((uint32_t *) buffer);
++
++        DBG("Retrieving a size of %d bytes.\n", snapshot_size);
++
++        /*
++         * Prepare a buffer to store the ME and additional header information like migration structure.
++         */
++        me = dma_alloc_coherent(capsule_dev, snapshot_size, &dma_handle, GFP_KERNEL);
++        BUG_ON(!me);
++
++        /* Copy the snapshot to the user buffer */
++        ret = copy_from_user(me, buffer, snapshot_size);
++        BUG_ON(ret);
++
++        args.cmd = AVZ_ME_WRITE_SNAPSHOT;
++     
++        args.u.avz_snapshot_args.size = snapshot_size;
++        args.u.avz_snapshot_args.slotID = -1;
++        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
++
++        DBG("%s: Now asking AVZ to re-implement the snapshot of size %d bytes...\n", __func__, snapshot_size);
++
++        avz_hypercall(&args);
++
++        if (!args.u.avz_snapshot_args.slotID) {
++                printk("%s: No free space...\n", __func__);
++                return -1; /* No free space */
++        }
++
++        slotID = args.u.avz_snapshot_args.slotID;
++
++        dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
++     
++        ME_state = get_ME_state(slotID);
++
++        if (ME_state == ME_state_stopped) {
++                /* Normal processing, start of the capsule */
++
++                start_capsule(slotID);
++                return slotID;
++        }
++
++        BUG_ON((ME_state != ME_state_hibernate) && (ME_state != ME_state_awakened));
++
++        DBG0("SOO migration subsys: Entering restoring tasks...\n");
++        
++        /* The capsule is performing an asynchronous signal-based resume callback and will
++         * be set to ME_state_awakened after its execution
++         */
++        while (1) {
++                schedule();
++
++                if (get_ME_state(slotID) == ME_state_awakened) {
++                        DBG("ME now resuming...\n");
++                        break;
++                }
++        }
++
++        DBG("Pinging ME %d for DC_RESUME...\n", slotID);
++        do_sync_dom(slotID, DC_RESUME);
++
++        DBG("Resuming all devices (resuming from backend devices) on domain %d...\n", slotID);
++        vbus_resume_devices(slotID);
++
++        DBG("Pinging ME %d for DC_POST_ACTIVATE...\n", slotID);
++        do_sync_dom(slotID, DC_POST_ACTIVATE);
++
++        DBG("Putting ME domid %d in state living...\n", slotID);
++        set_ME_state(slotID, ME_state_living);
++
++        return slotID;
++}
++
++int get_ME_state(unsigned int ME_slotID)
++{
++        avz_hyp_t args;
++
++        args.cmd = AVZ_GET_ME_STATE;
++        args.u.avz_me_state_args.slotID = ME_slotID;
++
++        avz_hypercall(&args);
++
++        return args.u.avz_me_state_args.state;
++}
++
++/*
++ * Setting the ME state to the specific ME_slotID.
++ * The hypercall args is passed by 2 contiguous (unsigned) int, the first one is
++ * used for slotID, the second for the state
++ */
++void set_ME_state(unsigned int ME_slotID, ME_state_t state)
++{
++        avz_hyp_t args;
++
++        args.cmd = AVZ_SET_ME_STATE;
++
++        args.u.avz_me_state_args.slotID = ME_slotID;
++	args.u.avz_me_state_args.state = state;
++
++        avz_hypercall(&args);
++}
++
++/**
++ * Retrieve the ME descriptor including the SPID, the state.
++ */
++void get_ME_desc(unsigned int slotID, ME_desc_t *ME_desc) {
++        avz_hyp_t args;
++
++        args.cmd = AVZ_GET_DOM_DESC;
++        args.u.avz_dom_desc_args.slotID = slotID;
++
++        avz_hypercall(&args);
++
++	memcpy(ME_desc, &args.u.avz_dom_desc_args.dom_desc, sizeof(ME_desc_t));
++}
++
++/**
++ * Retrieve the ME identity information including SPID, state.
++ *
++ * @param slotID
++ * @param ME_id
++ * @return true if a ME has been found in slotID, false otherwise.
++ */
++bool get_ME_id(uint32_t slotID, ME_id_t *ME_id) {
++	char *prop;
++	char rootname[VBS_KEY_LENGTH];
++	unsigned int len;
++
++	/* The ME can be dormant but without any accessible ID information */
++	ME_id->state = get_ME_state(slotID);
++
++	if (ME_id->state == ME_state_dead)
++		return false;
++
++	sprintf(rootname, "soo/me/%d", slotID);
++
++	/* Check if there is a ME? */
++	prop = vbus_read(VBT_NIL, rootname, "spid", &len);
++
++	if (len == 1)  { /* If no entry in vbstore, it returns 1 (byte \0) */
++		return true;
++	} else {
++		sscanf(prop, "%llx", &ME_id->spid);
++		kfree(prop);
++ 
++		prop = vbus_read(VBT_NIL, rootname, "name", &len);
++
++		strcpy(ME_id->name, prop);
++		kfree(prop);
++
++		prop = vbus_read(VBT_NIL, rootname, "shortdesc", &len);
++
++		strcpy(ME_id->shortdesc, prop);
++		kfree(prop);
++
++		ME_id->slotID = slotID;
++	}
++
++	return true;
++}
++
++/**
++ * Get a list of all residing MEs in this smart object.
++ * The caller must have allocated an array of <MAX_ME_DOMAINS> <ME_id_t> elements.
++ *
++ * The ME state will be used to determine if a ME is residing or not (ME_state_dead).
++ */
++void get_ME_id_array(ME_id_t *ME_id_array) {
++	uint32_t slotID;
++
++	/* Empty the array first */
++        memset(ME_id_array, 0, MAX_DOMAINS * sizeof(ME_id_array));
++	
++        /* Walk through all entries in vbstore regarding MEs */
++
++        for (slotID = 2; slotID < MAX_DOMAINS; slotID++)
++		get_ME_id(slotID, &ME_id_array[slotID-2]);
++
++}
++EXPORT_SYMBOL(get_ME_id_array);
++
++/**
++ * Prepare a XML message which contains the list of MEs with their specific ID information
++ * (SPID, name, short desc)
++ * 
++ *
++ * @return buffer	Buffer allocated by the which contains the XML message. Caller must free it.
++ * @param ME_id_array	Array of ME_id_t entries (got with get_ME_id_array())
++ */
++char *xml_prepare_id_array(ME_id_t *ME_id_array) {
++	uint32_t pos;
++	char *__buffer;
++	char *buffer; /* Output buffer */
++	node_t *messages, *me, *name, *shortdesc;
++	char spid[17]; /* 64-bit hex string + null terminator */
++	char slotID[2];
++
++	/* Adding the messages node */
++	messages = roxml_add_node(NULL, 0, ROXML_ELM_NODE, "mobile-entities", NULL);
++
++	for (pos = 0; pos < MAX_ME_DOMAINS; pos++) {
++
++		if (ME_id_array[pos].state != ME_state_dead) {
++
++			/* Adding the message itself */
++			me = roxml_add_node(messages, 0, ROXML_ELM_NODE, "mobile-entity", NULL);
++
++			/* Add SPID */
++			sprintf(spid, "%016llx", ME_id_array[pos].spid);
++			roxml_add_node(me, 0, ROXML_ATTR_NODE, "spid", spid);
++
++			/* Add the slotID */
++			sprintf(slotID, "%d", ME_id_array[pos].slotID);
++			roxml_add_node(me, 0, ROXML_ATTR_NODE, "slotID", slotID);
++
++			/* Add short name */
++			name = roxml_add_node(me, 0, ROXML_ELM_NODE, "name", NULL);
++			roxml_add_node(name, 0, ROXML_TXT_NODE, NULL, ME_id_array[pos].name);
++
++			/* And the short description */
++			shortdesc = roxml_add_node(me, 0, ROXML_ELM_NODE, "description", NULL);
++			roxml_add_node(shortdesc, 0, ROXML_TXT_NODE, NULL, ME_id_array[pos].shortdesc);
++
++		}
++
++	}
++
++	roxml_commit_changes(messages, NULL, &__buffer, 1);
++
++	/* Allocate the buffer here, as the caller has no way to determine it */
++	buffer = (char *) kzalloc(strlen(__buffer), GFP_KERNEL);
++	if (buffer == NULL) {
++		return NULL;
++	}
++
++	strcpy(buffer, __buffer);
++
++	roxml_release(RELEASE_LAST);
++	roxml_close(messages);
++
++	return buffer;
++}
++EXPORT_SYMBOL(xml_prepare_id_array);
++
++void capsule_init(void) {
++        int ret;
++
++        ret = misc_register(&cma_malloc_miscdevice);
++        BUG_ON(ret);
++
++        capsule_dev = cma_malloc_miscdevice.this_device;
++        capsule_dev->coherent_dma_mask = DMA_BIT_MASK(64);
++        capsule_dev->dma_mask = &capsule_dev->coherent_dma_mask;
++}
++
++void capsule_exit(void) {
++        misc_deregister(&cma_malloc_miscdevice);
++	capsule_dev = NULL;
++}
+\ No newline at end of file

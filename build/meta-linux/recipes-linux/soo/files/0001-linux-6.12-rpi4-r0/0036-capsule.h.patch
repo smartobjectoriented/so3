@@ -1,0 +1,44 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/capsule.h	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/include/soo/capsule.h	2025-08-30 15:30:27.244692708 +0200
+@@ -0,0 +1,40 @@
++/*
++ * Copyright (C) 2017-2025 Daniel Rossier <daniel.rossier@soo.tech>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#ifndef CAPSULE_H
++#define CAPSULE_H
++
++int inject_capsule(void *buffer, size_t size, int slotID);
++void start_capsule(int slotID);
++
++void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size);
++int write_snapshot(void *buffer);
++
++int get_ME_state(unsigned int ME_slotID);
++void set_ME_state(unsigned int ME_slotID, ME_state_t state);
++
++void get_ME_desc(unsigned int slotID, ME_desc_t *ME_desc);
++
++bool get_ME_id(uint32_t slotID, ME_id_t *ME_id);
++char *xml_prepare_id_array(ME_id_t *ME_id_array);
++void get_ME_id_array(ME_id_t *ME_id_array);
++
++void capsule_init(void);
++void capsule_exit(void);
++
++#endif /* CAPSULE_H */
+\ No newline at end of file

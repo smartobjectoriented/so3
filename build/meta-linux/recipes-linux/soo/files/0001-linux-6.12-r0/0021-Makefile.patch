@@ -1,0 +1,4 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vdummyback/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/drivers/vdummyback/Makefile	2025-08-29 08:46:41.395603823 +0200
+@@ -0,0 +1 @@
++obj-y := vdummy.o

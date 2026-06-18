@@ -1,0 +1,14 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/vbus/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/kernel/vbus/Makefile	2025-08-29 08:46:41.395011558 +0200
+@@ -0,0 +1,11 @@
++
++obj-y += vbus_client.o
++obj-y += vbus_vbstore.o
++
++obj-y += vbus.o
++
++obj-y += vbus_backend.o 
++ 
++
++
++
