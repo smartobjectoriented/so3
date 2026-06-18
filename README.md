@@ -59,7 +59,7 @@ The `main` branch always holds the last released version.
 > review.
 
 If you would like to contribute, please first get in touch with the maintainer at
-[info@soo.tech](mailto:info@soo.tech).
+[daniel.rossier@heig-vd.ch](mailto:daniel.rossier@heig-vd.ch).
 
 ## Credits
 
