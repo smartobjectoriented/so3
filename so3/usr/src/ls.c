@@ -31,12 +31,12 @@ static int long_format; /* -l */
 static int use_color = 1; /* default: color on */
 
 /* ANSI color codes, named per file role */
-#define COLOR_RESET   "\033[0m"
-#define COLOR_DIR     "\033[01;34m"   /* bold blue    — directories           */
-#define COLOR_EXEC    "\033[01;32m"   /* bold green   — executables (.elf)    */
-#define COLOR_SCRIPT  "\033[01;33m"   /* bold yellow  — shell / script files  */
-#define COLOR_SRC     "\033[01;35m"   /* bold magenta — source code & headers */
-#define COLOR_BIN     "\033[01;31m"   /* bold red     — binary / object / lib */
+#define COLOR_RESET "\033[0m"
+#define COLOR_DIR "\033[01;34m" /* bold blue    — directories           */
+#define COLOR_EXEC "\033[01;32m" /* bold green   — executables (.elf)    */
+#define COLOR_SCRIPT "\033[01;33m" /* bold yellow  — shell / script files  */
+#define COLOR_SRC "\033[01;35m" /* bold magenta — source code & headers */
+#define COLOR_BIN "\033[01;31m" /* bold red     — binary / object / lib */
 /*
  * Normal files, and plain-text files that are NOT source code (.txt, .md,
  * .conf, …), use the terminal default colour (white): file_color() returns
@@ -55,15 +55,12 @@ static const char *file_color(const char *name)
 		const char *ext = dot + 1;
 
 		/* Source / header files — magenta */
-		if (strcmp(ext, "c") == 0 || strcmp(ext, "h") == 0 ||
-		    strcmp(ext, "cpp") == 0 || strcmp(ext, "hpp") == 0 ||
-		    strcmp(ext, "s") == 0 || strcmp(ext, "S") == 0 ||
-		    strcmp(ext, "asm") == 0)
+		if (strcmp(ext, "c") == 0 || strcmp(ext, "h") == 0 || strcmp(ext, "cpp") == 0 || strcmp(ext, "hpp") == 0 ||
+		    strcmp(ext, "s") == 0 || strcmp(ext, "S") == 0 || strcmp(ext, "asm") == 0)
 			return COLOR_SRC;
 
 		/* Shell / script files — yellow */
-		if (strcmp(ext, "sh") == 0 || strcmp(ext, "bash") == 0 ||
-		    strcmp(ext, "zsh") == 0 || strcmp(ext, "py") == 0 ||
+		if (strcmp(ext, "sh") == 0 || strcmp(ext, "bash") == 0 || strcmp(ext, "zsh") == 0 || strcmp(ext, "py") == 0 ||
 		    strcmp(ext, "rb") == 0)
 			return COLOR_SCRIPT;
 
@@ -72,8 +69,7 @@ static const char *file_color(const char *name)
 			return COLOR_EXEC;
 
 		/* Binary / object / library — red */
-		if (strcmp(ext, "o") == 0 || strcmp(ext, "a") == 0 ||
-		    strcmp(ext, "so") == 0 || strcmp(ext, "bin") == 0)
+		if (strcmp(ext, "o") == 0 || strcmp(ext, "a") == 0 || strcmp(ext, "so") == 0 || strcmp(ext, "bin") == 0)
 			return COLOR_BIN;
 
 		/*

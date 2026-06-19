@@ -184,7 +184,7 @@ static void history_add(const char *line)
 	}
 
 	strncpy(history[hist_count], line, MAX_LINE - 1);
-	
+
 	history[hist_count][MAX_LINE - 1] = '\0';
 	hist_count++;
 }
