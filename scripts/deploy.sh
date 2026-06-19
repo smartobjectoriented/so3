@@ -20,7 +20,7 @@ progname=$(basename $0)
 pr_usage()
 {
 	printf "Infrabase deployment script\n\n"
-	printf "Usage: $progname [-h] [-l] [-a|-b|-r|-x|-k] [-v] ... \n"
+	printf "Usage: $progname [-h] [-l] [-a|-x] [-v] ... \n"
 }
 
 pr_help()
@@ -28,17 +28,14 @@ pr_help()
 	printf "\nAvailable options:\n"
 	printf "    -h                        Print this help\n"
 	printf "    -l                        List available recipes per layer or globally\n"
-	printf "    -a <bsp_recipe_name>      Deploy all, kernel, uboot, rootfs, usr\n"
-	printf "    -k <bsp_recipe_name>      Deploy kernel (with ITB)\n"
-	printf "    -b                        Deploy uboot\n"
-	printf "    -r <rootfs_recipe_name>   Deploy specified rootfs\n"
-	printf "    -x <aux_recipe_name>      Deploy auxiliary component\n"
+	printf "    -a <bsp_recipe_name>      Deploy a full BSP (rootfs, kernel, uboot, usr, ITB)\n"
+	printf "    -x <recipe_name>          Deploy a single recipe (component, uboot, rootfs, usr, ...)\n"
 	printf "    -v                        Emit logs during deployment\n"
 	printf "Examples: \n\n"
 	printf "$progname -l -a               List all deployable BSP recipes\n"
-	printf "$progname -l -x               List all deployable auxiliary components\n"
-	printf "$progname -b -v               Deploy uboot with verbose logs\n"
-	printf "$progname -a bsp-linux -v     Deploy ALL rootfs, kernel, uboot with verbose logs\n"
+	printf "$progname -l -x               List all deployable components\n"
+	printf "$progname -x usr-so3          Deploy the SO3 user space into the rootfs\n"
+	printf "$progname -a bsp-so3 -v       Deploy the full SO3 BSP with verbose logs\n"
 }
 
 if test $# -eq 0
@@ -57,7 +54,7 @@ optverbose=0
 dolist=0
 dodeploy=0
 
-while getopts "abhklrvx" o; do
+while getopts "ahlvx" o; do
 	case "$o" in
 		h)
 			# Help summary
@@ -75,16 +72,6 @@ while getopts "abhklrvx" o; do
 				dodeploy=1
 			fi
 			;;
-		k)
-			if ! test -n "$2"
-			then
-				layernames="meta-bsp"
-			else
-				recipename="$2"
-				deploytask="do_deploy_boot"
-				dodeploy=1
-			fi
-			;;
 		x)
 			if ! test -n "$2"
 			then
@@ -94,24 +81,6 @@ while getopts "abhklrvx" o; do
 				deploytask="do_deploy"
 				dodeploy=1
 			fi
-			;;
-		r)
-			if ! test -n "$2"
-			then
-				layernames="meta-rootfs"
-			else
-				recipename="$2"
-				deploytask="do_deploy"
-				dodeploy=1
-			fi
-			;;
-		b)
-			# We only currently have uboot for everything
-			# So no optarg for -b
-			layernames="meta-uboot"
-			recipename="uboot"
-			deploytask="do_deploy"
-			dodeploy=1
 			;;
 		l)
 			dolist=1

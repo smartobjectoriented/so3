@@ -83,10 +83,10 @@ You should land at the ``so3%`` prompt.
 
    After editing only the kernel, rebuild and redeploy it without a full rebuild::
 
-      ./scripts/build.sh -k so3
-      ./scripts/deploy.sh -k bsp-so3
+      ./scripts/build.sh -x so3
+      ./scripts/deploy.sh -a bsp-so3
 
-   The ``deploy.sh -k`` step is required because the in-tree kernel binary is not
+   The ``deploy.sh -a`` step is required because the in-tree kernel binary is not
    tracked by bitbake (see :ref:`build_system`).
 
 Launch scripts
@@ -168,7 +168,7 @@ relevant ``CMakeLists.txt``. Rebuild and redeploy the user space:
 .. code-block:: bash
 
    ./scripts/build.sh -x usr-so3
-   ./scripts/deploy.sh -k bsp-so3      # repack the rootfs into the FIT image
+   ./scripts/deploy.sh -a bsp-so3      # repack the rootfs into the FIT image + write the boot media
 
 See :ref:`user_space` for the user-space build details and the bundled
 applications.

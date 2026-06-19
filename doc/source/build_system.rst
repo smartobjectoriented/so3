@@ -169,33 +169,35 @@ The build & deploy scripts
    * - ``-a <bsp>``
      - build **everything** for a BSP (kernel + U-Boot + rootfs + FIT), e.g.
        ``build.sh -a bsp-so3``.
-   * - ``-k <recipe>``
-     - build the **kernel** only.
    * - ``-x <recipe>``
-     - build a **component / tool** (``usr-so3``, ``qemu``, ``avz``, …).
-   * - ``-r <recipe>``
-     - build a **rootfs**.
-   * - ``-b``
-     - build **U-Boot**.
+     - build a **single recipe** — component, tool, kernel, U-Boot, rootfs or
+       the SD-card image (``usr-so3``, ``qemu``, ``avz``, ``so3``, ``uboot``,
+       ``filesystem``, …). Opens the ``sudo -n`` session automatically for the
+       recipes that need root at build time (``filesystem``, ``bsp-linux``).
    * - ``-c``
-     - **clean** the selected recipe before building.
-   * - ``-f``
-     - create & format the **SD-card image**.
+     - **clean** the selected recipe; combine with ``-a``/``-x`` to clean then
+       rebuild.
    * - ``-l`` / ``-v``
      - **list** recipes / **verbose** bitbake output.
 
 ``scripts/deploy.sh`` then *writes the boot media* (and opens the ``sudo -n``
-session the privileged tasks need): ``-a <bsp>`` deploys everything,
-``-k <bsp>`` (re)builds the FIT and refreshes the SD-card boot partition,
-``-b`` deploys U-Boot, ``-r``/``-x`` deploy a rootfs / component.
+session the privileged tasks need): ``-a <bsp>`` deploys everything (rootfs +
+FIT + SD-card boot partition), and ``-x <recipe>`` deploys a single recipe
+(e.g. ``usr-so3`` into the rootfs, ``uboot``, a rootfs). ``-l`` / ``-v`` list /
+verbose.
+
+.. note::
+
+   ``build.sh`` / ``deploy.sh`` were simplified to just ``-a`` (full BSP) and
+   ``-x`` (single recipe); the former ``-k`` / ``-b`` / ``-r`` / ``-f`` are all
+   covered by ``-x <recipe>`` (e.g. ``-x so3``, ``-x uboot``, ``-x filesystem``).
 
 .. important::
 
    The SO3 kernel is built *in tree*, and bitbake does not track the in-tree
    ``so3/so3/so3.bin`` as a task output. After rebuilding the kernel
-   (``build.sh -k so3``), run ``deploy.sh -k bsp-so3`` (or ``-a``) to regenerate
-   the FIT image and refresh the SD-card — otherwise you boot the *previous*
-   kernel.
+   (``build.sh -x so3``), run ``deploy.sh -a bsp-so3`` to regenerate the FIT
+   image and refresh the SD-card — otherwise you boot the *previous* kernel.
 
 The SO3 kernel recipe
 =====================

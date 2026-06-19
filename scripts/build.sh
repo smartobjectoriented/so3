@@ -3,8 +3,8 @@
 # General build script for the infrabase infrastructure.
 #
 # bitbake runs as the unprivileged user. The only build invocation that
-# needs root (the filesystem image creation, `-f`) still runs bitbake
-# unprivileged — its recipe calls `sudo -n` for the privileged ops
+# needs root (the filesystem image creation, `-x filesystem`) still runs
+# bitbake unprivileged — its recipe calls `sudo -n` for the privileged ops
 # (losetup/fdisk/mkfs) via the sudo timestamp opened by
 # sudo_session_start.
 
@@ -23,7 +23,7 @@ progname=$(basename $0)
 pr_usage()
 {
 	printf "Infrabase build script\n\n"
-	printf "Usage: $progname [-h] [-l] [-a|-b|-x|-k|-f|-r] <recipe_name> [-c][-v]\n"
+	printf "Usage: $progname [-h] [-l] [-a|-x] <recipe_name> [-c] [-v]\n"
 }
 
 pr_help()
@@ -31,22 +31,19 @@ pr_help()
 
 	printf "\nAvailable options:\n"
 	printf "    -h                           Print this help\n"
-	printf "    -l                           List available BSPs, kernels, components\n"
-	printf "    -a <bsp_recipe_name>         Build all, the name of BSP is required\n"
-	printf "    -k <kernel_recipe_name>      Build kernel only\n"
-	printf "    -x <component_recipe_name>   Build component or tool\n"
-	printf "    -r <rootfs_recipe_name>      Build rootfs\n"
-	printf "    -f                           Create and format filesystem image\n"
-	printf "    -b                           Build uboot only\n"
-	printf "                                 of the selected base BSP (e.g. fc, dev-lvgl)\n"
-	printf "    -v                           Emit verbose build logs\n"
-	printf "    -c                           Clean before rebuilding\n\n"
+	printf "    -l                           List available recipes (BSPs and components)\n"
+	printf "    -a <bsp_recipe_name>         Build a full BSP (kernel, uboot, rootfs, usr)\n"
+	printf "    -x <recipe_name>             Build a single recipe (component, tool, kernel,\n"
+	printf "                                 uboot, rootfs, filesystem, ...)\n"
+	printf "    -c                           Clean (combine with -a/-x to clean then rebuild)\n"
+	printf "    -v                           Emit verbose build logs\n\n"
 	printf "Examples: \n\n"
 	printf "$progname -l                              Print all recipes\n"
 	printf "$progname -l -a                           Print all BSP recipes\n"
-	printf "$progname -l -k                           Print all kernel recipes\n"
-	printf "$progname -a bsp-linux                    Build the bare bsp-linux BSP (no capsule)\n"
-	printf "$progname -v -a bsp-linux -c              Clean and rebuild all emitting verbose logs\n"
+	printf "$progname -x uboot                        Build u-boot\n"
+	printf "$progname -x usr-so3                      Build the SO3 user space\n"
+	printf "$progname -a bsp-so3                      Build the full SO3 BSP\n"
+	printf "$progname -v -a bsp-so3 -c                Clean and rebuild the BSP, verbose\n"
 }
 
 if test $# -eq 0
@@ -67,7 +64,7 @@ doclean=0
 optverbose=0
 rootprivs=0
 
-while getopts "abcfhklrvx" o; do
+while getopts "achlvx" o; do
 	case "$o" in
 		l)
 			dolist=1
@@ -104,25 +101,17 @@ while getopts "abcfhklrvx" o; do
 				esac
 			fi
 			;;
-		r)
-			if ! test -n "$2"
-			then
-				layernames="meta-rootfs"
-			else
-				recipename="$2"
-				dobuild=1
-			fi
-			;;
-		b)
-			layernames="meta-uboot"
-			recipename="uboot"
-			dobuild=1
-			;;
 		x)
 			if test -n "$2"
 			then
 				recipename="$2"
 				dobuild=1
+				# Some recipes need root at build time (loop-mount /
+				# losetup / mkfs). Open a sudo session for them, mirroring
+				# the -a detection. Extend this match if more are added.
+				case "$recipename" in
+					bsp-linux*|filesystem) rootprivs=1 ;;
+				esac
 			else
 				layernames="$IB_AUX_LAYERS"
 			fi
@@ -133,20 +122,6 @@ while getopts "abcfhklrvx" o; do
 			;;
 		v)
 			optverbose=1
-			;;
-		k)
-			if ! test -n "$2"
-			then
-				layernames="meta-linux meta-so3"
-			else
-				recipename="$2"
-				dobuild=1
-			fi
-			;;
-		f)
-			recipename="filesystem"
-			rootprivs=1
-			dobuild=1
 			;;
 		*)
 			pr_usage;

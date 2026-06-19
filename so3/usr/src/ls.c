@@ -30,14 +30,23 @@
 static int long_format; /* -l */
 static int use_color = 1; /* default: color on */
 
-/* ANSI color codes */
+/* ANSI color codes, named per file role */
 #define COLOR_RESET   "\033[0m"
-#define COLOR_DIR     "\033[01;34m"   /* bold blue   */
-#define COLOR_FILE    "\033[01;32m"   /* bold green  */
-#define COLOR_EXEC    "\033[01;33m"   /* bold yellow */
-#define COLOR_SRC     "\033[01;35m"   /* bold magenta (source files) */
+#define COLOR_DIR     "\033[01;34m"   /* bold blue    — directories           */
+#define COLOR_EXEC    "\033[01;32m"   /* bold green   — executables (.elf)    */
+#define COLOR_SCRIPT  "\033[01;33m"   /* bold yellow  — shell / script files  */
+#define COLOR_SRC     "\033[01;35m"   /* bold magenta — source code & headers */
+#define COLOR_BIN     "\033[01;31m"   /* bold red     — binary / object / lib */
+/*
+ * Normal files, and plain-text files that are NOT source code (.txt, .md,
+ * .conf, …), use the terminal default colour (white): file_color() returns
+ * NULL for them and print_colored() prints them uncolored.
+ */
 
-/* Return the color code for a filename, or empty string. */
+/*
+ * Return the color code for a filename based on its extension, or NULL for a
+ * normal / non-source-text file (rendered uncolored, i.e. white).
+ */
 static const char *file_color(const char *name)
 {
 	const char *dot = strrchr(name, '.');
@@ -56,22 +65,25 @@ static const char *file_color(const char *name)
 		if (strcmp(ext, "sh") == 0 || strcmp(ext, "bash") == 0 ||
 		    strcmp(ext, "zsh") == 0 || strcmp(ext, "py") == 0 ||
 		    strcmp(ext, "rb") == 0)
-			return COLOR_EXEC;
+			return COLOR_SCRIPT;
 
-		/* Config / text files — cyan */
-		if (strcmp(ext, "conf") == 0 || strcmp(ext, "cfg") == 0 ||
-		    strcmp(ext, "ini") == 0 || strcmp(ext, "txt") == 0 ||
-		    strcmp(ext, "md") == 0 || strcmp(ext, "rst") == 0)
-			return "\033[01;36m";
+		/* Executables — green */
+		if (strcmp(ext, "elf") == 0)
+			return COLOR_EXEC;
 
 		/* Binary / object / library — red */
 		if (strcmp(ext, "o") == 0 || strcmp(ext, "a") == 0 ||
 		    strcmp(ext, "so") == 0 || strcmp(ext, "bin") == 0)
-			return "\033[01;31m";
+			return COLOR_BIN;
+
+		/*
+		 * Plain-text / config files (.conf .cfg .ini .txt .md .rst, …) are
+		 * not source code: fall through to NULL so they stay white.
+		 */
 	}
 
-	/* Executable files detected via mode — set in print_long / print_short */
-	return NULL; /* caller decides: COLOR_FILE by default */
+	/* Normal file (no recognised extension): no color (white). */
+	return NULL;
 }
 
 /* Print a string with the given color, then reset. */
@@ -81,6 +93,21 @@ static void print_colored(const char *str, const char *color)
 		printf("%s%s" COLOR_RESET, color, str);
 	else
 		printf("%s", str);
+}
+
+/* Color for an entry given its readdir type and name (NULL = white). */
+static const char *entry_color(unsigned char d_type, const char *name)
+{
+	switch (d_type) {
+	case DT_DIR:
+		return COLOR_DIR;
+	case DT_CHR:
+		return COLOR_EXEC;
+	case DT_REG:
+		return file_color(name);
+	default:
+		return NULL;
+	}
 }
 
 /* Join a directory path and an entry name into out[]. */
@@ -101,6 +128,7 @@ static void print_long(const char *dir, struct dirent *e)
 	struct stat st;
 	char type = (e->d_type == DT_DIR) ? 'd' : '-';
 	const char *suffix = (e->d_type == DT_DIR) ? "/" : "";
+	const char *color = entry_color(e->d_type, e->d_name);
 
 	join_path(path, sizeof(path), dir, e->d_name);
 
@@ -113,11 +141,14 @@ static void print_long(const char *dir, struct dirent *e)
 		else
 			strcpy(tbuf, "----------------");
 
-		printf("%c %10ld  %s  %s%s\n", type, (long) st.st_size, tbuf, e->d_name, suffix);
+		printf("%c %10ld  %s  ", type, (long) st.st_size, tbuf);
 	} else {
 		/* e.g. /dev entries have no FAT stat — show what readdir gave us. */
-		printf("%c %10s  %s  %s%s\n", type, "-", "----------------", e->d_name, suffix);
+		printf("%c %10s  %s  ", type, "-", "----------------");
 	}
+
+	print_colored(e->d_name, color);
+	printf("%s\n", suffix);
 }
 
 /* Print a long-format line from a stat result (used for a file argument). */
@@ -126,6 +157,7 @@ static void print_long_stat(const char *name, const struct stat *st)
 	char tbuf[24];
 	char type = S_ISDIR(st->st_mode) ? 'd' : '-';
 	const char *suffix = S_ISDIR(st->st_mode) ? "/" : "";
+	const char *color = S_ISDIR(st->st_mode) ? COLOR_DIR : file_color(name);
 	time_t t = st->st_mtime;
 	struct tm tm;
 
@@ -134,39 +166,20 @@ static void print_long_stat(const char *name, const struct stat *st)
 	else
 		strcpy(tbuf, "----------------");
 
-	printf("%c %10ld  %s  %s%s\n", type, (long) st->st_size, tbuf, name, suffix);
+	printf("%c %10ld  %s  ", type, (long) st->st_size, tbuf);
+	print_colored(name, color);
+	printf("%s\n", suffix);
 }
 
 /* Print one entry in the default (name-only) format. */
 static void print_short(struct dirent *e)
 {
-	const char *color = NULL;
+	const char *suffix = (e->d_type == DT_DIR) ? "/" : "";
 
-	switch (e->d_type) {
-	case DT_DIR:
-		color = COLOR_DIR;
-		print_colored(e->d_name, color);
-		printf("/\n");
-		break;
-	case DT_REG: {
-		const char *ext_color = file_color(e->d_name);
-		if (ext_color != NULL)
-			color = ext_color;
-		else
-			color = COLOR_FILE;
-		print_colored(e->d_name, color);
-		printf("\n");
-		break;
-	}
-	case DT_CHR:
-		color = COLOR_EXEC;
-		print_colored(e->d_name, color);
-		printf("\n");
-		break;
-	default:
-		printf("%s\n", e->d_name);
-		break;
-	}
+	/* entry_color() returns NULL for normal / non-source-text files, which
+	 * print_colored() renders uncolored (white). */
+	print_colored(e->d_name, entry_color(e->d_type, e->d_name));
+	printf("%s\n", suffix);
 }
 
 /*
