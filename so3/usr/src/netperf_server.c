@@ -15,6 +15,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
+/* Network throughput test server: accept TCP connections from netperf_client
+ * and consume the incoming data. Counterpart to netperf_client. */
+
 #include <string.h>
 #include <unistd.h>
 #include <syscall.h>

@@ -21,6 +21,9 @@
  *
  */
 
+/* LVGL performance probe: bring up the framebuffer via slv, build the
+ * lv_demo_stress UI and time a single lv_timer_handler() pass. */
+
 #include <sys/time.h>
 #include <stdlib.h>
 #include <stdio.h>

@@ -15,6 +15,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* Example demonstrating POSIX threads on SO3: spawn worker threads that
+ * contend on a shared pthread mutex. */
+
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>

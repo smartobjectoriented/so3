@@ -16,6 +16,9 @@
  *
  */
 
+/* Run the LVGL benchmark demo (lv_demo_benchmark) on the SO3 framebuffer via
+ * the slv port, printing a summary when it completes. */
+
 #include <benchmark/lv_demo_benchmark.h>
 #include <demos/lv_demos.h>
 

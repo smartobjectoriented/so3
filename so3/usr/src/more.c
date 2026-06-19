@@ -16,6 +16,12 @@
  *
  */
 
+/*
+ * more: a minimal pager — display a file (or stdin) one screenful at a time,
+ * advancing on key presses. Puts the terminal into raw mode while reading and
+ * restores the previous mode on exit / SIGINT.
+ */
+
 #include <sys/types.h>
 #include <sys/ioctl.h>
 

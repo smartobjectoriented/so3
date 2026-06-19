@@ -16,6 +16,9 @@
  *
  */
 
+/* Launch a named LVGL demo (from lv_demos) on the SO3 framebuffer via the slv
+ * port; the demo name is given as the first command-line argument. */
+
 #include <demos/lv_demos.h>
 
 #include <slv.h>

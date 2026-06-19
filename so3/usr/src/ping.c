@@ -16,6 +16,9 @@
  *
  */
 
+/* ping: send ICMP echo requests to a host and report the replies, including
+ * the round-trip times. */
+
 #include <string.h>
 #include <unistd.h>
 #include <syscall.h>

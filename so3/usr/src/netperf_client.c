@@ -15,6 +15,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
+/* Network throughput test client: connect to a netperf_server over TCP, send
+ * bursts of data and report the measured round-trip time and bandwidth. */
+
 #include <string.h>
 #include <unistd.h>
 #include <syscall.h>

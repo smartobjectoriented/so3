@@ -44,6 +44,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <dirent.h>
 
 #define MAX_LINE 256 /* longest command line accepted              */
 #define MAX_TOKENS 64 /* most tokens (words + operators) per line    */
@@ -54,6 +55,8 @@
 #define VAR_NAME 64 /* longest environment variable name           */
 #define HIST_MAX 16 /* most command lines remembered               */
 #define MAX_CWD 256 /* longest cwd shown in the prompt (kernel cap) */
+#define COMP_MAX 64 /* most completion candidates considered       */
+#define COMP_NAME 64 /* longest completion candidate name kept      */
 
 #define ELF_SUFFIX ".elf"
 
@@ -147,6 +150,8 @@ static int raw_ok; /* terminal supports raw mode (is a console) */
 static char history[HIST_MAX][MAX_LINE];
 static int hist_count;
 
+static void complete(char *buf, int *len, int *pos, int size); /* tab completion */
+
 static void out(const char *s, int n)
 {
 	if (n > 0)
@@ -169,6 +174,7 @@ static void history_add(const char *line)
 {
 	if (line[0] == '\0')
 		return;
+
 	if (hist_count > 0 && !strcmp(history[hist_count - 1], line))
 		return;
 
@@ -178,6 +184,7 @@ static void history_add(const char *line)
 	}
 
 	strncpy(history[hist_count], line, MAX_LINE - 1);
+	
 	history[hist_count][MAX_LINE - 1] = '\0';
 	hist_count++;
 }
@@ -215,8 +222,9 @@ static int enable_raw(struct termios *saved)
 }
 
 /*
- * Read a line with in-place editing, history (Up/Down) and cursor movement
- * (Left/Right). Returns the length, or -1 if raw mode is unavailable (caller
+ * Read a line with in-place editing, history (Up/Down), cursor movement
+ * (Left/Right) and Tab completion. Returns the length, or -1 if raw mode is
+ * unavailable (caller
  * should fall back to read_line), or -2 if the line was cancelled (Ctrl-C).
  */
 static int read_line_edit(char *buf, int size)
@@ -255,6 +263,8 @@ static int read_line_edit(char *buf, int size)
 				outc(' ');
 				backspaces(len - pos + 1);
 			}
+		} else if (c == '\t') { /* tab: complete command / path */
+			complete(buf, &len, &pos, size);
 		} else if (c == 27) { /* ESC: cursor / navigation keys */
 			char a, b;
 
@@ -605,6 +615,200 @@ static int run_builtin(int argc, char *argv[])
 }
 
 /* -------------------------------------------------------------------------- */
+/* Tab completion                                                             */
+/* -------------------------------------------------------------------------- */
+
+/* Print the interactive prompt ("<cwd> % "), flushed and ready for input. */
+static void print_prompt(void)
+{
+	char cwd[MAX_CWD];
+
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+		printf("%s %% ", cwd);
+	else
+		printf("%s", prompt);
+	fflush(stdout);
+}
+
+/* Length of the common leading prefix shared by a and b. */
+static int common_len(const char *a, const char *b)
+{
+	int i = 0;
+
+	while (a[i] && a[i] == b[i])
+		i++;
+
+	return i;
+}
+
+/* Insert s into buf at the cursor, updating the screen and editor state. */
+static void insert_str(char *buf, int *len, int *pos, int size, const char *s)
+{
+	int sl = (int) strlen(s);
+
+	if (*len + sl > size - 1)
+		sl = size - 1 - *len;
+	if (sl <= 0)
+		return;
+
+	memmove(&buf[*pos + sl], &buf[*pos], *len - *pos);
+	memcpy(&buf[*pos], s, sl);
+	*len += sl;
+
+	out(&buf[*pos], *len - *pos); /* redraw inserted text + tail */
+	backspaces(*len - *pos - sl); /* cursor back to just after the insert */
+	*pos += sl;
+}
+
+/*
+ * Collect completion candidates for prefix pfx into cand[] (marking each as a
+ * directory in isdir[]). In command mode the candidates are the builtins plus
+ * the "<name>.elf" executables in dir (suffix stripped); otherwise they are the
+ * matching entries of dir. Returns the number of candidates found.
+ */
+static int gather(const char *dir, const char *pfx, int cmdmode, char cand[][COMP_NAME], char *isdir)
+{
+	int n = 0, pl = (int) strlen(pfx);
+	int slen = (int) strlen(ELF_SUFFIX);
+	struct dirent *e;
+	DIR *d;
+
+	if (cmdmode) {
+		const struct builtin *b;
+
+		for (b = builtins; b->name != NULL && n < COMP_MAX; b++)
+			if (!strncmp(b->name, pfx, pl)) {
+				strncpy(cand[n], b->name, COMP_NAME - 1);
+				cand[n][COMP_NAME - 1] = '\0';
+				isdir[n++] = 0;
+			}
+	}
+
+	d = opendir(dir);
+	if (d == NULL)
+		return n;
+
+	while (n < COMP_MAX && (e = readdir(d)) != NULL) {
+		char name[COMP_NAME];
+		int nl = (int) strlen(e->d_name);
+
+		if (cmdmode) {
+			/* only executables, offered without their ".elf" suffix */
+			if (nl <= slen || strcmp(e->d_name + nl - slen, ELF_SUFFIX))
+				continue;
+			nl -= slen;
+			if (nl > COMP_NAME - 1)
+				nl = COMP_NAME - 1;
+			memcpy(name, e->d_name, nl);
+			name[nl] = '\0';
+		} else {
+			strncpy(name, e->d_name, COMP_NAME - 1);
+			name[COMP_NAME - 1] = '\0';
+		}
+
+		if (strncmp(name, pfx, pl))
+			continue;
+
+		strcpy(cand[n], name);
+		isdir[n++] = (e->d_type == DT_DIR);
+	}
+
+	closedir(d);
+	return n;
+}
+
+/*
+ * Tab completion of the word ending at the cursor. The first word of the line
+ * (command position) completes against builtins and "/<name>.elf" executables;
+ * any other word, and any word containing '/', completes against directory
+ * entries. A unique match is inserted in full (with a trailing '/' for a
+ * directory, else a space); on several matches the longest common prefix is
+ * filled in, and if that adds nothing the candidates are listed.
+ */
+static void complete(char *buf, int *len, int *pos, int size)
+{
+	char cand[COMP_MAX][COMP_NAME];
+	char isdir[COMP_MAX];
+	char wbuf[MAX_LINE], dirbuf[MAX_PATH], lcp[COMP_NAME];
+	const char *dir, *prefix;
+	char *slash;
+	int wstart = *pos, cmdmode = 1, i, n, pl, wl;
+
+	/* Word start: back up over the current (non-whitespace) word. */
+	while (wstart > 0 && buf[wstart - 1] != ' ' && buf[wstart - 1] != '\t')
+		wstart--;
+
+	/* Command position: only whitespace precedes the word. */
+	for (i = 0; i < wstart; i++)
+		if (buf[i] != ' ' && buf[i] != '\t') {
+			cmdmode = 0;
+			break;
+		}
+
+	wl = *pos - wstart;
+	memcpy(wbuf, &buf[wstart], wl);
+	wbuf[wl] = '\0';
+
+	slash = strrchr(wbuf, '/');
+	if (slash != NULL) {
+		cmdmode = 0; /* a path, not a bare command name */
+		prefix = slash + 1;
+		if (slash == wbuf)
+			dir = "/";
+		else {
+			int dl = (int) (slash - wbuf);
+
+			if (dl > MAX_PATH - 1)
+				dl = MAX_PATH - 1;
+			memcpy(dirbuf, wbuf, dl);
+			dirbuf[dl] = '\0';
+			dir = dirbuf;
+		}
+	} else {
+		prefix = wbuf;
+		dir = cmdmode ? "/" : ".";
+	}
+
+	n = gather(dir, prefix, cmdmode, cand, isdir);
+	if (n == 0)
+		return; /* nothing matches: ignore the Tab */
+
+	pl = (int) strlen(prefix);
+
+	if (n == 1) {
+		char ins[COMP_NAME + 1];
+
+		snprintf(ins, sizeof(ins), "%s%s", cand[0] + pl, isdir[0] ? "/" : " ");
+		insert_str(buf, len, pos, size, ins);
+		return;
+	}
+
+	/* Several matches: extend to their longest common prefix. */
+	strcpy(lcp, cand[0]);
+	for (i = 1; i < n; i++)
+		lcp[common_len(lcp, cand[i])] = '\0';
+
+	if ((int) strlen(lcp) > pl) {
+		insert_str(buf, len, pos, size, lcp + pl);
+		return;
+	}
+
+	/* No progress: list the candidates, then redraw the prompt + line. */
+	outc('\n');
+	for (i = 0; i < n; i++) {
+		out(cand[i], (int) strlen(cand[i]));
+		if (isdir[i])
+			outc('/');
+		out("  ", 2);
+	}
+	outc('\n');
+
+	print_prompt();
+	out(buf, *len);
+	backspaces(*len - *pos);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Pipeline parsing and execution                                             */
 /* -------------------------------------------------------------------------- */
 
@@ -790,7 +994,6 @@ int main(int argc, char *argv[])
 	char line[MAX_LINE];
 	char store[TOK_STORE];
 	char *tok[MAX_TOKENS];
-	char cwd[MAX_CWD];
 	struct command cmds[MAX_CMDS];
 	struct sigaction sa;
 	int n, ncmd, background;
@@ -810,11 +1013,7 @@ int main(int argc, char *argv[])
 		reap_children();
 
 		/* Prompt shows the current working directory, e.g. "/dev % ". */
-		if (getcwd(cwd, sizeof(cwd)) != NULL)
-			printf("%s %% ", cwd);
-		else
-			printf("%s", prompt);
-		fflush(stdout);
+		print_prompt();
 
 		if (raw_ok) {
 			n = read_line_edit(line, sizeof(line));

@@ -16,6 +16,9 @@
  *
  */
 
+/* ls: list directory contents (or the paths given as arguments). Supports -l
+ * (long format: type, size, mtime) and colourised output by entry type. */
+
 #include <stdio.h>
 #include <dirent.h>
 #include <stdlib.h>
@@ -25,6 +28,60 @@
 #include <time.h>
 
 static int long_format; /* -l */
+static int use_color = 1; /* default: color on */
+
+/* ANSI color codes */
+#define COLOR_RESET   "\033[0m"
+#define COLOR_DIR     "\033[01;34m"   /* bold blue   */
+#define COLOR_FILE    "\033[01;32m"   /* bold green  */
+#define COLOR_EXEC    "\033[01;33m"   /* bold yellow */
+#define COLOR_SRC     "\033[01;35m"   /* bold magenta (source files) */
+
+/* Return the color code for a filename, or empty string. */
+static const char *file_color(const char *name)
+{
+	const char *dot = strrchr(name, '.');
+
+	if (dot != NULL) {
+		const char *ext = dot + 1;
+
+		/* Source / header files — magenta */
+		if (strcmp(ext, "c") == 0 || strcmp(ext, "h") == 0 ||
+		    strcmp(ext, "cpp") == 0 || strcmp(ext, "hpp") == 0 ||
+		    strcmp(ext, "s") == 0 || strcmp(ext, "S") == 0 ||
+		    strcmp(ext, "asm") == 0)
+			return COLOR_SRC;
+
+		/* Shell / script files — yellow */
+		if (strcmp(ext, "sh") == 0 || strcmp(ext, "bash") == 0 ||
+		    strcmp(ext, "zsh") == 0 || strcmp(ext, "py") == 0 ||
+		    strcmp(ext, "rb") == 0)
+			return COLOR_EXEC;
+
+		/* Config / text files — cyan */
+		if (strcmp(ext, "conf") == 0 || strcmp(ext, "cfg") == 0 ||
+		    strcmp(ext, "ini") == 0 || strcmp(ext, "txt") == 0 ||
+		    strcmp(ext, "md") == 0 || strcmp(ext, "rst") == 0)
+			return "\033[01;36m";
+
+		/* Binary / object / library — red */
+		if (strcmp(ext, "o") == 0 || strcmp(ext, "a") == 0 ||
+		    strcmp(ext, "so") == 0 || strcmp(ext, "bin") == 0)
+			return "\033[01;31m";
+	}
+
+	/* Executable files detected via mode — set in print_long / print_short */
+	return NULL; /* caller decides: COLOR_FILE by default */
+}
+
+/* Print a string with the given color, then reset. */
+static void print_colored(const char *str, const char *color)
+{
+	if (use_color && color != NULL)
+		printf("%s%s" COLOR_RESET, color, str);
+	else
+		printf("%s", str);
+}
 
 /* Join a directory path and an entry name into out[]. */
 static void join_path(char *out, size_t outsz, const char *dir, const char *name)
@@ -83,15 +140,31 @@ static void print_long_stat(const char *name, const struct stat *st)
 /* Print one entry in the default (name-only) format. */
 static void print_short(struct dirent *e)
 {
+	const char *color = NULL;
+
 	switch (e->d_type) {
 	case DT_DIR:
-		printf("%s/\n", e->d_name);
+		color = COLOR_DIR;
+		print_colored(e->d_name, color);
+		printf("/\n");
 		break;
-	case DT_REG:
+	case DT_REG: {
+		const char *ext_color = file_color(e->d_name);
+		if (ext_color != NULL)
+			color = ext_color;
+		else
+			color = COLOR_FILE;
+		print_colored(e->d_name, color);
+		printf("\n");
+		break;
+	}
 	case DT_CHR:
-		printf("%s\n", e->d_name);
+		color = COLOR_EXEC;
+		print_colored(e->d_name, color);
+		printf("\n");
 		break;
 	default:
+		printf("%s\n", e->d_name);
 		break;
 	}
 }

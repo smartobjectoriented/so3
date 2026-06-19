@@ -16,6 +16,9 @@
  *
  */
 
+/* Example user-space app that emits a message through the capsule logging
+ * facility (capsule_log) every few seconds. */
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>

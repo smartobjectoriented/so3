@@ -16,6 +16,9 @@
  *
  */
 
+/* rm: remove files and directories. -r recurses into directories, -f ignores
+ * missing files and keeps going on errors. */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
