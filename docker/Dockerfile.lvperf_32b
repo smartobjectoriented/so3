@@ -36,5 +36,5 @@ RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh -a bsp-so3'
 RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
 
 # Run time (REQUIRES --privileged): rebuild usr, create+format the SD-card image
-# (build.sh -f, privileged), deploy (FIT + rootfs + sdcard), run.
-CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -f; deploy.sh -a bsp-so3; docker/scripts/run.sh"]
+# (build.sh -x filesystem, privileged), deploy (FIT + rootfs + sdcard), run.
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -x filesystem; deploy.sh -a bsp-so3; docker/scripts/run.sh"]

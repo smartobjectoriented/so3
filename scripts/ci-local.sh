@@ -5,7 +5,7 @@
 #
 # The CI checks out the repository with actions/checkout (only git-TRACKED
 # files, a fresh tree with no build output) and then, inside the so3-env
-# container, appends IB_PLATFORM and runs `build.sh -k so3` + `build.sh -x
+# container, appends IB_PLATFORM and runs `build.sh -x so3` + `build.sh -x
 # usr-so3`. To match that faithfully this script exports the tracked files
 # into a throwaway directory and runs the exact same docker command.
 #
@@ -83,7 +83,7 @@ for plat in "${PLATS[@]}"; do
         cd /so3
         echo "IB_PLATFORM = \"'"$plat"'\"" >> build/conf/local.conf
         . ./env.sh
-        build.sh -k so3
+        build.sh -x so3
         build.sh -x usr-so3
       '; then
     echo "[ci-local] platform=$plat: PASS"

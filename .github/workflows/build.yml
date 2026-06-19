@@ -8,7 +8,7 @@ on:
     branches: ["main"]
 
 # Smoke-build SO3 with Infrabase (bitbake) inside the so3-env image. Both the
-# kernel (build.sh -k so3) and the user space (build.sh -x usr-so3, which also
+# kernel (build.sh -x so3) and the user space (build.sh -x usr-so3, which also
 # builds the MUSL toolchain via meta-toolchain) are non-privileged, so a plain
 # `docker run` (no --privileged) is enough. The repo is mounted at /so3.
 jobs:
@@ -32,7 +32,7 @@ jobs:
               cd /so3
               echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
               . ./env.sh
-              build.sh -k so3
+              build.sh -x so3
               build.sh -x usr-so3 || {
                 rc=$?
                 echo "=== build failed (rc=$rc); tail of musl-toolchain do_build log ==="
