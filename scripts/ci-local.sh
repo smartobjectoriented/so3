@@ -64,6 +64,14 @@ populate() {
   fi
 }
 
+# The build runs as root inside the container, so it leaves root-owned files in
+# the work tree that the host user cannot delete (rm: "Permission denied"). Hand
+# ownership back to the invoking user via the same image (root) before the host
+# removes or inspects the tree.
+reown() {
+  docker run --rm -v "$1:/w" "$IMAGE" chown -R "$(id -u):$(id -g)" /w 2>/dev/null || true
+}
+
 rc=0
 IFS=',' read -ra PLATS <<< "$PLATFORMS"
 for plat in "${PLATS[@]}"; do
@@ -87,9 +95,11 @@ for plat in "${PLATS[@]}"; do
         build.sh -x usr-so3
       '; then
     echo "[ci-local] platform=$plat: PASS"
+    reown "$work"
     [ "$KEEP" -eq 1 ] || rm -rf "$work"
   else
     rc=1
+    reown "$work" # so the kept tree can be inspected / removed without sudo
     echo "[ci-local] platform=$plat: FAIL  (tree kept for inspection: $work)"
   fi
 done
