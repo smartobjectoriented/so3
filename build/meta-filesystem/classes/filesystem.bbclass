@@ -47,9 +47,15 @@ def __do_fs_init_storage(d):
     if IB_STORAGE_MODE == "remote":
         return None
 
-    if IB_STORAGE_MODE == "hard" and IB_STORAGE_DEVICE == "":
-        bb.fatal(("No device found; please edit conf/local.conf"
-                  " IB_STORAGE_DEVICE is not set"))
+    # `not` catches both unset (commented out in local.conf -> None) and empty.
+    # IB_STORAGE_DEVICE has no default ON PURPOSE: a wrong/default device (e.g.
+    # /dev/sda) on a mechanical deploy could overwrite a host disk.
+    if IB_STORAGE_MODE == "hard" and not IB_STORAGE_DEVICE:
+        bb.fatal("IB_STORAGE_MODE is 'hard' for platform '%s' but IB_STORAGE_DEVICE "
+                 "is not set. Refusing to initialise storage: writing to a wrong or "
+                 "default device (e.g. /dev/sda) could overwrite a host disk. "
+                 "Uncomment and set IB_STORAGE_DEVICE for this platform in "
+                 "conf/local.conf before deploying." % (d.getVar('IB_PLATFORM') or '?'))
 
     # Perform the tasks specific to the platform
     __platform_init_storage(d)

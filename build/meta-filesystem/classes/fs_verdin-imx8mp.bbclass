@@ -58,6 +58,16 @@ def __do_fs_init_storage(d):
 
     WORKDIR = d.getVar("WORKDIR")
 
+    # __platform_init_storage partitions/formats /dev/${IB_STORAGE_DEVICE}
+    # unconditionally, so refuse if it is unset (commented out -> None) or empty.
+    # IB_STORAGE_DEVICE has no default ON PURPOSE: a wrong/default device (e.g.
+    # /dev/sda) on a mechanical deploy could overwrite a host disk.
+    if not IB_STORAGE_DEVICE:
+        bb.fatal("IB_STORAGE_DEVICE is not set for platform '%s'. Refusing to "
+                 "partition/format: a wrong or default device (e.g. /dev/sda) could "
+                 "overwrite a host disk. Uncomment and set IB_STORAGE_DEVICE in "
+                 "conf/local.conf before deploying to hardware." % (d.getVar('IB_PLATFORM') or '?'))
+
     # Perform the tasks specific to the platform
     __platform_init_storage(d)
 
