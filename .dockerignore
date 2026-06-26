@@ -24,8 +24,13 @@ qemu
 u-boot
 avz
 atf
-qemu.back
-u-boot.back
+
+# Infrabase attach state (host-specific). do_attach_infrabase records a
+# sha256 manifest of the attached tree and keeps the prior tree in a .back dir;
+# both are regenerated in the container. Leaking the host's manifest makes the
+# in-container attach see the freshly-COPY'd tree as "locally modified" and abort.
+**/*.attach.sha256
+**/*.back
 
 # Generated disk / boot images
 filesystem/*.img*
