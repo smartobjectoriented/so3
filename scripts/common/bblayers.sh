@@ -29,8 +29,13 @@ show_env() {
 
 	_platform=
 	if test -n "$BUILDDIR" && test -r "$BUILDDIR/conf/local.conf"; then
-		_platform=$(grep "^IB_PLATFORM" "$BUILDDIR/conf/local.conf" \
-			| head -1 | sed -n 's/.*"\([^"]*\)".*/\1/p')
+		# Report the EFFECTIVE platform. bitbake uses last-assignment-wins,
+		# and an image build may append "IB_PLATFORM = ..." after the
+		# "IB_PLATFORM ?= ..." default (e.g. the lv_perf Dockerfiles), so
+		# take the last plain (non-override) assignment, not the first.
+		_platform=$(grep -E "^IB_PLATFORM[[:space:]]*[?:]?=" "$BUILDDIR/conf/local.conf" \
+			| grep -v "^IB_PLATFORM:" \
+			| tail -1 | sed -n 's/.*"\([^"]*\)".*/\1/p')
 	fi
 
 	printf '%s  root=%s  platform=%s\n' \
