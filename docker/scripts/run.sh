@@ -14,6 +14,9 @@
 # script returns and the container exits with the perf output on stdout.
 #
 # Determinism for reproducible FPS numbers comes from -icount + -semihosting.
+# align=off (the default): the virtual icount clock already provides determinism;
+# align=on would only pace the guest to host wall-clock and spam "the guest is
+# now late by N seconds" warnings whenever it can't keep up.
 
 set -e
 
@@ -65,7 +68,7 @@ fi
 exec "$QEMU_BIN" $QEMU_DEBUG_ARGS \
     -semihosting \
     -smp 2 \
-    -icount shift=0,sleep=on,align=on \
+    -icount shift=0,sleep=on,align=off \
     -serial mon:stdio \
     -M virt -cpu "$CPU" \
     -device virtio-blk-device,drive=hd0 \
