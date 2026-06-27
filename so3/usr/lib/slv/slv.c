@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <bits/ioctl.h>
@@ -33,8 +34,21 @@
 #include "slv_fs.h"
 #include "slv_mouse.h"
 
-static void *slv_tick(void *args);
 static void *slv_loop_inner(void *args);
+
+/*
+ * LVGL tick source. Read the monotonic clock (microsecond resolution, backed
+ * by the ARM generic timer) and return milliseconds. This replaces the old
+ * 10 ms lv_tick_inc helper thread: at 10 ms granularity the perf benchmark
+ * measured 0 render/flush time for any frame shorter than 10 ms — i.e. every
+ * frame on virt32 and the light scenes on virt64.
+ */
+static uint32_t slv_tick_get_ms(void)
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (uint32_t) (ts.tv_sec * 1000u + ts.tv_nsec / 1000000u);
+}
 
 int slv_init(slv_t *slv)
 {
@@ -56,10 +70,8 @@ int slv_init(slv_t *slv)
 	}
 	slv->terminate = false;
 
-	err = pthread_create(&slv->tick_thread, NULL, slv_tick, slv);
-	if (err < 0) {
-		goto thread_err;
-	}
+	/* Drive LVGL's tick from the monotonic clock instead of a 10 ms thread. */
+	lv_tick_set_cb(slv_tick_get_ms);
 
 	return 0;
 
@@ -69,7 +81,6 @@ kb_err:
 	slv_fb_terminate(&slv->fb);
 mouse_err:
 	slv_keyboard_terminate(slv->kfd);
-thread_err:
 	slv_mouse_terminate(slv->mfd);
 	return err;
 }
@@ -89,7 +100,6 @@ int slv_loop_start(slv_t *slv)
 void slv_terminate(slv_t *slv)
 {
 	slv->terminate = true;
-	pthread_join(slv->tick_thread, NULL);
 	if (slv->has_loop_thread) {
 		pthread_join(slv->loop_thread, NULL);
 	}
@@ -110,17 +120,6 @@ static void *slv_loop_inner(void *args)
 		} else {
 			usleep((uint64_t) next_timer * 1000);
 		}
-	}
-	return NULL;
-}
-
-static void *slv_tick(void *args)
-{
-	slv_t *slv = (slv_t *) args;
-	while (!slv->terminate) {
-		/* Tell LVGL that 10 milliseconds were elapsed */
-		usleep(10000);
-		lv_tick_inc(10);
 	}
 	return NULL;
 }
