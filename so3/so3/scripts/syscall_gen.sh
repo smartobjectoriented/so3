@@ -87,7 +87,15 @@ while read name func requirement; do
 	sys_cond["$name"]="$requirement"
 
 	echo "#ifdef SYSCALL_$name"
-	echo -e "\t[SYSCALL_$name] = &__sys_$func,"
+	if [ -n "$requirement" ]; then
+		echo "#ifdef CONFIG_$requirement"
+		echo -e "\t[SYSCALL_$name] = &__sys_$func,"
+		echo "#else"
+		echo -e "\t[SYSCALL_$name] = &__sys_empty,"
+		echo "#endif"
+	else
+		echo -e "\t[SYSCALL_$name] = &__sys_$func,"
+	fi
 	echo "#endif"
 done < <(echo "$valid_syscalls") >> "$outfile_table"
 
@@ -104,13 +112,11 @@ grep -E "^#define " "$infile_number" | sed "s/^#define __NR_//" | {
 			continue
 		fi
 
-		if [ -n "${sys_cond[$name]}" ]; then
-			echo "#ifdef CONFIG_${sys_cond[$name]}"
-		fi
-
 		echo "#define SYSCALL_$name $number"
 
 		if [ -n "${sys_cond[$name]}" ]; then
+			echo "#ifdef CONFIG_${sys_cond[$name]}"
+			echo "#define SYSCALL_$name $number"
 			echo "#endif"
 		fi
 	done
