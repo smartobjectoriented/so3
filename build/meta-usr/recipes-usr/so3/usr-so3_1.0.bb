@@ -32,9 +32,11 @@ IB_TOOLCHAIN_PATH = "${IB_TARGET}/${IB_PLAT_CPU}-linux-musl.cmake"
 # so the bbappend's do_handle_fetch_git can pull lvgl into the workdir and
 # attach it back into usr/.
 #
-# do_patch stays noexec: the slv/lvgl integration patches are already baked
-# into the in-tree usr/ source, so re-applying them fails (reversed patch).
-do_patch[noexec] = "1"
+# do_patch runs: the committed usr/ is the lvgl-free base, and the slv/lvgl
+# integration (lib/slv, lib/lv_conf.h, the lvgl_*.elf apps and the lvgl/slv
+# CMakeLists blocks) is delivered as :lvgl creation/CMake patches applied to
+# ${S} and mirrored to IB_TARGET by do_attach_infrabase (which runs after
+# do_patch via do_handle_symlinks).
 
 do_build[depends] = "rootfs-so3:do_build"
 

@@ -1,0 +1,9 @@
+--- /dev/null	2026-06-22 09:52:29.860520107 +0200
++++ ./lib/frozen/CMakeLists.txt	2025-09-25 16:09:37.252493017 +0200
+@@ -0,0 +1,5 @@
++
++add_library(frozen frozen.c)
++
++
++ 
+\ No newline at end of file

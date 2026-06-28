@@ -1,0 +1,5 @@
+--- /dev/null	2026-06-22 09:52:29.860520107 +0200
++++ ./depmod.sh	2025-09-25 16:09:37.250976939 +0200
+@@ -0,0 +1,2 @@
++make INSTALL_MOD_PATH=../rootfs/target/ -C ../linux modules_install
++

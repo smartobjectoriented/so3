@@ -1,0 +1,10 @@
+--- /dev/null	2026-06-22 09:52:29.860520107 +0200
++++ ./lib/CMakeLists.txt	2025-09-25 16:09:37.251567367 +0200
+@@ -0,0 +1,7 @@
++
++add_library(zip STATIC zip.c)
++
++set_target_properties(zip PROPERTIES COMPILE_FLAGS  "-std=gnu99")
++
++# JSON Support
++add_subdirectory(frozen)

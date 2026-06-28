@@ -20,6 +20,24 @@ IB_TARGET = "${IB_DIR}/linux/usr"
 
 IB_TOOLCHAIN_PATH = "${IB_ROOTFS_PATH}/host/share/buildroot/toolchainfile.cmake"
 
+# The agency user space is NOT committed in this repository: the whole tree is
+# regenerated from a patch set (the infrabase base below + the :soo override
+# apps). do_unpack therefore starts from an EMPTY ${S} (retrieve_usr_dir, which
+# would seed ${S} from a committed IB_TARGET, is dropped), the base + soo
+# creation patches populate ${S}, and do_attach_infrabase regenerates IB_TARGET
+# from the patched ${S} before do_build. so3/linux/usr is gitignored.
+FILESPATH:prepend = "${THISDIR}/files/0001-${PF}:"
+require files/0001-${PF}-patches.inc
+
+# Drop retrieve_usr_dir (it would seed ${S} from a committed IB_TARGET that does
+# not exist here) so do_unpack leaves ${S} empty for the creation patches.
+python () {
+    pf = (d.getVarFlag('do_unpack', 'postfuncs') or '').split()
+    pf = [x for x in pf if x != 'retrieve_usr_dir']
+    d.setVarFlag('do_unpack', 'postfuncs', ' '.join(pf))
+}
+addtask do_attach_infrabase after do_patch before do_build
+
 do_build[depends] = "rootfs-linux:do_build"
 do_unpack[depends] += "linux:do_build"
 
@@ -78,9 +96,7 @@ do_build:prepend () {
 
 do_install_apps () {
 
-    usr_do_install_file_root "${IB_TARGET}/build/src/applications/examples/hello"
-    usr_do_install_file_root "${IB_TARGET}/build/bin/capsule-flash-test"
-    usr_do_install_file_root "${IB_TARGET}/build/bin/capsule-http-test"
+    usr_do_install_file_root "${IB_TARGET}/build/src/examples/hello"
 
     # Installation of modules if any
 
@@ -89,21 +105,10 @@ do_install_apps () {
 
 do_clean:append () {
 
-    # Clean the modules
-    if [ -d ${IB_TARGET}/src/modules ]; then
-	    make -C ${IB_LINUX_PATH} M=${IB_TARGET}/src/modules clean
-    fi
-
     rm -f ${TMPDIR}/stamps/usr-linux*
+    rm -f ${WORKDIR}/*.patch
 
-    # Remove the usr organization in the build directory to avoid
-    # having old files in the next copy of usr tree.
-
-   rm -f ${WORKDIR}/*.patch
-
-   # Remove all patches
-   rm -rf ${IB_TARGET}/patches
-
-   # Clean the user space apps
-   rm -rf ${IB_TARGET}/build
+    # The whole IB_TARGET is regenerated from the patch set on every build,
+    # so a clean removes it entirely (tree, re-attach backup and manifest).
+    rm -rf ${IB_TARGET} ${IB_TARGET}.back ${IB_TARGET}.attach.sha256
 }
