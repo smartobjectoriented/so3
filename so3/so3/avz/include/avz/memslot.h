@@ -26,7 +26,7 @@
 #define MEMSLOT_AVZ 0
 #define MEMSLOT_AGENCY 1
 
-#define DOM_TO_MEMSLOT(domid) (((domid == DOMID_AGENCY) || (domid == DOMID_AGENCY_RT)) ? MEMSLOT_AGENCY : domid)
+#define DOM_TO_MEMSLOT(domid) ((domid == DOMID_AGENCY) ? MEMSLOT_AGENCY : domid)
 
 /*
  * Memslot management

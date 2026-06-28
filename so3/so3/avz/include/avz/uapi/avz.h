@@ -52,14 +52,11 @@
 
 #define MAX_S3C_DOMAINS 5
 
-/* We include the (non-RT & RT) agency domain */
+/* slot 0 = agency, slot 1 reserved, plus up to MAX_S3C_DOMAINS capsules */
 #define MAX_DOMAINS (2 + MAX_S3C_DOMAINS)
 
 /* Agency */
 #define DOMID_AGENCY 0
-
-/* Realtime agency subdomain */
-#define DOMID_AGENCY_RT 1
 
 #define DOMID_INVALID (0x7FF4U)
 

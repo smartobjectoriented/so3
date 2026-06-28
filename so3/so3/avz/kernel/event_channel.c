@@ -499,8 +499,6 @@ static void dump_evtchn_info(unsigned char key)
 		if (domains[i] != NULL)
 			domain_dump_evtchn_info(domains[i]);
 
-	domain_dump_evtchn_info(domains[DOMID_AGENCY_RT]);
-
 	for (i = 0; i < CONFIG_NR_CPUS; i++)
 		spin_unlock(&per_cpu(intc_lock, i));
 }
