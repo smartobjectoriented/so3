@@ -14,6 +14,9 @@ inherit uboot
 inherit logging
 inherit bsp
 
+# Capsules reuse the SO3 ITS templates (e.g. <plat>_capsule.its)
+IB_ITS_SRC = "${THISDIR}/../so3/files/its"
+
 # :append (not +=) so no space is inserted before ":so3" — otherwise the
 # preceding CPU token parses as "arm "/"aarch64 " and :<cpu> overrides
 # stop matching. See usr-so3_1.0.bb for the full rationale.
@@ -51,9 +54,10 @@ do_itb[nostamp] = "1"
 do_itb[depends] = "usr-so3:do_deploy"
 do_itb () {
 
-	if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
+	if [ ! -f ${IB_ITS_SRC}/${IB_TARGET_ITS}.its ]; then
 		bbfatal "No corresponding ITS found for container ${IB_TARGET_ITS}"
 	else
+		bsp_render_its ${IB_TARGET_ITS}
 		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 	fi
 	

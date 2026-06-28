@@ -23,52 +23,45 @@
 
 	images {
 
-	so3 {
-			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3.bin");
-			type = "guest";
+		linux {
+			description = "Linux kernel";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/Image");
+			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            		load = <0x41080000>;
-			entry = <0x41080000>;
+			load = <0x41000000>;
+			entry = <0x41000000>;
 		};
- 
-        fdt {
-			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/virt64_capsule.dtb");
+	
+        	fdt_linux {
+			description = "Linux device tree blob";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/arm/virt64.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x43000000>;
-		};	
-
-        ramfs {
-        	description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/rootfs.fat");
+			load = <0x50000000>;
+		};
+                  
+		initrd {
+			description = "Initial rootfs (initrd)";
+			data = /incbin/("${IB_ROOTFS_PATH}/board/virt64/initrd.cpio.gz");
 			type = "ramdisk";
 			arch = "arm64";
-			os = "linux";
+			os = "linux";			
 			compression = "none";
-			load = <0x43500000>;
-    	};
-                
-};
+			load = <0x50c00000>;
+		};
+	};
 
 	configurations {
-		default = "so3_ramfs";
-                
-		so3_ramfs {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
-            ramdisk = "ramfs"; 
-		};
-                
-        so3_mmc {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
+		default = "conf_linux";
+                	
+		conf_linux {
+			description = "Linux on virt64";
+			kernel = "linux";
+            		fdt = "fdt_linux"; 
+            		ramdisk = "initrd";  
 		};
 	};
 

@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
- * AVZ ITB for RPi4 (64-bit). Carries only the AVZ hypervisor binary
+ * AVZ ITB for virt64 (armv8). Carries only the AVZ hypervisor binary
  * (so3.bin) + the AVZ device tree. The guest (SO3) lives in a SEPARATE
- * ITB (rpi4_64_so3_guest.its); both are loaded by U-Boot's e1c-boot
+ * ITB (virt64_so3_guest.its); both are loaded by U-Boot's e1c-boot
  * command, which passes the AVZ FIT in x0 and the guest ITB in x1.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -15,28 +15,28 @@
 /dts-v1/;
 
 / {
-	description = "AVZ Hypervisor bundle for RPi4 (64-bit)";
+	description = "AVZ Hypervisor bundle for virt64 (armv8)";
 
 	images {
 
 		avz {
 			description = "AVZ Hypervisor (64-bit) Polymorphic SO3";
-			data = /incbin/("../../avz/so3.bin");
+			data = /incbin/("${IB_AVZ_PATH}/so3.bin");
 			type = "kernel";
 			os = "linux";
 			arch = "arm64";
 			compression = "none";
-			load = <0x00080000>;
-			entry = <0x00080000>;
+			load = <0x40080000>;
+			entry = <0x40080000>;
 		};
 
 		avz_dt {
 			description = "AVZ device tree";
-			data = /incbin/("../../avz/dts/rpi4_64_avz.dtb");
+			data = /incbin/("${IB_AVZ_PATH}/dts/virt64_avz.dtb");
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x03000000>;
+			load = <0x46000000>;
 		};
 	};
 
@@ -44,7 +44,7 @@
 		default = "avz";
 
 		avz {
-			description = "AVZ hypervisor on RPi4 64-bit";
+			description = "AVZ hypervisor on virt64";
 			kernel = "avz";
 			loadables = "avz_dt";
 			fdt = "avz_dt";

@@ -20,7 +20,7 @@
 	images {
 		avz {
 			description = "AVZ Hypervisor (64-bit) Polymorphic SO3";
-			data = /incbin/("../../avz/so3.bin");
+			data = /incbin/("${IB_AVZ_PATH}/so3.bin");
 			type = "kernel";
 			os = "linux";
 			arch = "arm64";
@@ -31,7 +31,7 @@
 
 		avz_dt {
 			description = "AVZ flattened device tree blob";
-			data = /incbin/("../../avz/dts/verdin-imx8mp_avz.dtb");
+			data = /incbin/("${IB_AVZ_PATH}/dts/verdin-imx8mp_avz.dtb");
 			type = "avz_dt";
 			arch = "arm64";
 			compression = "none";

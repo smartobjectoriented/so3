@@ -14,10 +14,49 @@ IB_BSP_PATH = "${IB_DIR}/build/meta-bsp/recipes-bsp/bsp"
 IB_ATF_PATH = "${IB_DIR}/atf"
 IB_OPTEE_PATH = "${IB_DIR}/atf/optee"
 
-# Path to the ITB files
+# ITB build/output directory (gitignored). The ITS *sources* live in each
+# BSP recipe's files/its/ (IB_ITS_SRC) and reference the component trees via
+# ${IB_*_PATH} variables; do_itb renders them here (bsp_render_its) before
+# mkimage and writes the resulting .itb here too.
+IB_ITB_PATH:so3 = "${IB_DIR}/so3/images"
+IB_ITB_PATH:linux = "${IB_DIR}/linux/images"
 
-IB_ITB_PATH:so3 = "${IB_DIR}/so3/target"
-IB_ITB_PATH:linux = "${IB_DIR}/linux/target"
+# Component tree locations referenced from the ITS templates. Provided here
+# (?=) so every BSP recipe can render any ITS regardless of which classes it
+# inherits; the real definitions in so3/avz/linux .bbclass take precedence.
+IB_SO3_PATH ?= "${IB_DIR}/so3"
+IB_AVZ_PATH ?= "${IB_DIR}/avz"
+IB_LINUX_PATH ?= "${IB_DIR}/linux/linux"
+
+# AVZ two-ITB boot: the guest ITB basename is <IB_TARGET_ITS without _avz> +
+# this suffix. SO3 guests use _so3_guest (default); the Linux agency overrides
+# it to _linux_guest in bsp-linux.
+IB_GUEST_SUFFIX ?= "_so3_guest"
+
+# Which cpio feeds the embedded ramfs (the initrd.cpio.gz that the ITS
+# /incbin/'s into the guest ITB). Both modes run-from-RAM; only the source
+# differs:
+#   "rootfs" (default) - the freshly built board/<plat>/rootfs.cpio (~30 MB,
+#                        full buildroot rootfs). p2 holds the same content.
+#   "initrd"           - the static, git-tracked board/<plat>/initrd.cpio
+#                        (small busybox ramfs). p2 still receives the full
+#                        rootfs.cpio; the kernel just boots the small initrd.
+# Override per build in conf/local.conf, e.g. IB_RAMFS_SOURCE = "initrd".
+IB_RAMFS_SOURCE ?= "rootfs"
+
+# Render an ITS template from IB_ITS_SRC into IB_ITB_PATH, expanding the
+# ${IB_*_PATH} / ${IB_PLATFORM} placeholders to absolute build paths. The sed
+# patterns use char classes ([$][{]...[}]) so bitbake leaves them untouched
+# and only the replacement side is expanded.
+bsp_render_its() {
+	mkdir -p "${IB_ITB_PATH}"
+	sed -e "s|[$][{]IB_SO3_PATH[}]|${IB_SO3_PATH}|g" \
+	    -e "s|[$][{]IB_AVZ_PATH[}]|${IB_AVZ_PATH}|g" \
+	    -e "s|[$][{]IB_LINUX_PATH[}]|${IB_LINUX_PATH}|g" \
+	    -e "s|[$][{]IB_ROOTFS_PATH[}]|${IB_ROOTFS_PATH}|g" \
+	    -e "s|[$][{]IB_PLATFORM[}]|${IB_PLATFORM}|g" \
+	    "${IB_ITS_SRC}/$1.its" > "${IB_ITB_PATH}/$1.its"
+}
 
 # This is the uEnv.txt file related to U-boot depending on the BSP
 IB_UENV = "${FILE_DIRNAME}/files/uEnv_${IB_PLATFORM}.txt"

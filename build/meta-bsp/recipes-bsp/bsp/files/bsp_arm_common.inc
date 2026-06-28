@@ -21,9 +21,11 @@ def __deploy_arm_common(d):
     IB_UENV = d.getVar("IB_UENV")
 
     if its.endswith("_avz"):
-        # Two-ITB AVZ boot.
+        # Two-ITB AVZ boot. The guest ITB basename is OS-specific
+        # (_so3_guest for SO3, _linux_guest for the Linux agency).
+        guest_suffix = d.getVar('IB_GUEST_SUFFIX') or "_so3_guest"
         avz_itb = f"{itb_dir}/{its}.itb"
-        guest_itb = f"{itb_dir}/{its[:-len('_avz')]}_so3_guest.itb"
+        guest_itb = f"{itb_dir}/{its[:-len('_avz')]}{guest_suffix}.itb"
         avz_uenv = os.path.join(os.path.dirname(IB_UENV), f"uEnv_{plat}_avz.txt")
 
         for f in (avz_itb, guest_itb, avz_uenv):

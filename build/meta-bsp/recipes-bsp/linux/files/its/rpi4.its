@@ -19,57 +19,52 @@
 /dts-v1/;
 
 / {
-	description = "Kernel and rootfs components for rpi4_64 (armv8) environment";
+	description = "Kernel and rootfs components for Raspberry Pi 4 environment";
 
 	images {
-
-	so3 {
-			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3.bin");
-			type = "guest";
+		
+		linux {
+			description = "Linux kernel 64-bits";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/Image");
+			type = "kernel";
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-            		load = <0x41080000>;
-			entry = <0x41080000>;
+			load = <0x01000000>;
+			entry = <0x01000000>;
+  
 		};
 
-        fdt {
-			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/rpi4_64_capsule.dtb");
+        fdt_linux {
+			description = "Linux device tree  64-bits blob";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x43000000>;
+			load = <0x10a00000>; 
 		};
-
-        ramfs {
-        	description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/rootfs.fat");
+		
+		initrd {
+			description = "Initial rootfs  64-bits (initrd)";
+			data = /incbin/("${IB_ROOTFS_PATH}/board/rpi4_64/initrd.cpio.gz");
 			type = "ramdisk";
 			arch = "arm64";
-			os = "linux";
+			os = "linux";			
 			compression = "none";
-			load = <0x43500000>;
-    	};
-
-};
-
+			load = <0x10c00000>;
+		};
+	};
+	
 	configurations {
-		default = "so3_ramfs";
+		default = "conf_linux";
 
-		so3_ramfs {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
-            ramdisk = "ramfs";
+		conf_linux {
+			description = "Linux on Raspberry Pi 4  64-bits";
+            kernel = "linux";
+            fdt = "fdt_linux";
+            ramdisk = "initrd";
 		};
-
-        so3_mmc {
-			description = "SO3 kernel image including device tree";
-			kernel = "so3";
-			fdt = "fdt";
-		};
+		
 	};
 
 };

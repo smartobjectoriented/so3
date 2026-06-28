@@ -15,6 +15,9 @@ inherit uboot
 inherit logging
 inherit bsp
 
+# ITS templates live in the layer (rendered into IB_ITB_PATH by do_itb)
+IB_ITS_SRC = "${THISDIR}/files/its"
+
 # :append (not +=) so no space is inserted before ":so3" — otherwise the
 # preceding CPU token parses as "arm "/"aarch64 " and :<cpu> overrides
 # stop matching. See usr-so3_1.0.bb for the full rationale.
@@ -46,9 +49,10 @@ do_itb[nostamp] = "1"
 do_itb[depends] = "usr-so3:do_deploy"
 do_itb () {
 
-	if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
+	if [ ! -f ${IB_ITS_SRC}/${IB_TARGET_ITS}.its ]; then
 		bbfatal "No corresponding ITS found (${IB_TARGET_ITS})"
 	else
+		bsp_render_its ${IB_TARGET_ITS}
 		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 	fi
 
@@ -59,8 +63,9 @@ do_itb () {
 	# platforms whose IB_PLATFORM carries a hyphen, e.g. verdin-imx8mp).
 	case "${IB_TARGET_ITS}" in
 	*_avz)
-		guest_its="${IB_TARGET_ITS%_avz}_so3_guest"
-		if [ -f ${IB_ITB_PATH}/${guest_its}.its ]; then
+		guest_its="$(echo "${IB_TARGET_ITS}" | sed 's/_avz$//')${IB_GUEST_SUFFIX}"
+		if [ -f ${IB_ITS_SRC}/${guest_its}.its ]; then
+			bsp_render_its ${guest_its}
 			mkimage -f ${IB_ITB_PATH}/${guest_its}.its ${IB_ITB_PATH}/${guest_its}.itb
 		fi
 		;;

@@ -21,7 +21,7 @@
 
 		so3 {
 			description = "SO3 OS kernel (guest)";
-			data = /incbin/("../so3/so3.bin");
+			data = /incbin/("${IB_SO3_PATH}/so3/so3.bin");
 			type = "guest";
 			arch = "arm64";
 			os = "linux";
@@ -32,7 +32,7 @@
 
 		fdt {
 			description = "SO3 guest device tree (AVZ-exposed)";
-			data = /incbin/("../so3/dts/virt64.dtb");
+			data = /incbin/("${IB_SO3_PATH}/so3/dts/virt64.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -41,7 +41,7 @@
 
 		ramfs {
 			description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/rootfs.fat");
+			data = /incbin/("${IB_ROOTFS_PATH}/rootfs.fat");
 			type = "ramdisk";
 			arch = "arm64";
 			os = "linux";

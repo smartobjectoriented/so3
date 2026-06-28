@@ -26,7 +26,7 @@
 
 		so3 {
 			description = "SO3 OS kernel";
-			data = /incbin/("../so3/so3.bin");
+			data = /incbin/("${IB_SO3_PATH}/so3/so3.bin");
 			type = "kernel";
 			arch = "arm";
 			os = "linux";
@@ -37,7 +37,7 @@
 
 		lvperf_fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../so3/dts/virt32_lvperf.dtb");
+			data = /incbin/("${IB_SO3_PATH}/so3/dts/virt32_lvperf.dtb");
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";
@@ -47,7 +47,7 @@
 
 		ramfs {
 			description = "SO3 environment minimal rootfs";
-			data = /incbin/("../rootfs/rootfs.fat");
+			data = /incbin/("${IB_ROOTFS_PATH}/rootfs.fat");
 			type = "ramdisk";
 			arch = "arm";
 			os = "linux";
