@@ -20,22 +20,23 @@ progname=$(basename $0)
 pr_usage()
 {
 	printf "Infrabase deployment script\n\n"
-	printf "Usage: $progname [-h] [-l] [-a|-x] [-v] ... \n"
+	printf "Usage: $progname [-h] [-l] [-v] [-x] <recipe_name>\n"
 }
 
 pr_help()
 {
 	printf "\nAvailable options:\n"
 	printf "    -h                        Print this help\n"
-	printf "    -l                        List available recipes per layer or globally\n"
-	printf "    -a <bsp_recipe_name>      Deploy a full BSP (rootfs, kernel, uboot, usr, ITB)\n"
-	printf "    -x <recipe_name>          Deploy a single recipe (component, uboot, rootfs, usr, ...)\n"
+	printf "    -l                        List all deployable recipes\n"
+	printf "    -x <recipe_name>          Deploy a recipe. -x is optional: the recipe may be\n"
+	printf "                              given as a bare argument. A BSP recipe (e.g. bsp-so3)\n"
+	printf "                              deploys the full image; a component (usr-so3, ...)\n"
+	printf "                              deploys just its own part.\n"
 	printf "    -v                        Emit logs during deployment\n"
 	printf "Examples: \n\n"
-	printf "$progname -l -a               List all deployable BSP recipes\n"
-	printf "$progname -l -x               List all deployable components\n"
-	printf "$progname -x usr-so3          Deploy the SO3 user space into the rootfs\n"
-	printf "$progname -a bsp-so3 -v       Deploy the full SO3 BSP with verbose logs\n"
+	printf "$progname -l                  List all deployable recipes\n"
+	printf "$progname usr-so3             Deploy the SO3 user space into the rootfs\n"
+	printf "$progname -v bsp-so3          Deploy the full SO3 BSP with verbose logs\n"
 }
 
 if test $# -eq 0
@@ -49,12 +50,13 @@ fi
 . ./scripts/common/sudo_session.sh
 
 recipename=''
-layernames=''
 optverbose=0
 dolist=0
 dodeploy=0
 
-while getopts "ahlvx" o; do
+# Options first, then the recipe as a positional argument. -x is accepted
+# for explicitness/symmetry but is optional (`deploy.sh bsp-so3` works).
+while getopts "hlvx" o; do
 	case "$o" in
 		h)
 			# Help summary
@@ -62,25 +64,8 @@ while getopts "ahlvx" o; do
 			pr_help
 			exit
 			;;
-		a)
-			if ! test -n "$2"
-			then
-				layernames="meta-bsp"
-			else
-				recipename="$2"
-				deploytask="do_deploy"
-				dodeploy=1
-			fi
-			;;
 		x)
-			if ! test -n "$2"
-			then
-				layernames="$IB_AUX_LAYERS"
-			else
-				recipename="$2"
-				deploytask="do_deploy"
-				dodeploy=1
-			fi
+			# Optional "deploy this recipe" marker; the recipe is positional.
 			;;
 		l)
 			dolist=1
@@ -94,10 +79,18 @@ while getopts "ahlvx" o; do
 			;;
 	esac
 done
+shift $((OPTIND - 1))
+recipename="$1"
+
+if test -n "$recipename"
+then
+	deploytask="do_deploy"
+	dodeploy=1
+fi
 
 show_env "$recipename"
 
-if test -z $recipename && test $dolist -eq 0
+if test -z "$recipename" && test $dolist -eq 0
 then
 	printf "Error: please specify a recipe name\n\n"
 	pr_usage
@@ -109,14 +102,9 @@ fi
 
 if test $dolist -eq 1
 then
-	if test -z "$layernames"
-	then
-		echo "Listing ALL available deployable recipes:"
-	else
-		echo "Listing available deployable recipes in layer(s): $layernames"
-	fi
+	echo "Listing ALL available deployable recipes:"
 
-	recipes=$(available_recipes "$layernames")
+	recipes=$(available_recipes "")
 
 	for r in $recipes
 	do

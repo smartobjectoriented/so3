@@ -23,7 +23,7 @@ progname=$(basename $0)
 pr_usage()
 {
 	printf "Infrabase build script\n\n"
-	printf "Usage: $progname [-h] [-l] [-a|-x] <recipe_name> [-c] [-v]\n"
+	printf "Usage: $progname [-h] [-l] [-c] [-v] [-x] <recipe_name>\n"
 }
 
 pr_help()
@@ -31,19 +31,19 @@ pr_help()
 
 	printf "\nAvailable options:\n"
 	printf "    -h                           Print this help\n"
-	printf "    -l                           List available recipes (BSPs and components)\n"
-	printf "    -a <bsp_recipe_name>         Build a full BSP (kernel, uboot, rootfs, usr)\n"
-	printf "    -x <recipe_name>             Build a single recipe (component, tool, kernel,\n"
-	printf "                                 uboot, rootfs, filesystem, ...)\n"
-	printf "    -c                           Clean (combine with -a/-x to clean then rebuild)\n"
+	printf "    -l                           List all available recipes (BSPs and components)\n"
+	printf "    -x <recipe_name>             Build a recipe. -x is optional: the recipe may be\n"
+	printf "                                 given as a bare argument. A BSP recipe (e.g.\n"
+	printf "                                 bsp-linux) pulls its whole dependency tree; a\n"
+	printf "                                 component (uboot, rootfs, ...) builds just itself.\n"
+	printf "    -c                           Clean the recipe first, then rebuild\n"
 	printf "    -v                           Emit verbose build logs\n\n"
 	printf "Examples: \n\n"
-	printf "$progname -l                              Print all recipes\n"
-	printf "$progname -l -a                           Print all BSP recipes\n"
-	printf "$progname -x uboot                        Build u-boot\n"
+	printf "$progname -l                              List all recipes\n"
+	printf "$progname uboot                           Build u-boot\n"
 	printf "$progname -x usr-so3                      Build the SO3 user space\n"
-	printf "$progname -a bsp-so3                      Build the full SO3 BSP\n"
-	printf "$progname -v -a bsp-so3 -c                Clean and rebuild the BSP, verbose\n"
+	printf "$progname bsp-so3                         Build the full SO3 BSP\n"
+	printf "$progname -v -c bsp-so3                   Clean and rebuild the BSP, verbose\n"
 }
 
 if test $# -eq 0
@@ -56,7 +56,6 @@ fi
 . ./scripts/common/bblayers.sh
 . ./scripts/common/sudo_session.sh
 
-layernames=''
 recipename=''
 dolist=0
 dobuild=0
@@ -64,7 +63,9 @@ doclean=0
 optverbose=0
 rootprivs=0
 
-while getopts "achlvx" o; do
+# Options first, then the recipe as a positional argument. -x is accepted
+# for explicitness/symmetry but is optional (`build.sh bsp-linux` works).
+while getopts "chlvx" o; do
 	case "$o" in
 		l)
 			dolist=1
@@ -75,50 +76,11 @@ while getopts "achlvx" o; do
 			pr_help
 			exit
 			;;
-		a)
-			if ! test -n "$2"
-			then
-				# List all recipes in 'meta-bsp'
-				layernames="meta-bsp"
-			else
-				recipename="$2"
-				dobuild=1
-				# do_build is pure compilation for most BSPs, so `-a` needs
-				# NO privileges. The privileged rootfs loop-mount lives in
-				# usr-*:do_deploy, which a BSP pulls in via do_itb. Whether
-				# that happens at *build* time depends on how the recipe
-				# wires do_itb:
-				#   - bsp-so3 / bsp-capsules: `do_itb before do_deploy` only
-				#       -> do_build is privilege-free; the mount happens in
-				#         deploy.sh. `build.sh -a` must NOT prompt for sudo.
-				#   - bsp-linux: `do_itb before do_build` (so `-a` also
-				#       produces the .itb) -> do_build DOES pull the mount and
-				#         needs root at build time.
-				# Only open a sudo session for the recipes that actually need
-				# it at build time (extend this match if more are added).
-				case "$recipename" in
-					bsp-linux*) rootprivs=1 ;;
-				esac
-			fi
+		c)
+			doclean=1
 			;;
 		x)
-			if test -n "$2"
-			then
-				recipename="$2"
-				dobuild=1
-				# Some recipes need root at build time (loop-mount /
-				# losetup / mkfs). Open a sudo session for them, mirroring
-				# the -a detection. Extend this match if more are added.
-				case "$recipename" in
-					bsp-linux*|filesystem) rootprivs=1 ;;
-				esac
-			else
-				layernames="$IB_AUX_LAYERS"
-			fi
-			;;
-		c)
-			recipename="$2"
-			doclean=1
+			# Optional "build this recipe" marker; the recipe is positional.
 			;;
 		v)
 			optverbose=1
@@ -129,29 +91,35 @@ while getopts "achlvx" o; do
 			;;
 	esac
 done
+shift $((OPTIND - 1))
+recipename="$1"
+
+if test -n "$recipename"
+then
+	dobuild=1
+	# Some recipes need root at build time (loop-mount / losetup / mkfs /
+	# cpio -id). Open a sudo session for them. bsp-linux pulls the rootfs
+	# mount at build time (do_itb before do_build); filesystem creates the
+	# image. Extend this match if more are added.
+	case "$recipename" in
+		bsp-linux*|filesystem) rootprivs=1 ;;
+	esac
+fi
 
 show_env "$recipename"
 
-if test -z $recipename && test $dolist -eq 0
+if test -z "$recipename" && test $dolist -eq 0
 then
 	printf "Error: Please specify recipe name\n\n"
 	pr_usage
 	exit 1
 fi
 
-# The user is willing to list available recipes
-# dolist action is available for component options
-
+# List all available recipes (BSPs and components).
 if test $dolist -eq 1
 then
-	if test -z "$layernames"
-	then
-		printf "Listing ALL available recipes:\n"
-	else
-		printf "Listing recipes in layer(s): $layernames\n"
-	fi
-
-	available_recipes "$layernames"
+	printf "Listing ALL available recipes:\n"
+	available_recipes ""
 	exit
 fi
 
