@@ -78,6 +78,13 @@ so3/usr/lib/libc/include/asm
 so3/rootfs/rootfs.fat
 # lvgl is fetched at build time (meta-usr lvgl bbappend, :lvgl override), not a submodule
 so3/usr/lib/lvgl/
+# The whole linux/ tree is a build working area, not committed: linux/linux
+# is the fetched agency kernel, linux/usr is regenerated from the meta-usr
+# patch set (base + :soo), linux/images holds rendered ITS + .itb output.
+# (so3/ differs: its kernel so3/so3 IS tracked in-tree.)
+/linux/
+# ITB build output (rendered ITS + .itb); ITS sources live in meta-bsp/recipes-bsp/*/files/its
+so3/images/
 so3/so3/scripts/basic/fixdep
 so3/so3/scripts/dtc/dtc
 so3/so3/scripts/kconfig/conf

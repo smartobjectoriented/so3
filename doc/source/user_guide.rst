@@ -62,14 +62,14 @@ the FIT image):
 
 .. code-block:: bash
 
-   ./scripts/build.sh -a bsp-so3
+   ./scripts/build.sh bsp-so3
 
 **4. Deploy** onto the virtual SD-card (this opens the sudo session and writes the
 boot partition):
 
 .. code-block:: bash
 
-   ./scripts/deploy.sh -a bsp-so3
+   ./scripts/deploy.sh bsp-so3
 
 **5. Run:**
 
@@ -84,10 +84,10 @@ You should land at the ``so3%`` prompt.
    After editing only the kernel, rebuild and redeploy it without a full rebuild::
 
       ./scripts/build.sh -x so3
-      ./scripts/deploy.sh -a bsp-so3
+      ./scripts/deploy.sh bsp-so3
 
-   The ``deploy.sh -a`` step is required because the in-tree kernel binary is not
-   tracked by bitbake (see :ref:`build_system`).
+   The ``deploy.sh bsp-so3`` step is required because the in-tree kernel binary
+   is not tracked by bitbake (see :ref:`build_system`).
 
 Launch scripts
 ==============
@@ -138,8 +138,8 @@ To run SO3 as the **agency guest** on top of AVZ:
 .. code-block:: bash
 
    ./scripts/build.sh -x avz
-   ./scripts/build.sh -a bsp-so3
-   ./scripts/deploy.sh -a bsp-so3
+   ./scripts/build.sh bsp-so3
+   ./scripts/deploy.sh bsp-so3
 
 **3.** Run — ``st.sh`` enables EL2 automatically because the ITS is an AVZ image:
 
@@ -168,7 +168,7 @@ relevant ``CMakeLists.txt``. Rebuild and redeploy the user space:
 .. code-block:: bash
 
    ./scripts/build.sh -x usr-so3
-   ./scripts/deploy.sh -a bsp-so3      # repack the rootfs into the FIT image + write the boot media
+   ./scripts/deploy.sh bsp-so3      # repack the rootfs into the FIT image + write the boot media
 
 See :ref:`user_space` for the user-space build details and the bundled
 applications.

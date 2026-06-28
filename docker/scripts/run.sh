@@ -34,7 +34,7 @@ QEMU_BIN="qemu/build/qemu-system-${QEMU_ARCH}"
 
 if [ ! -f "$FILESYSTEM_PATH" ]; then
     echo "Error: SD-card image '$FILESYSTEM_PATH' not found." >&2
-    echo "       Build & deploy it first: build.sh -a bsp-so3 && deploy.sh -a bsp-so3" >&2
+    echo "       Build & deploy it first: build.sh bsp-so3 && deploy.sh bsp-so3" >&2
     exit 1
 fi
 

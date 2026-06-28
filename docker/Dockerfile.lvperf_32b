@@ -31,10 +31,10 @@ RUN { \
 
 # Non-privileged: build the emulator + the full BSP (compile only; the
 # privileged rootfs loop-mount is deferred to deploy.sh at run time).
-RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh -a bsp-so3'
+RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh bsp-so3'
 
 RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
 
 # Run time (REQUIRES --privileged): rebuild usr, create+format the SD-card image
 # (build.sh -x filesystem, privileged), deploy (FIT + rootfs + sdcard), run.
-CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -x filesystem; deploy.sh -a bsp-so3; docker/scripts/run.sh"]
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -x filesystem; deploy.sh bsp-so3; docker/scripts/run.sh"]

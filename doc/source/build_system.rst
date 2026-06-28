@@ -166,37 +166,39 @@ The build & deploy scripts
 
    * - Option
      - Action
-   * - ``-a <bsp>``
-     - build **everything** for a BSP (kernel + U-Boot + rootfs + FIT), e.g.
-       ``build.sh -a bsp-so3``.
-   * - ``-x <recipe>``
-     - build a **single recipe** — component, tool, kernel, U-Boot, rootfs or
-       the SD-card image (``usr-so3``, ``qemu``, ``avz``, ``so3``, ``uboot``,
-       ``filesystem``, …). Opens the ``sudo -n`` session automatically for the
+   * - ``<recipe>`` (or ``-x <recipe>``)
+     - build a recipe and its dependency tree. A **BSP** name (``bsp-so3``,
+       ``bsp-linux``) pulls everything (kernel + U-Boot + rootfs + FIT); a
+       **component** (``usr-so3``, ``qemu``, ``avz``, ``so3``, ``uboot``,
+       ``filesystem``, …) builds just itself. ``-x`` is optional — the recipe
+       may be a bare argument. Opens the ``sudo -n`` session automatically for
        recipes that need root at build time (``filesystem``, ``bsp-linux``).
    * - ``-c``
-     - **clean** the selected recipe; combine with ``-a``/``-x`` to clean then
-       rebuild.
+     - **clean** the recipe first, then rebuild.
    * - ``-l`` / ``-v``
-     - **list** recipes / **verbose** bitbake output.
+     - **list** all recipes / **verbose** bitbake output.
 
 ``scripts/deploy.sh`` then *writes the boot media* (and opens the ``sudo -n``
-session the privileged tasks need): ``-a <bsp>`` deploys everything (rootfs +
-FIT + SD-card boot partition), and ``-x <recipe>`` deploys a single recipe
-(e.g. ``usr-so3`` into the rootfs, ``uboot``, a rootfs). ``-l`` / ``-v`` list /
-verbose.
+session the privileged tasks need): ``deploy.sh <recipe>`` (``-x`` optional)
+deploys it — a BSP writes the whole image (rootfs → p2 + FIT/ITB → p1), a
+component (e.g. ``usr-so3``) deploys just its part. ``-l`` / ``-v`` list /
+verbose. Deploy does **not** recompile: it consumes what ``build.sh`` already
+produced (``rootfs.cpio``, the FIT), so the workflow is *edit → build.sh →
+deploy.sh*. A deploy with no prior build fails clearly rather than silently
+rebuilding.
 
 .. note::
 
-   ``build.sh`` / ``deploy.sh`` were simplified to just ``-a`` (full BSP) and
-   ``-x`` (single recipe); the former ``-k`` / ``-b`` / ``-r`` / ``-f`` are all
-   covered by ``-x <recipe>`` (e.g. ``-x so3``, ``-x uboot``, ``-x filesystem``).
+   ``build.sh`` / ``deploy.sh`` take the recipe as a **positional argument**
+   (``-x`` is accepted but optional); ``-l`` lists every recipe. A BSP name
+   builds/deploys the whole BSP, a component name just that recipe — the former
+   ``-a`` / ``-k`` / ``-b`` / ``-r`` / ``-f`` flags are gone.
 
 .. important::
 
    The SO3 kernel is built *in tree*, and bitbake does not track the in-tree
    ``so3/so3/so3.bin`` as a task output. After rebuilding the kernel
-   (``build.sh -x so3``), run ``deploy.sh -a bsp-so3`` to regenerate the FIT
+   (``build.sh so3``), run ``deploy.sh bsp-so3`` to regenerate the FIT
    image and refresh the SD-card — otherwise you boot the *previous* kernel.
 
 The SO3 kernel recipe
