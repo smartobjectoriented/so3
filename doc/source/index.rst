@@ -55,15 +55,20 @@ particularly well suited to embedded systems. From a single code base it can be
 built in three ways:
 
 * as a **standalone OS** running directly on the hardware (EL1 on ARM64);
-* as the **AVZ hypervisor** (*Agency VirtualiZer*) running at EL2 and hosting a
-  guest *agency* domain;
-* as an **SO3 capsule** (S3C) — a lightweight guest running on top of AVZ beside
-  a Linux *agency*, as part of the **SOO** framework.
+* as the **AVZ hypervisor** (*Agency VirtualiZer*) running at EL2, hosting a
+  single guest at EL1;
+* as an **SO3 capsule** (S3C) — a lightweight guest on top of AVZ, as part of
+  the **SOO** framework.
 
 .. figure:: img/so3_modes.png
    :width: 100%
 
    The same SO3 code base deployed in its three modes.
+
+The AVZ guest is the *agency*, which owns the hardware. The agency is normally
+**Linux** (and, with the SOO framework, runs SO3 capsules beside it); the SO3
+tree can also be built as a plain guest (``CONFIG_SOO=n``) to exercise the
+hypervisor on its own.
 
 This documentation reflects the current state of the code base: ARM 32/64-bit,
 multicore, the AVZ hypervisor and SO3 capsules are all supported.

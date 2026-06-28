@@ -16,15 +16,31 @@ split (frontend/backend) drivers.
    ``S3C_domID``, ``MAX_S3C_DOMAINS`` …) and *capsule* in prose. The legacy
    ``ME`` spelling no longer appears in the code.
 
-The agency is a separate repository
-===================================
+The agency: Linux + the SOO framework
+=====================================
 
-The capsule model needs a **Linux** agency: Linux provides the backend drivers
-and the higher-level services that capsules talk to. For the time being **the
-Linux agency is not part of this (so3) repository** — it lives, together with the
-rest of the **SOO framework**, in the separate
-`soo repository <https://gitlab.com/smartobject/soo>`__ (also mirrored on
-GitHub).
+The capsule model needs a **Linux** agency: Linux owns the devices and provides
+the backend drivers and the higher-level services that capsules talk to — the
+backend half of the frontend/backend split, the vbstore server and the
+capsule-management user space (``injector``, ``melist``, ``saveme`` /
+``restoreme``, the EMISO engine).
+
+The so3 **build system can fetch and build that agency itself**, the same way it
+fetches AVZ, U-Boot and QEMU — it need not be built out of tree. The ``linux``
+recipe pulls mainline Linux from kernel.org; an opt-in ``soo`` override
+(``meta-linux/recipes-linux/soo`` and ``meta-usr/recipes-usr/soo``) patches it
+into the agency and adds the SOO user space, and the ``bsp-capsules`` recipe
+deploys *Linux as the guest on top of AVZ*. It is selected with
+``EXTRA_OVERRIDES .= ":soo"`` and a SOO defconfig (``virt64_soo_defconfig``);
+see :ref:`build_system`.
+
+The SOO additions — both the Linux kernel side and the agency user space — are
+applied by the ``soo`` override as **vendored** ``file://`` patch sets
+(``meta-linux/recipes-linux/soo`` and ``meta-usr/recipes-usr/soo``; the
+``SOO_URI`` list is local patches, not a remote fetch). Only the base Linux
+kernel itself is fetched remotely (mainline from kernel.org). Those patches
+derive from the **SOO framework**, developed in the separate
+`soo project <https://gitlab.com/smartobject/soo>`__.
 
 What *is* in this so3 repository is the **capsule (guest) side** and the
 hypervisor support for it:
@@ -38,9 +54,10 @@ hypervisor support for it:
 A capsule-capable guest is produced by ``virt64_capsule_defconfig`` (enabling
 ``CONFIG_SOO``). The AVZ demonstration shipped in this repository
 (the ``virt64_avz.its`` AVZ ITB plus the separate ``virt64_so3_guest.its``
-guest ITB — see :ref:`two_itb_boot`) boots an **SO3** agency, which is enough to
-exercise the hypervisor; running actual capsules additionally requires the Linux
-agency from the soo repository.
+guest ITB — see :ref:`two_itb_boot`) boots a plain **SO3** guest
+(``CONFIG_SOO=n``), which is enough to exercise the hypervisor; running actual
+capsules additionally requires the **Linux** agency (built with the ``soo``
+override described above).
 
 Split (frontend/backend) drivers
 =================================

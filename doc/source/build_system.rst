@@ -90,7 +90,9 @@ Meta-layers
      - the **SO3 kernel** recipe (``so3_6.2.0.bb``, built in tree) and the **AVZ**
        hypervisor recipe (``avz_6.2.0.bb``).
    * - ``meta-usr``
-     - the **user space** (``usr-so3``) — CMake + the MUSL toolchain.
+     - the **user space** (``usr-so3``, CMake + MUSL toolchain): a committed
+       lvgl-free base, plus opt-in add-ons layered as patches via overrides —
+       ``:lvgl`` (LVGL + ``slv`` + demos) and ``:soo`` (capsule user space).
    * - ``meta-bsp``
      - **board support**: ``bsp-so3`` assembles the FIT image (``do_itb``) and
        writes the boot media (``do_deploy_boot``).
@@ -99,6 +101,10 @@ Meta-layers
    * - ``meta-qemu``
      - the patched **QEMU** emulator (the ``virt`` machine with PL111/PL050/
        absmouse — see :ref:`display_input`).
+   * - ``meta-linux``
+     - the **Linux** kernel recipe (fetched from kernel.org + patched), plus the
+       opt-in ``soo`` override that builds Linux as the capsule **agency**
+       (see :ref:`capsules`).
    * - ``meta-rootfs``
      - builds the **root filesystem** image (``rootfs.fat``).
    * - ``meta-toolchain``
@@ -147,13 +153,22 @@ without a per-platform ``IB_PLATFORM:so3`` override:
    * - ``virt64_so3``
      - SO3 **standalone** (kernel at EL1)
    * - ``virt64_avz``
-     - SO3 as the **AVZ agency guest** (AVZ at EL2, see :ref:`avz`)
+     - SO3 as a plain **AVZ guest** (AVZ at EL2, ``CONFIG_SOO=n``, see :ref:`avz`)
    * - ``virt64_capsule``
      - an SO3 **capsule** (see :ref:`capsules`)
 
 ``IB_BOOT_CHAIN`` is a *weak* assignment so a capsule deployment can override it.
 For the QEMU ``virt`` machine, ``""``/``uboot`` boots a bare U-Boot, ``atf+uboot``
 boots through ARM-TF (EL3 → EL2), and ``full`` additionally loads OP-TEE.
+
+.. note::
+
+   Those three ITS targets build **SO3** only. The same tree can also build
+   **Linux as the capsule agency**: enable the ``soo`` override
+   (``EXTRA_OVERRIDES .= ":soo"``) and pick a SOO Linux config
+   (``IB_CONFIG:linux:<plat> = "virt64_soo_defconfig"``). The ``meta-linux``
+   ``soo`` layer then fetches and patches Linux into the agency, and the
+   ``bsp-capsules`` recipe deploys it beside the capsules — see :ref:`capsules`.
 
 The build & deploy scripts
 ==========================
@@ -198,7 +213,7 @@ rebuilding.
 
    The SO3 kernel is built *in tree*, and bitbake does not track the in-tree
    ``so3/so3/so3.bin`` as a task output. After rebuilding the kernel
-   (``build.sh so3``), run ``deploy.sh bsp-so3`` to regenerate the FIT
+   (``build.sh -x so3``), run ``deploy.sh bsp-so3`` to regenerate the FIT
    image and refresh the SD-card — otherwise you boot the *previous* kernel.
 
 The SO3 kernel recipe
@@ -245,14 +260,21 @@ FIT image, ITS and boot media
 
 SO3 is started by **U-Boot**, which loads one or more **FIT images** (``.itb``)
 — each a single file bundling a payload, its device tree and, for the OS images,
-a root filesystem. Each image is described by an ``.its`` file in
-``so3/target/`` and assembled by the ``do_itb`` task with ``mkimage``:
+a root filesystem. The ``.its`` *templates* live in the BSP layer
+(``meta-bsp/recipes-bsp/so3/files/its/`` for SO3,
+``meta-bsp/recipes-bsp/linux/files/its/`` for the Linux agency) and reference the
+component trees through ``${IB_*_PATH}`` placeholders. The ``do_itb`` task
+**renders** each template into the gitignored output dir ``<ctx>/images/``
+(``so3/images/`` or ``linux/images/``) — expanding ``${IB_SO3_PATH}``,
+``${IB_AVZ_PATH}``, ``${IB_LINUX_PATH}`` and ``${IB_ROOTFS_PATH}`` to absolute
+paths — then assembles the ``.itb`` there with ``mkimage`` (there is no committed
+``target/`` tree anymore):
 
 .. flat-table::
    :header-rows: 1
    :widths: 34 66
 
-   * - ``.its`` (in ``so3/target/``)
+   * - ``.its`` template
      - Contents
    * - ``virt64_so3.its``
      - standalone: SO3 kernel + DTB + ramfs
@@ -262,13 +284,16 @@ a root filesystem. Each image is described by an ``.its`` file in
        platform: ``virt64_avz``, ``rpi4_64_avz``, ``verdin_imx8mp_avz``
    * - ``<plat>_so3_guest.its``
      - **SO3 guest ITB**: guest SO3 kernel + DTB + ramfs, loaded by AVZ.
-       Derived from the AVZ ITS (``<plat>_avz`` → ``<plat>_so3_guest``)
+   * - ``<plat>_linux_guest.its``
+     - **Linux agency guest ITB**: Linux kernel + guest DTB + initrd, loaded by
+       AVZ (``meta-bsp/.../linux/files/its/``).
    * - ``virt64_capsule.its``
      - a capsule image
    * - ``virt32_so3.its`` / ``rpi4_64_so3.its``
      - the 32-bit / RPi4 standalone variants
 
-``do_deploy_boot`` writes the resulting ``.itb`` into the FAT (boot) partition of
+``do_deploy_boot`` writes the resulting ``.itb`` from ``<ctx>/images/`` into the
+FAT (boot) partition of
 ``filesystem/sdcard.img.<platform>``. For the ARM-TF chains (``atf+uboot`` /
 ``full``), ``__do_platform_boot_chain`` (``meta-bsp/.../bsp_virt64.inc``) also
 builds ``filesystem/flash0.img`` — ``BL1`` at offset 0 plus a FIP (``fiptool``)
@@ -280,26 +305,27 @@ QEMU loads as ``pflash``.
 Two-ITB AVZ boot
 ----------------
 
-When SO3 runs as an AVZ guest, the hypervisor and its guest are packaged as
-**two separate FIT images** rather than one: the **AVZ ITB** (``<plat>_avz.itb``
-— the hypervisor binary + ``avz_dt``) and the **SO3 guest ITB**
-(``<plat>_so3_guest.itb`` — the guest kernel, its device tree and the ramfs).
-This holds on **all** AVZ platforms — ``virt64``, ``rpi4_64`` and
-``verdin_imx8mp`` — and mirrors the edge-m1 ``e1c`` component separation
-(``<plat>_avz.its`` + ``<plat>_e1c.its``).
+When a guest runs on AVZ, the hypervisor and its guest are packaged as **two
+separate FIT images** rather than one: the **AVZ ITB** (``<plat>_avz.itb`` — the
+hypervisor binary + ``avz_dt`` only) and a **guest ITB**. The guest is either an
+**SO3** guest (``<plat>_so3_guest.itb`` — SO3 kernel + DTB + ramfs, from
+``bsp-so3``) or the **Linux agency** (``<plat>_linux_guest.itb`` — Linux kernel +
+guest DTB + initrd, from ``bsp-linux`` with ``IB_BOOT_CHAIN = "full"``). This
+mirrors the edge-m1 ``e1c`` component separation.
 
 The trigger throughout is the selected ITS ending in ``_avz``. ``do_itb`` then
 also builds the guest ITB, whose name is *derived* from the AVZ ITS by replacing
-the ``_avz`` suffix with ``_so3_guest`` (so ``virt64_avz`` → ``virt64_so3_guest``;
-deriving from ``IB_TARGET_ITS`` rather than ``IB_PLATFORM`` keeps the underscore
-naming on platforms whose ``IB_PLATFORM`` carries a hyphen, e.g.
-``verdin-imx8mp``).
+the ``_avz`` suffix with ``${IB_GUEST_SUFFIX}`` — ``_so3_guest`` by default
+(``bsp-so3``), ``_linux_guest`` for the Linux agency (``bsp-linux``). So
+``virt64_avz`` → ``virt64_so3_guest`` or ``virt64_linux_guest``. (Deriving from
+``IB_TARGET_ITS`` rather than ``IB_PLATFORM`` keeps the underscore naming on
+platforms whose ``IB_PLATFORM`` carries a hyphen, e.g. ``verdin-imx8mp``.)
 
 At deploy time the platform glue stages **both** images plus a per-platform
 ``uEnv_<plat>_avz.txt`` (or, on verdin, a ``boot_avz.scr`` boot script). U-Boot
 loads both ITBs to staging addresses and jumps through its ``e1c-boot`` command,
 which enters AVZ with the **AVZ FIT in** ``x0`` **and the guest ITB in** ``x1``;
-AVZ's ``loadAgency()`` then loads the agency guest from ``x1`` (see :ref:`avz`).
+AVZ's ``loadAgency()`` then loads the guest from ``x1`` (see :ref:`avz`).
 When the selected ITS is *not* an ``_avz`` one (a bare standalone SO3/Linux
 image), the deploy falls back to the single-ITB ``bootm`` path.
 

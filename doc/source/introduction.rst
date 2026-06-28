@@ -35,8 +35,9 @@ Standalone OS
 AVZ hypervisor
    The same tree, built with ``CONFIG_AVZ``, becomes **AVZ** (*Agency
    VirtualiZer*) — a lightweight type-1 hypervisor running at **EL2**. AVZ hosts
-   one or more guest *domains*; the primary guest is the **agency**, a normal
-   SO3 (or Linux) running at EL1. See :ref:`avz`.
+   a guest *domain* at EL1: it can boot **Linux** — the *agency*, which owns the
+   hardware and hosts the capsules — or a plain **SO3** guest on its own
+   (``CONFIG_SOO=n``). See :ref:`avz`.
 
 SO3 capsule
    On top of AVZ, the **SOO** framework adds *SO3 capsules* (**S3C**):

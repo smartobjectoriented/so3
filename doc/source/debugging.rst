@@ -101,7 +101,7 @@ Debugging AVZ
 
 For the hypervisor, run ``scripts/st.sh`` with an AVZ ITS selected (it enables
 EL2 automatically) and pass ``-S`` to wait for the debugger. Load symbols from the
-hypervisor ELF (``avz/so3``) for the EL2 code and from the agency ELF
+hypervisor ELF (``avz/so3``) for the EL2 code and from the SO3 guest ELF
 (``so3/so3/so3``) for the EL1 guest. The AVZ console trace (the *Loading Guest
 Domain* section and the vGIC messages) is usually the quickest way to locate a
 problem before reaching for the debugger.

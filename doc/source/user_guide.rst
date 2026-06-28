@@ -32,7 +32,7 @@ Repository layout
 
 The most relevant top-level directories are::
 
-   so3/          # the SO3 kernel (so3/so3) and user space (so3/usr), plus dts + target/*.its
+   so3/          # the SO3 kernel (so3/so3) and user space (so3/usr), plus dts
    build/        # the Infrabase build: meta-* layers, conf/local.conf, bitbake work tree
    scripts/      # build.sh, deploy.sh, st.sh, stg.sh, updiff.sh, …
    filesystem/   # the virtual SD-card image used by QEMU
@@ -123,7 +123,7 @@ guest SSH port (host ``2222`` → guest ``22``) and expose a GDB stub on
 Running the AVZ hypervisor
 ==========================
 
-To run SO3 as the **agency guest** on top of AVZ:
+To run SO3 as a **guest** on top of AVZ (``CONFIG_SOO=n``, no capsules):
 
 **1.** Select the AVZ ITS (and, optionally, a secure boot chain) in
 ``build/conf/local.conf``:
@@ -156,7 +156,7 @@ To run SO3 as the **agency guest** on top of AVZ:
    but see :ref:`two_itb_boot` for details.
 
 A successful run shows the **AVZ Hypervisor** banner, the *Loading Guest Domain*
-trace, and finally the agency reaching the ``so3%`` prompt. See :ref:`avz` for
+trace, and finally the guest reaching the ``so3%`` prompt. See :ref:`avz` for
 what happens under the hood.
 
 Adding a user application
