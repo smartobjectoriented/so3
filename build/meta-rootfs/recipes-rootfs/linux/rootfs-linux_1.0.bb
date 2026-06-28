@@ -22,12 +22,13 @@ do_configure[noexec] = "1"
 do_build[depends] = "${IB_ROOTFS_METHOD}:do_build"
 do_build[depends] += "linux:do_build"
 
-# Check that the image is present before deploying rootfs. The rootfs
-# generator (buildroot by default) must also have produced rootfs.cpio
-# under board/${IB_PLATFORM}/ — without this dep, do_deploy can race
-# ahead of buildroot:do_build on a fresh checkout (no cached cpio) and
-# fail in __do_rootfs_mount.
-do_deploy[depends] += "filesystem:do_fs_check ${IB_ROOTFS_METHOD}:do_build"
+# do_deploy is a pure DEPLOY step: it extracts the already-built rootfs.cpio
+# (apps baked in by usr-linux:do_deploy during the build) onto p2. It must
+# NOT pull ${IB_ROOTFS_METHOD}:do_build — that would rebuild buildroot on
+# every `deploy.sh`. The workflow is edit -> build.sh (produces rootfs.cpio)
+# -> deploy.sh; a deploy with no prior build fails clearly in
+# __do_rootfs_mount (missing rootfs.cpio) rather than silently rebuilding.
+do_deploy[depends] += "filesystem:do_fs_check"
 
 do_build[nostamp] = "1"
 do_build () {
@@ -48,13 +49,15 @@ do_attach_infrabase () {
 	# Keep a private working copy of the board directory under WORKDIR
 	# (tmp/work). The rootfs generator writes its productions there during
 	# the build (rootfs.cpio via post_image.sh, then rootfs.cpio.backup,
-	# rootfs.cpio.sha256, initrd.cpio, initrd.cpio.gz). Pointing the board
-	# symlink at this copy keeps those productions out of the git-tracked
-	# source tree under files/board.
+	# initrd.cpio.gz, initrd.cpio.gz.srchash). Pointing the board symlink
+	# at this copy keeps those productions out of the git-tracked source
+	# tree under files/board. Note: board/<plat>/initrd.cpio is now a
+	# git-tracked SOURCE (the static embedded ramfs for IB_RAMFS_SOURCE =
+	# "initrd"), refreshed from files/board on every attach.
 	#
 	# `cp -r .../board/.` refreshes the source config files on top of the
 	# copy but does NOT remove the dest-only productions, so the
-	# do_prepare_initrd content-hash guard (rootfs.cpio.sha256 +
+	# do_prepare_initrd content-hash guard (initrd.cpio.gz.srchash +
 	# initrd.cpio.gz) keeps working across builds.
 	mkdir -p ${WORKDIR}/board
 	cp -r ${FILE_DIRNAME}/files/board/. ${WORKDIR}/board

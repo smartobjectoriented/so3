@@ -1,0 +1,6 @@
+# Placeholder so /etc/inittab.d exists in the rootfs.
+#
+# sysvinit >= 3.04 scans /etc/inittab.d/*.conf in addition to /etc/inittab
+# and prints "INIT: No inittab.d directory found" when the directory is
+# absent. Shipping the (empty) directory silences that boot message. Only
+# *.conf snippets are read here, so this file is ignored by init.
