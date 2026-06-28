@@ -27,6 +27,7 @@ RUN { \
       echo 'IB_CONFIG:so3:virt32 = "virt32_lvperf_defconfig"'; \
       echo 'IB_TARGET_ITS:so3:virt32 = "virt32_lvperf"'; \
       echo 'IB_BOOT_CHAIN = ""'; \
+      echo 'EXTRA_OVERRIDES .= ":lvgl"'; \
     } >> build/conf/local.conf
 
 # Non-privileged: build the emulator + the full BSP (compile only; the

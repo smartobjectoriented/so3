@@ -40,6 +40,7 @@ RUN { \
       echo 'IB_CONFIG:so3:virt64 = "virt64_lvperf_defconfig"'; \
       echo 'IB_TARGET_ITS:so3:virt64 = "virt64_lvperf"'; \
       echo 'IB_BOOT_CHAIN = ""'; \
+      echo 'EXTRA_OVERRIDES .= ":lvgl"'; \
     } >> build/conf/local.conf
 
 # Build everything non-privileged: the emulator (meta-qemu) plus the full BSP.
