@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="doc/source/img/SO3_with_text.png" alt="SO3" width="420">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="doc/source/img/SO3_with_text_dark.png">
+    <img src="doc/source/img/SO3_with_text.png" alt="SO3" width="420">
+  </picture>
 </p>
 
 # Welcome to SO3 — the Smart Object Oriented (SOO) Operating System
