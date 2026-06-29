@@ -7,39 +7,36 @@ on:
   pull_request:
     branches: ["main"]
 
+# Smoke-build SO3 with Infrabase (bitbake) inside the so3-env image. Both the
+# kernel (build.sh -x so3) and the user space (build.sh -x usr-so3, which also
+# builds the MUSL toolchain via meta-toolchain) are non-privileged, so a plain
+# `docker run` (no --privileged) is enough. The repo is mounted at /so3.
 jobs:
-  build-so3:
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # We use the virtXX_fb configs as they're based on the normal virtXX configs with aditional fb support
-        CONFIG: ['virt32_fb_defconfig', 
-                 'virt64_fb_defconfig',
-                 'virt32_lvperf_defconfig',
-        ]
+        PLATFORM: [virt32, virt64]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Build 
-        run: |
-          docker run --rm -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:latest bash -c "cd so3 && make ${{ matrix.CONFIG }} && make -j`nproc`"
-
-  build-usr:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        CMAKE_TOOLCHAIN_FILE: ['aarch64-linux-musl.cmake',
-                               'arm-linux-musl.cmake']
-        BUILD_TYPE: ['Debug', 'Release']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: 'true'
 
-      - name: Build
+      - name: Build kernel + user space (Infrabase)
         run: |
-          docker run --rm -t -v "${PWD}:/so3" ghcr.io/smartobjectoriented/so3-env:latest bash -c "mkdir usr/build && cd usr/build && cmake --no-warn-unused-cli -DCMAKE_C_FLAGS='-Werror' -Wno-dev -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE=../${{matrix.CMAKE_TOOLCHAIN_FILE }} .. && make -j`nproc`"
+          docker run --rm -v "${PWD}:/so3" \
+            ghcr.io/smartobjectoriented/so3-env:latest bash -c '
+              set -e
+              cd /so3
+              echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
+              . ./env.sh
+              build.sh -x so3
+              build.sh -x usr-so3 || {
+                rc=$?
+                echo "=== build failed (rc=$rc); tail of musl-toolchain do_build log ==="
+                tail -n 120 build/tmp/work/musl-toolchain-1.0-r0/temp/log.do_build* 2>/dev/null || true
+                exit $rc
+              }
+            '

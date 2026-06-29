@@ -1,0 +1,4 @@
+--- a/tools/lib/sha512.c
++++ b/tools/lib/sha512.c
+@@ -0,0 +1 @@
++#include <../lib/sha512.c>

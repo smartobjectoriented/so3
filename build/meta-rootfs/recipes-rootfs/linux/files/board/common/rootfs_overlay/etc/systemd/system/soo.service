@@ -1,0 +1,15 @@
+[Unit]
+Description=Smart Object Oriented
+
+[Service]
+Type=o eshot
+ExecStart=/bin/sh -c "mkdir /dev/soo && mknod /dev/soo/core c 126 0"
+TimeoutStartSec=0
+RemainAfterExit=yes
+StandardError=journal
+StandardOutput=journal
+StandardInput=null
+
+
+[Install]
+WantedBy=default.target

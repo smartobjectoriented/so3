@@ -1,0 +1,24 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/arch/arm64/kernel/irq.c	2024-11-17 23:15:08.000000000 +0100
++++ ./arch/arm64/kernel/irq.c	2025-08-29 08:46:39.978048892 +0200
+@@ -27,6 +27,10 @@
+ #include <asm/stacktrace.h>
+ #include <asm/vmap_stack.h>
+ 
++#ifdef CONFIG_SOO
++#include <avz/uapi/avz.h>
++#endif /* CONFIG_SOO */
++
+ /* Only access this in an NMI enter/exit */
+ DEFINE_PER_CPU(struct nmi_ctx, nmi_contexts);
+ 
+@@ -122,6 +126,10 @@
+ 
+ void __init init_IRQ(void)
+ {
++#ifdef CONFIG_SOO
++	virq_init();
++#endif
++
+ 	init_irq_stacks();
+ 	init_irq_scs();
+ 	irqchip_init();

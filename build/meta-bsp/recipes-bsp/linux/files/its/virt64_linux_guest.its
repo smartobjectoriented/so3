@@ -1,0 +1,63 @@
+/*
+ * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * Linux guest ITB for virt64 (armv8). Carries the Linux (agency) kernel
+ * + its guest device tree + initrd. Paired with virt64_avz.itb and loaded
+ * by U-Boot's e1c-boot command, which passes this ITB to AVZ in x1; AVZ's
+ * loadAgency() loads the agency guest from it.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Linux guest bundle for virt64 (armv8)";
+
+	images {
+
+		linux {
+			description = "Linux kernel (guest)";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/Image");
+			type = "guest";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x41000000>;
+			entry = <0x41000000>;
+		};
+
+		fdt {
+			description = "Linux guest device tree";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/arm/virt64_guest.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x50000000>;
+		};
+
+		initrd {
+			description = "Linux initrd";
+			data = /incbin/("${IB_ROOTFS_PATH}/board/virt64/initrd.cpio.gz");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x50c00000>;
+		};
+	};
+
+	configurations {
+		default = "capsule";
+
+		capsule {
+			description = "Linux agency guest on virt64";
+			loadables = "linux";
+			fdt = "fdt";
+			ramdisk = "initrd";
+		};
+	};
+};

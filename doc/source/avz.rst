@@ -15,10 +15,12 @@ beside it.
 
 .. note::
 
-   In the demonstration shipped with this repository the agency is an **SO3**
-   kernel (enough to exercise the hypervisor). The full SO3 Capsule setup uses a
-   **Linux** agency, which — together with the SOO framework — lives in a
-   :ref:`separate repository <capsules>`.
+   The agency is a **Linux** kernel: it owns the hardware and hosts the
+   capsules. The agency, together with the SOO framework, lives in a
+   :ref:`separate repository <capsules>`. The hypervisor can equally boot a
+   plain **SO3** kernel in the guest slot (built with ``CONFIG_SOO=n``, so no
+   capsules) — that is the demonstration shipped with *this* repository, enough
+   to exercise the hypervisor on its own.
 
 .. figure:: img/so3_avz.png
    :width: 100%
@@ -36,10 +38,14 @@ Boot and guest loading
 
 The hypervisor entry point is ``avz_start()`` (``avz/kernel/setup.c``). After
 early CPU, memory and device initialisation it prints its banner and *loads the
-guest domain*: it parses the FIT image provided by U-Boot, places the agency's
-kernel and device tree in RAM, builds the agency's **stage-2** page tables and
-sets the guest entry point. AVZ then ``eret``\ s to EL1, and the agency boots as
-an ordinary SO3 kernel (``kernel_start()``). The console trace looks like::
+guest domain*. U-Boot's ``e1c-boot`` command hands AVZ **two** FIT images — the
+AVZ ITB in ``x0`` and a separate SO3 guest ITB in ``x1`` (see
+:ref:`build_system`) — and ``loadAgency()`` parses the guest from the ``x1``
+ITB. AVZ places the guest's kernel and device tree in RAM,
+injects the guest initrd (the ITB ``ramdisk`` node) into the guest's
+``/chosen``, builds the guest's **stage-2** page tables and sets the guest entry
+point. AVZ then ``eret``\ s to EL1, and the guest boots as an ordinary SO3
+kernel (``kernel_start()``). The console trace looks like::
 
    ********** Smart Object Oriented technology - AVZ Hypervisor **********
    ...
@@ -68,13 +74,14 @@ shared info page and its scheduling metadata. Well-known identifiers
    * - Identifier
      - Meaning
    * - ``DOMID_AGENCY`` (0)
-     - the primary agency guest (owns the devices)
-   * - ``DOMID_AGENCY_RT`` (1)
-     - optional real-time agency subdomain
+     - the agency guest — Linux, or a plain SO3 (``CONFIG_SOO=n``); owns the
+       devices
+   * - slot 1
+     - reserved
    * - slots 2 …
      - capsule domains
-   * - ``MAX_CAPSULE_DOMAINS``
-     - ``2 + 5`` — up to five capsules alongside the agencies
+   * - ``MAX_S3C_DOMAINS`` (5)
+     - up to five capsules alongside the agency (``MAX_DOMAINS = 2 + 5``)
 
 Each domain shares a page with the hypervisor — the ``avz_shared`` structure —
 carrying its domain id, event-channel pending bits, the upcall state and the

@@ -1,3 +1,0 @@
-[submodule "usr/lib/lvgl"]
-	path = usr/lib/lvgl
-	url = https://github.com/lvgl/lvgl

@@ -1,0 +1,19 @@
+--- a/package/auto-getty/Config.in
++++ b/package/auto-getty/Config.in
+@@ -0,0 +1,16 @@
++config BR2_PACKAGE_AUTO_GETTY_SUPPORT
++	bool "auto-getty: Enable auto console support"
++
++config BR2_PACKAGE_AUTO_GETTY
++	bool "Auto getty console"
++	depends on BR2_PACKAGE_AUTO_GETTY_SUPPORT && !BR2_TARGET_GENERIC_GETTY
++	help
++	  Automagically use the correct console device for getty based on kernel boot console.
++
++config BR2_PACKAGE_AUTO_GETTY_ROOT_LOGIN
++	bool "Auto login as root"
++	depends on BR2_PACKAGE_AUTO_GETTY
++	
++comment "Please deactivate buildroot getty option first!"
++	depends on BR2_PACKAGE_AUTO_GETTY_SUPPORT && BR2_TARGET_GENERIC_GETTY	  
++	

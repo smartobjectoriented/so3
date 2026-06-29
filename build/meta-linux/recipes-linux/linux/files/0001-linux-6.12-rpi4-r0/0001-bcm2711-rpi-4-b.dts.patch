@@ -1,0 +1,16 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-03 20:23:08.000000000 +0200
++++ ./arch/arm/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-04 17:36:47.567576517 +0200
+@@ -19,11 +19,12 @@
+ 	compatible = "raspberrypi,4-model-b", "brcm,bcm2711";
+ 	model = "Raspberry Pi 4 Model B";
+ 
++#if 0
+ 	chosen {
+ 		/* 8250 auxiliary UART instead of pl011 */
+ 		stdout-path = "serial1:115200n8";
+ 	};
+-
++#endif
+ 	cam1_reg: regulator-cam1 {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "cam1-reg";

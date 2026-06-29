@@ -1,0 +1,4 @@
+--- a/tools/lib/hash-checksum.c
++++ b/tools/lib/hash-checksum.c
+@@ -0,0 +1 @@
++#include <../lib/hash-checksum.c>

@@ -1,0 +1,4 @@
+--- a/tools/lib/sha256.c
++++ b/tools/lib/sha256.c
+@@ -0,0 +1 @@
++#include <../lib/sha256.c>

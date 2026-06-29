@@ -1,0 +1,5 @@
+--- /home/jmiceli/Documents/projects/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vlogsback/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/drivers/vlogsback/Makefile	2025-09-12 13:46:16.883171946 +0200
+@@ -0,0 +1,2 @@
++obj-y := vlogs.o
++

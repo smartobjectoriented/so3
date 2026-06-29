@@ -19,11 +19,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # check-path must be a real directory, otherwise the action silently
+        # falls back to scanning the whole repo. The SO3 sources are nested
+        # under so3/ since the Infrabase migration: so3/so3 (kernel) and
+        # so3/usr (user space). Vendored/third-party trees carry their own
+        # style and are excluded: micropython and libxml2 (tracked), the
+        # usr/lib/linux headers, and lvgl (fetched at build time / gitignored,
+        # listed for safety).
         path:
-          - check: "so3"
-            exclude: ".S"
-          - check: "usr/src"
-            exclude: "(micropython|lv_)"
+          - check: "so3/so3"
+            exclude: '\.S$'
+          - check: "so3/usr"
+            exclude: '(micropython|libxml2|usr/lib/linux|lvgl|lv_)'
     steps:
       - uses: actions/checkout@v4
       - name: Run clang-format style check for C/C++/Protobuf programs.

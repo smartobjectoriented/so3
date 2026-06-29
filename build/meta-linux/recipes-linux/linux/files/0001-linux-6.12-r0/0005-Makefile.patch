@@ -1,0 +1,10 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-r0/linux-6.12/arch/arm64/boot/dts/arm/Makefile	2024-11-17 23:15:08.000000000 +0100
++++ ./arch/arm64/boot/dts/arm/Makefile	2025-09-14 10:58:55.230911912 +0200
+@@ -7,3 +7,7 @@
+ dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2f-1xv7-ca53x2.dtb
+ dtb-$(CONFIG_ARCH_VEXPRESS) += fvp-base-revc.dtb
+ dtb-$(CONFIG_ARCH_VEXPRESS) += corstone1000-fvp.dtb corstone1000-mps3.dtb
++
++# Infrabase
++dtb-$(CONFIG_ARCH_VEXPRESS) += virt64.dtb virt64_guest.dtb
++

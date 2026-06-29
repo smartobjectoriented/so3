@@ -1,0 +1,88 @@
+#
+# Automatically generated make config: don't edit
+# SO3 Polymorphic OS Configuration
+#
+# SO3 standalone (bare-metal) on the Toradex Verdin iMX8MP — no AVZ. Same
+# standalone process/fs model as virt64_defconfig (PROC_ENV, RAMDEV rootfs,
+# FAT, IPC), with the verdin devices (GICv3, i.MX UART3, CP15 timer).
+#
+# CONFIG_ARCH_ARM32 is not set
+CONFIG_ARCH_ARM64=y
+# CONFIG_SO3VIRT is not set
+CONFIG_ARCH="arm64"
+CONFIG_CROSS_COMPILE="aarch64-none-elf-"
+# CONFIG_ARM_TRUSTZONE is not set
+CONFIG_KERNEL_VADDR=0xffff800000000000
+
+#
+# Platform
+#
+# CONFIG_VIRT64 is not set
+# CONFIG_RPI4_64 is not set
+CONFIG_VERDIN_IMX8MP=y
+# CONFIG_VA_BITS_39 is not set
+CONFIG_VA_BITS_48=y
+# CONFIG_THREAD_ENV is not set
+CONFIG_PROC_ENV=y
+
+#
+# Kernel & CPU features
+#
+# CONFIG_SMP is not set
+CONFIG_NR_CPUS=1
+CONFIG_HZ=100
+CONFIG_SCHED_FLIP_SCHEDFREQ=30
+
+#
+# SO3 Scheduling configuration
+#
+CONFIG_SCHED_RR=y
+# CONFIG_SCHED_PRIO is not set
+CONFIG_SCHED_FREQ_PREEMPTION=y
+
+#
+# Drivers
+#
+CONFIG_UART=y
+CONFIG_IO_MAPPING_BASE=0xffff900000000000
+# CONFIG_I2C is not set
+# CONFIG_NET is not set
+# CONFIG_FB is not set
+# CONFIG_INPUT is not set
+# CONFIG_NS16550 is not set
+# CONFIG_PL011_UART is not set
+CONFIG_IMX_UART=y
+CONFIG_UART_LL_PADDR=0x30880000
+# CONFIG_MMC is not set
+CONFIG_RAMDEV=y
+CONFIG_ARM_TIMER=y
+CONFIG_GIC=y
+# Use the GICv2 compatibility interface the iMX8MP GICv3 exposes (GICC MMIO,
+# ARE_NS=0) so SO3 reuses its proven EL1 GICv2 IRQ path — the native GICv3
+# support is the AVZ EL2 hypervisor path only.
+CONFIG_GIC_V2=y
+# CONFIG_GIC_V3 is not set
+
+#
+# SO3 Applications
+#
+# CONFIG_APP_SAMPLE is not set
+
+#
+# Filesystems
+#
+CONFIG_FS_FAT=y
+# CONFIG_ROOTFS_NONE is not set
+# CONFIG_ROOTFS_MMC is not set
+CONFIG_ROOTFS_RAMDEV=y
+
+#
+# IPC
+#
+CONFIG_IPC_SIGNAL=y
+CONFIG_IPC_PIPE=y
+CONFIG_HEAP_SIZE=8
+# CONFIG_RTOS is not set
+# CONFIG_AVZ is not set
+# CONFIG_SOO is not set
+CONFIG_MMU=y

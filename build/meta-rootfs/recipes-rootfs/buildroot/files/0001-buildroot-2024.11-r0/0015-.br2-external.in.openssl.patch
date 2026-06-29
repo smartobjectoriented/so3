@@ -1,0 +1,8 @@
+--- a/output/.br2-external.in.openssl
++++ b/output/.br2-external.in.openssl
+@@ -0,0 +1,5 @@
++#
++# Automatically generated file; DO NOT EDIT.
++#
++
++# No br2-external tree defined.

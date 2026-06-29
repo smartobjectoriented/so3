@@ -1,0 +1,8 @@
+--- a/package/sfdisk/Config.in
++++ b/package/sfdisk/Config.in
+@@ -0,0 +1,5 @@
++config BR2_PACKAGE_SFDISK
++	bool "sfdisk"
++	default n
++	help
++	  Partition table manipulator for Linux.

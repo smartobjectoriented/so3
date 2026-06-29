@@ -1,74 +1,41 @@
-FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
+# LVGL performance image for SO3 (virt32), built with Infrabase.
+#
+# Copyright (c) 2025-2026 REDS Institute, HEIG-VD
+#
+# Same flow as Dockerfile.lvperf_64b, for the 32-bit virt machine. See that file
+# and docker/README.md for the build-time / run-time (privileged) split and the
+# mount-override options.
+#
+# Run:   docker run -it --privileged -v /dev:/dev so3-lvperf32b
 
-FROM baseimage AS builder
+FROM ghcr.io/smartobjectoriented/so3-toolchains:latest
 
-RUN apt update && \
-    apt install -y build-essential cmake qemu-system-arm gcc-arm-none-eabi \
-    bison flex libssl-dev device-tree-compiler qemu-system-arm && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /so3
-
-COPY u-boot u-boot
-COPY so3 so3
-
-RUN echo 'PLATFORM := virt32' > build.conf
-
-RUN cd so3;\
-    make virt32_lvperf_defconfig;\
-    sed -i 's/CONFIG_USER_INIT_PROGRAM="lvgl_benchmark.elf"/CONFIG_USER_INIT_PROGRAM="init.elf"/g' .config; \
-    make -j`nproc`
-
-# Return early from the puts function essentially disabling all u-boot output
-RUN sed -i '/void puts(const char \*s)/,/{/s/{/{\n\treturn;/' u-boot/common/console.c
-
-RUN cd u-boot;\
-    make virt32_defconfig;\
-    sed -i 's/CONFIG_BOOTDELAY=2/CONFIG_BOOTDELAY=0/g' .config; \
-    make -j`nproc`
-
-FROM baseimage AS runner
-
-RUN apt-get update && \
-      apt install -y make cmake gcc-arm-none-eabi qemu-system-arm \
-      util-linux device-tree-compiler u-boot-tools dosfstools python3 \
-      python3-pip && \
-      apt clean && \
-      rm -rf /var/lib/apt/lists/*
-
-RUN pip install --break-system-packages pcpp
-
-WORKDIR /so3
-
-RUN echo 'PLATFORM := virt32' > build.conf
-
-RUN mkdir -p so3/dts
-COPY --from=builder /so3/so3/dts/virt32_lvperf.dtb so3/dts
-COPY --from=builder /so3/so3/so3.bin so3/so3.bin
-
-RUN mkdir -p u-boot
-COPY --from=builder /so3/u-boot/u-boot u-boot
-COPY u-boot/uEnv.d u-boot/uEnv.d
-
-RUN mkdir target
-RUN mkdir -p usr
-RUN mkdir -p rootfs
-RUN mkdir -p docker/scripts
-
-COPY usr usr
-RUN printf "run lvgl_benchmark.elf\nexit\n" > usr/out/commands.ini
-COPY docker/scripts docker/scripts
-COPY target/virt32_lvperf.its target
-
-# Create an empty script that can be modified by mounting a volume in the same path
-# so we can add additional dependencies easily without rebuilding the whole image 
-RUN echo "#!/bin/sh" > install_dependencies.sh && chmod +x install_dependencies.sh 
-
-RUN rm -rf /var/cache/apk/*
-RUN rm -rf /usr/share/man /usr/share/doc /usr/share/info /var/cache/apk/*
-
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 ENV QEMU_ARCH=arm
 ENV PLATFORM=virt32
 
-CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
+WORKDIR /so3
+
+COPY . /so3
+
+# Select the lv_perf virt32 build (last assignment wins).
+RUN { \
+      echo ''; \
+      echo '# --- lv_perf (virt32) image overrides ---'; \
+      echo 'IB_PLATFORM = "virt32"'; \
+      echo 'IB_CONFIG:so3:virt32 = "virt32_lvperf_defconfig"'; \
+      echo 'IB_TARGET_ITS:so3:virt32 = "virt32_lvperf"'; \
+      echo 'IB_BOOT_CHAIN = ""'; \
+      echo 'EXTRA_OVERRIDES .= ":lvgl"'; \
+    } >> build/conf/local.conf
+
+# Non-privileged: build the emulator + the full BSP (compile only; the
+# privileged rootfs loop-mount is deferred to deploy.sh at run time).
+RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh bsp-so3'
+
+RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
+
+# Run time (REQUIRES --privileged): rebuild usr, create+format the SD-card image
+# (build.sh -x filesystem, privileged), deploy (FIT + rootfs + sdcard), run.
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -x filesystem; deploy.sh bsp-so3; docker/scripts/run.sh"]

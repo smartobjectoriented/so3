@@ -1,0 +1,4 @@
+--- a/tools/lib/rsa/rsa-mod-exp.c
++++ b/tools/lib/rsa/rsa-mod-exp.c
+@@ -0,0 +1 @@
++#include <../lib/rsa/rsa-mod-exp.c>

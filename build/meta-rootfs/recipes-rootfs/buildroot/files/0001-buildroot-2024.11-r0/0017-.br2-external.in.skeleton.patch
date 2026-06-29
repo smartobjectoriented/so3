@@ -1,0 +1,8 @@
+--- a/output/.br2-external.in.skeleton
++++ b/output/.br2-external.in.skeleton
+@@ -0,0 +1,5 @@
++#
++# Automatically generated file; DO NOT EDIT.
++#
++
++# No br2-external tree defined.

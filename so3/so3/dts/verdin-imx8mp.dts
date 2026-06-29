@@ -1,0 +1,91 @@
+/*
+ * Copyright (C) 2026 EDGEMTech SA <info@edgemtech.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/*
+ * SO3 guest device tree for the Toradex Verdin iMX8MP under the AVZ hypervisor.
+ *
+ * The hardware nodes (GICv3, i.MX UART3, CP15 timer) match the AVZ device tree
+ * (verdin-imx8mp_avz.dts) — the guest sees the real device addresses. The only
+ * difference is the memory window: AVZ places the SO3 guest at 0x48000000
+ * (above its own heap/stack/frame-table region 0x40080000-0x45100000), so the
+ * guest RAM starts there. This mirrors edgem1's imx8mp-verdin-avz-guest.dts.
+ */
+
+/dts-v1/;
+
+/ {
+	model = "SO3 guest on Verdin iMX8MP (AVZ)";
+	compatible = "arm,verdin-imx8mp";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+	};
+
+	/* Guest RAM window exposed by AVZ: 0x48000000 .. 0xBCFFFFFF (1872 MiB),
+	 * identity-mapped at stage 2 (IPA == PA). */
+	memory@48000000 {
+		device_type = "memory";
+		reg = <0x0 0x48000000 0x0 0x75000000>;
+	};
+
+	mem {
+		compatible = "mem";
+		status = "ok";
+	};
+
+	/*
+	 * GICv3 (GICv2 compat CPU interface used by SO3):
+	 *   GICD @ 0x38800000, GICR @ 0x38880000, GICC @ 0x38C20000.
+	 */
+	gic: interrupt-controller@38800000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		reg = <0x0 0x38800000 0x0 0x10000
+		       0x0 0x38880000 0x0 0xc0000
+		       0x0 0x38C20000 0x0 0x10000>;
+		status = "ok";
+	};
+
+	/* UART3 — debug console, already initialised by ATF/U-Boot */
+	serial@30880000 {
+		compatible = "serial,imx";
+		reg = <0x0 0x30880000 0x0 0x10000>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 28 4>;
+		status = "ok";
+	};
+
+	/* Periodic timer — ARM CP15 timer, PPI #10 */
+	periodic-timer {
+		compatible = "arm,periodic-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <1 10 4>;
+		status = "ok";
+	};
+
+	/* Clocksource — ARM CP15 physical counter */
+	clocksource-timer {
+		compatible = "arm,clocksource-timer";
+		status = "ok";
+	};
+};

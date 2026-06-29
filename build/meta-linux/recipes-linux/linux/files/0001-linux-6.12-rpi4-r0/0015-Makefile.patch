@@ -1,0 +1,12 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/Makefile	2025-09-03 20:23:08.000000000 +0200
++++ ./Makefile	2025-09-04 17:09:43.485709002 +0200
+@@ -378,7 +378,8 @@
+ # Alternatively CROSS_COMPILE can be set in the environment.
+ # Default value for CROSS_COMPILE is not to prefix executables
+ # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+-ARCH		?= $(SUBARCH)
++ARCH		?= arm64
++CROSS_COMPILE   ?= aarch64-none-linux-gnu-
+ 
+ # Architecture as present in compile.h
+ UTS_MACHINE 	:= $(ARCH)

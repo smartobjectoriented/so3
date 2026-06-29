@@ -1,0 +1,62 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/dev/vsenseled.h	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/include/soo/dev/vsenseled.h	2025-08-29 08:46:41.396248777 +0200
+@@ -0,0 +1,59 @@
++/*
++ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ */
++
++#ifndef VSENSELED_H
++#define VSENSELED_H
++
++#include <soo/ring.h>
++#include <soo/grant_table.h>
++#include <soo/vdevback.h>
++
++#define VSENSELED_PACKET_SIZE	32
++
++#define VSENSELED_NAME		"vsenseled"
++#define VSENSELED_PREFIX	"[" VSENSELED_NAME "] "
++
++typedef struct {
++	int lednr;
++	bool ledstate; /* true = on, false = off */
++} vsenseled_request_t;
++
++typedef struct  {
++	/* nothing */
++} vsenseled_response_t;
++
++/*
++ * Generate ring structures and types.
++ */
++DEFINE_RING_TYPES(vsenseled, vsenseled_request_t, vsenseled_response_t);
++
++/*
++ * General structure for this virtual device (backend side)
++ */
++
++typedef struct {
++
++	/* Must be the first field */
++	vdevback_t vdevback;
++
++	vsenseled_back_ring_t ring;
++	unsigned int irq;
++
++} vsenseled_t;
++
++#endif /* VSENSELED_H */

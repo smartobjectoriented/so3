@@ -1,0 +1,42 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/board/toradex/smarc-imx8mp/Kconfig	1970-01-01 01:00:00.000000000 +0100
++++ ./board/toradex/smarc-imx8mp/Kconfig	2025-11-21 14:54:55.267305134 +0100
+@@ -0,0 +1,39 @@
++if TARGET_TORADEX_SMARC_IMX8MP
++
++config IMX_CONFIG
++	default "board/toradex/smarc-imx8mp/imximage.cfg"
++
++config SYS_BOARD
++	default "smarc-imx8mp"
++
++config SYS_CONFIG_NAME
++	default "toradex-smarc-imx8mp"
++
++config SYS_VENDOR
++	default "toradex"
++
++config TDX_CFG_BLOCK
++	default y
++
++config TDX_CFG_BLOCK_2ND_ETHADDR
++	default y
++
++config TDX_CFG_BLOCK_DEV
++	default "0"
++
++# Toradex config block in eMMC, at the end of 1st "boot sector"
++config TDX_CFG_BLOCK_OFFSET
++	default "-512"
++
++config TDX_CFG_BLOCK_PART
++	default "1"
++
++config TDX_HAVE_EEPROM_EXTRA
++	default y
++
++config TDX_HAVE_MMC
++	default y
++
++source "board/toradex/common/Kconfig"
++
++endif

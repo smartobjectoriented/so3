@@ -1,0 +1,38 @@
+--- a/arch/arm/dts/imx8mp-u-boot.dtsi
++++ b/arch/arm/dts/imx8mp-u-boot.dtsi
+@@ -167,6 +167,22 @@
+ 				};
+ #endif
+ 
++#ifdef CONFIG_TARGET_VERDIN_IMX8MP
++				tee {
++					description = "OP-TEE";
++					type = "firmware";
++					arch = "arm64";
++					os = "tee";
++					compression = "none";
++					load = <0xbe000000>;
++					entry = <0xbe000000>;
++
++					blob-ext {
++						filename = "tee.bin";
++					};
++				};
++#endif
++
+ 				@fdt-SEQ {
+ 					description = "NAME";
+ 					type = "flat_dt";
+@@ -186,8 +202,12 @@
+ 					fdt = "fdt-SEQ";
+ 					firmware = "uboot";
+ #ifndef CONFIG_ARMV8_PSCI
++#ifdef CONFIG_TARGET_VERDIN_IMX8MP
++					loadables = "atf", "tee";
++#else
+ 					loadables = "atf";
+ #endif
++#endif
+ 				};
+ 			};
+ 		};

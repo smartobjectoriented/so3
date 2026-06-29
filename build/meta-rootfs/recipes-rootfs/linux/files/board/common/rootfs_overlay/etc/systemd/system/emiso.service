@@ -1,0 +1,10 @@
+[Unit]
+Description=Starting Emiso-engine
+
+[Service]
+Restart=always
+ExecStart=/root/emiso_engine
+
+[Install]
+WantedBy=multi-user.target
+Enabled=true

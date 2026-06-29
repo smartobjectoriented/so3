@@ -1,0 +1,200 @@
+--- a/hw/arm/virt.c
++++ b/hw/arm/virt.c
+@@ -82,6 +82,10 @@
+ #include "hw/char/pl011.h"
+ #include "qemu/guest-random.h"
+ 
++#include "hw/input/ps2.h"
++
++#include "ui/input.h"
++
+ #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
+     static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
+                                                     void *data) \
+@@ -145,6 +149,12 @@
+     [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
+     /* This redistributor space allows up to 2*64kB*123 CPUs */
+     [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
++
++	[VIRT_CLCD] = 				{ 0x08800000, 0x00001000 },
++	[VIRT_KMI0] = 				{ 0x08801000, 0x00001000 },
++	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
++	[VIRT_ABSMOUSE] = 			{ 0x08803000, 0x00001000 },
++
+     [VIRT_UART] =               { 0x09000000, 0x00001000 },
+     [VIRT_RTC] =                { 0x09010000, 0x00001000 },
+     [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
+@@ -199,6 +209,11 @@
+     [VIRT_SECURE_UART] = 8,
+     [VIRT_ACPI_GED] = 9,
+     [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
++
++	[VIRT_CLCD] = 10,
++	[VIRT_KMI0] = 11,
++	[VIRT_KMI1] = 12,
++
+     [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
+     [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
+     [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
+@@ -2022,6 +2037,109 @@
+     }
+ }
+ 
++struct IRQState {
++    Object parent_obj;
++
++    qemu_irq_handler handler;
++    void *opaque;
++    int n;
++};
++
++/*
++ * SO3 absolute pointer ("so3,absmouse").
++ *
++ * A tiny read-only MMIO device fed by QEMU's *absolute* input handler.
++ * SO3's only other pointer is the relative PL050 PS/2 mouse, which forces
++ * QEMU into relative mode (pointer grab/warp) — broken under Wayland and
++ * always prone to host/guest position drift. Registering an absolute input
++ * handler makes QEMU use absolute pointer mode (no grab, no warp): the host
++ * pointer position maps 1:1 onto the guest. The guest simply polls the X/Y/
++ * button registers (no IRQ needed; the LVGL/slv mouse read_cb polls every
++ * refresh). Coordinates are reported in QEMU's absolute range
++ * [0 .. INPUT_EVENT_ABS_MAX]; the guest scales them to its screen size.
++ */
++#define VIRT_ABSMOUSE_REG_X    0x00 /* uint32: 0 .. INPUT_EVENT_ABS_MAX     */
++#define VIRT_ABSMOUSE_REG_Y    0x04 /* uint32: 0 .. INPUT_EVENT_ABS_MAX     */
++#define VIRT_ABSMOUSE_REG_BTN  0x08 /* uint32: bit0 left, bit1 right, bit2 middle */
++#define VIRT_ABSMOUSE_REG_MAX  0x0c /* uint32: INPUT_EVENT_ABS_MAX (scale reference) */
++
++typedef struct {
++    uint32_t x;
++    uint32_t y;
++    uint32_t buttons;
++} VirtAbsMouseState;
++
++static VirtAbsMouseState virt_absmouse;
++
++static void virt_absmouse_event(DeviceState *dev, QemuConsole *src,
++                                InputEvent *evt)
++{
++    InputMoveEvent *move;
++    InputBtnEvent *btn;
++    uint32_t bit;
++
++    switch (evt->type) {
++    case INPUT_EVENT_KIND_ABS:
++        move = evt->u.abs.data;
++        if (move->axis == INPUT_AXIS_X) {
++            virt_absmouse.x = move->value;
++        } else if (move->axis == INPUT_AXIS_Y) {
++            virt_absmouse.y = move->value;
++        }
++        break;
++    case INPUT_EVENT_KIND_BTN:
++        btn = evt->u.btn.data;
++        bit = 0;
++        if (btn->button == INPUT_BUTTON_LEFT) {
++            bit = 1;
++        } else if (btn->button == INPUT_BUTTON_RIGHT) {
++            bit = 2;
++        } else if (btn->button == INPUT_BUTTON_MIDDLE) {
++            bit = 4;
++        }
++        if (bit) {
++            if (btn->down) {
++                virt_absmouse.buttons |= bit;
++            } else {
++                virt_absmouse.buttons &= ~bit;
++            }
++        }
++        break;
++    default:
++        break;
++    }
++}
++
++static const QemuInputHandler virt_absmouse_handler = {
++    .name  = "SO3 absolute pointer",
++    .mask  = INPUT_EVENT_MASK_ABS | INPUT_EVENT_MASK_BTN,
++    .event = virt_absmouse_event,
++};
++
++static uint64_t virt_absmouse_read(void *opaque, hwaddr addr, unsigned size)
++{
++    switch (addr) {
++    case VIRT_ABSMOUSE_REG_X:   return virt_absmouse.x;
++    case VIRT_ABSMOUSE_REG_Y:   return virt_absmouse.y;
++    case VIRT_ABSMOUSE_REG_BTN: return virt_absmouse.buttons;
++    case VIRT_ABSMOUSE_REG_MAX: return INPUT_EVENT_ABS_MAX;
++    default:                    return 0;
++    }
++}
++
++static void virt_absmouse_write(void *opaque, hwaddr addr, uint64_t val,
++                                unsigned size)
++{
++    /* Read-only device. */
++}
++
++static const MemoryRegionOps virt_absmouse_ops = {
++    .read       = virt_absmouse_read,
++    .write      = virt_absmouse_write,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++    .valid      = { .min_access_size = 4, .max_access_size = 4 },
++};
++
+ static void machvirt_init(MachineState *machine)
+ {
+     VirtMachineState *vms = VIRT_MACHINE(machine);
+@@ -2326,6 +2444,51 @@
+                                vms->fw_cfg, OBJECT(vms));
+     }
+ 
++    {
++    	   MemoryRegion *sysmem = get_system_memory();
++    	   MemoryRegion *vram = g_new(MemoryRegion, 1);
++    	   ram_addr_t vram_size;
++
++    	   vram_size = 0x800000;
++
++    	   memory_region_init_ram(vram, NULL, "virt.vram", vram_size, NULL);
++    	   memory_region_add_subregion(sysmem, 0x30000000, vram);
++
++    	   sysbus_create_simple("pl111", (hwaddr) vms->memmap[VIRT_CLCD].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_CLCD]));
++
++    	   sysbus_create_simple("pl050_keyboard", (hwaddr) vms->memmap[VIRT_KMI0].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI0]));
++
++
++    	   sysbus_create_simple("pl050_mouse", (hwaddr) vms->memmap[VIRT_KMI1].base,
++    			   qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_KMI1]));
++
++    	   /* SO3 absolute pointer: a polled MMIO device whose registers are
++    	    * driven by QEMU's absolute input handler. Registering the handler
++    	    * also switches QEMU to absolute pointer mode (no grab/warp), so the
++    	    * guest cursor maps 1:1 to the host pointer on every backend
++    	    * (Wayland/X11) and every monitor. See VirtAbsMouseState above. */
++    	   {
++    		   MemoryRegion *absmouse = g_new(MemoryRegion, 1);
++
++    		   memory_region_init_io(absmouse, NULL, &virt_absmouse_ops,
++    				   &virt_absmouse, "so3.absmouse", 0x1000);
++    		   memory_region_add_subregion(sysmem,
++    				   vms->memmap[VIRT_ABSMOUSE].base, absmouse);
++
++    		   /* Activate (move to head of the handler list) so this handler
++    		    * claims pointer BUTTON events too: the relative pl050_mouse
++    		    * registered earlier also masks BTN, and qemu_input_find_handler()
++    		    * returns the first matching handler. ABS events already reach us
++    		    * (only we mask ABS); activating ensures clicks do as well. KEY
++    		    * events still fall through to the pl050 keyboard. */
++    		   qemu_input_handler_activate(
++    				   qemu_input_handler_register(NULL, &virt_absmouse_handler));
++    	   }
++
++    }
++
+     vms->bootinfo.ram_size = machine->ram_size;
+     vms->bootinfo.board_id = -1;
+     vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;

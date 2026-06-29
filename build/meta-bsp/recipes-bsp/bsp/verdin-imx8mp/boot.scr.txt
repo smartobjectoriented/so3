@@ -1,0 +1,16 @@
+# U-Boot boot script for SO3-on-AVZ on the Toradex Verdin iMX8MP.
+#
+# Loads the single AVZ+SO3 FIT image and boots it. bootm parses the FIT and
+# copies each sub-image to its load address (AVZ -> 0x40080000, SO3 guest ->
+# 0x48000000, dtbs, rootfs.fat), then enters AVZ which in turn starts the SO3
+# guest. The ITB is loaded high (0x90000000) so it never overlaps the
+# 0x40080000-0x50c00000 sub-image range during extraction.
+
+echo "=== SO3 on AVZ (Verdin iMX8MP) ==="
+
+env set itb_addr 0x90000000
+
+# The deploy stages the selected ITB (AVZ+SO3 guest *or* SO3 standalone) under
+# the fixed name boot.itb, so this script is the same for both variants.
+ext4load mmc 2:1 ${itb_addr} /boot.itb
+bootm ${itb_addr}

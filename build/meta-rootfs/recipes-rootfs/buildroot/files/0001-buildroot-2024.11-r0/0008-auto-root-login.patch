@@ -1,0 +1,6 @@
+--- a/package/auto-getty/src/auto-root-login
++++ b/package/auto-getty/src/auto-root-login
+@@ -0,0 +1,3 @@
++#!/bin/sh
++
++exec /bin/login -f root

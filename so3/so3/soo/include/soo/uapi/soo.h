@@ -1,0 +1,497 @@
+/*
+ * Copyright (C) 2014-2026 REDS Institute from HEIG-VD <daniel.rossier@heig-vd.ch>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifndef UAPI_SOO_H
+#define UAPI_SOO_H
+
+#ifndef __ASSEMBLY__
+
+#include <avz/uapi/avz.h>
+
+/* This signature is used to check the coherency of the capsule image, after a migration
+ * or a restoration for example.
+ */
+#define SOO_S3C_SIGNATURE "SooZ"
+
+#endif /* __ASSEMBLY__ */
+
+#define AGENCY_CPU 0
+#define AGENCY_RT_CPU 1
+
+#ifndef __ASSEMBLY__
+
+#include <asm/atomic.h>
+
+#ifndef DOMID_T
+#define DOMID_T
+typedef uint16_t domid_t;
+typedef unsigned long addr_t;
+#endif
+
+typedef uint32_t grant_ref_t;
+
+/* Grant table management */
+#define GRANT_INVALID_REF 0
+
+/* List of grant table commands which are processed by the hypervisor */
+
+#define GNTTAB_grant_page 1
+#define GNTTAB_revoke_page 2
+#define GNTTAB_map_page 3
+#define GNTTAB_unmap_page 4
+
+struct gnttab_op {
+	/* Command to be processed in the hypercall */
+	uint32_t cmd;
+
+	/* Peer domain */
+	domid_t domid;
+
+	/* pfn to be granted or pfn associated to an existing ref */
+	addr_t pfn;
+
+	/* Grant reference */
+	grant_ref_t ref;
+};
+typedef struct gnttab_op gnttab_op_t;
+
+void do_gnttab(gnttab_op_t *args);
+
+/*
+ * Page frame number to set the framebuffer addresses.
+ * The physical addresses may be splitted in multiple parts, which requires to have
+ * multiple set of strating page frame and page count
+ */
+
+#define MAX_FBDEV_PFN 8
+typedef struct fbdev_pfns {
+	size_t pfn_count;
+	addr_t pfn[MAX_FBDEV_PFN];
+	size_t page_count[MAX_FBDEV_PFN];
+} fbdev_pfns_t;
+
+#define AVZ_SCHEDULER_FLIP 0
+
+/*
+ * capsule states:
+ * - S3C_state_stopped:		Capsule is stopped (right after start or later)
+ * - S3C_state_living:		capsule is full-functional and activated (all frontend devices are consistent)
+ * - S3C_state_suspended:	capsule is suspended before migrating. This state is maintained for the resident capsule instance
+ * - S3C_state_hibernate:	capsule is in a state of hibernate snapshot
+ * - S3C_state_resuming:         capsule ready to perform resuming (after recovering)
+ * - S3C_state_awakened:         capsule is just being awakened
+ * - S3C_state_terminated:	capsule has been terminated (by a shutdown)
+ * - S3C_state_dead:		capsule does not exist
+ */
+typedef enum {
+	S3C_state_stopped,
+	S3C_state_living,
+	S3C_state_suspended,
+	S3C_state_hibernate,
+	S3C_state_resuming,
+	S3C_state_awakened,
+	S3C_state_killed,
+	S3C_state_terminated,
+	S3C_state_dead
+} S3C_state_t;
+
+/* Keep information about slot availability
+ * FREE:	the slot is available (no capsule)
+ * BUSY:	the slot is allocated a capsule
+ */
+typedef enum { S3C_SLOT_FREE, S3C_SLOT_BUSY } S3C_slotState_t;
+
+/* capsule ID related information */
+#define S3C_NAME_SIZE 40
+#define S3C_SHORTDESC_SIZE 1024
+
+/*
+ * Definition of capsule ID information used by functions which need
+ * to get a list of running MEs with their information.
+ */
+typedef struct {
+	uint32_t slotID;
+	S3C_state_t state;
+
+	uint64_t spid;
+
+	char name[S3C_NAME_SIZE];
+	char shortdesc[S3C_SHORTDESC_SIZE];
+} S3C_id_t;
+
+struct work_struct;
+struct semaphore;
+
+/*
+ * Directcomm event management
+ */
+typedef enum {
+	DC_NO_EVENT,
+	DC_PRE_SUSPEND,
+	DC_SUSPEND,
+	DC_RESUME,
+	DC_SHUTDOWN,
+	DC_POST_ACTIVATE,
+	DC_TRIGGER_DEV_PROBE,
+	DC_TRIGGER_LOCAL_COOPERATION,
+
+	DC_EVENT_MAX /* Used to determine the number of DC events */
+} dc_event_t;
+
+/*
+ * Callback function associated to dc_event.
+ */
+typedef void(dc_event_fn_t)(dc_event_t dc_event);
+
+extern atomic_t dc_outgoing_domID[DC_EVENT_MAX];
+extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
+
+/*
+ * IOCTL commands for migration.
+ * This part is shared between the kernel and user spaces.
+ */
+
+/*
+ * IOCTL codes
+ */
+
+#define AGENCY_IOCTL_READ_SNAPSHOT _IOWR('S', 1, agency_ioctl_args_t)
+#define AGENCY_IOCTL_WRITE_SNAPSHOT _IOW('S', 2, agency_ioctl_args_t)
+#define AGENCY_IOCTL_SHUTDOWN _IOW('S', 3, agency_ioctl_args_t)
+#define AGENCY_IOCTL_INJECT_CAPSULE _IOWR('S', 4, agency_ioctl_args_t)
+#define AGENCY_IOCTL_START_CAPSULE _IOWR('S', 5, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_S3C_ID _IOWR('S', 6, agency_ioctl_args_t)
+#define AGENCY_IOCTL_GET_S3C_ID_ARRAY _IOR('S', 7, agency_ioctl_args_t)
+
+#define SOO_NAME_SIZE 16
+
+/*
+ * capsule descriptor
+ *
+ * WARNING !! Be careful when modifying this structure. It *MUST* be aligned with
+ * the same structure used in the capsule.
+ */
+typedef struct {
+	unsigned int slotID;
+	unsigned int capsuleID; /* ID handled by emiso engine */
+	uint64_t spid;
+
+	S3C_state_t state;
+
+	unsigned int size; /* Size of the capsule with the struct dom_context size */
+	unsigned int dc_evtchn;
+
+	unsigned int vbstore_revtchn, vbstore_levtchn;
+	addr_t vbstore_pfn;
+
+	void (*resume_fn)(void);
+
+} S3C_desc_t;
+
+/*
+ * Agency descriptor
+ */
+typedef struct {
+	/*
+	 * SOO agencyUID unique 64-bit ID - Allowing to identify a SOO device.
+	 * agencyUID 0 is NOT valid.
+	 */
+
+	uint64_t agencyUID; /* Agency UID */
+
+	/* Event channels used for directcomm channel between agency and agency-RT or capsule */
+	unsigned int dc_evtchn[MAX_DOMAINS];
+
+	/* Event channels used by vbstore */
+	unsigned int vbstore_evtchn[MAX_DOMAINS];
+
+	/* Local agency event channel for vbstore */
+	uint32_t vbstore_levtchn;
+
+} agency_desc_t;
+
+/*
+ * SOO agency & capsule descriptor - This structure is used in the shared info page of the agency or capsule domain.
+ */
+
+typedef struct {
+	union {
+		agency_desc_t agency;
+		S3C_desc_t S3C;
+	} u;
+} dom_desc_t;
+
+struct avz_shared {
+	domid_t domID;
+
+	/* Domain related information */
+	unsigned long nr_pages; /* Total pages allocated to this domain.  */
+
+	addr_t fdt_paddr;
+
+	/* Other fields related to domain life */
+
+	unsigned long domain_stack;
+	uint8_t evtchn_upcall_pending;
+
+	/*
+	 * A domain can create "event channels" on which it can send and receive
+	 * asynchronous event notifications.
+	 * Each event channel is assigned a bit in evtchn_pending and its modification has to be
+	 * kept atomic.
+	 */
+
+	volatile bool evtchn_pending[NR_EVTCHN];
+
+	atomic_t dc_event;
+
+	/* This field is used when taking a snapshot of us. It will be
+	 * useful to restore later. Some timer deadlines are based on it and
+	 * will need to be updated accordingly.
+	 */
+	u64 current_s_time;
+
+	/* Agency or capsule descriptor */
+	dom_desc_t dom_desc;
+
+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	char signature[4];
+};
+
+typedef struct avz_shared avz_shared_t;
+extern volatile avz_shared_t *avz_shared;
+
+/* struct agency_ioctl_args used in IOCTLs */
+typedef struct agency_ioctl_args {
+	void *buffer; /* IN/OUT */
+	int slotID;
+	int capsuleID;
+	long value; /* IN/OUT */
+} agency_ioctl_args_t;
+
+#define NSECS 1000000000ull
+#define SECONDS(_s) ((u64) ((_s) * 1000000000ull))
+#define MILLISECS(_ms) ((u64) ((_ms) * 1000000ull))
+#define MICROSECS(_us) ((u64) ((_us) * 1000ull))
+
+#define VBUS_TASK_PRIO 50
+
+/*
+ * The priority of the Directcomm thread must be higher than the priority of the SDIO
+ * thread to make the Directcomm thread process a DC event and release it before any new
+ * request by the SDIO's side thus avoiding a deadlock.
+ */
+#define DC_ISR_TASK_PRIO 55
+
+/*
+ * SOO hypercall management
+ */
+
+/* AVZ hypercalls devoted to SOO */
+
+#define AVZ_S3C_READ_SNAPSHOT 4
+#define AVZ_S3C_WRITE_SNAPSHOT 5
+#define AVZ_START_CAPSULE 6
+#define AVZ_INJECT_CAPSULE 7
+#define AVZ_KILL_S3C 8
+#define AVZ_DC_EVENT_SET 9
+#define AVZ_GET_S3C_STATE 10
+#define AVZ_SET_S3C_STATE 11
+#define AVZ_GET_DOM_DESC 12
+#define AVZ_GRANT_TABLE_OP 13
+#define AVZ_FBDEV_SET_PFNS 14
+#define AVZ_FBDEV_CHANGE_FOCUS 15
+#define AVZ_FBDEV_GET_S3C_ADDR 16
+
+/* AVZ_INJECT_CAPSULE */
+typedef struct {
+	void *itb_paddr;
+	int slotID;
+	int capsuleID;
+} avz_inject_capsule_t;
+
+/* AVZ_START_CAPSULE */
+typedef struct {
+	int slotID;
+} avz_start_capsule_t;
+
+/* AVZ_DC_EVENT_SET */
+typedef struct {
+	unsigned int domID;
+	dc_event_t dc_event;
+	int state;
+} avz_dc_event_t;
+
+/* AVZ_GET_S3C_STATE */
+/* AVZ_SET_S3C_STATE */
+typedef struct {
+	uint32_t slotID;
+	int state;
+} avz_s3c_state_t;
+
+/* AVZ_GET_DOM_DESC */
+typedef struct {
+	uint32_t slotID;
+	dom_desc_t dom_desc;
+} avz_dom_desc_t;
+
+/* AVZ_GET_S3C_FREE_SLOT */
+typedef struct {
+	int slotID;
+	int size;
+} avz_free_slot_t;
+
+/* AVZ_MIG_INIT */
+typedef struct {
+	int slotID;
+} avz_mig_init_t;
+
+/* AVZ_READ_SNAPSHOT */
+/* AVZ_WRITE_SNAPSHOT */
+typedef struct {
+	void *snapshot_paddr;
+	int32_t slotID;
+	int size;
+} avz_snapshot_t;
+
+/* AVZ_KILL_S3C */
+typedef struct {
+	uint32_t slotID;
+} avz_kill_s3c_t;
+
+/* AVZ_GRANT_TABLE_OP */
+typedef struct {
+	gnttab_op_t gnttab_op;
+} avz_gnttab_t;
+
+/* AVZ_FBDEV_SET_PFNS */
+typedef struct {
+	fbdev_pfns_t fbdev;
+} avz_fbdev_pfns_t;
+
+/* AVZ_FBDEV_CHANGE_FOCUS */
+typedef struct {
+	int new_slotID;
+} avz_fbdev_focus_t;
+
+/* AVZ_FBDEV_GET_S3C_ADDR */
+typedef struct {
+	addr_t paddr;
+} avz_fbdev_addr_t;
+
+/*
+ * AVZ hypercall argument
+ */
+typedef struct {
+	int cmd;
+	union {
+		avz_evtchn_t avz_evtchn;
+		avz_inject_capsule_t avz_inject_capsule_args;
+		avz_start_capsule_t avz_start_capsule_args;
+		avz_dc_event_t avz_dc_event_args;
+		avz_s3c_state_t avz_s3c_state_args;
+		avz_dom_desc_t avz_dom_desc_args;
+		avz_free_slot_t avz_free_slot_args;
+		avz_mig_init_t avz_mig_init_args;
+		avz_snapshot_t avz_snapshot_args;
+		avz_kill_s3c_t avz_kill_s3c_args;
+		avz_console_io_t avz_console_io_args;
+		avz_domctl_t avz_domctl_args;
+		avz_gnttab_t avz_gnttab_args;
+		avz_fbdev_pfns_t avz_fbdev_pfns_args;
+		avz_fbdev_focus_t avz_fbdev_focus_args;
+		avz_fbdev_addr_t avz_fbdev_addr_args;
+	} u;
+} avz_hyp_t;
+
+typedef struct {
+	void *val;
+} pre_suspend_args_t;
+
+typedef struct {
+	void *val;
+} pre_resume_args_t;
+
+typedef struct {
+	void *val;
+} post_activate_args_t;
+
+typedef struct {
+	char soo_name[SOO_NAME_SIZE];
+} soo_name_args_t;
+
+/*
+ * SOO callback functions.
+ * The following definitions are used as argument in domcalls or in the
+ * agency_ctl() function as a callback to be propagated to a specific capsule.
+ *
+ */
+
+#define CB_PRE_SUSPEND 4
+#define CB_PRE_RESUME 5
+#define CB_POST_ACTIVATE 6
+#define CB_AGENCY_CTL 9
+
+typedef struct soo_domcall_arg {
+	/* Stores the agency ctl function.
+	 * Possibly, the agency_ctl function can be associated to a callback operation asked by a capsule
+	 */
+	unsigned int cmd;
+	unsigned int slotID; /* Origin of the domcall */
+
+	union {
+		pre_suspend_args_t pre_suspend_args;
+		pre_resume_args_t pre_resume_args;
+
+		post_activate_args_t post_activate_args;
+		S3C_state_t set_s3c_state_args;
+	} u;
+
+} soo_domcall_arg_t;
+
+/* Callbacks initiated by agency ping */
+void cb_pre_resume(soo_domcall_arg_t *args);
+void cb_pre_suspend(soo_domcall_arg_t *args);
+
+void cb_post_activate(soo_domcall_arg_t *args);
+
+void cb_shutdown(void);
+
+void callbacks_init(void);
+
+void set_dc_event(domid_t domid, dc_event_t dc_event);
+
+void do_soo_activity(void *arg);
+
+void soo_guest_activity_init(void);
+
+void dc_stable(int dc_event);
+void tell_dc_stable(int dc_event);
+
+void do_sync_dom(int slotID, dc_event_t);
+void do_async_dom(int slotID, dc_event_t);
+
+void perform_task(dc_event_t dc_event);
+
+void shutdown_S3C(unsigned int S3C_slotID);
+
+void cache_flush_all(void);
+
+#endif /* __ASSEMBLY__ */
+
+#endif /* UAPI_SOO_H */

@@ -1,0 +1,4 @@
+--- a/tools/env/embedded.c
++++ b/tools/env/embedded.c
+@@ -0,0 +1 @@
++#include <../env/embedded.c>

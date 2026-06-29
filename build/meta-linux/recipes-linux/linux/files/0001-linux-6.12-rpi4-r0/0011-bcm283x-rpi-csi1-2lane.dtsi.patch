@@ -1,0 +1,7 @@
+--- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm64/boot/dts/broadcom/bcm283x-rpi-csi1-2lane.dtsi	1970-01-01 01:00:00.000000000 +0100
++++ ./arch/arm64/boot/dts/broadcom/bcm283x-rpi-csi1-2lane.dtsi	2025-05-05 20:19:23.872333877 +0200
+@@ -0,0 +1,4 @@
++// SPDX-License-Identifier: GPL-2.0-only
++&csi1 {
++	brcm,num-data-lanes = <2>;
++};

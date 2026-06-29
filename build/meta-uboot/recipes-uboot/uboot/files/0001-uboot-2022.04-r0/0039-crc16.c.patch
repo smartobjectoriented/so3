@@ -1,0 +1,4 @@
+--- a/tools/lib/crc16.c
++++ b/tools/lib/crc16.c
+@@ -0,0 +1 @@
++#include <../lib/crc16.c>

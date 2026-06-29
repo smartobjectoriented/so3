@@ -1,0 +1,13 @@
+--- a/board/toradex/verdin-imx8mp/verdin-imx8mp.c
++++ b/board/toradex/verdin-imx8mp/verdin-imx8mp.c
+@@ -108,7 +108,9 @@
+ 	if (!size)
+ 		return -EINVAL;
+ 
+-	*size = get_ram_size((void *)PHYS_SDRAM, PHYS_SDRAM_SIZE + PHYS_SDRAM_2_SIZE);
++	/* Hardcode 2 GiB: get_ram_size() hangs because SPL's TZASC lockdown
++	 * blocks non-secure probing of the upper DRAM boundary. */
++	*size = SZ_2G;
+ 
+ 	return 0;
+ }

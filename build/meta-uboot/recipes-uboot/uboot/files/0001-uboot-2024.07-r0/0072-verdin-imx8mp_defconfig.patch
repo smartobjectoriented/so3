@@ -1,0 +1,7 @@
+--- a/configs/verdin-imx8mp_defconfig
++++ b/configs/verdin-imx8mp_defconfig
+@@ -190,3 +190,4 @@
+ CONFIG_USB_GADGET_PRODUCT_NUM=0x4000
+ CONFIG_IMX_WATCHDOG=y
+ CONFIG_HEXDUMP=y
++CONFIG_CMD_E1C_BOOT=y

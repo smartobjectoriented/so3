@@ -1,0 +1,29 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/lib/libroxml/config.h	1970-01-01 01:00:00.000000000 +0100
++++ ./soo/lib/libroxml/config.h	2025-08-29 08:46:41.395210719 +0200
+@@ -0,0 +1,26 @@
++
++#ifndef LIBROXML_CONFIG_H
++#define LIBROXML_CONFIG_H
++
++#define CONFIG_XML_THREAD_SAFE		1
++#define CONFIG_XML_SMALL_INPUT_FILE	1
++
++#define CONFIG_XML_FLOAT		1
++#define CONFIG_XML_SMALL_BUFFER		1
++
++#define FILE	int
++
++#define fopen(...) (0);
++#define fdopen(...) (0);
++#define fwrite(...) do { } while(0);
++#define fflush(...) do { } while(0);
++#define fseek(...) (0)
++#define ftell(...) (0)
++#define fread(...) (0)
++#define fwrite(...) do { } while(0);
++#define fclose(...) do { } while(0);
++#define dup(...) (0);
++#define vfprintf(...) do { } while(0);
++
++#endif /* LIBROXML_CONFIG_H */
++

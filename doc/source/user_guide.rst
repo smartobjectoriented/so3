@@ -3,10 +3,10 @@
 User Guide
 ##########
 
-This guide walks through setting up SO3 from scratch and running it in QEMU.
-The instructions were validated on Ubuntu 22.04 but work on other recent
-distributions. The reference platform is **virt64** (QEMU's ``virt`` machine,
-Cortex-A72, ARM64).
+This guide walks through building SO3 with :ref:`Infrabase <build_system>` and
+running it in QEMU. The instructions were validated on Ubuntu 22.04/24.04 but
+work on other recent distributions. The reference platform is **virt64** (QEMU's
+``virt`` machine, Cortex-A72, ARM64).
 
 Prerequisites
 =============
@@ -17,189 +17,173 @@ images and the disk images:
 .. code-block:: bash
 
    sudo apt-get update
-   sudo apt-get install build-essential bc unzip flex bison
-   sudo apt-get install device-tree-compiler u-boot-tools
+   sudo apt-get install build-essential bc unzip flex bison libncurses-dev
+   sudo apt-get install device-tree-compiler u-boot-tools mtools
    sudo apt-get install fdisk dosfstools
-   sudo apt-get install qemu-system-arm libncurses-dev
-   sudo apt-get install bridge-utils   # for QEMU tap networking
+   sudo apt-get install python3 chrpath diffstat gawk    # bitbake deps
 
-Toolchains
-==========
-
-SO3 uses **two** cross toolchains:
-
-Kernel
-   A *bare-metal* toolchain with no libc dependency:
-   ``aarch64-none-elf`` for ARM64 and ``arm-none-eabi`` for ARM32. The kernel's
-   ``CONFIG_CROSS_COMPILE`` points at it (``aarch64-none-elf-`` by default).
-
-User space
-   The user applications link against **MUSL**. The MUSL toolchains
-   (``aarch64-linux-musl`` and ``arm-linux-musleabihf``) are produced by:
-
-   .. code-block:: bash
-
-      cd toolchains
-      ./build-toolchain.sh
-
-   By default this generates the toolchain directories under ``toolchains/``.
-
-Make sure both toolchains are on your ``PATH``.
+You do **not** need to install QEMU or a cross-toolchain: Infrabase builds a
+patched QEMU (``meta-qemu``) and the MUSL toolchains (``meta-toolchain``) itself.
+Privileged image steps escalate with ``sudo -n``; ``deploy.sh`` opens the sudo
+session for you.
 
 Repository layout
 =================
 
 The most relevant top-level directories are::
 
-   so3/          # the kernel source (and the avz/ hypervisor, soo/ framework)
-   usr/          # user-space applications (CMake + MUSL)
-   rootfs/       # root filesystem image (ramfs) and its creation script
-   target/       # FIT image descriptions (*.its) and mkuboot.sh
+   so3/          # the SO3 kernel (so3/so3) and user space (so3/usr), plus dts
+   build/        # the Infrabase build: meta-* layers, conf/local.conf, bitbake work tree
+   scripts/      # build.sh, deploy.sh, st.sh, stg.sh, updiff.sh, …
    filesystem/   # the virtual SD-card image used by QEMU
-   u-boot/       # the U-Boot bootloader
-   avz/          # out-of-tree build of the AVZ hypervisor
-   build.conf    # selects the active PLATFORM
-   deploy.sh     # deploys kernel/dtb/ramfs/apps into the SD-card image
+   u-boot/       # fetched U-Boot (patched)
+   qemu/         # fetched QEMU (patched) -> qemu/build/qemu-system-*
+   avz/          # fetched AVZ hypervisor (patched)
+   env.sh        # sourced once per shell to set up the environment
 
 Quick start (standalone, virt64)
 ================================
 
-The fastest path to a shell on top of the standalone kernel.
-
-**1. Select the platform.** Edit ``build.conf`` so that ``PLATFORM := virt64``
-(the default).
-
-**2. Build U-Boot** (once):
+**1. Set up the shell.**
 
 .. code-block:: bash
 
-   cd u-boot
-   make virt64_defconfig
-   make -j$(nproc)
+   source env.sh
 
-**3. Create the virtual SD-card** (once), in ``filesystem/``:
+**2. Select the platform and deployment.** In ``build/conf/local.conf``:
 
-.. code-block:: bash
+.. code-block:: text
 
-   cd filesystem
-   ./create_img.sh virt64
+   IB_PLATFORM ?= "virt64"
+   IB_TARGET_ITS:so3:virt64 = "virt64_so3"      # standalone SO3
 
-**4. Build the user space** and pack the ramfs:
-
-.. code-block:: bash
-
-   cd usr
-   ./build.sh
-   cd ../rootfs
-   ./create_ramfs.sh        # once, creates rootfs.fat
-
-**5. Build the kernel:**
+**3. Build everything** for the SO3 BSP (kernel, user space, U-Boot, rootfs and
+the FIT image):
 
 .. code-block:: bash
 
-   cd so3
-   make virt64_defconfig
-   make -j$(nproc)
+   ./scripts/build.sh bsp-so3
 
-**6. Deploy** kernel, device tree, ramfs and the user apps into the SD-card
-image (from the repository root):
+**4. Deploy** onto the virtual SD-card (this opens the sudo session and writes the
+boot partition):
 
 .. code-block:: bash
 
-   ./deploy.sh -bu
+   ./scripts/deploy.sh bsp-so3
 
-The ``-b`` option deploys the boot components (it builds the FIT image and copies
-it into the first partition); ``-u`` deploys the user applications into the
-ramfs.
-
-**7. Run:**
+**5. Run:**
 
 .. code-block:: bash
 
-   ./st
+   ./scripts/st.sh
 
 You should land at the ``so3%`` prompt.
 
-.. note::
+.. tip::
 
-   To quit QEMU, type ``Ctrl-x`` followed by ``a`` (not ``Ctrl-a``).
+   After editing only the kernel, rebuild and redeploy it without a full rebuild::
+
+      ./scripts/build.sh -x so3
+      ./scripts/deploy.sh bsp-so3
+
+   The ``deploy.sh bsp-so3`` step is required because the in-tree kernel binary
+   is not tracked by bitbake (see :ref:`build_system`).
 
 Launch scripts
 ==============
 
-Three launch scripts wrap QEMU with the right options:
-
 .. flat-table::
    :header-rows: 1
-   :widths: 12 88
+   :widths: 16 84
 
    * - Script
      - Use
-   * - ``./st``
-     - **standalone** SO3 (``-M virt``, no virtualization). The kernel runs at
-       EL1.
-   * - ``./stv``
-     - **AVZ** (``-M virt,gic-version=2,virtualization=on``). EL2 is available,
-       so the hypervisor can run.
-   * - ``./stg``
-     - **graphical** run (a display window instead of ``-nographic``), used for
-       the framebuffer / LVGL configurations.
+   * - ``scripts/st.sh``
+     - **headless** run (``-display none``) — serial console only. The default for
+       non-graphical work and CI.
+   * - ``scripts/stg.sh``
+     - **graphical** run — a GTK window for the PL111 framebuffer (LVGL, ``fb_test``).
+       See :ref:`display_input`.
 
-All three read ``PLATFORM`` from ``build.conf`` and attach the SD-card image,
-a virtio block device and a tap network device.
+Both read ``IB_PLATFORM`` and the selected ITS from ``build/conf/local.conf``,
+attach ``filesystem/sdcard.img.<platform>`` as a virtio block device, forward the
+guest SSH port (host ``2222`` → guest ``22``) and expose a GDB stub on
+``tcp::1234`` (see :ref:`debugging`). The exception level is chosen automatically:
+
+* a standalone ITS → ``-M virt`` (EL1);
+* an ``…avz…`` ITS → ``-M virt,virtualization=on`` (EL2 for the hypervisor);
+* the presence of ``filesystem/flash0.img`` → ARM-TF chain (``secure=on``, EL3).
+
+.. note::
+
+   To quit QEMU from the console, type ``Ctrl-x`` then ``a``. Inside the guest,
+   **Ctrl-C** interrupts the foreground application or cancels the shell line —
+   see :ref:`Console Ctrl-C <console_sigint>`.
 
 Running the AVZ hypervisor
 ==========================
 
-To run the hypervisor with an agency guest on virt64:
+To run SO3 as a **guest** on top of AVZ (``CONFIG_SOO=n``, no capsules):
+
+**1.** Select the AVZ ITS (and, optionally, a secure boot chain) in
+``build/conf/local.conf``:
+
+.. code-block:: text
+
+   IB_TARGET_ITS:so3:virt64 = "virt64_avz"
+   # IB_BOOT_CHAIN ?= "atf+uboot"     # or "full" (ATF + OP-TEE); default is bare U-Boot
+
+**2.** Build the hypervisor and (re)assemble the BSP, then deploy:
 
 .. code-block:: bash
 
-   # 1. Build the hypervisor (out-of-tree into avz/)
-   cd avz
-   ./build.sh virt64_avz_defconfig
-   ./build.sh
+   ./scripts/build.sh -x avz
+   ./scripts/build.sh bsp-so3
+   ./scripts/deploy.sh bsp-so3
 
-   # 2. Build the agency guest (a standalone SO3) and pack the FIT image
-   cd ../so3
-   make virt64_defconfig
-   make -j$(nproc)
-   cd ../target
-   ./mkuboot.sh virt64_avz_so3        # produces virt64_avz_so3.itb
+**3.** Run — ``st.sh`` enables EL2 automatically because the ITS is an AVZ image:
 
-   # 3. Deploy that .itb as the image U-Boot loads (virt64.itb) and run
-   #    (see deploy.sh / the filesystem mount scripts), then:
-   cd ..
-   ./stv
+.. code-block:: bash
+
+   ./scripts/st.sh
+
+.. note::
+
+   AVZ boot produces **two ITBs** — the AVZ ITB (``virt64_avz.itb``) and the
+   SO3 guest ITB (``virt64_so3_guest.itb``, built automatically) — and the
+   deploy stages both on the boot partition with ``uEnv_virt64_avz.txt``; U-Boot
+   loads them and jumps via its ``e1c-boot`` command. No extra step is needed,
+   but see :ref:`two_itb_boot` for details.
 
 A successful run shows the **AVZ Hypervisor** banner, the *Loading Guest Domain*
-trace and finally the agency reaching the ``so3%`` prompt. See :ref:`avz` for
+trace, and finally the guest reaching the ``so3%`` prompt. See :ref:`avz` for
 what happens under the hood.
+
+Adding a user application
+=========================
+
+User applications live in ``so3/usr/src/``; adding a C file means adding it to the
+relevant ``CMakeLists.txt``. Rebuild and redeploy the user space:
+
+.. code-block:: bash
+
+   ./scripts/build.sh -x usr-so3
+   ./scripts/deploy.sh bsp-so3      # repack the rootfs into the FIT image + write the boot media
+
+See :ref:`user_space` for the user-space build details and the bundled
+applications.
 
 Running with Docker
 ===================
 
-SO3 can also be built and run inside a Docker container. The ``Dockerfile`` is
-at the repository root, and two helpers start the container:
+SO3 can also be built and run inside a container. The Dockerfiles live under
+``docker/`` and two helpers under ``docker/scripts/`` start the lv_perf image:
 
 .. code-block:: bash
 
-   docker build -t so3/virt64 .
-   ./drun            # run
-   ./drunit          # run, interactive
+   docker/scripts/lvperf-run.sh      # run the LVGL benchmark (container exits with the output)
+   docker/scripts/lvperf-shell.sh    # open an interactive shell in the container
 
-Deploying a *Hello World*
-=========================
-
-User applications live in ``usr/src/``; adding a C file means adding it to the
-relevant ``CMakeLists.txt``. Binaries are produced under ``usr/build/`` and the
-files to be deployed are gathered in ``usr/build/deploy/``. After building the
-user space, deploy the apps into the ramfs with:
-
-.. code-block:: bash
-
-   ./deploy.sh -u
-
-This works with a ramfs configuration: the user applications are transferred
-into the ``.itb`` image that is written to the single partition of the SD-card.
-See :ref:`user_space` for the user-space build details.
+Both default to ``so3-lvperf64b``; pass ``so3-lvperf32b`` as an argument for the
+32-bit image. Inside the container the same ``source env.sh`` / ``build.sh`` /
+``deploy.sh`` / ``st.sh`` workflow applies.

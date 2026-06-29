@@ -1,0 +1,142 @@
+#!/bin/bash
+
+# Copyright (c) 2025-2026 EDGEMTech SA
+
+# Resolve project root from this script's own location, cd there, and
+# source env.sh — prompting the user first if the parent shell points
+# at a different tree. Every relative path below (filesystem/...,
+# build/conf/local.conf) is anchored on that root. See
+# scripts/common/setup_env.sh.
+
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/setup_env.sh"
+
+QEMU_AUDIO_DRV="none"
+GDB_PORT_BASE=1234
+USR_OPTION=$1
+# QEMU_BIN is selected per IB_PLATFORM below (qemu-system-aarch64 for
+# virt64, qemu-system-arm for virt32).
+
+N_QEMU_INSTANCES=`ps -A | grep qemu-system | wc -l`
+
+launch_qemu() {
+    QEMU_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
+
+    GDB_PORT=$((${GDB_PORT_BASE} + ${N_QEMU_INSTANCES}))
+
+    echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
+    echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
+
+    while IFS= read -r line; do
+      # Check if the line starts with "IB_PLATFORM"
+      if [[ $line == IB_PLATFORM* ]]; then
+    	  # Extract the value between the quotes
+    	  value=$(echo "$line" | awk -F'"' '{print $2}')
+    
+    	  # Set the IB_PLATFORM variable to the extracted value
+    	  IB_PLATFORM="$value"
+    	  break
+      fi
+    done < build/conf/local.conf
+
+    # Detect a SO3-on-AVZ boot from the selected (uncommented) so3 ITS — AVZ
+    # is an EL2 hypervisor, so QEMU must expose EL2 (virtualization=on).
+    SO3_ITS=$(grep -E "^IB_TARGET_ITS:so3:${IB_PLATFORM}\b" build/conf/local.conf | awk -F'"' '{print $2}' | tail -1)
+
+    if [ "$IB_PLATFORM" != "virt64" ] && [ "$IB_PLATFORM" != "virt32" ]; then
+        echo "ERROR: stg.sh only supports IB_PLATFORM=virt64 or virt32, but" >&2
+        echo "       build/conf/local.conf has IB_PLATFORM=\"$IB_PLATFORM\"." >&2
+        echo "" >&2
+        echo "       Edit build/conf/local.conf to set" >&2
+        echo "           IB_PLATFORM ?= \"virt64\"   (or \"virt32\")" >&2
+        echo "       then rebuild+redeploy before retrying stg.sh." >&2
+        exit 1
+    fi
+
+    # SO3 now uses the ABSOLUTE pointer (so3,absmouse — see the so3 QEMU patch
+    # and devices/input/absmouse.c), so QEMU runs in absolute pointer mode: the
+    # host pointer maps 1:1 onto the guest with NO grab and NO warp. This sheds
+    # the relative-mouse grab workaround (grab-on-hover) entirely.
+    #
+    # GDK_BACKEND=x11 is still needed on a FRACTIONALLY-SCALED HiDPI Wayland
+    # panel: there QEMU's GTK reports pointer coordinates in a different scale
+    # than the framebuffer surface, so the absolute mapping comes out OFFSET
+    # (host vs guest cursor shifted) — fine on a 1x external monitor, shifted
+    # on the laptop. Routing GTK through XWayland gives a uniform pointer-to-
+    # surface mapping, so the cursors line up on every monitor. (GDK_SCALE just
+    # keeps the window native-sized; not load-bearing for the mapping.)
+    # Harmless on a real X11 session.
+    export GDK_BACKEND=x11
+    export GDK_SCALE=1
+    export GDK_DPI_SCALE=1
+
+    if [ "$IB_PLATFORM" == "virt64" ]; then
+    QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
+    echo Starting on virt64
+    # See st.sh for rationale and for the flash0.img-presence boot-mode
+    # heuristic (AVZ chain vs bare U-Boot).
+    # Like virt32, SO3 drives the PL111 CLCD + PL050 keyboard/mouse that the
+    # so3 QEMU patch wires unconditionally into '-M virt' (virt64.dts has the
+    # clcd@08800000 / pl050 nodes). It has NO virtio-gpu driver, so we do not
+    # add virtio-gpu/keyboard/mouse here. Use the GTK backend: SDL does not
+    # present the PL111 console's surface (the window stays black even though
+    # the framebuffer is rendered); GTK shows it and its View menu lists every
+    # console.
+
+    if [ -f filesystem/flash0.img ]; then
+        # ATF/OP-TEE chain (flash0/FIP): EL3 (secure=on) + EL2.
+        MACHINE_OPT="-M virt,virtualization=on,gic-version=2,secure=on"
+        BOOT_OPT="-drive if=pflash,format=raw,file=filesystem/flash0.img"
+    elif [[ "$SO3_ITS" == *avz* ]]; then
+        # SO3-on-AVZ via the ITS, no ATF: AVZ runs at EL2, so QEMU must
+        # expose it (virtualization=on). U-Boot here is virt64_defconfig
+        # (EL2-aware) and hands off to AVZ at EL2.
+        echo "AVZ guest (ITS=$SO3_ITS) — enabling EL2 (virtualization=on)"
+        MACHINE_OPT="-M virt,gic-version=2,virtualization=on"
+        BOOT_OPT="-kernel u-boot/u-boot"
+    else
+        MACHINE_OPT="-M virt,gic-version=2"
+        BOOT_OPT="-kernel u-boot/u-boot"
+    fi
+    ${QEMU_BIN} $@ ${USR_OPTION} \
+		-smp 4  \
+		-serial mon:stdio  \
+		${MACHINE_OPT} -cpu cortex-a72  \
+		${BOOT_OPT} \
+		-device virtio-blk-device,drive=hd0 \
+		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
+		-display gtk,zoom-to-fit=off \
+		-m 1024 \
+		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+        	-gdb tcp::${GDB_PORT}
+	fi
+
+    if [ "$IB_PLATFORM" == "virt32" ]; then
+    QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-arm"
+    echo Starting on virt32
+    # Graphical sibling of st.sh's virt32 branch: bare U-Boot chain
+    # (no ATF / flash on this platform), cortex-a15.
+    # NOTE: SO3 drives the PL111 CLCD + PL050 keyboard/mouse that the
+    # so3 QEMU patch wires unconditionally into '-M virt' (see boot log:
+    # pl111_init / pl050_init_*). It has NO virtio-gpu driver, so we must
+    # NOT add virtio-gpu/keyboard/mouse here.
+    # Use the GTK backend: its View menu lists every graphic console, so the
+    # PL111 panel is reachable even if QEMU registers more than one console.
+    ${QEMU_BIN} $@ ${USR_OPTION} \
+		-smp 4  \
+		-serial mon:stdio  \
+		-M virt -cpu cortex-a15  \
+		-kernel u-boot/u-boot \
+		-device virtio-blk-device,drive=hd0 \
+		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
+		-display gtk,zoom-to-fit=off \
+		-m 1024 \
+		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+        	-gdb tcp::${GDB_PORT}
+	fi
+
+    QEMU_RESULT=$?
+}
+
+launch_qemu

@@ -1,0 +1,10 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/arch/arm/mach-imx/imx8m/soc.c	2025-11-21 14:56:51.329079605 +0100
++++ ./arch/arm/mach-imx/imx8m/soc.c	2025-11-21 14:54:55.153940138 +0100
+@@ -955,6 +955,7 @@
+ 		"/soc@0/video-codec@38300000",
+ 		"/soc@0/video-codec@38310000",
+ 		"/soc@0/blk-ctrl@38330000",
++		"/soc@0/blk-ctl@38330000",
+ 	};
+ 
+ 	if (is_imx8mq())

@@ -1,0 +1,63 @@
+/*
+ * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ *
+ * SO3 guest ITB for RPi4 (64-bit). Carries the SO3 OS kernel (guest) +
+ * its device tree + minimal rootfs. Paired with rpi4_64_avz.itb and
+ * loaded by U-Boot's e1c-boot command, which passes this ITB to AVZ in
+ * x1; AVZ's loadAgency() loads the agency guest from it.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "SO3 guest bundle for RPi4 (64-bit)";
+
+	images {
+
+		so3 {
+			description = "SO3 OS kernel (guest)";
+			data = /incbin/("${IB_SO3_PATH}/so3/so3.bin");
+			type = "guest";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x10080000>;
+			entry = <0x10080000>;
+		};
+
+		fdt {
+			description = "SO3 guest device tree (AVZ-exposed)";
+			data = /incbin/("${IB_SO3_PATH}/so3/dts/rpi4_64.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x15000000>;
+		};
+
+		ramfs {
+			description = "SO3 environment minimal rootfs";
+			data = /incbin/("${IB_ROOTFS_PATH}/rootfs.fat");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x15c00000>;
+		};
+	};
+
+	configurations {
+		default = "capsule";
+
+		capsule {
+			description = "SO3 guest on RPi4 64-bit";
+			loadables = "so3";
+			fdt = "fdt";
+			ramdisk = "ramfs";
+		};
+	};
+};

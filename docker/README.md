@@ -1,105 +1,121 @@
-**This repository contains Dockerfiles related to so3.**
+**This directory contains the Dockerfiles related to SO3.**
 
-# So3 Environnement 
+All images build SO3 with the **Infrabase** (bitbake) build system. The container
+holds the whole repository at `/so3`; inside it the kernel is at `/so3/so3/so3`,
+the user space at `/so3/so3/usr` and the bundled LVGL at `/so3/so3/usr/lib/lvgl`.
 
-- [Dockerfile.env](./Dockerfile.env)
+# Base build environment
 
-An ubuntu based image with necessary prerequisites to build and run so3.
+- [`Dockerfile.toolchains`](./Dockerfile.toolchains) — Ubuntu image with the
+  bitbake host dependencies, the SO3 build tools (dtc, u-boot-tools, mtools, QEMU
+  build deps, …) and the **bare-metal kernel** cross toolchains
+  (`aarch64-none-elf`, `arm-none-eabi`). The MUSL user-space toolchains are **not**
+  built here — they are produced by the `meta-toolchain` layer during the build.
+- [`Dockerfile.env`](./Dockerfile.env) — a thin layer over the toolchains image,
+  used by the `Build` CI to compile SO3 with the repository mounted at `/so3`.
 
-# LVGL Performance Test Docker Images
+# LVGL performance test images
 
-- [Dockerfile.lvperf_32b](./Dockerfile.lvperf_32b)
-- [Dockerfile.lvperf_64b](./Dockerfile.lvperf_64b)
+- [`Dockerfile.lvperf_32b`](./Dockerfile.lvperf_32b)
+- [`Dockerfile.lvperf_64b`](./Dockerfile.lvperf_64b)
 
-Alpine-based images with `so3` pre-compiled using the `virtXX_lvperf_defconfig` configuration.
-These images are designed to run [LVGL](https://lvgl.io/) performance tests.
+Images with SO3 pre-built using the `virtXX_lvperf_defconfig` configuration, used
+to run [LVGL](https://lvgl.io/) performance tests under the patched QEMU.
 
 ## Getting Started
 
-**Build** the images from the main repository folder (`so3`):
+**Build** the images from the repository root. Use **`--network=host`**: the
+image build fetches the components (QEMU tarball, U-Boot/AVZ git) via
+Infrabase, and on hosts where the Docker *bridge* network can't resolve/reach
+external mirrors (common with systemd-resolved or a VPN), the build's
+`do_fetch` fails with a wget network error — host networking uses the host
+resolver and works.
 ```bash
-# 32-bit Version
-docker build . -f docker/Dockerfile.lvperf_32b -t so3-lv_perf32b
-# 64-bit Version
-docker build . -f docker/Dockerfile.lvperf_64b -t so3-lv_perf64b
+# 32-bit
+docker build --network=host . -f docker/Dockerfile.lvperf_32b -t so3-lvperf32b
+# 64-bit
+docker build --network=host . -f docker/Dockerfile.lvperf_64b -t so3-lvperf64b
 ```
 
-**Run** the images:
+**Run** them. `--privileged` is **required**: the SD-card image is created with
+`losetup`/`mkfs`/`mount` (this cannot be done during `docker build`, which is not
+privileged — hence the build-time / run-time split below). Add `--network=host`
+too (same reason as the build — the run-time `usr-so3` rebuild may fetch LVGL):
 ```bash
-# 32-bit Version
-docker run -it --privileged -v /dev:/dev so3-lv_perf32b
-# 64-bit Version
-docker run -it --privileged -v /dev:/dev so3-lv_perf64b
+docker run -it --privileged --network=host -v /dev:/dev so3-lvperf64b   # or so3-lvperf32b
 ```
 
 ## Technical Details
 
-When running the Docker image, the following operations are performed:
-1. Creates a disk image file
-2. Builds `usr` in `Release` mode
-3. Deploys `so3`, `u-boot` and `usr` to the disk image
-4. Launches `so3` with a standard version of `qemu`
+- **At image-build time** (non-privileged), Infrabase builds the emulator and the
+  full BSP. `build.sh bsp-so3` is privilege-free: it only compiles (the MUSL
+  toolchain via `meta-toolchain`, the kernel, the user space, U-Boot) and creates
+  an empty `rootfs.fat`. The privileged rootfs loop-mount is deferred to
+  `deploy.sh`.
+  ```
+  build.sh -x qemu  &&  build.sh bsp-so3
+  ```
+- **At container-run time** (privileged), the entrypoint rebuilds the user space
+  (picking up a mounted LVGL), creates+formats the SD-card image (`build.sh -x filesystem` —
+  `losetup`/`fdisk`/`mkfs`, the privileged step that cannot run at build time),
+  then `deploy.sh` assembles the FIT, populates the rootfs and writes the SD-card,
+  and finally QEMU runs:
+  ```
+  build.sh -x usr-so3  &&  build.sh -x filesystem  &&  deploy.sh bsp-so3  &&  docker/scripts/run.sh
+  ```
 
-With the `virtXX_lvperf_defconfig` configuration, the kernel will run `lvgl_benchmark.elf` instead of `sh.elf` after startup.
+With `virtXX_lvperf_defconfig` the kernel runs the LVGL benchmark as its init
+program; when it finishes the kernel performs a **semihosting exit**, so QEMU
+(`-semihosting`) halts and the container exits with the perf output on stdout.
 
 ## Adding Additional Dependencies
 
-To install extra dependencies without rebuilding the entire image, you can mount a shell script at `/so3/install_dependencies.sh`.
-Please note that the image is based on Alpine Linux.
+To install extra dependencies without rebuilding the image, mount a shell script
+at `/so3/install_dependencies.sh` (the entrypoint runs it first).
 
 ## Persistence
 
-Running the image repeatedly will execute all steps each time. To improve efficiency, you can mount Docker volumes to preserve data between runs:
+Each run repeats the run-time steps. To cache between runs, mount the bitbake work
+tree and the boot media as volumes:
 
-- `/persistence` - Stores disk image files
-- `/so3/usr/build` - Contains build artifacts
+- `/so3/build/tmp` — the bitbake work tree (toolchain, QEMU, kernel, usr, sstate)
+- `/so3/filesystem` — the generated SD-card image
 
-Example with mounted volumes:
 ```bash
 docker run -it --privileged \
-    -v /dev:/dev \ 
-    -v $(pwd)../so3-persistence:/persistence \
-    -v $(pwd)../so3-usr-build-64b:/so3/usr/build \
-    so3-lv_perf64b
+    -v /dev:/dev \
+    -v "$(pwd)/../so3-build-tmp-64b:/so3/build/tmp" \
+    -v "$(pwd)/../so3-filesystem-64b:/so3/filesystem" \
+    so3-lvperf64b
 ```
 
-> [!NOTE]  
-> We strongly recommend using separate `usr/build` folders for 32-bit and 64-bit versions to avoid compatibility issues.
+> [!NOTE]
+> Use separate cache volumes for the 32-bit and 64-bit images.
 
 ## Customization Options
 
 ### LVGL
 
-The `lvgl` source code is located in `/so3/usr/lib/lvgl` and the configuration in `/so3/usr/lib/lv_conf.h`.
-You can mount your own version of LVGL as follows:
+The LVGL source lives at `/so3/so3/usr/lib/lvgl` and its configuration at
+`/so3/so3/usr/lib/lv_conf.h`. Mount your own to benchmark them — the run-time
+`build.sh -x usr-so3` rebuilds the user space against them:
 
 ```bash
 docker run -it --privileged \
-    -v /dev:/dev \ 
-    -v <lvgl_path>:/so3/usr/lib/lvgl \
-    -v <lv_conf_path>:/so3/usr/lib/lv_conf.h \
-    so3-lv_perf64b
+    -v /dev:/dev \
+    -v <lvgl_path>:/so3/so3/usr/lib/lvgl \
+    -v <lv_conf_path>:/so3/so3/usr/lib/lv_conf.h \
+    so3-lvperf64b
 ```
 
-### SO3
+### SO3 kernel / U-Boot
 
-While not the primary purpose of these images, you can test a patched version of `so3` by mounting it:
-
-```bash
-docker run -it --privileged \
-    -v /dev:/dev \ 
-    -v <patched_so3.bin>:/so3/so3/so3.bin \
-    so3-lv_perf64b
-```
-
-### U-boot
-
-Similarly, you can test a custom `u-boot` version:
+You can also override the prebuilt kernel or U-Boot binaries:
 
 ```bash
 docker run -it --privileged \
-    -v /dev:/dev \ 
+    -v /dev:/dev \
+    -v <patched_so3.bin>:/so3/so3/so3/so3.bin \
     -v <patched_u-boot>:/so3/u-boot/u-boot \
-    -v <new_uenv.d>:/so3/u-boot/uEnv.d \
-    so3-lv_perf64b
+    so3-lvperf64b
 ```

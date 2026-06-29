@@ -1,29 +1,60 @@
-# Create a Docker image which prepare the toolchains needed by SO3 env.
+# Base image for the SO3 Infrabase build environment.
 #
-# Copyright (c) 2025 REDS Institute, HEIG-VD
+# Copyright (c) 2025-2026 REDS Institute, HEIG-VD
 #
-# Set 'aarch64-none-elf' toolchain & build arm & aarch64 musl toolchains
+# Provides everything the Infrabase (bitbake) build needs on the host side:
+#   - bitbake / Yocto host dependencies
+#   - the SO3-specific build tools (dtc, u-boot-tools, mtools, qemu build deps, ...)
+#   - the bare-metal KERNEL cross toolchains: aarch64-none-elf (downloaded) and
+#     gcc-arm-none-eabi (apt, for 32-bit).
+#   - the GNU/Linux cross toolchains used to build U-Boot (IB_TOOLCHAIN):
+#     aarch64-none-linux-gnu (downloaded, virt64/rpi4_64) and arm-linux-gnueabihf
+#     (apt, virt32).
 #
-# Note: 'arm-none-eabi-' is installed for package manager in the others docker images
+# The MUSL user-space toolchains are NOT built here anymore: they are produced by
+# the `meta-toolchain` layer during the Infrabase build itself.
 
 FROM ubuntu:24.04 AS toolchains-utils
 
-RUN apt-get update && apt-get install -y gcc-arm-none-eabi gcc-11 g++-11 git make \
-    patch sudo xz-utils wget && \
-	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 10 && \
-	update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 10 && \
-	apt clean && \
-	rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 
-# Download aarch64-none-elf toolchain
-RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
-RUN tar -xvf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
-RUN rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        # --- bitbake / Yocto host deps ---
+        gawk wget git diffstat unzip texinfo build-essential chrpath socat cpio \
+        python3 python3-pip python3-pexpect python3-git python3-jinja2 \
+        xz-utils debianutils iputils-ping file locales zstd lz4 \
+        ca-certificates sudo \
+        # --- SO3 / kernel / u-boot / image tooling ---
+        # (deploy.sh populates the rootfs/sdcard with rsync + parted + losetup +
+        #  sfdisk + mkfs.{fat,ext4}; the rest come from util-linux/dosfstools.)
+        bc flex bison libssl-dev device-tree-compiler u-boot-tools \
+        mtools dosfstools fdisk util-linux libncurses-dev rsync parted \
+        cmake ninja-build make patch pkg-config \
+        # --- QEMU build deps (meta-qemu builds with --enable-sdl --enable-slirp
+        #     and the GTK display for the graphical launcher) ---
+        libglib2.0-dev libpixman-1-dev libgtk-3-dev libslirp-dev libsdl2-dev \
+        # --- 32-bit kernel toolchain ---
+        gcc-arm-none-eabi \
+        # --- 32-bit GNU/Linux toolchain for U-Boot (IB_TOOLCHAIN:arm) ---
+        gcc-arm-linux-gnueabihf && \
+    locale-gen en_US.UTF-8 && \
+    pip3 install --break-system-packages pcpp && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="$PATH:/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin"
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
-COPY  toolchains /toolchains
-RUN   /toolchains/build-toolchain.sh && rm -rf /toolchains/musl-cross-make
+# Bare-metal aarch64 kernel toolchain (CONFIG_CROSS_COMPILE="aarch64-none-elf-").
+RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz && \
+    tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz -C /opt && \
+    rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf.tar.xz
 
-ENV   PATH=$PATH:/toolchains/aarch64-linux-musl/bin
-ENV   PATH=$PATH:/toolchains/arm-linux-musleabihf/bin
+# aarch64 GNU/Linux toolchain for U-Boot (IB_TOOLCHAIN:virt64 / :rpi4_64 =
+# "aarch64-none-linux-gnu"). Ubuntu's gcc-aarch64-linux-gnu uses a different
+# prefix (aarch64-linux-gnu-), so download the Arm GNU Toolchain to get the
+# exact "aarch64-none-linux-gnu-" prefix the recipes expect.
+RUN wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz && \
+    tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz -C /opt && \
+    rm arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+
+ENV PATH="/opt/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-elf/bin:/opt/arm-gnu-toolchain-12.3.rel1-x86_64-aarch64-none-linux-gnu/bin:$PATH"

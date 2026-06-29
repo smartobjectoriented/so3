@@ -1,0 +1,4 @@
+--- a/tools/boot/fdt_region.c
++++ b/tools/boot/fdt_region.c
+@@ -0,0 +1 @@
++#include <../boot/fdt_region.c>

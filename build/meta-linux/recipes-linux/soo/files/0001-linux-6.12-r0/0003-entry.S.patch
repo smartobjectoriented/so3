@@ -1,0 +1,30 @@
+--- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/arch/arm64/kernel/entry.S	2024-11-17 23:15:08.000000000 +0100
++++ ./arch/arm64/kernel/entry.S	2025-08-29 08:46:39.976604032 +0200
+@@ -28,6 +28,11 @@
+ #include <asm/thread_info.h>
+ #include <asm/asm-uaccess.h>
+ #include <asm/unistd.h>
++#ifdef CONFIG_SOO
++#include <soo/uapi/soo.h>
++
++.extern __stack_alignment_fault
++#endif
+ 
+ 	.macro	clear_gp_regs
+ 	.irp	n,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29
+@@ -1096,3 +1101,15 @@
+ SYM_CODE_END(__sdei_handler_abort)
+ NOKPROBE(__sdei_handler_abort)
+ #endif /* CONFIG_ARM_SDE_INTERFACE */
++
++#ifdef CONFIG_SOO
++
++.align 5
++
++SYM_CODE_START(__avz_hypercall)
++
++	hvc #0
++	ret
++
++#endif /* CONFIG_SOO */
++

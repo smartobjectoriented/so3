@@ -104,18 +104,23 @@ Boot flow
 
 SO3 is started by **U-Boot**, which loads a **FIT image** (``.itb``) containing
 the kernel, the device-tree blob and the root filesystem. In the AVZ
-configuration the FIT also contains the hypervisor and the agency guest.
+configuration U-Boot loads the hypervisor and the guest as **two separate
+ITBs** — the AVZ ITB (``<plat>_avz``) and the SO3 guest ITB
+(``<plat>_so3_guest``) — on every AVZ platform (``virt64``, ``rpi4_64``,
+``verdin_imx8mp``); see :ref:`build_system`.
 
 .. figure:: img/so3_boot.png
    :width: 100%
 
    Boot flow from U-Boot to the interactive shell.
 
-1. **U-Boot** loads the FIT image from the boot medium and jumps to the entry
-   point of the first component.
+1. **U-Boot** loads the FIT image(s) from the boot medium and jumps to the entry
+   point of the first component. In the ``virt64`` two-ITB AVZ boot it loads both
+   the AVZ and guest ITBs and enters AVZ through the ``e1c-boot`` command, which
+   passes the AVZ FIT in ``x0`` and the guest ITB in ``x1``.
 2. In the **AVZ** configuration, control enters the hypervisor
    (``avz_start()`` at EL2); AVZ sets up the stage-2 tables, *loads the guest
-   domain* and ``eret``\ s into the agency at EL1. In the **standalone**
+   domain* and ``eret``\ s into the guest at EL1. In the **standalone**
    configuration U-Boot jumps straight to the SO3 kernel entry
    (``__start`` → ``kernel_start()``) at EL1.
 3. The kernel brings itself up: ``memory_init()`` (frame table + MMU),

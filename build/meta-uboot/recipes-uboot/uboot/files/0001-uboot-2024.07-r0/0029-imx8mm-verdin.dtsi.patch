@@ -1,0 +1,11 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/dts/upstream/src/arm64/freescale/imx8mm-verdin.dtsi	2025-11-21 14:56:52.006308725 +0100
++++ ./dts/upstream/src/arm64/freescale/imx8mm-verdin.dtsi	2025-11-21 14:54:55.548301147 +0100
+@@ -145,7 +145,7 @@
+ 		regulator-max-microvolt = <3300000>;
+ 		regulator-min-microvolt = <3300000>;
+ 		regulator-name = "+V3.3_SD";
+-		startup-delay-us = <2000>;
++		startup-delay-us = <20000>;
+ 	};
+ 
+ 	reserved-memory {

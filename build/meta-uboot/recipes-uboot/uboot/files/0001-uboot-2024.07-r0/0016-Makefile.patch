@@ -1,0 +1,12 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/board/toradex/smarc-imx8mp/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ ./board/toradex/smarc-imx8mp/Makefile	2025-11-21 14:54:55.267330121 +0100
+@@ -0,0 +1,9 @@
++# SPDX-License-Identifier: GPL-2.0-or-later
++# Copyright (C) 2024 Toradex
++
++obj-y += smarc-imx8mp.o
++
++ifdef CONFIG_SPL_BUILD
++obj-y += spl.o
++obj-$(CONFIG_IMX8M_LPDDR4) += lpddr4_timing.o
++endif

@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 
-names=(modes architecture boot memory exception_levels syscall avz capsule device_model)
+names=(modes architecture boot memory exception_levels syscall avz capsule device_model build io)
 
 i=0
 for name in "${names[@]}"; do

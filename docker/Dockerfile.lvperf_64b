@@ -1,85 +1,59 @@
-FROM ghcr.io/smartobjectoriented/so3-toolchains:latest AS baseimage
+# LVGL performance image for SO3 (virt64), built with Infrabase.
+#
+# Copyright (c) 2025-2026 REDS Institute, HEIG-VD
+#
+# Image build (non-privileged): warm the Infrabase component builds — the MUSL
+# toolchain (meta-toolchain), QEMU (meta-qemu), U-Boot, the kernel and the user
+# space — so that a `docker run` only has to (re)build the user space against a
+# possibly-mounted LVGL, assemble the boot image and run the perf test.
+#
+# Container run (REQUIRES --privileged: the SD-card image is created via
+# losetup/mkfs/mount): rebuild usr, assemble + deploy the FIT/sdcard, then launch
+# the patched QEMU on the lv_perf configuration. The virt64_lvperf kernel runs
+# the LVGL benchmark as its init program; when it finishes, the root process
+# exits and the kernel performs a semihosting exit, so QEMU (-semihosting) halts
+# and the container exits with the perf output.
+#
+# Run:   docker run -it --privileged -v /dev:/dev so3-lvperf64b
+# See docker/README.md for the LVGL/SO3/U-Boot mount-override options.
+
+FROM ghcr.io/smartobjectoriented/so3-toolchains:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
-
-FROM baseimage AS builder
-
-RUN apt update && \
-    apt install -y build-essential cmake qemu-system-arm \
-    bison flex libssl-dev device-tree-compiler && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /so3
-
-COPY u-boot u-boot
-COPY so3 so3
-
-RUN echo 'PLATFORM := virt64' > build.conf
-
-RUN cd so3;\
-    make virt64_lvperf_defconfig;\
-    sed -i 's/CONFIG_USER_INIT_PROGRAM="lvgl_benchmark.elf"/CONFIG_USER_INIT_PROGRAM="init.elf"/g' .config; \
-    make -j`nproc`
-
-# Return early from the puts function essentially disabling all u-boot output
-RUN sed -i '/void puts(const char \*s)/,/{/s/{/{\n\treturn;/' u-boot/common/console.c
-
-RUN cd u-boot;\
-    make CROSS_COMPILE=aarch64-none-elf- virt64_defconfig;\
-    sed -i 's/CONFIG_BOOTDELAY=2/CONFIG_BOOTDELAY=0/g' .config; \
-    make CROSS_COMPILE=aarch64-none-elf- -j`nproc`
-
-FROM baseimage AS runner
-
-RUN apt update && apt install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    qemu-system-arm \
-    util-linux \
-    device-tree-compiler \
-    u-boot-tools \
-    dosfstools \
-    python3 \
-    python3-pip \
-    bash patch git && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN pip install --break-system-packages pcpp
-
-WORKDIR /so3
-
-RUN echo 'PLATFORM := virt64' > build.conf
-
-RUN mkdir -p so3/dts
-COPY --from=builder /so3/so3/dts/virt64_lvperf.dtb so3/dts
-COPY --from=builder /so3/so3/so3.bin so3/so3.bin
-
-RUN mkdir -p u-boot
-COPY --from=builder /so3/u-boot/u-boot u-boot
-
-COPY u-boot/uEnv.d u-boot/uEnv.d
-
-RUN mkdir target
-RUN mkdir -p usr
-RUN mkdir -p docker/scripts
-RUN mkdir -p rootfs
-
-COPY usr usr
-RUN printf "run lvgl_benchmark.elf\nexit\n" > usr/out/commands.ini
-COPY target/virt64_lvperf.its target
-COPY docker/scripts docker/scripts
-
-# Create an empty script that can be modified by mounting a volume in the same path
-# so we can add additional dependencies easily without rebuilding the whole image 
-RUN echo "#!/bin/sh" > install_dependencies.sh && chmod +x install_dependencies.sh 
-
-RUN rm -rf /var/cache/apk/*
-RUN rm -rf /usr/share/man /usr/share/doc /usr/share/info /var/cache/apk/*
-
 ENV QEMU_ARCH=aarch64
 ENV PLATFORM=virt64
 
-CMD ./install_dependencies.sh && ./docker/scripts/setup_ramfs.sh && ./docker/scripts/setup_filesystem.sh && ./docker/scripts/run.sh
+WORKDIR /so3
+
+# The whole repo is needed (build/ layers + conf, scripts/, env.sh, so3/).
+# build/tmp, the fetched u-boot/qemu/avz trees and .git are excluded via
+# .dockerignore; Infrabase re-fetches what it needs during the build below.
+COPY . /so3
+
+# Select the lv_perf virt64 build. Appended (last assignment wins) so they
+# override whatever the committed local.conf selects.
+RUN { \
+      echo ''; \
+      echo '# --- lv_perf (virt64) image overrides ---'; \
+      echo 'IB_PLATFORM = "virt64"'; \
+      echo 'IB_CONFIG:so3:virt64 = "virt64_lvperf_defconfig"'; \
+      echo 'IB_TARGET_ITS:so3:virt64 = "virt64_lvperf"'; \
+      echo 'IB_BOOT_CHAIN = ""'; \
+      echo 'EXTRA_OVERRIDES .= ":lvgl"'; \
+    } >> build/conf/local.conf
+
+# Build everything non-privileged: the emulator (meta-qemu) plus the full BSP.
+# `build.sh bsp-so3` is privilege-free — it only compiles (usr, u-boot, the
+# kernel, the MUSL toolchain) and creates an empty rootfs.fat; the privileged
+# rootfs loop-mount happens later, in deploy.sh.
+RUN bash -c 'set -e; . ./env.sh; build.sh -x qemu; build.sh bsp-so3'
+
+# Hook to add extra dependencies at run time without rebuilding the image.
+RUN printf '#!/bin/sh\n' > install_dependencies.sh && chmod +x install_dependencies.sh
+
+# Run time (REQUIRES --privileged): rebuild usr (picks up a mounted LVGL),
+# create+format the SD-card image (build.sh -x filesystem: losetup/fdisk/mkfs — privileged,
+# hence deferred here), then deploy.sh assembles the FIT, populates the rootfs
+# (loop-mount) and writes the sdcard; finally run the perf QEMU.
+CMD ["bash", "-c", "set -e; . ./env.sh; ./install_dependencies.sh; build.sh -x usr-so3; build.sh -x filesystem; deploy.sh bsp-so3; docker/scripts/run.sh"]

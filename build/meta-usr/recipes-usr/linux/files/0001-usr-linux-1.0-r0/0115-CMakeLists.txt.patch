@@ -1,0 +1,7 @@
+--- /dev/null	2026-06-22 09:52:29.860520107 +0200
++++ ./src/examples/CMakeLists.txt	2025-09-25 16:09:37.253015141 +0200
+@@ -0,0 +1,4 @@
++
++add_executable(hello hello.c)
++
++target_link_libraries(hello c)

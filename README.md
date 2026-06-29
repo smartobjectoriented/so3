@@ -1,29 +1,73 @@
+<p align="center">
+  <img src="doc/source/img/SO3_with_text.png" alt="SO3" width="420">
+</p>
 
+# Welcome to SO3 — the Smart Object Oriented (SOO) Operating System
 
-Welcome to the Smart Object Oriented (SOO) Operating System (code name SO3)
-***************************************************************************
+SO3 is a compact, lightweight, full-featured and extensible operating system,
+particularly well suited to embedded and IoT systems. It is the result of
+several years of research and development at the REDS Institute of HEIG-VD, has
+long been used as a teaching platform, and today forms the foundation of the
+**SOO** framework.
 
-For any information and discussions around SO3, please have a look at the [SO3 discussion forum](https://discourse.heig-vd.ch/c/so3).
+## A polymorphic operating system
 
-Feel free to post any comments/suggestions/remarks about SO3. If you wish to participate to development, please simply ask us and we will manage separate branches of development. 
+The most distinctive feature of SO3 is that it is **polymorphic**: from a
+**single source tree**, the very same code base can be configured and built into
+three different kinds of system.
 
-Furthermore, the full documentation is available [here](https://smartobjectoriented.github.io/so3)
+- **Standalone OS** — SO3 runs directly on the hardware as a conventional
+  monolithic OS (kernel at **EL1**, user applications at **EL0** on ARM64). This
+  is the configuration used for teaching and for plain embedded products.
+- **AVZ hypervisor** — built with `CONFIG_AVZ`, the same tree becomes **AVZ**
+  (*Agency VirtualiZer*), a lightweight type-1 hypervisor running at **EL2** that
+  hosts one or more guest *domains* — the primary guest being the *agency*.
+- **SO3 capsule (S3C)** — on top of AVZ, the **SOO** framework adds *SO3
+  capsules*: lightweight, self-contained guests running at EL1 beside a Linux
+  *agency* and cooperating with it through split (frontend/backend) drivers. The
+  capsule (guest) side lives in this repository; the Linux agency and the rest
+  of the SOO framework live in a separate one.
 
+SO3 targets ARM 32-bit and 64-bit, is multicore, and is kept *as compact as
+possible*. It ships with a MUSL-based user space and integrations such as LVGL,
+lwIP and MicroPython.
 
-We would like to extend our heartfelt thanks to our sponsors for their generous support in funding the development of the SO3 ecosystem, especially [HEIG-VD](http://www.heig-vd.ch) and the [Hasler Foundations](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation) 
+## Documentation
 
+The complete and up-to-date documentation — philosophy, architecture, build
+system, user guide, debugging and more — is the source of truth. It lives in
+[`doc/`](doc/) and is published at:
 
-Be careful with the requirements of various configs.
+### 👉 https://smartobjectoriented.github.io/so3
 
-- If you use avz -> ./st must have virtualization on => use ./stv
-- If you use the framebuffer (LVGL case) -> ./stg to start QEMU with the graphic display
+Start there for everything about building, configuring, running and debugging
+SO3.
 
-To build the patch related to the CI:
+## Supported targets
 
-- diff -Naur <source> <result> > so3_ci.patch
-and put the ci/so3_ci.patch in ci/
+- QEMU `virt` — ARM 32-bit and 64-bit
+- Raspberry Pi 4 (64-bit)
+- Toradex Verdin iMX8M Plus
 
-To apply the patch, in the root:
-- patch -p1 < ci/so3_ci.patch
+## Contributing
 
+The `main` branch always holds the last released version.
 
+> [!IMPORTANT]
+> Do not push directly to `main`. Each development is tracked by an issue with
+> its own branch; open a merge/pull request as soon as it is stable enough for
+> review.
+
+If you would like to contribute, please first get in touch with the maintainer at
+[daniel.rossier@heig-vd.ch](mailto:daniel.rossier@heig-vd.ch).
+
+## Credits
+
+We warmly thank our sponsors for their generous support in funding the
+development of the SO3 ecosystem, in particular
+[HEIG-VD](https://www.heig-vd.ch) and the
+[Hasler Foundation](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation).
+
+## License
+
+SO3 is released under the [GNU General Public License v2](LICENSE).

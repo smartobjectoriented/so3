@@ -1,0 +1,32 @@
+# /etc/inittab for sysvinit
+#
+# Format for each entry: <id>:<runlevels>:<action>:<process>
+#
+# id        == unique 1-4 char identifier
+# runlevels == runlevels for which the entry applies
+# action    == one of initdefault, sysinit, wait, respawn, ctrlaltdel, shutdown, etc.
+# process   == program to run
+
+id:3:initdefault:
+
+# Startup the system
+si0::sysinit:/bin/mount -t proc proc /proc
+si1::sysinit:/bin/mount -o remount,rw /
+si2::sysinit:/bin/mkdir -p /dev/pts
+si3::sysinit:/bin/mkdir -p /dev/shm
+si4::sysinit:/bin/mount -a
+si5::sysinit:/bin/mkdir -p /run/lock
+si6::sysinit:/bin/hostname -F /etc/hostname
+# now run any rc scripts
+rcS::sysinit:/etc/init.d/rcS
+
+# Put a getty on the serial port
+AMA0::respawn:/sbin/getty -L -l /usr/bin/auto-root-login -n ttyAMA0 0 vt100 # GENERIC_SERIAL
+
+# Stuff to do for the 3-finger salute
+ca::ctrlaltdel:/sbin/reboot
+
+# Stuff to do before rebooting (runlevels 0=halt, 6=reboot)
+sd0:06:wait:/etc/init.d/rcK
+sd1:06:wait:/sbin/swapoff -a
+sd2:06:wait:/bin/umount -a -r

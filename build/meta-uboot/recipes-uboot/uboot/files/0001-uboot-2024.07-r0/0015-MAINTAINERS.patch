@@ -1,0 +1,13 @@
+--- /home/rossierd/edgemtech/products/edgem1/build/tmp/work/uboot-2024.07-r0/uboot-2024.07/board/toradex/smarc-imx8mp/MAINTAINERS	1970-01-01 01:00:00.000000000 +0100
++++ ./board/toradex/smarc-imx8mp/MAINTAINERS	2025-11-21 14:54:55.267319243 +0100
+@@ -0,0 +1,10 @@
++Toradex Smarc iMX8M Plus
++F:	arch/arm/dts/imx8mp-toradex-smarc-dev-u-boot.dtsi
++F:	board/toradex/smarc-imx8mp/
++F:	board/toradex/common/
++F:	configs/toradex-smarc-imx8mp_defconfig
++F:	doc/board/toradex/toradex-smarc-imx8mp.rst
++F:	include/configs/toradex-smarc-imx8mp.h
++M:	Francesco Dolcini <francesco.dolcini@toradex.com>
++S:	Maintained
++W:	https://www.toradex.com/computer-on-modules/smarc-arm-family/nxp-imx-8m-plus

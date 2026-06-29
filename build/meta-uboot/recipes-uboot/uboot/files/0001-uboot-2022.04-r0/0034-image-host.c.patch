@@ -1,0 +1,4 @@
+--- a/tools/boot/image-host.c
++++ b/tools/boot/image-host.c
+@@ -0,0 +1 @@
++#include <../boot/image-host.c>

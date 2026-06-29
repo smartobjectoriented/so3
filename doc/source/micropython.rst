@@ -21,10 +21,11 @@ Using Micropython in the emulated environment
 
    Micropython currently works only for the virt64 platform
    
-Micropython is built along with the rest of the user-space applications. The "usr/build.sh" script 
-contains command lines to execute the Makefile found in the "usr/src/micropython/ports/soo" folder
-and export the resulting "firmware.elf" executable in the "deploy" folder where all the other 
-executables are sent. The executable is renamed "uPython.elf" at the same time for the sake of clarity
+Micropython is built along with the rest of the user space (the ``usr-so3``
+recipe — ``./scripts/build.sh -x usr-so3``; see :ref:`user_space`). Its CMake
+rules drive the Makefile in ``so3/usr/src/micropython/ports/soo`` and the
+resulting ``firmware.elf`` is renamed ``uPython.elf`` and gathered with the other
+applications for the root filesystem.
    
 Once inside SO3, MicroPython can be launched like any other program::
 

@@ -1,0 +1,4 @@
+--- a/tools/boot/image-fit.c
++++ b/tools/boot/image-fit.c
+@@ -0,0 +1 @@
++#include <../boot/image-fit.c>
