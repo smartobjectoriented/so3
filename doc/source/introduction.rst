@@ -49,9 +49,9 @@ SO3 capsule
 .. note::
 
    *SO3 Capsule*, abbreviated **S3C**, is the current name and acronym for what
-   older code and papers called a *Mobile Entity* (ME). The code base now uses
+   older code and papers called a *Mobile Entity* (ME). The code base uses
    the ``S3C`` acronym in identifiers and *capsule* in prose; the ``ME`` spelling
-   no longer appears.
+   does not appear.
 
 Approach and philosophy
 =======================

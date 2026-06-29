@@ -115,6 +115,8 @@ through ``__mmu_switch_vttbr()`` (``arch/arm64/context.S``).
 Inter-domain communication
 ==========================
 
+.. _event_channels:
+
 Event channels
 --------------
 

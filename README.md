@@ -71,6 +71,9 @@ development of the SO3 ecosystem, in particular
 [HEIG-VD](https://www.heig-vd.ch) and the
 [Hasler Foundation](https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation).
 
+We are also grateful to all the contributors — developers, students, researchers
+and community members alike — whose code, ideas and feedback have shaped SO3.
+
 ## License
 
 SO3 is released under the [GNU General Public License v2](LICENSE).

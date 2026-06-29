@@ -88,7 +88,7 @@ real window):
 
 .. code-block:: bash
 
-   ./scripts/stg.sh
+   stg.sh
 
 QEMU opens a GTK window that shows the PL111 framebuffer; launch an LVGL
 application from the ``so3%`` prompt to draw into it, for example::

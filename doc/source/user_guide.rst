@@ -62,20 +62,20 @@ the FIT image):
 
 .. code-block:: bash
 
-   ./scripts/build.sh bsp-so3
+   build.sh bsp-so3
 
 **4. Deploy** onto the virtual SD-card (this opens the sudo session and writes the
 boot partition):
 
 .. code-block:: bash
 
-   ./scripts/deploy.sh bsp-so3
+   deploy.sh bsp-so3
 
 **5. Run:**
 
 .. code-block:: bash
 
-   ./scripts/st.sh
+   st.sh
 
 You should land at the ``so3%`` prompt.
 
@@ -83,8 +83,8 @@ You should land at the ``so3%`` prompt.
 
    After editing only the kernel, rebuild and redeploy it without a full rebuild::
 
-      ./scripts/build.sh -x so3
-      ./scripts/deploy.sh bsp-so3
+      build.sh -x so3
+      deploy.sh bsp-so3
 
    The ``deploy.sh bsp-so3`` step is required because the in-tree kernel binary
    is not tracked by bitbake (see :ref:`build_system`).
@@ -98,10 +98,10 @@ Launch scripts
 
    * - Script
      - Use
-   * - ``scripts/st.sh``
+   * - ``st.sh``
      - **headless** run (``-display none``) — serial console only. The default for
        non-graphical work and CI.
-   * - ``scripts/stg.sh``
+   * - ``stg.sh``
      - **graphical** run — a GTK window for the PL111 framebuffer (LVGL, ``fb_test``).
        See :ref:`display_input`.
 
@@ -137,15 +137,15 @@ To run SO3 as a **guest** on top of AVZ (``CONFIG_SOO=n``, no capsules):
 
 .. code-block:: bash
 
-   ./scripts/build.sh -x avz
-   ./scripts/build.sh bsp-so3
-   ./scripts/deploy.sh bsp-so3
+   build.sh -x avz
+   build.sh bsp-so3
+   deploy.sh bsp-so3
 
 **3.** Run — ``st.sh`` enables EL2 automatically because the ITS is an AVZ image:
 
 .. code-block:: bash
 
-   ./scripts/st.sh
+   st.sh
 
 .. note::
 
@@ -167,8 +167,8 @@ relevant ``CMakeLists.txt``. Rebuild and redeploy the user space:
 
 .. code-block:: bash
 
-   ./scripts/build.sh -x usr-so3
-   ./scripts/deploy.sh bsp-so3      # repack the rootfs into the FIT image + write the boot media
+   build.sh -x usr-so3
+   deploy.sh bsp-so3      # repack the rootfs into the FIT image + write the boot media
 
 See :ref:`user_space` for the user-space build details and the bundled
 applications.

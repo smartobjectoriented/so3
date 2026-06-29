@@ -11,10 +11,10 @@ split (frontend/backend) drivers.
 .. note::
 
    *SO3 Capsule* / *S3C* is the current name and acronym for the concept that
-   older code and papers called a *Mobile Entity* (ME). The source tree now uses
+   older code and papers called a *Mobile Entity* (ME). The source tree uses
    the **S3C** acronym in identifiers (``S3C_desc_t``, ``S3C_state_t``,
    ``S3C_domID``, ``MAX_S3C_DOMAINS`` …) and *capsule* in prose. The legacy
-   ``ME`` spelling no longer appears in the code.
+   ``ME`` spelling does not appear in the code.
 
 The agency: Linux + the SOO framework
 =====================================
@@ -64,7 +64,7 @@ Split (frontend/backend) drivers
 
 Every virtual device a capsule uses is a **split driver**: a **frontend** in the
 capsule talks to a **backend** in the Linux agency through a shared memory ring
-and an event channel (set up with grant tables and :ref:`event channels <avz>`).
+and an event channel (set up with grant tables and :ref:`event channels <event_channels>`).
 
 .. figure:: img/so3_capsule.png
    :width: 100%
