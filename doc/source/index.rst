@@ -111,4 +111,7 @@ We would like to thank our sponsors for their generous support in funding the
 development of the SO3 ecosystem, especially `HEIG-VD <http://www.heig-vd.ch>`__
 and the `Hasler Foundation <https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation>`__.
 
+We are also grateful to all the contributors — developers, students, researchers
+and community members alike — whose code, ideas and feedback have shaped SO3.
+
 .. _SOO_mail: info@soo.tech

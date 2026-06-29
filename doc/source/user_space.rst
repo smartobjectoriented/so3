@@ -28,9 +28,9 @@ user space with:
 
 .. code-block:: bash
 
-   ./scripts/build.sh -x usr-so3      # configure + cross-compile (CMake + MUSL)
-   ./scripts/deploy.sh -x usr-so3     # repopulate so3/rootfs/rootfs.fat with the apps
-   ./scripts/deploy.sh bsp-so3     # repack rootfs into the FIT image + write the boot media
+   build.sh -x usr-so3      # configure + cross-compile (CMake + MUSL)
+   deploy.sh -x usr-so3     # repopulate so3/rootfs/rootfs.fat with the apps
+   deploy.sh bsp-so3     # repack rootfs into the FIT image + write the boot media
 
 The recipe configures and builds under ``so3/usr/build/`` and gathers the
 deployable, statically-linked ``*.elf`` binaries for the root filesystem. Adding
@@ -137,7 +137,7 @@ line reading.
 
 .. note::
 
-   Each process now has a **current working directory** (``pcb->cwd``, default
+   Each process has a **current working directory** (``pcb->cwd``, default
    ``/``, inherited across ``fork()`` and preserved across ``execve()``). The
    ``chdir`` / ``getcwd`` syscalls back the ``cd`` / ``pwd`` builtins, and the
    VFS resolves relative paths (and ``.`` / ``..``) against the cwd before
@@ -151,8 +151,8 @@ Root filesystem
 The applications are delivered through a root filesystem. In the default
 (ramfs) configuration this is a FAT image, ``so3/rootfs/rootfs.fat``, built by the
 ``rootfs-so3`` recipe (``meta-rootfs``) from the freshly built user binaries.
-``./scripts/deploy.sh bsp-so3`` packs it into the FIT image and writes it to
-the SD-card (:ref:`user_guide`); ``./scripts/build.sh bsp-so3`` does the whole
+``deploy.sh bsp-so3`` packs it into the FIT image and writes it to
+the SD-card (:ref:`user_guide`); ``build.sh bsp-so3`` does the whole
 build + image in one step. The FAT image can be inspected on the host (e.g. with
 ``mtools``) — useful when debugging what actually ended up on the target.
 

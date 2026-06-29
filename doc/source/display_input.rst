@@ -146,7 +146,7 @@ relative PL050 mouse (``kmi1.c``) is kept in the tree but its dts node is
 The host GTK window (``stg.sh``)
 ================================
 
-The graphical launcher ``scripts/stg.sh`` starts QEMU with the **GTK** display
+The graphical launcher ``stg.sh`` starts QEMU with the **GTK** display
 backend (``-display gtk,zoom-to-fit=off``):
 
 * **GTK, not SDL** — the SDL backend does not present the PL111 console surface
@@ -160,7 +160,7 @@ backend (``-display gtk,zoom-to-fit=off``):
   gives a uniform pointer-to-surface mapping, so the cursors coincide on every
   monitor. It is harmless on a native X11 session.
 
-``scripts/st.sh`` is the headless sibling (``-display none``): no window, console
+``st.sh`` is the headless sibling (``-display none``): no window, console
 only, used for non-graphical work and CI.
 
 .. _console_sigint:

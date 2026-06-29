@@ -18,9 +18,9 @@ ELF to get source-level debugging while the target runs the matching ``.bin``.
 Attaching GDB to QEMU
 =====================
 
-The launch script already exposes a GDB stub: ``scripts/st.sh`` starts QEMU with
+The launch script already exposes a GDB stub: ``st.sh`` starts QEMU with
 ``-gdb tcp::1234``. To make QEMU **wait** for the debugger before executing the
-first instruction, pass ``-S`` through to QEMU (``./scripts/st.sh -S``), or invoke
+first instruction, pass ``-S`` through to QEMU (``st.sh -S``), or invoke
 the patched emulator directly. A minimal headless invocation looks like:
 
 .. code-block:: bash
@@ -99,7 +99,7 @@ when EL2-only code runs at EL1).
 Debugging AVZ
 =============
 
-For the hypervisor, run ``scripts/st.sh`` with an AVZ ITS selected (it enables
+For the hypervisor, run ``st.sh`` with an AVZ ITS selected (it enables
 EL2 automatically) and pass ``-S`` to wait for the debugger. Load symbols from the
 hypervisor ELF (``avz/so3``) for the EL2 code and from the SO3 guest ELF
 (``so3/so3/so3``) for the EL1 guest. The AVZ console trace (the *Loading Guest

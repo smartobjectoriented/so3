@@ -173,7 +173,7 @@ boots through ARM-TF (EL3 → EL2), and ``full`` additionally loads OP-TEE.
 The build & deploy scripts
 ==========================
 
-``scripts/build.sh`` runs bitbake to *build* artefacts:
+``build.sh`` runs bitbake to *build* artefacts:
 
 .. flat-table::
    :header-rows: 1
@@ -193,7 +193,7 @@ The build & deploy scripts
    * - ``-l`` / ``-v``
      - **list** all recipes / **verbose** bitbake output.
 
-``scripts/deploy.sh`` then *writes the boot media* (and opens the ``sudo -n``
+``deploy.sh`` then *writes the boot media* (and opens the ``sudo -n``
 session the privileged tasks need): ``deploy.sh <recipe>`` (``-x`` optional)
 deploys it — a BSP writes the whole image (rootfs → p2 + FIT/ITB → p1), a
 component (e.g. ``usr-so3``) deploys just its part. ``-l`` / ``-v`` list /
@@ -268,7 +268,7 @@ component trees through ``${IB_*_PATH}`` placeholders. The ``do_itb`` task
 (``so3/images/`` or ``linux/images/``) — expanding ``${IB_SO3_PATH}``,
 ``${IB_AVZ_PATH}``, ``${IB_LINUX_PATH}`` and ``${IB_ROOTFS_PATH}`` to absolute
 paths — then assembles the ``.itb`` there with ``mkimage`` (there is no committed
-``target/`` tree anymore):
+``target/`` tree):
 
 .. flat-table::
    :header-rows: 1
@@ -347,7 +347,7 @@ hand:
 
 #. Edit the working tree directly (e.g. ``qemu/hw/arm/virt.c``).
 #. Build to test (``build.sh -x qemu``).
-#. Regenerate the patches: ``scripts/updiff.sh qemu``.
+#. Regenerate the patches: ``updiff.sh qemu``.
 
 ``updiff`` (``patch.bbclass``) diffs the pristine upstream snapshot
 (``${S}.pristine``, taken right after fetch) against the working tree and writes
