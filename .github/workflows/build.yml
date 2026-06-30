@@ -11,6 +11,11 @@ on:
 # kernel (build.sh -x so3) and the user space (build.sh -x usr-so3, which also
 # builds the MUSL toolchain via meta-toolchain) are non-privileged, so a plain
 # `docker run` (no --privileged) is enough. The repo is mounted at /so3.
+#
+# A second step then exercises the deploy path (build.sh bsp-so3 + deploy.sh
+# bsp-so3): assembling the FIT image and writing the SD-card image needs a
+# privileged container — the rootfs is populated through a loop-mount
+# (losetup/mkfs/mount via sudo -n), hence --privileged and -v /dev:/dev.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,4 +44,23 @@ jobs:
                 tail -n 120 build/tmp/work/musl-toolchain-1.0-r0/temp/log.do_build* 2>/dev/null || true
                 exit $rc
               }
+            '
+
+      - name: Assemble + deploy the SD-card image (privileged)
+        run: |
+          docker run --rm --privileged -v /dev:/dev -v "${PWD}:/so3" \
+            ghcr.io/smartobjectoriented/so3-env:latest bash -c '
+              set -e
+              cd /so3
+              echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
+              # Exercise the deploy path with the bare U-Boot chain. The default
+              # local.conf uses IB_BOOT_CHAIN="full" (ATF + OP-TEE + AVZ); AVZ is
+              # fetched from a local dev path, so "full" cannot build in CI.
+              echo "IB_BOOT_CHAIN = \"uboot\"" >> build/conf/local.conf
+              . ./env.sh
+              build.sh bsp-so3
+              # Create the (empty) SD-card image — privileged losetup/mkfs/parted —
+              # which bsp-so3:do_deploy then populates and writes.
+              build.sh -x filesystem
+              deploy.sh bsp-so3
             '
