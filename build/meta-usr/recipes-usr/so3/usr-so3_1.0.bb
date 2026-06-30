@@ -76,10 +76,17 @@ python do_deploy() {
     d.setVar('ROOTFS_FILENAME', '')
 
     if os.path.isdir(d.getVar('IB_ROOTFS_PATH')):
-        __do_rootfs_mount(d)
-        
         src_dir = os.path.join(d.getVar('IB_TARGET'), 'build', 'deploy')
         dst_dir = os.path.join(d.getVar('IB_ROOTFS_PATH'), 'fs')
+
+        # The user space must be built before it can be deployed. Bail out
+        # early — before mounting the rootfs, so a missing build does not
+        # leave a dangling loop mount — with an actionable message.
+        if not os.path.isdir(src_dir):
+            bb.fatal("SO3 user space not built: '%s' is missing. "
+                     "Build it first with 'build.sh -x usr-so3' (or 'build.sh bsp-so3')." % src_dir)
+
+        __do_rootfs_mount(d)
 
         # The SO3 rootfs.fat is loop-mounted at rootfs/fs as root
         # (rootfs/mount.sh), so the copy must be privileged. The split
