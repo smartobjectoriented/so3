@@ -59,5 +59,8 @@ jobs:
               echo "IB_BOOT_CHAIN = \"uboot\"" >> build/conf/local.conf
               . ./env.sh
               build.sh bsp-so3
+              # Create the (empty) SD-card image — privileged losetup/mkfs/parted —
+              # which bsp-so3:do_deploy then populates and writes.
+              build.sh -x filesystem
               deploy.sh bsp-so3
             '
