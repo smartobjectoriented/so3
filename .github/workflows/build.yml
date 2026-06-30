@@ -53,6 +53,10 @@ jobs:
               set -e
               cd /so3
               echo "IB_PLATFORM = \"${{ matrix.PLATFORM }}\"" >> build/conf/local.conf
+              # Exercise the deploy path with the bare U-Boot chain. The default
+              # local.conf uses IB_BOOT_CHAIN="full" (ATF + OP-TEE + AVZ); AVZ is
+              # fetched from a local dev path, so "full" cannot build in CI.
+              echo "IB_BOOT_CHAIN = \"uboot\"" >> build/conf/local.conf
               . ./env.sh
               build.sh bsp-so3
               deploy.sh bsp-so3
