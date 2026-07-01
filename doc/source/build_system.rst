@@ -202,6 +202,22 @@ produced (``rootfs.cpio``, the FIT), so the workflow is *edit → build.sh →
 deploy.sh*. A deploy with no prior build fails clearly rather than silently
 rebuilding.
 
+.. important::
+
+   ``build.sh bsp-so3`` compiles the BSP but does **not** create the SD-card
+   image itself: the empty ``filesystem/sdcard.img.<platform>`` is produced by the
+   separate, privileged ``filesystem`` recipe (``losetup``/``mkfs``/``parted``).
+   ``deploy.sh`` populates and writes that image but does not create it, so a
+   deploy against a fresh tree fails until the image exists. The canonical
+   first-build sequence is therefore three steps::
+
+      build.sh bsp-so3        # compile kernel + user space + U-Boot + rootfs + FIT
+      build.sh -x filesystem  # create + format the SD-card image (privileged, once)
+      deploy.sh bsp-so3       # populate the rootfs and write the boot media
+
+   Once the image exists, later edits only need ``build.sh -x <recipe>`` +
+   ``deploy.sh bsp-so3`` — the ``filesystem`` step is a one-off.
+
 .. note::
 
    ``build.sh`` / ``deploy.sh`` take the recipe as a **positional argument**
