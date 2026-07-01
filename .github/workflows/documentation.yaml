@@ -1,5 +1,13 @@
 name: Docs
 on: [push, pull_request, workflow_dispatch]
+
+# Serialize per ref so a burst of pushes (e.g. several PRs merged to main within
+# seconds) collapses to the latest run instead of racing multiple gh-pages
+# pushes — overlapping Pages deployments fail with "in progress deployment".
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docs:
     runs-on: ubuntu-latest
