@@ -64,14 +64,23 @@ the FIT image):
 
    build.sh bsp-so3
 
-**4. Deploy** onto the virtual SD-card (this opens the sudo session and writes the
+**4. Create the SD-card image.** ``build.sh bsp-so3`` only *compiles* — the empty
+SD-card image (``filesystem/sdcard.img.<platform>``) is produced by the separate,
+privileged ``filesystem`` recipe (``losetup``/``mkfs``/``parted``, escalated with
+``sudo -n``). Run it once before the first deploy:
+
+.. code-block:: bash
+
+   build.sh -x filesystem
+
+**5. Deploy** onto the virtual SD-card (this opens the sudo session and writes the
 boot partition):
 
 .. code-block:: bash
 
    deploy.sh bsp-so3
 
-**5. Run:**
+**6. Run:**
 
 .. code-block:: bash
 
@@ -133,12 +142,14 @@ To run SO3 as a **guest** on top of AVZ (``CONFIG_SOO=n``, no capsules):
    IB_TARGET_ITS:so3:virt64 = "virt64_avz"
    # IB_BOOT_CHAIN ?= "atf+uboot"     # or "full" (ATF + OP-TEE); default is bare U-Boot
 
-**2.** Build the hypervisor and (re)assemble the BSP, then deploy:
+**2.** Build the hypervisor and (re)assemble the BSP, create the SD-card image if
+it does not exist yet, then deploy:
 
 .. code-block:: bash
 
    build.sh -x avz
    build.sh bsp-so3
+   build.sh -x filesystem     # only needed the first time (creates the SD-card image)
    deploy.sh bsp-so3
 
 **3.** Run — ``st.sh`` enables EL2 automatically because the ITS is an AVZ image:
