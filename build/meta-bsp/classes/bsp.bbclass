@@ -58,6 +58,61 @@ bsp_render_its() {
 	    "${IB_ITS_SRC}/$1.its" > "${IB_ITB_PATH}/$1.its"
 }
 
+# Default ITS source dir for the generic (AVZ / bare linux) templates. The
+# Linux-agency BSP (bsp-linux) renders from here; bsp-so3 / bsp-capsules
+# override IB_ITS_SRC to their own files/its.
+IB_ITS_SRC ?= "${IB_DIR}/build/meta-bsp/recipes-bsp/linux/files/its"
+
+# Python counterpart of bsp_render_its, used by do_render_its below. Renders
+# IB_ITS_SRC/<name>.its into IB_ITB_PATH, expanding the same placeholders.
+# Returns False (a no-op) when IB_ITS_SRC has no <name>.its template, so
+# callers can offer a superset of candidate names and let missing ones skip.
+def bsp_render_its_py(d, name):
+    import os
+    src = os.path.join(d.getVar('IB_ITS_SRC') or '', name + '.its')
+    if not os.path.isfile(src):
+        return False
+    repl = {
+        '${IB_SO3_PATH}':    d.getVar('IB_SO3_PATH') or '',
+        '${IB_AVZ_PATH}':    d.getVar('IB_AVZ_PATH') or '',
+        '${IB_LINUX_PATH}':  d.getVar('IB_LINUX_PATH') or '',
+        '${IB_ROOTFS_PATH}': d.getVar('IB_ROOTFS_PATH') or '',
+        '${IB_PLATFORM}':    d.getVar('IB_PLATFORM') or '',
+    }
+    with open(src) as f:
+        text = f.read()
+    for k, v in repl.items():
+        text = text.replace(k, v)
+    dst_dir = d.getVar('IB_ITB_PATH')
+    os.makedirs(dst_dir, exist_ok=True)
+    with open(os.path.join(dst_dir, name + '.its'), 'w') as f:
+        f.write(text)
+    return True
+
+# Generic ITS render step, shared by EVERY BSP recipe (bsp-so3, bsp-linux,
+# bsp-capsules) and their per-platform do_itb includes. Renders all the
+# generic (placeholder) ITS a do_itb may mkimage — bare (IB_PLATFORM), the
+# AVZ ITB (IB_TARGET_ITS) and, for the two-ITB AVZ case, the guest — from
+# IB_ITS_SRC into IB_ITB_PATH, ONCE, before do_itb. Doing it here (not inline
+# in each do_itb) means adding a platform or variant never needs to re-add
+# render calls; bsp_render_its_py just skips the names that have no template.
+# do_itb then only reads + mkimage's.
+python do_render_its() {
+    plat       = d.getVar('IB_PLATFORM') or ''
+    target_its = d.getVar('IB_TARGET_ITS') or ''
+    suffix     = d.getVar('IB_GUEST_SUFFIX') or '_so3_guest'
+    names = [plat, target_its]
+    if target_its.endswith('_avz'):
+        names.append(target_its[:-len('_avz')] + suffix)
+    seen = set()
+    for n in names:
+        if n and n not in seen:
+            seen.add(n)
+            bsp_render_its_py(d, n)
+}
+do_render_its[nostamp] = "1"
+addtask do_render_its before do_itb
+
 # This is the uEnv.txt file related to U-boot depending on the BSP
 IB_UENV = "${FILE_DIRNAME}/files/uEnv_${IB_PLATFORM}.txt"
 
