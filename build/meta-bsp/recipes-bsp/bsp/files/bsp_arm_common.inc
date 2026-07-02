@@ -5,7 +5,7 @@
 # Two deployment shapes, selected by the chosen ITS:
 #   * AVZ two-ITB boot (IB_TARGET_ITS ends in "_avz"): stage the AVZ ITB
 #     (<plat>_avz.itb) AND the SO3 guest ITB (<plat>_guest.itb) plus the
-#     uEnv_<plat>_avz.txt that loads both and jumps via U-Boot's e1c-boot
+#     uEnv_<plat>_avz.txt that loads both and jumps via U-Boot's guest-boot
 #     command (AVZ FIT in x0, guest ITB in x1). The guest ITB is derived
 #     from IB_TARGET_ITS: <its-without-_avz>_so3_guest.itb.
 #   * Single-ITB bootm (any other ITS): the standalone SO3 / Linux image.

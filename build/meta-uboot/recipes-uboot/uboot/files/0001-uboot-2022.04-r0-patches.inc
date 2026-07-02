@@ -6,7 +6,7 @@ SRC_URI += "\
     file://0005-hwinit-common.c.patch \ 
     file://0006-bootm.c.patch \ 
     file://0007-image-board.c.patch \ 
-    file://0008-e1c_boot.c.patch \ 
+    file://0008-guest_boot.c.patch \ 
     file://0009-Kconfig.patch \ 
     file://0010-Makefile.patch \ 
     file://0011-setexpr.c.patch \ 

@@ -1,11 +1,11 @@
---- a/cmd/e1c_boot.c
-+++ b/cmd/e1c_boot.c
+--- a/cmd/guest_boot.c
++++ b/cmd/guest_boot.c
 @@ -0,0 +1,212 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright (C) 2026 EDGEMTech SA <info@edgemtech.ch>
 + *
-+ * e1c-boot: load an AVZ FIT image and an e1c capsule FIT image individually,
++ * guest-boot: load an AVZ FIT image and an e1c capsule FIT image individually,
 + * place each declared loadable/kernel/fdt/ramdisk at its declared load address,
 + * then transfer control to the AVZ entry point.
 + *
@@ -33,16 +33,16 @@
 +	ulong load;
 +
 +	if (fit_image_get_data_and_size(fit, img_off, &data, &size)) {
-+		printf("e1c-boot: %s: missing data\n", desc);
++		printf("guest-boot: %s: missing data\n", desc);
 +		return -1;
 +	}
 +
 +	if (fit_image_get_load(fit, img_off, &load)) {
-+		printf("e1c-boot: %s: missing load address\n", desc);
++		printf("guest-boot: %s: missing load address\n", desc);
 +		return -1;
 +	}
 +
-+	debug("e1c-boot: %s -> 0x%lx (%zu bytes)\n", desc, load, size);
++	debug("guest-boot: %s -> 0x%lx (%zu bytes)\n", desc, load, size);
 +	memmove((void *)load, data, size);
 +	flush_cache(load, size);
 +
@@ -67,7 +67,7 @@
 +	img_off = fit_conf_get_prop_node(fit, conf_off, prop);
 +	if (img_off < 0) {
 +		if (required) {
-+			printf("e1c-boot: config has no '%s' image\n", prop);
++			printf("guest-boot: config has no '%s' image\n", prop);
 +			return -1;
 +		}
 +		return 0;
@@ -87,7 +87,7 @@
 +		int img_off = fit_image_get_node(fit, uname);
 +
 +		if (img_off < 0) {
-+			printf("e1c-boot: loadable '%s' not found\n", uname);
++			printf("guest-boot: loadable '%s' not found\n", uname);
 +			return -1;
 +		}
 +		if (e1c_place_image(fit, img_off, uname, NULL, NULL))
@@ -103,13 +103,13 @@
 +	int conf_off;
 +
 +	if (fit_check_format(fit, IMAGE_SIZE_INVAL)) {
-+		printf("e1c-boot: invalid FIT at 0x%lx\n", fit_addr);
++		printf("guest-boot: invalid FIT at 0x%lx\n", fit_addr);
 +		return -1;
 +	}
 +
 +	conf_off = fit_conf_get_node(fit, conf_name);
 +	if (conf_off < 0) {
-+		printf("e1c-boot: config '%s' not found at 0x%lx\n",
++		printf("guest-boot: config '%s' not found at 0x%lx\n",
 +		       conf_name ? conf_name : "<default>", fit_addr);
 +		return -1;
 +	}
@@ -132,7 +132,7 @@
 +	return 0;
 +}
 +
-+static int do_e1c_boot(struct cmd_tbl *cmdtp, int flag, int argc,
++static int do_guest_boot(struct cmd_tbl *cmdtp, int flag, int argc,
 +		       char *const argv[])
 +{
 +	ulong avz_itb, e1c_itb, avz_entry = 0, capsule_fdt = 0;
@@ -143,13 +143,13 @@
 +	avz_itb = simple_strtoul(argv[1], NULL, 16);
 +	e1c_itb = simple_strtoul(argv[2], NULL, 16);
 +
-+	printf("e1c-boot: AVZ ITB @ 0x%lx, e1c ITB @ 0x%lx\n",
++	printf("guest-boot: AVZ ITB @ 0x%lx, guest ITB @ 0x%lx\n",
 +	       avz_itb, e1c_itb);
 +
 +	if (e1c_load_fit(avz_itb, "avz", &avz_entry, NULL))
 +		return CMD_RET_FAILURE;
 +	if (!avz_entry) {
-+		printf("e1c-boot: AVZ config has no kernel entry\n");
++		printf("guest-boot: AVZ config has no kernel entry\n");
 +		return CMD_RET_FAILURE;
 +	}
 +
@@ -157,7 +157,7 @@
 +		return CMD_RET_FAILURE;
 +
 +	/* Propagate U-Boot's bootargs env into the guest FDT's /chosen so the
-+	 * guest kernel sees the cmdline. e1c-boot replaces bootm's standard
++	 * guest kernel sees the cmdline. guest-boot replaces bootm's standard
 +	 * fdt_chosen() call — without this, the guest kernel cmdline is empty
 +	 * and OSTree-aware initramfs (e.g. TorizonOS) can't find its root. */
 +	if (capsule_fdt) {
@@ -165,7 +165,7 @@
 +		const char *ba = env_get("bootargs");
 +		int ret;
 +
-+		printf("e1c-boot: capsule fdt @ 0x%lx, bootargs=[%s]\n",
++		printf("guest-boot: capsule fdt @ 0x%lx, bootargs=[%s]\n",
 +		       capsule_fdt, ba ? ba : "<NULL>");
 +
 +		/* The guest DTB is tightly packed by mkimage and has no room
@@ -174,18 +174,18 @@
 +		 * extra props AVZ injects later. */
 +		ret = fdt_open_into(fdt, fdt, fdt_totalsize(fdt) + 0x1000);
 +		if (ret < 0) {
-+			printf("e1c-boot: WARN: fdt_open_into failed (%d)\n",
++			printf("guest-boot: WARN: fdt_open_into failed (%d)\n",
 +			       ret);
 +		}
 +
 +		ret = fdt_chosen(fdt);
 +		if (ret < 0)
-+			printf("e1c-boot: WARN: fdt_chosen failed (%d)\n", ret);
++			printf("guest-boot: WARN: fdt_chosen failed (%d)\n", ret);
 +		else
 +			flush_cache(capsule_fdt, fdt_totalsize(fdt));
 +	}
 +
-+	printf("e1c-boot: jumping to AVZ at 0x%lx (capsule ITB @ 0x%lx)\n",
++	printf("guest-boot: jumping to AVZ at 0x%lx (capsule ITB @ 0x%lx)\n",
 +	       avz_entry, e1c_itb);
 +
 +	cleanup_before_linux();
@@ -197,7 +197,7 @@
 +}
 +
 +#ifdef CONFIG_SYS_LONGHELP
-+static char e1c_boot_help_text[] =
++static char guest_boot_help_text[] =
 +	"<avz_itb_addr> <e1c_itb_addr>\n"
 +	"    - Parse the AVZ FIT and the e1c capsule FIT loaded at the given\n"
 +	"      addresses, place every kernel/fdt/ramdisk/loadable at its\n"
@@ -206,10 +206,10 @@
 +	"        x1 = e1c_itb_addr  (AVZ uses this FIT to load the guest)";
 +#endif
 +
-+ll_entry_declare(struct cmd_tbl, e1c_boot, cmd) = {
-+	"e1c-boot", 3, cmd_never_repeatable, do_e1c_boot,
++ll_entry_declare(struct cmd_tbl, guest_boot, cmd) = {
++	"guest-boot", 3, cmd_never_repeatable, do_guest_boot,
 +	"boot AVZ hypervisor with an e1c capsule",
 +#ifdef CONFIG_SYS_LONGHELP
-+	e1c_boot_help_text
++	guest_boot_help_text
 +#endif
 +};

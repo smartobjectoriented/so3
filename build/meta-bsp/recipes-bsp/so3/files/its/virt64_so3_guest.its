@@ -3,7 +3,7 @@
  *
  * SO3 guest ITB for virt64 (armv8). Carries the SO3 OS kernel (guest) +
  * its device tree + minimal rootfs. Paired with virt64_avz.itb and
- * loaded by U-Boot's e1c-boot command, which passes this ITB to AVZ in
+ * loaded by U-Boot's guest-boot command, which passes this ITB to AVZ in
  * x1; AVZ's loadAgency() loads the agency guest from it.
  *
  * This program is free software; you can redistribute it and/or modify

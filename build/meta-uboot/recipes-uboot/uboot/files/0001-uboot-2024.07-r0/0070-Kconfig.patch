@@ -4,8 +4,8 @@
  	help
  	  Boot an AArch64 Linux Kernel image from memory.
  
-+config CMD_E1C_BOOT
-+	bool "e1c-boot"
++config CMD_GUEST_BOOT
++	bool "guest-boot"
 +	depends on ARM64 && FIT
 +	help
 +	  Boot the AVZ hypervisor together with an e1c capsule (Linux guest)

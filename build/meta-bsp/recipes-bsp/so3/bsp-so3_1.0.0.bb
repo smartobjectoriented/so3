@@ -57,7 +57,7 @@ do_itb () {
 	mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 
 	# AVZ boot uses a SEPARATE guest ITB (loaded alongside the AVZ ITB by
-	# the e1c-boot U-Boot command). The guest ITS (<plat>_avz -> <plat> +
+	# the guest-boot U-Boot command). The guest ITS (<plat>_avz -> <plat> +
 	# IB_GUEST_SUFFIX) is rendered by do_render_its; mkimage it if present.
 	case "${IB_TARGET_ITS}" in
 	*_avz)

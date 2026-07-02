@@ -3,7 +3,7 @@
  *
  * AVZ ITB for virt64 (armv8). Carries only the AVZ hypervisor binary
  * (so3.bin) + the AVZ device tree. The guest (SO3) lives in a SEPARATE
- * ITB (virt64_so3_guest.its); both are loaded by U-Boot's e1c-boot
+ * ITB (virt64_so3_guest.its); both are loaded by U-Boot's guest-boot
  * command, which passes the AVZ FIT in x0 and the guest ITB in x1.
  *
  * This program is free software; you can redistribute it and/or modify

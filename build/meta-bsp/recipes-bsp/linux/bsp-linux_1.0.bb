@@ -53,7 +53,7 @@ do_itb () {
 	# ITS are rendered into IB_ITB_PATH by the shared do_render_its (before
 	# do_itb); this task only mkimage's them.
 	if [ "${IB_BOOT_CHAIN}" = "full" ]; then
-		# AVZ mode: two ITBs (e1c-boot) — the AVZ hypervisor ITB and a
+		# AVZ mode: two ITBs (guest-boot) — the AVZ hypervisor ITB and a
 		# SEPARATE Linux agency guest ITB, mirroring the SO3-on-AVZ model.
 
 		# AVZ hypervisor ITB
@@ -62,7 +62,7 @@ do_itb () {
 		fi
 		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 
-		# Linux agency guest ITB (loaded by AVZ from x1 via e1c-boot)
+		# Linux agency guest ITB (loaded by AVZ from x1 via guest-boot)
 		guest_its="$(echo "${IB_TARGET_ITS}" | sed 's/_avz$//')${IB_GUEST_SUFFIX}"
 		if [ ! -f ${IB_ITB_PATH}/${guest_its}.its ]; then
 			bbfatal "No Linux guest ITS found (${guest_its})"
