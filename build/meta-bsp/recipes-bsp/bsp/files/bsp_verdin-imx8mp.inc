@@ -1,8 +1,8 @@
 # Copyright (c) 2026 EDGEMTech SA
 #
-# Toradex Verdin iMX8MP platform glue for SO3-as-an-AVZ-guest, kept independent
-# of Torizon and the e1c capsules (edgem1 keeps the verdin BSP in meta-e1c; this
-# is the capsule-free equivalent).
+# Toradex Verdin iMX8MP platform glue for SO3-as-an-AVZ-guest. It runs no
+# TorizonOS / capsule userspace; the Toradex TEZI image is fetched only to
+# obtain the imx-boot firmware (see __fetch_torizon_tezi_image below).
 #
 # Boot image: do_itb (bsp-so3) mkimage's two ITBs — the AVZ ITB
 # (verdin_imx8mp_avz.its = AVZ + avz_dt) and the SO3 guest ITB

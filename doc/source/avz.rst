@@ -38,7 +38,7 @@ Boot and guest loading
 
 The hypervisor entry point is ``avz_start()`` (``avz/kernel/setup.c``). After
 early CPU, memory and device initialisation it prints its banner and *loads the
-guest domain*. U-Boot's ``e1c-boot`` command hands AVZ **two** FIT images — the
+guest domain*. U-Boot's ``guest-boot`` command hands AVZ **two** FIT images — the
 AVZ ITB in ``x0`` and a separate SO3 guest ITB in ``x1`` (see
 :ref:`build_system`) — and ``loadAgency()`` parses the guest from the ``x1``
 ITB. AVZ places the guest's kernel and device tree in RAM,

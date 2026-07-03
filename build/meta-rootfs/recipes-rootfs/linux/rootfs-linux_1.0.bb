@@ -84,10 +84,8 @@ python do_deploy () {
     # Verdin-imx8mp does not deploy its rootfs via a build-time partition
     # mount: storage is delivered through the platform's Tezi / HTTP recovery
     # flow (IB_STORAGE_MODE = "http"), so the verdin __do_fs_mount would try
-    # to mount a physical /dev/sda1 that is absent in a build/CI context.
-    # Mirror rootfs-torizon:do_deploy, which returns early for verdin for the
-    # same reason. (FC builds never reach here — their bbappend marks
-    # do_deploy noexec.)
+    # to mount a physical /dev/sda1 that is absent in a build/CI context,
+    # so do_deploy returns early for verdin here.
     if d.getVar('IB_PLATFORM') == "verdin-imx8mp":
         bb.plain("verdin-imx8mp: rootfs delivered via Tezi/HTTP, skipping partition deploy")
         return
