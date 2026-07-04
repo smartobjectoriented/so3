@@ -130,7 +130,7 @@ inherit filesystem
 #
 # Per-platform bootloader assembly lives in bsp_<platform>.inc as
 # __do_platform_boot_chain(d). The AVZ ITB build is generic: mkimage on
-# ${IB_DIR}/linux/target/${IB_PLATFORM}_avz.its.
+# ${IB_DIR}/linux/images/${IB_PLATFORM}_avz.its.
 
 # Boot-chain dependencies gate on IB_BOOT_CHAIN:
 #   "uboot"      → only u-boot (no ATF, OP-TEE, AVZ pulled in)
