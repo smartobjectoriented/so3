@@ -1,14 +1,30 @@
 /*
- * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2020-2026 EDGEMTech SA <info@edgemtech.ch>
  *
- * AVZ ITB for virt64 (armv8). Carries only the AVZ hypervisor binary
- * (so3.bin) + the AVZ device tree. The guest (SO3) lives in a SEPARATE
- * ITB (virt64_so3_guest.its); both are loaded by U-Boot's guest-boot
- * command, which passes the AVZ FIT in x0 and the guest ITB in x1.
+ * AVZ ITS for QEMU virt64 (armv8). Carries only the AVZ hypervisor
+ * binary (so3.bin) + the AVZ device tree. The guest lives in a SEPARATE
+ * ITB (virt64_so3_guest.its for bsp-so3, virt64_linux_guest.its for the
+ * Linux agency); both are loaded by U-Boot's guest-boot command, which
+ * passes the AVZ FIT in x0 and the guest ITB in x1.
+ *
+ * Template: ${IB_*_PATH} placeholders are expanded to absolute build
+ * paths by bsp_render_its (bsp.bbclass) at do_itb time.
+ *
+ * The bare path uses virt64.its (bsp-linux, IB_BOOT_CHAIN="uboot")
+ * instead — see that file for the single-ITB bootm variant without AVZ.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
 

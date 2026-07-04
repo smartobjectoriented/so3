@@ -1,5 +1,22 @@
 /*
- * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2020-2026 EDGEMTech SA <info@edgemtech.ch>
+ *
+ * Bare bsp-linux ITS for QEMU virt64. Pairs with IB_BOOT_CHAIN=
+ * "uboot": QEMU loads the U-Boot ELF directly via `-kernel` (no ATF,
+ * no OP-TEE, no AVZ — purest dev path). U-Boot bootm's this ITB; the
+ * buildroot initrd is the rootfs (root=/dev/ram).
+ *
+ * Kernel + DTB: the outer-linux build (arch/arm64/.../${IB_PLATFORM}.dtb,
+ * the customised virt DT — see the virt64.dts patch in meta-linux).
+ * Initrd: linux/rootfs's board/${IB_PLATFORM}/rootfs.cpio (buildroot
+ * output gzipped at deploy time into initrd.cpio.gz).
+ *
+ * Template: ${IB_*_PATH} / ${IB_PLATFORM} placeholders are expanded to
+ * absolute build paths by bsp_render_its (bsp.bbclass) at do_itb time.
+ *
+ * The AVZ two-ITB path uses virt64_avz.its + the guest ITB instead
+ * (virt64_so3_guest.its for bsp-so3, virt64_linux_guest.its for the
+ * Linux agency) — see those files for the guest-boot variant.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -33,35 +50,35 @@
 			load = <0x41000000>;
 			entry = <0x41000000>;
 		};
-	
-        	fdt_linux {
+
+		fdt_linux {
 			description = "Linux device tree blob";
-			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/arm/virt64.dtb");
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/arm/${IB_PLATFORM}.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
 			load = <0x50000000>;
 		};
-                  
+
 		initrd {
 			description = "Initial rootfs (initrd)";
-			data = /incbin/("${IB_ROOTFS_PATH}/board/virt64/initrd.cpio.gz");
+			data = /incbin/("${IB_ROOTFS_PATH}/board/${IB_PLATFORM}/initrd.cpio.gz");
 			type = "ramdisk";
 			arch = "arm64";
-			os = "linux";			
-			compression = "none";
+			os = "linux";
+			compression = "gzip";
 			load = <0x50c00000>;
 		};
 	};
 
 	configurations {
 		default = "conf_linux";
-                	
+
 		conf_linux {
 			description = "Linux on virt64";
 			kernel = "linux";
-            		fdt = "fdt_linux"; 
-            		ramdisk = "initrd";  
+			fdt = "fdt_linux";
+			ramdisk = "initrd";
 		};
 	};
 
