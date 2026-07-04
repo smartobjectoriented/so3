@@ -177,7 +177,7 @@ void loadAgency(void)
 
 	/* The agency guest (kernel + flat_dt + ramdisk) lives in the separate
 	 * guest ITB (x1). Its loadables are already placed in RAM at their
-	 * declared load addresses by the bootloader (e1c-boot / bootm), so we
+	 * declared load addresses by the bootloader (guest-boot / bootm), so we
 	 * only read their addresses here and point the memslots at them. */
 	nodeoffset = 0;
 	depth = 0;
@@ -293,7 +293,7 @@ void loadAgency(void)
 
 			lprintk("IPA Layout: initrd start at 0x%lx, end at 0x%lx\n", initrd_pa, initrd_end_pa);
 
-			/* Publish into /chosen (already created by e1c-boot with the
+			/* Publish into /chosen (already created by guest-boot with the
 			 * bootargs). Grow the guest flat_dt first to be safe. */
 			fdt_open_into(guest_fdt, guest_fdt, fdt_totalsize(guest_fdt) + 256);
 
