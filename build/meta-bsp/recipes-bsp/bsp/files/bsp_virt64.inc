@@ -3,8 +3,8 @@
 # virt64 (QEMU armv8) platform glue. The ITB and uEnv.txt are copied onto
 # the boot partition (p1) by __deploy_arm_common (bsp_arm_common.inc).
 # __do_platform_boot_chain assembles the optional ATF/OP-TEE firmware
-# (flash0.img) — generic, shared across products (so3 + edgem1); the
-# capsule/OSTree specifics stay in the e1c layer.
+# (flash0.img) — generic and product-agnostic. Any capsule/OSTree
+# specifics live in a downstream layer, not here.
 
 require bsp_arm_common.inc
 

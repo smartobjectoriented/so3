@@ -50,33 +50,32 @@ do_itb[nostamp] = "1"
 
 do_itb () {
 
+	# ITS are rendered into IB_ITB_PATH by the shared do_render_its (before
+	# do_itb); this task only mkimage's them.
 	if [ "${IB_BOOT_CHAIN}" = "full" ]; then
-		# AVZ mode: two ITBs (e1c-boot) — the AVZ hypervisor ITB and a
+		# AVZ mode: two ITBs (guest-boot) — the AVZ hypervisor ITB and a
 		# SEPARATE Linux agency guest ITB, mirroring the SO3-on-AVZ model.
 
 		# AVZ hypervisor ITB
-		if [ ! -f ${IB_ITS_SRC}/${IB_TARGET_ITS}.its ]; then
+		if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
 			bbfatal "No corresponding ITS found (${IB_TARGET_ITS})"
 		fi
-		bsp_render_its ${IB_TARGET_ITS}
 		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 
-		# Linux agency guest ITB (loaded by AVZ from x1 via e1c-boot)
+		# Linux agency guest ITB (loaded by AVZ from x1 via guest-boot)
 		guest_its="$(echo "${IB_TARGET_ITS}" | sed 's/_avz$//')${IB_GUEST_SUFFIX}"
-		if [ ! -f ${IB_ITS_SRC}/${guest_its}.its ]; then
+		if [ ! -f ${IB_ITB_PATH}/${guest_its}.its ]; then
 			bbfatal "No Linux guest ITS found (${guest_its})"
 		fi
-		bsp_render_its ${guest_its}
 		mkimage -f ${IB_ITB_PATH}/${guest_its}.its ${IB_ITB_PATH}/${guest_its}.itb
 	else
 		# Bare bsp-linux (IB_BOOT_CHAIN ∈ {uboot, atf+uboot}): single
 		# plain ITB from ${IB_PLATFORM}.its with the buildroot initrd
 		# bundled in. Direct bootm by U-Boot, no AVZ wrapping.
 
-		if [ ! -f ${IB_ITS_SRC}/${IB_PLATFORM}.its ]; then
-			bbfatal "No bare ITS found at ${IB_ITS_SRC}/${IB_PLATFORM}.its"
+		if [ ! -f ${IB_ITB_PATH}/${IB_PLATFORM}.its ]; then
+			bbfatal "No bare ITS found at ${IB_ITB_PATH}/${IB_PLATFORM}.its"
 		fi
-		bsp_render_its ${IB_PLATFORM}
 		mkimage -f ${IB_ITB_PATH}/${IB_PLATFORM}.its ${IB_ITB_PATH}/${IB_PLATFORM}.itb
 	fi
 }

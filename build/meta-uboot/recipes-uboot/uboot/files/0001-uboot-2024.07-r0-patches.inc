@@ -42,5 +42,5 @@ SRC_URI += "\
     file://0070-Kconfig.patch \
     file://0071-Makefile.patch \
     file://0072-verdin-imx8mp_defconfig.patch \
-    file://0073-e1c_boot.c.patch \
+    file://0073-guest_boot.c.patch \
 "

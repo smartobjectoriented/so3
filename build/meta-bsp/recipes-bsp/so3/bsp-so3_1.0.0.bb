@@ -49,23 +49,20 @@ do_itb[nostamp] = "1"
 do_itb[depends] = "usr-so3:do_deploy"
 do_itb () {
 
-	if [ ! -f ${IB_ITS_SRC}/${IB_TARGET_ITS}.its ]; then
+	# ITS are rendered into IB_ITB_PATH by the shared do_render_its (before
+	# do_itb); this task only mkimage's them.
+	if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
 		bbfatal "No corresponding ITS found (${IB_TARGET_ITS})"
-	else
-		bsp_render_its ${IB_TARGET_ITS}
-		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 	fi
+	mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 
 	# AVZ boot uses a SEPARATE guest ITB (loaded alongside the AVZ ITB by
-	# the e1c-boot U-Boot command). The guest ITS is derived from the
-	# selected AVZ ITS: <plat>_avz -> <plat>_so3_guest (deriving from
-	# IB_TARGET_ITS, not IB_PLATFORM, keeps the underscore naming on
-	# platforms whose IB_PLATFORM carries a hyphen, e.g. verdin-imx8mp).
+	# the guest-boot U-Boot command). The guest ITS (<plat>_avz -> <plat> +
+	# IB_GUEST_SUFFIX) is rendered by do_render_its; mkimage it if present.
 	case "${IB_TARGET_ITS}" in
 	*_avz)
 		guest_its="$(echo "${IB_TARGET_ITS}" | sed 's/_avz$//')${IB_GUEST_SUFFIX}"
-		if [ -f ${IB_ITS_SRC}/${guest_its}.its ]; then
-			bsp_render_its ${guest_its}
+		if [ -f ${IB_ITB_PATH}/${guest_its}.its ]; then
 			mkimage -f ${IB_ITB_PATH}/${guest_its}.its ${IB_ITB_PATH}/${guest_its}.itb
 		fi
 		;;

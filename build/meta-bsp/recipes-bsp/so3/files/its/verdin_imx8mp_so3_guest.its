@@ -3,7 +3,7 @@
  *
  * SO3 guest ITB for the Toradex Verdin iMX8MP. Carries the SO3 OS kernel
  * (guest) + its device tree + minimal rootfs. Paired with
- * verdin_imx8mp_avz.itb and loaded by U-Boot's e1c-boot command, which
+ * verdin_imx8mp_avz.itb and loaded by U-Boot's guest-boot command, which
  * passes this ITB to AVZ in x1; AVZ's loadAgency() loads the agency guest
  * from it.
  *

@@ -326,8 +326,7 @@ separate FIT images** rather than one: the **AVZ ITB** (``<plat>_avz.itb`` — t
 hypervisor binary + ``avz_dt`` only) and a **guest ITB**. The guest is either an
 **SO3** guest (``<plat>_so3_guest.itb`` — SO3 kernel + DTB + ramfs, from
 ``bsp-so3``) or the **Linux agency** (``<plat>_linux_guest.itb`` — Linux kernel +
-guest DTB + initrd, from ``bsp-linux`` with ``IB_BOOT_CHAIN = "full"``). This
-mirrors the edge-m1 ``e1c`` component separation.
+guest DTB + initrd, from ``bsp-linux`` with ``IB_BOOT_CHAIN = "full"``).
 
 The trigger throughout is the selected ITS ending in ``_avz``. ``do_itb`` then
 also builds the guest ITB, whose name is *derived* from the AVZ ITS by replacing
@@ -339,7 +338,7 @@ platforms whose ``IB_PLATFORM`` carries a hyphen, e.g. ``verdin-imx8mp``.)
 
 At deploy time the platform glue stages **both** images plus a per-platform
 ``uEnv_<plat>_avz.txt`` (or, on verdin, a ``boot_avz.scr`` boot script). U-Boot
-loads both ITBs to staging addresses and jumps through its ``e1c-boot`` command,
+loads both ITBs to staging addresses and jumps through its ``guest-boot`` command,
 which enters AVZ with the **AVZ FIT in** ``x0`` **and the guest ITB in** ``x1``;
 AVZ's ``loadAgency()`` then loads the guest from ``x1`` (see :ref:`avz`).
 When the selected ITS is *not* an ``_avz`` one (a bare standalone SO3/Linux
@@ -348,7 +347,7 @@ image), the deploy falls back to the single-ITB ``bootm`` path.
 .. note::
 
    Only the ``virt64`` two-ITB boot is runtime-verified (QEMU). The
-   ``rpi4_64`` and ``verdin_imx8mp`` ITS split + ``e1c-boot`` wiring is in
+   ``rpi4_64`` and ``verdin_imx8mp`` ITS split + ``guest-boot`` wiring is in
    place but still to be validated on hardware.
 
 .. _fetched_components:

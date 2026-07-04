@@ -2,7 +2,7 @@
 #
 # Loads the AVZ ITB and the SO3 guest ITB to staging addresses (above the
 # 0x40080000-0x50c00000 sub-image extraction range), then jumps via the
-# e1c-boot U-Boot command which passes the AVZ FIT in x0 and the guest ITB
+# guest-boot U-Boot command which passes the AVZ FIT in x0 and the guest ITB
 # in x1. AVZ extracts its sub-images (AVZ -> 0x40080000, avz_dt) and its
 # loadAgency() loads the SO3 guest (-> 0x48000000, dtb, rootfs.fat) from x1.
 
@@ -13,4 +13,4 @@ env set guest_addr 0x90000000
 
 ext4load mmc 2:1 ${avz_addr} /boot_avz.itb
 ext4load mmc 2:1 ${guest_addr} /boot_guest.itb
-e1c-boot ${avz_addr} ${guest_addr}
+guest-boot ${avz_addr} ${guest_addr}

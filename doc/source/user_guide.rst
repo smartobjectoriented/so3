@@ -163,7 +163,7 @@ it does not exist yet, then deploy:
    AVZ boot produces **two ITBs** — the AVZ ITB (``virt64_avz.itb``) and the
    SO3 guest ITB (``virt64_so3_guest.itb``, built automatically) — and the
    deploy stages both on the boot partition with ``uEnv_virt64_avz.txt``; U-Boot
-   loads them and jumps via its ``e1c-boot`` command. No extra step is needed,
+   loads them and jumps via its ``guest-boot`` command. No extra step is needed,
    but see :ref:`two_itb_boot` for details.
 
 A successful run shows the **AVZ Hypervisor** banner, the *Loading Guest Domain*

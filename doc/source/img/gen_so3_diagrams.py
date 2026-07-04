@@ -153,7 +153,7 @@ av  = p.box(540, 78, 190, 44, "AVZ (EL2)  avz_start()", AVZ, 10)
 load= p.box(780, 78, 270, 44, "Loading Guest Domain — stage-2 → guest", AVZ, 10)
 so  = p.box(540, 168, 190, 44, "SO3 kernel (EL1)\n__start → kernel_start()", KERNEL, 10)
 p.edge(ub, fit, "", EX)
-p.edge(fit, av, "AVZ: 2 ITBs\n(e1c-boot x0/x1)")
+p.edge(fit, av, "AVZ: 2 ITBs\n(guest-boot x0/x1)")
 # "standalone": drop out of FIT's bottom and enter SO3's left, staying below the
 # AVZ row so the arrow does not cross the AVZ box.
 p.edge(fit, so, "standalone", ARR + "exitX=0.5;exitY=1;entryX=0;entryY=0.5;")

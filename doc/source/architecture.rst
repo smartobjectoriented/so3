@@ -116,7 +116,7 @@ ITBs** — the AVZ ITB (``<plat>_avz``) and the SO3 guest ITB
 
 1. **U-Boot** loads the FIT image(s) from the boot medium and jumps to the entry
    point of the first component. In the ``virt64`` two-ITB AVZ boot it loads both
-   the AVZ and guest ITBs and enters AVZ through the ``e1c-boot`` command, which
+   the AVZ and guest ITBs and enters AVZ through the ``guest-boot`` command, which
    passes the AVZ FIT in ``x0`` and the guest ITB in ``x1``.
 2. In the **AVZ** configuration, control enters the hypervisor
    (``avz_start()`` at EL2); AVZ sets up the stage-2 tables, *loads the guest

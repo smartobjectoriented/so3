@@ -21,7 +21,7 @@ export BBPATH=$BUILDDIR
 PATH="$PWD/scripts:$BUILDDIR/bitbake/bin:$PATH"
 
 # Specify auxiliary layers for the -x component opt
-export IB_AUX_LAYERS="meta-usr meta-torizon meta-so3 meta-qemu meta-atf"
+export IB_AUX_LAYERS="meta-usr meta-so3 meta-qemu meta-atf"
 
 # TODO: It would be nice to test for the presence of such and
 # such compiler in meta-bsp

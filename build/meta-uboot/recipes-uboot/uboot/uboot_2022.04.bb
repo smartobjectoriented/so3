@@ -45,11 +45,10 @@ do_configure () {
 	#     and CONFIG_ARCH_QEMU=y, both required for QEMU `-kernel` to
 	#     load the U-Boot ELF at any address. Linux runs at EL1 (no
 	#     secure / no virtualization in QEMU machine).
-	#   - IB_BOOT_CHAIN="atf+uboot" (bare bsp-torizon) and "full" (capsule)
-	#     both use virt64_defconfig — same FIP-aware U-Boot, the boot
-	#     chain difference lives in ATF (no SPD vs SPD=opteed) and the
-	#     guest DT (see bsp_torizon doc, "Known virt64 DT Workarounds").
-	#     U-Boot is entered at EL2 by ATF and does NOT switch to EL1
+	#   - IB_BOOT_CHAIN="atf+uboot" and "full" (capsule) both use
+	#     virt64_defconfig — same FIP-aware U-Boot, the boot chain
+	#     difference lives in ATF (no SPD vs SPD=opteed) and the guest
+	#     DT. U-Boot is entered at EL2 by ATF and does NOT switch to EL1
 	#     before booting the kernel — the kernel performs its own
 	#     el2_setup and drops to EL1 itself, as per the arm64 boot
 	#     protocol.

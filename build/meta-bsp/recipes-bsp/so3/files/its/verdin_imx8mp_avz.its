@@ -4,7 +4,7 @@
  * AVZ ITB for the Toradex Verdin iMX8MP. Carries only the AVZ hypervisor
  * binary (so3.bin) + the AVZ device tree. The guest (SO3) lives in a
  * SEPARATE ITB (verdin_imx8mp_so3_guest.its); both are loaded by U-Boot's
- * e1c-boot command, which passes the AVZ FIT in x0 and the guest ITB in x1.
+ * guest-boot command, which passes the AVZ FIT in x0 and the guest ITB in x1.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

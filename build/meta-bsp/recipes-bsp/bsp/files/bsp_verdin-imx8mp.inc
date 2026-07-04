@@ -1,8 +1,8 @@
 # Copyright (c) 2026 EDGEMTech SA
 #
-# Toradex Verdin iMX8MP platform glue for SO3-as-an-AVZ-guest, kept independent
-# of Torizon and the e1c capsules (edgem1 keeps the verdin BSP in meta-e1c; this
-# is the capsule-free equivalent).
+# Toradex Verdin iMX8MP platform glue for SO3-as-an-AVZ-guest. It runs no
+# TorizonOS / capsule userspace; the Toradex TEZI image is fetched only to
+# obtain the imx-boot firmware (see __fetch_torizon_tezi_image below).
 #
 # Boot image: do_itb (bsp-so3) mkimage's two ITBs — the AVZ ITB
 # (verdin_imx8mp_avz.its = AVZ + avz_dt) and the SO3 guest ITB
@@ -12,13 +12,13 @@
 #
 # Deploy: assemble a Toradex TEZI image set (the official base image provides
 # image.json + the partition layout; we replace imx-boot with our flash.bin and
-# add a boot.scr that loads both ITBs and jumps via the e1c-boot U-Boot command).
+# add a boot.scr that loads both ITBs and jumps via the guest-boot U-Boot command).
 # For SO3 standalone (non-AVZ ITS) a single ITB is staged and bootm'd instead.
 # No capsule / OSTree rootfs — SO3's rootfs rides inside the guest ITB.
 
 # Path to the SO3 boot scripts and the U-Boot bootcmd that sources them.
 #   boot.scr.txt      single-ITB bootm (SO3 standalone)
-#   boot_avz.scr.txt  two-ITB AVZ boot (AVZ ITB + SO3 guest ITB via e1c-boot)
+#   boot_avz.scr.txt  two-ITB AVZ boot (AVZ ITB + SO3 guest ITB via guest-boot)
 IB_VERDIN_BOOTSCR = "${IB_DIR}/build/meta-bsp/recipes-bsp/bsp/verdin-imx8mp/boot.scr.txt"
 IB_VERDIN_BOOTSCR_AVZ = "${IB_DIR}/build/meta-bsp/recipes-bsp/bsp/verdin-imx8mp/boot_avz.scr.txt"
 IB_VERDIN_BOOTCMD = "mmc dev 2; ext4load mmc 2:1 0x48200000 /boot.scr; source 0x48200000"
@@ -135,7 +135,7 @@ def __do_platform_deploy(d):
     # Our firmware, boot script and ITB(s).
     #   * AVZ two-ITB boot (ITS ends in "_avz"): stage the AVZ ITB as
     #     boot_avz.itb and the SO3 guest ITB (derived <its-without-_avz>_so3_guest)
-    #     as boot_guest.itb; boot_avz.scr.txt loads both and jumps via e1c-boot.
+    #     as boot_guest.itb; boot_avz.scr.txt loads both and jumps via guest-boot.
     #   * Single-ITB bootm (any other ITS): stage it as boot.itb.
     subprocess.run(['cp', flashbin, f"{staging}/imx-boot"], check=True)
 
