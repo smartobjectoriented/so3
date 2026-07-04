@@ -67,6 +67,7 @@ IB_ITS_SRC ?= "${IB_DIR}/build/meta-bsp/recipes-bsp/linux/files/its"
 # IB_ITS_SRC/<name>.its into IB_ITB_PATH, expanding the same placeholders.
 # Returns False (a no-op) when IB_ITS_SRC has no <name>.its template, so
 # callers can offer a superset of candidate names and let missing ones skip.
+
 def bsp_render_its_py(d, name):
     import os
     src = os.path.join(d.getVar('IB_ITS_SRC') or '', name + '.its')
@@ -97,6 +98,7 @@ def bsp_render_its_py(d, name):
 # in each do_itb) means adding a platform or variant never needs to re-add
 # render calls; bsp_render_its_py just skips the names that have no template.
 # do_itb then only reads + mkimage's.
+
 python do_render_its() {
     plat       = d.getVar('IB_PLATFORM') or ''
     target_its = d.getVar('IB_TARGET_ITS') or ''
@@ -128,7 +130,7 @@ inherit filesystem
 #
 # Per-platform bootloader assembly lives in bsp_<platform>.inc as
 # __do_platform_boot_chain(d). The AVZ ITB build is generic: mkimage on
-# ${IB_DIR}/linux/target/${IB_PLATFORM}_avz.its.
+# ${IB_DIR}/linux/images/${IB_PLATFORM}_avz.its.
 
 # Boot-chain dependencies gate on IB_BOOT_CHAIN:
 #   "uboot"      → only u-boot (no ATF, OP-TEE, AVZ pulled in)

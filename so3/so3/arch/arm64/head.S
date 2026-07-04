@@ -64,7 +64,7 @@ __start:
 	str 	x9, [x8]
 
 	// Preserve the agency/guest ITB addr passed in x1 by the bootloader
-	// (e1c-boot / launcher). AVZ loads the agency guest from this separate
+	// (guest-boot / launcher). AVZ loads the agency guest from this separate
 	// ITB (avz_dt stays in the x0 AVZ FIT). Save it now before x1 is
 	// clobbered by el2_setup / bss clear.
 	mov	x10, x1
