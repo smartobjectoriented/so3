@@ -127,11 +127,25 @@ addtask do_clean
 # "No such file or directory: .../temp/fifo.NNNN". Python tasks create the
 # temp dir themselves and use no fifo, so they are robust here.
 python do_clean() {
-    import shutil
+    import os, shutil
     target = d.getVar('IB_TARGET')
     # Remove the applied patches and the (in-tree) user-space build dir.
     shutil.rmtree(target + '/patches', ignore_errors=True)
     shutil.rmtree(target + '/build', ignore_errors=True)
+
+    # Clear the do_attach_infrabase manifest (${IB_TARGET}.attach.sha256) so the
+    # next attach re-attaches from a fresh fetch+patch instead of aborting with
+    # "Refusing to re-attach". Generic to every usr recipe: the usr build mutates
+    # IB_TARGET in place (e.g. the :lvgl override fetches lib/lvgl and renames its
+    # stray CMakeLists.txt to hide them from the recursive CMake glob), and those
+    # renames/removals make the manifest's `sha256sum -c` fail on the next attach.
+    # A clean is an explicit reset, and the attach still backs the tree up to
+    # ${IB_TARGET}.back, so dropping the manifest here is the safe, generic fix —
+    # the guard stays fully active for builds that were NOT preceded by a clean.
+    try:
+        os.remove(target + '.attach.sha256')
+    except OSError:
+        pass
 }
 
 
