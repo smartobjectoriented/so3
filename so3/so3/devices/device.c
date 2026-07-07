@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2017-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (c) 2017-2026 REDS Institute, HEIG-VD
+ * Author: Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -23,6 +24,7 @@
 #include <ctype.h>
 #include <vfs.h>
 #include <log.h>
+#include <hashmap.h>
 
 #include <asm/setup.h>
 
@@ -100,6 +102,15 @@ bool fdt_device_is_available(void *fdt_addr, int node_offset)
 }
 
 /*
+ * Descriptor stored in the driver hash map: it ties a compatible string (the
+ * map key) to the matching driver's init function and its initcall level.
+ */
+struct driver_match {
+	int (*init)(dev_t *dev, int fdt_offset);
+	int level;
+};
+
+/*
  * Read the content of a device tree and associate a generic device info structure to each
  * relevant entry.
  *
@@ -111,11 +122,13 @@ void parse_dtb(void *fdt_addr)
 {
 	unsigned int drivers_count[INITCALLS_LEVELS];
 	driver_initcall_t *driver_entries[INITCALLS_LEVELS];
-	dev_t *dev;
-	int i, level;
-	int ret;
+	struct list_head pending[INITCALLS_LEVELS];
+	struct driver_match *matches, *match;
+	struct hashmap *driver_map;
+	dev_t *dev, *tmp;
+	int i, level, ret, m;
 	int offset, new_off;
-	bool found;
+	int total_drivers;
 
 	drivers_count[CORE] = ll_entry_count(driver_initcall_t, core);
 	driver_entries[CORE] = ll_entry_start(driver_initcall_t, core);
@@ -127,51 +140,96 @@ void parse_dtb(void *fdt_addr)
 	LOG_DEBUG("%s: # entries for postcore drivers : %d\n", __func__, drivers_count[POSTCORE]);
 	LOG_DEBUG("Now scanning the device tree to retrieve all devices...\n");
 
-	for (level = 0; level < INITCALLS_LEVELS; level++) {
-		dev = (dev_t *) malloc(sizeof(dev_t));
-		ASSERT(dev != NULL);
-		memset(dev, 0, sizeof(dev_t));
+	total_drivers = drivers_count[CORE] + drivers_count[POSTCORE];
 
-		found = false;
-		offset = 0;
+	/*
+	 * Index every registered driver by its compatible string so that each
+	 * device tree node can be matched in O(1). Building the map is O(M) over
+	 * the M drivers and the single device tree scan below is O(N) over the N
+	 * nodes, turning the former O(N * M) nested loop into an O(N + M) parsing.
+	 */
+	driver_map = hashmap_create(total_drivers);
+	ASSERT(driver_map != NULL);
 
-		while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
-			if (fdt_device_is_available(fdt_addr, new_off)) {
-				for (i = 0; i < drivers_count[level]; i++) {
-					if (!strcmp(dev->compatible, driver_entries[level][i].compatible)) {
-						found = true;
+	matches = total_drivers ? (struct driver_match *) malloc(total_drivers * sizeof(*matches)) : NULL;
+	ASSERT(total_drivers == 0 || matches != NULL);
 
-						LOG_DEBUG("Found compatible:    %s\n", driver_entries[level][i].compatible);
-						LOG_DEBUG("    Compatible:      %s\n", dev->compatible);
-						LOG_DEBUG("    Status:          %s\n", dev_state_str(dev->status));
-						LOG_DEBUG("    Initcall level:  %d\n", level);
+	for (level = 0; level < INITCALLS_LEVELS; level++)
+		INIT_LIST_HEAD(&pending[level]);
 
-						if (dev->status == STATUS_INIT_PENDING) {
-							ret = driver_entries[level][i].init(dev, new_off);
-							BUG_ON(ret);
-
-							dev->status = STATUS_INITIALIZED;
-							list_add_tail(&dev->list, &devices);
-						}
-						break;
-					}
-				}
-			}
-			if (!found)
-				free(dev);
-
-			offset = new_off;
-
-			dev = (dev_t *) malloc(sizeof(dev_t));
-			ASSERT(dev != NULL);
-			memset(dev, 0, sizeof(dev_t));
-
-			found = false;
+	/*
+	 * Insert postcore drivers before core ones: hashmap_put() overwrites on a
+	 * duplicate key, so a compatible shared by both levels ends up mapped to
+	 * its core driver, preserving the core-before-postcore precedence.
+	 */
+	m = 0;
+	for (level = INITCALLS_LEVELS - 1; level >= 0; level--) {
+		for (i = 0; i < drivers_count[level]; i++) {
+			matches[m].init = driver_entries[level][i].init;
+			matches[m].level = level;
+			hashmap_put(driver_map, driver_entries[level][i].compatible, &matches[m]);
+			m++;
 		}
 	}
 
-	/* We have always the last allocation which will not be used */
+	/*
+	 * Scan the device tree once. A single scratch entry probes every node --
+	 * get_dev_info() resets it on each call -- and is only kept (and replaced
+	 * by a fresh allocation) when the node matches a driver. Matched nodes are
+	 * queued on the list of their initcall level so that the initialization
+	 * below can honour the core-before-postcore ordering.
+	 */
+	dev = (dev_t *) malloc(sizeof(dev_t));
+	ASSERT(dev != NULL);
+
+	offset = 0;
+	while ((new_off = get_dev_info(fdt_addr, offset, "*", dev)) != -1) {
+		offset = new_off;
+
+		if (!fdt_device_is_available(fdt_addr, new_off))
+			continue;
+
+		match = (struct driver_match *) hashmap_get(driver_map, dev->compatible);
+		if (!match)
+			continue;
+
+		list_add_tail(&dev->list, &pending[match->level]);
+
+		dev = (dev_t *) malloc(sizeof(dev_t));
+		ASSERT(dev != NULL);
+	}
+
+	/* The last scratch buffer was never consumed. */
 	free(dev);
+
+	/*
+	 * Initialize the matched devices, core drivers before postcore ones and in
+	 * device tree order within each level, then move them to the global list.
+	 */
+	for (level = 0; level < INITCALLS_LEVELS; level++) {
+		list_for_each_entry_safe(dev, tmp, &pending[level], list) {
+			match = (struct driver_match *) hashmap_get(driver_map, dev->compatible);
+
+			LOG_DEBUG("Found compatible:    %s\n", dev->compatible);
+			LOG_DEBUG("    Status:          %s\n", dev_state_str(dev->status));
+			LOG_DEBUG("    Initcall level:  %d\n", level);
+
+			if (dev->status == STATUS_INIT_PENDING) {
+				ret = match->init(dev, dev->offset_dts);
+				BUG_ON(ret);
+
+				dev->status = STATUS_INITIALIZED;
+			}
+
+			list_del(&dev->list);
+			list_add_tail(&dev->list, &devices);
+		}
+	}
+
+	if (matches)
+		free(matches);
+
+	hashmap_free(driver_map);
 }
 
 /* Register a device. Usually called from the device driver. */

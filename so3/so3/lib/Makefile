@@ -7,4 +7,5 @@ lib-y += ctype.o
 lib-y += vsprintf.o printk.o
 lib-y += strtod.o
 lib-y += list_sort.o
+lib-y += hashmap.o
 
