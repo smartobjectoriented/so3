@@ -1,5 +1,5 @@
---- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/shutdownme.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./src/soo/shutdownme.c	2025-10-10 17:28:33.594328500 +0200
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/s3c-shutdown.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/s3c-shutdown.c	2025-10-10 17:28:33.594328500 +0200
 @@ -0,0 +1,57 @@
 +/*
 + * Copyright (C) 2014-2020 Daniel Rossier <daniel.rossier@soo.tech>
@@ -36,17 +36,17 @@
 +	printf("*** SOO - Mobile Entity shutdown ***\n");
 +
 +	if (argc != 2) {
-+		printf("## Usage is : shutdownme <ME ID (1-5)>\n");
++		printf("## Usage is : s3c-shutdown <S3C ID (1-5)>\n");
 +		exit(-1);
 +	}
 +
-+	printf("** Perform a shutdown of ME #%d (slotID %d)...", atoi(argv[1]), atoi(argv[1])+1);
++	printf("** Perform a shutdown of S3C #%d (slotID %d)...", atoi(argv[1]), atoi(argv[1])+1);
 +	fflush(stdout);
 +
 +	fd_core = open("/dev/soo/core", O_RDWR);
 +	assert(fd_core > 0);
 +
-+	/* Prepare to terminate the running ME (dom #2) */
++	/* Prepare to terminate the running S3C (dom #2) */
 +
 +	agency_ioctl_args.slotID = atoi(argv[1]) + 1;
 +

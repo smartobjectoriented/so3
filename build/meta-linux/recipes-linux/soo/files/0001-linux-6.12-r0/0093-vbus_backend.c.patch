@@ -150,7 +150,7 @@
 +		kfree(dir);
 +	
 +	/* Keep the synchronization with the injector */
-+	if (get_ME_state(domid) == ME_state_stopped)
++	if (get_S3C_state(domid) == S3C_state_stopped)
 +		complete(&backend_initialized);
 +
 +	return err;
@@ -285,7 +285,7 @@
 +/*
 + * vbus_suspend_devices
 + *
-+ * Inform all vbus devices that we are preparing to migrate (or some other scenarios requiring
++ * Inform all vbus devices that we are preparing to suspend (or some other scenarios requiring
 + * temporary suspension of their activities)
 + *
 + */
@@ -297,7 +297,7 @@
 +/*
 + * vbus_resume_devices
 + *
-+ * Inform all vbus devices that we are preparing to migrate (or some other scenarios requiring
++ * Inform all vbus devices that we are preparing to suspend (or some other scenarios requiring
 + * temporary suspension of their activities)
 + *
 + */
@@ -308,9 +308,9 @@
 +
 +
 +/* This function is called from vs_prepare_to_resume() in vbus/vbus_xs.c
-+ * after the FSM thread activities in order to setup post-migration vbus and frontend drivers.
++ * after the FSM thread activities in order to setup post-resume vbus and frontend drivers.
 + */
-+void postmig_setup(void) {
++void postresume_setup(void) {
 +
 +  /* Nothing at the moment */
 +

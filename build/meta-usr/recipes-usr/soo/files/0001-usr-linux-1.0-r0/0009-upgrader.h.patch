@@ -44,7 +44,7 @@
 +	char *header;
 +	size_t	compressed_size;
 +	char *decompressed_image;
-+    	unsigned int ME_slotID;
++    	unsigned int S3C_slotID;
 +} upgrader_args_t;
 +
 +void upgrader_init(void);

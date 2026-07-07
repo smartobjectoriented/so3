@@ -111,7 +111,7 @@
 +	 */
 +	enum vbus_state fe_state;
 +
-+	/* So far, only the ME use this completion struct. On the agency side,
++	/* So far, only the S3C use this completion struct. On the agency side,
 +	 * the device can not be shutdown on live.
 +	 */
 +	struct completion down;
@@ -319,7 +319,7 @@
 +void vbstore_trigger_dev_probe(void);
 +int vbstore_uart_remove(unsigned int domID);
 +
-+void postmig_setup(void);
++void postresume_setup(void);
 +int gnttab_remove(bool with_vbus);
 +
 +void remove_devices(void);

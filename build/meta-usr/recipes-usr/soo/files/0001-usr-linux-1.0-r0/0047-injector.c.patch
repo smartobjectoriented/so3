@@ -54,9 +54,9 @@
 +  * @return int 
 +  */
 +int main(int argc, char *argv[]) {
-+	int fd_migration, fd, ret;
-+	int nread, ME_size;
-+	void *ME_buffer;
++	int fd_core, fd, ret;
++	int nread, S3C_size;
++	void *S3C_buffer;
 +	struct stat filestat;
 +	struct agency_ioctl_args args;
 +	bool hold_capsule = false;
@@ -69,73 +69,73 @@
 +				hold_capsule = true;
 +				break;
 +			default:
-+				fprintf(stderr, "Usage: %s [-s] <ME_file_path>\n", argv[0]);
++				fprintf(stderr, "Usage: %s [-s] <S3C_file_path>\n", argv[0]);
 +				exit(EXIT_FAILURE);
 +		}
 +	}
 +
 +	if (optind >= argc) {
-+		fprintf(stderr, "Expected ME file path after options\n");
++		fprintf(stderr, "Expected S3C file path after options\n");
 +		exit(EXIT_FAILURE);
 +	}
 +
-+	char *me_file_path = argv[optind];
++	char *s3c_file_path = argv[optind];
 +
-+	printf("SOO ME injector (Smart Object Oriented based virtualization framework).\n");
++	printf("SOO S3C injector (Smart Object Oriented based virtualization framework).\n");
 +	printf("Version: %s\n", SOO_VERSION);
 +
-+	fd_migration = open(SOO_CORE_DEVICE, O_RDWR);
-+	if (fd_migration < 0) {
-+		printf("Failed to open device: " SOO_CORE_DEVICE " (%d)\n", fd_migration);
++	fd_core = open(SOO_CORE_DEVICE, O_RDWR);
++	if (fd_core < 0) {
++		printf("Failed to open device: " SOO_CORE_DEVICE " (%d)\n", fd_core);
 +		exit(EXIT_FAILURE);
 +	}
 +
-+	stat(me_file_path, &filestat);
++	stat(s3c_file_path, &filestat);
 +
-+	fd = open(me_file_path, O_RDONLY);
++	fd = open(s3c_file_path, O_RDONLY);
 +	if (fd < 0) {
-+		perror(me_file_path);
-+		printf("%s not found.\n", me_file_path);
++		perror(s3c_file_path);
++		printf("%s not found.\n", s3c_file_path);
 +		exit(EXIT_FAILURE);
 +	}
 +
-+	ME_size = filestat.st_size;
++	S3C_size = filestat.st_size;
 +
-+	/* Allocate the ME buffer */
-+	ME_buffer = malloc(ME_size);
-+	assert(ME_buffer != NULL);
++	/* Allocate the S3C buffer */
++	S3C_buffer = malloc(S3C_size);
++	assert(S3C_buffer != NULL);
 +
-+	DBG("agency_core: size to read from sd : %d, buffer address : 0x%08lx\n", ME_size, (unsigned long) ME_buffer);
++	DBG("agency_core: size to read from sd : %d, buffer address : 0x%08lx\n", S3C_size, (unsigned long) S3C_buffer);
 +
-+	/* Read the ME content  */
-+	nread = read(fd, ME_buffer, ME_size);
++	/* Read the S3C content  */
++	nread = read(fd, S3C_buffer, S3C_size);
 +	if (nread < 0) {
-+		printf("Error when reading the ME\n");
++		printf("Error when reading the S3C\n");
 +		exit(EXIT_FAILURE);
 +	}
 +
 +	/* Inject the capsule */
-+	args.buffer = ME_buffer;
-+	args.value = ME_size;
++	args.buffer = S3C_buffer;
++	args.value = S3C_size;
 +	args.slotID = -1; /* Wherever */
 +
-+	if ((ret = ioctl(fd_migration, AGENCY_IOCTL_INJECT_CAPSULE, &args)) < 0) {
-+		printf("Failed to inject ME (%d)\n", ret);
++	if ((ret = ioctl(fd_core, AGENCY_IOCTL_INJECT_CAPSULE, &args)) < 0) {
++		printf("Failed to inject S3C (%d)\n", ret);
 +		exit(EXIT_FAILURE);
 +	}
 +
 +	if (args.slotID == -1) {
-+		printf("No available ME slot further...\n");
++		printf("No available S3C slot further...\n");
 +		exit(EXIT_FAILURE);
 +	}
 +
 +	if (!hold_capsule) {
-+		ioctl(fd_migration, AGENCY_IOCTL_START_CAPSULE, &args);
++		ioctl(fd_core, AGENCY_IOCTL_START_CAPSULE, &args);
 +	}
 +
 +	close(fd);
 +
-+	free(ME_buffer);
++	free(S3C_buffer);
 +
 +	return 0;
 +}

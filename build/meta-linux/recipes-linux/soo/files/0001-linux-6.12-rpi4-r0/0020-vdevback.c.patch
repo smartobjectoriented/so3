@@ -285,7 +285,7 @@
 +}
 +
 +/*
-+ * Search for a console related to a specific ME according to its domid.
++ * Search for a console related to a specific S3C according to its domid.
 + */
 +struct vbus_device *vdevback_get_entry(uint32_t domid, struct list_head *_list) {
 +	vdev_entry_t *entry;
@@ -297,7 +297,7 @@
 +}
 +
 +/*
-+ * Remove a console attached to a specific ME
++ * Remove a console attached to a specific S3C
 + */
 +void vdevback_del_entry(struct vbus_device *vdev, struct list_head *_list) {
 +	vdev_entry_t *entry;

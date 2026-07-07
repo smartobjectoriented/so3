@@ -42,8 +42,8 @@
 +
 +#define INJECTOR_N_RECV_BUFFERS	10
 +
-+/* Max ME size in bytes */
-+#define DATACOMM_ME_MAX_SIZE	(32 * 1024 * 1024)
++/* Max S3C size in bytes */
++#define DATACOMM_S3C_MAX_SIZE	(32 * 1024 * 1024)
 +
 +#endif /* __KERNEL__ */
 +
@@ -60,7 +60,7 @@
 +
 +/*
 + * - INJECTOR_BUFFER_FREE means the buffer is ready for send/receive operations.
-+ * - INJECTOR_BUFFER_BUSY means the buffer is reserved for a ME.
++ * - INJECTOR_BUFFER_BUSY means the buffer is reserved for a S3C.
 + * - INJECTOR_BUFFER_SENDING means the buffer is currently along the path for being sent out.
 + *   The buffer can still be altered depending on the steps of sending (See SOOlink/Coder).
 + */
@@ -77,9 +77,9 @@
 +	injector_buffer_status_t	status;
 +
 +	/*
-+	 * Reference to the ME.
++	 * Reference to the S3C.
 +	 */
-+	void *ME_data;
++	void *S3C_data;
 +	size_t size;
 +
 +	uint32_t prio;
@@ -87,18 +87,18 @@
 +} injector_buffer_desc_t;
 +
 +void injector_prepare(uint32_t size);
-+void injector_clean_ME(void);
-+uint32_t injector_retrieve_ME(void);
++void injector_clean_S3C(void);
++uint32_t injector_retrieve_S3C(void);
 +
-+void *injector_get_ME_buffer(void);
-+size_t injector_get_ME_size(void);
++void *injector_get_S3C_buffer(void);
++size_t injector_get_S3C_size(void);
 +
 +void *injector_get_tmp_buf(void);
 +size_t injector_get_tmp_size(void);
 +bool injector_is_full(void);
 +void injector_set_full(bool _full);
 +
-+void injector_receive_ME(void *ME, size_t size);
++void injector_receive_S3C(void *S3C, size_t size);
 +
 +int inject_capsule(void *buffer, size_t size, int slotID, unsigned capsuleID);
 +void start_capsule(int slotID);

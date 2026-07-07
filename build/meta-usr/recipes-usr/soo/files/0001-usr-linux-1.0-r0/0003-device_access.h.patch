@@ -26,7 +26,7 @@
 +
 +#define FILENAME_MAX_LEN	80
 +
-+#define SOO_ME_DIRECTORY 	"/mnt/ME"
++#define SOO_S3C_DIRECTORY 	"/mnt/S3C"
 +#define SOO_BOOT_PART		"/mnt/boot/"
 +#define SOO_ROOTFS_P2 		"/mnt/rootfs1/"
 +#define SOO_ROOTFS_P4 		"/mnt/rootfs2/"
@@ -47,8 +47,8 @@
 +
 +#define ITB_PATH 		SOO_BOOT_PART ITB_NAME
 +
-+void agency_inject_ME_from_memory(void);
-+void sig_inject_ME_from_memory(int sig);
++void agency_inject_S3C_from_memory(void);
++void sig_inject_S3C_from_memory(int sig);
 +
 +void inject_MEs_from_filesystem(void);
 +

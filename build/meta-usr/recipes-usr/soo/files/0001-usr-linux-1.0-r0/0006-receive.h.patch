@@ -25,6 +25,6 @@
 +
 +#include <soo/uapi/soo.h>
 +
-+void ME_processing_receive(void);
++void S3C_processing_receive(void);
 +
 +#endif /* RECEIVE_H */

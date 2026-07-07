@@ -78,7 +78,7 @@
 +
 +	struct completion watch_wait;
 +
-+	/* To manage ongoing transactions when the ME must be suspended */
++	/* To manage ongoing transactions when the S3C must be suspended */
 +	struct mutex transaction_group_mutex;
 +
 +	/* Protect watch (de)register against save/restore. */
@@ -923,7 +923,7 @@
 +	int vbus_irq;
 +
 +	/*
-+	 * Bind evtchn for interdomain communication: must be executed from the agency or from a ME.
++	 * Bind evtchn for interdomain communication: must be executed from the agency or from a S3C.
 +	 */
 +
 +	/* dev temporary used to set up event channel used by vbstore. */
