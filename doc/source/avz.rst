@@ -76,9 +76,9 @@ shared info page and its scheduling metadata. Well-known identifiers
    * - ``DOMID_AGENCY`` (0)
      - the agency guest — Linux, or a plain SO3 (``CONFIG_SOO=n``); owns the
        devices
-   * - slot 1
-     - reserved
-   * - slots 2 …
+   * - domain id 1
+     - reserved (the agency occupies memory slot 1 but keeps domain id 0)
+   * - domain ids 2 …
      - capsule domains
    * - ``MAX_S3C_DOMAINS`` (5)
      - up to five capsules alongside the agency (``MAX_DOMAINS = 2 + 5``)

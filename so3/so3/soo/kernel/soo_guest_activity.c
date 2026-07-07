@@ -64,9 +64,7 @@ void dc_stable(int dc_event)
  * Sends a ping event to a remote domain in order to get synchronized.
  * Various types of event (dc_event) can be sent.
  *
- * To perform a ping from the RT domain, please use rtdm_do_sync_agency() in rtdm_vbus.c
- *
- * As for the domain table, the index 0 and 1 are for the agency and the indexes 2..MAX_DOMAINS
+ * As for the domain table, index 0 is the agency, index 1 is reserved and indexes 2..MAX_DOMAINS
  * are for the MEs. If a S3C_slotID is provided, the proper index is given by S3C_slotID.
  *
  * @domID: the target domain

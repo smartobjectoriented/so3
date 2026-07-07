@@ -195,7 +195,7 @@
 +
 +/*
 + * The following function is called either in the backend OR the frontend.
-+ * On the backend side, it may run on CPU #0 (non-RT) or CPU #1 if the backend is configured as realtime.
++ * On the backend side, it runs on the agency CPU.
 + */
 +void vbus_otherend_changed(struct vbus_watch *watch) {
 +	struct vbus_device *vdev = container_of(watch, struct vbus_device, otherend_watch);
@@ -317,7 +317,7 @@
 +		 */
 +		vbus_switch_state(vdev, VbusStateInitWait);
 +
-+		/* For both RT and non-RT initialization, we wait that the device gets connected */
++		/* We wait until the device gets connected */
 +		wait_for_completion(&vdev->sync_backfront);
 +	}
 +
@@ -813,8 +813,8 @@
 +
 +	/*
 +	 * Set up the directcomm communication channel that
-+	 * is used between the different domains, mainly between the agency and MEs,
-+	 * or the non-realtime and realtime agency.
++	 * is used between the different domains, mainly between the agency and the
++	 * MEs (capsules).
 +	 */
 +
 +	for (i = 1; i < MAX_DOMAINS; i++) {

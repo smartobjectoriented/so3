@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/avz/uapi/avz.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/avz/uapi/avz.h	2025-08-29 08:46:41.396291602 +0200
-@@ -0,0 +1,304 @@
+@@ -0,0 +1,300 @@
 +/*
 + * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -37,7 +37,6 @@
 +#define NR_VIRQS 256
 +
 +#define VIRQ_TIMER 0 /* System timer tick virtualized interrupt */
-+#define VIRQ_TIMER_RT 1 /* Timer tick issued from the oneshot timer (for RT agency and MEs */
 +
 +/**************************************************/
 +
@@ -55,14 +54,11 @@
 +
 +#define MAX_ME_DOMAINS 5
 +
-+/* We include the (non-RT & RT) agency domain */
++/* domains[]: 0 = agency, 1 = reserved, 2.. = up to MAX_ME_DOMAINS capsules */
 +#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
 +
 +/* Agency */
 +#define DOMID_AGENCY 0
-+
-+/* Realtime agency subdomain */
-+#define DOMID_AGENCY_RT 1
 +
 +#define DOMID_INVALID (0x7FF4U)
 +

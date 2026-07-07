@@ -132,7 +132,7 @@ void device_shutdown(void)
 }
 
 /*
- * In frontend drivers, otherend_id refering to the agency or *realtime* agency is equal to 0.
+ * In frontend drivers, otherend_id refering to the agency is equal to 0.
  */
 static void read_backend_details(struct vbus_device *vdev)
 {

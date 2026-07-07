@@ -197,18 +197,3 @@ enum vbus_state vbus_read_driver_state(const char *path)
 
 	return result;
 }
-
-/**
- * vbus_read_driver_realtime
- * @path: path for driver
- *
- * Return the value to indicate if the driver is realtime or not.
- */
-bool vbus_read_driver_realtime(const char *path)
-{
-	int val;
-
-	vbus_gather(VBT_NIL, path, "realtime", "%d", &val, NULL);
-
-	return val;
-}

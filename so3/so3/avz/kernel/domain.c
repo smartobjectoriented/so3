@@ -45,8 +45,8 @@ static DEFINE_SPINLOCK(domctl_lock);
 
 /*
  * We don't care of the IDLE domain here...
- * In the domain table, the index 0 and 1 are dedicated to the non-RT and RT agency domains.
- * The indexes 1..MAX_DOMAINS are for the MEs. S3C_slotID should correspond to domain ID.
+ * In the domain table, index 0 is the agency domain; index 1 is reserved and
+ * indexes 2..MAX_DOMAINS are for the capsules. S3C_slotID corresponds to the domain ID.
  */
 struct domain *domains[MAX_DOMAINS];
 
@@ -120,10 +120,7 @@ struct domain *domain_create(domid_t domid, int cpu_id)
 		} else if (cpu_id == AGENCY_CPU) {
 			d->sched = &sched_agency;
 			d->need_periodic_timer = true;
-
-		} else if (cpu_id == AGENCY_RT_CPU)
-
-			d->sched = &sched_agency;
+		}
 	}
 
 	if (sched_init_domain(d, cpu_id) != 0)

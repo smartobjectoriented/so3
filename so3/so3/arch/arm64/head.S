@@ -237,8 +237,8 @@ el2_setup:
    	and 	x1, x1, #3
 
 #ifdef CONFIG_SOO
-	cmp 	x1, #AGENCY_RT_CPU
-	bgt 	guest
+	cmp 	x1, #S3C_CPU
+	bge 	guest
 #endif /* CONFIG_SOO */
 
 agency:

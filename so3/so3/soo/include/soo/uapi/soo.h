@@ -31,7 +31,6 @@
 #endif /* __ASSEMBLY__ */
 
 #define AGENCY_CPU 0
-#define AGENCY_RT_CPU 1
 
 #ifndef __ASSEMBLY__
 
@@ -214,7 +213,7 @@ typedef struct {
 
 	uint64_t agencyUID; /* Agency UID */
 
-	/* Event channels used for directcomm channel between agency and agency-RT or capsule */
+	/* Event channels used for directcomm channel between agency and capsule */
 	unsigned int dc_evtchn[MAX_DOMAINS];
 
 	/* Event channels used by vbstore */

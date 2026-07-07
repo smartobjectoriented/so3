@@ -9,7 +9,7 @@
 +menu "Smart Object Oriented subsystem" 
 +
 +config VDUMMY_BACKEND
-+        bool "SOO (realtime and no-RT) vDummy support for debugging and testing"
++        bool "SOO vDummy support for debugging and testing"
 +
 +config VUART_BACKEND
 +	bool "vuart UART Backend support for SOO Mobile Entity consoles"

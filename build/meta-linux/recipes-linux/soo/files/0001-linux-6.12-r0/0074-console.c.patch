@@ -79,13 +79,13 @@
 +int avz_switch_console(char ch)
 +{
 +	static int switch_code_count = 0;
-+	static char *input_str[N_SWITCH_FOCUS] = { "Agency domain", "Agency-RT domain", "ME-1(2)", "ME-2(3)", "ME-3(4)", "ME-4(5)", "ME-5(6)", "Agency AVZ Hypervisor" };
++	static char *input_str[N_SWITCH_FOCUS] = { "Agency domain", "reserved", "ME-1(2)", "ME-2(3)", "ME-3(4)", "ME-4(5)", "ME-5(6)", "Agency AVZ Hypervisor" };
 +	struct device_node *np;
 +	int active = 0;
 +	u32 focus_max = N_SWITCH_FOCUS - 1;
 +        avz_hyp_t args;
 +
-+#if 0 /* Interactions with RT domain? */
++#if 0 /* Interactions with reserved domain? */
 +	int next = 1;
 +#endif
 +	int next = 2;
@@ -127,7 +127,7 @@
 +		case 0: /* Input to the agency */
 +			return 0;
 +
-+		case 1: /* RT domain */
++		case 1: /* reserved domain */
 +		case 2: /* Input to ME #1 */
 +		case 3: /* Input to ME #2 */
 +		case 4: /* Input to ME #3 */
