@@ -27,6 +27,7 @@
 #include <compiler.h>
 #include <printk.h>
 #include <string.h>
+#include <math.h>
 
 #endif /* __ASSEMBLY__ */
 
@@ -48,30 +49,6 @@
 
 extern addr_t __end[];
 extern addr_t __stack_bottom[];
-
-#define DIV_ROUND_CLOSEST(x, divisor)                                                                                 \
-	({                                                                                                            \
-		typeof(x) __x = x;                                                                                    \
-		typeof(divisor) __d = divisor;                                                                        \
-		(((typeof(x)) -1) > 0 || ((typeof(divisor)) -1) > 0 || (__x) > 0) ? (((__x) + ((__d) / 2)) / (__d)) : \
-										    (((__x) - ((__d) / 2)) / (__d));  \
-	})
-
-#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
-
-#define max(a, b)                  \
-	({                         \
-		typeof(a) _a = a;  \
-		typeof(b) _b = b;  \
-		_a > _b ? _a : _b; \
-	})
-
-#define min(a, b)                  \
-	({                         \
-		typeof(a) _a = a;  \
-		typeof(b) _b = b;  \
-		_a < _b ? _a : _b; \
-	})
 
 /**
  * container_of - cast a member of a structure out to the containing structure
@@ -138,24 +115,6 @@ extern boot_stage_t boot_stage;
 extern uint32_t origin_cpu;
 
 extern void __backtrace(void);
-/*
- * ..and if you can't take the strict
- * types, you can specify one yourself.
- *
- * Or not use min/max at all, of course.
- */
-#define min_t(type, x, y)              \
-	({                             \
-		type __x = (x);        \
-		type __y = (y);        \
-		__x < __y ? __x : __y; \
-	})
-#define max_t(type, x, y)              \
-	({                             \
-		type __x = (x);        \
-		type __y = (y);        \
-		__x > __y ? __x : __y; \
-	})
 
 /*
  * Check at compile time that something is of a particular type.
@@ -168,32 +127,6 @@ extern void __backtrace(void);
 		(void) (&__dummy == &__dummy2); \
 		1;                              \
 	})
-
-/*
- * This looks more complex than it should be. But we need to
- * get the type for the ~ right in round_down (it needs to be
- * as wide as the result!), and we want to evaluate the macro
- * arguments just once each.
- */
-#define __round_mask(x, y) ((__typeof__(x)) ((y) - 1))
-/**
- * round_up - round up to next specified power of 2
- * @x: the value to round
- * @y: multiple to round up to (must be a power of 2)
- *
- * Rounds @x up to next multiple of @y (which must be a power of 2).
- * To perform arbitrary rounding up, use roundup() below.
- */
-#define round_up(x, y) ((((x) - 1) | __round_mask(x, y)) + 1)
-/**
- * round_down - round down to next specified power of 2
- * @x: the value to round
- * @y: multiple to round down to (must be a power of 2)
- *
- * Rounds @x down to next multiple of @y (which must be a power of 2).
- * To perform arbitrary rounding down, use rounddown() below.
- */
-#define round_down(x, y) ((x) & ~__round_mask(x, y))
 
 #endif /* __ASSEMBLY__ */
 

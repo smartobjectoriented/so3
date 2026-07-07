@@ -22,6 +22,77 @@
 
 #include <types.h>
 
+#ifndef __ASSEMBLY__
+
+#define max(a, b)                  \
+	({                         \
+		typeof(a) _a = a;  \
+		typeof(b) _b = b;  \
+		_a > _b ? _a : _b; \
+	})
+
+#define min(a, b)                  \
+	({                         \
+		typeof(a) _a = a;  \
+		typeof(b) _b = b;  \
+		_a < _b ? _a : _b; \
+	})
+
+/*
+ * ..and if you can't take the strict
+ * types, you can specify one yourself.
+ *
+ * Or not use min/max at all, of course.
+ */
+#define min_t(type, x, y)              \
+	({                             \
+		type __x = (x);        \
+		type __y = (y);        \
+		__x < __y ? __x : __y; \
+	})
+#define max_t(type, x, y)              \
+	({                             \
+		type __x = (x);        \
+		type __y = (y);        \
+		__x > __y ? __x : __y; \
+	})
+
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+
+#define DIV_ROUND_CLOSEST(x, divisor)                                                                                 \
+	({                                                                                                            \
+		typeof(x) __x = x;                                                                                    \
+		typeof(divisor) __d = divisor;                                                                        \
+		(((typeof(x)) -1) > 0 || ((typeof(divisor)) -1) > 0 || (__x) > 0) ? (((__x) + ((__d) / 2)) / (__d)) : \
+										    (((__x) - ((__d) / 2)) / (__d));  \
+	})
+
+/*
+ * This looks more complex than it should be. But we need to
+ * get the type for the ~ right in round_down (it needs to be
+ * as wide as the result!), and we want to evaluate the macro
+ * arguments just once each.
+ */
+#define __round_mask(x, y) ((__typeof__(x)) ((y) - 1))
+/**
+ * round_up - round up to next specified power of 2
+ * @x: the value to round
+ * @y: multiple to round up to (must be a power of 2)
+ *
+ * Rounds @x up to next multiple of @y (which must be a power of 2).
+ * To perform arbitrary rounding up, use roundup() below.
+ */
+#define round_up(x, y) ((((x) - 1) | __round_mask(x, y)) + 1)
+/**
+ * round_down - round down to next specified power of 2
+ * @x: the value to round
+ * @y: multiple to round down to (must be a power of 2)
+ *
+ * Rounds @x down to next multiple of @y (which must be a power of 2).
+ * To perform arbitrary rounding down, use rounddown() below.
+ */
+#define round_down(x, y) ((x) & ~__round_mask(x, y))
+
 /*
  * Round @n up to the next power of two. Returns @n unchanged when it already is
  * a power of two, and 1 for @n == 0.
@@ -69,5 +140,7 @@ static inline s32 log_2_n_round_down(u32 n)
 
 	return log2n;
 }
+
+#endif /* __ASSEMBLY__ */
 
 #endif /* MATH_H */
