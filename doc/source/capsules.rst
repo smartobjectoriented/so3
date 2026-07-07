@@ -22,7 +22,7 @@ The agency: Linux + the SOO framework
 The capsule model needs a **Linux** agency: Linux owns the devices and provides
 the backend drivers and the higher-level services that capsules talk to — the
 backend half of the frontend/backend split, the vbstore server and the
-capsule-management user space (``injector``, ``s3c-list``, ``s3c-save`` /
+capsule-management user space (``s3c-inject``, ``s3c-list``, ``s3c-save`` /
 ``s3c-restore``, the EMISO engine).
 
 The so3 **build system can fetch and build that agency itself**, the same way it

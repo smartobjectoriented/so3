@@ -13,7 +13,7 @@ SOO_URI:append = "\
     file://0011-debug.h.patch \
     file://0012-soo.h.patch \
     file://0016-CMakeLists.txt.patch \
-    file://0047-injector.c.patch \
+    file://0047-s3c-inject.c.patch \
     file://0048-s3c-list.c.patch \
     file://0049-s3c-restore.c.patch \
     file://0050-s3c-save.c.patch \

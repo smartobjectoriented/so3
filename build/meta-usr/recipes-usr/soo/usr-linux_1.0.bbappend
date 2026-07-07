@@ -19,7 +19,7 @@ require files/0001-${PF}-patches.inc
 do_install_apps:append () {
    
     if echo ":${OVERRIDES}:" | grep -q ":soo"; then
-        usr_do_install_file_root "${IB_TARGET}/build/src/soo/injector"
+        usr_do_install_file_root "${IB_TARGET}/build/src/soo/s3c-inject"
         usr_do_install_file_root "${IB_TARGET}/build/src/soo/s3c-restore"
         usr_do_install_file_root "${IB_TARGET}/build/src/soo/s3c-save"
         usr_do_install_file_root "${IB_TARGET}/build/src/soo/s3c-list"

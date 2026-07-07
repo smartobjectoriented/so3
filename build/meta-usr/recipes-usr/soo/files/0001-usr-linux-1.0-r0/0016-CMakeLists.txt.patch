@@ -3,7 +3,7 @@
 @@ -0,0 +1,12 @@
 +
 +
-+add_executable(injector injector.c)
++add_executable(s3c-inject s3c-inject.c)
 +
 +add_executable(s3c-save s3c-save.c)
 +add_executable(s3c-restore s3c-restore.c)
