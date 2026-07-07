@@ -88,8 +88,6 @@ struct vbus_device {
 	struct completion sync_backfront;
 
 	int resuming;
-
-	bool realtime; /* Tell if this device is a RT device */
 };
 
 /* A vbus driver. */
@@ -206,7 +204,6 @@ void vbus_bind_evtchn(struct vbus_device *dev, uint32_t remote_port, uint32_t *p
 void vbus_free_evtchn(struct vbus_device *dev, uint32_t port);
 
 enum vbus_state vbus_read_driver_state(const char *path);
-bool vbus_read_driver_realtime(const char *path);
 
 const char *vbus_strstate(enum vbus_state state);
 int vbus_dev_is_online(struct vbus_device *dev);

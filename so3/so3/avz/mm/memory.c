@@ -37,7 +37,7 @@
 
 /*
  * Set of memslots in the RAM memory (do not confuse with memchunk !)
- * In the memslot table, the index 0 is for AVZ, the index 1 is for the two agency domains (domain 0 (non-RT) and domain 1 (RT))
+ * In the memslot table, the index 0 is for AVZ, the index 1 is for the agency domain (domain 0)
  * and the indexes 2..MEMSLOT_NR are for the MEs. If the S3C_slotID is provided, the index is given by S3C_slotID.
  * Hence, the S3C_slotID matches with the capsule domID.
  */

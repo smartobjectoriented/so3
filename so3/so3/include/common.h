@@ -33,14 +33,12 @@
 #ifdef CONFIG_AVZ
 
 /*
- * CPU #0 is the primary (non-RT) Agency CPU.
- * CPU #1 is the hard RT Agency CPU.
- * CPU #2 is the second (SMP) Agency CPU.
+ * CPU #0 is the primary Agency CPU.
+ * CPU #1 and #2 are additional (SMP) Agency CPUs.
  * CPU #3 is the capsule CPU.
  */
 
 #define AGENCY_CPU 0
-#define AGENCY_RT_CPU 1
 
 #define S3C_CPU 3
 

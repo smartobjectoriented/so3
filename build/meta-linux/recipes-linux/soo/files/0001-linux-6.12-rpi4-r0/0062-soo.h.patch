@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/uapi/soo.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/uapi/soo.h	2025-08-29 08:46:41.395924678 +0200
-@@ -0,0 +1,460 @@
+@@ -0,0 +1,459 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -34,7 +34,6 @@
 +#endif /* __ASSEMBLY__ */
 +
 +#define AGENCY_CPU 0
-+#define AGENCY_RT_CPU 1
 +
 +#ifndef __ASSEMBLY__
 +
@@ -203,7 +202,7 @@
 +
 +	uint64_t agencyUID; /* Agency UID */
 +
-+	/* Event channels used for directcomm channel between agency and agency-RT or ME */
++	/* Event channels used for directcomm channel between agency and ME */
 +	unsigned int dc_evtchn[MAX_DOMAINS];
 +
 +	/* Event channels used by vbstore */

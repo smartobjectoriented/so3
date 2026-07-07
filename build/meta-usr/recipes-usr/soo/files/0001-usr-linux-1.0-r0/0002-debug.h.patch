@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/include/core/debug.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./include/core/debug.h	2025-10-10 17:28:33.584702104 +0200
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,48 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
 + * Copyright (C) 2018-2019 Baptiste Delporte <bonel@bonel.net>
@@ -41,7 +41,6 @@
 +#else
 +
 +#define DBG(fmt, ...)
-+#define RTDBG(fmt, ...)
 +#define DBG0(...)
 +#define DBG_BUFFER(buffer, ...)
 +#define DBG_ON__

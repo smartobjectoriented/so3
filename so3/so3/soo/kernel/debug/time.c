@@ -20,8 +20,7 @@
 /*
  * Timestamp and delay measurement facility.
  *
- * There are two sets of functions: one for a non RT domain (non RT agency or capsule), one for the
- * RT agency. The RT version is prefixed with rtdm_.
+ * These functions are usable from any domain (agency or capsule).
  *
  * Typical usage:
  *

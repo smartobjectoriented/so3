@@ -34,7 +34,6 @@
 #define NR_VIRQS 256
 
 #define VIRQ_TIMER 0 /* System timer tick virtualized interrupt */
-#define VIRQ_TIMER_RT 1 /* Timer tick issued from the oneshot timer (for RT agency and MEs */
 
 /**************************************************/
 
@@ -52,7 +51,7 @@
 
 #define MAX_S3C_DOMAINS 5
 
-/* slot 0 = agency, slot 1 reserved, plus up to MAX_S3C_DOMAINS capsules */
+/* domains[]: 0 = agency, 1 = reserved, 2.. = up to MAX_S3C_DOMAINS capsules */
 #define MAX_DOMAINS (2 + MAX_S3C_DOMAINS)
 
 /* Agency */

@@ -163,7 +163,6 @@ void vbus_read_otherend_details(struct vbus_device *vdev, char *id_node, char *p
 }
 /*
  * The following function is called either in the backend OR the frontend.
- * On the backend side, it may run on CPU #0 (non-RT) or CPU #1 if the backend is configured as realtime.
  */
 void vbus_otherend_changed(struct vbus_watch *watch)
 {
@@ -364,10 +363,8 @@ static struct vbus_device *vbus_probe_node(struct vbus_type *bus, const char *ty
 	int err;
 	struct vbus_device *vdev;
 	enum vbus_state state;
-	bool realtime;
 
 	state = vbus_read_driver_state(nodename);
-	realtime = vbus_read_driver_realtime(nodename);
 
 	/* If the backend driver entry exists, but no frontend is using it, there is no
 	 * vbstore entry related to the state and we simply skip it.
@@ -385,7 +382,6 @@ static struct vbus_device *vbus_probe_node(struct vbus_type *bus, const char *ty
 	vdev->state = VbusStateInitialising;
 
 	vdev->resuming = 0;
-	vdev->realtime = realtime;
 
 	vdev->vdrv = NULL;
 	vdev->vbus = bus;
@@ -563,7 +559,7 @@ void vbus_init(void)
 	}
 
 	avz_shared->dom_desc.u.S3C.dc_evtchn = evtchn_from_irq(res);
-	DBG("%s: local event channel bound to directcomm towards non-RT Agency : %d\n", __func__,
+	DBG("%s: local event channel bound to directcomm towards Agency : %d\n", __func__,
 	    avz_shared->dom_desc.u.S3C.dc_evtchn);
 
 	DBG("vbus_init OK!\n");

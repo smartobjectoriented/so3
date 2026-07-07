@@ -50,10 +50,8 @@ static void vbs_s3c_write(const char *dir, const char *node, const char *string)
 /*
  * The following vbstore node creation does not require to be within a transaction
  * since the backend has no visibility on these nodes until it gets the DC_TRIGGER_DEV_PROBE event.
- *
- * <realtime> tells if the device is realtime.
  */
-static void vbstore_dev_init(unsigned int domID, const char *devname, bool realtime, const char *compat)
+static void vbstore_dev_init(unsigned int domID, const char *devname, const char *compat)
 {
 	char rootname[VBS_KEY_LENGTH]; /* Root name depending on domID */
 	char propname[VBS_KEY_LENGTH]; /* Property name depending on domID */
@@ -94,15 +92,6 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	sprintf(rootname, devrootname, domID);
 	vbs_s3c_write(rootname, "state", "1"); /* = VBusStateInitialising */
 
-	switch (realtime) {
-	case true:
-		vbs_s3c_write(rootname, "realtime", "1");
-		break;
-
-	case false:
-		vbs_s3c_write(rootname, "realtime", "0");
-	}
-
 	vbs_s3c_write(rootname, "backend-id", "0");
 
 	strcpy(devrootname, "backend/");
@@ -128,21 +117,6 @@ static void vbstore_dev_init(unsigned int domID, const char *devname, bool realt
 	strcat(devrootname, "/0"); /* "/backend/vuart/%d/state/1" */
 	sprintf(rootname, devrootname, domID);
 	vbs_s3c_write(rootname, "state", "1");
-
-	switch (realtime) {
-	case true:
-		vbs_s3c_write(rootname, "realtime", "1");
-
-		/* The two next entries are used to synchronize RT and non-RT vbus/vbstore. */
-		vbs_s3c_write(rootname, "sync_backfront", "0");
-
-		vbs_s3c_write(rootname, "sync_backfront_rt", "0");
-
-		break;
-
-	case false:
-		vbs_s3c_write(rootname, "realtime", "0");
-	}
 
 	strcpy(devrootname, "device/%d/");
 	strcat(devrootname, devname);
@@ -273,49 +247,49 @@ void vbstore_devices_populate(void)
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vdummy,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vdummy...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vdummy", false, "vdummy,frontend");
+		vbstore_dev_init(S3C_domID(), "vdummy", "vdummy,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuihandler,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: Init vUIHandler...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vuihandler", false, "vuihandler,frontend");
+		vbstore_dev_init(S3C_domID(), "vuihandler", "vuihandler,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vuart,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vuart...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vuart", false, "vuart,frontend");
+		vbstore_dev_init(S3C_domID(), "vuart", "vuart,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsenseled,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsenseled...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vsenseled", false, "vsenseled,frontend");
+		vbstore_dev_init(S3C_domID(), "vsenseled", "vsenseled,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vsensej,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vsensej...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vsensej", false, "vsensej,frontend");
+		vbstore_dev_init(S3C_domID(), "vsensej", "vsensej,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vlogs,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vlogs...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vlogs", false, "vlogs,frontend");
+		vbstore_dev_init(S3C_domID(), "vlogs", "vlogs,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vfbdev...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vfbdev", false, "vfbdev,frontend");
+		vbstore_dev_init(S3C_domID(), "vfbdev", "vfbdev,frontend");
 	}
 
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vinput,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vinput...\n", __func__);
-		vbstore_dev_init(S3C_domID(), "vinput", false, "vinput,frontend");
+		vbstore_dev_init(S3C_domID(), "vinput", "vinput,frontend");
 	}
 }
 
