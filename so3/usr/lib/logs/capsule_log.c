@@ -27,7 +27,7 @@
  * Generates logs messages. It does:
  *   1. Add '[S3C:<S3C_ID>]' prefix to the message
  *   2. Send message though vLOGS
- *   3. The message is added in a file (`/var/log/soo/me_<SLOT-ID>.log) on the
+ *   3. The message is added in a file (`/var/log/soo/s3c_<SLOT-ID>.log) on the
  *      agency (SOO environment)
  *
  *   Warnings: It works only on Capsule - SO3 running on SOO environment

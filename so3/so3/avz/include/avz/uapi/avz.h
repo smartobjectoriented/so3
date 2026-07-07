@@ -288,7 +288,7 @@ struct avz_shared {
 	 */
 	u64 current_s_time;
 
-	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	/* Used to store a signature for consistency checking, for example after a snapshot restoration */
 	char signature[4];
 };
 

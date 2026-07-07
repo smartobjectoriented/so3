@@ -41,7 +41,7 @@ typedef struct {
 } host_t;
 
 /*
- * Common structure to help in migration pattern and other.
+ * Common structure to help in the capsule lifecycle and other.
  * This structure must be allocated within a page (or several contiguous pages).
  */
 typedef struct {

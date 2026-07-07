@@ -228,7 +228,7 @@ void context_switch(struct domain *prev, struct domain *next)
 
 	prev->is_running = 0;
 
-	/* Check for migration request /after/ clearing running flag. */
+	/* Memory barrier /after/ clearing the running flag. */
 	smp_mb();
 
 	spin_unlock(&prev->sched->sched_data.schedule_lock);

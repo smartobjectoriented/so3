@@ -44,7 +44,7 @@ sh_refso3_t *sh_refso3;
 /**
  * PRE_SUSPEND
  *
- * This callback is executed right before suspending the state of frontend drivers, before migrating
+ * This callback is executed right before suspending the state of frontend drivers.
  *
  */
 void cb_pre_suspend(soo_domcall_arg_t *args)
