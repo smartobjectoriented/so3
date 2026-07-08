@@ -428,7 +428,7 @@
 +	vbs_store_mkdir("/backend");
 +	vbs_store_mkdir("/device");
 +
-+#warning the following entries (domain + directcomm) need to be revisited (see soo/me entries)
++#warning the following entries (domain + directcomm) need to be revisited (see soo/s3c entries)
 +
 +	vbs_store_mkdir("/domain");
 +	vbs_store_mkdir("/domain/gnttab");
@@ -440,7 +440,7 @@
 +	vbs_store_mkdir("/domain/gnttab/5");
 +	vbs_store_mkdir("/domain/gnttab/6");
 +
-+	/* Target ME directcomm event channel */
++	/* Target S3C directcomm event channel */
 +	vbs_store_mkdir("/soo");
 +	vbs_store_mkdir("/soo/directcomm");
 +	vbs_store_mkdir("/soo/directcomm/0");
@@ -451,8 +451,8 @@
 +	vbs_store_mkdir("/soo/directcomm/5");
 +	vbs_store_mkdir("/soo/directcomm/6");
 +
-+	/* Prepare the entries for ME ID information */
-+	vbs_store_mkdir("/soo/me");
++	/* Prepare the entries for S3C ID information */
++	vbs_store_mkdir("/soo/s3c");
 +
 +	/* Agency backend side of virtual LED device  */
 +	np = of_find_compatible_node(NULL, NULL, "vleds,backend");

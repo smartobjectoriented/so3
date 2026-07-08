@@ -52,10 +52,10 @@
 +/* DOMID_SELF is used in certain contexts to refer to oneself. */
 +#define DOMID_SELF (0x7FF0U)
 +
-+#define MAX_ME_DOMAINS 5
++#define MAX_S3C_DOMAINS 5
 +
-+/* domains[]: 0 = agency, 1 = reserved, 2.. = up to MAX_ME_DOMAINS capsules */
-+#define MAX_DOMAINS (2 + MAX_ME_DOMAINS)
++/* domains[]: 0 = agency, 1 = reserved, 2.. = up to MAX_S3C_DOMAINS capsules */
++#define MAX_DOMAINS (2 + MAX_S3C_DOMAINS)
 +
 +/* Agency */
 +#define DOMID_AGENCY 0
@@ -284,7 +284,7 @@
 +	 */
 +	u64 current_s_time;
 +
-+	/* Used to store a signature for consistency checking, for example after a migration/restoration */
++	/* Used to store a signature for consistency checking, for example after a snapshot restoration */
 +	char signature[4];
 +};
 +

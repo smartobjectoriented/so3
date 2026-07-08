@@ -1,5 +1,5 @@
---- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/melist.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./src/soo/melist.c	2025-10-10 17:28:33.594328500 +0200
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/s3c-list.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/s3c-list.c	2025-10-10 17:28:33.594328500 +0200
 @@ -0,0 +1,93 @@
 +/*
 + * Copyright (C) 2018 Baptiste Delporte <bonel@bonel.net>
@@ -31,27 +31,27 @@
 +
 +#include <soo/uapi/soo.h>
 + 
-+const char *ME_state_str(int state) {
++const char *S3C_state_str(int state) {
 +
 +	switch (state) {
-+	case ME_state_stopped:
-+		return "ME_state_stopped";
-+	case ME_state_living:
-+		return "ME_state_living";
-+	case ME_state_suspended:
-+		return "ME_state_suspended";
-+	case ME_state_hibernate:
-+		return "ME_state_hibernate";
-+	case ME_state_resuming:
-+		return "ME_state_resuming";
-+	case ME_state_awakened:
-+		return "ME_state_awakened";
-+	case ME_state_killed:
-+		return "ME_state_killed";
-+	case ME_state_terminated:
-+		return "ME_state_terminated";
-+	case ME_state_dead:
-+		return "ME_state_dead";
++	case S3C_state_stopped:
++		return "S3C_state_stopped";
++	case S3C_state_living:
++		return "S3C_state_living";
++	case S3C_state_suspended:
++		return "S3C_state_suspended";
++	case S3C_state_hibernate:
++		return "S3C_state_hibernate";
++	case S3C_state_resuming:
++		return "S3C_state_resuming";
++	case S3C_state_awakened:
++		return "S3C_state_awakened";
++	case S3C_state_killed:
++		return "S3C_state_killed";
++	case S3C_state_terminated:
++		return "S3C_state_terminated";
++	case S3C_state_dead:
++		return "S3C_state_dead";
 +	}
 +
 +	return "(n/a)";
@@ -62,7 +62,7 @@
 + */
 +int main(int argc, char *argv[]) {
 +	int i, fd_core;
-+	ME_id_t id_array[MAX_ME_DOMAINS];
++	S3C_id_t id_array[MAX_S3C_DOMAINS];
 +	agency_ioctl_args_t agency_ioctl_args;
 +
 +	printf("*** SOO - Mobile Entity ID Retrieval ***\n\n");
@@ -70,19 +70,19 @@
 +	fd_core = open("/dev/soo/core", O_RDWR);
 +	assert(fd_core > 0);
 +
-+	/* Prepare to terminate the running ME (dom #2) */
++	/* Prepare to terminate the running S3C (dom #2) */
 +	printf("*** List of residing Mobile Entities: \n");
 +
 +	agency_ioctl_args.buffer = &id_array;
-+	ioctl(fd_core, AGENCY_IOCTL_GET_ME_ID_ARRAY, (unsigned long) &agency_ioctl_args);
++	ioctl(fd_core, AGENCY_IOCTL_GET_S3C_ID_ARRAY, (unsigned long) &agency_ioctl_args);
 +
-+	for (i = 0; i < MAX_ME_DOMAINS; i++) {
-+		if (id_array[i].state == ME_state_dead)
++	for (i = 0; i < MAX_S3C_DOMAINS; i++) {
++		if (id_array[i].state == S3C_state_dead)
 +			printf("  slot %d -> empty\n", i+2);
 +		else {
 +			printf("  slot %d -> spid: %" PRIx64 "       name: %s       state: %s\n", i+2,
 +				id_array[i].spid, id_array[i].name,
-+				ME_state_str(id_array[i].state));
++				S3C_state_str(id_array[i].state));
 +
 +			printf("             Short description: %s\n", id_array[i].shortdesc);
 +		}

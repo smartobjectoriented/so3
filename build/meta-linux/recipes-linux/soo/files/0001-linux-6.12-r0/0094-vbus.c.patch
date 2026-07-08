@@ -246,9 +246,9 @@
 +		if (vdev->resuming) {
 +
 +			/*
-+			 * It happens after migration & resume
++			 * It happens after resume
 +			 *
-+			 * If we have migrated, we are already in connected state;
++			 * If we have resumed, we are already in connected state;
 +			 * we have been put in this state during the reconfiguring process.
 +			 *
 +			 */
@@ -302,12 +302,12 @@
 +
 +	vdrv->probe(vdev);
 +
-+	/* Get the state from the otherend to see if we are in a post-migration situation. */
++	/* Get the state from the otherend to see if we are in a post-resume situation. */
 +	otherend_state = vbus_read_driver_state(vdev->otherend);
 +
-+	/* If the node is probed after a migration, it means that the frontend will be reconfigured.
++	/* If the node is probed after a resume, it means that the frontend will be reconfigured.
 +	 * In this case, the resuming operation can go ahead.
-+	 * If the ME is not migrated (injected), the node is created and the synchronization will be
++	 * If the S3C is freshly injected, the node is created and the synchronization will be
 +	 * achieved once the device gets connected.
 +	 */
 +	if (otherend_state == VbusStateInitialising) {
@@ -334,7 +334,7 @@
 +	DBG("%s", vdev->nodename);
 +
 +	/*
-+	 * If the ME is running on a Smart Object which does not offer all the backends matching the ME's frontends,
++	 * If the S3C is running on a Smart Object which does not offer all the backends matching the S3C's frontends,
 +	 * some frontend related entries may not have been created. We must check here if the entry matching the dev
 +	 * to remove exists.
 +	 */
@@ -359,7 +359,7 @@
 +/*
 + * Shutdown a device. This function can be called externally, but *not* by the Linux subsystem
 + * during a reboot operation for instance (because of IRQs off). In this case, force_terminate DC events
-+ * will be sent to each running ME during the reboot process.
++ * will be sent to each running S3C during the reboot process.
 + */
 +void vbus_dev_shutdown(struct device *dev)
 +{
@@ -371,7 +371,7 @@
 +	dir_exists = vbus_directory_exists(VBT_NIL, vdev->otherend_watch.node, "");
 +
 +	/*
-+	 * If the ME is running on a Smart Object which does not offer all the backends matching the ME's frontends,
++	 * If the S3C is running on a Smart Object which does not offer all the backends matching the S3C's frontends,
 +	 * some frontend related entries may not have been created. We must check here if the entry matching the dev
 +	 * to shutdown exists.
 +	 */
@@ -512,7 +512,7 @@
 +
 +/*
 + * Create a new node and initialize basic structure (vdev).
-+ * This function is NOT re-entrant and must be executed in the specific context during injection or post-migration sequence.
++ * This function is NOT re-entrant and must be executed in the specific context during injection or post-resume sequence.
 + */
 +static int vbus_probe_node(struct vbus_type *bus, const char *type, const char *nodename)
 +{
@@ -568,7 +568,7 @@
 +
 +/******************/
 +
-+/* Suspend devices which eventually match with a certain root name (specific ME) */
++/* Suspend devices which eventually match with a certain root name (specific S3C) */
 +static int suspend_dev(struct device *dev, void *data)
 +{
 +	const struct vbus_driver *vdrv;
@@ -668,7 +668,7 @@
 +	vdev->resuming = 1;
 +
 +	if (vdev->state != VbusStateSuspended)
-+		/* we are in StateInitWait because newly create vbstore entries after migration */
++		/* we are in StateInitWait because newly create vbstore entries after resume */
 +		vbus_switch_state(vdev, VbusStateReconfiguring);
 +	else {
 +		DBG("Changing state of %s to resuming\n", vdev->nodename);
@@ -848,9 +848,9 @@
 +			BUG();
 +		}
 +
-+		/* Finally, we put the directcomm event channel in vbstore (intended to ME usage) */
++		/* Finally, we put the directcomm event channel in vbstore (intended to S3C usage) */
 +		/* Save it in vbstore */
-+		DBG("%s: writing initial vbstore entries for directcomm activities for ME %d ...\n", __func__, i);
++		DBG("%s: writing initial vbstore entries for directcomm activities for S3C %d ...\n", __func__, i);
 +
 +		vbus_transaction_start(&vbt);
 +
@@ -859,7 +859,7 @@
 +
 +		vbus_transaction_end(vbt);
 +
-+		DBG("%s: direct communication set up between Agency and ME %d with event channel: %d irq: %d\n", __func__, i, 
++		DBG("%s: direct communication set up between Agency and S3C %d with event channel: %d irq: %d\n", __func__, i, 
 +		avz_shared->dom_desc.u.agency.dc_evtchn[i], evtchn);
 +	}
 +

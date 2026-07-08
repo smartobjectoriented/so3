@@ -55,7 +55,7 @@ const char *get_s3c_shortdesc(void)
  *
  * @return a pointer to the string in the DT if it exists, NULL otherwise.
  */
-const char *get_me_name(void)
+const char *get_s3c_name(void)
 {
 	const char *str = NULL;
 	int node;
@@ -64,7 +64,7 @@ const char *get_me_name(void)
 	node = fdt_find_node_by_name(__fdt_addr, 0, "capsule");
 	ASSERT(node >= 0);
 
-	fdt_property_read_string(__fdt_addr, node, "me_name", &str);
+	fdt_property_read_string(__fdt_addr, node, "s3c_name", &str);
 
 	return str;
 }
@@ -114,17 +114,17 @@ void vbstore_S3C_ID_populate(void)
 	avz_shared->dom_desc.u.S3C.spid = spid;
 
 	/* Set the name */
-	name = get_me_name();
+	name = get_s3c_name();
 
 	/* And set a short description which can be used on the user GUI */
 	shortdesc = get_s3c_shortdesc();
 
-	strcpy(rootname, "soo/me");
+	strcpy(rootname, "soo/s3c");
 
 	sprintf(entry, "%d", S3C_domID());
 	vbus_mkdir(VBT_NIL, rootname, entry);
 
-	sprintf(rootname, "soo/me/%d", S3C_domID());
+	sprintf(rootname, "soo/s3c/%d", S3C_domID());
 	sprintf(entry, "%lx", spid);
 
 	vbus_write(VBT_NIL, rootname, "spid", entry);

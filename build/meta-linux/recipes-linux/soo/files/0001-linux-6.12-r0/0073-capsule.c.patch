@@ -47,12 +47,12 @@
 +#include <soo/uapi/debug.h>
 +#include <soo/uapi/injector.h>
 +
-+/* Buffer in which the ME will be received. It is dynamically allocated
++/* Buffer in which the S3C will be received. It is dynamically allocated
 +in injector_prepare */
-+uint8_t *ME_buffer;
++uint8_t *S3C_buffer;
 +
 +/* Full size of the me we are receiving */
-+size_t ME_size;
++size_t S3C_size;
 +
 +/* Current size received */
 +size_t current_size = 0;
@@ -90,13 +90,13 @@
 +
 +        DBG("Original contents at address: 0x%08x\n with size %d bytes\n", (unsigned long) buffer, size);
 +
-+        /* Allocate a contiguous memory region to host the ME */
++        /* Allocate a contiguous memory region to host the S3C */
 +        me = dma_alloc_coherent(capsule_dev, size, &dma_handle, GFP_KERNEL);
 +        BUG_ON(!me);
 +
 +        memcpy(me, buffer, size);
 +
-+        /* Since the ME buffer is in the CMA zone and allocated via the
++        /* Since the S3C buffer is in the CMA zone and allocated via the
 +         * dma_alloc_cohenrent() function, we cannot use virt_to_phys(). So, we
 +         * take the CPU phys addr stored in dma_handle, and we force to a
 +         * (wrong) virtual address to make sure the soo_hypercall() function
@@ -125,7 +125,7 @@
 +void start_capsule(int slotID) {
 +        avz_hyp_t args;
 +
-+        BUG_ON(get_ME_state(slotID) != ME_state_stopped);
++        BUG_ON(get_S3C_state(slotID) != S3C_state_stopped);
 +
 +        args.cmd = AVZ_START_CAPSULE;
 +
@@ -138,29 +138,29 @@
 +
 +        DBG("Capsule in slot %d in state living...\n", slotID);
 +
-+        set_ME_state(slotID, ME_state_living);
++        set_S3C_state(slotID, S3C_state_living);
 +}
 +
 +/**
-+ * Read a ME snapshot for migration or saving.
-+ * The ME is read and stored in a vmalloc'd memory area.
++ * Read a S3C snapshot for saving.
++ * The S3C is read and stored in a vmalloc'd memory area.
 + *
 + * @param slotID
-+ * @param buffer pointer to the ME buffer
++ * @param buffer pointer to the S3C buffer
 + */
 +void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size) {
 +        avz_hyp_t args;
 +        void *me = NULL;
 +        int ret;
 +        dma_addr_t dma_handle;
-+        ME_state_t ME_state;
++        S3C_state_t S3C_state;
 +
 +        /* Ask the size only */
 +        if (*size == 0) {
 +
 +                DBG("%s: ask the snapshot size...\n", __func__);
 +
-+                args.cmd = AVZ_ME_READ_SNAPSHOT;
++                args.cmd = AVZ_S3C_READ_SNAPSHOT;
 +                args.u.avz_snapshot_args.slotID = slotID;
 +                args.u.avz_snapshot_args.size = 0;
 +
@@ -170,29 +170,29 @@
 +                return;
 +        }
 +
-+        if (get_ME_state(slotID) == ME_state_living) {
++        if (get_S3C_state(slotID) == S3C_state_living) {
 +
-+                /* Suspend the ME */
++                /* Suspend the S3C */
 +                do_sync_dom(slotID, DC_PRE_SUSPEND);
 +
-+                /* Set the ME in suspended state */
-+                set_ME_state(slotID, ME_state_suspended);
++                /* Set the S3C in suspended state */
++                set_S3C_state(slotID, S3C_state_suspended);
 +
 +                vbus_suspend_devices(slotID);
 +
 +                do_sync_dom(slotID, DC_SUSPEND);
 +
-+                printk("### state: %d\n", get_ME_state(slotID));
++                printk("### state: %d\n", get_S3C_state(slotID));
 +        }
 +
 +        /*
-+         * Prepare a buffer to store the ME and additional header information like migration structure.
++         * Prepare a buffer to store the S3C and additional header information like the snapshot structure.
 +         */
 +
 +        me = dma_alloc_coherent(capsule_dev, *size, &dma_handle, GFP_KERNEL);
 +        BUG_ON(!me);
 + 
-+        args.cmd = AVZ_ME_READ_SNAPSHOT;
++        args.cmd = AVZ_S3C_READ_SNAPSHOT;
 +
 +        args.u.avz_snapshot_args.slotID = slotID;
 +        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
@@ -206,29 +206,29 @@
 +	 
 +	dma_free_coherent(capsule_dev, *size, me, dma_handle);
 +
-+        ME_state = get_ME_state(slotID);
++        S3C_state = get_S3C_state(slotID);
 +
-+        if (ME_state == ME_state_resuming) {
++        if (S3C_state == S3C_state_resuming) {
 +
-+                DBG("Pinging ME %d for DC_RESUME...\n", slotID);
++                DBG("Pinging S3C %d for DC_RESUME...\n", slotID);
 +                do_sync_dom(slotID, DC_RESUME);
 +
 +                DBG("Resuming all devices (resuming from backend devices) on domain %d...\n", slotID);
 +                vbus_resume_devices(slotID);
 +
-+                DBG("Pinging ME %d for DC_POST_ACTIVATE...\n", slotID);
++                DBG("Pinging S3C %d for DC_POST_ACTIVATE...\n", slotID);
 +                do_sync_dom(slotID, DC_POST_ACTIVATE);
 +
-+                DBG("Putting ME domid %d in state living...\n", slotID);
-+                set_ME_state(slotID, ME_state_living);
++                DBG("Putting S3C domid %d in state living...\n", slotID);
++                set_S3C_state(slotID, S3C_state_living);
 +        }
 +}
 +
 +/**
-+ * Write a ME snapshot provided a ME_info_transfer_t descriptor.
++ * Write a S3C snapshot provided a S3C_info_transfer_t descriptor.
 + *
 + * @param slotID
-+ * @param buffer  Adresse of a buffer of ME_info_transfert_t
++ * @param buffer  Adresse of a buffer of S3C_info_transfert_t
 + * @return slotID in case of success, -1 if no available slot
 + */
 +int write_snapshot(void *buffer) {
@@ -238,14 +238,14 @@
 +        dma_addr_t dma_handle;
 +        uint32_t snapshot_size;
 +        uint32_t slotID;
-+        ME_state_t ME_state;
++        S3C_state_t S3C_state;
 +
 +        snapshot_size = *((uint32_t *) buffer);
 +
 +        DBG("Retrieving a size of %d bytes.\n", snapshot_size);
 +
 +        /*
-+         * Prepare a buffer to store the ME and additional header information like migration structure.
++         * Prepare a buffer to store the S3C and additional header information like the snapshot structure.
 +         */
 +        me = dma_alloc_coherent(capsule_dev, snapshot_size, &dma_handle, GFP_KERNEL);
 +        BUG_ON(!me);
@@ -254,7 +254,7 @@
 +        ret = copy_from_user(me, buffer, snapshot_size);
 +        BUG_ON(ret);
 +
-+        args.cmd = AVZ_ME_WRITE_SNAPSHOT;
++        args.cmd = AVZ_S3C_WRITE_SNAPSHOT;
 +     
 +        args.u.avz_snapshot_args.size = snapshot_size;
 +        args.u.avz_snapshot_args.slotID = -1;
@@ -273,52 +273,52 @@
 +
 +        dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
 +     
-+        ME_state = get_ME_state(slotID);
++        S3C_state = get_S3C_state(slotID);
 +
-+        if (ME_state == ME_state_stopped) {
++        if (S3C_state == S3C_state_stopped) {
 +                /* Normal processing, start of the capsule */
 +
 +                start_capsule(slotID);
 +                return slotID;
 +        }
 +
-+        BUG_ON((ME_state != ME_state_hibernate) && (ME_state != ME_state_awakened));
++        BUG_ON((S3C_state != S3C_state_hibernate) && (S3C_state != S3C_state_awakened));
 +
-+        DBG0("SOO migration subsys: Entering restoring tasks...\n");
++        DBG0("SOO capsule subsys: Entering restoring tasks...\n");
 +        
 +        /* The capsule is performing an asynchronous signal-based resume callback and will
-+         * be set to ME_state_awakened after its execution
++         * be set to S3C_state_awakened after its execution
 +         */
 +        while (1) {
 +                schedule();
 +
-+                if (get_ME_state(slotID) == ME_state_awakened) {
-+                        DBG("ME now resuming...\n");
++                if (get_S3C_state(slotID) == S3C_state_awakened) {
++                        DBG("S3C now resuming...\n");
 +                        break;
 +                }
 +        }
 +
-+        DBG("Pinging ME %d for DC_RESUME...\n", slotID);
++        DBG("Pinging S3C %d for DC_RESUME...\n", slotID);
 +        do_sync_dom(slotID, DC_RESUME);
 +
 +        DBG("Resuming all devices (resuming from backend devices) on domain %d...\n", slotID);
 +        vbus_resume_devices(slotID);
 +
-+        DBG("Pinging ME %d for DC_POST_ACTIVATE...\n", slotID);
++        DBG("Pinging S3C %d for DC_POST_ACTIVATE...\n", slotID);
 +        do_sync_dom(slotID, DC_POST_ACTIVATE);
 +
-+        DBG("Putting ME domid %d in state living...\n", slotID);
-+        set_ME_state(slotID, ME_state_living);
++        DBG("Putting S3C domid %d in state living...\n", slotID);
++        set_S3C_state(slotID, S3C_state_living);
 +
 +        return slotID;
 +}
 +
-+int get_ME_state(unsigned int ME_slotID)
++int get_S3C_state(unsigned int S3C_slotID)
 +{
 +        avz_hyp_t args;
 +
-+        args.cmd = AVZ_GET_ME_STATE;
-+        args.u.avz_me_state_args.slotID = ME_slotID;
++        args.cmd = AVZ_GET_S3C_STATE;
++        args.u.avz_me_state_args.slotID = S3C_slotID;
 +
 +        avz_hypercall(&args);
 +
@@ -326,26 +326,26 @@
 +}
 +
 +/*
-+ * Setting the ME state to the specific ME_slotID.
++ * Setting the S3C state to the specific S3C_slotID.
 + * The hypercall args is passed by 2 contiguous (unsigned) int, the first one is
 + * used for slotID, the second for the state
 + */
-+void set_ME_state(unsigned int ME_slotID, ME_state_t state)
++void set_S3C_state(unsigned int S3C_slotID, S3C_state_t state)
 +{
 +        avz_hyp_t args;
 +
-+        args.cmd = AVZ_SET_ME_STATE;
++        args.cmd = AVZ_SET_S3C_STATE;
 +
-+        args.u.avz_me_state_args.slotID = ME_slotID;
++        args.u.avz_me_state_args.slotID = S3C_slotID;
 +	args.u.avz_me_state_args.state = state;
 +
 +        avz_hypercall(&args);
 +}
 +
 +/**
-+ * Retrieve the ME descriptor including the SPID, the state.
++ * Retrieve the S3C descriptor including the SPID, the state.
 + */
-+void get_ME_desc(unsigned int slotID, ME_desc_t *ME_desc) {
++void get_S3C_desc(unsigned int slotID, S3C_desc_t *S3C_desc) {
 +        avz_hyp_t args;
 +
 +        args.cmd = AVZ_GET_DOM_DESC;
@@ -353,49 +353,49 @@
 +
 +        avz_hypercall(&args);
 +
-+	memcpy(ME_desc, &args.u.avz_dom_desc_args.dom_desc, sizeof(ME_desc_t));
++	memcpy(S3C_desc, &args.u.avz_dom_desc_args.dom_desc, sizeof(S3C_desc_t));
 +}
 +
 +/**
-+ * Retrieve the ME identity information including SPID, state.
++ * Retrieve the S3C identity information including SPID, state.
 + *
 + * @param slotID
-+ * @param ME_id
-+ * @return true if a ME has been found in slotID, false otherwise.
++ * @param S3C_id
++ * @return true if a S3C has been found in slotID, false otherwise.
 + */
-+bool get_ME_id(uint32_t slotID, ME_id_t *ME_id) {
++bool get_S3C_id(uint32_t slotID, S3C_id_t *S3C_id) {
 +	char *prop;
 +	char rootname[VBS_KEY_LENGTH];
 +	unsigned int len;
 +
-+	/* The ME can be dormant but without any accessible ID information */
-+	ME_id->state = get_ME_state(slotID);
++	/* The S3C can be dormant but without any accessible ID information */
++	S3C_id->state = get_S3C_state(slotID);
 +
-+	if (ME_id->state == ME_state_dead)
++	if (S3C_id->state == S3C_state_dead)
 +		return false;
 +
-+	sprintf(rootname, "soo/me/%d", slotID);
++	sprintf(rootname, "soo/s3c/%d", slotID);
 +
-+	/* Check if there is a ME? */
++	/* Check if there is a S3C? */
 +	prop = vbus_read(VBT_NIL, rootname, "spid", &len);
 +
 +	if (len == 1)  { /* If no entry in vbstore, it returns 1 (byte \0) */
 +		return true;
 +	} else {
-+		sscanf(prop, "%llx", &ME_id->spid);
++		sscanf(prop, "%llx", &S3C_id->spid);
 +		kfree(prop);
 + 
 +		prop = vbus_read(VBT_NIL, rootname, "name", &len);
 +
-+		strcpy(ME_id->name, prop);
++		strcpy(S3C_id->name, prop);
 +		kfree(prop);
 +
 +		prop = vbus_read(VBT_NIL, rootname, "shortdesc", &len);
 +
-+		strcpy(ME_id->shortdesc, prop);
++		strcpy(S3C_id->shortdesc, prop);
 +		kfree(prop);
 +
-+		ME_id->slotID = slotID;
++		S3C_id->slotID = slotID;
 +	}
 +
 +	return true;
@@ -403,23 +403,23 @@
 +
 +/**
 + * Get a list of all residing MEs in this smart object.
-+ * The caller must have allocated an array of <MAX_ME_DOMAINS> <ME_id_t> elements.
++ * The caller must have allocated an array of <MAX_S3C_DOMAINS> <S3C_id_t> elements.
 + *
-+ * The ME state will be used to determine if a ME is residing or not (ME_state_dead).
++ * The S3C state will be used to determine if a S3C is residing or not (S3C_state_dead).
 + */
-+void get_ME_id_array(ME_id_t *ME_id_array) {
++void get_S3C_id_array(S3C_id_t *S3C_id_array) {
 +	uint32_t slotID;
 +
 +	/* Empty the array first */
-+        memset(ME_id_array, 0, MAX_DOMAINS * sizeof(ME_id_array));
++        memset(S3C_id_array, 0, MAX_DOMAINS * sizeof(S3C_id_array));
 +	
 +        /* Walk through all entries in vbstore regarding MEs */
 +
 +        for (slotID = 2; slotID < MAX_DOMAINS; slotID++)
-+		get_ME_id(slotID, &ME_id_array[slotID-2]);
++		get_S3C_id(slotID, &S3C_id_array[slotID-2]);
 +
 +}
-+EXPORT_SYMBOL(get_ME_id_array);
++EXPORT_SYMBOL(get_S3C_id_array);
 +
 +/**
 + * Prepare a XML message which contains the list of MEs with their specific ID information
@@ -427,9 +427,9 @@
 + * 
 + *
 + * @return buffer	Buffer allocated by the which contains the XML message. Caller must free it.
-+ * @param ME_id_array	Array of ME_id_t entries (got with get_ME_id_array())
++ * @param S3C_id_array	Array of S3C_id_t entries (got with get_S3C_id_array())
 + */
-+char *xml_prepare_id_array(ME_id_t *ME_id_array) {
++char *xml_prepare_id_array(S3C_id_t *S3C_id_array) {
 +	uint32_t pos;
 +	char *__buffer;
 +	char *buffer; /* Output buffer */
@@ -440,28 +440,28 @@
 +	/* Adding the messages node */
 +	messages = roxml_add_node(NULL, 0, ROXML_ELM_NODE, "mobile-entities", NULL);
 +
-+	for (pos = 0; pos < MAX_ME_DOMAINS; pos++) {
++	for (pos = 0; pos < MAX_S3C_DOMAINS; pos++) {
 +
-+		if (ME_id_array[pos].state != ME_state_dead) {
++		if (S3C_id_array[pos].state != S3C_state_dead) {
 +
 +			/* Adding the message itself */
 +			me = roxml_add_node(messages, 0, ROXML_ELM_NODE, "mobile-entity", NULL);
 +
 +			/* Add SPID */
-+			sprintf(spid, "%016llx", ME_id_array[pos].spid);
++			sprintf(spid, "%016llx", S3C_id_array[pos].spid);
 +			roxml_add_node(me, 0, ROXML_ATTR_NODE, "spid", spid);
 +
 +			/* Add the slotID */
-+			sprintf(slotID, "%d", ME_id_array[pos].slotID);
++			sprintf(slotID, "%d", S3C_id_array[pos].slotID);
 +			roxml_add_node(me, 0, ROXML_ATTR_NODE, "slotID", slotID);
 +
 +			/* Add short name */
 +			name = roxml_add_node(me, 0, ROXML_ELM_NODE, "name", NULL);
-+			roxml_add_node(name, 0, ROXML_TXT_NODE, NULL, ME_id_array[pos].name);
++			roxml_add_node(name, 0, ROXML_TXT_NODE, NULL, S3C_id_array[pos].name);
 +
 +			/* And the short description */
 +			shortdesc = roxml_add_node(me, 0, ROXML_ELM_NODE, "description", NULL);
-+			roxml_add_node(shortdesc, 0, ROXML_TXT_NODE, NULL, ME_id_array[pos].shortdesc);
++			roxml_add_node(shortdesc, 0, ROXML_TXT_NODE, NULL, S3C_id_array[pos].shortdesc);
 +
 +		}
 +

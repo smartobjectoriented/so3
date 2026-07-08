@@ -51,33 +51,27 @@ do_itb[nostamp] = "1"
 do_itb () {
 
 	# ITS are rendered into IB_ITB_PATH by the shared do_render_its (before
-	# do_itb); this task only mkimage's them.
-	if [ "${IB_BOOT_CHAIN}" = "full" ]; then
-		# AVZ mode: two ITBs (guest-boot) — the AVZ hypervisor ITB and a
-		# SEPARATE Linux agency guest ITB, mirroring the SO3-on-AVZ model.
+	# do_itb); this task only mkimage's them. The boot shape is selected by
+	# the ITS name (mirroring bsp-so3 and __deploy_arm_common), NOT by
+	# IB_BOOT_CHAIN — AVZ boots fine on the bare U-Boot chain (EL2 via
+	# QEMU virtualization=on), ATF/OP-TEE is an independent choice.
+	if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
+		bbfatal "No corresponding ITS found (${IB_TARGET_ITS})"
+	fi
+	mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
 
-		# AVZ hypervisor ITB
-		if [ ! -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ]; then
-			bbfatal "No corresponding ITS found (${IB_TARGET_ITS})"
-		fi
-		mkimage -f ${IB_ITB_PATH}/${IB_TARGET_ITS}.its ${IB_ITB_PATH}/${IB_TARGET_ITS}.itb
-
-		# Linux agency guest ITB (loaded by AVZ from x1 via guest-boot)
+	# AVZ boot uses a SEPARATE guest ITB (loaded alongside the AVZ ITB by
+	# the guest-boot U-Boot command). The guest ITS (<plat>_avz -> <plat> +
+	# IB_GUEST_SUFFIX) is rendered by do_render_its.
+	case "${IB_TARGET_ITS}" in
+	*_avz)
 		guest_its="$(echo "${IB_TARGET_ITS}" | sed 's/_avz$//')${IB_GUEST_SUFFIX}"
 		if [ ! -f ${IB_ITB_PATH}/${guest_its}.its ]; then
 			bbfatal "No Linux guest ITS found (${guest_its})"
 		fi
 		mkimage -f ${IB_ITB_PATH}/${guest_its}.its ${IB_ITB_PATH}/${guest_its}.itb
-	else
-		# Bare bsp-linux (IB_BOOT_CHAIN ∈ {uboot, atf+uboot}): single
-		# plain ITB from ${IB_PLATFORM}.its with the buildroot initrd
-		# bundled in. Direct bootm by U-Boot, no AVZ wrapping.
-
-		if [ ! -f ${IB_ITB_PATH}/${IB_PLATFORM}.its ]; then
-			bbfatal "No bare ITS found at ${IB_ITB_PATH}/${IB_PLATFORM}.its"
-		fi
-		mkimage -f ${IB_ITB_PATH}/${IB_PLATFORM}.its ${IB_ITB_PATH}/${IB_PLATFORM}.itb
-	fi
+		;;
+	esac
 }
 
 # do_prepare_initrd: gzip the selected cpio into initrd.cpio.gz so do_itb

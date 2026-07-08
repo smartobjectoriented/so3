@@ -39,16 +39,17 @@ addtask do_build
 def __do_platform_deploy(d):
 
     import os
-    import subprocess   
 
     capsule_path = d.getVar('IB_FILESYSTEM_PATH') + "/p2/mnt/capsules/image"
     itb_path = d.getVar('IB_ITB_PATH') + "/" + d.getVar('IB_TARGET_ITS') + ".itb"
 
     if not os.path.isfile(itb_path):
         bb.fatal(itb_path + " is missing ...")
- 
-    subprocess.run(['mkdir', '-p', capsule_path])
-    subprocess.run(['cp', itb_path, capsule_path])
+
+    # The p2 rootfs is extracted as root, so any write into it must be
+    # escalated (bitbake itself runs unprivileged) and must fail loudly.
+    utils_sudo(['mkdir', '-p', capsule_path], check=True)
+    utils_sudo(['cp', itb_path, capsule_path], check=True)
 
 do_itb[nostamp] = "1"
 do_itb[depends] = "usr-so3:do_deploy"

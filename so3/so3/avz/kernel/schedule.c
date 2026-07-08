@@ -40,7 +40,7 @@ inline void domain_runstate_change(struct domain *d, int new_state)
 {
 	/*
 	 * We might already be in RUNSTATE_blocked before setting to this state; for example,
-	 * if a capsule has been paused and migrates, and is killed during the cooperation phase,
+	 * if a capsule has been paused and is killed during the cooperation phase,
 	 * the call to shutdown() will lead to be here with such a state already.
 	 */
 	ASSERT((d->runstate == RUNSTATE_blocked) || (d->runstate != new_state));

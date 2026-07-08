@@ -23,8 +23,8 @@
 
 #include <avz/uapi/avz.h>
 
-/* This signature is used to check the coherency of the capsule image, after a migration
- * or a restoration for example.
+/* This signature is used to check the coherency of the capsule image, after a snapshot
+ * restoration for example.
  */
 #define SOO_S3C_SIGNATURE "SooZ"
 
@@ -90,7 +90,7 @@ typedef struct fbdev_pfns {
  * capsule states:
  * - S3C_state_stopped:		Capsule is stopped (right after start or later)
  * - S3C_state_living:		capsule is full-functional and activated (all frontend devices are consistent)
- * - S3C_state_suspended:	capsule is suspended before migrating. This state is maintained for the resident capsule instance
+ * - S3C_state_suspended:	capsule is suspended (e.g. before taking a snapshot)
  * - S3C_state_hibernate:	capsule is in a state of hibernate snapshot
  * - S3C_state_resuming:         capsule ready to perform resuming (after recovering)
  * - S3C_state_awakened:         capsule is just being awakened
@@ -161,7 +161,7 @@ extern atomic_t dc_outgoing_domID[DC_EVENT_MAX];
 extern atomic_t dc_incoming_domID[DC_EVENT_MAX];
 
 /*
- * IOCTL commands for migration.
+ * IOCTL commands for capsule management.
  * This part is shared between the kernel and user spaces.
  */
 
@@ -268,7 +268,7 @@ struct avz_shared {
 	/* Agency or capsule descriptor */
 	dom_desc_t dom_desc;
 
-	/* Used to store a signature for consistency checking, for example after a migration/restoration */
+	/* Used to store a signature for consistency checking, for example after a snapshot restoration */
 	char signature[4];
 };
 

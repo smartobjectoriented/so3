@@ -446,7 +446,7 @@
 +		DBG("%s: allocating unbound evtchn %d for vbstore shared page on domain: %d (intf = %lx)...\n", __func__, 
 +			args.u.avz_evtchn.evtchn_op.u.alloc_unbound.evtchn, i, vbstore_intf[i]);
 +		
-+		/* This evtchn will be the remote for all clients, including the agency itself and the ME (using their      levtchn). */
++		/* This evtchn will be the remote for all clients, including the agency itself and the S3C (using their      levtchn). */
 +		avz_shared->dom_desc.u.agency.vbstore_evtchn[i] = args.u.avz_evtchn.evtchn_op.u.alloc_unbound.evtchn;
 +        }
 +
@@ -456,7 +456,7 @@
 +	/* Bind the vbstore listening event channels */
 +	for (i = 0; i < MAX_DOMAINS; i++) {
 +
-+		/* Bind IRQ used as event channel to discuss with the ME to the vbstore interrupt handler */
++		/* Bind IRQ used as event channel to discuss with the S3C to the vbstore interrupt handler */
 +		DBG("%s: binding evtchn %d to vbstore_interrupt handler..\n", __func__, avz_shared->dom_desc.u.agency.vbstore_evtchn[i]);
 +
 +		res = bind_evtchn_to_virq_handler(avz_shared->dom_desc.u.agency.vbstore_evtchn[i], 

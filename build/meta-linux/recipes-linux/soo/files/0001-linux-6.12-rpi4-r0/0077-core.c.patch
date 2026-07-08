@@ -53,21 +53,21 @@
 +/**
 + * @brief Shutdown the capsule in a way it depends on its state.
 + * 
-+ * @param ME_slotID 
++ * @param S3C_slotID 
 + */
-+static void shutdown_capsule(unsigned int ME_slotID)
++static void shutdown_capsule(unsigned int S3C_slotID)
 +{
 +	avz_hyp_t args;
 +
 +	/* Asynchronous termination of the capsule */
-+	if (get_ME_state(ME_slotID) != ME_state_stopped)
-+		do_sync_dom(ME_slotID, DC_SHUTDOWN);
++	if (get_S3C_state(S3C_slotID) != S3C_state_stopped)
++		do_sync_dom(S3C_slotID, DC_SHUTDOWN);
 +
-+	/* Then, final termination of the residual ME */
-+	if ((get_ME_state(ME_slotID) == ME_state_terminated) ||
-+	    (get_ME_state(ME_slotID) == ME_state_stopped)) {
-+		args.cmd = AVZ_KILL_ME;
-+		args.u.avz_kill_me_args.slotID = ME_slotID;
++	/* Then, final termination of the residual S3C */
++	if ((get_S3C_state(S3C_slotID) == S3C_state_terminated) ||
++	    (get_S3C_state(S3C_slotID) == S3C_state_stopped)) {
++		args.cmd = AVZ_KILL_S3C;
++		args.u.avz_kill_me_args.slotID = S3C_slotID;
 +
 +		avz_hypercall(&args);
 +	}
@@ -95,8 +95,8 @@
 +	}
 +
 +	switch (cmd) {
-+	case AGENCY_IOCTL_GET_ME_ID:
-+		args.value = (get_ME_id(args.slotID, (ME_id_t *)args.buffer) ? 0 : -1);
++	case AGENCY_IOCTL_GET_S3C_ID:
++		args.value = (get_S3C_id(args.slotID, (S3C_id_t *)args.buffer) ? 0 : -1);
 +		break;
 +
 +	case AGENCY_IOCTL_READ_SNAPSHOT:
@@ -119,8 +119,8 @@
 +		shutdown_capsule(args.slotID);
 +		break;
 +
-+	case AGENCY_IOCTL_GET_ME_ID_ARRAY:
-+		get_ME_id_array((ME_id_t *)args.buffer);
++	case AGENCY_IOCTL_GET_S3C_ID_ARRAY:
++		get_S3C_id_array((S3C_id_t *)args.buffer);
 +		break;
 +
 +	default:
@@ -217,21 +217,21 @@
 +				void *unused)
 +{
 +	int slotID;
-+	ME_desc_t desc;
++	S3C_desc_t desc;
 +
 +	lprintk("%s: !! Now terminating all Mobile Entities of this smart object...\n",
 +		__func__);
 +
 +	for (slotID = 2; slotID < MAX_DOMAINS; slotID++) {
 +		/*
-+		 * Check if the ME slot is used or not in order to not
++		 * Check if the S3C slot is used or not in order to not
 +		   call shutdown on an empty slot, which would cause an error.
 +		 */
 +
-+		get_ME_desc(slotID, &desc);
++		get_S3C_desc(slotID, &desc);
 +
 +		if (desc.size > 0) {
-+			lprintk("%s: terminating ME %d...\n", __func__, slotID);
++			lprintk("%s: terminating S3C %d...\n", __func__, slotID);
 +			shutdown_capsule(slotID);
 +		}
 +	}
@@ -257,7 +257,7 @@
 +{
 +	int rc;
 +
-+	DBG("SOO Migration subsystem registering...\n");
++	DBG("SOO capsule subsystem registering...\n");
 +
 +	soo_sysfs_init();
 +
@@ -283,7 +283,7 @@
 +
 +	capsule_init();
 +
-+	DBG("SOO Migration subsystem registered...\n");
++	DBG("SOO capsule subsystem registered...\n");
 +
 +	register_reboot_notifier(&agency_reboot_nb);
 +

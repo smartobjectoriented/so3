@@ -1,5 +1,5 @@
---- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/restoreme.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./src/soo/restoreme.c	2025-10-10 17:28:33.594328500 +0200
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/s3c-restore.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/s3c-restore.c	2025-10-10 17:28:33.594328500 +0200
 @@ -0,0 +1,76 @@
 +/*
 + * Copyright (C) 2014-2020 Daniel Rossier <daniel.rossier@soo.tech>
@@ -42,11 +42,11 @@
 +        printf("*** SOO - Mobile Entity snapshot restorer ***\n");
 +
 +	if (argc != 2) {
-+		printf("## Usage is : restoreme <filename> where <filename> is the file containing the ME snapshot.\n");
++		printf("## Usage is : s3c-restore <filename> where <filename> is the file containing the S3C snapshot.\n");
 +		exit(-1);
 +	}
 +
-+	printf("** Now reading the ME snapshot.\n");
++	printf("** Now reading the S3C snapshot.\n");
 +
 +	fd_core = open("/dev/soo/core", O_RDWR);
 +	assert(fd_core > 0);
@@ -66,14 +66,14 @@
 +
 +	zip_close(zip);
 +        
-+	printf("  ** ME memory re-implantation and resuming the capsule.\n");
++	printf("  ** S3C memory re-implantation and resuming the capsule.\n");
 +
 +	args.slotID = -1;
 +	ioctl(fd_core, AGENCY_IOCTL_WRITE_SNAPSHOT, &args);
 +
 +	close(fd_core);
 +
-+	printf("  ** ME successfully restored and resumed...\n");
++	printf("  ** S3C successfully restored and resumed...\n");
 +
 +	return 0;
 +}

@@ -83,13 +83,13 @@
 +}
 +
 +/*
-+ * Add a new console for a new ME.
++ * Add a new console for a new S3C.
 + */
 +static void add_console(struct vbus_device *vdev_console)
 +{
 +	struct vdev_console *console;
 +
-+	console = kzalloc(sizeof(vdev_console), GFP_ATOMIC);
++	console = kzalloc(sizeof(struct vdev_console), GFP_ATOMIC);
 +	BUG_ON(!console);
 +
 +	console->vdev_console = vdev_console;
@@ -98,7 +98,7 @@
 +}
 +
 +/*
-+ * Search for a console related to a specific ME according to its domid.
++ * Search for a console related to a specific S3C according to its domid.
 + */
 +static struct vbus_device *get_console(uint32_t domid)
 +{
@@ -111,7 +111,7 @@
 +}
 +
 +/*
-+ * Remove a console attached to a specific ME
++ * Remove a console attached to a specific S3C
 + */
 +static void del_console(struct vbus_device *vdev_console)
 +{
@@ -183,7 +183,7 @@
 + * - If the state is not Connected, the character is pushed into a circular buffer that
 + *   will be flushed at the next call to the Connected callback.
 + */
-+void me_cons_sendc(domid_t domid, uint8_t ch)
++void s3c_cons_sendc(domid_t domid, uint8_t ch)
 +{
 +	struct vbus_device *console;
 +	vuart_priv_t *vuart_priv;
@@ -278,7 +278,7 @@
 +	DBG(VUART_PREFIX "Backend reconfigured: %d\n", vdev->otherend_id);
 +
 +	/*
-+	 * Set up a ring (shared page & event channel) between the agency and the ME.
++	 * Set up a ring (shared page & event channel) between the agency and the S3C.
 +	 */
 +
 +	vbus_gather(VBT_NIL, vdev->otherend, "ring-ref", "%lu",

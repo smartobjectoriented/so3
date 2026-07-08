@@ -74,8 +74,8 @@
 +}
 +
 +/*
-+ * Prepare a remote ME to react to a ping event.
-+ * @domID: the target ME
++ * Prepare a remote S3C to react to a ping event.
++ * @domID: the target S3C
 + */
 +void set_dc_event(domid_t domID, dc_event_t dc_event)
 +{

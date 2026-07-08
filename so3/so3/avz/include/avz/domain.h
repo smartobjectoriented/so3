@@ -95,9 +95,16 @@ struct domain {
 
 	avz_shared_t *avz_shared; /* shared data area between AVZ and the domain */
 
-	/* Physical and virtual address of the page table used when the domain is bootstraping */
+	/* Physical and virtual address of the page table used when the domain is bootstraping.
+	 * VTCR_EL2 runs with SL0=L1, so pagetable_paddr/vaddr refer to the L1 table
+	 * (the value loaded in VTTBR_EL2), NOT the L0 root. */
 	addr_t pagetable_paddr;
 	addr_t pagetable_vaddr; /* Required when bootstrapping the domain */
+
+	/* L0 root of the stage-2 tables. Walk helpers (__create_mapping) expect
+	 * the L0 root — use this one, not pagetable_vaddr, to add S2 mappings
+	 * (grant pages, vbstore ring, fbdev) after the domain is set up. */
+	addr_t pagetable_l0_vaddr;
 
 	unsigned int max_pages; /* maximum value for tot_pages */
 

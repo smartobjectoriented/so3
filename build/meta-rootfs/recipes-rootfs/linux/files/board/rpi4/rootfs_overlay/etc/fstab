@@ -8,7 +8,7 @@ tmpfs		/run		tmpfs	mode=0755,nosuid,nodev	0	0
 sysfs		/sys		sysfs	defaults	0	0
 /dev/mmcblk0p1	/mnt/boot	vfat	defaults	0	2
 /dev/mmcblk0p2  /mnt/rootfs1    ext4    defaults        0       2
-/dev/mmcblk0p3  /mnt/ME 	ext4    defaults   	0   	2
+/dev/mmcblk0p3  /mnt/s3c 	ext4    defaults   	0   	2
 /dev/mmcblk0p4  /mnt/rootfs2    ext4    defaults        0       2
 
 

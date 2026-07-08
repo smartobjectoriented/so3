@@ -131,9 +131,8 @@ void start_capsule(avz_hyp_t *args)
 }
 
 /*------------------------------------------------------------------------------
-build_domain_migration_info
-build_vcpu_migration_info
-    Build the structures holding the key info to be migrated over
+build_domain_context
+    Build the structures holding the key domain info for the snapshot.
 ------------------------------------------------------------------------------*/
 static void build_domain_context(unsigned int S3C_slotID, struct domain *me, struct dom_context *domctxt)
 {

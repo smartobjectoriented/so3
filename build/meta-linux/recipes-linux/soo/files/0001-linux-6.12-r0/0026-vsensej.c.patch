@@ -170,7 +170,7 @@
 +	DBG(VSENSEJ_PREFIX "Backend reconfigured: %d\n", vdev->otherend_id);
 +
 +	/*
-+	 * Set up a ring (shared page & event channel) between the agency and the ME.
++	 * Set up a ring (shared page & event channel) between the agency and the S3C.
 +	 */
 +
 +	vbus_gather(VBT_NIL, vdev->otherend, "ring-ref", "%lu", &ring_ref, "ring-evtchn", "%u", &evtchn, NULL);

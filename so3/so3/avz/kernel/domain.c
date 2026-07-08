@@ -135,7 +135,7 @@ static void complete_domain_destroy(struct domain *d)
 	sched_destroy_domain(d);
 
 	/* Remove the root page table */
-	reset_root_pgtable((void *) d->pagetable_vaddr, true);
+	reset_root_pgtable((void *) d->pagetable_l0_vaddr, true);
 
 	/* Restore allocated memory for this domain */
 
@@ -228,7 +228,7 @@ void context_switch(struct domain *prev, struct domain *next)
 
 	prev->is_running = 0;
 
-	/* Check for migration request /after/ clearing running flag. */
+	/* Memory barrier /after/ clearing the running flag. */
 	smp_mb();
 
 	spin_unlock(&prev->sched->sched_data.schedule_lock);

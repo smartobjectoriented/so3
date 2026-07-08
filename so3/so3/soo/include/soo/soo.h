@@ -36,7 +36,7 @@ S3C_desc_t *get_S3C_desc(void);
 
 /* capsule ID management */
 const char *get_s3c_shortdesc(void);
-const char *get_me_name(void);
+const char *get_s3c_name(void);
 u64 get_spid(void);
 
 void vbstore_S3C_ID_populate(void);

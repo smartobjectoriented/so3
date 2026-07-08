@@ -187,7 +187,7 @@ void remove_vbstore_entries(void)
 	char rootname[VBS_KEY_LENGTH], entry[VBS_KEY_LENGTH];
 
 	/* Remove the vbstore entries related to the capsule */
-	strcpy(rootname, "soo/me");
+	strcpy(rootname, "soo/s3c");
 	sprintf(entry, "%d", S3C_domID());
 
 	vbus_rm(VBT_NIL, rootname, entry);

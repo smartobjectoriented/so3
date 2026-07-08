@@ -32,7 +32,11 @@
 	
 	memory {
 		device_type = "memory";
-		reg = <0x0 0x41000000 0x0 0x4000000>; /* 64 MB */
+		/* 128 MB: the ITS loads the ramdisk (rootfs.fat, 32 MB) at
+		 * +37 MB (0x43500000), which overflows a 64 MB slot — AVZ
+		 * faults in load_S3C when copying the initrd past the slot
+		 * mapping. */
+		reg = <0x0 0x41000000 0x0 0x8000000>;
 	};
 
 	mem {
@@ -91,17 +95,17 @@
 		status = "ok";
 	};
 
-	ME {
+	capsule {
    		/* SPID on 64-bit encoding */
         	spid = /bits/ 64 <0x0030000000000003>;
 
-		 /* Name of this ME */
-		me_name = "SOO.refso3";
+		 /* Name of this capsule */
+		s3c_name = "SOO.refso3";
 
 		/* Short description */
-		me_shortdesc =
+		s3c_shortdesc =
 
-		"This is the standard reference ME that can be used as template or simply to \n \
+		"This is the standard reference capsule that can be used as template or simply to \n \
 		perform various tests. This variant includes a rootfs with some user space \n \
 		applications.";
 
@@ -125,16 +129,21 @@
 				status = "ok";
 			};
 
-			/* Enabling framebuffer support */
+			/* Framebuffer support: disabled — the Linux agency built from
+			 * this repo provides no vfbdev backend (vuart/vlogs only), and
+			 * the capsule BUG()s at vbstore init when the backend node is
+			 * missing. Re-enable when an agency with the virtual
+			 * framebuffer backend is used. */
 			vfbdev {
 				compatible = "vfbdev,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 
-			/* Enabling input support */
+			/* Input support: disabled — no vinput backend in the agency
+			 * (see vfbdev above). */
 			vinput {
 				compatible = "vinput,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 		};
 	};

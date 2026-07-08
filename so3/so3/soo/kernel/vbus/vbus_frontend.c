@@ -153,7 +153,7 @@ void vbus_register_frontend(struct vbus_driver *vdrv)
 }
 
 /*
- * We need to adjust names of device after migration as well as
+ * We need to adjust names of device after resume as well as
  * removing and recreating watches associated to this device
  */
 static int remove_dev_watches(struct vbus_device *vdev, void *data)
@@ -203,9 +203,9 @@ static int remove_dev_watches(struct vbus_device *vdev, void *data)
 }
 
 /**
- * Called after migration during the resume process.
+ * Called during the resume process (after an awakened snapshot).
  */
-void postmig_setup(void)
+void postresume_setup(void)
 {
 	/*
 	 * First, we need to take care about local watches on vbstore entries to be ready

@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Create the SOO core device node used by the capsule management
+# applications (s3c-inject, s3c-save, ...). The soo core driver
+# registers char major 126 (soo/core) but does not create the node
+# itself, and this rootfs boots with busybox init (no systemd, no
+# udev) so it must be created here.
+
+case "$1" in
+start)
+	if [ ! -c /dev/soo/core ]; then
+		mkdir -p /dev/soo
+		mknod /dev/soo/core c 126 0
+	fi
+	;;
+stop) ;;
+*)
+	echo "Usage: $0 {start|stop}"
+	exit 1
+	;;
+esac
+
+exit 0

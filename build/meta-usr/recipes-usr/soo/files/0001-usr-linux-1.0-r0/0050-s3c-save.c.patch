@@ -1,5 +1,5 @@
---- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/saveme.c	1970-01-01 01:00:00.000000000 +0100
-+++ ./src/soo/saveme.c	2025-10-10 17:28:33.594328500 +0200
+--- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/s3c-save.c	1970-01-01 01:00:00.000000000 +0100
++++ ./src/soo/s3c-save.c	2025-10-10 17:28:33.594328500 +0200
 @@ -0,0 +1,86 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -41,7 +41,7 @@
 +        printf("*** SOO - Mobile Entity snapshot saver ***\n");
 +
 +	if (argc != 2) {
-+		printf("## Usage is : saveme <filename> where <filename> is the file containing the ME snapshot.\n");
++		printf("## Usage is : s3c-save <filename> where <filename> is the file containing the S3C snapshot.\n");
 +		exit(-1);
 +	}
 +

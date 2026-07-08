@@ -195,7 +195,7 @@ void vbus_otherend_changed(struct vbus_watch *watch)
 	switch (state) {
 	case VbusStateInitWait:
 
-		/* Check if we are suspended (before migration). In this case, we do nothing since the backend will
+		/* Check if we are suspended (before a snapshot). In this case, we do nothing since the backend will
 		 * set its state in resuming later on.
 		 */
 		if (vdev->state != VbusStateSuspended) {
@@ -427,7 +427,7 @@ void vbus_dev_changed(const char *node, char *type, struct vbus_type *bus, const
 
 	/*
 	 * Either the device does not exist (backend or frontend) and the dev must be allocated, initialized
-	 * and probed via the dev subsystem of Linux, OR the device exists (after migration)
+	 * and probed via the dev subsystem of Linux, OR the device exists (after a resume)
 	 * and in this case, the device exists on the frontend side only, and we only have to "talk_to_otherend" to
 	 * set up the watch on its state (and retrieve the otherend id and name).
 	 */
@@ -531,7 +531,7 @@ void vbus_init(void)
 
 	vbstore_s3c_init();
 
-	/* Set up the direct communication channel for post-migration activities
+	/* Set up the direct communication channel for post-resume activities
 	 * previously established by dom0.
 	 */
 

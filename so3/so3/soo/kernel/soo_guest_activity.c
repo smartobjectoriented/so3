@@ -160,7 +160,7 @@ void set_S3C_state(S3C_state_t state)
 	avz_shared->dom_desc.u.S3C.state = state;
 }
 
-void postmig_setup(void);
+void postresume_setup(void);
 void perform_task(dc_event_t dc_event)
 {
 	soo_domcall_arg_t args;
@@ -206,7 +206,7 @@ void perform_task(dc_event_t dc_event)
 
 		/* During a resuming after an awakened snapshot, re-init watch for device/<domID> */
 		if (get_S3C_state() == S3C_state_awakened)
-			postmig_setup();
+			postresume_setup();
 
 		DBG("vbstore resumed.\n");
 		break;

@@ -58,6 +58,6 @@
 +} vuart_t;
 +
 +bool vuart_ready(void);
-+void me_cons_sendc(domid_t domid, uint8_t ch);
++void s3c_cons_sendc(domid_t domid, uint8_t ch);
 +
 +#endif /* VUART_H */
