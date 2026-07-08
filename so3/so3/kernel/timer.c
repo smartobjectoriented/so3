@@ -316,7 +316,11 @@ again:
 		t = cur;
 		cur = cur->list_next;
 
-		if (t->expires <= now) {
+		/* Signed comparison, consistent with timer_dev_set_deadline():
+		 * a deadline that wrapped below <now> must be treated as expired,
+		 * otherwise it is never executed here but keeps re-raising
+		 * TIMER_SOFTIRQ in timer_dev_set_deadline (delta <= 0) forever. */
+		if ((int64_t) (t->expires - now) <= 0) {
 			LOG_DEBUG("### %s: NOW: %llu executing timer expires: %llu   ***  delta: %d\n", __func__, now,
 				  t->expires, t->expires - now);
 
