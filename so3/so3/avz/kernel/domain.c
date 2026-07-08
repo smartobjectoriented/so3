@@ -135,7 +135,7 @@ static void complete_domain_destroy(struct domain *d)
 	sched_destroy_domain(d);
 
 	/* Remove the root page table */
-	reset_root_pgtable((void *) d->pagetable_vaddr, true);
+	reset_root_pgtable((void *) d->pagetable_l0_vaddr, true);
 
 	/* Restore allocated memory for this domain */
 

@@ -128,8 +128,11 @@ void avz_el2_timer_tick(void)
 	/* Re-arm the timer for the next period. */
 	next_event(arm_timer->reload);
 
-	/* Agency tick (non-capsule path). */
-	timer_interrupt(false);
+	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
+	 * must run the periodic path so capsule domains get their
+	 * VIRQ_TIMER event; otherwise a capsule never sees a tick and
+	 * spins forever in calibrate_delay. */
+	timer_interrupt(smp_processor_id() == S3C_CPU);
 }
 #endif /* CONFIG_AVZ */
 

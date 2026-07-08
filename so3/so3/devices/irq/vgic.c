@@ -19,6 +19,7 @@
 #include <mmio.h>
 #include <spinlock.h>
 #include <smp.h>
+#include <common.h>
 
 #include <device/arch/vgic.h>
 
@@ -79,6 +80,16 @@ static enum mmio_result gicv2_handle_dist_access(struct mmio_access *mmio)
 		return MMIO_HANDLED;
 
 	default:
+		/* GICD_ICENABLER0 is banked per-CPU: a guest blanket-disabling
+		 * its PPIs during gic init (ICENABLER0 = 0xffff0000/0xffffffff)
+		 * would also clobber the EL2-owned MAINT (25) and CNTHP (26)
+		 * PPIs on this CPU's bank.  The reactive re-assert in
+		 * gic_handle only runs when an IRQ arrives — on the capsule
+		 * CPU nothing else fires, so the EL2 tick would die forever.
+		 * Filter the hypervisor PPIs out of guest disables. */
+		if (mmio->is_write && mmio->address == GICD_ICENABLER)
+			mmio->value &= ~((1u << IRQ_ARCH_ARM_MAINT) | (1u << 26));
+
 		mmio_perform_access(gic->gicd, mmio);
 		return MMIO_HANDLED;
 	}
@@ -153,6 +164,19 @@ static enum mmio_result gicv2_handle_irq_target(struct mmio_access *mmio, unsign
 
 enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 {
+	/* Capsules must never reach the physical distributor: their
+	 * interrupts are delivered as events (LR injection through the
+	 * GICV cpu interface), so they don't need it — and a capsule's
+	 * gic driver init would otherwise blanket-disable the banked
+	 * PPIs of its CPU (killing the hypervisor CNTHP tick) and ALL
+	 * global SPIs (killing the agency's UART/virtio).  Drop writes,
+	 * return 0 on reads (mmio->value is pre-zeroed by the decoder).
+	 * Capsules run exclusively on S3C_CPU, so the trapping CPU
+	 * identifies the guest; only the agency (CPUs 0..2) keeps the
+	 * pass-through policy below. */
+	if (smp_processor_id() == S3C_CPU)
+		return MMIO_HANDLED;
+
 #ifdef CONFIG_GIC_V3
 	return gicv3_handle_dist_access(mmio);
 #else

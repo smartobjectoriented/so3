@@ -131,6 +131,10 @@ void __setup_dom_pgtable(struct domain *d, addr_t paddr_start, unsigned long map
 	d->pagetable_paddr = *((u64 *) new_pt) & TTB_L0_TABLE_ADDR_MASK;
 	d->pagetable_vaddr = (addr_t) __va(d->pagetable_paddr);
 
+	/* Keep the L0 root around: later S2 mapping insertions (grant pages,
+	 * vbstore ring, fbdev) must walk from L0, not from the VTTBR L1. */
+	d->pagetable_l0_vaddr = (addr_t) new_pt;
+
 #ifdef CONFIG_SOO
 	/* Initialize the grant pfn (ipa address) area */
 	for (i = 0; i < NR_GRANT_PFN; i++) {
