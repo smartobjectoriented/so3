@@ -55,7 +55,12 @@ void do_softirq(void)
 			break;
 		}
 
-		if (loopmax > 100) /* Probably something wrong ;-) */
+		/* Probably something wrong ;-) — warn ONCE per invocation: printing on
+		 * every iteration makes each loop slower than a timer tick period, so
+		 * the pending softirq is re-raised faster than it is consumed and the
+		 * warning itself turns a transient burst into a permanent livelock
+		 * (seen on the capsule CPU during snapshot resume). */
+		if (loopmax == 101)
 			printk("%s: Warning trying to process softirq on cpu %d for quite a long time (i = %d)...\n", __func__,
 			       cpu, i);
 
