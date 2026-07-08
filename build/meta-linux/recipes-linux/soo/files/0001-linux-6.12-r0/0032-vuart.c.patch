@@ -89,7 +89,7 @@
 +{
 +	struct vdev_console *console;
 +
-+	console = kzalloc(sizeof(vdev_console), GFP_ATOMIC);
++	console = kzalloc(sizeof(struct vdev_console), GFP_ATOMIC);
 +	BUG_ON(!console);
 +
 +	console->vdev_console = vdev_console;

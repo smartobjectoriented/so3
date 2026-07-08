@@ -123,13 +123,10 @@
 				status = "ok";
 			};
 
-			/* Logging support: disabled pending an agency-side vbstore
-			 * server fix — with vlogs enabled the agency Oopses in
-			 * __kmalloc (corrupted slab) while probing the vlogs device.
-			 * The vuart console already carries the capsule output. */
+			/* Enabling vlogs - logging supports */
 			vlogs {
 				compatible = "vlogs,frontend";
-				status = "disabled";
+				status = "ok";
 			};
 
 			/* Framebuffer support: disabled — the Linux agency built from
