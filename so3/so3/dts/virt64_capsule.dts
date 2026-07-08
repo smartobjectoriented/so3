@@ -32,7 +32,11 @@
 	
 	memory {
 		device_type = "memory";
-		reg = <0x0 0x41000000 0x0 0x4000000>; /* 64 MB */
+		/* 128 MB: the ITS loads the ramdisk (rootfs.fat, 32 MB) at
+		 * +37 MB (0x43500000), which overflows a 64 MB slot — AVZ
+		 * faults in load_S3C when copying the initrd past the slot
+		 * mapping. */
+		reg = <0x0 0x41000000 0x0 0x8000000>;
 	};
 
 	mem {
@@ -119,22 +123,30 @@
 				status = "ok";
 			};
 
-			/* Enabling vlogs - logging supports */
+			/* Logging support: disabled pending an agency-side vbstore
+			 * server fix — with vlogs enabled the agency Oopses in
+			 * __kmalloc (corrupted slab) while probing the vlogs device.
+			 * The vuart console already carries the capsule output. */
 			vlogs {
 				compatible = "vlogs,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 
-			/* Enabling framebuffer support */
+			/* Framebuffer support: disabled — the Linux agency built from
+			 * this repo provides no vfbdev backend (vuart/vlogs only), and
+			 * the capsule BUG()s at vbstore init when the backend node is
+			 * missing. Re-enable when an agency with the virtual
+			 * framebuffer backend is used. */
 			vfbdev {
 				compatible = "vfbdev,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 
-			/* Enabling input support */
+			/* Input support: disabled — no vinput backend in the agency
+			 * (see vfbdev above). */
 			vinput {
 				compatible = "vinput,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 		};
 	};
