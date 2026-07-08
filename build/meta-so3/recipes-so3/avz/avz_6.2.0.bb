@@ -19,7 +19,7 @@ IB_TARGET = "${IB_AVZ_PATH}"
 # Build AVZ from this local so3 tree's HEAD (so the hypervisor carries the
 # in-tree changes). Bump SRCREV after committing AVZ changes here.
 SRC_URI = "git:///home/rossierd/soo/so3;protocol=file;nobranch=1"
-SRCREV = "ecb9da5d118828acd4831cbf2813407c1f6999ec"
+SRCREV = "6c46d2eb895413f5ec8749409d5c6c8aa920164d"
 
 python do_handle_fetch_git() {
 
