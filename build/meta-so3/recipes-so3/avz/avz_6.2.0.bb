@@ -16,10 +16,13 @@ OVERRIDES += ":avz"
 # Where the working directory will be placed in infrabase root dir
 IB_TARGET = "${IB_AVZ_PATH}"
 
-# Build AVZ from this local so3 tree's HEAD (so the hypervisor carries the
-# in-tree changes). Bump SRCREV after committing AVZ changes here.
+# Build AVZ from this local so3 tree, always tracking the tip of main:
+# SRCREV is resolved to the local main HEAD at parse time, so no manual
+# bump is needed after merging AVZ changes. NB the source is FETCHED from
+# git — uncommitted working-tree changes never reach the AVZ build; commit
+# them (on main) first.
 SRC_URI = "git:///home/rossierd/soo/so3;protocol=file;nobranch=1"
-SRCREV = "ae8c580018bf7b269c9c53fe817c053bc7205d91"
+SRCREV = "${@bb.process.run('git -C /home/rossierd/soo/so3 rev-parse main')[0].strip()}"
 
 python do_handle_fetch_git() {
 
