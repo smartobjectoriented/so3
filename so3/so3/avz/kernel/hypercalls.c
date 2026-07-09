@@ -230,17 +230,17 @@ void do_avz_hypercall(void *__args)
 	 * starve the capsule CPU between two ticks and turn any notification
 	 * burst into a softirq livelock (issue #274). */
 	switch (args->cmd) {
+#ifdef CONFIG_SOO
 	case AVZ_INJECT_CAPSULE:
 	case AVZ_S3C_READ_SNAPSHOT:
 	case AVZ_S3C_WRITE_SNAPSHOT:
 	case AVZ_KILL_S3C:
 	case AVZ_GRANT_TABLE_OP:
-#ifdef CONFIG_SOO
 	case AVZ_FBDEV_SET_PFNS:
 	case AVZ_FBDEV_CHANGE_FOCUS:
-#endif
 		flush_dcache_all();
 		break;
+#endif
 
 	default:
 		break;
