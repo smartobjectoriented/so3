@@ -24,6 +24,35 @@ IB_TARGET = "${IB_AVZ_PATH}"
 SRC_URI = "git:///home/rossierd/soo/so3;protocol=file;nobranch=1"
 SRCREV = "${@bb.process.run('git -C /home/rossierd/soo/so3 rev-parse main')[0].strip()}"
 
+# The stamps of this build system carry no signature hash, so a SRCREV
+# change alone does not re-trigger the chain. Run do_fetch on every build
+# (cheap: local git) and, ONLY when the resolved revision differs from the
+# one recorded at the previous fetch, drop the downstream stamps so that
+# unpack/patch/attach re-run and the avz/ tree is refreshed from the new
+# main HEAD. When main has not moved, everything stays incremental.
+do_fetch[nostamp] = "1"
+
+python do_fetch:append() {
+    import glob
+
+    rev = d.getVar('SRCREV')
+    marker = os.path.join(d.getVar('WORKDIR'), '.last_srcrev')
+
+    last = ''
+    if os.path.exists(marker):
+        with open(marker) as f:
+            last = f.read().strip()
+
+    if last != rev:
+        if last:
+            bb.plain("avz: main moved (%s -> %s), refreshing the source tree" % (last[:9], rev[:9]))
+        for st in glob.glob(os.path.join(d.getVar('TMPDIR'), 'stamps', 'avz-*.do_*')):
+            if not st.endswith('.do_fetch'):
+                os.remove(st)
+        with open(marker, 'w') as f:
+            f.write(rev)
+}
+
 python do_handle_fetch_git() {
 
     import os
