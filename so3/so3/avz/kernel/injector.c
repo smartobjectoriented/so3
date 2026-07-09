@@ -139,8 +139,10 @@ static void build_domain_context(unsigned int S3C_slotID, struct domain *me, str
 	/* Event channel info */
 	memcpy(domctxt->evtchn, me->evtchn, sizeof(me->evtchn));
 
-	/* Preserve the current system time to facilitate resuming after hibernation */
-	me->avz_shared->current_s_time = NOW();
+	/* current_s_time is written by the capsule itself (in ITS OWN time
+	 * scale) when it handles DC_SUSPEND — do not overwrite it here with
+	 * AVZ's EL2 time, the two time bases are unrelated and the resume
+	 * offset computed from a mixed pair wraps the timer deadlines. */
 
 	/* Get the start_info structure */
 	domctxt->avz_shared = *(me->avz_shared);

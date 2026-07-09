@@ -84,5 +84,15 @@ extern void send_guest_virq(struct domain *d, int virq);
 
 void send_timer_event(struct domain *d)
 {
+	/* Do not pile up notifications on a domain which has not consumed the
+	 * previous one yet (e.g. a freshly resumed capsule with interrupts
+	 * still masked in early resume_fn): re-raising the event only
+	 * generates a useless self-SGI per tick on the capsule CPU, and under
+	 * emulation that per-tick overhead can exceed the tick period so the
+	 * guest never gets to run again (livelock). A single pending upcall
+	 * is enough — it is delivered as soon as the domain runs. */
+	if (d->avz_shared->evtchn_upcall_pending)
+		return;
+
 	send_guest_virq(d, VIRQ_TIMER);
 }

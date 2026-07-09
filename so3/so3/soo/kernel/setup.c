@@ -57,11 +57,17 @@ static void resume_fn(void)
 	/* Init the timer too */
 	clocksource_timer_reset();
 
-	/* Now, we need to update the list of all existing timers since our
-	 * host clock will be different. We stored the current system time when saving,
-	 * so we compute the offset according to the current time.
-	 */
+	/* Update the list of all existing timers since the clock reference
+	 * changed across the snapshot/restore.
+	 * Both timestamps are in the capsule's own time scale: current_s_time
+	 * was stored by our DC_SUSPEND handler, and after the snapshot restore
+	 * the restored sys_time plus the clocksource reset above make NOW()
+	 * continue from the suspend point. Clamp for safety — a wrapped
+	 * (negative) offset would corrupt every pending timer deadline. */
 	time_offset = NOW() - avz_shared->current_s_time;
+	if ((int64_t) time_offset < 0)
+		time_offset = 0;
+
 	apply_timer_offset(time_offset);
 
 	raise_softirq(SCHEDULE_SOFTIRQ);
