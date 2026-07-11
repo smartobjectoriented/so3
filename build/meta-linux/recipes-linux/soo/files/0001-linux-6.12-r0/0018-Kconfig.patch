@@ -12,7 +12,7 @@
 +        bool "SOO vDummy support for debugging and testing"
 +
 +config VUART_BACKEND
-+	bool "vuart UART Backend support for SOO Mobile Entity consoles"
++	bool "vuart UART Backend support for SO3 capsule consoles"
 +	select SERIAL_CORE_CONSOLE
 +	
 +config VLEDS_BACKEND

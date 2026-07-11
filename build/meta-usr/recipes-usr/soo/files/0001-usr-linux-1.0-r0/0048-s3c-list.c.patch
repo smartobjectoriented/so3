@@ -65,13 +65,13 @@
 +	S3C_id_t id_array[MAX_S3C_DOMAINS];
 +	agency_ioctl_args_t agency_ioctl_args;
 +
-+	printf("*** SOO - Mobile Entity ID Retrieval ***\n\n");
++	printf("*** SOO - SO3 Capsule ID Retrieval ***\n\n");
 +
 +	fd_core = open("/dev/soo/core", O_RDWR);
 +	assert(fd_core > 0);
 +
 +	/* Prepare to terminate the running S3C (dom #2) */
-+	printf("*** List of residing Mobile Entities: \n");
++	printf("*** List of residing SO3 Capsules: \n");
 +
 +	agency_ioctl_args.buffer = &id_array;
 +	ioctl(fd_core, AGENCY_IOCTL_GET_S3C_ID_ARRAY, (unsigned long) &agency_ioctl_args);
