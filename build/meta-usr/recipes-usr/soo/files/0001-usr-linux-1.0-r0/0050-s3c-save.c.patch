@@ -38,7 +38,7 @@
 +	struct zip_t *zip;
 +        struct agency_ioctl_args args;
 +       
-+        printf("*** SOO - Mobile Entity snapshot saver ***\n");
++        printf("*** SOO - SO3 Capsule snapshot saver ***\n");
 +
 +	if (argc != 2) {
 +		printf("## Usage is : s3c-save <filename> where <filename> is the file containing the S3C snapshot.\n");

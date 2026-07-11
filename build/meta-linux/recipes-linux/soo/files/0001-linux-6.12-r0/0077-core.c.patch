@@ -219,7 +219,7 @@
 +	int slotID;
 +	S3C_desc_t desc;
 +
-+	lprintk("%s: !! Now terminating all Mobile Entities of this smart object...\n",
++	lprintk("%s: !! Now terminating all SO3 capsules of this smart object...\n",
 +		__func__);
 +
 +	for (slotID = 2; slotID < MAX_DOMAINS; slotID++) {
