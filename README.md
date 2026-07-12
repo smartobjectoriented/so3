@@ -51,7 +51,7 @@ SO3.
 
 ## Contributing
 
-The `main` branch always holds the last released version.
+The `main` branch is the development line for the next version.
 
 > [!IMPORTANT]
 > Do not push directly to `main`. Each development is tracked by an issue with
@@ -60,6 +60,17 @@ The `main` branch always holds the last released version.
 
 If you would like to contribute, please first get in touch with the maintainer at
 [daniel.rossier@heig-vd.ch](mailto:daniel.rossier@heig-vd.ch).
+
+## Releases
+
+SO3 uses a branch-per-release model: development happens on `main`, and every
+minor version gets a long-lived `release/vX.Y` maintenance branch on which patch
+releases are tagged (`vX.Y.Z`, or `vX.Y.Z-rc` for candidates). Each tag has a
+matching [GitHub Release](https://github.com/smartobjectoriented/so3/releases).
+
+The full procedure — cutting patch and minor releases, tagging and publishing —
+is documented in
+[Release process](https://smartobjectoriented.github.io/so3/release_process.html).
 
 ## Credits
 

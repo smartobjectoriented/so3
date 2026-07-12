@@ -139,7 +139,7 @@ html_theme_options = {'body_max_width': '100%'}
 # Logo shown at the top of the navigation sidebar (every page).
 # The simple "icon + SO3" mark; the full logo with tagline is on the
 # landing page (index.rst).
-html_logo = 'img/SO3_logo.png'
+html_logo = 'img/so3_logo.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

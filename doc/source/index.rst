@@ -6,7 +6,7 @@
    :height: 70px
    :target: http://reds.heig-vd.ch/en/rad
 
-.. image:: img/SO3_with_text.png
+.. image:: img/so3_logo_dark_text.png
    :align: center
    :width: 420px
 
@@ -45,6 +45,7 @@
    lwip
    micropython
    Coding conventions <coding_conventions>
+   release_process
 
 ============================================
 Smart Object Oriented (SO3) Operating System

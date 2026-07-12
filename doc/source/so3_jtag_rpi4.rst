@@ -375,7 +375,7 @@ Links
 .. |image0| image:: https://www.segger.com/fileadmin/images/products/J-Link/Interface_Description/181129_JTAG.svg
 .. |image1| image:: img/rpi_jtags.jpg
 .. |image2| image:: img/openocd1.png
-.. |image3| image:: img/rick_rick-ThinkPad-P50___-reds-so3-ci-jtag_217.png
+.. |image3| image:: img/so3_ci_jtag.png
 .. |image4| image:: img/gdb.png
 .. |image5| image:: img/gdb2.png
 .. |image6| image:: img/gdb3.png
