@@ -65,6 +65,26 @@ While a minor line has not diverged from ``main`` yet (no work started on the
 next minor), its ``release/vX.Y`` branch and ``main`` may point at the same
 commit — that is expected.
 
+Which fixes go on a release branch?
+***********************************
+
+Being a bug fix is *not* what sends a change to a release branch. ``main`` is
+the continuous development line and carries both features **and** fixes as they
+land; anything committed there simply ships in the next version. There are two
+kinds of fix:
+
+* **A fix for unreleased code, or one that can wait for the next version.**
+  Nothing special — it is an ordinary commit on ``main`` and ships in the next
+  ``vX.Y.0``. Do *not* touch any release branch.
+* **A fix for an already-published version** (e.g. a bug in ``v6.2.1``) that must
+  ship *before* the next version. Only this case uses the patch-release
+  procedure below: the fix lands on ``release/v6.2`` (tagged ``v6.2.2``) and is
+  also carried to ``main`` so it is not lost at the next minor.
+
+In other words, what sends a change to ``release/vX.Y`` is the need to patch a
+*live, already-released* version — never the mere fact that it is a fix rather
+than a feature.
+
 Cutting a patch release (``vX.Y.Z``)
 ************************************
 
