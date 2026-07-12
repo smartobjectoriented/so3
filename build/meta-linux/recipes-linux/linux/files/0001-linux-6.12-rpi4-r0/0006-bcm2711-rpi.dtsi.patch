@@ -1,14 +1,10 @@
 --- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm64/boot/dts/broadcom/bcm2711-rpi.dtsi	1970-01-01 01:00:00.000000000 +0100
 +++ ./arch/arm64/boot/dts/broadcom/bcm2711-rpi.dtsi	2025-05-05 20:19:23.871333855 +0200
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,167 @@
 +// SPDX-License-Identifier: GPL-2.0
 +#include "bcm270x-rpi.dtsi"
 +
 +/ {
-+	__overrides__ {
-+		arm_freq;
-+	};
-+
 +	v3dbus: v3dbus {
 +		compatible = "simple-bus";
 +		#address-cells = <1>;
@@ -107,36 +103,6 @@
 +
 +&vchiq {
 +	compatible = "brcm,bcm2711-vchiq";
-+};
-+
-+&firmwarekms {
-+	compatible = "raspberrypi,rpi-firmware-kms-2711";
-+	interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&smi {
-+	interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&mmc {
-+	interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&mmcnr {
-+	interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&csi0 {
-+	interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&csi1 {
-+	interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
-+};
-+
-+&random {
-+	compatible = "brcm,bcm2711-rng200";
-+	status = "okay";
 +};
 +
 +&usb {

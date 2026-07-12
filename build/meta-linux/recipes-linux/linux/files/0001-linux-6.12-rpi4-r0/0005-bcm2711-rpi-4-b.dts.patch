@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-03 20:23:08.000000000 +0200
 +++ ./arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-04 17:39:05.169281153 +0200
-@@ -1,2 +1,416 @@
+@@ -1,2 +1,417 @@
  // SPDX-License-Identifier: GPL-2.0
 -#include "arm/broadcom/bcm2711-rpi-4-b.dts"
 +/* SOO.tech */
@@ -8,6 +8,7 @@
 +/dts-v1/;
 +#include "bcm2711.dtsi"
 +#include "bcm2835-rpi.dtsi"
++#include "bcm2711-rpi.dtsi"
 +#include "bcm283x-rpi-usb-peripheral.dtsi"
 +
 +#include <dt-bindings/reset/raspberrypi,firmware-reset.h>

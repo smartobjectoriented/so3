@@ -1,10 +1,14 @@
 --- /dev/null	2026-06-22 09:52:29.860520107 +0200
 +++ ./src/modules/Makefile	2025-09-25 16:09:37.253067057 +0200
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,15 @@
 +obj-m :=  qemu.o  
 +
 +ifeq ($(IB_PLATFORM),$(filter $(IB_PLATFORM),rpi4))
 +obj-m := senseled.o
++endif
++
++ifeq ($(IB_PLATFORM),$(filter $(IB_PLATFORM),rpi4_64))
++obj-m := modtry.o
 +endif
 +
 +ifeq ($(IB_PLATFORM),$(filter $(IB_PLATFORM),virt64))
