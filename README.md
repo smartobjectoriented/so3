@@ -72,6 +72,20 @@ The full procedure — cutting patch and minor releases, tagging and publishing 
 is documented in
 [Release process](https://smartobjectoriented.github.io/so3/release_process.html).
 
+### Maintenance branches
+
+Each minor line has its own long-lived branch. Bug fixes for a published version
+land there and are tagged as patch releases.
+
+| Line | Branch | Latest release | Status |
+|------|--------|----------------|--------|
+| 6.2  | [`release/v6.2`](https://github.com/smartobjectoriented/so3/tree/release/v6.2) | [v6.2.1](https://github.com/smartobjectoriented/so3/releases/tag/v6.2.1) | Current stable |
+| 6.1  | [`release/v6.1`](https://github.com/smartobjectoriented/so3/tree/release/v6.1) | [v6.1.0](https://github.com/smartobjectoriented/so3/releases/tag/v6.1.0) | Previous |
+| 5.4  | [`release/v5.4`](https://github.com/smartobjectoriented/so3/tree/release/v5.4) | [v5.4.1](https://github.com/smartobjectoriented/so3/releases/tag/v5.4.1) | Previous |
+
+See all versions on the
+[Releases page](https://github.com/smartobjectoriented/so3/releases).
+
 ## Credits
 
 We warmly thank our sponsors for their generous support in funding the
