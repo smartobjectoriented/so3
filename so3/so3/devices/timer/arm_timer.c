@@ -34,6 +34,7 @@
 
 #ifdef CONFIG_AVZ
 #include <avz/physdev.h>
+#include <avz/memslot.h>
 #endif
 
 static void next_event(u32 next)
@@ -171,13 +172,29 @@ void avz_el2_timer_tick(void)
 			       read_sysreg(far_el1));
 
 			if (elr_samples == 12) {
+				/* TEMP: probe the guest text at the faulting PC. The
+				 * guest undef'd on what the vmlinux says is a NOP, so
+				 * either the RAM really is corrupted or the guest's
+				 * view (icache/S2) is stale. Read the physical bytes
+				 * through the agency memslot mapping. */
+				unsigned long elr1 = read_sysreg(elr_el1);
+
+				if ((elr1 & 0xffffffc000000000UL) == 0xffffffc000000000UL) {
+					unsigned long pa = elr1 - 0xffffffc080000000UL + 0x1000000UL;
+					u32 *txt = (u32 *) __xva(MEMSLOT_AGENCY, pa);
+
+					printk("guest text @ELR_EL1 0x%lx (PA 0x%lx): %08x %08x %08x %08x\n", elr1, pa,
+					       txt[0], txt[1], txt[2], txt[3]);
+				}
+
 				/* TEMP: the guest BUGs before its console is up, so
 				 * its whole early dmesg (incl. the original panic and
 				 * stack trace) sits unseen in the printk ring. Dump it
-				 * from EL2 via the linear map. PA = __log_buf guest VA
-				 * (0xffffffc0819b1330 for THIS vmlinux) - kernel VA
-				 * base + guest load PA 0x1000000 = 0x29b1330. */
-				u8 *lb = (u8 *) __va(0x29b1330UL);
+				 * from EL2 through the agency memslot mapping. PA =
+				 * __log_buf guest VA (0xffffffc0819b1330 for THIS
+				 * vmlinux) - kernel VA base + guest load PA 0x1000000
+				 * = 0x29b1330. */
+				u8 *lb = (u8 *) __xva(MEMSLOT_AGENCY, 0x29b1330UL);
 				static char line[121];
 				int i, n = 0;
 
