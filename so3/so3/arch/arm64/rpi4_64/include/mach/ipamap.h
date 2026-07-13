@@ -76,12 +76,23 @@ ipamap_t agency_ipamap[] = {
 		.size = 0x40000000,
 	},
 
-	/* Null pointer exception */
+	/* GICC view → physical GICV (vGIC CPU interface), mirroring virt64.
+	 * Placed AFTER the big I/O window on purpose: do_ipamap applies the
+	 * entries in order (last write wins), so this overrides the direct
+	 * GICC pass-through contained in the 0xfc000000 window. The guest
+	 * must never touch the real GICC under the hypervisor.
+	 * BCM2711 GIC-400: GICC at 0xff842000, GICV at 0xff846000. */
 	{
-		.ipa_addr = 0x0,
-		.phys_addr = 0x0,
-		.size = 0x1000,
+		.ipa_addr = 0xff842000,
+		.phys_addr = 0xff846000,
+		.size = 0x2000,
 	},
+
+	/* NB: no IPA 0x0 "null pointer" entry here (the old 0x10000000-based
+	 * layout had one): the agency RAM now starts at IPA 0x0 and the guest
+	 * entry point IS IPA 0x0 — such an entry would override the first RAM
+	 * page after __setup_dom_pgtable and send the guest into the armstub
+	 * area at PA 0x0 (silent WFE hang). */
 };
 
 /**
