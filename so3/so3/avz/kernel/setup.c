@@ -132,16 +132,16 @@ void avz_start(void)
 
 	smp_init();
 
-	printk("All secondary CPUs are up; unpausing the agency domain...\n");
-
-	domain_unpause_by_systemcontroller(agency);
-
 	/* TEMP (rpi4 bring-up diagnostics): the EL2 periodic tick never fired
 	 * on the Pi. Dump the timer + GIC state now and again ~100 ms later
 	 * (CNTPCT busy-wait): if GICD_ISPENDR0 bit 26 is set in the second
 	 * dump, CNTHP fires but is not delivered (routing/CPU-interface
 	 * problem); if it stays clear, the timer itself is not programmed or
-	 * not counting. To be removed once the rpi4_64 agency boots. */
+	 * not counting. Run BEFORE the agency unpause and with IRQs masked:
+	 * a first attempt after the unpause got preempted mid-print by the
+	 * reschedule into the guest, which (with no tick) never gave the CPU
+	 * back. To be removed once the rpi4_64 agency boots. */
+	local_irq_disable();
 	{
 		int pass;
 		u64 t0, tfrq;
@@ -166,6 +166,11 @@ void avz_start(void)
 			}
 		}
 	}
+	local_irq_enable();
+
+	printk("All secondary CPUs are up; unpausing the agency domain...\n");
+
+	domain_unpause_by_systemcontroller(agency);
 
 	set_current_domain(idle_domain[smp_processor_id()]);
 
