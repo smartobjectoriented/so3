@@ -168,8 +168,35 @@ void avz_start(void)
 					;
 			}
 		}
+
+		/* Probe 1: manually acknowledge whatever the CPU interface
+		 * presents. IAR=26 proves the interface signals fine and the
+		 * gate is between nIRQ and the core; IAR=1023 (spurious) means
+		 * the interface itself never signals despite HPPIR. */
+		{
+			u32 iar = ioread32(&gic->gicc->iar);
+
+			printk("  probe: GICC_IAR=0x%08x\n", iar);
+
+			if ((iar & 0x3ff) < 1020) {
+				iowrite32(&gic->gicc->eoir, iar);
+				iowrite32(&gic->gicc->dir, iar);
+				printk("  probe: eoi+dir done, ISPENDR0=0x%08x HPPIR=0x%08x\n",
+				       ioread32(&gic->gicd->ispendr[0]), ioread32(&gic->gicc->hppir));
+			}
+		}
 	}
+
+	/* Probe 2: unmask with the tick armed and give it 20 ms. If delivery
+	 * works, the EL2 tick sampler in arm_timer.c prints immediately. */
 	local_irq_enable();
+	printk("IRQs unmasked: DAIF=0x%lx - waiting 20 ms for the tick...\n", read_sysreg(daif));
+	{
+		u64 t0 = read_sysreg(cntpct_el0);
+
+		while ((read_sysreg(cntpct_el0) - t0) < (54000000 / 50))
+			;
+	}
 
 	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
