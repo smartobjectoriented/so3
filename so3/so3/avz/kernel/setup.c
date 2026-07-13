@@ -156,8 +156,9 @@ void avz_start(void)
 			printk("  GICD: ISACTIVER0=0x%08x IPRIORITYR6=0x%08x RPR=0x%08x HCR_EL2=0x%lx\n",
 			       ioread32(&gic->gicd->isactiver[0]), ioread32(&gic->gicd->ipriorityr[6]),
 			       ioread32(&gic->gicc->rpr), read_sysreg(hcr_el2));
-			printk("  GICC: CTLR=0x%08x PMR=0x%08x HPPIR=0x%08x DAIF=0x%lx\n", ioread32(&gic->gicc->ctlr),
-			       ioread32(&gic->gicc->pmr), ioread32(&gic->gicc->hppir), read_sysreg(daif));
+			printk("  GICC: CTLR=0x%08x PMR=0x%08x HPPIR=0x%08x DAIF=0x%lx ISR_EL1=0x%lx\n",
+			       ioread32(&gic->gicc->ctlr), ioread32(&gic->gicc->pmr), ioread32(&gic->gicc->hppir),
+			       read_sysreg(daif), read_sysreg(isr_el1));
 
 			if (pass == 0) {
 				tfrq = read_sysreg(cntfrq_el0);
@@ -188,15 +189,22 @@ void avz_start(void)
 	}
 
 	/* Probe 2: unmask with the tick armed and give it 20 ms. If delivery
-	 * works, the EL2 tick sampler in arm_timer.c prints immediately. */
+	 * works, the EL2 tick sampler in arm_timer.c prints immediately.
+	 * ISR_EL1 (readable at EL2) shows the RAW physical IRQ line as seen
+	 * by the core: I=1 means the GIC output reaches the core (gate is in
+	 * the vectors); I=0 means the GIC-400 nIRQ never asserts (BCM2711
+	 * routing). */
 	local_irq_enable();
-	printk("IRQs unmasked: DAIF=0x%lx - waiting 20 ms for the tick...\n", read_sysreg(daif));
+	printk("IRQs unmasked: DAIF=0x%lx ISR_EL1=0x%lx - waiting 20 ms for the tick...\n", read_sysreg(daif),
+	       read_sysreg(isr_el1));
 	{
 		u64 t0 = read_sysreg(cntpct_el0);
 
 		while ((read_sysreg(cntpct_el0) - t0) < (54000000 / 50))
 			;
 	}
+	printk("after window: DAIF=0x%lx ISR_EL1=0x%lx ISPENDR0=0x%08x\n", read_sysreg(daif), read_sysreg(isr_el1),
+	       ioread32(&gic->gicd->ispendr[0]));
 
 	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
