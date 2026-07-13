@@ -168,6 +168,41 @@ void avz_el2_timer_tick(void)
 			printk("EL2 tick #%d: guest ELR_EL2=0x%lx SPSR_EL2=0x%lx | ELR_EL1=0x%lx ESR_EL1=0x%lx FAR_EL1=0x%lx\n",
 			       elr_samples, read_sysreg(elr_el2), spsr, read_sysreg(elr_el1), read_sysreg(esr_el1),
 			       read_sysreg(far_el1));
+
+			if (elr_samples == 12) {
+				/* TEMP: the guest BUGs before its console is up, so
+				 * its whole early dmesg (incl. the original panic and
+				 * stack trace) sits unseen in the printk ring. Dump it
+				 * from EL2 via the linear map. PA = __log_buf guest VA
+				 * (0xffffffc0819b1330 for THIS vmlinux) - kernel VA
+				 * base + guest load PA 0x1000000 = 0x29b1330. */
+				u8 *lb = (u8 *) __va(0x29b1330UL);
+				static char line[121];
+				int i, n = 0;
+
+				printk("==== guest __log_buf (16 KB) ====\n");
+				for (i = 0; i < 16384; i++) {
+					u8 c = lb[i];
+
+					if (c >= 0x20 && c < 0x7f) {
+						line[n++] = c;
+						if (n == 120) {
+							line[n] = 0;
+							printk("%s\n", line);
+							n = 0;
+						}
+					} else if ((c == '\n') && n) {
+						line[n] = 0;
+						printk("%s\n", line);
+						n = 0;
+					}
+				}
+				if (n) {
+					line[n] = 0;
+					printk("%s\n", line);
+				}
+				printk("==== end log_buf ====\n");
+			}
 		}
 	}
 
