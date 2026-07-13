@@ -206,6 +206,23 @@ void avz_start(void)
 	printk("after window: DAIF=0x%lx ISR_EL1=0x%lx ISPENDR0=0x%08x\n", read_sysreg(daif), read_sysreg(isr_el1),
 	       ioread32(&gic->gicd->ispendr[0]));
 
+	/* TEMP (rpi4 bring-up diagnostics): guest text corruption watch.
+	 * PA 0x11f2f40 (disable_trace_on_warning) was found overwritten at
+	 * run time with a {u32=0, u8=1} stride-8 pattern. Dump the window
+	 * BEFORE the guest ever runs: corrupted here = AVZ wrote it;
+	 * clean here but corrupted at tick 12 = happens after the launch.
+	 * Image reference: f000bf80 b94bb000 340002e0 d503233f a9be7bfd
+	 * f00075c2 910003fd f9000bf3 (from 0x11f2f48). */
+	{
+		u32 *g = (u32 *) __xva(MEMSLOT_AGENCY, 0x11f2f40UL);
+
+		printk("guest text pre-unpause @PA 0x11f2f40:\n");
+		printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[0], g[1], g[2], g[3], g[4], g[5], g[6],
+		       g[7]);
+		printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[8], g[9], g[10], g[11], g[12], g[13],
+		       g[14], g[15]);
+	}
+
 	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
 	domain_unpause_by_systemcontroller(agency);

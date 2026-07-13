@@ -187,6 +187,18 @@ void avz_el2_timer_tick(void)
 					       txt[0], txt[1], txt[2], txt[3]);
 				}
 
+				/* Fixed corruption-watch window (same as the
+				 * pre-unpause dump in setup.c). */
+				{
+					u32 *g = (u32 *) __xva(MEMSLOT_AGENCY, 0x11f2f40UL);
+
+					printk("guest text @tick12 @PA 0x11f2f40:\n");
+					printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[0], g[1], g[2], g[3],
+					       g[4], g[5], g[6], g[7]);
+					printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[8], g[9], g[10], g[11],
+					       g[12], g[13], g[14], g[15]);
+				}
+
 				/* TEMP: the guest BUGs before its console is up, so
 				 * its whole early dmesg (incl. the original panic and
 				 * stack trace) sits unseen in the printk ring. Dump it
