@@ -30,6 +30,7 @@
 
 #include <asm/arm_timer.h>
 #include <asm/processor.h>
+#include <memory.h>
 
 #ifdef CONFIG_AVZ
 #include <avz/physdev.h>
