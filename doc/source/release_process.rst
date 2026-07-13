@@ -3,10 +3,9 @@
 Release process
 ###############
 
-SO3 follows a branch-per-release model inspired by `LVGL
-<https://github.com/lvgl/lvgl>`_: development happens on ``main``, and every
-minor version gets a long-lived maintenance branch on which patch releases are
-tagged. This keeps stable lines alive for backports while ``main`` moves on.
+SO3 follows a branch-per-release model: development happens on ``main``, and
+every minor version gets a long-lived maintenance branch on which patch releases
+are tagged. This keeps stable lines alive for backports while ``main`` moves on.
 
 Overview
 ********

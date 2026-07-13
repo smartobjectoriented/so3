@@ -92,19 +92,6 @@ Where to start
 :ref:`User space <user_space>` · :ref:`Debugging <debugging>`
     The MUSL-based user land, and how to debug SO3 under QEMU/GDB or JTAG.
 
-Development flow
-================
-
-The ``main`` branch contains the last released version.
-
-.. important::
-
-   Do not push directly to ``main``. Each development leads to an issue with its
-   own branch; open a merge/pull request as soon as it is stable enough for
-   review.
-
-If you want to contribute, please first contact `the maintainer <SOO_mail_>`__.
-
 Acknowledgements
 ================
 
@@ -114,5 +101,3 @@ and the `Hasler Foundation <https://haslerstiftung.ch/en/welcome-to-the-hasler-f
 
 We are also grateful to all the contributors — developers, students, researchers
 and community members alike — whose code, ideas and feedback have shaped SO3.
-
-.. _SOO_mail: info@soo.tech
