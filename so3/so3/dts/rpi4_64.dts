@@ -92,5 +92,20 @@
 		interrupts = <0 113 4>;
 		status = "disabled";
     };
-	
+
+	/*
+	 * Present only so U-Boot's RPi 4 bootm fixup can copy the
+	 * firmware-corrected dma-ranges into this static DT (see u-boot
+	 * boot/bootm.c, CONFIG_BCM2711). Silences the "Can't find emmc2bus in
+	 * the DT stored in the ITB" warning. SO3 boots from ramfs and does not
+	 * drive emmc2 itself, so the child controller node is intentionally omitted.
+	 */
+	emmc2bus {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges = <0x0 0x7e000000  0x0 0xfe000000  0x01800000>;
+		dma-ranges = <0x0 0xc0000000  0x0 0x00000000  0x40000000>;
+	};
+
 };
