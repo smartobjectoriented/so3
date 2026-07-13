@@ -23,11 +23,54 @@
 
 ipamap_t agency_ipamap[] = {
 
-	/* I/O Memory space*/
+	/* I/O Memory space, up to the ARM_LOCAL/GIC 2 MB region.
+	 * NB: entries must NOT overlap — __create_mapping cannot split an
+	 * already-installed 2 MB S2 block into an L3 table (alloc_init_l3
+	 * would dereference the block as a table and fault), so the GIC-400
+	 * region is carved out of this window and mapped 4K-grained below. */
 	{
 		.ipa_addr = 0xfc000000,
 		.phys_addr = 0xfc000000,
-		.size = 0x04000000,
+		.size = 0x03800000, /* 0xfc000000 - 0xff7fffff */
+	},
+
+	/* ARM_LOCAL block up to the GIC-400 distributor */
+	{
+		.ipa_addr = 0xff800000,
+		.phys_addr = 0xff800000,
+		.size = 0x41000, /* 0xff800000 - 0xff840fff */
+	},
+
+	/* GICD pass-through (mirroring virt64) */
+	{
+		.ipa_addr = 0xff841000,
+		.phys_addr = 0xff841000,
+		.size = 0x1000,
+	},
+
+	/* GICC view → physical GICV (vGIC CPU interface), mirroring virt64.
+	 * Under the hypervisor the guest must use the virtual CPU interface,
+	 * never the real GICC. GICH/GICV are EL2-only: no guest mapping at
+	 * their real IPAs (accesses trap).
+	 * BCM2711 GIC-400: GICC at 0xff842000, GICV at 0xff846000. */
+	{
+		.ipa_addr = 0xff842000,
+		.phys_addr = 0xff846000,
+		.size = 0x2000,
+	},
+
+	/* Rest of the GIC 2 MB region after the GIC-400 frames */
+	{
+		.ipa_addr = 0xff848000,
+		.phys_addr = 0xff848000,
+		.size = 0x1b8000, /* 0xff848000 - 0xff9fffff */
+	},
+
+	/* Remaining high peripherals */
+	{
+		.ipa_addr = 0xffa00000,
+		.phys_addr = 0xffa00000,
+		.size = 0x600000, /* 0xffa00000 - 0xffffffff */
 	},
 
 	/* VC memory*/
@@ -58,11 +101,10 @@ ipamap_t agency_ipamap[] = {
 		.phys_addr = 0x7e206000,
 		.size = 0x1000,
 	},
-	{
-		.ipa_addr = 0xf0000000,
-		.phys_addr = 0xf0000000,
-		.size = 0x10000000,
-	},
+	/* NB: the legacy 0xf0000000/256MB entry is gone: it fully overlapped
+	 * the 0xfc000000 I/O window and the GIC carve-out above (re-installing
+	 * 2 MB blocks over them), and nothing ARM-visible lives below
+	 * 0xfc000000 on the BCM2711. */
 
 	/* PCI */
 	{
@@ -74,18 +116,6 @@ ipamap_t agency_ipamap[] = {
 		.ipa_addr = 0x600000000,
 		.phys_addr = 0x600000000,
 		.size = 0x40000000,
-	},
-
-	/* GICC view → physical GICV (vGIC CPU interface), mirroring virt64.
-	 * Placed AFTER the big I/O window on purpose: do_ipamap applies the
-	 * entries in order (last write wins), so this overrides the direct
-	 * GICC pass-through contained in the 0xfc000000 window. The guest
-	 * must never touch the real GICC under the hypervisor.
-	 * BCM2711 GIC-400: GICC at 0xff842000, GICV at 0xff846000. */
-	{
-		.ipa_addr = 0xff842000,
-		.phys_addr = 0xff846000,
-		.size = 0x2000,
 	},
 
 	/* NB: no IPA 0x0 "null pointer" entry here (the old 0x10000000-based
