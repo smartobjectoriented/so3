@@ -131,7 +131,7 @@ void avz_start(void)
 
 	smp_init();
 
-	LOG_DEBUG("Now, unpausing the agency domain and doing its bootstrap...");
+	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
 	domain_unpause_by_systemcontroller(agency);
 
