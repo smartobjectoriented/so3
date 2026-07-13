@@ -29,6 +29,7 @@
 #include <device/arch/arm_timer.h>
 
 #include <asm/arm_timer.h>
+#include <asm/processor.h>
 
 #ifdef CONFIG_AVZ
 #include <avz/physdev.h>
@@ -84,6 +85,21 @@ static irq_return_t timer_isr(int irq, void *dev)
 		next_event(arm_timer->reload);
 
 #ifdef CONFIG_AVZ
+		/* TEMP (rpi4 bring-up diagnostics): sample the interrupted PC on
+		 * the first EL2 ticks of the agency CPU. When the guest runs but
+		 * stays silent, ELR_EL2 pinpoints where it is spinning (symbolize
+		 * against the guest vmlinux). To be removed once the rpi4_64
+		 * agency boots to the console. */
+		{
+			static volatile int elr_samples = 0;
+
+			if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 8)) {
+				elr_samples++;
+				printk("EL2 tick #%d (CPU %d): ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples,
+				       smp_processor_id(), read_sysreg(elr_el2), read_sysreg(spsr_el2));
+			}
+		}
+
 		timer_interrupt((smp_processor_id() == S3C_CPU) ? true : false);
 #else
 		jiffies++;
