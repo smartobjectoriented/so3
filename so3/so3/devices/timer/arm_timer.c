@@ -161,8 +161,13 @@ void avz_el2_timer_tick(void)
 		 * console lock when this sampled unconditionally). */
 		if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 12) && ((spsr & 0xc) == 0x4)) {
 			elr_samples++;
-			printk("EL2 tick #%d: guest ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples,
-			       read_sysreg(elr_el2), spsr);
+			/* The guest is looping through its own exception handlers:
+			 * its EL1 exception registers (readable from EL2 while the
+			 * vcpu is current) carry the ORIGINAL fault: ELR_EL1 = the
+			 * faulting guest PC, ESR_EL1 = the cause. */
+			printk("EL2 tick #%d: guest ELR_EL2=0x%lx SPSR_EL2=0x%lx | ELR_EL1=0x%lx ESR_EL1=0x%lx FAR_EL1=0x%lx\n",
+			       elr_samples, read_sysreg(elr_el2), spsr, read_sysreg(elr_el1), read_sysreg(esr_el1),
+			       read_sysreg(far_el1));
 		}
 	}
 
