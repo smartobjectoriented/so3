@@ -32,6 +32,7 @@
 #include <avz/evtchn.h>
 
 #include <device/device.h>
+#include <device/arch/gic.h>
 
 #include <asm/processor.h>
 #include <asm/io.h>
@@ -134,6 +135,37 @@ void avz_start(void)
 	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
 	domain_unpause_by_systemcontroller(agency);
+
+	/* TEMP (rpi4 bring-up diagnostics): the EL2 periodic tick never fired
+	 * on the Pi. Dump the timer + GIC state now and again ~100 ms later
+	 * (CNTPCT busy-wait): if GICD_ISPENDR0 bit 26 is set in the second
+	 * dump, CNTHP fires but is not delivered (routing/CPU-interface
+	 * problem); if it stays clear, the timer itself is not programmed or
+	 * not counting. To be removed once the rpi4_64 agency boots. */
+	{
+		int pass;
+		u64 t0, tfrq;
+
+		for (pass = 0; pass < 2; pass++) {
+			printk("GIC/TIMER dump #%d: CNTFRQ=%lu CNTHP_CTL=0x%lx CNTHP_TVAL=0x%lx CNTPCT=0x%lx\n", pass,
+			       read_sysreg(cntfrq_el0), read_sysreg(cnthp_ctl_el2), read_sysreg(cnthp_tval_el2),
+			       read_sysreg(cntpct_el0));
+			printk("  GICD: CTLR=0x%08x ISENABLER0=0x%08x ISPENDR0=0x%08x IGROUPR0=0x%08x\n",
+			       ioread32(&gic->gicd->ctlr), ioread32(&gic->gicd->isenabler[0]),
+			       ioread32(&gic->gicd->ispendr[0]), ioread32(&gic->gicd->igroupr[0]));
+			printk("  GICC: CTLR=0x%08x PMR=0x%08x HPPIR=0x%08x DAIF=0x%lx\n", ioread32(&gic->gicc->ctlr),
+			       ioread32(&gic->gicc->pmr), ioread32(&gic->gicc->hppir), read_sysreg(daif));
+
+			if (pass == 0) {
+				tfrq = read_sysreg(cntfrq_el0);
+				t0 = read_sysreg(cntpct_el0);
+
+				/* ~100 ms busy wait */
+				while (tfrq && ((read_sysreg(cntpct_el0) - t0) < (tfrq / 10)))
+					;
+			}
+		}
+	}
 
 	set_current_domain(idle_domain[smp_processor_id()]);
 
