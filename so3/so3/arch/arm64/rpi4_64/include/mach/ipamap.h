@@ -118,11 +118,19 @@ ipamap_t agency_ipamap[] = {
 		.size = 0x40000000,
 	},
 
-	/* NB: no IPA 0x0 "null pointer" entry here (the old 0x10000000-based
-	 * layout had one): the agency RAM now starts at IPA 0x0 and the guest
-	 * entry point IS IPA 0x0 — such an entry would override the first RAM
-	 * page after __setup_dom_pgtable and send the guest into the armstub
-	 * area at PA 0x0 (silent WFE hang). */
+	/* Low page, identity. With the identity RAM layout (agency at IPA =
+	 * PA 0x1000000) IPA 0 is not guest RAM, and the guest's
+	 * smp_spin_table_cpu_prepare writes the spin-table release addresses
+	 * (0xd8-0xf0, bcm2711 DTB) plus dcache maintenance on their line
+	 * (0xc0): unmapped, those fault at S2 and panic AVZ. Identity-map the
+	 * page so they land harmlessly in the vacated armstub spin area (the
+	 * physical CPUs have long left it for AVZ). This mirrors the historic
+	 * pre-EDGE-M1 rpi4 layout. */
+	{
+		.ipa_addr = 0x0,
+		.phys_addr = 0x0,
+		.size = 0x1000,
+	},
 };
 
 /**
