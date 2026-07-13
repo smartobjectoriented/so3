@@ -29,12 +29,9 @@
 #include <device/arch/arm_timer.h>
 
 #include <asm/arm_timer.h>
-#include <asm/processor.h>
-#include <memory.h>
 
 #ifdef CONFIG_AVZ
 #include <avz/physdev.h>
-#include <avz/memslot.h>
 #endif
 
 static void next_event(u32 next)
@@ -87,21 +84,6 @@ static irq_return_t timer_isr(int irq, void *dev)
 		next_event(arm_timer->reload);
 
 #ifdef CONFIG_AVZ
-		/* TEMP (rpi4 bring-up diagnostics): sample the interrupted PC on
-		 * the first EL2 ticks of the agency CPU. When the guest runs but
-		 * stays silent, ELR_EL2 pinpoints where it is spinning (symbolize
-		 * against the guest vmlinux). To be removed once the rpi4_64
-		 * agency boots to the console. */
-		{
-			static volatile int elr_samples = 0;
-
-			if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 8)) {
-				elr_samples++;
-				printk("EL2 tick #%d (CPU %d): ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples,
-				       smp_processor_id(), read_sysreg(elr_el2), read_sysreg(spsr_el2));
-			}
-		}
-
 		timer_interrupt((smp_processor_id() == S3C_CPU) ? true : false);
 #else
 		jiffies++;
@@ -145,96 +127,6 @@ void avz_el2_timer_tick(void)
 
 	/* Re-arm the timer for the next period. */
 	next_event(arm_timer->reload);
-
-	/* TEMP (rpi4 bring-up diagnostics): sample the interrupted PC on the
-	 * first EL2 ticks of the agency CPU. This is the path actually taken
-	 * for CNTHP (the INTID-26 special case bypasses timer_isr, where a
-	 * first sampler sat and never fired). SPSR_EL2.M = 0x5 (EL1h) means
-	 * the sample is the silent guest's PC — symbolize against vmlinux.
-	 * To be removed once the rpi4_64 agency boots to the console. */
-	{
-		static volatile int elr_samples = 0;
-		unsigned long spsr = read_sysreg(spsr_el2);
-
-		/* Only sample interrupted EL1 contexts (SPSR_EL2.M[3:2] = 01,
-		 * i.e. the guest): that is the PC we are after, and it keeps
-		 * this printk out of any window where AVZ itself is mid-print
-		 * (a tick landing during a boot-time printk deadlocked on the
-		 * console lock when this sampled unconditionally). */
-		if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 12) && ((spsr & 0xc) == 0x4)) {
-			elr_samples++;
-			/* The guest is looping through its own exception handlers:
-			 * its EL1 exception registers (readable from EL2 while the
-			 * vcpu is current) carry the ORIGINAL fault: ELR_EL1 = the
-			 * faulting guest PC, ESR_EL1 = the cause. */
-			printk("EL2 tick #%d: guest ELR_EL2=0x%lx SPSR_EL2=0x%lx | ELR_EL1=0x%lx ESR_EL1=0x%lx FAR_EL1=0x%lx\n",
-			       elr_samples, read_sysreg(elr_el2), spsr, read_sysreg(elr_el1), read_sysreg(esr_el1),
-			       read_sysreg(far_el1));
-
-			if (elr_samples == 12) {
-				/* TEMP: probe the guest text at the faulting PC. The
-				 * guest undef'd on what the vmlinux says is a NOP, so
-				 * either the RAM really is corrupted or the guest's
-				 * view (icache/S2) is stale. Read the physical bytes
-				 * through the agency memslot mapping. */
-				unsigned long elr1 = read_sysreg(elr_el1);
-
-				if ((elr1 & 0xffffffc000000000UL) == 0xffffffc000000000UL) {
-					unsigned long pa = elr1 - 0xffffffc080000000UL + 0x1000000UL;
-					u32 *txt = (u32 *) __xva(MEMSLOT_AGENCY, pa);
-
-					printk("guest text @ELR_EL1 0x%lx (PA 0x%lx): %08x %08x %08x %08x\n", elr1, pa,
-					       txt[0], txt[1], txt[2], txt[3]);
-				}
-
-				/* Fixed corruption-watch window (same as the
-				 * pre-unpause dump in setup.c). */
-				{
-					u32 *g = (u32 *) __xva(MEMSLOT_AGENCY, 0x11f2f40UL);
-
-					printk("guest text @tick12 @PA 0x11f2f40:\n");
-					printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[0], g[1], g[2], g[3],
-					       g[4], g[5], g[6], g[7]);
-					printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[8], g[9], g[10], g[11],
-					       g[12], g[13], g[14], g[15]);
-				}
-
-				/* TEMP: the guest BUGs before its console is up, so
-				 * its whole early dmesg (incl. the original panic and
-				 * stack trace) sits unseen in the printk ring. Dump it
-				 * from EL2 through the agency memslot mapping. PA =
-				 * __log_buf guest VA (0xffffffc0819b1330 for THIS
-				 * vmlinux) - kernel VA base + guest load PA 0x1000000
-				 * = 0x29b1330. */
-				u8 *lb = (u8 *) __xva(MEMSLOT_AGENCY, 0x29b1330UL);
-				static char line[121];
-				int i, n = 0;
-
-				printk("==== guest __log_buf (16 KB) ====\n");
-				for (i = 0; i < 16384; i++) {
-					u8 c = lb[i];
-
-					if (c >= 0x20 && c < 0x7f) {
-						line[n++] = c;
-						if (n == 120) {
-							line[n] = 0;
-							printk("%s\n", line);
-							n = 0;
-						}
-					} else if ((c == '\n') && n) {
-						line[n] = 0;
-						printk("%s\n", line);
-						n = 0;
-					}
-				}
-				if (n) {
-					line[n] = 0;
-					printk("%s\n", line);
-				}
-				printk("==== end log_buf ====\n");
-			}
-		}
-	}
 
 	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
 	 * must run the periodic path so capsule domains get their

@@ -32,7 +32,6 @@
 #include <avz/evtchn.h>
 
 #include <device/device.h>
-#include <device/arch/gic.h>
 
 #include <asm/processor.h>
 #include <asm/io.h>
@@ -131,97 +130,6 @@ void avz_start(void)
 	local_irq_enable();
 
 	smp_init();
-
-	/* TEMP (rpi4 bring-up diagnostics): the EL2 periodic tick never fired
-	 * on the Pi. Dump the timer + GIC state now and again ~100 ms later
-	 * (CNTPCT busy-wait): if GICD_ISPENDR0 bit 26 is set in the second
-	 * dump, CNTHP fires but is not delivered (routing/CPU-interface
-	 * problem); if it stays clear, the timer itself is not programmed or
-	 * not counting. Run BEFORE the agency unpause and with IRQs masked:
-	 * a first attempt after the unpause got preempted mid-print by the
-	 * reschedule into the guest, which (with no tick) never gave the CPU
-	 * back. To be removed once the rpi4_64 agency boots. */
-	local_irq_disable();
-	{
-		int pass;
-		u64 t0, tfrq;
-
-		for (pass = 0; pass < 2; pass++) {
-			printk("GIC/TIMER dump #%d: CNTFRQ=%lu CNTHP_CTL=0x%lx CNTHP_TVAL=0x%lx CNTPCT=0x%lx\n", pass,
-			       read_sysreg(cntfrq_el0), read_sysreg(cnthp_ctl_el2), read_sysreg(cnthp_tval_el2),
-			       read_sysreg(cntpct_el0));
-			printk("  GICD: CTLR=0x%08x ISENABLER0=0x%08x ISPENDR0=0x%08x IGROUPR0=0x%08x\n",
-			       ioread32(&gic->gicd->ctlr), ioread32(&gic->gicd->isenabler[0]),
-			       ioread32(&gic->gicd->ispendr[0]), ioread32(&gic->gicd->igroupr[0]));
-			printk("  GICD: ISACTIVER0=0x%08x IPRIORITYR6=0x%08x RPR=0x%08x HCR_EL2=0x%lx\n",
-			       ioread32(&gic->gicd->isactiver[0]), ioread32(&gic->gicd->ipriorityr[6]),
-			       ioread32(&gic->gicc->rpr), read_sysreg(hcr_el2));
-			printk("  GICC: CTLR=0x%08x PMR=0x%08x HPPIR=0x%08x DAIF=0x%lx ISR_EL1=0x%lx\n",
-			       ioread32(&gic->gicc->ctlr), ioread32(&gic->gicc->pmr), ioread32(&gic->gicc->hppir),
-			       read_sysreg(daif), read_sysreg(isr_el1));
-
-			if (pass == 0) {
-				tfrq = read_sysreg(cntfrq_el0);
-				t0 = read_sysreg(cntpct_el0);
-
-				/* ~100 ms busy wait */
-				while (tfrq && ((read_sysreg(cntpct_el0) - t0) < (tfrq / 10)))
-					;
-			}
-		}
-
-		/* Probe 1: manually acknowledge whatever the CPU interface
-		 * presents. IAR=26 proves the interface signals fine and the
-		 * gate is between nIRQ and the core; IAR=1023 (spurious) means
-		 * the interface itself never signals despite HPPIR. */
-		{
-			u32 iar = ioread32(&gic->gicc->iar);
-
-			printk("  probe: GICC_IAR=0x%08x\n", iar);
-
-			if ((iar & 0x3ff) < 1020) {
-				iowrite32(&gic->gicc->eoir, iar);
-				iowrite32(&gic->gicc->dir, iar);
-				printk("  probe: eoi+dir done, ISPENDR0=0x%08x HPPIR=0x%08x\n",
-				       ioread32(&gic->gicd->ispendr[0]), ioread32(&gic->gicc->hppir));
-			}
-		}
-	}
-
-	/* Probe 2: unmask with the tick armed and give it 20 ms. If delivery
-	 * works, the EL2 tick sampler in arm_timer.c prints immediately.
-	 * ISR_EL1 (readable at EL2) shows the RAW physical IRQ line as seen
-	 * by the core: I=1 means the GIC output reaches the core (gate is in
-	 * the vectors); I=0 means the GIC-400 nIRQ never asserts (BCM2711
-	 * routing). */
-	local_irq_enable();
-	printk("IRQs unmasked: DAIF=0x%lx ISR_EL1=0x%lx - waiting 20 ms for the tick...\n", read_sysreg(daif),
-	       read_sysreg(isr_el1));
-	{
-		u64 t0 = read_sysreg(cntpct_el0);
-
-		while ((read_sysreg(cntpct_el0) - t0) < (54000000 / 50))
-			;
-	}
-	printk("after window: DAIF=0x%lx ISR_EL1=0x%lx ISPENDR0=0x%08x\n", read_sysreg(daif), read_sysreg(isr_el1),
-	       ioread32(&gic->gicd->ispendr[0]));
-
-	/* TEMP (rpi4 bring-up diagnostics): guest text corruption watch.
-	 * PA 0x11f2f40 (disable_trace_on_warning) was found overwritten at
-	 * run time with a {u32=0, u8=1} stride-8 pattern. Dump the window
-	 * BEFORE the guest ever runs: corrupted here = AVZ wrote it;
-	 * clean here but corrupted at tick 12 = happens after the launch.
-	 * Image reference: f000bf80 b94bb000 340002e0 d503233f a9be7bfd
-	 * f00075c2 910003fd f9000bf3 (from 0x11f2f48). */
-	{
-		u32 *g = (u32 *) __xva(MEMSLOT_AGENCY, 0x11f2f40UL);
-
-		printk("guest text pre-unpause @PA 0x11f2f40:\n");
-		printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[0], g[1], g[2], g[3], g[4], g[5], g[6],
-		       g[7]);
-		printk("  %08x %08x %08x %08x %08x %08x %08x %08x\n", g[8], g[9], g[10], g[11], g[12], g[13],
-		       g[14], g[15]);
-	}
 
 	printk("All secondary CPUs are up; unpausing the agency domain...\n");
 
