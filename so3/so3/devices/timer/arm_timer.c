@@ -144,6 +144,22 @@ void avz_el2_timer_tick(void)
 	/* Re-arm the timer for the next period. */
 	next_event(arm_timer->reload);
 
+	/* TEMP (rpi4 bring-up diagnostics): sample the interrupted PC on the
+	 * first EL2 ticks of the agency CPU. This is the path actually taken
+	 * for CNTHP (the INTID-26 special case bypasses timer_isr, where a
+	 * first sampler sat and never fired). SPSR_EL2.M = 0x5 (EL1h) means
+	 * the sample is the silent guest's PC — symbolize against vmlinux.
+	 * To be removed once the rpi4_64 agency boots to the console. */
+	{
+		static volatile int elr_samples = 0;
+
+		if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 12)) {
+			elr_samples++;
+			printk("EL2 tick #%d: ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples, read_sysreg(elr_el2),
+			       read_sysreg(spsr_el2));
+		}
+	}
+
 	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
 	 * must run the periodic path so capsule domains get their
 	 * VIRQ_TIMER event; otherwise a capsule never sees a tick and
