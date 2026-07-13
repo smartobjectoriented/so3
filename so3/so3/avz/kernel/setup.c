@@ -153,6 +153,9 @@ void avz_start(void)
 			printk("  GICD: CTLR=0x%08x ISENABLER0=0x%08x ISPENDR0=0x%08x IGROUPR0=0x%08x\n",
 			       ioread32(&gic->gicd->ctlr), ioread32(&gic->gicd->isenabler[0]),
 			       ioread32(&gic->gicd->ispendr[0]), ioread32(&gic->gicd->igroupr[0]));
+			printk("  GICD: ISACTIVER0=0x%08x IPRIORITYR6=0x%08x RPR=0x%08x HCR_EL2=0x%lx\n",
+			       ioread32(&gic->gicd->isactiver[0]), ioread32(&gic->gicd->ipriorityr[6]),
+			       ioread32(&gic->gicc->rpr), read_sysreg(hcr_el2));
 			printk("  GICC: CTLR=0x%08x PMR=0x%08x HPPIR=0x%08x DAIF=0x%lx\n", ioread32(&gic->gicc->ctlr),
 			       ioread32(&gic->gicc->pmr), ioread32(&gic->gicc->hppir), read_sysreg(daif));
 
