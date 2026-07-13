@@ -152,11 +152,17 @@ void avz_el2_timer_tick(void)
 	 * To be removed once the rpi4_64 agency boots to the console. */
 	{
 		static volatile int elr_samples = 0;
+		unsigned long spsr = read_sysreg(spsr_el2);
 
-		if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 12)) {
+		/* Only sample interrupted EL1 contexts (SPSR_EL2.M[3:2] = 01,
+		 * i.e. the guest): that is the PC we are after, and it keeps
+		 * this printk out of any window where AVZ itself is mid-print
+		 * (a tick landing during a boot-time printk deadlocked on the
+		 * console lock when this sampled unconditionally). */
+		if ((smp_processor_id() == AGENCY_CPU) && (elr_samples < 12) && ((spsr & 0xc) == 0x4)) {
 			elr_samples++;
-			printk("EL2 tick #%d: ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples, read_sysreg(elr_el2),
-			       read_sysreg(spsr_el2));
+			printk("EL2 tick #%d: guest ELR_EL2=0x%lx SPSR_EL2=0x%lx\n", elr_samples,
+			       read_sysreg(elr_el2), spsr);
 		}
 	}
 
