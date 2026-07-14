@@ -234,26 +234,16 @@ void smp_init(void)
 
 	create_mapping(NULL, mem_info.phys_base, mem_info.phys_base, SZ_128M, false);
 
+	/* Bring ALL secondaries into AVZ, SOO or not. Under SOO the agency
+	 * CPUs then hand off to the guest — parked on the guest spin-table
+	 * (rpi4) or in the PSCI pen waiting for the guest's CPU_ON (virt64,
+	 * verdin) — giving an SMP agency on every platform, while the S3C
+	 * CPU joins the AVZ idle loop to run capsules. */
+
+	for (i = 1; i < CONFIG_NR_CPUS; i++)
+		cpu_up(i);
+
 #ifdef CONFIG_SOO
-
-	printk("Starting capsule CPU...\n");
-
-#ifdef CONFIG_CPU_SPIN_TABLE
-	/* Spin-table platforms (rpi4): bring ALL secondaries into AVZ — the
-	 * agency CPUs park on the guest spin-table with stage-2 set (same
-	 * flow as non-SOO SMP), while the S3C CPU joins the AVZ idle loop. */
-	for (i = 1; i < CONFIG_NR_CPUS; i++)
-		cpu_up(i);
-#else
-	cpu_up(S3C_CPU);
-#endif /* CONFIG_CPU_SPIN_TABLE */
-
 	printk("Brought secondary CPU %d for running SO3 capsules...\n", S3C_CPU);
-
-#else /* CONFIG_SOO */
-
-	for (i = 1; i < CONFIG_NR_CPUS; i++)
-		cpu_up(i);
-
-#endif /* !CONFIG_SOO */
+#endif /* CONFIG_SOO */
 }
