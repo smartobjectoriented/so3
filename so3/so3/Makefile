@@ -485,8 +485,19 @@ $(sort $(so3-all)): $(so3-dirs) ;
 prepare0: scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=.
 
+# Generated release-version header. The version string is resolved from the
+# git release tag at build time (see scripts/so3version.sh); filechk only
+# rewrites the header when the resolved value actually changes, so it does not
+# force needless rebuilds.
+define filechk_autoversion.h
+	printf '#ifndef SO3_AUTOVERSION_H\n#define SO3_AUTOVERSION_H\n#define SO3_KERNEL_VERSION "%s"\n#endif\n' "$$($(CONFIG_SHELL) $(srctree)/scripts/so3version.sh $(srctree))"
+endef
+
+include/generated/autoversion.h: include/version.h FORCE
+	$(call filechk,autoversion.h)
+
 # All the preparing..
-prepare: prepare0
+prepare: prepare0 include/generated/autoversion.h
 
 PHONY += $(so3-dirs)
 $(so3-dirs): prepare scripts_basic

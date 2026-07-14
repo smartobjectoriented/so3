@@ -18,6 +18,7 @@
  */
 
 #ifndef VERSION_H
+#define VERSION_H
 
 /* CHANGES 2023.6.0 */
 /**
@@ -27,6 +28,16 @@
  * - Upgrade U-boot to 2022.04
  */
 
-#define SO3_KERNEL_VERSION "6.2.0"
+/*
+ * Fallback release version, used only when the build tree carries no git
+ * metadata (e.g. a bitbake WORKDIR copy). On a normal git checkout the actual
+ * value of SO3_KERNEL_VERSION is derived from the release tag at build time
+ * (see scripts/so3version.sh and include/generated/autoversion.h). Keep this in
+ * sync with the current release tag as a safety net.
+ */
+#define SO3_KERNEL_VERSION_FALLBACK "6.2.1"
+
+/* Release version resolved at build time (git tag -> base version). */
+#include <generated/autoversion.h>
 
 #endif /* VERSION_H */
