@@ -432,6 +432,22 @@ static int gic_inject_irq(u16 irq_id_packed)
 		/* Check that there is no overlapping */
 		lr = gic_read_lr(n);
 		if ((lr & GICH_LR_VIRT_ID_MASK) == irq_id) {
+			/* A vSGI of this id is already handled by the guest (LR
+			 * ACTIVE): a fresh edge just arrived — possibly from a
+			 * different source CPU (SGI source is not part of the id
+			 * we match on). Dropping it (-EEXIST) loses an IPI: the
+			 * guest has already scanned its call-single queue, so the
+			 * new csd never runs and smp_call_function_many() hangs
+			 * (RCU stall). Instead re-arm the LR ACTIVE+PENDING so the
+			 * guest re-enters the handler after it writes vEOIR and
+			 * drains the new work. Only ACTIVE (not plain PENDING)
+			 * needs this: a still-PENDING vSGI has not been consumed
+			 * yet, so coalescing is correct. */
+
+			if (is_sgi(irq_id) && (lr & GICH_LR_ACTIVE_BIT) && !(lr & GICH_LR_PENDING_BIT)) {
+				gic_write_lr(n, lr | GICH_LR_PENDING_BIT);
+				return 0;
+			}
 			this_cpu(gic_eexist_count)++;
 			if (irq_id == 0)
 				this_cpu(gic_sgi0_eexist)++;
