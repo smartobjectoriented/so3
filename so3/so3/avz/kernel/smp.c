@@ -103,9 +103,14 @@ void secondary_start_kernel(void)
 
 	gicc_init();
 
-#ifndef CONFIG_SOO
+#ifdef CONFIG_SOO
+	/* Agency CPUs run the guest under stage-2 exactly as in the non-SOO
+	 * flow; only the S3C CPU stays on AVZ's own tables to run capsules. */
+	if (cpu != S3C_CPU)
+		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+#else
 	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
-#endif /* !CONFIG_SOO */
+#endif /* CONFIG_SOO */
 
 	booted[cpu] = 1;
 
@@ -223,7 +228,15 @@ void smp_init(void)
 
 	printk("Starting capsule CPU...\n");
 
+#ifdef CONFIG_CPU_SPIN_TABLE
+	/* Spin-table platforms (rpi4): bring ALL secondaries into AVZ — the
+	 * agency CPUs park on the guest spin-table with stage-2 set (same
+	 * flow as non-SOO SMP), while the S3C CPU joins the AVZ idle loop. */
+	for (i = 1; i < CONFIG_NR_CPUS; i++)
+		cpu_up(i);
+#else
 	cpu_up(S3C_CPU);
+#endif /* CONFIG_CPU_SPIN_TABLE */
 
 	printk("Brought secondary CPU %d for running SO3 capsules...\n", S3C_CPU);
 
