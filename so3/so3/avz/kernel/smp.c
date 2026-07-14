@@ -25,6 +25,7 @@
 
 #include <avz/evtchn.h>
 #include <avz/domain.h>
+#include <avz/sched.h>
 
 #include <avz/uapi/avz.h>
 
@@ -106,10 +107,19 @@ void secondary_start_kernel(void)
 #ifdef CONFIG_SOO
 	/* Agency CPUs run the guest under stage-2 exactly as in the non-SOO
 	 * flow; only the S3C CPU stays on AVZ's own tables to run capsules. */
-	if (cpu != S3C_CPU)
+	if (cpu != S3C_CPU) {
 		__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+
+		/* This CPU is about to ERET into the agency guest: its per-CPU
+		 * current_domain must point at the agency, otherwise the first
+		 * hypercall it issues (evtchn, vbstore, ...) dereferences a NULL
+		 * current_domain in AVZ. The non-SOO guest never hypercalls from
+		 * a secondary so this went unnoticed there. */
+		set_current_domain(domains[DOMID_AGENCY]);
+	}
 #else
 	__mmu_switch_kernel((void *) domains[DOMID_AGENCY]->pagetable_paddr, true);
+	set_current_domain(domains[DOMID_AGENCY]);
 #endif /* CONFIG_SOO */
 
 	booted[cpu] = 1;
