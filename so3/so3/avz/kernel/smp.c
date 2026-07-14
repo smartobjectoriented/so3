@@ -110,18 +110,26 @@ void secondary_start_kernel(void)
 	booted[cpu] = 1;
 
 #ifdef CONFIG_CPU_SPIN_TABLE
-	switch (cpu) {
-	case 1:
-		pre_ret_to_el1_spin(CPU1_RELEASE_ADDR);
-		break;
-	case 2:
-		pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
-		break;
-	case 3:
-		pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);
-		break;
-	default:
-		printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
+#ifdef CONFIG_SOO
+	/* Same exemption as the PSCI path below: the capsule CPU must not
+	 * park on the guest spin-table — it stays in AVZ and runs the S3C
+	 * domains through the idle loop / scheduler. */
+	if (cpu != S3C_CPU)
+#endif /* CONFIG_SOO */
+	{
+		switch (cpu) {
+		case 1:
+			pre_ret_to_el1_spin(CPU1_RELEASE_ADDR);
+			break;
+		case 2:
+			pre_ret_to_el1_spin(CPU2_RELEASE_ADDR);
+			break;
+		case 3:
+			pre_ret_to_el1_spin(CPU3_RELEASE_ADDR);
+			break;
+		default:
+			printk("%s: trying to start CPU %d that is not supported.\n", __func__, cpu);
+		}
 	}
 #endif
 
