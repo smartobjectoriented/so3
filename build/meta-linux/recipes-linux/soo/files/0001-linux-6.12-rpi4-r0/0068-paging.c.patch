@@ -43,7 +43,7 @@
 +    BUG_ON(!pg);
 + 
 +    pages[0] = pg;
-+    va = vmap(pages, 1, VM_MAP, pgprot_noncached(PAGE_KERNEL));
++    va = vmap(pages, 1, VM_MAP, pgprot_writecombine(PAGE_KERNEL));
 +    BUG_ON(!va);
 +    
 +    uncp->vaddr = va;
