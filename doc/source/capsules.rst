@@ -31,13 +31,19 @@ recipe pulls mainline Linux from kernel.org; an opt-in ``soo`` override
 (``meta-linux/recipes-linux/soo`` and ``meta-usr/recipes-usr/soo``) patches it
 into the agency and adds the SOO user space, and the ``bsp-capsules`` recipe
 deploys *Linux as the guest on top of AVZ*. It is selected with
-``EXTRA_OVERRIDES .= ":soo"`` and a SOO defconfig (``virt64_soo_defconfig``);
-see :ref:`build_system`.
+``EXTRA_OVERRIDES .= ":soo"`` and a SOO defconfig (``virt64_soo_defconfig``,
+``rpi4_64_avz_soo_defconfig`` for AVZ on the Raspberry Pi 4); see
+:ref:`build_system`.
 
 The SOO additions — both the Linux kernel side and the agency user space — are
 applied by the ``soo`` override as **vendored** ``file://`` patch sets
 (``meta-linux/recipes-linux/soo`` and ``meta-usr/recipes-usr/soo``; the
-``SOO_URI`` list is local patches, not a remote fetch). Only the base Linux
+``SOO_URI`` list is local patches, not a remote fetch). The kernel-side
+patches live in a single **generic** set shared by every agency kernel
+(``files/soo-generic/``); the per-kernel directory (``files/0001-<PF>/``)
+only carries specifics such as the guest device tree, and a same-named
+patch placed there shadows its generic counterpart when a kernel version
+needs a divergent variant. Only the base Linux
 kernel itself is fetched remotely (mainline from kernel.org). Those patches
 derive from the **SOO framework**, developed in the separate
 `soo project <https://gitlab.com/smartobject/soo>`__.
@@ -51,8 +57,10 @@ hypervisor support for it:
 * the hypervisor-side capsule **build / inject / snapshot** code
   (``so3/avz/`` — ``capsule_build.c``, ``injector.c``).
 
-A capsule-capable guest is produced by ``virt64_capsule_defconfig`` (enabling
-``CONFIG_SOO``). The AVZ demonstration shipped in this repository
+A capsule-capable guest is produced by ``virt64_capsule_defconfig`` or
+``rpi4_64_capsule_defconfig`` (enabling ``CONFIG_SOO``). The agency runs
+**SMP** on the remaining cores (CPU 0–2 on both platforms) while the last
+core (``S3C_CPU``, CPU 3) is reserved to AVZ for running the capsules. The AVZ demonstration shipped in this repository
 (the ``virt64_avz.its`` AVZ ITB plus the separate ``virt64_so3_guest.its``
 guest ITB — see :ref:`two_itb_boot`) boots a plain **SO3** guest
 (``CONFIG_SOO=n``), which is enough to exercise the hypervisor; running actual

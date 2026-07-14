@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/src/soo/s3c-inject.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./src/soo/s3c-inject.c	2025-10-10 17:28:33.594328500 +0200
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,145 @@
 +/*
 + * Copyright (C) 2016-2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) January 2018 Baptiste Delporte <bonel@bonel.net>
@@ -118,6 +118,12 @@
 +	args.buffer = S3C_buffer;
 +	args.value = S3C_size;
 +	args.slotID = -1; /* Wherever */
++
++	/* No specific capsule identity from the CLI injector (EMISO/MICOFE
++	 * assign real capsule IDs); the field must still be initialized as
++	 * the kernel forwards it verbatim to the AVZ injection hypercall. */
++
++	args.capsuleID = 0;
 +
 +	if ((ret = ioctl(fd_core, AGENCY_IOCTL_INJECT_CAPSULE, &args)) < 0) {
 +		printf("Failed to inject S3C (%d)\n", ret);

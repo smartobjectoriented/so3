@@ -1,15 +1,13 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/arch/arm64/boot/dts/arm/virt64_guest.dts	2025-08-30 15:42:55.089796760 +0200
 +++ ./arch/arm64/boot/dts/arm/virt64_guest.dts	2025-08-29 08:46:39.933578397 +0200
-@@ -367,7 +367,7 @@
+@@ -351,13 +351,15 @@
  			compatible = "arm,cortex-a72";
  			device_type = "cpu";
  		};
--
 +#if 0
- 		cpu@1 {
- 			reg = <0x01>;
- 			enable-method = "psci";
-@@ -387,7 +387,8 @@
+ 
+ 		cpu@3 {
+ 			reg = <0x03>;
  			enable-method = "psci";
  			compatible = "arm,cortex-a72";
  			device_type = "cpu";
@@ -19,10 +17,11 @@
  	};
  
  	timer {
-@@ -403,4 +404,36 @@
- 		compatible = "fixed-clock";
+@@ -421,5 +423,37 @@
+ 			};
+ 		};
  	};
- 
++
 +
 +	agency: agency {
 +				
@@ -54,5 +53,5 @@
 +			};
 +		};
 +	};
-+
+ 
  };
