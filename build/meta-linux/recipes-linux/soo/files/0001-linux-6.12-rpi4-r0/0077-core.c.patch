@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,300 @@
+@@ -0,0 +1,316 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -87,12 +87,26 @@
 +{
 +	int ret = 0;
 +	agency_ioctl_args_t args;
++	cpumask_t saved_mask;
 +
 +	if ((copy_from_user(&args, (void *)arg, sizeof(agency_ioctl_args_t))) != 0) {
 +		lprintk("Agency: %s:%d Failed to retrieve args from userspace\n",
 +			__func__, __LINE__);
 +		BUG();
 +	}
++
++	/* All capsule life-cycle operations issue heavy AVZ hypercalls
++	 * (inject: seconds of EL2 copy with IRQs off) and rely on the SOO
++	 * event plumbing, which is entirely bound to the agency boot CPU
++	 * (d->processor, evtchn upcalls, directcomm/vbswatch threads). On an
++	 * SMP agency, running such a hypercall from a secondary CPU freezes
++	 * the guest on that CPU for its whole duration and has been observed
++	 * to leave the calling CPU's interrupt delivery dead (rpi4). Execute
++	 * the whole ioctl from AGENCY_CPU, mirroring the rest of the design.
++	 */
++
++	cpumask_copy(&saved_mask, &current->cpus_mask);
++	set_cpus_allowed_ptr(current, cpumask_of(AGENCY_CPU));
 +
 +	switch (cmd) {
 +	case AGENCY_IOCTL_GET_S3C_ID:
@@ -127,6 +141,8 @@
 +		lprintk("%s: Unrecognized IOCTL: 0x%x\n", __func__, cmd);
 +		BUG();
 +	}
++
++	set_cpus_allowed_ptr(current, &saved_mask);
 +
 +	if ((copy_to_user((void *)arg, &args, sizeof(agency_ioctl_args_t))) != 0) {
 +		lprintk("Agency: %s:%d Failed to send back args to userspace\n",
