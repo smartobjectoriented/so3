@@ -136,14 +136,14 @@
 			/* Enabling framebuffer support */
 			vfbdev {
 				compatible = "vfbdev,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 
 
 			/* Enabling vinput support */
 			vinput {
 				compatible = "vinput,frontend";
-				status = "ok";
+				status = "disabled";
 			};
 		};
 	};
