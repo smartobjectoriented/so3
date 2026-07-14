@@ -198,6 +198,15 @@ def __do_fs_mount(d):
         devname = devname.replace("/dev/", "")
     else:
         devname = d.getVar('IB_STORAGE_DEVICE')
+        # IB_STORAGE_DEVICE has no default ON PURPOSE (a wrong device could
+        # overwrite a host disk). Fail with an actionable message instead of
+        # crashing on `devname[-1]` below when it is unset.
+        if not devname:
+            bb.fatal("IB_STORAGE_DEVICE is not set for platform '%s' (IB_STORAGE_MODE='%s'). "
+                     "Set it to the target device without /dev/ — e.g. "
+                     "IB_STORAGE_DEVICE:%s = \"sda\" — in build/conf/local.conf, or use "
+                     "IB_STORAGE_MODE:%s = \"soft\" to build a flashable sdcard.img instead."
+                     % (IB_PLATFORM, IB_STORAGE_MODE, IB_PLATFORM, IB_PLATFORM))
 
     shdata = {
         'IB_FILESYSTEM_DEVNAME': devname

@@ -1,0 +1,84 @@
+/*
+ * Copyright (C) 2020-2026 EDGEMTech SA <info@edgemtech.ch>
+ *
+ * Bare bsp-linux ITS for the Raspberry Pi 4 (64-bit). Standalone Linux
+ * booted by U-Boot's bootm from a single ITB (no ATF, no AVZ). Pairs
+ * with IB_TARGET_ITS:linux:rpi4_64="rpi4_64".
+ *
+ * Kernel + DTB: the raspberrypi/linux build (arch/arm64/boot/Image and
+ * the real board DTB bcm2711-rpi-4-b.dtb — Linux drives the full Pi
+ * hardware here, unlike the minimal SO3 rpi4_64.dts).
+ * Initrd: linux/rootfs's board/rpi4_64 buildroot output, gzipped at
+ * deploy time into initrd.cpio.gz (root=/dev/ram).
+ *
+ * Template: ${IB_*_PATH} / ${IB_PLATFORM} placeholders are expanded to
+ * absolute build paths by bsp_render_its (bsp.bbclass) at do_itb time.
+ *
+ * The AVZ two-ITB path uses rpi4_64_avz.its + the guest ITB instead
+ * (rpi4_64_linux_guest.its for the Linux agency) — see those files.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Kernel and rootfs components for Raspberry Pi 4 (64-bit) environment";
+
+	images {
+
+		linux {
+			description = "Linux kernel";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/Image");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0x01000000>;
+			entry = <0x01000000>;
+		};
+
+		fdt_linux {
+			description = "Linux device tree blob";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load = <0x10a00000>;
+		};
+
+		initrd {
+			description = "Initial rootfs (initrd)";
+			data = /incbin/("${IB_ROOTFS_PATH}/board/${IB_PLATFORM}/initrd.cpio.gz");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "gzip";
+			load = <0x10c00000>;
+		};
+	};
+
+	configurations {
+		default = "conf_linux";
+
+		conf_linux {
+			description = "Linux on Raspberry Pi 4 (64-bit)";
+			kernel = "linux";
+			fdt = "fdt_linux";
+			ramdisk = "initrd";
+		};
+	};
+
+};

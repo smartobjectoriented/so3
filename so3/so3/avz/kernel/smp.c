@@ -187,6 +187,8 @@ void cpu_up(unsigned int cpu)
 	while (!booted[cpu])
 		;
 
+	printk("%s: CPU %d is up\n", __func__, cpu);
+
 	secondary_data.stack = NULL;
 	secondary_data.pgdir = 0;
 }

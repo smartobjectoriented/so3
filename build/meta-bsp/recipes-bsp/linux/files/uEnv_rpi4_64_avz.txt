@@ -1,0 +1,18 @@
+fdt_high=ffffffffffffffff
+initrd_high=ffffffffffffffff
+
+# Linux (agency) guest kernel cmdline for the RPi4. Propagated into the
+# guest FDT /chosen/bootargs by the guest-boot command (env_get("bootargs")
+# + fdt_chosen()). console=ttyS0 binds the log to the BCM283x mini-UART
+# (same as the standalone rpi4 boot). root=/dev/ram: the kernel boots the
+# embedded initramfs; in IB_RAMFS_SOURCE="initrd" mode the busybox /init
+# then switch_root's into the ext4 rootfs on p2.
+
+bootargs=console=ttyS0,115200 earlycon=uart8250,mmio32,0xfe215040 loglevel=8 root=/dev/ram coherent_pool=1M 8250.nr_uarts=1 cma=64M smsc95xx.macaddr=DC:A6:32:18:DD:95 vc_mem.mem_base=0x3ec00000 vc_mem.mem_size=0x40000000 fsck.repair=yes rootwait
+
+# AVZ boot on RPi4 64-bit: two ITBs (AVZ + Linux guest) loaded to staging
+# addresses (above the 0x00080000-0x17c00000 sub-image extraction range),
+# then jumped via the guest-boot U-Boot command which passes the AVZ FIT in
+# x0 and the guest ITB in x1 (AVZ loadAgency loads the guest from x1).
+
+start=fatload mmc 0 0x20000000 rpi4_64_avz.itb; fatload mmc 0 0x30000000 rpi4_64_guest.itb; guest-boot 0x20000000 0x30000000

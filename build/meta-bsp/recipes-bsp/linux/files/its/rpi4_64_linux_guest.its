@@ -2,7 +2,7 @@
  * Copyright (C) 2020-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * Linux guest ITB for rpi4_64. Carries the Linux (agency) kernel
- * + its guest device tree + initrd. Paired with virt64_avz.itb and loaded
+ * + its guest device tree + initrd. Paired with rpi4_64_avz.itb and loaded
  * by U-Boot's guest-boot command, which passes this ITB to AVZ in x1; AVZ's
  * loadAgency() loads the agency guest from it.
  *
@@ -26,8 +26,8 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x10000000>;
-			entry = <0x10000000>;
+			load = <0x01000000>;
+			entry = <0x01000000>;
 		};
 
 		fdt {
@@ -36,7 +36,7 @@
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
-			load = <0x15000000>;
+			load = <0x10000000>;
 		};
 
 		initrd {
@@ -46,7 +46,7 @@
 			arch = "arm64";
 			os = "linux";
 			compression = "none";
-			load = <0x15c00000>;
+			load = <0x10c00000>;
 		};
 	};
 
@@ -54,7 +54,7 @@
 		default = "capsule";
 
 		capsule {
-			description = "Linux agency guest on virt64";
+			description = "Linux agency guest on rpi4_64";
 			loadables = "linux";
 			fdt = "fdt";
 			ramdisk = "initrd";
