@@ -346,9 +346,11 @@ image), the deploy falls back to the single-ITB ``bootm`` path.
 
 .. note::
 
-   Only the ``virt64`` two-ITB boot is runtime-verified (QEMU). The
-   ``rpi4_64`` and ``verdin_imx8mp`` ITS split + ``guest-boot`` wiring is in
-   place but still to be validated on hardware.
+   The ``virt64`` (QEMU) and ``rpi4_64`` (hardware) two-ITB boots are
+   runtime-verified — on the Raspberry Pi 4 with both a Linux agency guest
+   and a plain SO3 guest, as well as the full SOO capsule configuration.
+   The ``verdin_imx8mp`` ITS split + ``guest-boot`` wiring is in place but
+   still to be validated on hardware.
 
 .. _fetched_components:
 

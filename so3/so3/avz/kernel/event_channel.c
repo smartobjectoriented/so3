@@ -348,6 +348,19 @@ static void evtchn_set_pending(struct domain *d, int evtchn)
 	ASSERT(local_irq_is_disabled());
 
 	d->avz_shared->evtchn_pending[evtchn] = true;
+
+	/* The per-evtchn flag must be visible BEFORE the global upcall flag:
+	 * the guest's virq_handle xchg-clears evtchn_upcall_pending and then
+	 * scans evtchn_pending[]. Without this write barrier another CPU can
+	 * observe upcall_pending == 1 while the evtchn_pending slot still
+	 * reads 0 — the handler (or its final-recheck retry) scans, finds
+	 * nothing, exits, and the event is lost for good: the domain sits in
+	 * WFI with a pending evtchn nobody will ever deliver (seen on the
+	 * virt64 3-CPU SMP agency, hanging the very first vbstore loopback
+	 * transaction during boot). */
+
+	smp_wmb();
+
 	d->avz_shared->evtchn_upcall_pending = 1;
 
 	smp_mb();
