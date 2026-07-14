@@ -230,7 +230,7 @@ void do_gnttab(gnttab_op_t *args)
 		args->pfn = phys_to_pfn(grant_paddr);
 
 		/* Same attributes and L0-root walk as in map_vbstore_pfn(). */
-		__create_mapping((addr_t *) d->pagetable_l0_vaddr, grant_paddr, pfn_to_phys(gnttab->pfn), PAGE_SIZE, true, S2);
+		__create_mapping((addr_t *) d->pagetable_l0_vaddr, grant_paddr, pfn_to_phys(gnttab->pfn), PAGE_SIZE, false, S2);
 
 		break;
 
