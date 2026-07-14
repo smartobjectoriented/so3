@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/evtchn.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/evtchn.c	2025-08-29 08:46:41.394868986 +0200
-@@ -0,0 +1,427 @@
+@@ -0,0 +1,444 @@
 +
 +/*
 + * Copyright (C) 2014-2016 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -355,6 +355,22 @@
 +	mask_evtchn(evtchn);
 +}
 +
++/*
++ * AVZ always delivers this domain's evtchn upcalls on its boot CPU
++ * (agency: d->processor = AGENCY_CPU = 0). Without an irq_set_affinity op,
++ * irq_do_set_affinity() returns -EINVAL under SMP: the VIRQ irqdesc keeps no
++ * valid affinity and the threaded-IRQ kthread ends up with no runnable CPU,
++ * so IRQ_WAKE_THREAD never runs the bottom half (e.g. the directcomm/vbus
++ * dev-probe handshake stalls the capsule injection). Accept the mask so
++ * genirq records it and the kthread gets a schedulable CPU.
++ */
++
++static int set_affinity_virtirq(struct irq_data *data, const struct cpumask *dest, bool force)
++{
++	irq_data_update_effective_affinity(data, cpumask_of(0));
++	return IRQ_SET_MASK_OK;
++}
++
 +static struct irq_chip virtirq_chip = {
 +		.name             = "avz_virt-irq",
 +		.irq_startup      = startup_virtirq,
@@ -363,6 +379,7 @@
 +		.irq_disable      = disable_virtirq,
 +		.irq_unmask       = enable_virtirq,
 +		.irq_mask         = disable_virtirq,
++		.irq_set_affinity = set_affinity_virtirq,
 +};
 +
 +
