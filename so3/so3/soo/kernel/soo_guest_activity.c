@@ -284,6 +284,15 @@ S3C_desc_t *get_S3C_desc(void)
 	return (S3C_desc_t *) &avz_shared->dom_desc.u.S3C;
 }
 
+/* NULL-safe slot ID for the LOG() prefix: before avz_setup() has mapped
+ * the shared page, get_S3C_desc() would dereference a NULL avz_shared.
+ * On virt64 the boot idmap happens to make the bogus low VA readable
+ * (garbage slot ID, silently); on rpi4 it faults. */
+int soo_log_slotID(void)
+{
+	return avz_shared ? (int) get_S3C_desc()->slotID : -1;
+}
+
 agency_desc_t *get_agency_desc(void)
 {
 	return (agency_desc_t *) &avz_shared->dom_desc.u.agency;

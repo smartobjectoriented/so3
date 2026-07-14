@@ -45,14 +45,15 @@
 
 #elif defined(CONFIG_VLOGS_FRONTEND)
 
-#define LOG(level, fmt, ...)                                                                                         \
-	do {                                                                                                         \
-		if (vlogs_ready())                                                                                   \
-			vlogs_write("[S3C:%d][" #level "] <%s:%d> " fmt, get_S3C_desc()->slotID, __func__, __LINE__, \
-				    ##__VA_ARGS__);                                                                  \
-		else                                                                                                 \
-			lprintk("[S3C:%d][" #level "] <%s:%d> " fmt, get_S3C_desc()->slotID, __func__, __LINE__,     \
-				##__VA_ARGS__);                                                                      \
+/* NULL-safe before avz_setup() (returns -1 until the shared page is mapped) */
+extern int soo_log_slotID(void);
+
+#define LOG(level, fmt, ...)                                                                                                   \
+	do {                                                                                                                   \
+		if (vlogs_ready())                                                                                             \
+			vlogs_write("[S3C:%d][" #level "] <%s:%d> " fmt, soo_log_slotID(), __func__, __LINE__, ##__VA_ARGS__); \
+		else                                                                                                           \
+			lprintk("[S3C:%d][" #level "] <%s:%d> " fmt, soo_log_slotID(), __func__, __LINE__, ##__VA_ARGS__);     \
 	} while (0)
 
 #else
