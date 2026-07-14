@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/infrabase/build/tmp/work/linux-6.12-rpi4-r0/linux-6.12-rpi4/arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-03 20:23:08.000000000 +0200
 +++ ./arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dts	2025-09-04 17:39:05.169281153 +0200
-@@ -1,2 +1,440 @@
+@@ -1,2 +1,441 @@
  // SPDX-License-Identifier: GPL-2.0
 -#include "arm/broadcom/bcm2711-rpi-4-b.dts"
 +/* SOO.tech */
