@@ -32,7 +32,11 @@
 
 	memory {
 		device_type = "memory";
-		reg = <0x0 0x41000000 0x0 0x4000000>; /* 64 MB */
+		/* 128 MB: the ITS loads the ramdisk (rootfs.fat, 32 MB) at
+		 * +37 MB (0x43500000), which overflows a 64 MB slot — AVZ
+		 * faults in load_S3C when copying the initrd past the slot
+		 * mapping. Mirrors virt64_capsule.dts. */
+		reg = <0x0 0x41000000 0x0 0x8000000>;
 	};
 
 	mem {
