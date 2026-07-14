@@ -43,7 +43,7 @@
 +    BUG_ON(!pg);
 + 
 +    pages[0] = pg;
-+    va = vmap(pages, 1, VM_MAP, pgprot_noncached(PAGE_KERNEL));
++    va = vmap(pages, 1, VM_MAP, pgprot_writecombine(PAGE_KERNEL));
 +    BUG_ON(!va);
 +    
 +    uncp->vaddr = va;
@@ -63,7 +63,7 @@
 +void *paging_remap(unsigned long paddr, size_t size) {
 +	void *vaddr;
 +
-+	vaddr = ioremap_wc(paddr, size);
++	vaddr = memremap(paddr, size, MEMREMAP_WB);
 +	BUG_ON(!vaddr);
 +
 +	return vaddr;
