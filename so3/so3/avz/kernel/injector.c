@@ -196,9 +196,42 @@ void inject_capsule(avz_hyp_t *args)
 }
 
 /**
+ * @brief Kill a capsule which took an unrecoverable fault.
+ *
+ * Called from the EL2 trap path, in the context of the faulting capsule.
+ * The capsule is marked killed and taken out of the runqueue for good,
+ * then the CPU schedules away: a crashed capsule must never park the
+ * physical CPU in the trap handler (which would freeze every other
+ * capsule and, through the next agency IPI, the whole platform). The
+ * agency reaps the slot later with a shutdown (AVZ_KILL_S3C).
+ */
+void s3c_crash(unsigned long esr)
+{
+	struct domain *dom = current_domain;
+
+	printk("!! Capsule in slot %d crashed: ESR 0x%lx, ELR_EL2 0x%lx, FAR_EL2 0x%lx - killing it.\n", dom->avz_shared->domID,
+	       esr, read_sysreg(elr_el2), read_sysreg(far_el2));
+
+	dom->avz_shared->dom_desc.u.S3C.state = S3C_state_killed;
+
+	atomic_inc(&dom->pause_count);
+	vcpu_sleep_nosync(dom);
+
+	/* Switch to another capsule or the idle domain; this trap context
+	 * stays on the crashed capsule's stack and is never resumed.
+	 */
+
+	raise_softirq(SCHEDULE_SOFTIRQ);
+	do_softirq();
+
+	/* do_softirq() switched away and cannot come back here. */
+	BUG();
+}
+
+/**
  * @brief Start the execution of a pre-loaded capsule
- * 
- * @param args 
+ *
+ * @param args
  */
 void start_capsule(avz_hyp_t *args)
 {

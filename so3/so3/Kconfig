@@ -96,6 +96,17 @@ endif
 if AVZ
 config SOO
 	bool "Configure AVZ to support SOO technology"
+
+config S3C_POOL_SIZE_MB
+	int "Size of the capsule (S3C) memory pool (MB)"
+	default 512
+	help
+	  Physical memory reserved for capsule memslots, starting right after
+	  the agency memslot. The pool is additionally clamped at run time to
+	  the end of the platform RAM, but firmware carve-outs invisible to
+	  AVZ (e.g. the VideoCore memory on the Raspberry Pi 4, typically
+	  from 0x3ec00000) must be excluded here: a capsule slot overlapping
+	  such a region corrupts the firmware silently.
 endif
 
 config MMU

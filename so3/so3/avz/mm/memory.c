@@ -66,6 +66,29 @@ unsigned int get_power_from_size(unsigned int bits_NR)
 }
 
 /*
+ * Number of memchunks the capsule pool may really use: the static pool
+ * (S3C_MEMCHUNK_NR) bounded by the configured pool size and by the end of
+ * the platform RAM. Without these clamps, allocating one capsule too many
+ * silently maps a slot past the end of RAM (QEMU virt) or into a firmware
+ * carve-out AVZ cannot see (VideoCore memory on rpi4), and the injection
+ * memset destroys it.
+ */
+static unsigned int s3c_memchunk_avail(void)
+{
+	addr_t chunk_base = memslot[MEMSLOT_AGENCY].base_paddr + memslot[MEMSLOT_AGENCY].size;
+	addr_t ram_end = memslot[MEMSLOT_AVZ].base_paddr + memslot[MEMSLOT_AVZ].size;
+	unsigned int avail = S3C_MEMCHUNK_NR;
+
+	if (avail > (unsigned int) (CONFIG_S3C_POOL_SIZE_MB * SZ_1M / S3C_MEMCHUNK_SIZE))
+		avail = CONFIG_S3C_POOL_SIZE_MB * SZ_1M / S3C_MEMCHUNK_SIZE;
+
+	if (chunk_base + (addr_t) avail * S3C_MEMCHUNK_SIZE > ram_end)
+		avail = (ram_end > chunk_base) ? (ram_end - chunk_base) / S3C_MEMCHUNK_SIZE : 0;
+
+	return avail;
+}
+
+/*
  * Allocate a memory slot which satisfies the request.
  *
  * Returns the physical start address or 0 if no slot available.
@@ -74,7 +97,7 @@ static unsigned int allocate_memslot(unsigned int order)
 {
 	int pos;
 
-	pos = bitmap_find_free_region((unsigned long *) &memchunk_bitmap, S3C_MEMCHUNK_NR, order);
+	pos = bitmap_find_free_region((unsigned long *) &memchunk_bitmap, s3c_memchunk_avail(), order);
 	if (pos < 0)
 		return 0;
 

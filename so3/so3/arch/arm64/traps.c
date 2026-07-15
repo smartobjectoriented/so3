@@ -33,6 +33,9 @@
 
 #ifdef CONFIG_SOO
 #include <soo/uapi/soo.h>
+
+#include <avz/memslot.h>
+#include <avz/injector.h>
 #endif /* CONFIG_SOO */
 
 #else /* CONFIG_AVZ */
@@ -430,6 +433,17 @@ void trap_handle(cpu_regs_t *regs)
 
 	default:
 __err:
+#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+		/* An unrecoverable fault taken by a capsule kills the capsule,
+		 * not the hypervisor (s3c_crash() schedules away and never
+		 * returns). The agency (domID 0) still falls through to the
+		 * fatal path: without it nothing can run anyway.
+		 */
+
+		if (current_domain->avz_shared->domID >= MEMSLOT_BASE)
+			s3c_crash(esr);
+#endif /* CONFIG_AVZ && CONFIG_SOO */
+
 		lprintk("### On CPU %d: ESR_Elx_EC(esr): 0x%lx\n", smp_processor_id(), ESR_ELx_EC(esr));
 		trap_handle_error(regs->lr);
 		kernel_panic();
