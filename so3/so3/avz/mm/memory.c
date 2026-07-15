@@ -32,7 +32,7 @@
 
 #include <avz/sched.h>
 
-#define S3C_MEMCHUNK_SIZE 2 * 1024 * 1024
+#define S3C_MEMCHUNK_SIZE (2 * 1024 * 1024)
 #define S3C_MEMCHUNK_NR 256 /* 256 chunks of 2 MB */
 
 /*
