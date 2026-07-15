@@ -133,6 +133,8 @@ release (they drift silently otherwise):
 
 * the *Maintained versions* table in ``README.md`` (the *Latest release*
   column of the line, and the *Status* column when a new minor line starts);
+* a ``CHANGELOG`` entry summarizing the release (same content as the GitHub
+  Release notes, kept in the repository for offline reference);
 * the build-system version pins: rename the ``so3_X.Y.Z.bb`` and
   ``avz_X.Y.Z.bb`` recipes (under ``build/meta-so3/recipes-so3/``) to the
   new version and update the ``PREFERRED_VERSION_so3`` /

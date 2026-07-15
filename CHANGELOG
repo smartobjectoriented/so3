@@ -1,4 +1,18 @@
 
+v6.2.3 (15 jul 2026)
+
+Patch release on the 6.2 line fixing the non-SOO AVZ configuration on GICv3
+platforms (Verdin iMX8MP), validated on hardware before tagging.
+
+•	Gated the S3C_CPU paths on CONFIG_SOO: in a non-SOO AVZ build the guest
+	runs on all CPUs, but gic_handle_dist_access() still discarded every
+	distributor access trapped from CPU 3 — on verdin-imx8mp (GICD trapped
+	for the whole agency) any interrupt enabled or routed from CPU 3 was
+	silently lost, causing minutes-long boot stalls and lcdifv3
+	flip_done/vblank timeout storms. GICv2 platforms were unaffected.
+•	The periodic/capsule tick path no longer runs on CPU 3 in non-SOO
+	builds (same wrong assumption, agency accounting skipped).
+
 v2021.4.1 (29 jan 2021)
 
 This release includes support for graphics (LVGL) and networking based on “lwip”.
