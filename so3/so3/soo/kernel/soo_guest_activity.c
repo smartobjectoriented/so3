@@ -122,8 +122,9 @@ void tell_dc_stable(int dc_event)
 /*
  * Prepare a remote capsule to react to a ping event.
  * @domID: the target capsule
+ * @return the state returned by AVZ (ESUCCESS or -ESRCH if the target domain has vanished)
  */
-void set_dc_event(domid_t domID, dc_event_t dc_event)
+int set_dc_event(domid_t domID, dc_event_t dc_event)
 {
 	avz_hyp_t args;
 
@@ -140,6 +141,8 @@ void set_dc_event(domid_t domID, dc_event_t dc_event)
 
 		avz_hypercall(&args);
 	}
+
+	return args.u.avz_dc_event_args.state;
 }
 
 /*

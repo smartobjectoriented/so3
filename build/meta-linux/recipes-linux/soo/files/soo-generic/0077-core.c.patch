@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,300 @@
+@@ -0,0 +1,312 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -52,12 +52,22 @@
 +
 +/**
 + * @brief Shutdown the capsule in a way it depends on its state.
-+ * 
-+ * @param S3C_slotID 
++ *
++ * @param S3C_slotID
++ * @return 0 on success, -ESRCH if the slot does not host any capsule
 + */
-+static void shutdown_capsule(unsigned int S3C_slotID)
++static int shutdown_capsule(unsigned int S3C_slotID)
 +{
 +	avz_hyp_t args;
++
++	/* Nothing to do if the slot does not host any capsule; a DC event
++	 * sent to an empty slot has no possible recipient.
++	 */
++
++	if (get_S3C_state(S3C_slotID) == S3C_state_dead) {
++		lprintk("%s: no capsule in slot %d, nothing to shut down.\n", __func__, S3C_slotID);
++		return -ESRCH;
++	}
 +
 +	/* Asynchronous termination of the capsule */
 +	if (get_S3C_state(S3C_slotID) != S3C_state_stopped)
@@ -71,6 +81,8 @@
 +
 +		avz_hypercall(&args);
 +	}
++
++	return 0;
 +}
 +
 +static int agency_open(struct inode *inode, struct file *file)
@@ -116,7 +128,7 @@
 +		break;
 +
 +	case AGENCY_IOCTL_SHUTDOWN:
-+		shutdown_capsule(args.slotID);
++		args.value = shutdown_capsule(args.slotID);
 +		break;
 +
 +	case AGENCY_IOCTL_GET_S3C_ID_ARRAY:

@@ -318,10 +318,21 @@ typedef struct agency_ioctl_args {
 #define AVZ_FBDEV_GET_S3C_ADDR 16
 
 /* AVZ_INJECT_CAPSULE */
+
+/* Injection stages: the (large) slot clearing is split into bounded chunks
+ * so that the calling CPU never stays at EL2 with IRQs off for seconds
+ * (issue #287).
+ */
+#define AVZ_INJECT_STAGE_INIT 0
+#define AVZ_INJECT_STAGE_CLEAR 1
+#define AVZ_INJECT_STAGE_FINALIZE 2
+
 typedef struct {
 	void *itb_paddr;
 	int slotID;
 	int capsuleID;
+	uint32_t stage; /* IN: injection stage (AVZ_INJECT_STAGE_*) */
+	uint32_t offset; /* CLEAR: IN/OUT byte offset in the slot / INIT: OUT slot size */
 } avz_inject_capsule_t;
 
 /* AVZ_START_CAPSULE */
@@ -473,7 +484,7 @@ void cb_shutdown(void);
 
 void callbacks_init(void);
 
-void set_dc_event(domid_t domid, dc_event_t dc_event);
+int set_dc_event(domid_t domid, dc_event_t dc_event);
 
 void do_soo_activity(void *arg);
 

@@ -14,6 +14,18 @@ exec 0</dev/console
 exec 1>/dev/console
 exec 2>/dev/console
 
+# Create the SOO core device node used by the capsule management
+# applications (s3c-inject, s3c-save, ...). The soo core driver registers
+# char major 126 (soo/core) but does not create the node itself and
+# devtmpfs does not know it either. Created here (and carried into the
+# real root by the mount --move below) so that it exists in every boot
+# flavour, including the emergency shell.
+
+if [ ! -c /dev/soo/core ]; then
+	/bin/mkdir -p /dev/soo
+	/bin/mknod /dev/soo/core c 126 0
+fi
+
 # The kernel always boots the ramfs (root=/dev/ram); mounting the real root
 # is this script's job. p2 = the ext4 rootfs on the virtio-blk disk.
 ROOT_DEV=/dev/vda2
