@@ -45,28 +45,44 @@
  */
 static struct dom_context domain_context = { 0 };
 
-/* Maximum amount of slot memory cleared in one AVZ_INJECT_STAGE_CLEAR call.
+/* Maximum amount of domain memory moved in one AVZ_STAGE_CHUNK call.
  * This bounds the time spent at EL2 with IRQs off on the calling CPU
  * (issue #287).
  */
-#define INJECT_CLEAR_CHUNK_SIZE (4 * SZ_1M)
+#define STAGE_CHUNK_SIZE (4 * SZ_1M)
 
 /**
- * Check that a slot is currently the target of an ongoing injection, i.e.
- * it has been allocated by AVZ_INJECT_STAGE_INIT and the capsule has not
- * been started yet.
+ * Compute the size of the next chunk to be moved, and advance the cursor.
  */
-static bool inject_slot_valid(int slotID)
+static size_t stage_next_chunk(uint32_t *offset, size_t total)
 {
-	return (slotID >= MEMSLOT_BASE) && (slotID < MEMSLOT_NR) && memslot[slotID].busy && (domains[slotID] != NULL) &&
-	       (domains[slotID]->avz_shared->dom_desc.u.S3C.state == S3C_state_stopped);
+	size_t chunk_size = total - *offset;
+
+	if (chunk_size > STAGE_CHUNK_SIZE)
+		chunk_size = STAGE_CHUNK_SIZE;
+
+	*offset += chunk_size;
+
+	return chunk_size;
+}
+
+/**
+ * Check that a slot currently holds a capsule, i.e. it is allocated and its
+ * domain exists. @state, if not S3C_state_dead, is additionally required.
+ */
+static bool staged_slot_valid(int slotID, S3C_state_t state)
+{
+	if ((slotID < MEMSLOT_BASE) || (slotID >= MEMSLOT_NR) || !memslot[slotID].busy || (domains[slotID] == NULL))
+		return false;
+
+	return (state == S3C_state_dead) || (domains[slotID]->avz_shared->dom_desc.u.S3C.state == state);
 }
 
 /**
  * @brief  Inject a SO3 container (capsule) as guest domain.
  *
  * The injection is staged (issue #287): INIT parses the capsule ITB and
- * allocates the memslot, CLEAR wipes the slot RAM chunk by chunk and
+ * allocates the memslot, CHUNK wipes the slot RAM chunk by chunk and
  * FINALIZE loads the capsule image and constructs the domain. The agency
  * drives the sequence with one hypercall per stage so that the calling CPU
  * gets its interrupts back between two stages instead of staying at EL2
@@ -89,7 +105,7 @@ void inject_capsule(avz_hyp_t *args)
 	itb_vaddr = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_capsule_args.itb_paddr);
 
 	switch (args->u.avz_inject_capsule_args.stage) {
-	case AVZ_INJECT_STAGE_INIT:
+	case AVZ_STAGE_INIT:
 
 		LOG_DEBUG("%s: Preparing capsule injection, source image vaddr = %lx\n", __func__, itb_vaddr);
 
@@ -130,34 +146,30 @@ void inject_capsule(avz_hyp_t *args)
 
 		break;
 
-	case AVZ_INJECT_STAGE_CLEAR:
+	case AVZ_STAGE_CHUNK:
 
 		slotID = args->u.avz_inject_capsule_args.slotID;
 		offset = args->u.avz_inject_capsule_args.offset;
 
-		if (!inject_slot_valid(slotID) || (offset >= memslot[slotID].size)) {
-			printk("%s: invalid CLEAR stage (slot %d, offset 0x%x)\n", __func__, slotID, offset);
+		if (!staged_slot_valid(slotID, S3C_state_stopped) || (offset >= memslot[slotID].size)) {
+			printk("%s: invalid CHUNK stage (slot %d, offset 0x%x)\n", __func__, slotID, offset);
 			args->u.avz_inject_capsule_args.slotID = -1;
 			return;
 		}
 
 		/* Clear the next chunk of the RAM allocated to this capsule */
 
-		chunk_size = memslot[slotID].size - offset;
-		if (chunk_size > INJECT_CLEAR_CHUNK_SIZE)
-			chunk_size = INJECT_CLEAR_CHUNK_SIZE;
+		chunk_size = stage_next_chunk(&args->u.avz_inject_capsule_args.offset, memslot[slotID].size);
 
 		memset((void *) __xva(slotID, memslot[slotID].base_paddr + offset), 0, chunk_size);
 
-		args->u.avz_inject_capsule_args.offset = offset + chunk_size;
-
 		break;
 
-	case AVZ_INJECT_STAGE_FINALIZE:
+	case AVZ_STAGE_FINALIZE:
 
 		slotID = args->u.avz_inject_capsule_args.slotID;
 
-		if (!inject_slot_valid(slotID)) {
+		if (!staged_slot_valid(slotID, S3C_state_stopped)) {
 			printk("%s: invalid FINALIZE stage (slot %d)\n", __func__, slotID);
 			args->u.avz_inject_capsule_args.slotID = -1;
 			return;
@@ -269,59 +281,106 @@ static void build_domain_context(unsigned int S3C_slotID, struct domain *me, str
 /**
   * @brief Take a memory snapshot of a capsule. This will lead to a capsule with HIBERNATE state
   * 	   while the resident capsule will end up in resuming state.
-  * 
+  *
+  * Staged like the injection (issue #287): INIT pauses the capsule and writes
+  * the snapshot header (payload size + domain context), CHUNK copies the
+  * capsule memory chunk by chunk and FINALIZE resumes the capsule. A size of
+  * 0 at the INIT stage only queries the snapshot size, as before.
+  *
   * @param args provided from the Linux kernel
   */
 void read_S3C_snapshot(avz_hyp_t *args)
 {
 	unsigned int slotID = args->u.avz_snapshot_args.slotID;
+	size_t chunk_size, payload_offset;
+	uint32_t offset;
 	struct domain *dom_S3C;
 	void *snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
 
-	if ((slotID >= MAX_DOMAINS) || (domains[slotID] == NULL)) {
+	BUG_ON(local_irq_is_enabled());
+
+	if (!staged_slot_valid(slotID, S3C_state_dead)) {
 		printk("%s: no capsule in slot %d, ignoring.\n", __func__, slotID);
 		args->u.avz_snapshot_args.size = 0;
+		args->u.avz_snapshot_args.offset = 0;
 		return;
 	}
 
 	dom_S3C = domains[slotID];
 
-	/* If the size is 0, we return the snapshot size. */
-	if (args->u.avz_snapshot_args.size == 0) {
-		args->u.avz_snapshot_args.size = sizeof(uint32_t) + memslot[slotID].size + sizeof(domain_context);
-		return;
-	}
+	/* The capsule memory sits after the header (payload size + context). */
 
-	/* If the capsule is living, it will be put in S3C_state_suspended state by Linux
-	 * before being entering this function.  
-	*/
-	if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
-		/* Pause the capsule */
-		domain_pause_by_systemcontroller(dom_S3C);
-	}
+	payload_offset = sizeof(uint32_t) + sizeof(domain_context);
 
-	/* Gather all the info we need into structures */
-	/* This will put the capsule snapshot in HIBERNATE state */
-	build_domain_context(slotID, dom_S3C, &domain_context);
+	switch (args->u.avz_snapshot_args.stage) {
+	case AVZ_STAGE_INIT:
 
-	/* Copy the size of the payload which is made of the dom_info structure and the capsule */
-	args->u.avz_snapshot_args.size = memslot[slotID].size + sizeof(domain_context);
+		/* If the size is 0, we return the snapshot size. */
+		if (args->u.avz_snapshot_args.size == 0) {
+			args->u.avz_snapshot_args.size = payload_offset + memslot[slotID].size;
+			args->u.avz_snapshot_args.offset = memslot[slotID].size;
+			return;
+		}
 
-	memcpy(snapshot_buffer, &args->u.avz_snapshot_args.size, sizeof(uint32_t));
-	args->u.avz_snapshot_args.size += sizeof(uint32_t);
+		/* If the capsule is living, it will be put in S3C_state_suspended state by Linux
+		 * before being entering this function.
+		*/
+		if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
+			/* Pause the capsule */
+			domain_pause_by_systemcontroller(dom_S3C);
+		}
 
-	/* Copy the dom_info structure */
-	memcpy(snapshot_buffer + sizeof(uint32_t), &domain_context, sizeof(domain_context));
+		/* Gather all the info we need into structures */
+		/* This will put the capsule snapshot in HIBERNATE state */
+		build_domain_context(slotID, dom_S3C, &domain_context);
 
-	/* Finally copy the capsule */
-	memcpy(snapshot_buffer + sizeof(uint32_t) + sizeof(domain_context), (void *) __xva(slotID, memslot[slotID].base_paddr),
-	       memslot[slotID].size);
+		/* Copy the size of the payload which is made of the dom_info structure and the capsule */
+		args->u.avz_snapshot_args.size = memslot[slotID].size + sizeof(domain_context);
 
-	if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
-		/* Now, this capsule is suspended and must be resumed by the agency */
-		dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_resuming;
+		memcpy(snapshot_buffer, &args->u.avz_snapshot_args.size, sizeof(uint32_t));
+		args->u.avz_snapshot_args.size += sizeof(uint32_t);
 
-		domain_unpause_by_systemcontroller(dom_S3C);
+		/* Copy the dom_info structure */
+		memcpy(snapshot_buffer + sizeof(uint32_t), &domain_context, sizeof(domain_context));
+
+		/* The capsule memory itself is copied by the CHUNK stage. */
+
+		args->u.avz_snapshot_args.offset = memslot[slotID].size;
+
+		break;
+
+	case AVZ_STAGE_CHUNK:
+
+		offset = args->u.avz_snapshot_args.offset;
+
+		if (offset >= memslot[slotID].size) {
+			printk("%s: invalid CHUNK stage (slot %d, offset 0x%x)\n", __func__, slotID, offset);
+			args->u.avz_snapshot_args.size = 0;
+			return;
+		}
+
+		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size);
+
+		memcpy(snapshot_buffer + payload_offset + offset, (void *) __xva(slotID, memslot[slotID].base_paddr + offset),
+		       chunk_size);
+
+		break;
+
+	case AVZ_STAGE_FINALIZE:
+
+		if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
+			/* Now, this capsule is suspended and must be resumed by the agency */
+			dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_resuming;
+
+			domain_unpause_by_systemcontroller(dom_S3C);
+		}
+
+		break;
+
+	default:
+		printk("%s: unknown snapshot stage %d\n", __func__, args->u.avz_snapshot_args.stage);
+		args->u.avz_snapshot_args.size = 0;
+		break;
 	}
 }
 
@@ -383,8 +442,13 @@ void restore_domain_context(unsigned int S3C_slotID, struct domain *me, struct d
 	me->vcpu = domctxt->vcpu;
 }
 /**
- * @brief Write a snapshot into the memory. 
- * 
+ * @brief Write a snapshot into the memory.
+ *
+ * Staged like the injection (issue #287): INIT allocates the slot, restores
+ * the domain context and sets up the page tables, CHUNK copies the capsule
+ * memory chunk by chunk and FINALIZE builds the stack, rebinds the event
+ * channels and resumes the capsule.
+ *
  * @param args If args->u.avz_snapshot_args.size == 0, the function will try to find an empty slot.
  */
 void write_S3C_snapshot(avz_hyp_t *args)
@@ -392,43 +456,90 @@ void write_S3C_snapshot(avz_hyp_t *args)
 	uint32_t snapshot_size;
 	void *snapshot_buffer;
 	uint32_t slotID;
+	size_t chunk_size, payload_offset;
+	uint32_t offset;
 	struct domain *dom_S3C;
 	struct dom_context *domctxt;
 	void *dom_stack;
 	struct cpu_regs *frame;
 
+	BUG_ON(local_irq_is_enabled());
+
 	slotID = args->u.avz_snapshot_args.slotID;
 	snapshot_size = args->u.avz_snapshot_args.size;
-
-	/* Ask for available slot and perform the reservation */
-
-	LOG_DEBUG("Original size of the snapshot: %d bytes\n", snapshot_size);
-	LOG_DEBUG("Looking for an available slot for a capsule of %d bytes...\n",
-		  snapshot_size - sizeof(uint32_t) - sizeof(struct dom_context));
-
-	slotID = get_S3C_free_slot(snapshot_size - sizeof(uint32_t) - sizeof(struct dom_context), slotID);
-	if (slotID > 0)
-		args->u.avz_snapshot_args.slotID = slotID;
-	else
-		return;
-
-	LOG_DEBUG("Available slotID: %d\n", args->u.avz_snapshot_args.slotID);
-
-	LOG_DEBUG("Writing the snapshot into memory...\n");
 	snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
 
-	dom_S3C = domains[slotID];
+	/* The capsule memory sits after the header (payload size + context). */
+
+	payload_offset = sizeof(uint32_t) + sizeof(struct dom_context);
 	domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
 
-	LOG_DEBUG("Restoring the domain context...\n");
-	restore_domain_context(slotID, dom_S3C, domctxt);
+	if (args->u.avz_snapshot_args.stage == AVZ_STAGE_INIT) {
+		/* Ask for available slot and perform the reservation */
 
-	LOG_DEBUG("Set up the page tables...\n");
-	__setup_dom_pgtable(dom_S3C, memslot[slotID].base_paddr, memslot[slotID].size);
+		LOG_DEBUG("Original size of the snapshot: %d bytes\n", snapshot_size);
+		LOG_DEBUG("Looking for an available slot for a capsule of %d bytes...\n", snapshot_size - payload_offset);
 
-	/* Copy the capsule content */
-	memcpy((void *) __xva(slotID, memslot[slotID].base_paddr),
-	       snapshot_buffer + sizeof(uint32_t) + sizeof(struct dom_context), memslot[slotID].size);
+		slotID = get_S3C_free_slot(snapshot_size - payload_offset, slotID);
+		if (slotID > 0)
+			args->u.avz_snapshot_args.slotID = slotID;
+		else {
+			printk("%s: no slot available for a snapshot of %d bytes.\n", __func__, snapshot_size - payload_offset);
+			args->u.avz_snapshot_args.slotID = -1;
+			return;
+		}
+
+		LOG_DEBUG("Available slotID: %d\n", args->u.avz_snapshot_args.slotID);
+
+		LOG_DEBUG("Writing the snapshot into memory...\n");
+
+		dom_S3C = domains[slotID];
+
+		LOG_DEBUG("Restoring the domain context...\n");
+		restore_domain_context(slotID, dom_S3C, domctxt);
+
+		LOG_DEBUG("Set up the page tables...\n");
+		__setup_dom_pgtable(dom_S3C, memslot[slotID].base_paddr, memslot[slotID].size);
+
+		/* The capsule memory itself is copied by the CHUNK stage. */
+
+		args->u.avz_snapshot_args.offset = memslot[slotID].size;
+
+		return;
+	}
+
+	if (!staged_slot_valid(slotID, S3C_state_dead)) {
+		printk("%s: invalid stage %d on slot %d\n", __func__, args->u.avz_snapshot_args.stage, slotID);
+		args->u.avz_snapshot_args.slotID = -1;
+		return;
+	}
+
+	dom_S3C = domains[slotID];
+
+	if (args->u.avz_snapshot_args.stage == AVZ_STAGE_CHUNK) {
+		offset = args->u.avz_snapshot_args.offset;
+
+		if (offset >= memslot[slotID].size) {
+			printk("%s: invalid CHUNK stage (slot %d, offset 0x%x)\n", __func__, slotID, offset);
+			args->u.avz_snapshot_args.slotID = -1;
+			return;
+		}
+
+		/* Copy the next chunk of the capsule content */
+
+		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size);
+
+		memcpy((void *) __xva(slotID, memslot[slotID].base_paddr + offset), snapshot_buffer + payload_offset + offset,
+		       chunk_size);
+
+		return;
+	}
+
+	if (args->u.avz_snapshot_args.stage != AVZ_STAGE_FINALIZE) {
+		printk("%s: unknown snapshot stage %d\n", __func__, args->u.avz_snapshot_args.stage);
+		args->u.avz_snapshot_args.slotID = -1;
+		return;
+	}
 
 	/* Create a stack for this restored domain */
 

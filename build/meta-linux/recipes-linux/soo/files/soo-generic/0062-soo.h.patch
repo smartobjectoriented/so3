@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/uapi/soo.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/uapi/soo.h	2025-08-29 08:46:41.395924678 +0200
-@@ -0,0 +1,472 @@
+@@ -0,0 +1,482 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -303,22 +303,30 @@
 +#define AVZ_GET_DOM_DESC		12
 +#define AVZ_GRANT_TABLE_OP              13
 +
-+/* AVZ_INJECT_CAPSULE */
-+
-+/* Injection stages: the (large) slot clearing is split into bounded chunks
-+ * so that the calling CPU never stays at EL2 with IRQs off for seconds
-+ * (issue #287).
++/* Staged hypercalls.
++ *
++ * The hypercalls which move a whole capsule memslot around (injection,
++ * snapshot read/write) would otherwise spend seconds at EL2 with IRQs off
++ * on the calling CPU. They are therefore split into stages driven by the
++ * agency, the bulk copy being done one bounded chunk per CHUNK call, so
++ * that the calling CPU takes its interrupts back in between (issue #287).
++ *
++ *   INIT      prepare (parse, allocate, pause, ...); returns the number of
++ *             bytes the CHUNK stage has to move, in `offset`.
++ *   CHUNK     move the next chunk; `offset` is the IN/OUT byte cursor.
++ *   FINALIZE  complete (load, construct, resume, ...).
 + */
-+#define AVZ_INJECT_STAGE_INIT 0
-+#define AVZ_INJECT_STAGE_CLEAR 1
-+#define AVZ_INJECT_STAGE_FINALIZE 2
++#define AVZ_STAGE_INIT 0
++#define AVZ_STAGE_CHUNK 1
++#define AVZ_STAGE_FINALIZE 2
 +
++/* AVZ_INJECT_CAPSULE */
 +typedef struct {
 +	void *itb_paddr;
 +	int slotID;
 +	unsigned int capsuleID;
-+	uint32_t stage; /* IN: injection stage (AVZ_INJECT_STAGE_*) */
-+	uint32_t offset; /* CLEAR: IN/OUT byte offset in the slot / INIT: OUT slot size */
++	uint32_t stage; /* IN: AVZ_STAGE_* */
++	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to clear */
 +} avz_inject_capsule_t;
 +
 +/* AVZ_START_CAPSULE */
@@ -363,6 +371,8 @@
 +	void *snapshot_paddr;
 +	int32_t slotID;
 +	int size;
++	uint32_t stage; /* IN: AVZ_STAGE_* */
++	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to copy */
 +} avz_snapshot_t;
 +
 +/* AVZ_KILL_S3C */

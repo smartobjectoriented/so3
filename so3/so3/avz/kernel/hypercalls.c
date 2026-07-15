@@ -252,16 +252,24 @@ void do_avz_hypercall(void *__args)
 #ifdef CONFIG_SOO
 	case AVZ_INJECT_CAPSULE:
 		/* Only the FINALIZE stage needs the flush: INIT does not touch
-		 * domain memory and the CLEAR chunks get covered by the final
+		 * domain memory and the CHUNK stages get covered by the final
 		 * flush anyway (the dcache is PIPT, lines stay coherent per PA).
 		 */
 
-		if (args->u.avz_inject_capsule_args.stage == AVZ_INJECT_STAGE_FINALIZE)
+		if (args->u.avz_inject_capsule_args.stage == AVZ_STAGE_FINALIZE)
 			flush_dcache_all();
 		break;
 
 	case AVZ_S3C_READ_SNAPSHOT:
 	case AVZ_S3C_WRITE_SNAPSHOT:
+		/* Same reasoning as the injection above: one flush at the end of
+		 * the staged sequence covers the chunks that came before it.
+		 */
+
+		if (args->u.avz_snapshot_args.stage == AVZ_STAGE_FINALIZE)
+			flush_dcache_all();
+		break;
+
 	case AVZ_KILL_S3C:
 	case AVZ_GRANT_TABLE_OP:
 	case AVZ_FBDEV_SET_PFNS:
