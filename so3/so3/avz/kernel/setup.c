@@ -86,6 +86,14 @@ static void check_avz_agency_overlap(void)
 		panic("AVZ footprint [0x%lx - 0x%lx] (kernel + heap + frame table) overlaps the agency memslot "
 		      "[0x%lx - 0x%lx]; reduce CONFIG_HEAP_SIZE or move the agency load address.\n",
 		      avz_start, avz_end, agency_start, agency_end);
+
+	/* The headroom is thinner than it looks (a couple of MB on virt64) and
+	 * shrinks with the platform RAM size, since the frame table scales with
+	 * it: keep it visible at every boot rather than only when it is too late.
+	 */
+
+	lprintk("  AVZ footprint: %ld MB, %ld MB of headroom before the agency slot at 0x%lx\n", get_kernel_size() / SZ_1M,
+		(agency_start - avz_end) / SZ_1M, agency_start);
 }
 
 void avz_start(void)
