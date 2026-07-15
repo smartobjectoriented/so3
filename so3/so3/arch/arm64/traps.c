@@ -66,7 +66,16 @@ const char entry_error_messages[19][32] = { "SYNC_INVALID_EL1t",     "IRQ_INVALI
 void show_invalid_entry_message(u32 type, u64 esr, u64 address)
 {
 	printk("CPU%d: ERROR CAUGHT: ", smp_processor_id());
-	printk(entry_error_messages[type]);
+
+	/* trap_handle_error() passes the ESR exception class here, which can
+	 * exceed the message table (e.g. EC 0x25, data abort without EL
+	 * change) — print the raw value instead of walking off the array.
+	 */
+
+	if (type < ARRAY_SIZE(entry_error_messages))
+		printk(entry_error_messages[type]);
+	else
+		printk("type %d", type);
 	printk(", ESR: ");
 	printk("%lx", esr);
 	printk(", Address: ");

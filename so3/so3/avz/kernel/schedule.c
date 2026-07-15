@@ -260,8 +260,18 @@ static struct task_slice agency_schedule(void)
 {
 	struct task_slice ts;
 
-	/* No domain must be scheduled on CPU #1 since it is fully handled by Linux */
-	if (smp_processor_id() == AGENCY_CPU)
+	/* No domain must be scheduled on the agency CPUs: they run the agency
+	 * guest under stage-2. The secondary agency CPUs ERET into the guest
+	 * before init_idle_domain() runs, so they have NO idle domain at all:
+	 * a (spurious) SCHEDULE_SOFTIRQ processed at EL2 on such a CPU (e.g.
+	 * raised by a capsule-management hypercall issued from that CPU) used
+	 * to pick the NULL idle domain and die on a data abort at EL2, killing
+	 * the CPU (stuck in the trap handler) and wedging the agency. Return
+	 * the agency domain instead: domain_schedule() then takes its
+	 * prev == next no-op path and the CPU goes back to the guest.
+	 */
+
+	if ((smp_processor_id() == AGENCY_CPU) || (idle_domain[smp_processor_id()] == NULL))
 		ts.d = domains[0];
 	else
 		ts.d = idle_domain[smp_processor_id()];
