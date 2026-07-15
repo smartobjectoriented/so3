@@ -83,8 +83,11 @@ static irq_return_t timer_isr(int irq, void *dev)
 		/* Periodic timer */
 		next_event(arm_timer->reload);
 
-#ifdef CONFIG_AVZ
-		timer_interrupt((smp_processor_id() == S3C_CPU) ? true : false);
+#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+		timer_interrupt(smp_processor_id() == S3C_CPU);
+#elif defined(CONFIG_AVZ)
+		/* No capsule CPU without CONFIG_SOO — always the agency path. */
+		timer_interrupt(false);
 #else
 		jiffies++;
 
@@ -131,8 +134,14 @@ void avz_el2_timer_tick(void)
 	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
 	 * must run the periodic path so capsule domains get their
 	 * VIRQ_TIMER event; otherwise a capsule never sees a tick and
-	 * spins forever in calibrate_delay. */
+	 * spins forever in calibrate_delay. Without CONFIG_SOO there is
+	 * no capsule CPU — every CPU runs the agency path. */
+
+#ifdef CONFIG_SOO
 	timer_interrupt(smp_processor_id() == S3C_CPU);
+#else
+	timer_interrupt(false);
+#endif /* CONFIG_SOO */
 }
 #endif /* CONFIG_AVZ */
 
