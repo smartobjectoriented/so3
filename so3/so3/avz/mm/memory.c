@@ -136,7 +136,7 @@ int get_S3C_free_slot(unsigned int size, int slotID)
 		if (slotID == MEMSLOT_NR)
 			return -1;
 
-	} else if (memslot[slotID].busy)
+	} else if ((slotID < MEMSLOT_BASE) || (slotID >= MEMSLOT_NR) || memslot[slotID].busy)
 		return -1;
 
 	/* memslot[slotID] is available */

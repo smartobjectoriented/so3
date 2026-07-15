@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,498 @@
+@@ -0,0 +1,556 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -59,6 +59,10 @@
 +
 +struct device *capsule_dev = NULL;
 +
++/* Serialize the staged injection hypercall sequence (issue #287). */
++
++static DEFINE_MUTEX(inject_lock);
++
 +#define CMA_MALLOC_DEVICE_FILENAME "cma_malloc"
 +
 +static struct file_operations cma_malloc_fileops = {
@@ -87,6 +91,7 @@
 +        void *me = NULL;
 +        dma_addr_t dma_handle;
 +        avz_hyp_t args;
++        uint32_t slot_size;
 +
 +        DBG("Original contents at address: 0x%08x\n with size %d bytes\n", (unsigned long) buffer, size);
 +
@@ -103,13 +108,50 @@
 +         * gets the right physical address; indeeed, it uses virt_to_phys() there.
 +         */
 +
++        /* The injection is staged (issue #287): one hypercall per stage so
++         * that the calling CPU gets its interrupts back between two stages
++         * instead of freezing at EL2 for the whole slot processing.
++         */
++
++        mutex_lock(&inject_lock);
++
 +        args.cmd = AVZ_INJECT_CAPSULE;
 +
 +        args.u.avz_inject_capsule_args.itb_paddr = (void *) dma_handle;
 +        args.u.avz_inject_capsule_args.slotID = slotID;
 +        args.u.avz_inject_capsule_args.capsuleID = capsuleID;
++        args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_INIT;
 +
 +        avz_hypercall(&args);
++
++        if (args.u.avz_inject_capsule_args.slotID < 0)
++                goto out;
++
++        /* INIT returns the amount of slot memory to be cleared. */
++
++        slot_size = args.u.avz_inject_capsule_args.offset;
++
++        /* Clear the slot RAM chunk by chunk. */
++
++        args.u.avz_inject_capsule_args.offset = 0;
++
++        while (args.u.avz_inject_capsule_args.offset < slot_size) {
++                args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_CLEAR;
++
++                avz_hypercall(&args);
++
++                if (args.u.avz_inject_capsule_args.slotID < 0)
++                        goto out;
++
++                cond_resched();
++        }
++
++        args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_FINALIZE;
++
++        avz_hypercall(&args);
++
++out:
++        mutex_unlock(&inject_lock);
 +
 +        /* Deallocate the memory area reserved for the capsule */
 +        dma_free_coherent(capsule_dev, size, me, dma_handle);
@@ -125,7 +167,10 @@
 +void start_capsule(int slotID) {
 +        avz_hyp_t args;
 +
-+        BUG_ON(get_S3C_state(slotID) != S3C_state_stopped);
++        if (get_S3C_state(slotID) != S3C_state_stopped) {
++                lprintk("%s: no stopped capsule in slot %d, nothing to start.\n", __func__, slotID);
++                return;
++        }
 +
 +        args.cmd = AVZ_START_CAPSULE;
 +
@@ -154,6 +199,14 @@
 +        int ret;
 +        dma_addr_t dma_handle;
 +        S3C_state_t S3C_state;
++
++        /* No snapshot can be taken from a slot which does not host any capsule. */
++
++        if (get_S3C_state(slotID) == S3C_state_dead) {
++                lprintk("%s: no capsule in slot %d, no snapshot to read.\n", __func__, slotID);
++                *size = 0;
++                return;
++        }
 +
 +        /* Ask the size only */
 +        if (*size == 0) {
@@ -264,8 +317,13 @@
 +
 +        avz_hypercall(&args);
 +
-+        if (!args.u.avz_snapshot_args.slotID) {
++        /* AVZ leaves the slotID unchanged (-1) when no slot could be allocated;
++         * capsule slots start at 2 (0 = agency, 1 = reserved).
++         */
++
++        if (args.u.avz_snapshot_args.slotID < 2) {
 +                printk("%s: No free space...\n", __func__);
++                dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
 +                return -1; /* No free space */
 +        }
 +
@@ -499,4 +557,3 @@
 +        misc_deregister(&cma_malloc_miscdevice);
 +	capsule_dev = NULL;
 +}
-\ No newline at end of file

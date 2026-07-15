@@ -45,71 +45,142 @@
  */
 static struct dom_context domain_context = { 0 };
 
+/* Maximum amount of slot memory cleared in one AVZ_INJECT_STAGE_CLEAR call.
+ * This bounds the time spent at EL2 with IRQs off on the calling CPU
+ * (issue #287).
+ */
+#define INJECT_CLEAR_CHUNK_SIZE (4 * SZ_1M)
+
+/**
+ * Check that a slot is currently the target of an ongoing injection, i.e.
+ * it has been allocated by AVZ_INJECT_STAGE_INIT and the capsule has not
+ * been started yet.
+ */
+static bool inject_slot_valid(int slotID)
+{
+	return (slotID >= MEMSLOT_BASE) && (slotID < MEMSLOT_NR) && memslot[slotID].busy && (domains[slotID] != NULL) &&
+	       (domains[slotID]->avz_shared->dom_desc.u.S3C.state == S3C_state_stopped);
+}
+
 /**
  * @brief  Inject a SO3 container (capsule) as guest domain.
- * 
+ *
+ * The injection is staged (issue #287): INIT parses the capsule ITB and
+ * allocates the memslot, CLEAR wipes the slot RAM chunk by chunk and
+ * FINALIZE loads the capsule image and constructs the domain. The agency
+ * drives the sequence with one hypercall per stage so that the calling CPU
+ * gets its interrupts back between two stages instead of staying at EL2
+ * with IRQs off for the whole (large) slot processing.
+ *
  * @param args args received from the guest
  */
 void inject_capsule(avz_hyp_t *args)
 {
 	int slotID;
-	size_t fdt_size;
+	size_t fdt_size, chunk_size;
+	uint32_t offset;
 	void *fdt_vaddr;
-	struct domain *dom_S3C, *__current;
+	struct domain *dom_S3C;
 	void *itb_vaddr;
 	mem_info_t guest_mem_info;
-
-	LOG_DEBUG("%s: Preparing capsule injection, source image vaddr = %lx\n", __func__,
-		  ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_capsule_args.itb_paddr));
 
 	BUG_ON(local_irq_is_enabled());
 
 	itb_vaddr = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_inject_capsule_args.itb_paddr);
 
-	LOG_DEBUG("%s: ITB vaddr: %lx\n", __func__, itb_vaddr);
+	switch (args->u.avz_inject_capsule_args.stage) {
+	case AVZ_INJECT_STAGE_INIT:
 
-	/* Retrieve the domain size of this capsule through its device tree. */
-	fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr, &fdt_size);
-	if (!fdt_vaddr) {
-		printk("### %s: wrong device tree.\n", __func__);
-		BUG();
+		LOG_DEBUG("%s: Preparing capsule injection, source image vaddr = %lx\n", __func__, itb_vaddr);
+
+		/* Retrieve the domain size of this capsule through its device tree. */
+		fit_image_get_data_and_size(itb_vaddr, fit_image_get_node(itb_vaddr, "fdt"), (const void **) &fdt_vaddr,
+					    &fdt_size);
+		if (!fdt_vaddr) {
+			printk("### %s: wrong device tree.\n", __func__);
+			BUG();
+		}
+
+		get_mem_info(fdt_vaddr, &guest_mem_info);
+
+		/* Find a slotID to store this capsule */
+		slotID = get_S3C_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
+		if (slotID == -1) {
+			printk("%s: no slot available for a capsule of %d bytes.\n", __func__, guest_mem_info.size);
+			args->u.avz_inject_capsule_args.slotID = -1;
+			return;
+		}
+
+		dom_S3C = domains[slotID];
+
+		/* At the beginning, the capsule is stopped */
+		dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_stopped;
+
+		/* Store slotID & capsuleID */
+		dom_S3C->avz_shared->dom_desc.u.S3C.slotID = slotID;
+		dom_S3C->avz_shared->dom_desc.u.S3C.capsuleID = args->u.avz_inject_capsule_args.capsuleID;
+
+		/* Set the size of this capsule in its own descriptor with the dom_context size */
+		dom_S3C->avz_shared->dom_desc.u.S3C.size = memslot[slotID].size;
+
+		/* Return the slotID and the amount of slot memory to be cleared. */
+
+		args->u.avz_inject_capsule_args.slotID = slotID;
+		args->u.avz_inject_capsule_args.offset = memslot[slotID].size;
+
+		break;
+
+	case AVZ_INJECT_STAGE_CLEAR:
+
+		slotID = args->u.avz_inject_capsule_args.slotID;
+		offset = args->u.avz_inject_capsule_args.offset;
+
+		if (!inject_slot_valid(slotID) || (offset >= memslot[slotID].size)) {
+			printk("%s: invalid CLEAR stage (slot %d, offset 0x%x)\n", __func__, slotID, offset);
+			args->u.avz_inject_capsule_args.slotID = -1;
+			return;
+		}
+
+		/* Clear the next chunk of the RAM allocated to this capsule */
+
+		chunk_size = memslot[slotID].size - offset;
+		if (chunk_size > INJECT_CLEAR_CHUNK_SIZE)
+			chunk_size = INJECT_CLEAR_CHUNK_SIZE;
+
+		memset((void *) __xva(slotID, memslot[slotID].base_paddr + offset), 0, chunk_size);
+
+		args->u.avz_inject_capsule_args.offset = offset + chunk_size;
+
+		break;
+
+	case AVZ_INJECT_STAGE_FINALIZE:
+
+		slotID = args->u.avz_inject_capsule_args.slotID;
+
+		if (!inject_slot_valid(slotID)) {
+			printk("%s: invalid FINALIZE stage (slot %d)\n", __func__, slotID);
+			args->u.avz_inject_capsule_args.slotID = -1;
+			return;
+		}
+
+		dom_S3C = domains[slotID];
+
+		load_S3C(slotID, itb_vaddr);
+
+		if (construct_S3C(domains[slotID]) != 0)
+			panic("Could not set up capsule guest OS\n");
+
+		dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_pfn = map_vbstore_pfn(slotID, 0);
+		dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_revtchn =
+			agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID];
+
+		break;
+
+	default:
+		printk("%s: unknown injection stage %d\n", __func__, args->u.avz_inject_capsule_args.stage);
+		args->u.avz_inject_capsule_args.slotID = -1;
+		break;
 	}
-
-	get_mem_info(fdt_vaddr, &guest_mem_info);
-
-	/* Find a slotID to store this capsule */
-	slotID = get_S3C_free_slot(guest_mem_info.size, args->u.avz_inject_capsule_args.slotID);
-	if (slotID == -1)
-		goto out;
-
-	dom_S3C = domains[slotID];
-
-	/* At the beginning, the capsule is stopped */
-	dom_S3C->avz_shared->dom_desc.u.S3C.state = S3C_state_stopped;
-
-	/* Store slotID & capsuleID */
-	dom_S3C->avz_shared->dom_desc.u.S3C.slotID = slotID;
-	dom_S3C->avz_shared->dom_desc.u.S3C.capsuleID = args->u.avz_inject_capsule_args.capsuleID;
-
-	/* Set the size of this capsule in its own descriptor with the dom_context size */
-	dom_S3C->avz_shared->dom_desc.u.S3C.size = memslot[slotID].size;
-
-	__current = current_domain;
-
-	/* Clear the RAM allocated to this capsule */
-	memset((void *) __xva(slotID, memslot[slotID].base_paddr), 0, memslot[slotID].size);
-
-	load_S3C(slotID, itb_vaddr);
-
-	if (construct_S3C(domains[slotID]) != 0)
-		panic("Could not set up capsule guest OS\n");
-
-out:
-	/* Prepare to return the slotID to the caller. */
-	args->u.avz_inject_capsule_args.slotID = slotID;
-
-	dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_pfn = map_vbstore_pfn(slotID, 0);
-	dom_S3C->avz_shared->dom_desc.u.S3C.vbstore_revtchn = agency->avz_shared->dom_desc.u.agency.vbstore_evtchn[slotID];
 }
 
 /**
@@ -119,11 +190,18 @@ out:
  */
 void start_capsule(avz_hyp_t *args)
 {
+	unsigned int slotID = args->u.avz_start_capsule_args.slotID;
+
 	BUG_ON(local_irq_is_enabled());
+
+	if ((slotID >= MAX_DOMAINS) || (domains[slotID] == NULL)) {
+		printk("%s: no capsule in slot %d, ignoring.\n", __func__, slotID);
+		return;
+	}
 
 	raise_softirq(SCHEDULE_SOFTIRQ);
 
-	domain_unpause_by_systemcontroller(domains[args->u.avz_start_capsule_args.slotID]);
+	domain_unpause_by_systemcontroller(domains[slotID]);
 
 	/* Setting the capsule in living will be made by Linux since there are still
 	 * FE/BE to be resumed.
@@ -197,8 +275,16 @@ static void build_domain_context(unsigned int S3C_slotID, struct domain *me, str
 void read_S3C_snapshot(avz_hyp_t *args)
 {
 	unsigned int slotID = args->u.avz_snapshot_args.slotID;
-	struct domain *dom_S3C = domains[slotID];
+	struct domain *dom_S3C;
 	void *snapshot_buffer = (void *) ipa_to_va(MEMSLOT_AGENCY, args->u.avz_snapshot_args.snapshot_paddr);
+
+	if ((slotID >= MAX_DOMAINS) || (domains[slotID] == NULL)) {
+		printk("%s: no capsule in slot %d, ignoring.\n", __func__, slotID);
+		args->u.avz_snapshot_args.size = 0;
+		return;
+	}
+
+	dom_S3C = domains[slotID];
 
 	/* If the size is 0, we return the snapshot size. */
 	if (args->u.avz_snapshot_args.size == 0) {

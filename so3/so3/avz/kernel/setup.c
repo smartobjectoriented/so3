@@ -18,6 +18,7 @@
 
 #include <common.h>
 #include <log.h>
+#include <memory.h>
 #include <softirq.h>
 #include <console.h>
 #include <smp.h>
@@ -67,6 +68,26 @@ void init_idle_domain(void)
 	set_current_domain(idle_domain[cpu]);
 }
 
+/*
+ * Structural guard: the AVZ footprint, i.e. the kernel image including the
+ * heap followed by the frame table ([phys_base .. phys_base + kernel_size]),
+ * must never overlap the agency memslot. Growing CONFIG_HEAP_SIZE or the
+ * platform RAM size (hence the frame table) can silently push the AVZ
+ * footprint into the agency slot and corrupt the guest image.
+ */
+static void check_avz_agency_overlap(void)
+{
+	addr_t avz_start = memslot[MEMSLOT_AVZ].base_paddr;
+	addr_t avz_end = avz_start + get_kernel_size();
+	addr_t agency_start = memslot[MEMSLOT_AGENCY].base_paddr;
+	addr_t agency_end = agency_start + memslot[MEMSLOT_AGENCY].size;
+
+	if ((avz_start < agency_end) && (agency_start < avz_end))
+		panic("AVZ footprint [0x%lx - 0x%lx] (kernel + heap + frame table) overlaps the agency memslot "
+		      "[0x%lx - 0x%lx]; reduce CONFIG_HEAP_SIZE or move the agency load address.\n",
+		      avz_start, avz_end, agency_start, agency_end);
+}
+
 void avz_start(void)
 {
 	int i;
@@ -82,6 +103,10 @@ void avz_start(void)
 
 	/* Memory manager subsystem initialization */
 	memory_init();
+
+	/* The frame table is now placed; make sure AVZ does not spill over the agency slot. */
+
+	check_avz_agency_overlap();
 
 	percpu_init_areas();
 

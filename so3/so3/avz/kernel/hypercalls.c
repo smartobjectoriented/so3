@@ -50,7 +50,7 @@
  */
 S3C_state_t get_S3C_state(unsigned int S3C_slotID)
 {
-	if (domains[S3C_slotID] == NULL)
+	if ((S3C_slotID >= MAX_DOMAINS) || (domains[S3C_slotID] == NULL))
 		return S3C_state_dead;
 	else
 		return domains[S3C_slotID]->avz_shared->dom_desc.u.S3C.state;
@@ -58,12 +58,22 @@ S3C_state_t get_S3C_state(unsigned int S3C_slotID)
 
 void set_S3C_state(unsigned int S3C_slotID, S3C_state_t state)
 {
+	if ((S3C_slotID >= MAX_DOMAINS) || (domains[S3C_slotID] == NULL)) {
+		printk("%s: no capsule in slot %d, ignoring.\n", __func__, S3C_slotID);
+		return;
+	}
+
 	domains[S3C_slotID]->avz_shared->dom_desc.u.S3C.state = state;
 }
 
 void shutdown_S3C(unsigned int S3C_slotID)
 {
 	struct domain *dom;
+
+	if ((S3C_slotID < MEMSLOT_BASE) || (S3C_slotID >= MAX_DOMAINS) || (domains[S3C_slotID] == NULL)) {
+		printk("%s: no capsule in slot %d, ignoring.\n", __func__, S3C_slotID);
+		return;
+	}
 
 	dom = domains[S3C_slotID];
 
@@ -106,7 +116,7 @@ void get_dom_desc(uint32_t slotID, dom_desc_t *dom_desc)
 	 * We presume that the slotID of agency is never free...
 	 */
 
-	if ((slotID > 1) && !memslot[slotID].busy)
+	if ((slotID >= MAX_DOMAINS) || ((slotID > 1) && !memslot[slotID].busy))
 		dom_desc->u.S3C.size = 0;
 	else
 		/* Copy the content to the target desc */
@@ -176,8 +186,17 @@ void do_avz_hypercall(void *__args)
 		 * until the field gets free, i.e. set to DC_NO_EVENT.
 		 */
 
-		dom = domains[args->u.avz_dc_event_args.domID];
-		BUG_ON(dom == NULL);
+		/* The target domain may have vanished in the meantime (typically a
+		 * shutdown request against an empty slot): report it to the caller
+		 * instead of panicking the hypervisor.
+		 */
+
+		if ((args->u.avz_dc_event_args.domID >= MAX_DOMAINS) ||
+		    ((dom = domains[args->u.avz_dc_event_args.domID]) == NULL)) {
+			printk("%s: AVZ_DC_EVENT_SET: no domain in slot %d\n", __func__, args->u.avz_dc_event_args.domID);
+			args->u.avz_dc_event_args.state = -ESRCH;
+			break;
+		}
 
 		/* The shared info page is set as non cacheable, i.e. if a CPU tries to update it, it becomes visible to 
 		 * other CPUs 
@@ -232,6 +251,15 @@ void do_avz_hypercall(void *__args)
 	switch (args->cmd) {
 #ifdef CONFIG_SOO
 	case AVZ_INJECT_CAPSULE:
+		/* Only the FINALIZE stage needs the flush: INIT does not touch
+		 * domain memory and the CLEAR chunks get covered by the final
+		 * flush anyway (the dcache is PIPT, lines stay coherent per PA).
+		 */
+
+		if (args->u.avz_inject_capsule_args.stage == AVZ_INJECT_STAGE_FINALIZE)
+			flush_dcache_all();
+		break;
+
 	case AVZ_S3C_READ_SNAPSHOT:
 	case AVZ_S3C_WRITE_SNAPSHOT:
 	case AVZ_KILL_S3C:
