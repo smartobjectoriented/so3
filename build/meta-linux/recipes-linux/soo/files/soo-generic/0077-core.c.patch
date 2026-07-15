@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,312 @@
+@@ -0,0 +1,317 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -69,13 +69,18 @@
 +		return -ESRCH;
 +	}
 +
-+	/* Asynchronous termination of the capsule */
-+	if (get_S3C_state(S3C_slotID) != S3C_state_stopped)
++	/* Asynchronous termination of the capsule. A crashed capsule (killed
++	 * by AVZ after a fault) cannot answer the DC_SHUTDOWN handshake
++	 * anymore: it is reaped directly.
++	 */
++
++	if ((get_S3C_state(S3C_slotID) != S3C_state_stopped) && (get_S3C_state(S3C_slotID) != S3C_state_killed))
 +		do_sync_dom(S3C_slotID, DC_SHUTDOWN);
 +
 +	/* Then, final termination of the residual S3C */
 +	if ((get_S3C_state(S3C_slotID) == S3C_state_terminated) ||
-+	    (get_S3C_state(S3C_slotID) == S3C_state_stopped)) {
++	    (get_S3C_state(S3C_slotID) == S3C_state_stopped) ||
++	    (get_S3C_state(S3C_slotID) == S3C_state_killed)) {
 +		args.cmd = AVZ_KILL_S3C;
 +		args.u.avz_kill_me_args.slotID = S3C_slotID;
 +

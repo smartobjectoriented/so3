@@ -68,6 +68,9 @@ struct dom_context {
 /* Load a capsule into a moemory slot */
 void inject_capsule(avz_hyp_t *args);
 
+/* Kill a faulting capsule from the EL2 trap path (never returns) */
+void s3c_crash(unsigned long esr);
+
 /* Start the execution of a capsule */
 void start_capsule(avz_hyp_t *args);
 

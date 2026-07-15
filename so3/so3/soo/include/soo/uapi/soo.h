@@ -317,22 +317,30 @@ typedef struct agency_ioctl_args {
 #define AVZ_FBDEV_CHANGE_FOCUS 15
 #define AVZ_FBDEV_GET_S3C_ADDR 16
 
-/* AVZ_INJECT_CAPSULE */
-
-/* Injection stages: the (large) slot clearing is split into bounded chunks
- * so that the calling CPU never stays at EL2 with IRQs off for seconds
- * (issue #287).
+/* Staged hypercalls.
+ *
+ * The hypercalls which move a whole capsule memslot around (injection,
+ * snapshot read/write) would otherwise spend seconds at EL2 with IRQs off
+ * on the calling CPU. They are therefore split into stages driven by the
+ * agency, the bulk copy being done one bounded chunk per CHUNK call, so
+ * that the calling CPU takes its interrupts back in between (issue #287).
+ *
+ *   INIT      prepare (parse, allocate, pause, ...); returns the number of
+ *             bytes the CHUNK stage has to move, in `offset`.
+ *   CHUNK     move the next chunk; `offset` is the IN/OUT byte cursor.
+ *   FINALIZE  complete (load, construct, resume, ...).
  */
-#define AVZ_INJECT_STAGE_INIT 0
-#define AVZ_INJECT_STAGE_CLEAR 1
-#define AVZ_INJECT_STAGE_FINALIZE 2
+#define AVZ_STAGE_INIT 0
+#define AVZ_STAGE_CHUNK 1
+#define AVZ_STAGE_FINALIZE 2
 
+/* AVZ_INJECT_CAPSULE */
 typedef struct {
 	void *itb_paddr;
 	int slotID;
 	int capsuleID;
-	uint32_t stage; /* IN: injection stage (AVZ_INJECT_STAGE_*) */
-	uint32_t offset; /* CLEAR: IN/OUT byte offset in the slot / INIT: OUT slot size */
+	uint32_t stage; /* IN: AVZ_STAGE_* */
+	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to clear */
 } avz_inject_capsule_t;
 
 /* AVZ_START_CAPSULE */
@@ -377,6 +385,8 @@ typedef struct {
 	void *snapshot_paddr;
 	int32_t slotID;
 	int size;
+	uint32_t stage; /* IN: AVZ_STAGE_* */
+	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to copy */
 } avz_snapshot_t;
 
 /* AVZ_KILL_S3C */

@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/evtchn.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/evtchn.c	2025-08-29 08:46:41.394868986 +0200
-@@ -0,0 +1,444 @@
+@@ -0,0 +1,434 @@
 +
 +/*
 + * Copyright (C) 2014-2016 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -68,18 +68,20 @@
 +	int virq_bindcount[NR_VIRQS];
 +} evtchn_info_t;
 +
-+static DEFINE_PER_CPU(evtchn_info_t, evtchn_info);
-+
-+/*
-+ * Get the evtchn from a irq_data structure which contains a (unique) CPU bound to the IRQ processing.
++/* The evtchn <-> VIRQ mapping is global, NOT per-CPU: the Linux IRQ space
++ * (request_irq) is system-wide and AVZ delivers a domain's upcalls on the
++ * boot CPU only (d->processor). A per-CPU table — the historical layout,
++ * harmless as long as every agency was UP de facto — breaks under the SMP
++ * agency: a binding performed on CPU1/2 was invisible to the upcall path
++ * on CPU0, and find_unbound_virq() scanning only the calling CPU's
++ * bindcounts handed out the same VIRQ twice (genirq "Flags mismatch"
++ * panic in vbus_init when the init task migrated between two bindings).
 + */
-+inline unsigned int evtchn_from_virq_and_cpu(unsigned int virq, unsigned int cpu) {
-+	return per_cpu(evtchn_info, cpu).virq_to_evtchn[virq];
-+}
++static evtchn_info_t evtchn_info;
 +
 +inline unsigned int evtchn_from_virq(int virq)
 +{
-+	return evtchn_from_virq_and_cpu(virq, smp_processor_id());
++	return evtchn_info.virq_to_evtchn[virq];
 +}
 +
 +inline unsigned int evtchn_from_irq_data(struct irq_data *irq_data)
@@ -91,7 +93,7 @@
 +#define __evtchn_from_virq   evtchn_from_irq_data
 +
 +static inline bool evtchn_is_masked(unsigned int b) {
-+	return per_cpu(evtchn_info, smp_processor_id()).evtchn_mask[b];
++	return evtchn_info.evtchn_mask[b];
 +}
 +
 +#if 0 /* debug */
@@ -101,7 +103,7 @@
 +	lprintk("   Evtchn info in Agency CPU %d\n\n", smp_processor_id());
 +
 +	for (i = 0; i < NR_EVTCHN; i++)
-+		lprintk("e:%d m:%d p:%d  ", i, per_cpu(evtchn_info, smp_processor_id()).evtchn_mask[i],
++		lprintk("e:%d m:%d p:%d  ", i, evtchn_info.evtchn_mask[i],
 +			avz_shared->evtchn_pending[i]);
 +
 +	lprintk("\n\n");
@@ -142,15 +144,15 @@
 +		if (evtchn == NR_EVTCHN)
 +			break;
 +
-+		BUG_ON(!per_cpu(evtchn_info, smp_processor_id()).valid[evtchn]);
++		BUG_ON(!evtchn_info.valid[evtchn]);
 +
 +		loopmax++;
 +
 +		if (loopmax > 500)   /* Probably something wrong ;-) */
 +			lprintk("%s: Warning trying to process evtchn: %d IRQ: %d for quite a long time on CPU %d / masked: %d...\n",
-+				__func__, evtchn, per_cpu(evtchn_info, smp_processor_id()).evtchn_to_virq[evtchn], smp_processor_id(), evtchn_is_masked(evtchn));
++				__func__, evtchn, evtchn_info.evtchn_to_virq[evtchn], smp_processor_id(), evtchn_is_masked(evtchn));
 +
-+		virq = per_cpu(evtchn_info, smp_processor_id()).evtchn_to_virq[evtchn];
++		virq = evtchn_info.evtchn_to_virq[evtchn];
 +
 +		clear_evtchn(evtchn_from_virq(virq));
 +
@@ -164,12 +166,12 @@
 +
 +}
 +
-+static int find_unbound_virq(int cpu)
++static int find_unbound_virq(void)
 +{
 +	int virq;
 +
 +	for (virq = 0; virq < NR_VIRQS; virq++)
-+		if (per_cpu(evtchn_info, cpu).virq_bindcount[virq] == 0)
++		if (evtchn_info.virq_bindcount[virq] == 0)
 +			break;
 +
 +	if (virq == NR_VIRQS)
@@ -181,19 +183,18 @@
 +static int bind_evtchn_to_virq(unsigned int evtchn)
 +{
 +	int virq;
-+	int cpu = smp_processor_id();
 +
 +	spin_lock(&virq_mapping_update_lock);
 +
-+	if ((virq = per_cpu(evtchn_info, cpu).evtchn_to_virq[evtchn]) == -1) {
-+		virq = find_unbound_virq(cpu);
-+		per_cpu(evtchn_info, cpu).evtchn_to_virq[evtchn] = virq;
-+		per_cpu(evtchn_info, cpu).virq_to_evtchn[virq] = evtchn;
-+		per_cpu(evtchn_info, cpu).valid[evtchn] = true;
++	if ((virq = evtchn_info.evtchn_to_virq[evtchn]) == -1) {
++		virq = find_unbound_virq();
++		evtchn_info.evtchn_to_virq[evtchn] = virq;
++		evtchn_info.virq_to_evtchn[virq] = evtchn;
++		evtchn_info.valid[evtchn] = true;
 +
 +	}
 +
-+	per_cpu(evtchn_info, cpu).virq_bindcount[virq]++;
++	evtchn_info.virq_bindcount[virq]++;
 +
 +	spin_unlock(&virq_mapping_update_lock);
 +
@@ -256,11 +257,10 @@
 +{
 +        avz_hyp_t args;
 +        int evtchn = evtchn_from_virq(virq);
-+	int cpu = smp_processor_id();
 +
 +	spin_lock(&virq_mapping_update_lock);
 +
-+	if (--per_cpu(evtchn_info, cpu).virq_bindcount[virq] == 0) {
++	if (--evtchn_info.virq_bindcount[virq] == 0) {
 +
 +		args.cmd = AVZ_EVENT_CHANNEL_OP;
 +                args.u.avz_evtchn.evtchn_op.cmd = EVTCHNOP_close;
@@ -269,8 +269,8 @@
 +
 +		avz_hypercall(&args);
 +
-+		per_cpu(evtchn_info, cpu).evtchn_to_virq[evtchn] = -1;
-+		per_cpu(evtchn_info, cpu).valid[evtchn] = false;
++		evtchn_info.evtchn_to_virq[evtchn] = -1;
++		evtchn_info.valid[evtchn] = false;
 +	}
 +
 +	spin_unlock(&virq_mapping_update_lock);
@@ -392,44 +392,34 @@
 +
 +void mask_evtchn(int evtchn)
 +{
-+	per_cpu(evtchn_info, smp_processor_id()).evtchn_mask[evtchn] = true;
++	evtchn_info.evtchn_mask[evtchn] = true;
 +}
 +
 +void unmask_evtchn(int evtchn)
 +{
-+	per_cpu(evtchn_info, smp_processor_id()).evtchn_mask[evtchn] = false;
++	evtchn_info.evtchn_mask[evtchn] = false;
 +}
 +
 +void virq_init(void)
 +{
 +	struct irq_desc *irqdesc; /* Linux IRQ descriptor */
++	int i;
 +
-+	int i, cpu;
-+	cpumask_t cpumask = CPU_MASK_ALL;
++	/* No event-channel -> IRQ mappings. */
++	for (i = 0; i < NR_EVTCHN; i++) {
++		evtchn_info.evtchn_to_virq[i] = -1;
++		evtchn_info.valid[i] = false;
 +
-+	/*
-+	 * For each CPU, initialize event channels for all IRQs.
-+	 * An IRQ will processed by only one CPU, but it may be rebound to another CPU as well.
-+	 */
-+
-+	for_each_cpu(cpu, &cpumask) {
-+ 
-+		/* No event-channel -> IRQ mappings. */
-+		for (i = 0; i < NR_EVTCHN; i++) {
-+			per_cpu(evtchn_info, cpu).evtchn_to_virq[i] = -1;
-+			per_cpu(evtchn_info, cpu).valid[i] = false;
-+
-+			per_cpu(evtchn_info, cpu).evtchn_mask[i] = true;
-+		}
++		evtchn_info.evtchn_mask[i] = true;
++	}
 +
 +#ifdef CONFIG_SPARSE_IRQ
-+		irq_alloc_descs(VIRQ_BASE, VIRQ_BASE, NR_VIRQS, numa_node_id());
++	irq_alloc_descs(VIRQ_BASE, VIRQ_BASE, NR_VIRQS, numa_node_id());
 +#endif
 +
-+		/* Dynamic IRQ space is currently unbound. Zero the refcnts. */
-+		for (i = 0; i < NR_VIRQS; i++)
-+			per_cpu(evtchn_info, cpu).virq_bindcount[i] = 0;
-+	}
++	/* Dynamic IRQ space is currently unbound. Zero the refcnts. */
++	for (i = 0; i < NR_VIRQS; i++)
++		evtchn_info.virq_bindcount[i] = 0;
 +
 +	/* Configure the irqdesc associated to VIRQs */
 +	for (i = 0; i < NR_VIRQS; i++) {

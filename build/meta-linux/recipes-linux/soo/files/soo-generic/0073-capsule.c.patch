@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,556 @@
+@@ -0,0 +1,627 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -120,7 +120,7 @@
 +        args.u.avz_inject_capsule_args.itb_paddr = (void *) dma_handle;
 +        args.u.avz_inject_capsule_args.slotID = slotID;
 +        args.u.avz_inject_capsule_args.capsuleID = capsuleID;
-+        args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_INIT;
++        args.u.avz_inject_capsule_args.stage = AVZ_STAGE_INIT;
 +
 +        avz_hypercall(&args);
 +
@@ -136,7 +136,7 @@
 +        args.u.avz_inject_capsule_args.offset = 0;
 +
 +        while (args.u.avz_inject_capsule_args.offset < slot_size) {
-+                args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_CLEAR;
++                args.u.avz_inject_capsule_args.stage = AVZ_STAGE_CHUNK;
 +
 +                avz_hypercall(&args);
 +
@@ -146,7 +146,7 @@
 +                cond_resched();
 +        }
 +
-+        args.u.avz_inject_capsule_args.stage = AVZ_INJECT_STAGE_FINALIZE;
++        args.u.avz_inject_capsule_args.stage = AVZ_STAGE_FINALIZE;
 +
 +        avz_hypercall(&args);
 +
@@ -197,6 +197,7 @@
 +        avz_hyp_t args;
 +        void *me = NULL;
 +        int ret;
++        uint32_t payload_size;
 +        dma_addr_t dma_handle;
 +        S3C_state_t S3C_state;
 +
@@ -216,6 +217,7 @@
 +                args.cmd = AVZ_S3C_READ_SNAPSHOT;
 +                args.u.avz_snapshot_args.slotID = slotID;
 +                args.u.avz_snapshot_args.size = 0;
++                args.u.avz_snapshot_args.stage = AVZ_STAGE_INIT;
 +
 +                avz_hypercall(&args);
 +                *size = args.u.avz_snapshot_args.size;
@@ -244,19 +246,53 @@
 +
 +        me = dma_alloc_coherent(capsule_dev, *size, &dma_handle, GFP_KERNEL);
 +        BUG_ON(!me);
-+ 
++
++        /* The snapshot is read in stages (issue #287) so that the calling CPU
++         * gets its interrupts back between two chunks of capsule memory.
++         */
++
++        mutex_lock(&inject_lock);
++
 +        args.cmd = AVZ_S3C_READ_SNAPSHOT;
 +
 +        args.u.avz_snapshot_args.slotID = slotID;
 +        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
 +	args.u.avz_snapshot_args.size = *size;
++        args.u.avz_snapshot_args.stage = AVZ_STAGE_INIT;
 +
 +	avz_hypercall(&args);
++
++        if (args.u.avz_snapshot_args.size == 0)
++                goto out;
++
++        /* INIT returns the amount of capsule memory to be copied. */
++
++        payload_size = args.u.avz_snapshot_args.offset;
++
++        args.u.avz_snapshot_args.offset = 0;
++
++        while (args.u.avz_snapshot_args.offset < payload_size) {
++                args.u.avz_snapshot_args.stage = AVZ_STAGE_CHUNK;
++
++                avz_hypercall(&args);
++
++                if (args.u.avz_snapshot_args.size == 0)
++                        goto out;
++
++                cond_resched();
++        }
++
++        args.u.avz_snapshot_args.stage = AVZ_STAGE_FINALIZE;
++
++        avz_hypercall(&args);
++
++out:
++        mutex_unlock(&inject_lock);
 +
 +        /* Copy the snapshot to the user buffer */
 +        ret = copy_to_user(buffer, me, *size);
 +        BUG_ON(ret);
-+	 
++
 +	dma_free_coherent(capsule_dev, *size, me, dma_handle);
 +
 +        S3C_state = get_S3C_state(slotID);
@@ -290,6 +326,7 @@
 +        int ret;
 +        dma_addr_t dma_handle;
 +        uint32_t snapshot_size;
++        uint32_t payload_size;
 +        uint32_t slotID;
 +        S3C_state_t S3C_state;
 +
@@ -307,11 +344,18 @@
 +        ret = copy_from_user(me, buffer, snapshot_size);
 +        BUG_ON(ret);
 +
++        /* The snapshot is written in stages (issue #287) so that the calling
++         * CPU gets its interrupts back between two chunks of capsule memory.
++         */
++
++        mutex_lock(&inject_lock);
++
 +        args.cmd = AVZ_S3C_WRITE_SNAPSHOT;
-+     
++
 +        args.u.avz_snapshot_args.size = snapshot_size;
 +        args.u.avz_snapshot_args.slotID = -1;
 +        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
++        args.u.avz_snapshot_args.stage = AVZ_STAGE_INIT;
 +
 +        DBG("%s: Now asking AVZ to re-implement the snapshot of size %d bytes...\n", __func__, snapshot_size);
 +
@@ -320,6 +364,33 @@
 +        /* AVZ leaves the slotID unchanged (-1) when no slot could be allocated;
 +         * capsule slots start at 2 (0 = agency, 1 = reserved).
 +         */
++
++        if (args.u.avz_snapshot_args.slotID < 2)
++                goto out;
++
++        /* INIT returns the amount of capsule memory to be copied. */
++
++        payload_size = args.u.avz_snapshot_args.offset;
++
++        args.u.avz_snapshot_args.offset = 0;
++
++        while (args.u.avz_snapshot_args.offset < payload_size) {
++                args.u.avz_snapshot_args.stage = AVZ_STAGE_CHUNK;
++
++                avz_hypercall(&args);
++
++                if (args.u.avz_snapshot_args.slotID < 2)
++                        goto out;
++
++                cond_resched();
++        }
++
++        args.u.avz_snapshot_args.stage = AVZ_STAGE_FINALIZE;
++
++        avz_hypercall(&args);
++
++out:
++        mutex_unlock(&inject_lock);
 +
 +        if (args.u.avz_snapshot_args.slotID < 2) {
 +                printk("%s: No free space...\n", __func__);
