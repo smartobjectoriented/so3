@@ -124,6 +124,21 @@ When ``main`` is ready for a new minor version, branch off it, then tag:
    gh release create v6.3.0 --title "SO3 v6.3.0" \
        --target release/v6.3 --latest --generate-notes
 
+After tagging: propagate the release to ``main``
+************************************************
+
+A release is not finished when the tag is pushed. Two references to the
+current version live on ``main`` and must be bumped right after every
+release (they drift silently otherwise):
+
+* the *Maintained versions* table in ``README.md`` (the *Latest release*
+  column of the line, and the *Status* column when a new minor line starts);
+* the build-system version pins: rename the ``so3_X.Y.Z.bb`` and
+  ``avz_X.Y.Z.bb`` recipes (under ``build/meta-so3/recipes-so3/``) to the
+  new version and update the ``PREFERRED_VERSION_so3`` /
+  ``PREFERRED_VERSION_avz`` entries in ``build/conf/local.conf`` (see the
+  ``v6.2.3`` bump for a template).
+
 Rules of thumb
 **************
 
