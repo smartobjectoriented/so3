@@ -164,6 +164,7 @@ static enum mmio_result gicv2_handle_irq_target(struct mmio_access *mmio, unsign
 
 enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 {
+#ifdef CONFIG_SOO
 	/* Capsules must never reach the physical distributor: their
 	 * interrupts are delivered as events (LR injection through the
 	 * GICV cpu interface), so they don't need it — and a capsule's
@@ -173,9 +174,18 @@ enum mmio_result gic_handle_dist_access(struct mmio_access *mmio)
 	 * return 0 on reads (mmio->value is pre-zeroed by the decoder).
 	 * Capsules run exclusively on S3C_CPU, so the trapping CPU
 	 * identifies the guest; only the agency (CPUs 0..2) keeps the
-	 * pass-through policy below. */
+	 * pass-through policy below.
+	 *
+	 * SOO only: without CONFIG_SOO no CPU is reserved for capsules —
+	 * the guest runs on ALL CPUs, so a trap from S3C_CPU is a regular
+	 * guest access. Discarding it would silently lose any interrupt
+	 * the guest enables or routes from that CPU (a driver whose probe
+	 * lands there then waits forever for its IRQ — seen on
+	 * verdin-imx8mp, where the GICD is trapped for the whole agency). */
+
 	if (smp_processor_id() == S3C_CPU)
 		return MMIO_HANDLED;
+#endif /* CONFIG_SOO */
 
 #ifdef CONFIG_GIC_V3
 	return gicv3_handle_dist_access(mmio);
