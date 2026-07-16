@@ -176,7 +176,13 @@ addtask do_deploy_boot_chain before do_deploy
 def __do_deploy_boot(d):
 
     if d.getVar('IB_STORAGE_MODE') not in ("remote", "http"):
-        bb.warn("Now mounting")
+        # Make deploy depend on an initialised storage. In "soft" mode this
+        # creates sdcard.img.<platform> on the fly when it is missing (the
+        # same work as scripts/init_storage.sh), so a fresh tree can deploy
+        # without a separate manual init step. deploy.sh already opened a
+        # sudo session, so the losetup/mkfs done here via `sudo -n` succeeds.
+        __do_fs_check(d)
+        bb.plain("Mounting storage")
         __do_fs_mount(d)
 
     __do_platform_deploy(d)
