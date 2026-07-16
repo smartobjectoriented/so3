@@ -57,6 +57,10 @@ jobs:
               # local.conf uses IB_BOOT_CHAIN="full" (ATF + OP-TEE + AVZ); AVZ is
               # fetched from a local dev path, so "full" cannot build in CI.
               echo "IB_BOOT_CHAIN = \"uboot\"" >> build/conf/local.conf
+              # CI only builds + deploys the BSP; it never runs the emulator, so
+              # skip the (multi-minute) QEMU compile that build.sh bsp-so3 would
+              # otherwise bootstrap on the virt platforms.
+              echo "IB_BUILD_QEMU = \"0\"" >> build/conf/local.conf
               . ./env.sh
               build.sh bsp-so3
               # Create the (empty) SD-card image — privileged losetup/mkfs/parted —
