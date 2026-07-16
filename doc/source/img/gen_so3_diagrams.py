@@ -348,7 +348,7 @@ itb = p.box(70, 420, 250, 64,
 dep = p.box(420, 420, 250, 64,
             "scripts/deploy.sh bsp-so3\n→ sdcard FAT  (+ flash0.img)", WHITE, 10)
 run = p.box(770, 420, 270, 64,
-            "scripts/st.sh  /  stg.sh\n→ QEMU (EL1 / EL2 / ATF)", WHITE, 10)
+            "scripts/st.sh  [-d]\n→ QEMU (EL1 / EL2 / ATF)", WHITE, 10)
 # the band feeds do_itb: drop from the band's lower-left border straight down.
 p.edge(rec, itb, "", ARR + "exitX=0.15;exitY=1;entryX=0.5;entryY=0;")
 p.edge(itb, dep, "", ARR + "exitX=1;exitY=0.5;entryX=0;entryY=0.5;")
@@ -379,7 +379,7 @@ qms  = p.box(430, 240, 280, 64, "so3.absmouse @ 0x08803000\nabsolute input handl
 qmsd = p.box(430, 320, 280, 44, "pl050 mouse @ 0x08802000  (disabled)", NONE, 9)
 quart= p.box(430, 380, 280, 46, "pl011 UART @ 0x09000000  (SPI 1)", HW, 9)
 # Host column
-p.box(780, 60, 300, 470, "Host  (scripts/stg.sh)", CONT, 12, 1)
+p.box(780, 60, 300, 470, "Host  (scripts/st.sh -d)", CONT, 12, 1)
 hwin = p.box(810, 110, 240, 80, "GTK window\n-display gtk,zoom-to-fit=off\nGDK_BACKEND=x11 (HiDPI/Wayland)", NEUTRAL, 9)
 hptr = p.box(810, 250, 240, 64, "host pointer → absolute\n1:1 mapping, no grab / no warp", NEUTRAL, 9)
 hterm= p.box(810, 380, 240, 46, "terminal (-serial mon:stdio)", NEUTRAL, 9)

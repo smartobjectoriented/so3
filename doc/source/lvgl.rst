@@ -83,12 +83,12 @@ Running LVGL under QEMU
 =======================
 
 Build the user space with the LVGL applications and a framebuffer-enabled kernel
-configuration, then launch the **graphical** emulator (the framebuffer needs a
-real window):
+configuration, then launch the emulator in **graphical** mode with ``-d`` (the
+framebuffer needs a real window):
 
 .. code-block:: bash
 
-   stg.sh
+   st.sh -d
 
 QEMU opens a GTK window that shows the PL111 framebuffer; launch an LVGL
 application from the ``so3%`` prompt to draw into it, for example::

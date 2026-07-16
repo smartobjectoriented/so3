@@ -12,6 +12,23 @@
 
 QEMU_AUDIO_DRV="none"
 GDB_PORT_BASE=1234
+
+# Parse our own options (currently just -d) out of the argument list before
+# what's left is forwarded to QEMU as USR_OPTION.
+WITH_DISPLAY=0
+POSARGS=()
+for _a in "$@"; do
+    case "$_a" in
+        -d) WITH_DISPLAY=1 ;;
+        -h|--help)
+            echo "Usage: $(basename "$0") [-d] [qemu-option]"
+            echo "  -d   graphical: open the QEMU GTK window showing the guest PL111/LVGL screen"
+            echo "       (default: headless, serial console only)"
+            exit 0 ;;
+        *)  POSARGS+=("$_a") ;;
+    esac
+done
+set -- "${POSARGS[@]}"
 USR_OPTION=$1
 # QEMU_BIN is selected per IB_PLATFORM below (qemu-system-aarch64 for
 # virt64, qemu-system-arm for virt32).
@@ -45,6 +62,24 @@ launch_qemu() {
     # must expose EL2 (virtualization=on); a standalone SO3 boots at EL1.
     SO3_ITS=$(grep -E "^IB_TARGET_ITS:so3:${IB_PLATFORM}\b" build/conf/local.conf | awk -F'"' '{print $2}' | tail -1)
     LINUX_ITS=$(grep -E "^IB_TARGET_ITS:linux:${IB_PLATFORM}\b" build/conf/local.conf | awk -F'"' '{print $2}' | tail -1)
+
+    # Display mode. Default: headless (serial console only, -display none). With
+    # -d: open the QEMU GTK window that presents the guest PL111 CLCD (the LVGL
+    # screen). SO3 drives PL111 + PL050 (wired unconditionally into '-M virt' by
+    # the so3 QEMU patch) and has no virtio-gpu, so no extra device flags are
+    # needed — just switch the display backend. Use GTK, not SDL: SDL leaves the
+    # PL111 console black, GTK presents it (and its View menu lists every
+    # console). On a fractionally-scaled HiDPI Wayland panel, route GTK through
+    # XWayland (GDK_BACKEND=x11) so the so3,absmouse absolute pointer maps 1:1
+    # onto the guest surface; harmless on a real X11 session.
+    if [ "$WITH_DISPLAY" == "1" ]; then
+        DISPLAY_OPT="-display gtk,zoom-to-fit=off"
+        export GDK_BACKEND=x11
+        export GDK_SCALE=1
+        export GDK_DPI_SCALE=1
+    else
+        DISPLAY_OPT="-display none"
+    fi
 
     if [ "$IB_PLATFORM" == "virt64" ]; then
     QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
@@ -97,7 +132,7 @@ launch_qemu() {
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
 		-m 1024 \
-		-display none \
+		${DISPLAY_OPT} \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
         	-gdb tcp::${GDB_PORT}
@@ -120,7 +155,7 @@ launch_qemu() {
 		-device virtio-blk-device,drive=hd0 \
 		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
 		-m 1024 \
-		-display none \
+		${DISPLAY_OPT} \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
         	-gdb tcp::${GDB_PORT}

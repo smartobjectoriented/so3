@@ -143,25 +143,23 @@ it once per refresh through the ``GET_STATE`` ioctl, and the driver scales the r
 relative PL050 mouse (``kmi1.c``) is kept in the tree but its dts node is
 ``status = "disabled"`` so there is a single ``/dev/mouse``.
 
-The host GTK window (``stg.sh``)
-================================
+The host GTK window (``st.sh -d``)
+==================================
 
-The graphical launcher ``stg.sh`` starts QEMU with the **GTK** display
-backend (``-display gtk,zoom-to-fit=off``):
+By default ``st.sh`` is headless (``-display none``): no window, serial console
+only, used for non-graphical work and CI. Pass **-d** to open the QEMU **GTK**
+window that presents the guest PL111 CLCD (``-display gtk,zoom-to-fit=off``):
 
 * **GTK, not SDL** — the SDL backend does not present the PL111 console surface
   (the window stays black even though the framebuffer is rendered correctly);
   GTK shows it, and its *View* menu lists every console.
-* **XWayland for HiDPI** — ``stg.sh`` exports ``GDK_BACKEND=x11`` (plus
-  ``GDK_SCALE=1``). On a fractionally-scaled HiDPI **Wayland** panel, GTK reports
-  pointer coordinates in a different scale than the framebuffer surface, so the
-  absolute mapping comes out *offset* (host and guest cursors shifted) — fine on a
-  1× external monitor, wrong on the laptop panel. Routing GTK through XWayland
-  gives a uniform pointer-to-surface mapping, so the cursors coincide on every
-  monitor. It is harmless on a native X11 session.
-
-``st.sh`` is the headless sibling (``-display none``): no window, console
-only, used for non-graphical work and CI.
+* **XWayland for HiDPI** — with ``-d``, ``st.sh`` exports ``GDK_BACKEND=x11``
+  (plus ``GDK_SCALE=1``). On a fractionally-scaled HiDPI **Wayland** panel, GTK
+  reports pointer coordinates in a different scale than the framebuffer surface,
+  so the absolute mapping comes out *offset* (host and guest cursors shifted) —
+  fine on a 1× external monitor, wrong on the laptop panel. Routing GTK through
+  XWayland gives a uniform pointer-to-surface mapping, so the cursors coincide on
+  every monitor. It is harmless on a native X11 session.
 
 .. _console_sigint:
 

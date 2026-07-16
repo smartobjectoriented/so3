@@ -71,8 +71,8 @@ Everything is anchored on the repository root. Source ``env.sh`` once per shell:
 
 This exports ``IB_ROOT_DIR``, sets ``BBPATH``/``BUILDDIR`` to ``build/``, and
 prepends ``scripts/`` and the bundled ``bitbake`` to ``PATH`` so the active tree
-wins. From then on the ``build.sh`` / ``deploy.sh`` / ``st.sh`` / ``stg.sh``
-commands are on the path. See :ref:`user_guide` for the end-to-end walkthrough.
+wins. From then on the ``build.sh`` / ``deploy.sh`` / ``st.sh`` commands are on
+the path. See :ref:`user_guide` for the end-to-end walkthrough.
 
 Meta-layers
 ===========
