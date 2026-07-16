@@ -40,8 +40,8 @@ fi
 
 # This launcher boots a STANDALONE SO3 image at EL1 (plain -M virt). It cannot
 # boot an AVZ (EL2 hypervisor) or an ATF/flash0 (EL3) deployment — those need
-# QEMU started with virtualization=on / secure=on, which scripts/st.sh and
-# scripts/stg.sh select from the deployed ITS. The lv_perf images deploy a
+# QEMU started with virtualization=on / secure=on, which scripts/st.sh selects
+# from the deployed ITS. The lv_perf images deploy a
 # standalone ITS, so this guard only ever trips when run by hand on a host tree
 # configured for AVZ/ATF.
 SO3_ITS=$(grep -E "^IB_TARGET_ITS:so3:${PLATFORM}\b" build/conf/local.conf 2>/dev/null \
@@ -55,7 +55,7 @@ if [ -n "$why" ]; then
     echo "Error: the deployment is not standalone — $why." >&2
     echo "       run.sh boots SO3 standalone at EL1 only. For an AVZ (EL2) or ATF" >&2
     echo "       (EL3) build, use the host launchers instead, which select the EL" >&2
-    echo "       from the ITS:  scripts/st.sh  (headless)  /  scripts/stg.sh  (GTK)." >&2
+    echo "       from the ITS:  scripts/st.sh  (headless)  /  scripts/st.sh -d  (GTK)." >&2
     exit 1
 fi
 

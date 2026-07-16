@@ -34,7 +34,7 @@ The most relevant top-level directories are::
 
    so3/          # the SO3 kernel (so3/so3) and user space (so3/usr), plus dts
    build/        # the Infrabase build: meta-* layers, conf/local.conf, bitbake work tree
-   scripts/      # build.sh, deploy.sh, st.sh, stg.sh, updiff.sh, …
+   scripts/      # build.sh, deploy.sh, st.sh, updiff.sh, …
    filesystem/   # the virtual SD-card image used by QEMU
    u-boot/       # fetched U-Boot (patched)
    qemu/         # fetched QEMU (patched) -> qemu/build/qemu-system-*
@@ -105,12 +105,12 @@ Launch scripts
    :header-rows: 1
    :widths: 16 84
 
-   * - Script
+   * - Command
      - Use
    * - ``st.sh``
      - **headless** run (``-display none``) — serial console only. The default for
        non-graphical work and CI.
-   * - ``stg.sh``
+   * - ``st.sh -d``
      - **graphical** run — a GTK window for the PL111 framebuffer (LVGL, ``fb_test``).
        See :ref:`display_input`.
 
