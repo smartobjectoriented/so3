@@ -205,9 +205,10 @@ do_attach_infrabase () {
 	if [ -d "${IB_TARGET}" ] && [ -f "$ib_manifest" ] && [ "${IB_FORCE_ATTACH}" != "1" ]; then
 		ib_dirty=$(cd "${IB_TARGET}" && LC_ALL=C sha256sum -c --quiet "$ib_manifest" 2>/dev/null | sed -n 's/: FAILED.*$//p')
 		if [ -n "$ib_dirty" ]; then
-			bbwarn "Local modifications detected in ${IB_TARGET}, not captured in the ${PN} patch set:"
+			echo "WARNING: Local modifications detected in ${IB_TARGET}, not captured in the ${PN} patch set:" >&2
 			echo "$ib_dirty" | sed 's|^\./|    |' >&2
-			bbfatal "Refusing to re-attach ${PN} (would overwrite the files above). Run 'bitbake ${PN} -c updiff' to fold them into the patch set, or set IB_FORCE_ATTACH=1 to discard them and re-attach (prior tree is kept in ${IB_TARGET}.back)."
+			echo "ERROR: Refusing to re-attach ${PN} (would overwrite the files above). Run 'bitbake ${PN} -c updiff' to fold them into the patch set, or set IB_FORCE_ATTACH=1 to discard them and re-attach (prior tree is kept in ${IB_TARGET}.back)." >&2
+			exit 1
 		fi
 	fi
 

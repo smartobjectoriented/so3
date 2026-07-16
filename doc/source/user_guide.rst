@@ -64,6 +64,14 @@ the FIT image):
 
    build.sh bsp-so3
 
+On the emulated platforms (``virt32``/``virt64``) this also builds the patched
+QEMU the first time (when ``qemu/build/qemu-system-*`` is still missing), so the
+tree is runnable at step 6 without a separate ``build.sh qemu``. Once built, QEMU
+is left alone on later BSP builds; set ``IB_BUILD_QEMU = "0"`` in
+``build/conf/local.conf`` to opt out (e.g. a build-only CI that never runs the
+emulator). Rebuilding QEMU after editing its sources stays the explicit
+``build.sh -x qemu`` (see :ref:`build_system`).
+
 **4. Create the SD-card image.** ``build.sh bsp-so3`` only *compiles* — the empty
 SD-card image (``filesystem/sdcard.img.<platform>``) is produced by the separate,
 privileged ``filesystem`` recipe (``losetup``/``mkfs``/``parted``, escalated with

@@ -47,13 +47,14 @@ docker run -it --privileged --network=host -v /dev:/dev so3-lvperf64b   # or so3
 
 ## Technical Details
 
-- **At image-build time** (non-privileged), Infrabase builds the emulator and the
-  full BSP. `build.sh bsp-so3` is privilege-free: it only compiles (the MUSL
-  toolchain via `meta-toolchain`, the kernel, the user space, U-Boot) and creates
-  an empty `rootfs.fat`. The privileged rootfs loop-mount is deferred to
-  `deploy.sh`.
+- **At image-build time** (non-privileged), Infrabase builds the full BSP. On the
+  virt platforms `build.sh bsp-so3` also builds the emulator (`meta-qemu`)
+  automatically when its binary is still missing, so no separate `build.sh qemu`
+  step is needed. It is privilege-free: it only compiles (the MUSL toolchain via
+  `meta-toolchain`, the kernel, the user space, U-Boot, QEMU) and creates an empty
+  `rootfs.fat`. The privileged rootfs loop-mount is deferred to `deploy.sh`.
   ```
-  build.sh -x qemu  &&  build.sh bsp-so3
+  build.sh bsp-so3
   ```
 - **At container-run time** (privileged), the entrypoint rebuilds the user space
   (picking up a mounted LVGL), creates+formats the SD-card image (`build.sh -x filesystem` —
