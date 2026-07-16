@@ -169,7 +169,13 @@ def __do_fs_mount(d):
             os.stat(img_path)
         except OSError as e:
             if e.errno == errno.ENOENT:
-                bb.fatal(f"{img_path} does not exist")
+                bb.fatal(
+                    f"Storage image '{img_path}' does not exist: the filesystem "
+                    f"for platform '{IB_PLATFORM}' has not been initialised yet.\n"
+                    f"Deploy normally creates it automatically; if you reach this, "
+                    f"initialise the storage explicitly by running:\n"
+                    f"    ./scripts/init_storage.sh\n"
+                    f"then run the deploy again.")
 
     p1 = os.path.join(WORKDIR, "p1")
     p2 = os.path.join(WORKDIR, "p2")
