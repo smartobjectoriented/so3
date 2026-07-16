@@ -12,7 +12,6 @@ PR = "r0"
 
 inherit filesystem
 inherit linux
-inherit logging
 inherit bsp
 inherit uboot
 inherit atf

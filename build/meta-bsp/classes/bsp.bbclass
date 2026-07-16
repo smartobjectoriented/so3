@@ -118,7 +118,6 @@ addtask do_render_its before do_itb
 # This is the uEnv.txt file related to U-boot depending on the BSP
 IB_UENV = "${FILE_DIRNAME}/files/uEnv_${IB_PLATFORM}.txt"
 
-inherit logging
 inherit filesystem
 
 # Platform boot chain — produces the bootloader-side artefacts (flash0.img

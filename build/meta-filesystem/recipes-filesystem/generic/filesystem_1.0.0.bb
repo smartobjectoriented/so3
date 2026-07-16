@@ -10,7 +10,6 @@ PV = "1.0.0"
 PR = "r0"
 
 inherit filesystem
-inherit logging
 
 do_configure[noexec] = "1"
 do_attach_infrabase[noexec] = "1"

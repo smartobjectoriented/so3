@@ -10,7 +10,6 @@ PV = "2024.11"
 
 OVERRIDES += ":linux"
 
-inherit logging
 inherit rootfs
 
 SRC_URI = "https://buildroot.org/downloads/buildroot-2024.11.tar.gz;protocol=https"

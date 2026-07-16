@@ -24,7 +24,6 @@
 #
 ###################################################################
 
-inherit logging
 inherit utils
 inherit fs_${IB_PLATFORM}
 
