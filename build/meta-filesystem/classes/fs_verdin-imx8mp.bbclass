@@ -7,7 +7,6 @@
 # The caller (deploy.sh / build.sh / mount.sh / umount.sh) is expected
 # to have opened a sudo session beforehand.
 
-inherit logging
 inherit utils
 
 IB_FILESYSTEM_PATH = "${IB_DIR}/filesystem"

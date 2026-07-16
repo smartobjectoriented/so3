@@ -12,7 +12,6 @@ inherit filesystem
 inherit uboot
 inherit bsp
 inherit atf
-inherit logging
 
 SRCREV = "3f772959501c99fbe5aa0b22a36efe3478d1ae1c"
 SRC_URI = "git://gitlab.com/u-boot/u-boot.git;nobranch=1;protocol=https"

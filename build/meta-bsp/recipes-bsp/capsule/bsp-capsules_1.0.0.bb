@@ -11,7 +11,6 @@ PR = "r0"
 
 inherit filesystem
 inherit uboot
-inherit logging
 inherit bsp
 
 # Capsules reuse the SO3 ITS templates (e.g. <plat>_capsule.its)
