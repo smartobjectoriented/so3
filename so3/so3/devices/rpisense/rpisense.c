@@ -35,7 +35,11 @@
 
 #include <device/arch/rpisense.h>
 
-static uint32_t gpio_regs_addr;
+/* addr_t, not uint32_t: io_map() hands back a virtual address, which on arm64
+ * sits at CONFIG_IO_MAPPING_BASE (0xffff9000_00000000) and would lose its top
+ * half in a 32-bit variable.
+ */
+static addr_t gpio_regs_addr;
 
 uint8_t leds_array[SIZE_FB];
 
