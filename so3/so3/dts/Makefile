@@ -1,4 +1,5 @@
 
+dtb-$(CONFIG_RPI4) += rpi4.dtb
 dtb-$(CONFIG_RPI4_64) += rpi4_64.dtb rpi4_64_avz.dtb rpi4_64_capsule.dtb
 dtb-$(CONFIG_VIRT64) += virt64.dtb virt64_avz.dtb virt64_capsule.dtb virt64_lvperf.dtb
 dtb-$(CONFIG_VIRT32) += virt32.dtb virt32_lvperf.dtb

@@ -371,6 +371,9 @@ export KBUILD_ARFLAGS
 ifeq ($(CONFIG_VIRT32),y)
 TARGET = virt32
 endif
+ifeq ($(CONFIG_RPI4),y)
+TARGET = rpi4
+endif
 ifeq ($(CONFIG_RPI4_64),y)
 TARGET = rpi4_64
 endif
