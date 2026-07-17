@@ -40,6 +40,9 @@
 
 #else /* CONFIG_AVZ */
 #include <syscall.h>
+#include <process.h>
+#include <schedule.h>
+#include <signal.h>
 #endif /* !CONFIG_AVZ */
 
 #include <asm/processor.h>
@@ -215,9 +218,36 @@ int dabt_handle(cpu_regs_t *regs, unsigned long esr)
 #endif
 }
 
+#ifndef CONFIG_AVZ
+/* A synchronous abort taken from a lower EL (EL0) is a fault in the running
+ * user process — typically a NULL-pointer dereference. Report which process
+ * faulted and where, then terminate that process ONLY, so the shell regains
+ * control instead of the whole kernel panicking. Kernel-mode (EL1) faults use a
+ * different exception class (DABT/IABT "current EL") and still reach the fatal
+ * path in trap_handle(). */
+
+static void user_fault(unsigned long esr)
+{
+	unsigned long far = read_sysreg(far_el1);
+	unsigned long elr = read_sysreg(elr_el1);
+	pcb_t *pcb = current()->pcb;
+
+	printk("[SO3] process \"%s\" (pid %d) faulted at address 0x%lx (pc=0x%lx, ESR=0x%lx) - terminating it.\n",
+	       pcb ? pcb->name : "?", pcb ? pcb->pid : -1, far, elr, esr);
+
+	/* Terminate the offending process. sys_do_exit_group() sets it zombie and
+	 * schedules away, so it does not return here; the parent's wait4() reaps
+	 * it and the shell reprints its prompt. IRQs must be enabled for the
+	 * scheduler, as in the syscall path above. */
+
+	local_irq_enable();
+	sys_do_exit_group(128 + SIGSEGV);
+}
+#endif /* !CONFIG_AVZ */
+
 /**
  * This is the entry point for all exceptions currently managed by SO3.
- * 
+ *
  * Regarding the SOO hypercalls, all addresses got from arguments
  * *must* be physical addresses.
  *
@@ -253,8 +283,13 @@ void trap_handle(cpu_regs_t *regs)
 	case ESR_ELx_EC_DABT_LOW:
 
 		ret = dabt_handle(regs, esr);
-		if (ret == -1)
+		if (ret == -1) {
+#ifdef CONFIG_AVZ
 			goto __err;
+#else
+			user_fault(esr); /* EL0 data abort: terminate the user process */
+#endif
+		}
 		break;
 
 	/* SVC used for syscalls */
@@ -429,7 +464,12 @@ void trap_handle(cpu_regs_t *regs)
 	}
 
 	case ESR_ELx_EC_IABT_LOW:
+#ifdef CONFIG_AVZ
 		goto __err;
+#else
+		user_fault(esr); /* EL0 instruction abort: terminate the user process */
+		break;
+#endif
 
 	default:
 __err:
