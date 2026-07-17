@@ -1,4 +1,69 @@
 
+v6.2.4 (17 jul 2026)
+
+Patch release on the 6.2 line. Mostly the Raspberry Pi 4 support, whose 64-bit
+side had never actually been exercised: several assumptions left over from the
+32-bit rpi4 platform only surfaced once the I2C/Sense HAT path was enabled on
+rpi4_64. All of it validated on real hardware (RPi 4 Model B, Sense HAT), on
+both word sizes.
+
+•	i2c_bsc and rpisense could not be selected on rpi4_64 at all: their Kconfig
+	still depended on RPI4, a symbol dropped with the 32-bit platform. Lined
+	them up on "RPI4 || RPI4_64", as devices/serial/Kconfig already was.
+
+•	Both drivers stored the io_map() return value in a uint32_t. io_map()
+	returns addr_t, and on arm64 the mapped address sits at
+	CONFIG_IO_MAPPING_BASE (0xffff9000_00000000), so the top half was cut off
+	and the driver dereferenced the truncated address. As they are
+	REGISTER_DRIVER_CORE, they probe before the POSTCORE serial console: the
+	abort killed the kernel with no output at all. arm32 was unaffected, its
+	IO_MAPPING_BASE being 0xe0000000.
+
+•	bsp/rpi4/config.txt never got the 64-bit boot settings, so the firmware
+	looked for kernel7l.img while the deploy installs the aarch64 U-Boot as
+	kernel8.img, and nothing was loaded. The 32/64-bit settings now live in
+	appended config_rpi4_arm{32,64}.txt fragments, since the file is shared.
+
+•	A fitted Sense HAT made U-Boot boot in complete silence: the firmware merges
+	the HAT's EEPROM overlay into the device tree it hands over, and that DT has
+	no /chosen/stdout-path, so U-Boot picked its console by node order and drove
+	the wrong UART. force_eeprom_read=0 avoids it; SO3 talks to the HAT through
+	rpisense and never needs the overlay.
+
+•	Ctrl-C did nothing on rpi4, for every program: bcm283x_mu was polling-only,
+	so nothing ever raised SIGINT. Bound the mini UART RX interrupt (AUX, SPI
+	93) and mirrored pl011_int(). This also fixed the register layout, copied
+	from U-Boot with iir before ier — harmless while neither field was read,
+	wrong the moment ier is written.
+
+•	Signals never reached a thread blocked in the kernel: sys_do_kill() only set
+	a pcb bit, and a thread parked in wait_for_completion() is off the ready
+	list. Added signal_pending(), wait_for_completion_interruptible() and a
+	selective wake of interruptible waiters.
+
+•	The RPi bootcmd imported uEnv.txt with neither format nor length, so U-Boot
+	scanned memory for a double-NUL to guess the size and swallowed whatever
+	followed the file. It only appeared to work on arm64 by luck. Now passes
+	-t and ${filesize}.
+
+•	bsp/rpi4 shipped no device tree: the .dtb are vendored firmware inputs, but
+	the "*.dtb" ignore rule — right for every other .dtb, which are build
+	products — swallowed them when the directory moved under meta-bsp. Cards
+	flashed before the move still carried the old ones, which is why nothing had
+	flagged it; a fresh card got none.
+
+•	Restored the 32-bit Raspberry Pi 4 platform. The tree was already written
+	for it ("RPI4 || RPI4_64" in kernel/ and devices/); only the arch symbol and
+	its wiring were missing.
+
+•	The boot banner now states the architecture (e.g. "Version 6.2.4 (arm64)").
+	On a Pi 4 the two chains differ only by which kernel*.img the firmware picks
+	up, so nothing on the console told you which one had booted.
+
+•	Deploy now initialises the storage itself when it is missing, instead of
+	failing on a bare "sdcard.img.<plat> does not exist" — init_storage.sh was
+	an undocumented prerequisite.
+
 v6.2.3 (15 jul 2026)
 
 Patch release on the 6.2 line fixing the non-SOO AVZ configuration on GICv3

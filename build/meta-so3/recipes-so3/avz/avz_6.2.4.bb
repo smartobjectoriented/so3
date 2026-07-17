@@ -9,7 +9,7 @@ inherit avz
 # Version and revision
  
 PR = "r0"
-PV = "6.2.3"
+PV = "6.2.4"
 
 OVERRIDES += ":avz"
 
