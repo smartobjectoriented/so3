@@ -221,6 +221,46 @@ SYSCALL_DEFINE4(rt_sigprocmask, int, how, const sigset_t *, set, sigset_t *, old
 	return 0;
 }
 
+bool signal_pending(struct tcb *tcb)
+{
+	size_t i;
+
+	if ((tcb == NULL) || (tcb->pcb == NULL))
+		return false;
+
+	for (i = 0; i < _NSIG_NB_ENTRY; i++)
+		if (tcb->pcb->sigset_map.sigmap[i] & ~tcb->sig_mask.sigmap[i])
+			return true;
+
+	return false;
+}
+
+/*
+ * Wake the threads of <proc> that are parked in an interruptible wait, so they
+ * observe the signal we just raised instead of sleeping until their own
+ * condition happens to occur. The primitive re-checks signal_pending() when it
+ * resumes, unwinds its wait state and returns -EINTR.
+ *
+ * Same shape as discard_tcb_in_pcb()'s handling of kernel-blocked threads, and
+ * likewise deliberately selective: only waiters that advertised themselves as
+ * interruptible are touched. The other primitives (mutex, semaphore) keep a
+ * stack-allocated queue entry linked in a wait list and must not be resumed
+ * from the outside.
+ *
+ * pcb->threads holds the spawned threads only, hence the separate main_thread.
+ */
+static void wake_interruptible_threads(pcb_t *proc)
+{
+	tcb_t *cur;
+
+	if (proc->main_thread && proc->main_thread->interruptible && (proc->main_thread->state == THREAD_STATE_WAITING))
+		wake_up(proc->main_thread);
+
+	list_for_each_entry(cur, &proc->threads, list)
+		if (cur->interruptible && (cur->state == THREAD_STATE_WAITING))
+			wake_up(cur);
+}
+
 SYSCALL_DEFINE2(kill, int, pid, int, sig)
 {
 	pcb_t *proc;
@@ -244,6 +284,11 @@ SYSCALL_DEFINE2(kill, int, pid, int, sig)
 	if (proc->state != PROC_STATE_ZOMBIE) {
 		/* Set the corresponding bit in the pcb signals bitmap */
 		proc->sigset_map.sigmap[(sig - 1) / _NSIG_BPE] |= 1UL << (sig - 1) % _NSIG_BPE;
+
+		/* A thread blocked in an interruptible primitive is off the ready
+		 * list, so a reschedule alone would never get it back to the
+		 * point where sig_check() runs: wake it explicitly. */
+		wake_interruptible_threads(proc);
 
 		/* Depending on the scheduling policy, the signal handler will be processed soon. */
 		raise_softirq(SCHEDULE_SOFTIRQ);

@@ -91,6 +91,15 @@ struct tcb {
 	bool killed;
 
 #ifdef CONFIG_IPC_SIGNAL
+	/* Set while the thread sits in an interruptible blocking primitive
+	 * (see wait_for_completion_interruptible()). sys_do_kill() wakes such
+	 * threads so they can observe the signal instead of sleeping until
+	 * their completion happens to fire; the primitive then unwinds its own
+	 * wait state and returns -EINTR. Only interruptible waiters are woken:
+	 * the other primitives park a stack-allocated queue entry in a list and
+	 * must not be resumed behind their back. */
+	bool interruptible;
+
 	/* Mask for thread's disabled signals */
 	sigset_t sig_mask;
 #endif

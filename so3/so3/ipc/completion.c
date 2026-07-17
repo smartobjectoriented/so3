@@ -53,6 +53,60 @@ void wait_for_completion(completion_t *completion)
 }
 
 /*
+ * Interruptible variant of wait_for_completion(): returns 0 once completed, or
+ * -EINTR if a signal arrived first.
+ *
+ * The thread advertises itself as interruptible so that sys_do_kill() knows it
+ * may be woken (see wake_interruptible_threads()); without that, a thread
+ * parked here is off the ready list and would sleep until its completion
+ * happens to fire, no matter how many signals are raised meanwhile.
+ */
+int wait_for_completion_interruptible(completion_t *completion)
+{
+	queue_thread_t q_tcb;
+	unsigned long flags;
+	int ret = 0;
+
+	ASSERT(!__in_interrupt);
+	ASSERT(local_irq_is_enabled());
+
+	flags = local_irq_save();
+
+	q_tcb.tcb = current();
+
+	if (!completion->count) {
+		list_add_tail(&q_tcb.list, &completion->tcb_list);
+
+#ifdef CONFIG_IPC_SIGNAL
+		current()->interruptible = true;
+
+		while (!completion->count && !signal_pending(current()))
+			waiting();
+
+		current()->interruptible = false;
+
+		if (!completion->count) {
+			/* Signalled. complete() unlinks the waiter it wakes, but
+			 * nobody unlinked us — and q_tcb lives on this stack
+			 * frame, which is about to go away. Do it ourselves. */
+			list_del(&q_tcb.list);
+			local_irq_restore(flags);
+
+			return -EINTR;
+		}
+#else
+		while (!completion->count)
+			waiting();
+#endif /* CONFIG_IPC_SIGNAL */
+	}
+	completion->count--;
+
+	local_irq_restore(flags);
+
+	return ret;
+}
+
+/*
  * Wake a thread waiting on a completion.
  * IRQs are disabled; this function can be safely called from an interrupt context.
  */

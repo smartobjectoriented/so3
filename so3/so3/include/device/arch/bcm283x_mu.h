@@ -30,23 +30,38 @@
 #define UART_THR 0x0
 #define UART_LSR 0x14
 
-/* Bits and regs definitions (taken from U-boot) */
+/*
+ * Bits and regs definitions.
+ *
+ * NOTE: this layout used to be copied from U-Boot's struct bcm283x_mu_regs,
+ * which lists iir before ier. That is wrong: the mini UART is 8250-compatible
+ * (Linux drives it with the generic 8250 driver, and the BCM2835 peripherals
+ * doc puts AUX_MU_IER_REG at +0x04 and AUX_MU_IIR_REG at +0x08, as the
+ * MU_IER_REG/MU_IIR_REG offsets in mach/io.h already stated). The mistake was
+ * harmless as long as neither field was touched — U-Boot never reads them and
+ * this driver only used io and lsr — but it bites the moment ier is written to
+ * enable the RX interrupt.
+ */
 typedef struct {
-	u32 io;
-	u32 iir;
-	u32 ier;
-	u32 lcr;
-	u32 mcr;
-	u32 lsr;
-	u32 msr;
-	u32 scratch;
-	u32 cntl;
-	u32 stat;
-	u32 baud;
+	u32 io; /* 0x00 */
+	u32 ier; /* 0x04 */
+	u32 iir; /* 0x08 */
+	u32 lcr; /* 0x0c */
+	u32 mcr; /* 0x10 */
+	u32 lsr; /* 0x14 */
+	u32 msr; /* 0x18 */
+	u32 scratch; /* 0x1c */
+	u32 cntl; /* 0x20 */
+	u32 stat; /* 0x24 */
+	u32 baud; /* 0x28 */
 } bcm283x_mu_t;
 
 /* LSR register bits */
 #define UART_LSR_RX_READY (1 << 0)
 #define UART_LSR_TX_READY (1 << 5)
+
+/* IER register bits (8250 semantics, see the note above) */
+#define UART_IER_RX_ENABLE (1 << 0)
+#define UART_IER_TX_ENABLE (1 << 1)
 
 #endif /* BCM28x_MU_H */
