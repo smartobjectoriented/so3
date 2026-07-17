@@ -22,14 +22,23 @@
  #define ENV_MEM_LAYOUT_SETTINGS \
  	"fdt_high=" FDT_HIGH "\0" \
  	"initrd_high=" INITRD_HIGH "\0" \
-@@ -168,12 +173,21 @@
+@@ -168,12 +173,30 @@
  
  #include <config_distro_bootcmd.h>
  
 +#endif /* 0 */
 +
++/*
++ * Import uEnv.txt with an explicit format and length. Without them, "env
++ * import" scans from the load address for a double-NUL to guess the size, so
++ * it swallows whatever stale memory follows the file: on arm32 that yielded
++ * "input data size = 4447" for a 117-byte file and the import failed with
++ * errno 22. It only appeared to work on arm64 because the byte after the file
++ * happened to be NUL. fatload sets ${filesize}, so use it, and state -t rather
++ * than lean on the "defaulting to text format" warning.
++ */
 +#define CONFIG_BOOTCOMMAND \
-+            "fatload mmc 0 0x02000000 uEnv.txt; env import 0x02000000; run start\0\0" \
++            "fatload mmc 0 0x02000000 uEnv.txt; env import -t 0x02000000 ${filesize}; run start\0\0" \
 +            "bootdelay=0\0"
 +
 +
