@@ -64,6 +64,9 @@ both word sizes.
 	failing on a bare "sdcard.img.<plat> does not exist" — init_storage.sh was
 	an undocumented prerequisite.
 
+•	Aligned the copyright e-mail on daniel.rossier@heig-vd.ch across the tree —
+	the address README.md points contributors to.
+
 v6.2.3 (15 jul 2026)
 
 Patch release on the 6.2 line fixing the non-SOO AVZ configuration on GICv3
