@@ -2,7 +2,7 @@
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
 @@ -0,0 +1,317 @@
 +/*
-+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
 + *
 + * This program is free software; you can redistribute it and/or modify

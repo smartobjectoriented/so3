@@ -2,7 +2,7 @@
 +++ ./soo/kernel/debug/debug.c	2025-08-29 08:46:41.394757773 +0200
 @@ -0,0 +1,47 @@
 +/*
-+ * Copyright (C) 2022 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2022 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * 
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as

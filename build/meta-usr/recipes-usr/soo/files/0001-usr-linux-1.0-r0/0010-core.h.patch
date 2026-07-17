@@ -2,7 +2,7 @@
 +++ ./include/soo/core.h	2025-10-10 17:28:33.584702104 +0200
 @@ -0,0 +1,30 @@
 +/*
-+ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2018-2019 Baptiste Delporte <bonel@bonel.net>
 + *
 + * This program is free software; you can redistribute it and/or modify

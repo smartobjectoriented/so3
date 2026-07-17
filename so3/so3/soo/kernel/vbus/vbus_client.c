@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
  * Copyright (C) 2016-2018 Baptiste Delporte <bonel@bonel.net>
  *
  * This program is free software; you can redistribute it and/or modify

@@ -2,7 +2,7 @@
 +++ ./src/soo/s3c-restore.c	2025-10-10 17:28:33.594328500 +0200
 @@ -0,0 +1,76 @@
 +/*
-+ * Copyright (C) 2014-2020 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2014-2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
