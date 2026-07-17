@@ -45,6 +45,15 @@ static inline void reinit_completion(struct completion *x)
 }
 
 void wait_for_completion(completion_t *completion);
+
+/*
+ * Same as wait_for_completion(), except that a pending signal abandons the
+ * wait and returns -EINTR (0 on a normal completion). Use it whenever a
+ * user-space read may block indefinitely on an external event, so that the
+ * process stays killable while it waits.
+ */
+int wait_for_completion_interruptible(completion_t *completion);
+
 void complete(completion_t *completion);
 void init_completion(completion_t *completion);
 

@@ -55,6 +55,15 @@
 	serial@fe215040 {
 		compatible = "serial,bcm283x-mu";
 		reg = <0x0 0xfe215040 0x0 0x1000>;
+		interrupt-parent = <&gic>;
+
+		/*
+		 * AUX (mini UART) — SPI 93, as the Broadcom
+		 * bcm2711-rpi-4-b.dtb gives for /soc/serial@7e215040.
+		 * Without it the console falls back to polling and Ctrl-C
+		 * cannot raise SIGINT.
+		 */
+		interrupts = <0 93 4>;
 		status = "ok";
 	};
 

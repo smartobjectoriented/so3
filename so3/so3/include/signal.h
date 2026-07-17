@@ -101,6 +101,17 @@ typedef struct __sigaction {
 	sigaction_t *sa;
 } __sigaction_t;
 
+/* Forward declaration: thread.h already includes us for sigset_t. */
+struct tcb;
+
+/*
+ * True when <tcb> has at least one pending signal its mask does not block.
+ * Used by the interruptible blocking primitives to decide whether to abandon
+ * their wait; the signal itself is acted upon later, by sig_check() on the way
+ * back to user space.
+ */
+bool signal_pending(struct tcb *tcb);
+
 SYSCALL_DECLARE(rt_sigaction, int signum, const sigaction_t *action, sigaction_t *old_action, size_t sigsize);
 SYSCALL_DECLARE(rt_sigprocmask, int how, const sigset_t *set, sigset_t *old, size_t sigsize);
 SYSCALL_DECLARE(kill, int pid, int sig);
