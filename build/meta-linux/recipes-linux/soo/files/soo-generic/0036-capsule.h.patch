@@ -2,7 +2,7 @@
 +++ ./soo/include/soo/capsule.h	2025-08-30 15:30:27.244692708 +0200
 @@ -0,0 +1,40 @@
 +/*
-+ * Copyright (C) 2017-2025 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2017-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as

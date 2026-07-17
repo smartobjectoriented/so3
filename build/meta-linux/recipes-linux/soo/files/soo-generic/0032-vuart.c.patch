@@ -2,7 +2,7 @@
 +++ ./soo/drivers/vuartback/vuart.c	2025-08-29 08:46:41.395804736 +0200
 @@ -0,0 +1,327 @@
 +/*
-+ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2016 Baptiste Delporte <bonel@bonel.net>
 + *
 + * This program is free software; you can redistribute it and/or modify

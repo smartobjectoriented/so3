@@ -2,7 +2,7 @@
 +++ ./soo/kernel/hypervisor.c	2025-08-30 15:04:15.207689288 +0200
 @@ -0,0 +1,108 @@
 +/*
-+ * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as

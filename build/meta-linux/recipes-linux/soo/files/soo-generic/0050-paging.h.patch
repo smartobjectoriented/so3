@@ -2,7 +2,7 @@
 +++ ./soo/include/soo/paging.h	2025-08-29 08:46:41.395959078 +0200
 @@ -0,0 +1,36 @@
 +/*
-+ * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@soo.tech>
++ * Copyright (C) 2016-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2018 Baptiste Delporte <bonel@bonel.net>
 + *
 + * This program is free software; you can redistribute it and/or modify
