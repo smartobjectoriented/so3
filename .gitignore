@@ -28,6 +28,16 @@
 !/build/conf/
 !/build/meta-*/
 
+# The rpi4 BSP deploys Broadcom's prebuilt bcm27xx device trees onto the boot
+# partition, alongside start4.elf & co. Unlike every other .dtb in the tree they
+# are vendored *inputs*, not build products, so the "*.dtb" rule above must not
+# apply: it silently swallowed them when bsp/rpi4 moved under this recipe
+# directory, leaving the deploy with no device tree to install and a fresh card
+# unbootable (the firmware finds none, and U-Boot takes its own DT from the
+# firmware — CONFIG_OF_BOARD). Same shape as the /atf and /qemu anchoring notes
+# below.
+!/build/meta-bsp/recipes-bsp/bsp/rpi4/*.dtb
+
 # The fetched ATF source tree lives at the repo root (/atf), like /u-boot, /avz,
 # qemu. Anchor to /atf so the bare name doesn't also match the meta-atf recipe
 # directory (build/meta-atf/recipes-atf/atf), which holds tracked recipe sources.
