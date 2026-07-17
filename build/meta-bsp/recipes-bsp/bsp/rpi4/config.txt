@@ -65,3 +65,24 @@ max_framebuffers=2
 #dtoverlay=vc4-fkms-v3d
 
 enable_uart=1
+
+# Don't read an attached HAT's EEPROM. The firmware would merge the HAT's own
+# overlay into the device tree it hands to U-Boot, and that DT carries no
+# /chosen/stdout-path — so U-Boot picks its console by DT node order, which the
+# merge perturbs: with a Sense HAT fitted, U-Boot drives the wrong UART and
+# boots in complete silence. SO3 talks to the HAT through its own rpisense
+# driver and never needs the overlay. Applies to both 32- and 64-bit.
+force_eeprom_read=0
+
+# The 32/64-bit boot settings are NOT here: this file is shared by every rpi4
+# BSP, and the two chains need opposite values (kernel7l.img vs kernel8.img).
+# bsp_rpi4.inc / bsp_rpi4_64.inc append the right config_rpi4_arm{32,64}.txt
+# fragment after copying this directory.
+
+# Diagnostic only — echoes the firmware's own boot stage on the UART, which is
+# how you tell a failure *before* U-Boot from a dead board. Leave it OFF for
+# normal boots: to print, the firmware muxes GPIO14/15 to the PL011 and resets
+# its baud, while the DT gives serial0 = the mini-UART (7e215040, the one SO3
+# drives). The pins then stay on the wrong peripheral and U-Boot's output never
+# reaches the wire.
+#uart_2ndstage=1

@@ -1,0 +1,7 @@
+
+# --- 32-bit boot chain (appended by bsp_rpi4.inc) ---
+# The deploy installs the arm32 U-Boot as kernel7l.img. arm_64bit=0 is the
+# firmware default, but state both explicitly so the loaded file never depends
+# on the firmware's 32/64-bit filename default.
+arm_64bit=0
+kernel=kernel7l.img

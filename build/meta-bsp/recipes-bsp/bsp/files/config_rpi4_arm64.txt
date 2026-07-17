@@ -1,0 +1,9 @@
+
+# --- 64-bit boot chain (appended by bsp_rpi4_64.inc) ---
+# The deploy installs the aarch64 U-Boot as kernel8.img. This firmware
+# (bcm2711, Aug 2021) defaults arm_64bit to 0, so without this it starts the
+# cores in 32-bit mode and looks for kernel7l.img, never finds it, and boots
+# nothing at all — no serial output whatsoever. kernel= is stated explicitly so
+# the loaded file never depends on the firmware's filename default.
+arm_64bit=1
+kernel=kernel8.img
