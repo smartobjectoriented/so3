@@ -56,8 +56,9 @@ particularly well suited to embedded systems. From a single code base it can be
 built in three ways:
 
 * as a **standalone OS** running directly on the hardware (EL1 on ARM64);
-* as the **AVZ hypervisor** (*Agency VirtualiZer*) running at EL2, hosting a
-  single guest at EL1;
+* as the **AVZ hypervisor** (*Agency VirtualiZer*) running at EL2, hosting the
+  agency guest at EL1 — and, with the SOO framework, up to five capsules beside
+  it;
 * as an **SO3 capsule** (S3C) — a lightweight guest on top of AVZ, as part of
   the **SOO** framework.
 

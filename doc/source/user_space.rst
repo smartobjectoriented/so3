@@ -17,6 +17,10 @@ facilities (for example full ``pthreads``) are intentionally kept minimal.
 Applications are linked **statically** against MUSL, so each executable is
 self-contained.
 
+**C++** applications are supported too: the programs under
+``so3/usr/src/tests/`` are C++ and exercise classes, exceptions and dynamic
+allocation on top of the same toolchain.
+
 Build system (CMake)
 ====================
 
@@ -58,12 +62,15 @@ The standard applications in ``so3/usr/src/`` include:
      - ICMP ping (exercises the lwIP stack)
    * - ``time``
      - simple timing utility
-   * - ``hello-world``
-     - minimal example
    * - ``thread_example`` / ``logs_example`` / ``mydev_test``
      - API and subsystem demonstrations
+   * - ``hello-world`` / ``class-test`` / ``stdlib-test`` / ``exception-test`` /
+       ``allocation-test`` / ``threads-test`` / ``files-test``
+     - the **C++** example and test programs of ``so3/usr/src/tests/``, built by
+       default (CMake option ``WITH_TESTS``, ``ON``)
    * - ``lvgl_widgets`` / ``lvgl_demo`` / ``lvgl_perf`` / ``lvgl_benchmark``
-     - LVGL graphical demos (framebuffer builds — see :ref:`lvgl`)
+     - LVGL graphical demos — present only when the ``:lvgl`` override adds them
+       (see :ref:`lvgl`)
    * - ``fb_test``
      - minimal framebuffer test, straight to ``/dev/fb`` (see :ref:`display_input`)
    * - MicroPython

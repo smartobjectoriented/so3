@@ -32,6 +32,9 @@ Trying it out
 =============
 
 With ``CONFIG_NET`` enabled and a supported NIC, the ``ping`` application
-exercises the stack end to end. Under QEMU the launch scripts attach a tap
-network device (``scripts/qemu-ifup.sh`` / ``qemu-ifdown.sh``), so the guest can
-reach the host network once the tap bridge is configured.
+exercises the stack end to end. Under QEMU, ``st.sh`` attaches a **user-mode
+(slirp)** network device — QEMU itself plays DHCP, DNS and NAT, and forwards host
+port ``2222`` to the guest's port ``22`` — so nothing has to be set up on the host
+and no ``sudo`` is needed. The trade-off is that the guest is NAT'd and not
+reachable from the LAN. (``scripts/qemu-ifup.sh`` / ``qemu-ifdown.sh`` are
+leftovers from the earlier ``tap``-and-bridge setup and are no longer used.)
