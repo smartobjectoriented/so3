@@ -7,6 +7,26 @@
 "C" coding conventions (Cconv)
 ##############################
 
+How the style is enforced
+*************************
+
+The layout rules below are not merely advisory: they are checked mechanically.
+``.clang-format`` at the repository root (itself derived from the Linux kernel
+one) is the reference — ``UseTab: Always``, ``IndentWidth: 8``, ``TabWidth: 8``
+and ``ColumnLimit: 128`` — and the ``style.yml`` GitHub workflow runs
+**clang-format 19** over the tracked sources of ``so3/so3`` and ``so3/usr`` on
+every push and pull request.
+
+Run the very same check locally before submitting:
+
+.. code-block:: bash
+
+   check-format.sh          # list the files that need reformatting
+   check-format.sh --fix    # reformat them in place
+
+Everything clang-format cannot judge — naming, function length, comments, error
+handling, what belongs in a macro — is the subject of the rest of this chapter.
+
 
 Indentation
 ***********
@@ -75,11 +95,11 @@ Breaking long lines and strings
 Coding style is all about readability and maintainability using commonly
 available tools.
 
-The limit on the length of lines should correspond to what a modern screen and
-editor is reasonibly able to display before the reader has to scroll horizontally
-(even if it is acceptable to scroll over a few characters).
+The limit on the length of lines is **128 characters** — what a modern screen and
+editor is reasonably able to display without scrolling horizontally. This is the
+``ColumnLimit`` of ``.clang-format``, so the check rejects longer lines.
 
-Statements too long will be broken into sensible chunks. 
+Statements too long will be broken into sensible chunks.
 Descendants are always substantially shorter than the parent and
 are placed substantially to the right. The same applies to function headers
 with a long argument list. However, avoid to break user-visible strings such as
@@ -270,8 +290,7 @@ that counts the number of active users, you should call that
 
 Encoding the type of a function into the name (so-called Hungarian
 notation) is brain damaged - the compiler knows the types anyway and can
-check those, and it only confuses the programmer. No wonder MicroSoft
-makes buggy programs.
+check those, and it only confuses the programmer.
 
 LOCAL variable names should be short, and to the point.  If you have
 some random integer loop counter, it should probably be called ``i``.
@@ -324,17 +343,16 @@ generally easily keep track of about 7 different things, anything more
 and it gets confused.  You know you're brilliant, but maybe you'd like
 to understand what you did 2 weeks from now.
 
-In source files, separate functions with one blank line.  If the function is
-exported, the **EXPORT** macro for it should follow immediately after the
-closing function brace line.  E.g.:
+In source files, separate functions with one blank line.  A function that is not
+part of a subsystem's interface should be ``static``; the ones that are belong in
+the subsystem header, next to the types they operate on.  E.g.:
 
 .. code-block:: c
 
-	int system_is_up(void)
+	static bool system_is_up(void)
 	{
 		return system_state == SYSTEM_RUNNING;
 	}
-	EXPORT_SYMBOL(system_is_up);
 
 In function prototypes, include parameter names with their data types.
 Although this is not required by the C language, it is preferred
@@ -372,7 +390,7 @@ The rationale for using gotos is:
 		int result = 0;
 		char *buffer;
 
-		buffer = kmalloc(SIZE, GFP_KERNEL);
+		buffer = malloc(SIZE);
 		if (!buffer)
 			return -ENOMEM;
 
@@ -385,7 +403,7 @@ The rationale for using gotos is:
 		}
 		...
 	out_free_buffer:
-		kfree(buffer);
+		free(buffer);
 		return result;
 	}
 
@@ -394,8 +412,8 @@ A common type of bug to be aware of is ``one err bugs`` which look like this:
 .. code-block:: c
 
 	err:
-		kfree(foo->bar);
-		kfree(foo);
+		free(foo->bar);
+		free(foo);
 		return ret;
 
 The bug in this code is that on some exit paths ``foo`` is NULL.  Normally the
@@ -405,9 +423,9 @@ fix for this is to split it up into two error labels ``err_free_bar:`` and
 .. code-block:: c
 
 	 err_free_bar:
-		kfree(foo->bar);
+		free(foo->bar);
 	 err_free_foo:
-		kfree(foo);
+		free(foo);
 		return ret;
 
 Ideally you should simulate errors to test all exit paths.
@@ -541,14 +559,17 @@ Usually, messages do not have to be terminated with a period.
 Coming up with good debugging messages can be quite a challenge; and once
 you have them, they can be a huge help for remote troubleshooting.  However
 debug message printing is handled differently than printing other non-debug
-messages.  
+messages.
 
-Syslog-ng
-=========
+In the kernel, regular messages go through ``printk()`` (``include/printk.h``).
+Its low-level counterpart ``lprintk()`` writes straight to the serial port
+without going through the console layer, which is what makes it usable very
+early at boot, from an interrupt handler, or when the console itself is the
+suspect — the assertion and ``BUG_ON()`` paths use it for that reason.
 
-Syslog-ng enables logging messages in various forms and configurations.
-It can be used to log message on the console and/or in files typically
-stored in ``/var/log`` directory.
+Debug traces are kept out of a normal build: define a ``DBG()``-style macro
+guarded by a local ``#define DEBUG`` in the subsystem (see
+``soo/include/soo/debug.h``) rather than leaving bare ``printk()`` calls behind.
 
 Function return values and names
 ********************************
