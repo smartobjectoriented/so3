@@ -83,7 +83,7 @@ Don't put multiple assignments on a single line either. Coding style
 is super simple.  Avoid tricky expressions.
 
 Outside of comments, documentation and except in some files where it is required
-like Kconfig Linux kernel, spaces are never used for indentation, 
+like Kconfig Linux kernel, spaces are never used for indentation,
 and the above example is deliberately broken.
 
 Get a decent editor and don't leave whitespace at the end of lines.
@@ -203,7 +203,7 @@ Also, prefer using braces when a loop contains more than a single simple stateme
 Spaces
 ======
 
-Use a space after (most) keywords. The notable exceptions are sizeof, typeof, alignof, 
+Use a space after (most) keywords. The notable exceptions are sizeof, typeof, alignof,
 and __attribute__, which look somewhat like functions (and are usually used with parentheses in Linux,
 although they are not required in the language, as in: ``sizeof info`` after
 ``struct fileinfo info;`` is declared).
@@ -311,9 +311,9 @@ definition of a type or to define a struct and having a more readable
 type rather than *struct sensor*. Put a ``_t`` as suffix of a type
 definition. For example, ``sensor_t``.
 
-Regarding the platform-dependent definition, it helps to define clear integer types, 
+Regarding the platform-dependent definition, it helps to define clear integer types,
 where the abstraction **helps** avoid confusion whether it is ``int`` or ``long``.
-u8/u16/u32 are perfectly fine typedefs 
+u8/u16/u32 are perfectly fine typedefs
 
 NEVER use a typedef to hide a pointer except for the pointer to a function.
 For example:
@@ -636,19 +636,19 @@ the next instruction in the assembly output:
 Conditional Compilation
 ***********************
 
-Using #if or #ifdef block should always have a comment on the #else or #endif 
+Using #if or #ifdef block should always have a comment on the #else or #endif
 statement with the name of the condition, like this:
 
 .. code-block:: c
 
 	#ifdef CONFIG_SOMETHING
-   
+
    ...
-   
+
    #else /* CONFIG_SOMETHING */
-	
+
    ...
-   
+
 	#endif /* !CONFIG_SOMETHING */
 
 It will greatly help the reading of the code.

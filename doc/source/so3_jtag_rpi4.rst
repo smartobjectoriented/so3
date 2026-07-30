@@ -1,13 +1,13 @@
 .. _so3_jtag_rpi4:
 
 Debugging SO3 with JTAG on RPi4
-===============================
+###############################
 
-This pages gives instructions on how to debug SO3 or SO3 applications on
+This page gives instructions on how to debug SO3 or SO3 applications on
 the Raspberry Pi 4 through the JTAG interface.
 
 Requirements
-------------
+============
 
 -  Raspberry Pi 4
 
@@ -20,32 +20,32 @@ Requirements
 -  GDB-multiarch
 
 JTAG Probe
-----------
+==========
 
 To enable JTAG on the Raspberry Pi 4 add ``enable_jtag_gpio=1`` in the
 ``config.txt`` file. This will select Alt4 mode for GPIO pins 22-27, and
 set up some internal SoC connections, thus enabling the JTAG interface
 for the ARM CPU. It works on all models of Raspberry Pi. (See `Raspberry
 Pi
-Documentation <https://www.raspberrypi.org/documentation/configuration/config-txt/gpio.md>`__)
+Documentation <https://www.raspberrypi.com/documentation/computers/config_txt.html#enable_jtag_gpio>`__)
 
 J-Link Probe
-~~~~~~~~~~~~
+------------
 
 The `SEGGER J-Link EDU probe <https://www.segger.com/products/debug-probes/j-link/models/j-link-edu/>`__
-has been used for this project. The pinout for the 20-pin interface can be found here :
-https://www.segger.com/products/debug-probes/j-link/technology/interface-description/
-
-|image0|
+has been used for this project. The pinout of the 20-pin interface is documented
+on SEGGER's `interface description
+<https://www.segger.com/products/debug-probes/j-link/technology/interface-description/>`__
+page.
 
 Required pins are VTref, nTRST, TDI, TMS, TCK, RTCK, TDO and GND.
 
 Wiring
-~~~~~~
+------
 
 The JTAG pins should be connected to the corresponding pins on the
 Raspberry Pi (GPIO 22-27 in Alt4 mode). A nice representation of
-Raspberry Pi header pinout can be found here :
+Raspberry Pi header pinout can be found here:
 http://www.panu.it/raspberry/
 
 From the ALT4 column of the table we can find which pin goes to which
@@ -60,20 +60,20 @@ The extra wires at the bottom (red, green, blue) are for the UART serial
 port.
 
 OpenOCD
--------
+=======
 
 OpenOCD is Free Open On-Chip Debugger software for In-System Programming
-and Boundary-Scan Testing. Website : http://openocd.org/
+and Boundary-Scan Testing. Website: http://openocd.org/
 
-Prebuilt binaries are available from : https://xpack.github.io/openocd/
+Prebuilt binaries are available from: https://xpack.github.io/openocd/
 
-Source code is available at :
+Source code is available at:
 https://sourceforge.net/p/openocd/code/ci/master/tree/
 
 Building OpenOCD
-~~~~~~~~~~~~~~~~
+----------------
 
-.. code-block:: bash 
+.. code-block:: bash
 
    git clone https://git.code.sf.net/p/openocd/code openocd-code
    cd openocd-code
@@ -84,48 +84,48 @@ Building OpenOCD
 
 OpenOCD can be launched from the ``./src/`` directory e.g.,
 
-.. code-block:: bash 
+.. code-block:: bash
 
    ./src/openocd -v
 
 Configuration file for the Raspberry Pi 4
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------------
 
 Create a configuration file (e.g., ``rpi4.cfg``) with the following
-contents :
+contents:
 
 .. code-block:: console
 
    adapter driver jlink
-    
+
    set _CHIPNAME bcm2711
    set _DAP_TAPID 0x4ba00477
-    
+
    adapter speed 1000
-    
+
    transport select jtag
    reset_config trst_and_srst
-    
+
    telnet_port 4444
-    
+
    # create tap
    jtag newtap auto0 tap -irlen 4 -expected-id $_DAP_TAPID
-    
+
    # create dap
    dap create auto0.dap -chain-position auto0.tap
-    
+
    set CTIBASE {0x80420000 0x80520000 0x80620000 0x80720000}
    set DBGBASE {0x80410000 0x80510000 0x80610000 0x80710000}
-    
+
    set _cores 4
-    
+
    set _TARGETNAME $_CHIPNAME.a72
    set _CTINAME $_CHIPNAME.cti
    set _smp_command ""
-    
+
    for {set _core 0} {$_core < $_cores} { incr _core} {
        cti create $_CTINAME.$_core -dap auto0.dap -ap-num 0 -ctibase [lindex $CTIBASE $_core]
-    
+
        set _command "target create ${_TARGETNAME}.$_core aarch64 \
                        -dap auto0.dap  -dbgbase [lindex $DBGBASE $_core] \
                        -coreid $_core -cti $_CTINAME.$_core"
@@ -134,14 +134,14 @@ contents :
        } else {
            set _smp_command "target smp $_TARGETNAME.$_core"
        }
-    
+
        eval $_command
    }
-    
+
    eval $_smp_command
    targets $_TARGETNAME.0
 
-The configuration file was built from information found in :
+The configuration file was built from information found in:
 https://gist.github.com/tnishinaga/46a3380e1f47f5e892bbb74e55b3cf3e and
 https://www.raspberrypi.org/forums/viewtopic.php?t=252551
 
@@ -156,9 +156,9 @@ If the ``dap`` command is not understood by OpenOCD you may be using an
 older version, change to a more recent version.
 
 Launching OpenOCD
-~~~~~~~~~~~~~~~~~
+-----------------
 
-OpenOCD can be launched with the following command :
+OpenOCD can be launched with the following command:
 
 ::
 
@@ -166,16 +166,16 @@ OpenOCD can be launched with the following command :
 
 |image2|
 
-OpenOCD will listen on three ports :
+OpenOCD will listen on three ports:
 
--  *3333* : Listens for GDB connections
+-  *3333*: listens for GDB connections
 
--  *4444* : Listens for telnet connections
+-  *4444*: listens for telnet connections
 
--  *6666* : Listens for tcl connections
+-  *6666*: listens for tcl connections
 
 Connect with telnet
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 Connecting to OpenOCD through telnet allows to send OpenOCD commands
 (see `manual <http://openocd.org/doc/pdf/openocd.pdf>`__)
@@ -185,15 +185,22 @@ Connecting to OpenOCD through telnet allows to send OpenOCD commands
 The ``help`` command may come in handy.
 
 Connect with GDB
-~~~~~~~~~~~~~~~~
+----------------
 
-The CPU from the Raspberry Pi 4 is ARM AARCH64 and will be reported as
-such by OpenOCD. In order to debug ARM AARCH32 (e.g., SO3) on an X86
-host for a AARCH64 it is best to use gdb-multiarch (this allows to
-switch architectures).
+The CPU of the Raspberry Pi 4 is an AArch64 core and is reported as such by
+OpenOCD. Debugging it from an x86 host is best done with gdb-multiarch, which can
+switch architectures.
 
-Launch gdb-multiarch and set the architecture to ``arm`` (arm 32-bit),
-then connect to OpenOCD with ``target extended-remote localhost:3333``
+Launch gdb-multiarch, select the architecture matching the SO3 build and connect
+to OpenOCD with ``target extended-remote localhost:3333``:
+
+.. code-block:: text
+
+   set architecture aarch64      # rpi4_64 build (the usual case)
+   set architecture arm          # 32-bit build (rpi4_defconfig)
+
+The screenshots below were taken on a 32-bit build, hence the ``arm``
+architecture; the procedure itself is identical on ``rpi4_64``.
 
 |image4|
 
@@ -202,29 +209,28 @@ You can load the correct executable file with the ``file`` command
 |image5|
 
 Debugging with GDB
-------------------
+==================
 
-Kernel debugging works fine because the CPU is in supervisor mode,
-however, debugging 32-bit user mode on AARCH64 is not supported in
-OpenOCD and requires a patch.
-
-The patch can be found here : http://openocd.zylin.com/#/c/5826/
-
-If you want to Debug user mode (EL0) applications (e.g., ls.elf in SO3)
-you need to apply this patch and rebuild OpenOCD.
+Kernel debugging works fine because the CPU is in supervisor mode. Debugging
+**32-bit** user mode on an AArch64 core, on the other hand, was unsupported in
+OpenOCD and needed a patch (change ``5826``, submitted on the Gerrit that has
+since moved to https://review.openocd.org/): to debug user mode (EL0) of a 32-bit
+build — e.g. ``ls.elf`` — that patch had to be applied and OpenOCD rebuilt. Check
+whether your OpenOCD version already carries it. A 64-bit (``rpi4_64``) build is
+not concerned.
 
 Debug a user app
-~~~~~~~~~~~~~~~~
+----------------
 
-In order to break in an user app that is not currently launched in SO3 a
+In order to break in a user app that is not currently launched in SO3 a
 hardware breakpoint is required, because since the app is not launched
-there is not context for the app (MMU translation table) and setting a
+there is no context for the app (MMU translation table) and setting a
 software breakpoint will use the current context (e.g., SO3 kernel or
 other app such as sh.elf) to set the software breakpoint, this will
 corrupt the memory of the current context.
 
 Example
-^^^^^^^
+~~~~~~~
 
 Let’s say we want to debug ls.elf
 
@@ -251,7 +257,7 @@ another app (other context) because apps share some common addresses
 
 |image8|
 
-One way to check is to have a look at the disassembled code :
+One way to check is to have a look at the disassembled code:
 
 |image9|
 
@@ -259,9 +265,9 @@ Here if we compare to the disassembly of ls.elf (with objdump)
 
 |image10|
 
-We see that the instructions do not match ! We actually breaked into
+We see that the instructions do not match! We actually breaked into
 sh.elf, if we look at the disassembly of sh.elf (with objdump) we can
-see :
+see:
 
 |image11|
 
@@ -290,7 +296,7 @@ breakpoints e.g.,
 |image14| |image15|
 
 Follow a syscall
-''''''''''''''''
+^^^^^^^^^^^^^^^^
 
 If you want to follow a syscall inside SO3 you can change the file to
 ``so3`` and add a hardware breakpoint inside SO3 and continue, this
@@ -328,7 +334,7 @@ Here we printed to contents of the ``p_entry`` structure, filled by
 ``readdir()`` and we can see the entry name is ``cat.elf``.
 
 Notes
-~~~~~
+-----
 
 -  The reason we may break in the wrong place with hardware breakpoints
    is because it is a simple comparator on PC in the processor, and
@@ -341,7 +347,7 @@ Notes
 -  The reason a software breakpoint cannot be set before an app is
    launched is because a software breakpoint through JTAG is simply
    replacing the instruction where we want to break by the ARM ‘HLT’
-   instruction. However is the app is not yet loaded we don’t know where
+   instruction. However if the app is not yet loaded we don’t know where
    this would be.
 
 -  Once an app is loaded and is the active process the ‘HLT’ instruction
@@ -353,7 +359,7 @@ Notes
    instruction so that the program continues execution normally.
 
 Links
------
+=====
 
 -  https://sourceforge.net/projects/openocd/
 
@@ -364,7 +370,7 @@ Links
 -  https://metebalci.com/blog/bare-metal-raspberry-pi-3b-jtag/ <- Very
    good read
 
--  https://www.raspberrypi.org/documentation/configuration/config-txt/gpio.md
+-  https://www.raspberrypi.com/documentation/computers/config_txt.html#enable_jtag_gpio
 
 -  http://www.panu.it/raspberry/
 
@@ -372,7 +378,6 @@ Links
 
 -  https://stackoverflow.com/questions/53714503/openocd-error-invalid-command-name-dap-cant-connect-blue-pill-via-st-link
 
-.. |image0| image:: https://www.segger.com/fileadmin/images/products/J-Link/Interface_Description/181129_JTAG.svg
 .. |image1| image:: img/rpi_jtags.jpg
 .. |image2| image:: img/openocd1.png
 .. |image3| image:: img/so3_ci_jtag.png
