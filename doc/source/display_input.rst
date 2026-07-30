@@ -7,7 +7,7 @@ On the QEMU ``virt`` machine SO3 drives a small set of ARM PrimeCell devices for
 graphics and human input. These are **not** part of the upstream ``virt`` model;
 they are added by the SO3 QEMU patch
 (``build/meta-qemu/.../files/0001-qemu-8.2.2-r0/0001-virt.c.patch``) and described
-to the kernel in the device tree (``so3/dts/virt64.dts`` / ``virt32.dts``).
+to the kernel in the device tree (``so3/so3/dts/virt64.dts`` / ``virt32.dts``).
 
 .. figure:: img/so3_io.png
    :width: 100%

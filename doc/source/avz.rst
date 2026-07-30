@@ -27,7 +27,7 @@ beside it.
 
    AVZ: domains isolated by stage-2 tables, and the EL2 services beneath them.
 
-The code lives under ``so3/avz/`` (kernel, memory, scheduler, hypercalls, grant
+The code lives under ``avz/`` (kernel, memory, scheduler, hypercalls, grant
 tables, capsule build/inject) together with the EL2-specific parts of
 ``arch/arm64`` (``head.S`` MMU setup, ``exception.S`` EL2 vectors,
 ``context.S`` stage-2 switch, ``cache.S`` EL2 TLB ops) and the virtual GIC in

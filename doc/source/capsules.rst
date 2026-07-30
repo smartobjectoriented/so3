@@ -55,7 +55,7 @@ hypervisor support for it:
 * the **vbus / vbstore** clients and the event-channel / grant-table glue
   (``soo/kernel/``);
 * the hypervisor-side capsule **build / inject / snapshot** code
-  (``so3/avz/`` — ``capsule_build.c``, ``injector.c``).
+  (``avz/kernel/`` — ``capsule_build.c``, ``injector.c``).
 
 A capsule-capable guest is produced by ``virt64_capsule_defconfig`` or
 ``rpi4_64_capsule_defconfig`` (enabling ``CONFIG_SOO``). The agency runs
