@@ -87,8 +87,10 @@ Meta-layers
      - base bitbake classes — notably ``patch.bbclass`` (the fetch/patch/``updiff``
        machinery) and the privileged-helper plumbing.
    * - ``meta-so3``
-     - the **SO3 kernel** recipe (``so3_6.2.0.bb``, built in tree) and the **AVZ**
-       hypervisor recipe (``avz_6.2.0.bb``).
+     - the **SO3 kernel** recipe (``so3_<version>.bb``, built in tree) and the
+       **AVZ** hypervisor recipe (``avz_<version>.bb``); both are named after the
+       current release and pinned by ``PREFERRED_VERSION_*`` (see
+       :ref:`release_process`).
    * - ``meta-usr``
      - the **user space** (``usr-so3``, CMake + MUSL toolchain): a committed
        lvgl-free base, plus opt-in add-ons layered as patches via overrides —
@@ -235,8 +237,8 @@ rebuilding.
 The SO3 kernel recipe
 =====================
 
-``so3_6.2.0.bb`` configures and builds the kernel straight from ``so3/so3``; the
-mechanics below are the still-familiar Kbuild ones.
+``so3_<version>.bb`` configures and builds the kernel straight from ``so3/so3``;
+the mechanics below are the still-familiar Kbuild ones.
 
 Configuration (Kconfig)
 -----------------------
