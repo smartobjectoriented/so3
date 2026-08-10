@@ -35,7 +35,7 @@
  * (see scripts/so3version.sh and include/generated/autoversion.h). Keep this in
  * sync with the current release tag as a safety net.
  */
-#define SO3_KERNEL_VERSION_FALLBACK "6.2.4"
+#define SO3_KERNEL_VERSION_FALLBACK "6.2.5"
 
 /* Release version resolved at build time (git tag -> base version). */
 #include <generated/autoversion.h>
