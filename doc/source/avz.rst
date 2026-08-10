@@ -27,7 +27,7 @@ beside it.
 
    AVZ: domains isolated by stage-2 tables, and the EL2 services beneath them.
 
-The code lives under ``so3/avz/`` (kernel, memory, scheduler, hypercalls, grant
+The code lives under ``avz/`` (kernel, memory, scheduler, hypercalls, grant
 tables, capsule build/inject) together with the EL2-specific parts of
 ``arch/arm64`` (``head.S`` MMU setup, ``exception.S`` EL2 vectors,
 ``context.S`` stage-2 switch, ``cache.S`` EL2 TLB ops) and the virtual GIC in
@@ -92,15 +92,23 @@ Hypercalls
 
 Guests call into AVZ with the ``hvc`` instruction, which traps to the EL2
 synchronous handler (``el12_sync_handler`` in ``arch/arm64/exception.S``) and is
-dispatched by ``avz/kernel/hypercalls.c``. The generic hypercalls
-(``avz/include/avz/uapi/avz.h``) are:
+dispatched by ``avz/kernel/hypercalls.c``. Every hypercall is one ``cmd`` value
+in that single dispatcher. Three are always compiled in
+(``avz/include/avz/uapi/avz.h``):
 
 * ``AVZ_EVENT_CHANNEL_OP`` — allocate / bind / send / close event channels;
 * ``AVZ_CONSOLE_IO_OP`` — console output for guests;
 * ``AVZ_DOMAIN_CONTROL_OP`` — domain control (pause / unpause a capsule, …).
 
-The capsule-management operations (inject, kill, read/write snapshot) used by the
-SOO framework are built on top of these — see :ref:`capsules`.
+The rest are the SOO commands, declared in ``soo/include/soo/uapi/soo.h`` and
+compiled in only with ``CONFIG_SOO``: the **grant-table** op
+(``AVZ_GRANT_TABLE_OP``), domain description (``AVZ_GET_DOM_DESC``), capsule
+lifecycle (``AVZ_INJECT_CAPSULE``, ``AVZ_START_CAPSULE``, ``AVZ_KILL_S3C``,
+``AVZ_GET_S3C_STATE`` / ``AVZ_SET_S3C_STATE``), the snapshot primitives
+(``AVZ_S3C_READ_SNAPSHOT`` / ``AVZ_S3C_WRITE_SNAPSHOT``), the direct-communication
+events (``AVZ_DC_EVENT_SET``) and the virtual-framebuffer ops
+(``AVZ_FBDEV_*``). They are *not* layered on top of the three generic ones — see
+:ref:`capsules`.
 
 Domain scheduling
 =================

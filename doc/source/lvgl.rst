@@ -52,7 +52,9 @@ A typical application is just:
 Applications
 ============
 
-The LVGL applications are defined in ``so3/usr/src/CMakeLists.txt``:
+The LVGL applications are added to ``so3/usr/src/CMakeLists.txt`` by the
+``:lvgl`` override — the committed, lvgl-free ``CMakeLists.txt`` does not build
+them (see :ref:`build_system`):
 
 .. flat-table::
    :header-rows: 1

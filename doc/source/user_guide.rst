@@ -125,7 +125,11 @@ Launch scripts
 Both read ``IB_PLATFORM`` and the selected ITS from ``build/conf/local.conf``,
 attach ``filesystem/sdcard.img.<platform>`` as a virtio block device, forward the
 guest SSH port (host ``2222`` → guest ``22``) and expose a GDB stub on
-``tcp::1234`` (see :ref:`debugging`). The exception level is chosen automatically:
+``tcp::1234`` (see :ref:`debugging`). Networking is QEMU's user-mode (slirp)
+stack, so no ``tap`` device and no ``sudo`` are involved — the guest is NAT'd and
+not visible on the LAN. When other QEMU instances are already running, the GDB
+port is shifted by their number (1235, 1236, …) and printed at startup. The
+exception level is chosen automatically:
 
 * a standalone ITS → ``-M virt`` (EL1);
 * an ``…avz…`` ITS → ``-M virt,virtualization=on`` (EL2 for the hypervisor);

@@ -176,6 +176,9 @@ The tree contains drivers for the main device classes:
      - SD/MMC controller, in-memory RAM disk
    * - framebuffer (``fb/``)
      - PL111, ramfb, virtfb (used by LVGL)
+   * - real-time clock (``rtc/``)
+     - PL031 — provides the wall-clock time behind ``gettimeofday`` and the file
+       timestamps (see :ref:`user_space`)
    * - input (``input/``)
      - PL050 KMI keyboard; ``so3,absmouse`` absolute pointer; PL050 relative
        mouse (legacy, disabled in the dts). See :ref:`display_input`.
@@ -183,6 +186,8 @@ The tree contains drivers for the main device classes:
      - smc911x (``smsc,smc911x``), wired to lwIP — optional (``CONFIG_NET``)
    * - i2c, rpisense (``i2c/``, ``rpisense/``)
      - I²C bus and Raspberry Pi Sense HAT
+   * - example (``mydev.c``)
+     - a minimal reference driver, exercised by the ``mydev_test`` application
 
 Interrupts and time
 ===================

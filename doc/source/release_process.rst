@@ -139,7 +139,14 @@ release (they drift silently otherwise):
   ``avz_X.Y.Z.bb`` recipes (under ``build/meta-so3/recipes-so3/``) to the
   new version and update the ``PREFERRED_VERSION_so3`` /
   ``PREFERRED_VERSION_avz`` entries in ``build/conf/local.conf`` (see the
-  ``v6.2.3`` bump for a template).
+  ``v6.2.3`` bump for a template);
+* the boot-banner safety net ``SO3_KERNEL_VERSION_FALLBACK``
+  (``so3/so3/include/version.h``), used only when the build tree carries no git
+  metadata (a bitbake ``WORKDIR`` copy, a tarball export).
+
+Two version strings need **no** action: the boot banner itself and the
+documentation version both derive from the release tag at build time
+(``so3/so3/scripts/so3version.sh``, reused by ``doc/source/conf.py``).
 
 Before tagging: check the CI
 ***************************

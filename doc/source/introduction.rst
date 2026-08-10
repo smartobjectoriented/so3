@@ -12,6 +12,8 @@ SO3 is the result of several years of research and development at the
 `HEIG-VD <HEIG-VD_>`__, in the field of embedded operating systems and
 execution environments for ARM 32/64-bit multicore systems. SO3 was publicly
 released in early 2020 (see also the `HEIG-VD newsletter <heig-vd_news_>`__).
+The source code is hosted on GitHub:
+`smartobjectoriented/so3 <so3_github_>`__.
 
 `Prof. Daniel Rossier <DRE_>`__ initiated the development of an operating system
 in 2013, in the context of a Bachelor lecture focusing on the port of operating
@@ -127,6 +129,7 @@ on what is selected. SO3 is therefore an excellent environment to experiment:
 trying out a kernel function, a processor feature or a compilation trick is
 quick and cheap.
 
+.. _so3_github: https://github.com/smartobjectoriented/so3
 .. _REDS: http://www.reds.ch
 .. _HEIG-VD: http://www.heig-vd.ch
 .. _heig-vd_news: https://heig-vd.ch/

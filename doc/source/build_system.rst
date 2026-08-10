@@ -92,15 +92,19 @@ Meta-layers
      - base bitbake classes — notably ``patch.bbclass`` (the fetch/patch/``updiff``
        machinery) and the privileged-helper plumbing.
    * - ``meta-so3``
-     - the **SO3 kernel** recipe (``so3_6.2.0.bb``, built in tree) and the **AVZ**
-       hypervisor recipe (``avz_6.2.0.bb``).
+     - the **SO3 kernel** recipe (``so3_<version>.bb``, built in tree) and the
+       **AVZ** hypervisor recipe (``avz_<version>.bb``); both are named after the
+       current release and pinned by ``PREFERRED_VERSION_*`` (see
+       :ref:`release_process`).
    * - ``meta-usr``
      - the **user space** (``usr-so3``, CMake + MUSL toolchain): a committed
        lvgl-free base, plus opt-in add-ons layered as patches via overrides —
        ``:lvgl`` (LVGL + ``slv`` + demos) and ``:soo`` (capsule user space).
    * - ``meta-bsp``
      - **board support**: ``bsp-so3`` assembles the FIT image (``do_itb``) and
-       writes the boot media (``do_deploy_boot``).
+       writes the boot media (``do_deploy_boot``); ``bsp-linux`` does the same for
+       the Linux agency and ``bsp-capsules`` for an agency running SO3 capsules
+       (see :ref:`capsules`).
    * - ``meta-uboot``
      - the **U-Boot** bootloader (fetched + patched).
    * - ``meta-qemu``
@@ -240,8 +244,8 @@ rebuilding.
 The SO3 kernel recipe
 =====================
 
-``so3_6.2.0.bb`` configures and builds the kernel straight from ``so3/so3``; the
-mechanics below are the still-familiar Kbuild ones.
+``so3_<version>.bb`` configures and builds the kernel straight from ``so3/so3``;
+the mechanics below are the still-familiar Kbuild ones.
 
 Configuration (Kconfig)
 -----------------------
@@ -308,10 +312,13 @@ paths — then assembles the ``.itb`` there with ``mkimage`` (there is no commit
    * - ``<plat>_linux_guest.its``
      - **Linux agency guest ITB**: Linux kernel + guest DTB + initrd, loaded by
        AVZ (``meta-bsp/.../linux/files/its/``).
-   * - ``virt64_capsule.its``
-     - a capsule image
-   * - ``virt32_so3.its`` / ``rpi4_64_so3.its``
-     - the 32-bit / RPi4 standalone variants
+   * - ``<plat>_capsule.its``
+     - a capsule image (``virt64_capsule``, ``rpi4_64_capsule``)
+   * - ``virt32_so3.its`` / ``rpi4_64_so3.its`` / ``verdin_imx8mp_so3.its``
+     - the 32-bit / RPi4 / Verdin standalone variants
+   * - ``<plat>_lvperf.its``
+     - the LVGL-benchmark image driven by the ``docker/`` lvperf containers and
+       the CI (``virt64_lvperf``, ``virt32_lvperf`` — see :ref:`lvgl`)
 
 ``do_deploy_boot`` writes the resulting ``.itb`` from ``<ctx>/images/`` into the
 FAT (boot) partition of

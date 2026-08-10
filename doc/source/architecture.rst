@@ -21,9 +21,9 @@ filesystem, IPC, networking — plus a device-tree-driven device and driver mode
 Source tree
 ===========
 
-The kernel source lives under ``so3/`` and is organised by subsystem::
+The kernel source lives under ``so3/so3/`` and is organised by subsystem::
 
-   so3/
+   so3/so3/
    ├── arch/         # architecture-specific code (arm32, arm64)
    │   └── arm64/    #   head/boot, exceptions, MMU, context switch, traps
    ├── kernel/       # processes, threads, scheduler, syscalls, time
@@ -35,12 +35,19 @@ The kernel source lives under ``so3/`` and is organised by subsystem::
    ├── dts/          # device trees (*.dts → *.dtb)
    ├── avz/          # the AVZ hypervisor (built with CONFIG_AVZ)
    ├── soo/          # the SOO framework / SO3 capsules (CONFIG_SOO)
+   ├── apps/         # optional kernel-space example apps (CONFIG_APP_*)
+   ├── include/      # kernel headers
    ├── configs/      # defconfig files
    └── lib/          # in-kernel helper libraries (libfdt, libroxml, …)
 
-The user space lives under ``usr/`` and the surrounding tooling (bootloader,
-emulator, root filesystem, deployment scripts) at the repository root — see
-:ref:`build_system` and :ref:`user_space`.
+.. note::
+
+   Kernel paths are quoted **relative to that tree** throughout this
+   documentation: ``arch/arm64/mmu.c`` means ``so3/so3/arch/arm64/mmu.c``.
+
+The user space lives under ``so3/usr/`` and the surrounding tooling (build
+system, bootloader, emulator, root filesystem, deployment scripts) at the
+repository root — see :ref:`build_system` and :ref:`user_space`.
 
 Exception levels
 ================
