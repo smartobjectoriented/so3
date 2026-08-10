@@ -1,0 +1,167 @@
+# Host packages required to build the SO3 tree, one per line.
+#
+# SINGLE SOURCE OF TRUTH — consumed by docker/build-env/Dockerfile, which
+# installs this list verbatim. Comments and blank lines are stripped before
+# the list reaches apt.
+#
+# Copyright (c) 2026 REDS Institute - HEIG-VD
+
+# --- bitbake / Yocto host dependencies ---------------------------------
+# What the bundled bitbake itself needs to start and parse the layers.
+# A UTF-8 locale is mandatory (locales, generated in the Dockerfile).
+
+gawk
+diffstat
+chrpath
+socat
+python3
+python3-pip
+python3-pexpect
+python3-git
+python3-jinja2
+debianutils
+iputils-ping
+locales
+sudo
+
+# --- toolchain and generic build ---------------------------------------
+# Kernel, U-Boot and buildroot host-side builds, and their menuconfig.
+# libelf-dev is for objtool, dwarves (pahole) for CONFIG_DEBUG_INFO_BTF.
+
+build-essential
+make
+bc
+bison
+flex
+patch
+perl
+which
+libssl-dev
+libelf-dev
+libncurses-dev
+dwarves
+
+# --- source and archive handling ----------------------------------------
+
+git
+wget
+curl
+file
+ca-certificates
+xz-utils
+bzip2
+gzip
+unzip
+zstd
+lz4
+
+# --- boot images -------------------------------------------------------
+# DTB compilation and FIT (.itb) assembly, on every platform.
+
+device-tree-compiler
+u-boot-tools
+
+# --- rootfs / initrd pipeline ------------------------------------------
+# kmod provides depmod for the out-of-tree modules the labs build
+# (usr-linux: access.ko & co); cpio packs the initrd/ramfs.
+
+cpio
+rsync
+fakeroot
+kmod
+
+# --- storage images ----------------------------------------------------
+# build.sh filesystem and deploy.sh: partitioning, mkfs, loop devices.
+# These live in /usr/sbin and are reached through sudo.
+
+dosfstools
+mtools
+e2fsprogs
+parted
+fdisk
+util-linux
+mount
+kpartx
+
+# --- user space --------------------------------------------------------
+# CMake drives usr-linux / usr-so3. The distribution CMake (3.28.x on
+# 24.04) is what this list pulls, ON PURPOSE: 4.x drops
+# cmake_minimum_required(<3.5) support, which buildroot 2024.11 still
+# relies on. swig + python3-dev build U-Boot's pylibfdt.
+
+cmake
+ninja-build
+meson
+pkg-config
+python3-venv
+python3-dev
+python3-setuptools
+swig
+uuid-dev
+libgnutls28-dev
+
+# --- QEMU: building AND running ----------------------------------------
+# The runtime half is easy to overlook — qemu/build/qemu-system-* is built
+# into the bind-mounted tree but resolves its libraries inside the
+# container. libgtk-3-dev is not optional for the labs: st.sh -d presents
+# the guest PL111 screen through the GTK display (SDL leaves it black).
+
+libglib2.0-dev
+libpixman-1-dev
+libgtk-3-dev
+libsdl2-dev
+libslirp-dev
+libepoxy-dev
+libcairo2-dev
+libxcb-xkb-dev
+
+# --- Sense HAT emulator (st.sh -g) -------------------------------------
+# The GUI imports the distro PyGObject/Gtk3; numpy and Pillow come from
+# apt so the venv (--system-site-packages) does not rebuild them.
+#
+# python3-gi-cairo is the one whose absence is SILENT and costly: without
+# the pycairo foreign-struct converter every Gtk 'draw' callback dies with
+# "Couldn't find foreign struct converter for 'cairo.Context'", so the
+# emulator window opens with working sliders and a BLANK 8x8 LED matrix
+# while the data path is perfectly fine. sense-hat-server.py starts the
+# GUI with stderr=devnull, so the TypeError never reaches any log.
+#
+# librsvg2-common ships the gdk-pixbuf SVG loader (the About dialog's
+# logo); dbus-x11 provides dbus-launch, else GTK spams dconf warnings.
+
+python3-gi
+python3-gi-cairo
+python3-cairo
+gir1.2-gtk-3.0
+python3-numpy
+python3-pil
+libjpeg-dev
+zlib1g-dev
+librsvg2-common
+dbus-x11
+
+# --- 32-bit cross toolchains (from apt) --------------------------------
+# The prefixes the recipes pin, provided as-is by Ubuntu — no download
+# needed, unlike the 64-bit ones (see the Dockerfile):
+#   arm-linux-gnueabihf-  virt32/rpi4 kernel + U-Boot (IB_TOOLCHAIN:arm)
+#   arm-none-eabi-        SO3 kernel 32-bit (CONFIG_CROSS_COMPILE)
+
+gcc-arm-linux-gnueabihf
+g++-arm-linux-gnueabihf
+gcc-arm-none-eabi
+
+# --- documentation ------------------------------------------------------
+# `dbuild.sh make -C doc html` builds doc/ (Sphinx + the Read the Docs theme),
+# so the doc toolchain lives here too and nothing has to be installed on a
+# host just to read the documentation of the tree.
+
+python3-sphinx
+python3-sphinx-rtd-theme
+
+# --- hardware access / serial console ----------------------------------
+# The rpi4 labs talk to the board over its mini-UART and flash SD cards.
+
+picocom
+usbutils
+openssh-client
+net-tools

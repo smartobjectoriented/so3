@@ -1,0 +1,62 @@
+# Interactive shell inside the SO3 build container.
+#
+# Sourcing env.sh HERE (rather than in a parent process) matters: it
+# defines shell functions — the cd/pushd/popd wrappers and
+# ib_autoswitch_* — which only exist in the shell that sourced them.
+# A parent that sources env.sh then execs bash passes on the exported
+# variables but loses the functions.
+#
+# Copyright (c) 2026 REDS Institute - HEIG-VD
+
+# NOT sourcing /etc/bash.bashrc here: Debian/Ubuntu bash already reads it for
+# every interactive shell, --rcfile only replaces ~/.bashrc. Sourcing it again
+# ran its sudo hint — and anything else it prints — twice on entry.
+
+# Colours and the usual ls shorthands. On a normal Ubuntu login these come from
+# the user's ~/.bashrc, which `bash --rcfile` deliberately bypasses in favour of
+# this file — so without the block below the container shell is the one place
+# where `ls` comes out monochrome. Sourcing ~/.bashrc instead would drag in its
+# PS1 and undo the [so3-build] prompt set at the bottom.
+
+if [ -x /usr/bin/dircolors ]; then
+	if [ -r "$HOME/.dircolors" ]; then
+		eval "$(dircolors -b "$HOME/.dircolors")"
+	else
+		eval "$(dircolors -b)"
+	fi
+	alias ls='ls --color=auto'
+	alias grep='grep --color=auto'
+	alias fgrep='fgrep --color=auto'
+	alias egrep='egrep --color=auto'
+fi
+
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+if [ -n "$IB_TREE" ] && [ -f "$IB_TREE/env.sh" ]; then
+	cd "$IB_TREE" && . ./env.sh >/dev/null 2>&1
+fi
+
+# Return to the directory the user invoked dbuild.sh from.
+
+[ -n "$IB_CWD" ] && cd "$IB_CWD"
+
+# Make it obvious at a glance that this shell is inside the container —
+# the tree looks identical to the host one, same absolute paths.
+
+PS1='\[\033[01;33m\][so3-build]\[\033[00m\] \w \$ '
+
+cat <<'EOF'
+
+SO3 build container — the repository is bind-mounted from the host and
+you are running as the host user, so anything you produce stays yours.
+env.sh is already sourced.
+
+  build.sh -l                 list recipes
+  build.sh bsp-linux          build the Linux BSP (bsp-so3 for SO3)
+  deploy.sh bsp-linux         deploy (FIT + rootfs + sdcard)
+  st.sh / st.sh -d            run in QEMU (headless / graphical)
+  exit                        leave the container
+
+EOF
