@@ -162,6 +162,13 @@ could build. ``build (virt32)`` and ``build (virt64)`` are required status
 checks on ``main`` for the same reason: merging on red stays possible for a
 maintainer, but never by accident.
 
+Check ``SO3_KERNEL_VERSION_FALLBACK`` too: it must already read the version
+being tagged, since the tagged tree is what a gitless build banners. It
+appears twice in this page on purpose — bump it **in the release commit set**
+so the tag is right, and again when propagating to ``main`` so the next
+release does not start a version behind (``main`` sat at ``6.2.4`` while
+``release/v6.2`` was at ``6.2.5``).
+
 Rules of thumb
 **************
 
