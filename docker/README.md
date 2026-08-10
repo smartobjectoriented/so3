@@ -4,6 +4,29 @@ All images build SO3 with the **Infrabase** (bitbake) build system. The containe
 holds the whole repository at `/so3`; inside it the kernel is at `/so3/so3/so3`,
 the user space at `/so3/so3/usr` and the bundled LVGL at `/so3/so3/usr/lib/lvgl`.
 
+# Developer build container — `dbuild.sh`
+
+For day-to-day development, use [`build-env`](./build-env) driven by
+`scripts/dbuild.sh` — it replaces the older "repository baked into the image"
+flow for interactive work. The image carries ONLY the environment (both Arm
+64-bit toolchains including the bare-metal `aarch64-none-elf`, the 32-bit apt
+toolchains, host packages); the repository stays on the host and is
+bind-mounted at its **own absolute path**, so host and container builds share
+one `build/tmp` interchangeably, and the container runs as the calling host
+user so everything it writes stays yours.
+
+```
+./scripts/dbuild.sh --build            # build the so3-build:1.0 image (once)
+./scripts/dbuild.sh build.sh bsp-linux # run any front-end script inside
+./scripts/dbuild.sh                    # interactive shell, env.sh sourced
+./scripts/dbuild.sh st.sh -d           # graphical QEMU from the container
+```
+
+Caller environment variables are not forwarded; pass them through the
+command: `./scripts/dbuild.sh env IB_FORCE_ATTACH=1 build.sh bsp-linux`.
+
+The images below remain the CI/perf-rig side of the house.
+
 # Base build environment
 
 - [`Dockerfile.toolchains`](./Dockerfile.toolchains) — Ubuntu image with the
