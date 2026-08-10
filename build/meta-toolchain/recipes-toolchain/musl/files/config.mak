@@ -19,6 +19,17 @@
 GNU_SITE = https://ftp.gnu.org/gnu
 DL_CMD = wget -c --tries=5 --waitretry=10 --timeout=30 -O
 
+# Same story for the musl tarball itself: musl.libc.org is a single host with
+# no mirror rotation, and when it goes down (timeouts, then "Unable to
+# establish SSL connection" — observed 2026-08-10, both CI platforms and from
+# outside CI) the toolchain build fails at ~2 min and no amount of retrying
+# helps. Fetch it from the MacPorts distfiles mirror, which carries the exact
+# upstream tarball. musl-cross-make checks every download against
+# hashes/<file>.sha1, so a mirror serving anything else fails the build loudly
+# rather than silently building something different (verified: the mirrored
+# musl-1.2.5.tar.gz matches hashes/musl-1.2.5.tar.gz.sha1).
+MUSL_SITE = https://distfiles.macports.org/musl
+
 BINUTILS_VER = 2.44
 GCC_VER = 12.4.0
 # MUSL_VER = git-master
