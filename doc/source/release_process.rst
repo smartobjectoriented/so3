@@ -148,6 +148,20 @@ Two version strings need **no** action: the boot banner itself and the
 documentation version both derive from the release tag at build time
 (``so3/so3/scripts/so3version.sh``, reused by ``doc/source/conf.py``).
 
+Before tagging: check the CI
+***************************
+
+The ``Build`` workflow runs on ``main`` **and on every** ``release/**``
+**branch**, so the commit a tag will point at has always been built. Check it
+before tagging::
+
+   gh run list --workflow Build --branch release/v6.2
+
+Tagging a red commit is how ``v6.2.4`` shipped a tree that no fresh clone
+could build. ``build (virt32)`` and ``build (virt64)`` are required status
+checks on ``main`` for the same reason: merging on red stays possible for a
+maintainer, but never by accident.
+
 Rules of thumb
 **************
 

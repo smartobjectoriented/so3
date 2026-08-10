@@ -88,6 +88,17 @@ so3/usr/lib/libc/include/asm
 so3/rootfs/rootfs.fat
 # lvgl is fetched at build time (meta-usr lvgl bbappend, :lvgl override), not a submodule
 so3/usr/lib/lvgl/
+# ... and everything below is materialized into the usr tree by the lvgl
+# patch set / quilt at build time — never track it (a tracked copy makes
+# do_patch fail on a fresh clone with "would create ... which already exists")
+so3/usr/patches/
+so3/usr/lib/slv/
+so3/usr/lib/lv_conf.h
+so3/usr/src/fillfb.c
+so3/usr/src/lvgl_demo.c
+so3/usr/src/lvgl_perf.c
+so3/usr/src/lvgl_benchmark.c
+so3/usr/src/lvgl_widgets.c
 # The whole linux/ tree is a build working area, not committed: linux/linux
 # is the fetched agency kernel, linux/usr is regenerated from the meta-usr
 # patch set (base + :soo), linux/images holds rendered ITS + .itb output.

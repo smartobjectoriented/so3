@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
+      - "release/**"
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/**"]
 
 # Smoke-build SO3 with Infrabase (bitbake) inside the so3-env image. Both the
 # kernel (build.sh -x so3) and the user space (build.sh -x usr-so3, which also
