@@ -79,7 +79,7 @@ land there and are tagged as patch releases.
 
 | Line | Branch | Latest release | Status |
 |------|--------|----------------|--------|
-| 6.2  | [`release/v6.2`](https://github.com/smartobjectoriented/so3/tree/release/v6.2) | [v6.2.4](https://github.com/smartobjectoriented/so3/releases/tag/v6.2.4) | Current stable |
+| 6.2  | [`release/v6.2`](https://github.com/smartobjectoriented/so3/tree/release/v6.2) | [v6.2.5](https://github.com/smartobjectoriented/so3/releases/tag/v6.2.5) | Current stable |
 | 6.1  | [`release/v6.1`](https://github.com/smartobjectoriented/so3/tree/release/v6.1) | [v6.1.0](https://github.com/smartobjectoriented/so3/releases/tag/v6.1.0) | Previous |
 | 5.4  | [`release/v5.4`](https://github.com/smartobjectoriented/so3/tree/release/v5.4) | [v5.4.1](https://github.com/smartobjectoriented/so3/releases/tag/v5.4.1) | End of life |
 

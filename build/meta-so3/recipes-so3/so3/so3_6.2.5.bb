@@ -8,7 +8,7 @@ inherit so3
 
 # Version and revision
 PR = "r0"
-PV = "6.2.4"
+PV = "6.2.5"
 
 # :append (not +=) so no space is inserted before ":so3" — otherwise the
 # preceding CPU token parses as "arm "/"aarch64 " and :<cpu> overrides
