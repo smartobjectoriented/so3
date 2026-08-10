@@ -141,6 +141,20 @@ release (they drift silently otherwise):
   ``PREFERRED_VERSION_avz`` entries in ``build/conf/local.conf`` (see the
   ``v6.2.3`` bump for a template).
 
+Before tagging: check the CI
+***************************
+
+The ``Build`` workflow runs on ``main`` **and on every** ``release/**``
+**branch**, so the commit a tag will point at has always been built. Check it
+before tagging::
+
+   gh run list --workflow Build --branch release/v6.2
+
+Tagging a red commit is how ``v6.2.4`` shipped a tree that no fresh clone
+could build. ``build (virt32)`` and ``build (virt64)`` are required status
+checks on ``main`` for the same reason: merging on red stays possible for a
+maintainer, but never by accident.
+
 Rules of thumb
 **************
 
