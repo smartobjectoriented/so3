@@ -1,4 +1,29 @@
 
+v6.2.5 (10 aug 2026)
+
+Patch release on the 6.2 line, fixing the release plumbing itself: the v6.2.4
+tree could not be built from a fresh clone at all.
+
+	•	The tree-wide copyright e-mail alignment ran over a built working tree
+		and committed 37 files the build materializes itself: usr/lib/lv_conf.h,
+		the usr/lib/slv/ sources, the quilt staging directory usr/patches/ and
+		the generated usr/src/{fillfb,lvgl_*}.c. On a fresh clone the lvgl patch
+		set then found its own outputs already in place and do_patch died on the
+		very first patch ("would create lib/lv_conf.h, which already exists").
+		Local incremental trees never saw it — only fresh clones and the CI,
+		which had been red since. The files are untracked and the whole family
+		is now in .gitignore.
+
+	•	The Build and Style workflows only ran on main, yet tags are cut on
+		release/vX.Y — the very commits a release points at were the only ones
+		never built. They now also run on release/**, and release_process.rst
+		documents the pre-tag check. On main, build (virt32) and build (virt64)
+		are required status checks.
+
+	•	SO3_KERNEL_VERSION_FALLBACK is back in sync with the tag. A build from a
+		tree without git metadata (tarball, bitbake workdir copy) banners this
+		constant, and v6.2.4 shipped it still reading 6.2.3.
+
 v6.2.4 (17 jul 2026)
 
 Patch release on the 6.2 line. Mostly the Raspberry Pi 4 support, whose 64-bit
