@@ -1,4 +1,36 @@
 
+v6.3.0 (12 aug 2026)
+
+Minor release opening the 6.3 line. It carries the developer build container
+and a documentation correctness pass on top of v6.2.5.
+
+	•	A ready-made build environment: docker/build-env plus scripts/dbuild.sh.
+		The image carries only the environment — both Arm 64-bit toolchains,
+		including the bare-metal aarch64-none-elf the SO3 and AVZ kernels need
+		and that hand-provisioned hosts routinely miss, the 32-bit apt
+		toolchains, and the host packages listed in packages.txt. The repository
+		stays on the host, bind-mounted at its own absolute path so bitbake
+		stamps and the buildroot host tree stay valid and a tree can be built
+		from inside or outside the container interchangeably, and the container
+		runs as the calling host user so nothing comes back root-owned.
+		One entry point covers everything: dbuild.sh --build to make the image,
+		a bare dbuild.sh for an interactive shell with env.sh already sourced,
+		and dbuild.sh <script> for any front-end script (st.sh -d included, the
+		X11 display and cookie are forwarded). The CI images
+		(Dockerfile.toolchains, Dockerfile.env) and the LVGL perf-rig images
+		are untouched.
+
+	•	A correctness pass over the documentation set: the hypercall, driver,
+		ITS and application inventories match the tree again, kernel paths are
+		quoted relative to so3/so3, the coding conventions state what the CI
+		actually enforces, the JTAG chapter is up to date and the documentation
+		version is derived from the release tag.
+
+	•	Everything in v6.2.5: the untracked build-materialized user-space files
+		that made a fresh clone unbuildable, Build and Style running on the
+		release branches so a release commit is validated before it is tagged,
+		and the musl tarball fetched from a mirror.
+
 v6.2.5 (10 aug 2026)
 
 Patch release on the 6.2 line, fixing the release plumbing itself: the v6.2.4
