@@ -110,6 +110,7 @@ def __fetch_torizon_tezi_image(d, dest_dir):
 def __do_platform_deploy(d):
     """Stage a flashable TEZI image: our imx-boot (flash.bin) + boot.scr + the
     AVZ+SO3 ITB, with image.json patched to auto-install them."""
+    import json
     import os
     import subprocess
 
@@ -169,8 +170,29 @@ def __do_platform_deploy(d):
     if not final_dest:
         bb.fatal("verdin: no deploy destination (set IB_HTTP_DEPLOY_PATH or use the default)")
 
-    utils_sudo(["mkdir", "-p", final_dest], check=True)
-    utils_sudo(["rsync", "-a", "--delete", f"{staging}/", f"{final_dest}/"], check=True)
+    # TEZI feed index. Written next to image.json so the feed directory is
+    # self-contained: whatever serves it (scripts/tezi-feed-serve.sh, or a
+    # web server on another machine) can use it as its document root, and
+    # the board's feed URL is always <root>/image_list.json. Kept relative
+    # for the same reason — no absolute path, no directory prefix.
+    with open(f"{staging}/image_list.json", "w") as f:
+        json.dump({"config_format": 1,
+                   "autoinstall": "image.json",
+                   "images": ["image.json"]}, f, indent=4)
+
+    # Publish. The default IB_HTTP_DEPLOY_PATH lives inside the tree and is
+    # owned by the calling user, so no privilege is needed; a site.conf that
+    # points somewhere root-owned (e.g. a web server document root) still
+    # works through the sudo fallback.
+    try:
+        os.makedirs(final_dest, exist_ok=True)
+        subprocess.run(["rsync", "-a", "--delete",
+                        f"{staging}/", f"{final_dest}/"], check=True)
+    except (PermissionError, subprocess.CalledProcessError) as e:
+        bb.note(f"publishing to {final_dest} unprivileged failed ({e}); retrying with sudo")
+        utils_sudo(["mkdir", "-p", final_dest], check=True)
+        utils_sudo(["rsync", "-a", "--delete",
+                    f"{staging}/", f"{final_dest}/"], check=True)
 
     bb.plain("verdin: TEZI image staged at %s (imx-boot + boot.scr + ITB(s) for %s)"
              % (final_dest, IB_TARGET_ITS))

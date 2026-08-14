@@ -144,4 +144,11 @@ then
 	then
 		exit 1
 	fi
+
+	# Make the freshly published TEZI feed reachable without a manual
+	# step. Idempotent and quiet when a server is already up; a no-op
+	# when the deploy did not publish an HTTP feed, in CI, and inside
+	# the build container (dbuild.sh does it on the host instead —
+	# a server started in the container would die with it).
+	./scripts/tezi-feed-serve.sh --ensure
 fi

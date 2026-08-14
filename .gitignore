@@ -27,6 +27,17 @@
 /build/*
 !/build/conf/
 !/build/meta-*/
+# The core layer has NO dash, so "meta-*" above does not match it: its classes
+# (base, patch, utils, logging, terminal) and conf/ were tracked only because
+# they predate the rule, and any file added there since would have been ignored
+# in silence — a new class simply never reaching the repository.
+!/build/meta/
+
+# Per-machine bitbake overrides (see build/meta/conf/bitbake.conf). The rule
+# just above re-includes all of build/conf/, so this one file needs its own.
+# The TEZI feed published by deploy.sh lives in build/deploy/ (along with the
+# feed server's pid/log) and is already covered by the /build/* rule.
+/build/conf/site.conf
 
 # The rpi4 BSP deploys Broadcom's prebuilt bcm27xx device trees onto the boot
 # partition, alongside start4.elf & co. Unlike every other .dtb in the tree they
