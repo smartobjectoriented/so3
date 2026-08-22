@@ -55,10 +55,18 @@ do_configure () {
 	#   - verdin platforms: ${IB_PLATFORM}_defconfig (verdin uses
 	#     uboot_2024.07.bb anyway).
 
+	# CROSS_COMPILE has to be pinned here too, not only in do_build: the
+	# U-Boot Makefile carries a patched-in default of
+	# aarch64-none-linux-gnu-, and the defconfig step probes the compiler
+	# (scripts/gcc-version.sh, clang-version.sh). On a 32-bit platform, or
+	# in a container that ships no 64-bit toolchain, that default is simply
+	# absent and Kconfig dies with "syntax error". A host that happens to
+	# have the 64-bit toolchain installed hides the bug.
+
 	if [ "${IB_PLATFORM}" = "virt64" ] && [ "${IB_BOOT_CHAIN}" = "uboot" ]; then
-		make qemu_arm64_defconfig
+		make CROSS_COMPILE=${IB_TOOLCHAIN}- qemu_arm64_defconfig
 	else
-		make ${IB_PLATFORM}_defconfig
+		make CROSS_COMPILE=${IB_TOOLCHAIN}- ${IB_PLATFORM}_defconfig
 	fi
 
 	# Specific handling for bbb platform
