@@ -41,6 +41,7 @@ utimensat               utimensat
 stat64                  stat64
 fstatat64               fstatat64
 newfstatat              newfstatat
+statx                   empty
 mmap                    mmap
 mmap2                   mmap2
 nanosleep               nanosleep
