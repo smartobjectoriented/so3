@@ -24,8 +24,9 @@ chapter.
 .. note::
 
    Networking is **opt-in**: ``CONFIG_NET`` plus ``CONFIG_SMC911X``. Both are on
-   in ``virt64_defconfig`` and ``virt64_fb_defconfig``, and off everywhere else —
-   the other platforms have no driver for their own MAC yet.
+   in the four QEMU virt defconfigs (``virt32``/``virt64``, plain and ``_fb``),
+   and off everywhere else — rpi4 and verdin have no driver for their own MAC
+   yet.
 
 The NIC on QEMU virt
 ====================
