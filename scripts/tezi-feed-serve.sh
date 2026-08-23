@@ -199,7 +199,13 @@ do_ensure()
 	fi
 
 	running_pid >/dev/null && return 0
-	check_feed || return 0
+
+	# Called after every build and deploy, including on platforms that never
+	# publish a feed (soft/hard storage), so a missing feed is the normal
+	# case here: stay quiet and leave the explaining to check_feed, which
+	# only runs when the server is asked for explicitly.
+
+	[ -d "$feed" ] && [ -f "$feed/image_list.json" ] || return 0
 
 	command -v python3 >/dev/null 2>&1 || {
 		printf "%s: python3 not found — cannot serve the feed\n" "$progname" >&2
