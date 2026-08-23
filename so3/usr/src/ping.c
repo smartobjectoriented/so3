@@ -21,6 +21,7 @@
 /* ping: send ICMP echo requests to a host and report the replies, including
  * the round-trip times. */
 
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <syscall.h>
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
 	if (s < 0) {
-		printf("Impossible to obtain a socket file descriptor!!\n");
+		printf("Cannot open the ICMP socket: %s\n", strerror(errno));
 		return 1;
 	}
 
@@ -265,7 +266,7 @@ int main(int argc, char **argv)
 		gettimeofday(&start, NULL);
 
 		if (sendto(s, &packet, sizeof(packet), 0, (struct sockaddr *) &ping_addr, sizeof(ping_addr)) <= 0) {
-			printf("Packet sending failed!!\n");
+			printf("Cannot send icmp_seq=%d: %s\n", msg_count, strerror(errno));
 			continue;
 		}
 
@@ -273,10 +274,16 @@ int main(int argc, char **argv)
 
 		len = recvfrom(s, reply, sizeof(reply), 0, (struct sockaddr *) &recv_addr, &size);
 
-		/* A timeout (SO_RCVTIMEO) lands here too, which is the normal
-		 * outcome for a host that never answers. */
+		/* A host that never answers is the normal case, not a failure:
+		 * SO_RCVTIMEO expires and lwIP reports it as EWOULDBLOCK (EAGAIN,
+		 * the same value in musl). Anything else is a real error and says
+		 * which one. */
 		if (len <= 0) {
-			printf("Packet receive failed!!\n");
+			if ((len < 0) && (errno != EAGAIN))
+				printf("Cannot receive icmp_seq=%d: %s\n", msg_count, strerror(errno));
+			else
+				printf("Request timeout for icmp_seq=%d\n", msg_count);
+
 			continue;
 		}
 
