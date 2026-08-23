@@ -57,29 +57,45 @@ static int lwip_return(int ret)
 }
 
 /**
+ * lwip_fds[] is indexed by GLOBAL file descriptor.
+ *
+ * @param Global file descriptor (gfd)
+ * @return Associated socket ID from lwip
+ */
+static int get_lwip_fd_from_gfd(int gfd)
+{
+	if ((gfd < 0) || (gfd >= MAX_FDS))
+		return -1;
+
+	return lwip_fds[gfd];
+}
+
+/**
  *
  * @param Local file descriptor (fd)
  * @return Associated socket ID from lwip
  */
 static int get_lwip_fd(int fd)
 {
-	int gfd;
-
 	/* Get the gfd from this fd */
-	gfd = current()->pcb->fd_array[fd];
-
-	if (gfd < MAX_FDS)
-		return lwip_fds[gfd];
-	else
-		return -1;
+	return get_lwip_fd_from_gfd(current()->pcb->fd_array[fd]);
 }
 
 /**************************** Network subsystem ***************************************/
 
-int read_sock(int fd, void *buffer, int count)
+/*
+ * The file operations below are the ones the VFS calls, and it passes them the
+ * GLOBAL descriptor (see the fops->read/write/close call sites in fs/vfs.c) —
+ * unlike the socket syscalls, which get the process-local one. Translating a
+ * gfd a second time used to land on an unrelated entry of the process fd table,
+ * or on -1 once close() had already released it: lwip_close() then never
+ * reached the socket, leaking its pcb and every packet queued on it.
+ */
+
+int read_sock(int gfd, void *buffer, int count)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
@@ -89,10 +105,10 @@ int read_sock(int fd, void *buffer, int count)
 	return lwip_return(ret);
 }
 
-int write_sock(int fd, const void *buffer, int count)
+int write_sock(int gfd, const void *buffer, int count)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
@@ -102,14 +118,18 @@ int write_sock(int fd, const void *buffer, int count)
 	return lwip_return(ret);
 }
 
-int close_sock(int fd)
+int close_sock(int gfd)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
 	}
+
+	/* Release the slot before the socket is gone, so a gfd handed out again
+	 * later cannot be mistaken for this socket. */
+	lwip_fds[gfd] = -1;
 
 	ret = lwip_close(lwip_fd);
 	return lwip_return(ret);
@@ -618,6 +638,13 @@ static void network_tcpip_done(void *args)
 
 void net_init(void)
 {
+	int gfd;
+
+	/* 0 is a perfectly valid lwip socket id, so the zero-initialised table
+	 * would make every descriptor look like socket 0. */
+	for (gfd = 0; gfd < MAX_FDS; gfd++)
+		lwip_fds[gfd] = -1;
+
 	tcpip_init(network_tcpip_done, NULL);
 }
 
