@@ -54,6 +54,17 @@
 
 #include <net/netif/ethernet.h>
 
+/* Interrupt-path tracing, compiled out unless DEBUG is defined above. The
+ * kernel-wide DBG() lives in soo/debug.h, which is only on the include path
+ * under CONFIG_SOO, so this driver carries its own. */
+#ifdef DEBUG
+#define DBG(fmt, ...) printk("%s:%i > " fmt, __func__, __LINE__, ##__VA_ARGS__)
+#else
+#define DBG(fmt, ...) \
+	do {          \
+	} while (0)
+#endif
+
 #define ETHERNET_LAYER_2_MAX_LENGTH 1522
 
 /* Basic mode control register. */
@@ -303,46 +314,46 @@ static irq_return_t smc911x_so3_interrupt(int irq, void *dummy)
 		}
 
 		if (status & INT_STS_SW_INT) {
-			DBG("STS_SW\n", status);
+			DBG("STS_SW: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_SW_INT);
 		}
 		/* Handle various error conditions */
 		if (status & INT_STS_RXE) {
-			DBG("STS_RXE\n", status);
+			DBG("STS_RXE: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_RXE);
 		}
 		if (status & INT_STS_RXDFH_INT) {
-			DBG("STS_RXDFH\n", status);
+			DBG("STS_RXDFH: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_RXDFH_INT);
 		}
 		/* Undocumented interrupt-what is the right thing to do here? */
 		if (status & INT_STS_RXDF_INT) {
-			DBG("STS_RXDF\n", status);
+			DBG("STS_RXDF: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_RXDF_INT);
 		}
 		/* Incoming frame */
 		if (status & INT_STS_RSFL) {
-			DBG("STS_RSFL\n", status);
+			DBG("STS_RSFL: status %08x\n", status);
 			irq_return = IRQ_BOTTOM;
 			smc911x_reg_write(dev, INT_STS, INT_STS_RSFL);
 		}
 		/* Rx Data FIFO exceeds set level */
 		if (status & INT_STS_RDFL) {
-			DBG("STS_RDFL\n", status);
+			DBG("STS_RDFL: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_RDFL);
 		}
 		if (status & INT_STS_RDFO) {
-			DBG("STS_RDFO\n", status);
+			DBG("STS_RDFO: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_RDFO);
 		}
 
 		if (status & (INT_STS_TSFL | INT_STS_GPT_INT)) {
-			DBG("STS_TSFL\n", status);
+			DBG("STS_TSFL: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_TSFL | INT_STS_GPT_INT);
 		}
 
 		if (status & INT_STS_PHY_INT) {
-			DBG("PHY_INT\n", status);
+			DBG("PHY_INT: status %08x\n", status);
 			smc911x_reg_write(dev, INT_STS, INT_STS_PHY_INT);
 		}
 	} while (--timeout);
@@ -450,8 +461,13 @@ err_t smc911x_lwip_init(struct netif *netif)
 	netif_set_link_up(netif);
 	netif_set_up(netif);
 
+	/* RX Status Level 0. The controller raises RSFL when the RX status FIFO
+	 * holds MORE entries than this level, so the 1 that used to be written
+	 * here only interrupted once a SECOND frame had arrived: every
+	 * reception stayed one frame behind, and the reply to the second ping
+	 * of a run was not delivered until the third one showed up. */
 	fifo = smc911x_reg_read(eth_dev, FIFO_INT);
-	smc911x_reg_write(eth_dev, FIFO_INT, 0x01 | (fifo & 0xFFFFFF00));
+	smc911x_reg_write(eth_dev, FIFO_INT, fifo & ~FIFO_INT_RX_STS_LEVEL);
 
 	/* Turn on relevant interrupts */
 	smc911x_reg_write(eth_dev, INT_EN, INT_EN_RSFL_EN | INT_EN_RSFF_EN);

@@ -57,29 +57,45 @@ static int lwip_return(int ret)
 }
 
 /**
+ * lwip_fds[] is indexed by GLOBAL file descriptor.
+ *
+ * @param Global file descriptor (gfd)
+ * @return Associated socket ID from lwip
+ */
+static int get_lwip_fd_from_gfd(int gfd)
+{
+	if ((gfd < 0) || (gfd >= MAX_FDS))
+		return -1;
+
+	return lwip_fds[gfd];
+}
+
+/**
  *
  * @param Local file descriptor (fd)
  * @return Associated socket ID from lwip
  */
 static int get_lwip_fd(int fd)
 {
-	int gfd;
-
 	/* Get the gfd from this fd */
-	gfd = current()->pcb->fd_array[fd];
-
-	if (gfd < MAX_FDS)
-		return lwip_fds[gfd];
-	else
-		return -1;
+	return get_lwip_fd_from_gfd(current()->pcb->fd_array[fd]);
 }
 
 /**************************** Network subsystem ***************************************/
 
-int read_sock(int fd, void *buffer, int count)
+/*
+ * The file operations below are the ones the VFS calls, and it passes them the
+ * GLOBAL descriptor (see the fops->read/write/close call sites in fs/vfs.c) —
+ * unlike the socket syscalls, which get the process-local one. Translating a
+ * gfd a second time used to land on an unrelated entry of the process fd table,
+ * or on -1 once close() had already released it: lwip_close() then never
+ * reached the socket, leaking its pcb and every packet queued on it.
+ */
+
+int read_sock(int gfd, void *buffer, int count)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
@@ -89,10 +105,10 @@ int read_sock(int fd, void *buffer, int count)
 	return lwip_return(ret);
 }
 
-int write_sock(int fd, const void *buffer, int count)
+int write_sock(int gfd, const void *buffer, int count)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
@@ -102,14 +118,18 @@ int write_sock(int fd, const void *buffer, int count)
 	return lwip_return(ret);
 }
 
-int close_sock(int fd)
+int close_sock(int gfd)
 {
 	int ret;
-	int lwip_fd = get_lwip_fd(fd);
+	int lwip_fd = get_lwip_fd_from_gfd(gfd);
 
 	if (lwip_fd < 0) {
 		return -EBADF;
 	}
+
+	/* Release the slot before the socket is gone, so a gfd handed out again
+	 * later cannot be mistaken for this socket. */
+	lwip_fds[gfd] = -1;
 
 	ret = lwip_close(lwip_fd);
 	return lwip_return(ret);
@@ -154,6 +174,26 @@ struct sockaddr *user_to_lwip_sockadd(const struct usr_sockaddr_in *usr, struct 
 	lwip->sin_addr = usr->sin_addr;
 
 	return (struct sockaddr *) lwip;
+}
+
+/**
+ * Adapt a lwip sockaddr back to a userspace one.
+ * The two layouts differ by lwip's leading sa_len byte, so the peer address
+ * an lwip call filled in cannot simply be memcpy'd out to user space.
+ * @param lwip
+ * @param usr
+ */
+void lwip_to_user_sockadd(const struct sockaddr_in *lwip, struct usr_sockaddr_in *usr)
+{
+	if (usr == NULL) {
+		return;
+	}
+
+	memset(usr, 0, sizeof(struct usr_sockaddr_in));
+
+	usr->sin_family = lwip->sin_family;
+	usr->sin_port = lwip->sin_port;
+	usr->sin_addr = lwip->sin_addr;
 }
 
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
@@ -504,9 +544,8 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct usr_sockaddr_in *, addr, socklen_t *
 	/*  TODO check fd ok */
 	lwip_fds[gfd] = lwip_bind_fd;
 
-	/* Copy back our sockaddr info in the usr data */
-	if (addr)
-		memcpy(addr, addr_ptr, sizeof(struct sockaddr_in));
+	/* Copy the peer address back out, converting the layout */
+	lwip_to_user_sockadd(&addr_lwip, addr);
 
 	return fd;
 }
@@ -539,6 +578,12 @@ SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, str
 	from_ptr = user_to_lwip_sockadd(from, &from_lwip);
 
 	ret = lwip_recvfrom(lwip_fd, mem, len, flags, from_ptr, fromlen);
+
+	/* lwip_recvfrom() filled the SOURCE address into our local sockaddr;
+	 * without this it never reached the caller (ping printed 0.0.0.0). */
+	if (ret >= 0)
+		lwip_to_user_sockadd(&from_lwip, from);
+
 	return lwip_return(ret);
 }
 
@@ -593,6 +638,13 @@ static void network_tcpip_done(void *args)
 
 void net_init(void)
 {
+	int gfd;
+
+	/* 0 is a perfectly valid lwip socket id, so the zero-initialised table
+	 * would make every descriptor look like socket 0. */
+	for (gfd = 0; gfd < MAX_FDS; gfd++)
+		lwip_fds[gfd] = -1;
+
 	tcpip_init(network_tcpip_done, NULL);
 }
 

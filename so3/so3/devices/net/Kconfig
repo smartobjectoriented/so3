@@ -1,7 +1,7 @@
 
 config SMC911X
 	bool "smc911x network interface"
-	depends on VIRT32
+	depends on VIRT32 || VIRT64
 	depends on NET
 
 	

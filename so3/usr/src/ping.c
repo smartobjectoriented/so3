@@ -56,6 +56,47 @@ struct ping_pkt {
 };
 
 /**
+ * Human-readable reason for an ICMP message that is not an echo reply, or NULL
+ * when the type is one we have nothing better to say about than its numbers.
+ */
+static const char *icmp_reason(unsigned char type, unsigned char code)
+{
+	switch (type) {
+	case ICMP_DEST_UNREACH:
+		switch (code) {
+		case ICMP_NET_UNREACH:
+			return "Destination Net Unreachable";
+		case ICMP_HOST_UNREACH:
+			return "Destination Host Unreachable";
+		case ICMP_PROT_UNREACH:
+			return "Destination Protocol Unreachable";
+		case ICMP_PORT_UNREACH:
+			return "Destination Port Unreachable";
+		case ICMP_FRAG_NEEDED:
+			return "Fragmentation needed but DF set";
+		case ICMP_SR_FAILED:
+			return "Source Route Failed";
+		case ICMP_NET_ANO:
+		case ICMP_HOST_ANO:
+		case ICMP_PKT_FILTERED:
+			return "Communication administratively prohibited";
+		default:
+			return "Destination Unreachable";
+		}
+	case ICMP_SOURCE_QUENCH:
+		return "Source Quench";
+	case ICMP_REDIRECT:
+		return "Redirect";
+	case ICMP_TIME_EXCEEDED:
+		return (code == ICMP_EXC_TTL) ? "Time to live exceeded" : "Fragment reassembly time exceeded";
+	case ICMP_PARAMETERPROB:
+		return "Parameter problem";
+	default:
+		return NULL;
+	}
+}
+
+/**
  * Compute the checksum
  * From https://www.geeksforgeeks.org/ping-in-c/
  */
@@ -170,6 +211,7 @@ int main(int argc, char **argv)
 	unsigned int size = 0;
 	float rtt = 0, rtt_total = 0.0, rtt_min = 1000000.0, rtt_max = 0.0;
 	char ip[100];
+	const char *reason;
 	struct ping_pkt packet;
 	char reply[sizeof(struct iphdr) + PING_PKT_LEN];
 	struct iphdr *iph;
@@ -231,7 +273,9 @@ int main(int argc, char **argv)
 
 		len = recvfrom(s, reply, sizeof(reply), 0, (struct sockaddr *) &recv_addr, &size);
 
-		if (len <= 0 && msg_count > 1) {
+		/* A timeout (SO_RCVTIMEO) lands here too, which is the normal
+		 * outcome for a host that never answers. */
+		if (len <= 0) {
 			printf("Packet receive failed!!\n");
 			continue;
 		}
@@ -256,9 +300,7 @@ int main(int argc, char **argv)
 
 		icmph = (struct icmphdr *) (reply + hlen);
 
-		if (!(icmph->type == ICMP_ECHOREPLY && icmph->code == 0)) {
-			printf("Error... Packet received with ICMP type %d code %d\n", icmph->type, icmph->code);
-		} else {
+		if (icmph->type == ICMP_ECHOREPLY && icmph->code == 0) {
 			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%f ms\n", len - hlen, ip, msg_count, iph->ttl, rtt);
 
 			rtt_max = fmaxf(rtt_max, rtt);
@@ -266,6 +308,17 @@ int main(int argc, char **argv)
 
 			rtt_total += rtt;
 			msg_count_succeed++;
+		} else {
+			/* Not an echo reply: an ICMP error about the request we
+			 * just sent, reported by a router or by the stack of the
+			 * destination itself. */
+
+			reason = icmp_reason(icmph->type, icmph->code);
+
+			if (reason != NULL)
+				printf("From %s icmp_seq=%d %s\n", ip, msg_count, reason);
+			else
+				printf("From %s icmp_seq=%d ICMP type %d code %d\n", ip, msg_count, icmph->type, icmph->code);
 		}
 	}
 
