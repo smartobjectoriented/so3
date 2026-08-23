@@ -17,13 +17,13 @@ user so everything it writes stays yours.
 
 ```
 ./scripts/dbuild.sh --build            # build the so3-build:1.0 image (once)
-./scripts/dbuild.sh build.sh bsp-linux # run any front-end script inside
+./scripts/dbuild.sh build.sh bsp-so3   # run any front-end script inside
 ./scripts/dbuild.sh                    # interactive shell, env.sh sourced
 ./scripts/dbuild.sh st.sh -d           # graphical QEMU from the container
 ```
 
 Caller environment variables are not forwarded; pass them through the
-command: `./scripts/dbuild.sh env IB_FORCE_ATTACH=1 build.sh bsp-linux`.
+command: `./scripts/dbuild.sh env IB_FORCE_ATTACH=1 build.sh bsp-so3`.
 
 The images below remain the CI/perf-rig side of the house.
 

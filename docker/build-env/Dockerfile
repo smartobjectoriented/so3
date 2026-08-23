@@ -8,7 +8,7 @@
 # CMake caches and the *.attach.sha256 manifests all embed absolute paths).
 #
 # Build the image:  scripts/dbuild.sh --build
-# Use it:           scripts/dbuild.sh build.sh bsp-linux
+# Use it:           scripts/dbuild.sh build.sh bsp-so3
 #                   scripts/dbuild.sh st.sh -d
 #
 # The build context is this directory only — never the project root,

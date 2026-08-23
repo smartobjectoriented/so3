@@ -33,7 +33,7 @@ layers. The canonical, continuously-tested list is the base container recipe
 ``docker/Dockerfile.toolchains`` — mirror it when setting up a bare host.
 For development, the same environment is available as a ready-made build
 container: ``scripts/dbuild.sh --build`` then ``scripts/dbuild.sh build.sh
-bsp-linux`` (or bare ``dbuild.sh`` for a shell) runs any front-end script
+bsp-so3`` (or bare ``dbuild.sh`` for a shell) runs any front-end script
 inside it, with the repository bind-mounted at its own path and the container
 running as the calling user — see ``docker/README.md``.
 
