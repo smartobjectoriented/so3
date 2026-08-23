@@ -60,8 +60,10 @@ modules.order
 vmlinux.*dom*
 **/include/config/**
 
-# QEMU downloaded by build.sh script
-qemu
+# QEMU downloaded by build.sh script. Anchored: an unanchored "qemu" also
+# matches the DIRECTORIES of that name inside the layers (meta-qemu/
+# recipes-qemu/qemu/), which silently swallowed the recipe's patch files.
+/qemu
 
 # Backup files
 *~

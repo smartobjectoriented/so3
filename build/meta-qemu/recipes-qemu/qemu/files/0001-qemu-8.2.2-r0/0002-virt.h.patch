@@ -1,6 +1,6 @@
 --- a/include/hw/arm/virt.h
 +++ b/include/hw/arm/virt.h
-@@ -58,6 +58,12 @@
+@@ -58,6 +58,13 @@
      VIRT_GIC_VCPU,
      VIRT_GIC_ITS,
      VIRT_GIC_REDIST,
@@ -9,6 +9,7 @@
 +	VIRT_KMI0,
 +	VIRT_KMI1,
 +	VIRT_ABSMOUSE,
++	VIRT_ETH,
 +
      VIRT_SMMU,
      VIRT_UART,

@@ -1,6 +1,14 @@
 --- a/hw/arm/virt.c
 +++ b/hw/arm/virt.c
-@@ -82,6 +82,10 @@
+@@ -42,6 +42,7 @@
+ #include "hw/vfio/vfio-amd-xgbe.h"
+ #include "hw/display/ramfb.h"
+ #include "net/net.h"
++#include "hw/net/lan9118.h"
+ #include "sysemu/device_tree.h"
+ #include "sysemu/numa.h"
+ #include "sysemu/runstate.h"
+@@ -82,6 +83,10 @@
  #include "hw/char/pl011.h"
  #include "qemu/guest-random.h"
  
@@ -11,7 +19,7 @@
  #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
      static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
                                                      void *data) \
-@@ -145,6 +149,12 @@
+@@ -145,6 +150,20 @@
      [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
      /* This redistributor space allows up to 2*64kB*123 CPUs */
      [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
@@ -21,10 +29,18 @@
 +	[VIRT_KMI1] = 				{ 0x08802000, 0x00001000 },
 +	[VIRT_ABSMOUSE] = 			{ 0x08803000, 0x00001000 },
 +
++	/* SMSC LAN9118 Ethernet MAC. It sits with the other SO3-added devices
++	 * rather than at the 0x1a000000 the SO3 device trees inherited from
++	 * vexpress-a15: that address falls inside VIRT_PCIE_MMIO below, whose
++	 * gpex window covers the whole range and shadows anything mapped
++	 * underneath it (the guest then reads back nothing and the chip is
++	 * never detected). */
++	[VIRT_ETH] = 				{ 0x08804000, 0x00001000 },
++
      [VIRT_UART] =               { 0x09000000, 0x00001000 },
      [VIRT_RTC] =                { 0x09010000, 0x00001000 },
      [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
-@@ -199,6 +209,11 @@
+@@ -199,6 +218,12 @@
      [VIRT_SECURE_UART] = 8,
      [VIRT_ACPI_GED] = 9,
      [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
@@ -32,11 +48,25 @@
 +	[VIRT_CLCD] = 10,
 +	[VIRT_KMI0] = 11,
 +	[VIRT_KMI1] = 12,
++	[VIRT_ETH] = 15,
 +
      [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
      [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
      [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
-@@ -2022,6 +2037,109 @@
+@@ -1487,6 +1512,12 @@
+     vms->bus = pci->bus;
+     if (vms->bus) {
+         for (i = 0; i < nb_nics; i++) {
++            /* Skip a slot an on-board NIC already took (the SO3 LAN9118
++             * created just before this call): the PCI code would reject its
++             * model with "Unsupported NIC model: lan9118". */
++            if (nd_table[i].instantiated) {
++                continue;
++            }
+             pci_nic_init_nofail(&nd_table[i], pci->bus, mc->default_nic, NULL);
+         }
+     }
+@@ -2022,6 +2053,109 @@
      }
  }
  
@@ -146,7 +176,33 @@
  static void machvirt_init(MachineState *machine)
  {
      VirtMachineState *vms = VIRT_MACHINE(machine);
-@@ -2326,6 +2444,51 @@
+@@ -2287,6 +2421,25 @@
+ 
+     create_rtc(vms);
+ 
++    /* SMSC LAN9118 Ethernet MAC — the NIC the SO3 smc911x driver
++     * (devices/net/smc911x_lwip.c, "smsc,smc911x") binds to, at the address
++     * and SPI the SO3 device trees declare. QEMU's own virt machine offers
++     * only virtio-net, which SO3 has no driver for.
++     *
++     * Taken from the legacy on-board NIC slot, so a run without -nic/-net
++     * leaves the machine exactly as it was and the guest simply finds no chip
++     * (smc911x_detect_chip() fails cleanly). scripts/st.sh passes
++     * "-nic user,model=lan9118".
++     *
++     * This has to happen BEFORE create_pcie(): that one hands every nd_table
++     * entry no on-board device has claimed to pci_nic_init_nofail(), which
++     * bails out with "Unsupported NIC model: lan9118".
++     */
++    if (nd_table[0].used) {
++        lan9118_init(&nd_table[0], vms->memmap[VIRT_ETH].base,
++                     qdev_get_gpio_in(vms->gic, vms->irqmap[VIRT_ETH]));
++    }
++
+     create_pcie(vms);
+ 
+     if (has_ged && aarch64 && firmware_loaded && virt_is_acpi_enabled(vms)) {
+@@ -2326,6 +2479,51 @@
                                 vms->fw_cfg, OBJECT(vms));
      }
  

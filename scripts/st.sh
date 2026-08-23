@@ -38,6 +38,10 @@ N_QEMU_INSTANCES=`ps -A | grep qemu-system | wc -l`
 launch_qemu() {
     QEMU_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
 
+    # Second NIC (SO3's LAN9118, see ETH_OPT below) — must not collide with
+    # the virtio-net one above.
+    QEMU_ETH_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((0x10 + N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
+
     GDB_PORT=$((${GDB_PORT_BASE} + ${N_QEMU_INSTANCES}))
 
     echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
@@ -80,6 +84,24 @@ launch_qemu() {
     else
         DISPLAY_OPT="-display none"
     fi
+
+    # Networking. Two NICs are attached, because the two kinds of guest this
+    # script boots need different ones:
+    #
+    #   * virtio-net for the Linux agency (AVZ boot chain) — it has no
+    #     smc911x node in its device tree, and hostfwd puts guest ssh on host
+    #     port 2222;
+    #   * an SMSC LAN9118 for SO3, whose only Ethernet driver is smc911x
+    #     (devices/net/smc911x_lwip.c). QEMU's stock 'virt' machine has no
+    #     such device; the so3 QEMU patch adds one at 0x08804000 / SPI 15 —
+    #     the address and IRQ the SO3 device trees declare — and creates it
+    #     only when the legacy on-board NIC slot is filled, which is what
+    #     -nic does here.
+    #
+    # Both sit on their own user-mode (slirp) stack: QEMU plays DHCP, DNS and
+    # NAT internally, so the guest gets 10.0.2.15 with no host setup and no
+    # sudo. Whichever guest is booted simply ignores the NIC it cannot drive.
+    ETH_OPT="-nic user,model=lan9118,mac=${QEMU_ETH_MAC_ADDR}"
 
     if [ "$IB_PLATFORM" == "virt64" ]; then
     QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-aarch64"
@@ -135,6 +157,7 @@ launch_qemu() {
 		${DISPLAY_OPT} \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+		${ETH_OPT} \
         	-gdb tcp::${GDB_PORT}
 	fi
 
@@ -158,6 +181,7 @@ launch_qemu() {
 		${DISPLAY_OPT} \
 		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
+		${ETH_OPT} \
         	-gdb tcp::${GDB_PORT}
 	fi
 
