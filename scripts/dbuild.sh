@@ -10,8 +10,8 @@
 # Usage:
 #   dbuild.sh --build              Build (or rebuild) the image
 #   dbuild.sh                      Interactive shell inside the container
-#   dbuild.sh build.sh bsp-linux   Run a build
-#   dbuild.sh deploy.sh bsp-linux  Deploy it
+#   dbuild.sh build.sh bsp-so3     Run a build
+#   dbuild.sh deploy.sh bsp-so3    Deploy it
 #   dbuild.sh st.sh -d             Run it under QEMU, graphical
 #
 # The command runs with the project root bind-mounted at its OWN
@@ -54,8 +54,8 @@ pr_usage()
 	printf "                scripts/ and bitbake are on PATH.\n\n"
 	printf "Examples:\n"
 	printf "    %s --build\n" "$progname"
-	printf "    %s build.sh bsp-linux\n" "$progname"
-	printf "    %s deploy.sh bsp-linux\n" "$progname"
+	printf "    %s build.sh bsp-so3\n" "$progname"
+	printf "    %s deploy.sh bsp-so3\n" "$progname"
 	printf "    %s st.sh -d\n" "$progname"
 }
 

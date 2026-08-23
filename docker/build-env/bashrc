@@ -54,8 +54,8 @@ you are running as the host user, so anything you produce stays yours.
 env.sh is already sourced.
 
   build.sh -l                 list recipes
-  build.sh bsp-linux          build the Linux BSP (bsp-so3 for SO3)
-  deploy.sh bsp-linux         deploy (FIT + rootfs + sdcard)
+  build.sh bsp-so3            build the SO3 BSP (bsp-linux for Linux)
+  deploy.sh bsp-so3           deploy (FIT + rootfs + sdcard)
   st.sh / st.sh -d            run in QEMU (headless / graphical)
   exit                        leave the container
 
