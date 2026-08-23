@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2020 Julien Quartier <julien.quartier@heig-vd.ch>
+ * Copyright (c) 2020-2026 REDS Institute, HEIG-VD
+ * Author: Julien Quartier <julien.quartier@heig-vd.ch>
+ * Author: Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -164,10 +166,14 @@ void parse_args(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	int s, i = 0, msg_count = 0, msg_count_succeed = 0, attempt = 0;
+	int len, hlen;
 	unsigned int size = 0;
-	float rtt = 0, rtt_total, rtt_min = 1000000.0, rtt_max = 0.0;
+	float rtt = 0, rtt_total = 0.0, rtt_min = 1000000.0, rtt_max = 0.0;
 	char ip[100];
 	struct ping_pkt packet;
+	char reply[sizeof(struct iphdr) + PING_PKT_LEN];
+	struct iphdr *iph;
+	struct icmphdr *icmph;
 	struct sockaddr_in ping_addr, recv_addr;
 	struct timeval timeout, start, end;
 
@@ -223,7 +229,9 @@ int main(int argc, char **argv)
 
 		size = sizeof(recv_addr);
 
-		if (recvfrom(s, &packet, sizeof(packet), 0, (struct sockaddr *) &recv_addr, &size) <= 0 && msg_count > 1) {
+		len = recvfrom(s, reply, sizeof(reply), 0, (struct sockaddr *) &recv_addr, &size);
+
+		if (len <= 0 && msg_count > 1) {
 			printf("Packet receive failed!!\n");
 			continue;
 		}
@@ -234,10 +242,24 @@ int main(int argc, char **argv)
 
 		rtt = end.tv_usec / 1000.0 + end.tv_sec * 1000 - (start.tv_usec / 1000.0 + start.tv_sec * 1000);
 
-		if (!(packet.hdr.type == 69 && packet.hdr.code == 0)) {
-			printf("Error... Packet received with ICMP type %d code %d\n", packet.hdr.type, packet.hdr.code);
+		/* A raw socket hands over the whole IP datagram, so the ICMP
+		 * message starts after the IP header, whose length is given by
+		 * the IHL field. */
+
+		iph = (struct iphdr *) reply;
+		hlen = iph->ihl * 4;
+
+		if (len < hlen + (int) sizeof(struct icmphdr)) {
+			printf("Error... Truncated reply of %d bytes\n", len);
+			continue;
+		}
+
+		icmph = (struct icmphdr *) (reply + hlen);
+
+		if (!(icmph->type == ICMP_ECHOREPLY && icmph->code == 0)) {
+			printf("Error... Packet received with ICMP type %d code %d\n", icmph->type, icmph->code);
 		} else {
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%f ms\n", PING_PKT_LEN, ip, msg_count, ttl, rtt);
+			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%f ms\n", len - hlen, ip, msg_count, iph->ttl, rtt);
 
 			rtt_max = fmaxf(rtt_max, rtt);
 			rtt_min = fminf(rtt_min, rtt);
@@ -254,10 +276,6 @@ int main(int argc, char **argv)
 	if (msg_count_succeed > 0)
 		printf("rtt min/avg/max = %f/%f/%f ms\n", rtt_min, rtt_total / msg_count_succeed, rtt_max);
 
+	close(s);
 	return 0;
-
-	/*end:
-
-	 close(s);
-	 return 0;*/
 }
