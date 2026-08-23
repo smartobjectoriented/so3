@@ -52,8 +52,11 @@ Trying it out
 
 ``ping`` exercises the stack end to end::
 
-   / % ping -c 4 10.0.2.2
-   64 bytes from 10.0.2.2: icmp_seq=1 ttl=255 time=0.302979 ms
+   / % ping -c 6 10.0.2.2
+   64 bytes from 10.0.2.2: icmp_seq=1 ttl=255 time=6.497070 ms
+   64 bytes from 10.0.2.2: icmp_seq=2 ttl=255 time=0.601074 ms
+   ...
+   6 packets transmitted, 6 received, 0.000000% packet loss
 
 ``st.sh`` attaches two NICs on **user-mode (slirp)** networking — QEMU itself
 plays DHCP, DNS and NAT, so nothing has to be set up on the host and no ``sudo``
@@ -73,7 +76,7 @@ announced on the console shortly after boot::
 
 .. note::
 
-   One known rough edge: the second echo request of a fresh ``ping`` run is
-   consistently lost (the first is answered, so are all the following ones).
-   The reply never reaches the raw socket; the receive path of
-   ``devices/net/smc911x_lwip.c`` is the suspect.
+   The **RX Status Level** the driver programs into ``FIFO_INT`` must be 0: the
+   controller raises the RSFL interrupt when the RX status FIFO holds *more*
+   entries than that level, so a level of 1 only interrupts once a second frame
+   has arrived, and every reception stays one frame behind.

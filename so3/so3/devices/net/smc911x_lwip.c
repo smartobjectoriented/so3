@@ -461,8 +461,13 @@ err_t smc911x_lwip_init(struct netif *netif)
 	netif_set_link_up(netif);
 	netif_set_up(netif);
 
+	/* RX Status Level 0. The controller raises RSFL when the RX status FIFO
+	 * holds MORE entries than this level, so the 1 that used to be written
+	 * here only interrupted once a SECOND frame had arrived: every
+	 * reception stayed one frame behind, and the reply to the second ping
+	 * of a run was not delivered until the third one showed up. */
 	fifo = smc911x_reg_read(eth_dev, FIFO_INT);
-	smc911x_reg_write(eth_dev, FIFO_INT, 0x01 | (fifo & 0xFFFFFF00));
+	smc911x_reg_write(eth_dev, FIFO_INT, fifo & ~FIFO_INT_RX_STS_LEVEL);
 
 	/* Turn on relevant interrupts */
 	smc911x_reg_write(eth_dev, INT_EN, INT_EN_RSFL_EN | INT_EN_RSFF_EN);
