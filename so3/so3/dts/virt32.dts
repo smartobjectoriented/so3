@@ -147,19 +147,21 @@
 		status = "ok";
 	};
 	
-	/*
-        https://github.com/psawargaonkar/xvisor-next/blob/95b887c82a37c8d9ee126e061cf4d8f383ec7d01/arch/arm/board/generic/dts/vexpress/a15/vexpress-a15.dtsi
-        https://github.com/avpatel/xvisor-next/blob/master/tests/arm32/vexpress-a15/vexpress-a15-guest.dts
-   	 */
-    ethernet@1a000000 {
-        compatible = "smsc,smc911x";
-        reg = <0x1a000000 0x1000>;
-        
-    	interrupt-parent = <&gic>;
-        interrupts = <0 15 4>;
-        switch = "br0";
+	/* SMSC LAN9118 Ethernet MAC (so3 QEMU patch, VIRT_ETH @ 0x08804000).
+	 * QEMU's stock 'virt' machine has no Ethernet controller SO3 can drive —
+	 * only virtio-net — so the machine model adds one next to the other SO3
+	 * devices. Not at the 0x1a000000 vexpress-a15 uses: that address falls
+	 * inside the PCIe MMIO window, whose gpex alias shadows anything mapped
+	 * underneath it. */
+	ethernet@08804000 {
+		compatible = "smsc,smc911x";
+		reg = <0x08804000 0x1000>;
 
-        status = "ok";
-    };
+		interrupt-parent = <&gic>;
+		/* SPI 15 — matches irqmap[VIRT_ETH] in the so3 QEMU patch. */
+		interrupts = <0 15 4>;
+
+		status = "ok";
+	};
     	
 };
