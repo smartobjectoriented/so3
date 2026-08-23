@@ -156,6 +156,26 @@ struct sockaddr *user_to_lwip_sockadd(const struct usr_sockaddr_in *usr, struct 
 	return (struct sockaddr *) lwip;
 }
 
+/**
+ * Adapt a lwip sockaddr back to a userspace one.
+ * The two layouts differ by lwip's leading sa_len byte, so the peer address
+ * an lwip call filled in cannot simply be memcpy'd out to user space.
+ * @param lwip
+ * @param usr
+ */
+void lwip_to_user_sockadd(const struct sockaddr_in *lwip, struct usr_sockaddr_in *usr)
+{
+	if (usr == NULL) {
+		return;
+	}
+
+	memset(usr, 0, sizeof(struct usr_sockaddr_in));
+
+	usr->sin_family = lwip->sin_family;
+	usr->sin_port = lwip->sin_port;
+	usr->sin_addr = lwip->sin_addr;
+}
+
 int ioctl_sock(int fd, unsigned long cmd, unsigned long args)
 {
 	int ret;
@@ -504,9 +524,8 @@ SYSCALL_DEFINE3(accept, int, sockfd, struct usr_sockaddr_in *, addr, socklen_t *
 	/*  TODO check fd ok */
 	lwip_fds[gfd] = lwip_bind_fd;
 
-	/* Copy back our sockaddr info in the usr data */
-	if (addr)
-		memcpy(addr, addr_ptr, sizeof(struct sockaddr_in));
+	/* Copy the peer address back out, converting the layout */
+	lwip_to_user_sockadd(&addr_lwip, addr);
 
 	return fd;
 }
@@ -539,6 +558,12 @@ SYSCALL_DEFINE6(recvfrom, int, sockfd, void *, mem, size_t, len, int, flags, str
 	from_ptr = user_to_lwip_sockadd(from, &from_lwip);
 
 	ret = lwip_recvfrom(lwip_fd, mem, len, flags, from_ptr, fromlen);
+
+	/* lwip_recvfrom() filled the SOURCE address into our local sockaddr;
+	 * without this it never reached the caller (ping printed 0.0.0.0). */
+	if (ret >= 0)
+		lwip_to_user_sockadd(&from_lwip, from);
+
 	return lwip_return(ret);
 }
 
