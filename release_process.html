@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Release process &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="4. “C” coding conventions (Cconv)" href="coding_conventions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Release process</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#versioning">5.2. Versioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#branch-layout">5.3. Branch layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-fixes-go-on-a-release-branch">5.4. Which fixes go on a release branch?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cutting-a-patch-release-vx-y-z">5.5. Cutting a patch release (<code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cutting-a-new-minor-release-vx-y-0">5.6. Cutting a new minor release (<code class="docutils literal notranslate"><span class="pre">vX.Y.0</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#after-tagging-propagate-the-release-to-main">5.7. After tagging: propagate the release to <code class="docutils literal notranslate"><span class="pre">main</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#before-tagging-check-the-ci">5.8. Before tagging: check the CI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rules-of-thumb">5.9. Rules of thumb</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>Release process</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="release-process">
+<span id="id1"></span><h1><span class="section-number">5. </span>Release process<a class="headerlink" href="#release-process" title="Link to this heading"></a></h1>
+<p>SO3 follows a branch-per-release model: development happens on <code class="docutils literal notranslate"><span class="pre">main</span></code>, and
+every minor version gets a long-lived maintenance branch on which patch releases
+are tagged. This keeps stable lines alive for backports while <code class="docutils literal notranslate"><span class="pre">main</span></code> moves on.</p>
+<section id="overview">
+<h2><span class="section-number">5.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Three git objects work together, and GitHub surfaces them in different places:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 20.0%" />
+<col style="width: 58.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Object</p></th>
+<th class="head"><p>Example</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">main</span></code> branch</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">main</span></code></p></td>
+<td><p>Continuous development (the next, unreleased version).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> branch</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">release/v6.2</span></code></p></td>
+<td><p>Long-lived maintenance line for a minor version. Patch fixes land here
+and are tagged.</p></td>
+</tr>
+<tr class="row-even"><td><p>Tag <code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">v6.2.1</span></code></p></td>
+<td><p>Immutable point marking a delivered version. Release candidates use the
+<code class="docutils literal notranslate"><span class="pre">-rc</span></code> suffix (<code class="docutils literal notranslate"><span class="pre">v6.2.1-rc</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p>GitHub Release</p></td>
+<td><p>“SO3 v6.2.1”</p></td>
+<td><p>The release page (notes + assets), attached to a tag. Exactly one is
+flagged <em>Latest</em>; <code class="docutils literal notranslate"><span class="pre">-rc</span></code> tags are published as <em>pre-release</em>.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="versioning">
+<h2><span class="section-number">5.2. </span>Versioning<a class="headerlink" href="#versioning" title="Link to this heading"></a></h2>
+<p>Versions follow semantic versioning <code class="docutils literal notranslate"><span class="pre">vMAJOR.MINOR.PATCH</span></code>:</p>
+<ul class="simple">
+<li><p><strong>MAJOR</strong> — breaking changes to the boot chain, ABI or on-disk formats.</p></li>
+<li><p><strong>MINOR</strong> — new features, backward compatible. Opens a new <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code>
+branch.</p></li>
+<li><p><strong>PATCH</strong> — bug fixes only, cut <em>on</em> an existing <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> branch.</p></li>
+</ul>
+<p>Release candidates append <code class="docutils literal notranslate"><span class="pre">-rc</span></code> (optionally <code class="docutils literal notranslate"><span class="pre">-rcN</span></code> for successive
+candidates), e.g. <code class="docutils literal notranslate"><span class="pre">v6.3.0-rc</span></code>.</p>
+</section>
+<section id="branch-layout">
+<h2><span class="section-number">5.3. </span>Branch layout<a class="headerlink" href="#branch-layout" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>main ──●──●──●──●──●──●───────►   development (next version)
+        \
+release/v6.2  ●──●──●             maintenance line for 6.2.x
+              │  │  └─ v6.2.1     (tags live on the branch)
+              │  └──── v6.2.1-rc
+              └─────── v6.2.0
+</pre></div>
+</div>
+<p>While a minor line has not diverged from <code class="docutils literal notranslate"><span class="pre">main</span></code> yet (no work started on the
+next minor), its <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> branch and <code class="docutils literal notranslate"><span class="pre">main</span></code> may point at the same
+commit — that is expected.</p>
+</section>
+<section id="which-fixes-go-on-a-release-branch">
+<h2><span class="section-number">5.4. </span>Which fixes go on a release branch?<a class="headerlink" href="#which-fixes-go-on-a-release-branch" title="Link to this heading"></a></h2>
+<p>Being a bug fix is <em>not</em> what sends a change to a release branch. <code class="docutils literal notranslate"><span class="pre">main</span></code> is
+the continuous development line and carries both features <strong>and</strong> fixes as they
+land; anything committed there simply ships in the next version. There are two
+kinds of fix:</p>
+<ul class="simple">
+<li><p><strong>A fix for unreleased code, or one that can wait for the next version.</strong>
+Nothing special — it is an ordinary commit on <code class="docutils literal notranslate"><span class="pre">main</span></code> and ships in the next
+<code class="docutils literal notranslate"><span class="pre">vX.Y.0</span></code>. Do <em>not</em> touch any release branch.</p></li>
+<li><p><strong>A fix for an already-published version</strong> (e.g. a bug in <code class="docutils literal notranslate"><span class="pre">v6.2.1</span></code>) that must
+ship <em>before</em> the next version. Only this case uses the patch-release
+procedure below: the fix lands on <code class="docutils literal notranslate"><span class="pre">release/v6.2</span></code> (tagged <code class="docutils literal notranslate"><span class="pre">v6.2.2</span></code>) and is
+also carried to <code class="docutils literal notranslate"><span class="pre">main</span></code> so it is not lost at the next minor.</p></li>
+</ul>
+<p>In other words, what sends a change to <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> is the need to patch a
+<em>live, already-released</em> version — never the mere fact that it is a fix rather
+than a feature.</p>
+</section>
+<section id="cutting-a-patch-release-vx-y-z">
+<h2><span class="section-number">5.5. </span>Cutting a patch release (<code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code>)<a class="headerlink" href="#cutting-a-patch-release-vx-y-z" title="Link to this heading"></a></h2>
+<p>Patch fixes are committed <strong>on the release branch</strong>, then tagged. If a fix was
+first merged into <code class="docutils literal notranslate"><span class="pre">main</span></code>, cherry-pick it onto the branch rather than
+fast-forwarding.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>release/v6.2
+git<span class="w"> </span>cherry-pick<span class="w"> </span>&lt;sha&gt;<span class="w">          </span><span class="c1"># or commit the fix directly</span>
+
+<span class="c1"># optional: publish a candidate first</span>
+git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>v6.2.1-rc<span class="w"> </span>-m<span class="w"> </span><span class="s2">"so3 v6.2.1-rc"</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>release/v6.2<span class="w"> </span>v6.2.1-rc
+gh<span class="w"> </span>release<span class="w"> </span>create<span class="w"> </span>v6.2.1-rc<span class="w"> </span>--title<span class="w"> </span><span class="s2">"SO3 v6.2.1-rc"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--target<span class="w"> </span>release/v6.2<span class="w"> </span>--prerelease<span class="w"> </span>--generate-notes
+
+<span class="c1"># final release</span>
+git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>v6.2.1<span class="w"> </span>-m<span class="w"> </span><span class="s2">"so3 v6.2.1"</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>release/v6.2<span class="w"> </span>v6.2.1
+gh<span class="w"> </span>release<span class="w"> </span>create<span class="w"> </span>v6.2.1<span class="w"> </span>--title<span class="w"> </span><span class="s2">"SO3 v6.2.1"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--target<span class="w"> </span>release/v6.2<span class="w"> </span>--latest<span class="w"> </span>--generate-notes
+</pre></div>
+</div>
+</section>
+<section id="cutting-a-new-minor-release-vx-y-0">
+<h2><span class="section-number">5.6. </span>Cutting a new minor release (<code class="docutils literal notranslate"><span class="pre">vX.Y.0</span></code>)<a class="headerlink" href="#cutting-a-new-minor-release-vx-y-0" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">main</span></code> is ready for a new minor version, branch off it, then tag:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>main
+git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>release/v6.3
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>release/v6.3
+
+git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>v6.3.0<span class="w"> </span>-m<span class="w"> </span><span class="s2">"so3 v6.3.0"</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v6.3.0
+gh<span class="w"> </span>release<span class="w"> </span>create<span class="w"> </span>v6.3.0<span class="w"> </span>--title<span class="w"> </span><span class="s2">"SO3 v6.3.0"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--target<span class="w"> </span>release/v6.3<span class="w"> </span>--latest<span class="w"> </span>--generate-notes
+</pre></div>
+</div>
+</section>
+<section id="after-tagging-propagate-the-release-to-main">
+<h2><span class="section-number">5.7. </span>After tagging: propagate the release to <code class="docutils literal notranslate"><span class="pre">main</span></code><a class="headerlink" href="#after-tagging-propagate-the-release-to-main" title="Link to this heading"></a></h2>
+<p>A release is not finished when the tag is pushed. Two references to the
+current version live on <code class="docutils literal notranslate"><span class="pre">main</span></code> and must be bumped right after every
+release (they drift silently otherwise):</p>
+<ul class="simple">
+<li><p>the <em>Maintained versions</em> table in <code class="docutils literal notranslate"><span class="pre">README.md</span></code> (the <em>Latest release</em>
+column of the line, and the <em>Status</em> column when a new minor line starts);</p></li>
+<li><p>a <code class="docutils literal notranslate"><span class="pre">CHANGELOG</span></code> entry summarizing the release (same content as the GitHub
+Release notes, kept in the repository for offline reference);</p></li>
+<li><p>the build-system version pins: rename the <code class="docutils literal notranslate"><span class="pre">so3_X.Y.Z.bb</span></code> and
+<code class="docutils literal notranslate"><span class="pre">avz_X.Y.Z.bb</span></code> recipes (under <code class="docutils literal notranslate"><span class="pre">build/meta-so3/recipes-so3/</span></code>) to the
+new version and update the <code class="docutils literal notranslate"><span class="pre">PREFERRED_VERSION_so3</span></code> /
+<code class="docutils literal notranslate"><span class="pre">PREFERRED_VERSION_avz</span></code> entries in <code class="docutils literal notranslate"><span class="pre">build/conf/local.conf</span></code> (see the
+<code class="docutils literal notranslate"><span class="pre">v6.2.3</span></code> bump for a template);</p></li>
+<li><p>the boot-banner safety net <code class="docutils literal notranslate"><span class="pre">SO3_KERNEL_VERSION_FALLBACK</span></code>
+(<code class="docutils literal notranslate"><span class="pre">so3/so3/include/version.h</span></code>), used only when the build tree carries no git
+metadata (a bitbake <code class="docutils literal notranslate"><span class="pre">WORKDIR</span></code> copy, a tarball export).</p></li>
+</ul>
+<p>Two version strings need <strong>no</strong> action: the boot banner itself and the
+documentation version both derive from the release tag at build time
+(<code class="docutils literal notranslate"><span class="pre">so3/so3/scripts/so3version.sh</span></code>, reused by <code class="docutils literal notranslate"><span class="pre">doc/source/conf.py</span></code>).</p>
+</section>
+<section id="before-tagging-check-the-ci">
+<h2><span class="section-number">5.8. </span>Before tagging: check the CI<a class="headerlink" href="#before-tagging-check-the-ci" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Build</span></code> workflow runs on <code class="docutils literal notranslate"><span class="pre">main</span></code> <strong>and on every</strong> <code class="docutils literal notranslate"><span class="pre">release/**</span></code>
+<strong>branch</strong>, so the commit a tag will point at has always been built. Check it
+before tagging:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gh</span> <span class="n">run</span> <span class="nb">list</span> <span class="o">--</span><span class="n">workflow</span> <span class="n">Build</span> <span class="o">--</span><span class="n">branch</span> <span class="n">release</span><span class="o">/</span><span class="n">v6</span><span class="mf">.2</span>
+</pre></div>
+</div>
+<p>Tagging a red commit is how <code class="docutils literal notranslate"><span class="pre">v6.2.4</span></code> shipped a tree that no fresh clone
+could build. <code class="docutils literal notranslate"><span class="pre">build</span> <span class="pre">(virt32)</span></code> and <code class="docutils literal notranslate"><span class="pre">build</span> <span class="pre">(virt64)</span></code> are required status
+checks on <code class="docutils literal notranslate"><span class="pre">main</span></code> for the same reason: merging on red stays possible for a
+maintainer, but never by accident.</p>
+<p>Check <code class="docutils literal notranslate"><span class="pre">SO3_KERNEL_VERSION_FALLBACK</span></code> too: it must already read the version
+being tagged, since the tagged tree is what a gitless build banners. It
+appears twice in this page on purpose — bump it <strong>in the release commit set</strong>
+so the tag is right, and again when propagating to <code class="docutils literal notranslate"><span class="pre">main</span></code> so the next
+release does not start a version behind (<code class="docutils literal notranslate"><span class="pre">main</span></code> sat at <code class="docutils literal notranslate"><span class="pre">6.2.4</span></code> while
+<code class="docutils literal notranslate"><span class="pre">release/v6.2</span></code> was at <code class="docutils literal notranslate"><span class="pre">6.2.5</span></code>).</p>
+</section>
+<section id="rules-of-thumb">
+<h2><span class="section-number">5.9. </span>Rules of thumb<a class="headerlink" href="#rules-of-thumb" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>One <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> branch <strong>per minor</strong>, not per patch — patches are tags
+<em>on</em> the branch.</p></li>
+<li><p>Tags are immutable: never move or delete a published <code class="docutils literal notranslate"><span class="pre">vX.Y.Z</span></code> tag. To
+correct a release, cut the next patch.</p></li>
+<li><p>Exactly one GitHub Release carries the <em>Latest</em> flag; every <code class="docutils literal notranslate"><span class="pre">-rc</span></code> Release is
+a <em>pre-release</em> so it never shadows the latest stable version.</p></li>
+<li><p>Once a <code class="docutils literal notranslate"><span class="pre">release/vX.Y</span></code> branch has diverged from <code class="docutils literal notranslate"><span class="pre">main</span></code>, backport fixes with
+<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">cherry-pick</span></code> — do not fast-forward the branch onto <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="coding_conventions.html" class="btn btn-neutral float-left" title="4. “C” coding conventions (Cconv)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

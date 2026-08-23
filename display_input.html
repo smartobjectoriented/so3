@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Display &amp; Input (QEMU virt) &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Debugging SO3" href="debugging.html" />
+    <link rel="prev" title="3. User Space" href="user_space.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Display &amp; Input (QEMU virt)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#framebuffer-pl111">4.1. Framebuffer (PL111)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keyboard-pl050">4.2. Keyboard (PL050)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-absolute-pointer-so3-absmouse">4.3. The absolute pointer (<code class="docutils literal notranslate"><span class="pre">so3,absmouse</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-host-gtk-window-st-sh-d">4.4. The host GTK window (<code class="docutils literal notranslate"><span class="pre">st.sh</span> <span class="pre">-d</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#console-ctrl-c-sigint">4.5. Console Ctrl-C (SIGINT)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span>Display &amp; Input (QEMU virt)</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="display-input-qemu-virt">
+<span id="display-input"></span><h1><span class="section-number">4. </span>Display &amp; Input (QEMU virt)<a class="headerlink" href="#display-input-qemu-virt" title="Link to this heading"></a></h1>
+<p>On the QEMU <code class="docutils literal notranslate"><span class="pre">virt</span></code> machine SO3 drives a small set of ARM PrimeCell devices for
+graphics and human input. These are <strong>not</strong> part of the upstream <code class="docutils literal notranslate"><span class="pre">virt</span></code> model;
+they are added by the SO3 QEMU patch
+(<code class="docutils literal notranslate"><span class="pre">build/meta-qemu/.../files/0001-qemu-8.2.2-r0/0001-virt.c.patch</span></code>) and described
+to the kernel in the device tree (<code class="docutils literal notranslate"><span class="pre">so3/so3/dts/virt64.dts</span></code> / <code class="docutils literal notranslate"><span class="pre">virt32.dts</span></code>).</p>
+<figure class="align-default" id="id1">
+<a class="reference internal image-reference" href="_images/so3_io.png"><img alt="_images/so3_io.png" src="_images/so3_io.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 4.2 </span><span class="caption-text">The display and input path: SO3 <code class="docutils literal notranslate"><span class="pre">/dev</span></code> nodes ↔ the QEMU <code class="docutils literal notranslate"><span class="pre">virt</span></code> devices ↔
+the host GTK window.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Device</p></th>
+<th class="head"><p>MMIO base</p></th>
+<th class="head"><p>IRQ</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">/dev</span></code> node</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>PL111 CLCD</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0x08800000</span></code></p></td>
+<td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code></p></td>
+<td><p>framebuffer (1024×768, 32 bpp)</p></td>
+</tr>
+<tr class="row-odd"><td><p>PL050 KMI0</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0x08801000</span></code></p></td>
+<td><p>SPI 11</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/dev/keyboard</span></code></p></td>
+<td><p>PS/2 keyboard</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">so3,absmouse</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0x08803000</span></code></p></td>
+<td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/dev/mouse</span></code></p></td>
+<td><p><strong>absolute</strong> pointer (polled)</p></td>
+</tr>
+<tr class="row-odd"><td><p>PL050 KMI1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0x08802000</span></code></p></td>
+<td><p>SPI 12</p></td>
+<td><p>—</p></td>
+<td><p>PS/2 relative mouse (<em>disabled</em>)</p></td>
+</tr>
+<tr class="row-even"><td><p>PL011 UART</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0x09000000</span></code></p></td>
+<td><p>SPI 1</p></td>
+<td><p>console</p></td>
+<td><p>serial console + Ctrl-C</p></td>
+</tr>
+</tbody>
+</table>
+<section id="framebuffer-pl111">
+<h2><span class="section-number">4.1. </span>Framebuffer (PL111)<a class="headerlink" href="#framebuffer-pl111" title="Link to this heading"></a></h2>
+<p>The graphical output is an ARM <strong>PL111 Color LCD Controller</strong>
+(<code class="docutils literal notranslate"><span class="pre">devices/fb/pl111.c</span></code>, <code class="docutils literal notranslate"><span class="pre">compatible</span> <span class="pre">=</span> <span class="pre">&quot;arm,pl111&quot;</span></code>). The driver programs a
+fixed <strong>1024×768, 32 bpp</strong> mode and points the controller at an <strong>8 MB VRAM</strong>
+region the QEMU patch maps at guest-physical <code class="docutils literal notranslate"><span class="pre">0x30000000</span></code>.</p>
+<p>User space reaches the framebuffer through <code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="s">"/dev/fb"</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="kt">uint32_t</span><span class="w"> </span><span class="n">hres</span><span class="p">,</span><span class="w"> </span><span class="n">vres</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="n">bpp</span><span class="p">;</span>
+<span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">IOCTL_FB_HRES</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">hres</span><span class="p">);</span><span class="w">   </span><span class="cm">/* 1 -&gt; 1024            */</span>
+<span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">IOCTL_FB_VRES</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">vres</span><span class="p">);</span><span class="w">   </span><span class="cm">/* 2 -&gt; 768             */</span>
+<span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">IOCTL_FB_SIZE</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">size</span><span class="p">);</span><span class="w">   </span><span class="cm">/* 3 -&gt; bytes           */</span>
+<span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="n">IOCTL_FB_BPP</span><span class="p">,</span><span class="w">  </span><span class="o">&amp;</span><span class="n">bpp</span><span class="p">);</span><span class="w">    </span><span class="cm">/* 5 -&gt; 32              */</span>
+<span class="cm">/* IOCTL_FB_IS_REAL == 4: is the framebuffer mmap-able?    */</span>
+
+<span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="n">fb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mmap</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">fd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">   </span><span class="cm">/* 0x00RRGGBB pixels */</span>
+</pre></div>
+</div>
+<p>The mapping is <strong>non-cacheable</strong>: the CPU writes must reach VRAM immediately so
+that QEMU’s dirty-page tracking refreshes the window. <code class="docutils literal notranslate"><span class="pre">usr/src/fb_test.c</span></code> is a
+minimal, LVGL-free example that draws colour bars and a moving square straight
+into <code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code> — handy for checking the display path in isolation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">virtfb.c</span></code> is a <em>fake</em> framebuffer (no <code class="docutils literal notranslate"><span class="pre">mmap</span></code>, <code class="docutils literal notranslate"><span class="pre">IOCTL_FB_IS_REAL</span></code> = 0)
+used only by special configurations; the real graphical path is the PL111.</p>
+</div>
+</section>
+<section id="keyboard-pl050">
+<h2><span class="section-number">4.2. </span>Keyboard (PL050)<a class="headerlink" href="#keyboard-pl050" title="Link to this heading"></a></h2>
+<p>The keyboard is an ARM <strong>PL050 KMI</strong> PS/2 interface (<code class="docutils literal notranslate"><span class="pre">devices/input/kmi0.c</span></code> +
+<code class="docutils literal notranslate"><span class="pre">ps2.c</span></code>, <code class="docutils literal notranslate"><span class="pre">compatible</span> <span class="pre">=</span> <span class="pre">&quot;arm,pl050,keyboard&quot;</span></code>), IRQ-driven on <strong>SPI 11</strong> and
+exposed as <code class="docutils literal notranslate"><span class="pre">/dev/keyboard</span></code>. Key codes are read with the <code class="docutils literal notranslate"><span class="pre">GET_KEY</span></code> ioctl.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>QEMU routes PL050 events only to the <strong>focused</strong> GTK window. The LVGL keypad
+indev also needs an <code class="docutils literal notranslate"><span class="pre">lv_group</span></code> of focusable widgets to do anything useful;
+the pointer (below) needs no group.</p>
+</div>
+</section>
+<section id="the-absolute-pointer-so3-absmouse">
+<h2><span class="section-number">4.3. </span>The absolute pointer (<code class="docutils literal notranslate"><span class="pre">so3,absmouse</span></code>)<a class="headerlink" href="#the-absolute-pointer-so3-absmouse" title="Link to this heading"></a></h2>
+<p>The historical mouse is a PL050 PS/2 device, which is <strong>relative</strong>: it reports
+deltas, not positions. Under QEMU that forces <em>pointer-grab / warp</em> mode, which
+is fragile — it breaks under Wayland (the compositor forbids pointer warping) and
+the guest cursor drifts away from the host cursor, differently per monitor and
+per HiDPI scale factor. No host-side tweak fully fixes a relative pointer.</p>
+<p>SO3 therefore uses an <strong>absolute</strong> pointer, <code class="docutils literal notranslate"><span class="pre">so3,absmouse</span></code>. It is a tiny
+read-only MMIO device added by the QEMU patch at <code class="docutils literal notranslate"><span class="pre">0x08803000</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Offset</p></th>
+<th class="head"><p>Register</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">0x00</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X</span></code></p></td>
+<td><p>absolute X, <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">…</span> <span class="pre">INPUT_EVENT_ABS_MAX</span></code> (32767)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">0x04</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Y</span></code></p></td>
+<td><p>absolute Y, <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">…</span> <span class="pre">INPUT_EVENT_ABS_MAX</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">0x08</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BTN</span></code></p></td>
+<td><p>buttons — bit 0 left, bit 1 right, bit 2 middle</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">0x0c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MAX</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INPUT_EVENT_ABS_MAX</span></code> (scale reference)</p></td>
+</tr>
+</tbody>
+</table>
+<p>On the <strong>QEMU</strong> side the device registers an <em>absolute</em> input handler
+(<code class="docutils literal notranslate"><span class="pre">INPUT_EVENT_MASK_ABS</span> <span class="pre">|</span> <span class="pre">INPUT_EVENT_MASK_BTN</span></code>) and <strong>activates</strong> it. Registering
+an absolute handler switches QEMU into absolute-pointer mode: there is no grab and
+no warp, and the host pointer maps 1:1 onto the guest. Activation moves the handler
+to the head of the list so that <em>button</em> events reach it rather than the still-present
+(but unused) relative PL050 mouse — <code class="docutils literal notranslate"><span class="pre">qemu_input_find_handler()</span></code> returns the first
+handler whose mask matches the event.</p>
+<p>On the <strong>guest</strong> side <code class="docutils literal notranslate"><span class="pre">devices/input/absmouse.c</span></code> registers <code class="docutils literal notranslate"><span class="pre">DEV_CLASS_MOUSE</span></code>
+(i.e. <code class="docutils literal notranslate"><span class="pre">/dev/mouse</span></code>). It carries <strong>no IRQ</strong>: the LVGL/<code class="docutils literal notranslate"><span class="pre">slv</span></code> read callback polls
+it once per refresh through the <code class="docutils literal notranslate"><span class="pre">GET_STATE</span></code> ioctl, and the driver scales the raw
+<code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">…</span> <span class="pre">MAX</span></code> coordinates to the display resolution (set via <code class="docutils literal notranslate"><span class="pre">SET_SIZE</span></code>). The
+relative PL050 mouse (<code class="docutils literal notranslate"><span class="pre">kmi1.c</span></code>) is kept in the tree but its dts node is
+<code class="docutils literal notranslate"><span class="pre">status</span> <span class="pre">=</span> <span class="pre">&quot;disabled&quot;</span></code> so there is a single <code class="docutils literal notranslate"><span class="pre">/dev/mouse</span></code>.</p>
+</section>
+<section id="the-host-gtk-window-st-sh-d">
+<h2><span class="section-number">4.4. </span>The host GTK window (<code class="docutils literal notranslate"><span class="pre">st.sh</span> <span class="pre">-d</span></code>)<a class="headerlink" href="#the-host-gtk-window-st-sh-d" title="Link to this heading"></a></h2>
+<p>By default <code class="docutils literal notranslate"><span class="pre">st.sh</span></code> is headless (<code class="docutils literal notranslate"><span class="pre">-display</span> <span class="pre">none</span></code>): no window, serial console
+only, used for non-graphical work and CI. Pass <strong>-d</strong> to open the QEMU <strong>GTK</strong>
+window that presents the guest PL111 CLCD (<code class="docutils literal notranslate"><span class="pre">-display</span> <span class="pre">gtk,zoom-to-fit=off</span></code>):</p>
+<ul class="simple">
+<li><p><strong>GTK, not SDL</strong> — the SDL backend does not present the PL111 console surface
+(the window stays black even though the framebuffer is rendered correctly);
+GTK shows it, and its <em>View</em> menu lists every console.</p></li>
+<li><p><strong>XWayland for HiDPI</strong> — with <code class="docutils literal notranslate"><span class="pre">-d</span></code>, <code class="docutils literal notranslate"><span class="pre">st.sh</span></code> exports <code class="docutils literal notranslate"><span class="pre">GDK_BACKEND=x11</span></code>
+(plus <code class="docutils literal notranslate"><span class="pre">GDK_SCALE=1</span></code>). On a fractionally-scaled HiDPI <strong>Wayland</strong> panel, GTK
+reports pointer coordinates in a different scale than the framebuffer surface,
+so the absolute mapping comes out <em>offset</em> (host and guest cursors shifted) —
+fine on a 1× external monitor, wrong on the laptop panel. Routing GTK through
+XWayland gives a uniform pointer-to-surface mapping, so the cursors coincide on
+every monitor. It is harmless on a native X11 session.</p></li>
+</ul>
+</section>
+<section id="console-ctrl-c-sigint">
+<span id="console-sigint"></span><h2><span class="section-number">4.5. </span>Console Ctrl-C (SIGINT)<a class="headerlink" href="#console-ctrl-c-sigint" title="Link to this heading"></a></h2>
+<p>The serial console is the PL011 UART (<code class="docutils literal notranslate"><span class="pre">devices/serial/pl011.c</span></code>). Its interrupt
+handler turns a typed <strong>Ctrl-C</strong> (<code class="docutils literal notranslate"><span class="pre">0x03</span></code>) into one of two actions, depending on
+whether a thread is currently reading the console (tested via the <code class="docutils literal notranslate"><span class="pre">read_lock</span></code>
+mutex):</p>
+<ul class="simple">
+<li><p><strong>A shell is at its prompt</strong> (a console read is in progress). The handler sets
+<code class="docutils literal notranslate"><span class="pre">serial_intr</span></code>; <code class="docutils literal notranslate"><span class="pre">pl011_get_byte()</span></code> returns ETX and the line editor cancels the
+current line and reprints the prompt — the shell is <em>not</em> killed.</p></li>
+<li><p><strong>A foreground application is running</strong> (no console read in progress). The
+handler delivers <code class="docutils literal notranslate"><span class="pre">SIGINT</span></code> to the foreground job. The target is the global
+<code class="docutils literal notranslate"><span class="pre">fg_pcb</span></code>, maintained by <code class="docutils literal notranslate"><span class="pre">sys_do_wait4()</span></code> in <code class="docutils literal notranslate"><span class="pre">kernel/process.c</span></code>: when the
+shell blocks waiting on a child it sets <code class="docutils literal notranslate"><span class="pre">fg_pcb</span> <span class="pre">=</span> <span class="pre">child</span></code>, and restores it to
+itself when the child exits. (Using <code class="docutils literal notranslate"><span class="pre">fg_pcb</span></code> rather than <code class="docutils literal notranslate"><span class="pre">current()</span></code> matters
+because, in IRQ context, <code class="docutils literal notranslate"><span class="pre">current()</span></code> is usually the idle thread — the
+foreground app is asleep.)</p></li>
+</ul>
+<p>Terminating a <strong>multi-threaded</strong> application correctly (an LVGL app runs an
+<code class="docutils literal notranslate"><span class="pre">slv</span></code> tick <em>pthread</em> alongside its main loop) takes coordinated teardown:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ipc/signal.c</span></code> (<code class="docutils literal notranslate"><span class="pre">sig_check</span></code>) <strong>defers</strong> a fatal default-action signal
+(SIGINT/SIGTERM/SIGKILL) to the process <em>main thread</em>. Otherwise a spawned
+thread — which wakes far more often — would call <code class="docutils literal notranslate"><span class="pre">exit_group()</span></code> and zombie only
+itself, leaving the main thread alive.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/thread.c</span></code> (<code class="docutils literal notranslate"><span class="pre">discard_tcb_in_pcb</span></code>) cooperatively cancels the spawned
+threads: each is flagged <code class="docutils literal notranslate"><span class="pre">killed</span></code> and woken, and self-terminates at its next
+blocking point; the last one signals <code class="docutils literal notranslate"><span class="pre">threads_active</span></code> so the main thread’s wait
+completes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel/schedule.c</span></code> (<code class="docutils literal notranslate"><span class="pre">next_thread</span></code>, the round-robin policy) still schedules a
+thread whose pcb is already <code class="docutils literal notranslate"><span class="pre">ZOMBIE</span></code> <em>if</em> it is <code class="docutils literal notranslate"><span class="pre">killed</span></code> or it is the pcb’s
+<code class="docutils literal notranslate"><span class="pre">main_thread</span></code> — these run kernel-only teardown code and never return to user
+space, so they must get the CPU to finish exiting.</p></li>
+</ul>
+<p>See <a class="reference internal" href="kernel.html#kernel"><span class="std std-ref">Kernel Internals</span></a> for the broader process/thread model.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="user_space.html" class="btn btn-neutral float-left" title="3. User Space" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="debugging.html" class="btn btn-neutral float-right" title="5. Debugging SO3" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

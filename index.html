@@ -1,0 +1,186 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Object Oriented (SO3) Operating System &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Introduction to SO3" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Smart Object Oriented (SO3) Operating System</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <a class="reference external image-reference" href="http://reds.heig-vd.ch/en/rad"><img alt="_images/heigvd-reds.png" class="align-right" src="_images/heigvd-reds.png" style="width: 180px; height: 70px;" />
+</a>
+<a class="reference internal image-reference" href="_images/so3_logo_dark_text.png"><img alt="_images/so3_logo_dark_text.png" class="align-center" src="_images/so3_logo_dark_text.png" style="width: 420px;" />
+</a>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<section id="smart-object-oriented-so3-operating-system">
+<h1>Smart Object Oriented (SO3) Operating System<a class="headerlink" href="#smart-object-oriented-so3-operating-system" title="Link to this heading"></a></h1>
+<p>SO3 is a compact, lightweight, full-featured and extensible operating system,
+particularly well suited to embedded systems. From a single code base it can be
+built in three ways:</p>
+<ul class="simple">
+<li><p>as a <strong>standalone OS</strong> running directly on the hardware (EL1 on ARM64);</p></li>
+<li><p>as the <strong>AVZ hypervisor</strong> (<em>Agency VirtualiZer</em>) running at EL2, hosting the
+agency guest at EL1 — and, with the SOO framework, up to five capsules beside
+it;</p></li>
+<li><p>as an <strong>SO3 capsule</strong> (S3C) — a lightweight guest on top of AVZ, as part of
+the <strong>SOO</strong> framework.</p></li>
+</ul>
+<figure class="align-default" id="id1">
+<a class="reference internal image-reference" href="_images/so3_modes.png"><img alt="_images/so3_modes.png" src="_images/so3_modes.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 1 </span><span class="caption-text">The same SO3 code base deployed in its three modes.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The AVZ guest is the <em>agency</em>, which owns the hardware. The agency is normally
+<strong>Linux</strong> (and, with the SOO framework, runs SO3 capsules beside it); the SO3
+tree can also be built as a plain guest (<code class="docutils literal notranslate"><span class="pre">CONFIG_SOO=n</span></code>) to exercise the
+hypervisor on its own.</p>
+<p>This documentation reflects the current state of the code base: ARM 32/64-bit,
+multicore, the AVZ hypervisor and SO3 capsules are all supported.</p>
+<section id="where-to-start">
+<h2>Where to start<a class="headerlink" href="#where-to-start" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><a class="reference internal" href="introduction.html#introduction"><span class="std std-ref">Introduction</span></a></dt><dd><p>Philosophy, history and the polymorphic nature of SO3.</p>
+</dd>
+<dt><a class="reference internal" href="architecture.html#architecture"><span class="std std-ref">Architecture</span></a> · <a class="reference internal" href="kernel.html#kernel"><span class="std std-ref">Kernel internals</span></a></dt><dd><p>The user/kernel split, the boot flow, and how the kernel subsystems work.</p>
+</dd>
+<dt><a class="reference internal" href="avz.html#avz"><span class="std std-ref">AVZ hypervisor</span></a> · <a class="reference internal" href="capsules.html#capsules"><span class="std std-ref">SO3 capsules</span></a></dt><dd><p>Virtualization at EL2 and the SOO capsule framework.</p>
+</dd>
+<dt><a class="reference internal" href="build_system.html#build-system"><span class="std std-ref">Build system</span></a> · <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">User guide</span></a></dt><dd><p>How the tree is built, configured and packaged, and a step-by-step setup.</p>
+</dd>
+<dt><a class="reference internal" href="user_space.html#user-space"><span class="std std-ref">User space</span></a> · <a class="reference internal" href="debugging.html#debugging"><span class="std std-ref">Debugging</span></a></dt><dd><p>The MUSL-based user land, and how to debug SO3 under QEMU/GDB or JTAG.</p>
+</dd>
+</dl>
+</section>
+<section id="acknowledgements">
+<h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Link to this heading"></a></h2>
+<p>We would like to thank our sponsors for their generous support in funding the
+development of the SO3 ecosystem, especially <a class="reference external" href="http://www.heig-vd.ch">HEIG-VD</a>
+and the <a class="reference external" href="https://haslerstiftung.ch/en/welcome-to-the-hasler-foundation">Hasler Foundation</a>.</p>
+<p>We are also grateful to all the contributors — developers, students, researchers
+and community members alike — whose code, ideas and feedback have shaped SO3.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="introduction.html" class="btn btn-neutral float-right" title="1. Introduction to SO3" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

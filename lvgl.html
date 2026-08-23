@@ -1,0 +1,232 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. LVGL — Light and Versatile Embedded Graphics Library &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. lwIP — Lightweight IP" href="lwip.html" />
+    <link rel="prev" title="6. Debugging SO3 with JTAG on RPi4" href="so3_jtag_rpi4.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. LVGL — Light and Versatile Embedded Graphics Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#integration-of-lvgl-in-so3">1.1. Integration of LVGL in SO3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-slv-glue-library">1.2. The <code class="docutils literal notranslate"><span class="pre">slv</span></code> glue library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#applications">1.3. Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-lvgl-under-qemu">1.4. Running LVGL under QEMU</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1. </span>LVGL — Light and Versatile Embedded Graphics Library</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lvgl-light-and-versatile-embedded-graphics-library">
+<span id="lvgl"></span><h1><span class="section-number">1. </span>LVGL — Light and Versatile Embedded Graphics Library<a class="headerlink" href="#lvgl-light-and-versatile-embedded-graphics-library" title="Link to this heading"></a></h1>
+<p><a class="reference external" href="https://lvgl.io/">LVGL</a> is a free and open-source library providing an
+efficient GUI for embedded systems.</p>
+<section id="integration-of-lvgl-in-so3">
+<h2><span class="section-number">1.1. </span>Integration of LVGL in SO3<a class="headerlink" href="#integration-of-lvgl-in-so3" title="Link to this heading"></a></h2>
+<p>The initial port of LVGL to SO3 was done by Nikolaos Garanis in the context of
+his <a class="reference external" href="https://nyg.gitlab.io/so3-support-graphique">Bachelor project</a>; a short
+demonstration is available in <a class="reference external" href="https://youtu.be/skn_mp3ZBhI">this video</a>.</p>
+<p>SO3 integrates <strong>LVGL v9</strong>. The library is a pure user-space component: it is
+fetched into <code class="docutils literal notranslate"><span class="pre">so3/usr/lib/lvgl</span></code> at build time (the <code class="docutils literal notranslate"><span class="pre">:lvgl</span></code> override in
+<code class="docutils literal notranslate"><span class="pre">build/conf/local.conf</span></code>) and linked into the LVGL applications. It draws into
+the SO3 framebuffer and reads the keyboard and mouse entirely through <code class="docutils literal notranslate"><span class="pre">/dev</span></code>
+nodes — there is no LVGL code in the kernel. The device side (PL111 framebuffer,
+PL050 keyboard, the <code class="docutils literal notranslate"><span class="pre">so3,absmouse</span></code> absolute pointer) is documented in
+<a class="reference internal" href="display_input.html#display-input"><span class="std std-ref">Display &amp; Input (QEMU virt)</span></a>.</p>
+</section>
+<section id="the-slv-glue-library">
+<h2><span class="section-number">1.2. </span>The <code class="docutils literal notranslate"><span class="pre">slv</span></code> glue library<a class="headerlink" href="#the-slv-glue-library" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">so3/usr/lib/slv</span></code> (“SO3 ↔ LVGL”) is a small library that wires LVGL to the SO3
+devices so an application does not have to. <code class="docutils literal notranslate"><span class="pre">slv_init()</span></code>:</p>
+<ul class="simple">
+<li><p>initialises LVGL (<code class="docutils literal notranslate"><span class="pre">lv_init</span></code>);</p></li>
+<li><p>opens <code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code> and registers an LVGL <strong>display</strong> (<code class="docutils literal notranslate"><span class="pre">slv_fb_init</span></code> — queries
+the resolution via the framebuffer ioctls and <code class="docutils literal notranslate"><span class="pre">mmap</span></code>s the VRAM);</p></li>
+<li><p>opens <code class="docutils literal notranslate"><span class="pre">/dev/keyboard</span></code> and registers a <strong>keypad</strong> indev (<code class="docutils literal notranslate"><span class="pre">slv_keyboard_init</span></code>);</p></li>
+<li><p>opens <code class="docutils literal notranslate"><span class="pre">/dev/mouse</span></code> and registers a <strong>pointer</strong> indev, telling the driver the
+screen size so it can scale the absolute coordinates (<code class="docutils literal notranslate"><span class="pre">slv_mouse_init</span></code>);</p></li>
+<li><p>spawns a <strong>tick thread</strong> that calls <code class="docutils literal notranslate"><span class="pre">lv_tick_inc(10)</span></code> every 10 ms.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">slv_loop()</span></code> then runs the LVGL event loop (<code class="docutils literal notranslate"><span class="pre">lv_timer_handler</span></code> + sleep) until
+the application is killed (Ctrl-C), and <code class="docutils literal notranslate"><span class="pre">slv_terminate()</span></code> tears everything down.
+A typical application is just:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">slv_t</span><span class="w"> </span><span class="n">slv</span><span class="p">;</span>
+<span class="n">slv_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">slv</span><span class="p">);</span>
+<span class="n">lv_demo_widgets</span><span class="p">();</span><span class="w">      </span><span class="cm">/* build the UI */</span>
+<span class="n">slv_loop</span><span class="p">(</span><span class="o">&amp;</span><span class="n">slv</span><span class="p">);</span><span class="w">         </span><span class="cm">/* render + dispatch input */</span>
+<span class="n">slv_terminate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">slv</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="applications">
+<h2><span class="section-number">1.3. </span>Applications<a class="headerlink" href="#applications" title="Link to this heading"></a></h2>
+<p>The LVGL applications are added to <code class="docutils literal notranslate"><span class="pre">so3/usr/src/CMakeLists.txt</span></code> by the
+<code class="docutils literal notranslate"><span class="pre">:lvgl</span></code> override — the committed, lvgl-free <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> does not build
+them (see <a class="reference internal" href="build_system.html#build-system"><span class="std std-ref">Build System</span></a>):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Application</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lvgl_widgets</span></code></p></td>
+<td><p>the LVGL <code class="docutils literal notranslate"><span class="pre">lv_demo_widgets</span></code> gallery — exercises the display, keyboard and
+mouse together.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lvgl_demo</span></code></p></td>
+<td><p>the LVGL demo showcase.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lvgl_benchmark</span></code></p></td>
+<td><p>the LVGL rendering benchmark.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lvgl_perf</span></code></p></td>
+<td><p>a one-shot performance probe (runs a single <code class="docutils literal notranslate"><span class="pre">lv_timer_handler</span></code> pass and
+exits — this is by design).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fb_test</span></code></p></td>
+<td><p>a minimal, LVGL-free framebuffer test (writes straight to <code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code>);
+useful to validate the display path on its own.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">lv_demo_widgets</span></code> needs a larger LVGL heap than the default; SO3 sets
+<code class="docutils literal notranslate"><span class="pre">LV_MEM_SIZE</span></code> to 4 MB in <code class="docutils literal notranslate"><span class="pre">so3/usr/lib/lv_conf.h</span></code>.</p>
+</div>
+</section>
+<section id="running-lvgl-under-qemu">
+<h2><span class="section-number">1.4. </span>Running LVGL under QEMU<a class="headerlink" href="#running-lvgl-under-qemu" title="Link to this heading"></a></h2>
+<p>Build the user space with the LVGL applications and a framebuffer-enabled kernel
+configuration, then launch the emulator in <strong>graphical</strong> mode with <code class="docutils literal notranslate"><span class="pre">-d</span></code> (the
+framebuffer needs a real window):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>st.sh<span class="w"> </span>-d
+</pre></div>
+</div>
+<p>QEMU opens a GTK window that shows the PL111 framebuffer; launch an LVGL
+application from the <code class="docutils literal notranslate"><span class="pre">so3%</span></code> prompt to draw into it, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">so3</span><span class="o">%</span> <span class="n">lvgl_widgets</span>
+</pre></div>
+</div>
+<p>Move the mouse and click on the widgets — the cursor maps 1:1 to the host pointer
+(absolute pointer, no grab). Press <strong>Ctrl-C</strong> in the console to terminate the
+application and return to the shell. The display, input and Ctrl-C behaviour are
+covered in detail in <a class="reference internal" href="display_input.html#display-input"><span class="std std-ref">Display &amp; Input (QEMU virt)</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="so3_jtag_rpi4.html" class="btn btn-neutral float-left" title="6. Debugging SO3 with JTAG on RPi4" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lwip.html" class="btn btn-neutral float-right" title="2. lwIP — Lightweight IP" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

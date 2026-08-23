@@ -1,0 +1,564 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. Build System &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. User Guide" href="user_guide.html" />
+    <link rel="prev" title="5. SO3 Capsules (SOO framework)" href="capsules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Build System</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">1.1. Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">1.2. Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#meta-layers">1.3. Meta-layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-build-conf-local-conf">1.4. Configuration — <code class="docutils literal notranslate"><span class="pre">build/conf/local.conf</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-build-deploy-scripts">1.5. The build &amp; deploy scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-so3-kernel-recipe">1.6. The SO3 kernel recipe</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-kconfig">1.6.1. Configuration (Kconfig)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#linker-script-and-asm-offsets">1.6.2. Linker script and asm-offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#device-trees">1.6.3. Device trees</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fit-image-its-and-boot-media">1.7. FIT image, ITS and boot media</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-itb-avz-boot">1.7.1. Two-ITB AVZ boot</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-fetched-components-updiff">1.8. Working with fetched components (<code class="docutils literal notranslate"><span class="pre">updiff</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-space-and-toolchains">1.9. User space and toolchains</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1. </span>Build System</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="build-system">
+<span id="id1"></span><h1><span class="section-number">1. </span>Build System<a class="headerlink" href="#build-system" title="Link to this heading"></a></h1>
+<p>SO3 is built with <strong>Infrabase</strong>, a thin orchestration layer on top of
+<a class="reference external" href="https://docs.yoctoproject.org/bitbake/">bitbake</a>. A set of <em>meta-layers</em>
+(<code class="docutils literal notranslate"><span class="pre">build/meta*</span></code>) provides the recipes; a single configuration file
+(<code class="docutils literal notranslate"><span class="pre">build/conf/local.conf</span></code>) selects <em>what</em> to build; and a handful of wrapper
+scripts in <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> drive the whole thing — building the kernel, the user
+space, U-Boot, the root filesystem and the FIT image, then packaging them onto a
+virtual SD-card.</p>
+<figure class="align-default" id="id2">
+<a class="reference internal image-reference" href="_images/so3_build.png"><img alt="_images/so3_build.png" src="_images/so3_build.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-number">Fig. 1.1 </span><span class="caption-text">From <code class="docutils literal notranslate"><span class="pre">local.conf</span></code> through the meta-layer recipes to a bootable image.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The SO3 <strong>kernel</strong> and <strong>user space</strong> are built <em>in tree</em> (directly from the
+committed <code class="docutils literal notranslate"><span class="pre">so3/</span></code> sources). The other components — <strong>U-Boot</strong>, <strong>QEMU</strong>, the
+<strong>AVZ</strong> hypervisor and (optionally) <strong>ARM-TF/OP-TEE</strong> — are <em>fetched</em> from
+upstream and local changes are kept as patches (see
+<a class="reference internal" href="#fetched-components"><span class="std std-ref">fetched components</span></a>).</p>
+<section id="prerequisites">
+<h2><span class="section-number">1.1. </span>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Infrabase drives bitbake, so the <strong>host</strong> needs the usual Yocto/bitbake build
+dependencies plus the SO3 image tooling (<code class="docutils literal notranslate"><span class="pre">device-tree-compiler</span></code>,
+<code class="docutils literal notranslate"><span class="pre">u-boot-tools</span></code>, <code class="docutils literal notranslate"><span class="pre">mtools</span></code>, <code class="docutils literal notranslate"><span class="pre">dosfstools</span></code>, <code class="docutils literal notranslate"><span class="pre">rsync</span></code>, <code class="docutils literal notranslate"><span class="pre">parted</span></code>, the QEMU
+build dependencies, …) and a few <strong>cross-toolchains</strong> that are <em>not</em> built by the
+layers. The canonical, continuously-tested list is the base container recipe
+<code class="docutils literal notranslate"><span class="pre">docker/Dockerfile.toolchains</span></code> — mirror it when setting up a bare host.
+For development, the same environment is available as a ready-made build
+container: <code class="docutils literal notranslate"><span class="pre">scripts/dbuild.sh</span> <span class="pre">--build</span></code> then <code class="docutils literal notranslate"><span class="pre">scripts/dbuild.sh</span> <span class="pre">build.sh</span>
+<span class="pre">bsp-so3</span></code> (or bare <code class="docutils literal notranslate"><span class="pre">dbuild.sh</span></code> for a shell) runs any front-end script
+inside it, with the repository bind-mounted at its own path and the container
+running as the calling user — see <code class="docutils literal notranslate"><span class="pre">docker/README.md</span></code>.</p>
+<p>The cross-toolchains that must be on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Used for</p></th>
+<th class="head"><p>Toolchain (prefix)</p></th>
+<th class="head"><p>Selected by</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Kernel</strong> (and AVZ), bare-metal</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">aarch64-none-elf-</span></code> (64-bit) / <code class="docutils literal notranslate"><span class="pre">arm-none-eabi-</span></code> (32-bit)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CONFIG_CROSS_COMPILE</span></code> in the kernel defconfig</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>U-Boot</strong>, GNU/Linux</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">aarch64-none-linux-gnu-</span></code> (virt64/rpi4_64) / <code class="docutils literal notranslate"><span class="pre">arm-linux-gnueabihf-</span></code> (virt32)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IB_TOOLCHAIN</span></code> in <code class="docutils literal notranslate"><span class="pre">local.conf</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>User space</strong>, MUSL</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">aarch64-linux-musl</span></code> / <code class="docutils literal notranslate"><span class="pre">arm-linux-musleabihf</span></code></p></td>
+<td><p>built automatically by <code class="docutils literal notranslate"><span class="pre">meta-toolchain</span></code> — <em>no action</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The MUSL user-space toolchains are produced into the bitbake work tree by the
+<code class="docutils literal notranslate"><span class="pre">meta-toolchain</span></code> layer; there is no manual step for them. Only the bare-metal
+(kernel/AVZ) and GNU/Linux (U-Boot) toolchains must be installed on the host.</p>
+</div>
+<p>To avoid installing anything on the host, build inside the container instead —
+see <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">Running with Docker</span></a>.</p>
+</section>
+<section id="getting-started">
+<h2><span class="section-number">1.2. </span>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<p>Everything is anchored on the repository root. Source <code class="docutils literal notranslate"><span class="pre">env.sh</span></code> once per shell:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>env.sh
+</pre></div>
+</div>
+<p>This exports <code class="docutils literal notranslate"><span class="pre">IB_ROOT_DIR</span></code>, sets <code class="docutils literal notranslate"><span class="pre">BBPATH</span></code>/<code class="docutils literal notranslate"><span class="pre">BUILDDIR</span></code> to <code class="docutils literal notranslate"><span class="pre">build/</span></code>, and
+prepends <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> and the bundled <code class="docutils literal notranslate"><span class="pre">bitbake</span></code> to <code class="docutils literal notranslate"><span class="pre">PATH</span></code> so the active tree
+wins. From then on the <code class="docutils literal notranslate"><span class="pre">build.sh</span></code> / <code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> / <code class="docutils literal notranslate"><span class="pre">st.sh</span></code> commands are on
+the path. See <a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">User Guide</span></a> for the end-to-end walkthrough.</p>
+</section>
+<section id="meta-layers">
+<h2><span class="section-number">1.3. </span>Meta-layers<a class="headerlink" href="#meta-layers" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Layer</p></th>
+<th class="head"><p>Provides</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta</span></code></p></td>
+<td><p>base bitbake classes — notably <code class="docutils literal notranslate"><span class="pre">patch.bbclass</span></code> (the fetch/patch/<code class="docutils literal notranslate"><span class="pre">updiff</span></code>
+machinery) and the privileged-helper plumbing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">meta-so3</span></code></p></td>
+<td><p>the <strong>SO3 kernel</strong> recipe (<code class="docutils literal notranslate"><span class="pre">so3_&lt;version&gt;.bb</span></code>, built in tree) and the
+<strong>AVZ</strong> hypervisor recipe (<code class="docutils literal notranslate"><span class="pre">avz_&lt;version&gt;.bb</span></code>); both are named after the
+current release and pinned by <code class="docutils literal notranslate"><span class="pre">PREFERRED_VERSION_*</span></code> (see
+<a class="reference internal" href="release_process.html#release-process"><span class="std std-ref">Release process</span></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta-usr</span></code></p></td>
+<td><p>the <strong>user space</strong> (<code class="docutils literal notranslate"><span class="pre">usr-so3</span></code>, CMake + MUSL toolchain): a committed
+lvgl-free base, plus opt-in add-ons layered as patches via overrides —
+<code class="docutils literal notranslate"><span class="pre">:lvgl</span></code> (LVGL + <code class="docutils literal notranslate"><span class="pre">slv</span></code> + demos) and <code class="docutils literal notranslate"><span class="pre">:soo</span></code> (capsule user space).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">meta-bsp</span></code></p></td>
+<td><p><strong>board support</strong>: <code class="docutils literal notranslate"><span class="pre">bsp-so3</span></code> assembles the FIT image (<code class="docutils literal notranslate"><span class="pre">do_itb</span></code>) and
+writes the boot media (<code class="docutils literal notranslate"><span class="pre">do_deploy_boot</span></code>); <code class="docutils literal notranslate"><span class="pre">bsp-linux</span></code> does the same for
+the Linux agency and <code class="docutils literal notranslate"><span class="pre">bsp-capsules</span></code> for an agency running SO3 capsules
+(see <a class="reference internal" href="capsules.html#capsules"><span class="std std-ref">SO3 Capsules (SOO framework)</span></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta-uboot</span></code></p></td>
+<td><p>the <strong>U-Boot</strong> bootloader (fetched + patched).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">meta-qemu</span></code></p></td>
+<td><p>the patched <strong>QEMU</strong> emulator (the <code class="docutils literal notranslate"><span class="pre">virt</span></code> machine with PL111/PL050/
+absmouse — see <a class="reference internal" href="display_input.html#display-input"><span class="std std-ref">Display &amp; Input (QEMU virt)</span></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta-linux</span></code></p></td>
+<td><p>the <strong>Linux</strong> kernel recipe (fetched from kernel.org + patched), plus the
+opt-in <code class="docutils literal notranslate"><span class="pre">soo</span></code> override that builds Linux as the capsule <strong>agency</strong>
+(see <a class="reference internal" href="capsules.html#capsules"><span class="std std-ref">SO3 Capsules (SOO framework)</span></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">meta-rootfs</span></code></p></td>
+<td><p>builds the <strong>root filesystem</strong> image (<code class="docutils literal notranslate"><span class="pre">rootfs.fat</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta-toolchain</span></code></p></td>
+<td><p>builds the <strong>MUSL</strong> cross-toolchains used by the user space.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">meta-atf</span></code></p></td>
+<td><p><strong>ARM Trusted Firmware</strong> and <strong>OP-TEE</strong> (only for the secure boot chains).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">meta-filesystem</span></code></p></td>
+<td><p>creates and populates the <strong>SD-card image</strong> (privileged <code class="docutils literal notranslate"><span class="pre">losetup</span></code>/
+<code class="docutils literal notranslate"><span class="pre">mkfs</span></code>/<code class="docutils literal notranslate"><span class="pre">mount</span></code> via <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">-n</span></code>).</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">build/conf/bblayers.conf</span></code> is regenerated automatically from this fixed list;
+do not edit it by hand.</p>
+</section>
+<section id="configuration-build-conf-local-conf">
+<h2><span class="section-number">1.4. </span>Configuration — <code class="docutils literal notranslate"><span class="pre">build/conf/local.conf</span></code><a class="headerlink" href="#configuration-build-conf-local-conf" title="Link to this heading"></a></h2>
+<p>A few <code class="docutils literal notranslate"><span class="pre">IB_*</span></code> variables select the target and the deployment mode:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IB_PLATFORM</span></code></p></td>
+<td><p>target platform: <code class="docutils literal notranslate"><span class="pre">virt64</span></code> (default), <code class="docutils literal notranslate"><span class="pre">virt32</span></code>, <code class="docutils literal notranslate"><span class="pre">rpi4_64</span></code>, …</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">IB_CONFIG:so3:&lt;plat&gt;</span></code></p></td>
+<td><p>the SO3 kernel <code class="docutils literal notranslate"><span class="pre">defconfig</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">virt32_fb_defconfig</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IB_TARGET_ITS:so3:&lt;plat&gt;</span></code></p></td>
+<td><p>the <strong>FIT image</strong> to assemble — this is what selects the <em>deployment mode</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">IB_BOOT_CHAIN</span></code></p></td>
+<td><p>the firmware chain: <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">uboot</span></code> (bare U-Boot), <code class="docutils literal notranslate"><span class="pre">atf+uboot</span></code> (ARM-TF),
+or <code class="docutils literal notranslate"><span class="pre">full</span></code> (ARM-TF + OP-TEE).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IB_ATF_PLAT</span></code> / <code class="docutils literal notranslate"><span class="pre">IB_OPTEE_PLAT</span></code> / <code class="docutils literal notranslate"><span class="pre">IB_ATF_EXTRA_OPTS</span></code></p></td>
+<td><p>ARM-TF / OP-TEE platform identifiers and build options (secure chains only).</p></td>
+</tr>
+</tbody>
+</table>
+<p>The same <code class="docutils literal notranslate"><span class="pre">virt64</span></code> kernel can be deployed three ways purely by choosing the ITS,
+without a per-platform <code class="docutils literal notranslate"><span class="pre">IB_PLATFORM:so3</span></code> override:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">IB_TARGET_ITS:so3:virt64</span></code></p></th>
+<th class="head"><p>Deployment</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">virt64_so3</span></code></p></td>
+<td><p>SO3 <strong>standalone</strong> (kernel at EL1)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">virt64_avz</span></code></p></td>
+<td><p>SO3 as a plain <strong>AVZ guest</strong> (AVZ at EL2, <code class="docutils literal notranslate"><span class="pre">CONFIG_SOO=n</span></code>, see <a class="reference internal" href="avz.html#avz"><span class="std std-ref">AVZ Hypervisor</span></a>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">virt64_capsule</span></code></p></td>
+<td><p>an SO3 <strong>capsule</strong> (see <a class="reference internal" href="capsules.html#capsules"><span class="std std-ref">SO3 Capsules (SOO framework)</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">IB_BOOT_CHAIN</span></code> is a <em>weak</em> assignment so a capsule deployment can override it.
+For the QEMU <code class="docutils literal notranslate"><span class="pre">virt</span></code> machine, <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">uboot</span></code> boots a bare U-Boot, <code class="docutils literal notranslate"><span class="pre">atf+uboot</span></code>
+boots through ARM-TF (EL3 → EL2), and <code class="docutils literal notranslate"><span class="pre">full</span></code> additionally loads OP-TEE.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Those three ITS targets build <strong>SO3</strong> only. The same tree can also build
+<strong>Linux as the capsule agency</strong>: enable the <code class="docutils literal notranslate"><span class="pre">soo</span></code> override
+(<code class="docutils literal notranslate"><span class="pre">EXTRA_OVERRIDES</span> <span class="pre">.=</span> <span class="pre">&quot;:soo&quot;</span></code>) and pick a SOO Linux config
+(<code class="docutils literal notranslate"><span class="pre">IB_CONFIG:linux:&lt;plat&gt;</span> <span class="pre">=</span> <span class="pre">&quot;virt64_soo_defconfig&quot;</span></code>). The <code class="docutils literal notranslate"><span class="pre">meta-linux</span></code>
+<code class="docutils literal notranslate"><span class="pre">soo</span></code> layer then fetches and patches Linux into the agency, and the
+<code class="docutils literal notranslate"><span class="pre">bsp-capsules</span></code> recipe deploys it beside the capsules — see <a class="reference internal" href="capsules.html#capsules"><span class="std std-ref">SO3 Capsules (SOO framework)</span></a>.</p>
+</div>
+</section>
+<section id="the-build-deploy-scripts">
+<h2><span class="section-number">1.5. </span>The build &amp; deploy scripts<a class="headerlink" href="#the-build-deploy-scripts" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">build.sh</span></code> runs bitbake to <em>build</em> artefacts:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;recipe&gt;</span></code> (or <code class="docutils literal notranslate"><span class="pre">-x</span> <span class="pre">&lt;recipe&gt;</span></code>)</p></td>
+<td><p>build a recipe and its dependency tree. A <strong>BSP</strong> name (<code class="docutils literal notranslate"><span class="pre">bsp-so3</span></code>,
+<code class="docutils literal notranslate"><span class="pre">bsp-linux</span></code>) pulls everything (kernel + U-Boot + rootfs + FIT); a
+<strong>component</strong> (<code class="docutils literal notranslate"><span class="pre">usr-so3</span></code>, <code class="docutils literal notranslate"><span class="pre">qemu</span></code>, <code class="docutils literal notranslate"><span class="pre">avz</span></code>, <code class="docutils literal notranslate"><span class="pre">so3</span></code>, <code class="docutils literal notranslate"><span class="pre">uboot</span></code>,
+<code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, …) builds just itself. <code class="docutils literal notranslate"><span class="pre">-x</span></code> is optional — the recipe
+may be a bare argument. Opens the <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">-n</span></code> session automatically for
+recipes that need root at build time (<code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, <code class="docutils literal notranslate"><span class="pre">bsp-linux</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code></p></td>
+<td><p><strong>clean</strong> the recipe first, then rebuild.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-l</span></code> / <code class="docutils literal notranslate"><span class="pre">-v</span></code></p></td>
+<td><p><strong>list</strong> all recipes / <strong>verbose</strong> bitbake output.</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> then <em>writes the boot media</em> (and opens the <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">-n</span></code>
+session the privileged tasks need): <code class="docutils literal notranslate"><span class="pre">deploy.sh</span> <span class="pre">&lt;recipe&gt;</span></code> (<code class="docutils literal notranslate"><span class="pre">-x</span></code> optional)
+deploys it — a BSP writes the whole image (rootfs → p2 + FIT/ITB → p1), a
+component (e.g. <code class="docutils literal notranslate"><span class="pre">usr-so3</span></code>) deploys just its part. <code class="docutils literal notranslate"><span class="pre">-l</span></code> / <code class="docutils literal notranslate"><span class="pre">-v</span></code> list /
+verbose. Deploy does <strong>not</strong> recompile: it consumes what <code class="docutils literal notranslate"><span class="pre">build.sh</span></code> already
+produced (<code class="docutils literal notranslate"><span class="pre">rootfs.cpio</span></code>, the FIT), so the workflow is <em>edit → build.sh →
+deploy.sh</em>. A deploy with no prior build fails clearly rather than silently
+rebuilding.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><code class="docutils literal notranslate"><span class="pre">build.sh</span> <span class="pre">bsp-so3</span></code> compiles the BSP but does <strong>not</strong> create the SD-card
+image itself: the empty <code class="docutils literal notranslate"><span class="pre">filesystem/sdcard.img.&lt;platform&gt;</span></code> is produced by the
+separate, privileged <code class="docutils literal notranslate"><span class="pre">filesystem</span></code> recipe (<code class="docutils literal notranslate"><span class="pre">losetup</span></code>/<code class="docutils literal notranslate"><span class="pre">mkfs</span></code>/<code class="docutils literal notranslate"><span class="pre">parted</span></code>).
+<code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> populates and writes that image but does not create it, so a
+deploy against a fresh tree fails until the image exists. The canonical
+first-build sequence is therefore three steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="n">bsp</span><span class="o">-</span><span class="n">so3</span>        <span class="c1"># compile kernel + user space + U-Boot + rootfs + FIT</span>
+<span class="n">build</span><span class="o">.</span><span class="n">sh</span> <span class="o">-</span><span class="n">x</span> <span class="n">filesystem</span>  <span class="c1"># create + format the SD-card image (privileged, once)</span>
+<span class="n">deploy</span><span class="o">.</span><span class="n">sh</span> <span class="n">bsp</span><span class="o">-</span><span class="n">so3</span>       <span class="c1"># populate the rootfs and write the boot media</span>
+</pre></div>
+</div>
+<p>Once the image exists, later edits only need <code class="docutils literal notranslate"><span class="pre">build.sh</span> <span class="pre">-x</span> <span class="pre">&lt;recipe&gt;</span></code> +
+<code class="docutils literal notranslate"><span class="pre">deploy.sh</span> <span class="pre">bsp-so3</span></code> — the <code class="docutils literal notranslate"><span class="pre">filesystem</span></code> step is a one-off.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">build.sh</span></code> / <code class="docutils literal notranslate"><span class="pre">deploy.sh</span></code> take the recipe as a <strong>positional argument</strong>
+(<code class="docutils literal notranslate"><span class="pre">-x</span></code> is accepted but optional); <code class="docutils literal notranslate"><span class="pre">-l</span></code> lists every recipe. A BSP name
+builds/deploys the whole BSP, a component name just that recipe — the former
+<code class="docutils literal notranslate"><span class="pre">-a</span></code> / <code class="docutils literal notranslate"><span class="pre">-k</span></code> / <code class="docutils literal notranslate"><span class="pre">-b</span></code> / <code class="docutils literal notranslate"><span class="pre">-r</span></code> / <code class="docutils literal notranslate"><span class="pre">-f</span></code> flags are gone.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The SO3 kernel is built <em>in tree</em>, and bitbake does not track the in-tree
+<code class="docutils literal notranslate"><span class="pre">so3/so3/so3.bin</span></code> as a task output. After rebuilding the kernel
+(<code class="docutils literal notranslate"><span class="pre">build.sh</span> <span class="pre">-x</span> <span class="pre">so3</span></code>), run <code class="docutils literal notranslate"><span class="pre">deploy.sh</span> <span class="pre">bsp-so3</span></code> to regenerate the FIT
+image and refresh the SD-card — otherwise you boot the <em>previous</em> kernel.</p>
+</div>
+</section>
+<section id="the-so3-kernel-recipe">
+<h2><span class="section-number">1.6. </span>The SO3 kernel recipe<a class="headerlink" href="#the-so3-kernel-recipe" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">so3_&lt;version&gt;.bb</span></code> configures and builds the kernel straight from <code class="docutils literal notranslate"><span class="pre">so3/so3</span></code>;
+the mechanics below are the still-familiar Kbuild ones.</p>
+<section id="configuration-kconfig">
+<h3><span class="section-number">1.6.1. </span>Configuration (Kconfig)<a class="headerlink" href="#configuration-kconfig" title="Link to this heading"></a></h3>
+<p>Each subsystem carries a <code class="docutils literal notranslate"><span class="pre">Kconfig</span></code>; every option becomes a <code class="docutils literal notranslate"><span class="pre">CONFIG_*</span></code> symbol
+stored in <code class="docutils literal notranslate"><span class="pre">so3/so3/.config</span></code> and exposed as
+<code class="docutils literal notranslate"><span class="pre">include/generated/autoconf.h</span></code>. <code class="docutils literal notranslate"><span class="pre">IB_CONFIG:so3:&lt;plat&gt;</span></code> names the
+<code class="docutils literal notranslate"><span class="pre">defconfig</span></code> (<code class="docutils literal notranslate"><span class="pre">so3/so3/configs/</span></code>) the recipe loads. The target architecture
+(<code class="docutils literal notranslate"><span class="pre">CONFIG_VIRT64</span></code>/<code class="docutils literal notranslate"><span class="pre">CONFIG_RPI4_64</span></code>/<code class="docutils literal notranslate"><span class="pre">CONFIG_VIRT32</span></code>…) and the mode
+(<code class="docutils literal notranslate"><span class="pre">CONFIG_AVZ</span></code>, <code class="docutils literal notranslate"><span class="pre">CONFIG_SOO</span></code>) are driven from <code class="docutils literal notranslate"><span class="pre">.config</span></code>; <code class="docutils literal notranslate"><span class="pre">menuconfig</span></code> is
+available for interactive tweaks. The recipe records the last-built architecture
+in a <code class="docutils literal notranslate"><span class="pre">.ib_last_arch</span></code> marker and runs <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">distclean</span></code> on an arch switch.</p>
+</section>
+<section id="linker-script-and-asm-offsets">
+<h3><span class="section-number">1.6.2. </span>Linker script and asm-offsets<a class="headerlink" href="#linker-script-and-asm-offsets" title="Link to this heading"></a></h3>
+<p>The kernel is linked with an architecture-specific script
+(<code class="docutils literal notranslate"><span class="pre">arch/arm64/so3.lds</span></code>) that places the exception vectors, <code class="docutils literal notranslate"><span class="pre">.head.text</span></code>, the
+code/data/bss, the per-CPU area, the system page tables, the driver <em>initcall</em>
+sections, the heap and the per-CPU stacks. Sizes come from <code class="docutils literal notranslate"><span class="pre">CONFIG_*</span></code> symbols
+passed with <code class="docutils literal notranslate"><span class="pre">--defsym</span></code>; the base address is <code class="docutils literal notranslate"><span class="pre">CONFIG_KERNEL_VADDR</span></code>. Assembly
+needs the byte offsets of C structures — <code class="docutils literal notranslate"><span class="pre">arch/arm64/asm-offsets.c</span></code> produces a
+header of <code class="docutils literal notranslate"><span class="pre">#define</span> <span class="pre">OFFSET_*</span></code> values shared by C and assembly, exactly as Linux
+does.</p>
+</section>
+<section id="device-trees">
+<h3><span class="section-number">1.6.3. </span>Device trees<a class="headerlink" href="#device-trees" title="Link to this heading"></a></h3>
+<p>Hardware is described by <strong>device trees</strong> in <code class="docutils literal notranslate"><span class="pre">so3/so3/dts/</span></code>. The <code class="docutils literal notranslate"><span class="pre">.dts</span></code>
+sources are compiled to <code class="docutils literal notranslate"><span class="pre">.dtb</span></code> blobs and shipped to the kernel inside the FIT
+image; the kernel parses the blob at boot to discover RAM and devices
+(<a class="reference internal" href="kernel.html#kernel"><span class="std std-ref">Kernel Internals</span></a>). The QEMU <code class="docutils literal notranslate"><span class="pre">virt</span></code> nodes for the framebuffer and input devices
+live here too (<a class="reference internal" href="display_input.html#display-input"><span class="std std-ref">Display &amp; Input (QEMU virt)</span></a>).</p>
+</section>
+</section>
+<section id="fit-image-its-and-boot-media">
+<h2><span class="section-number">1.7. </span>FIT image, ITS and boot media<a class="headerlink" href="#fit-image-its-and-boot-media" title="Link to this heading"></a></h2>
+<p>SO3 is started by <strong>U-Boot</strong>, which loads one or more <strong>FIT images</strong> (<code class="docutils literal notranslate"><span class="pre">.itb</span></code>)
+— each a single file bundling a payload, its device tree and, for the OS images,
+a root filesystem. The <code class="docutils literal notranslate"><span class="pre">.its</span></code> <em>templates</em> live in the BSP layer
+(<code class="docutils literal notranslate"><span class="pre">meta-bsp/recipes-bsp/so3/files/its/</span></code> for SO3,
+<code class="docutils literal notranslate"><span class="pre">meta-bsp/recipes-bsp/linux/files/its/</span></code> for the Linux agency) and reference the
+component trees through <code class="docutils literal notranslate"><span class="pre">${IB_*_PATH}</span></code> placeholders. The <code class="docutils literal notranslate"><span class="pre">do_itb</span></code> task
+<strong>renders</strong> each template into the gitignored output dir <code class="docutils literal notranslate"><span class="pre">&lt;ctx&gt;/images/</span></code>
+(<code class="docutils literal notranslate"><span class="pre">so3/images/</span></code> or <code class="docutils literal notranslate"><span class="pre">linux/images/</span></code>) — expanding <code class="docutils literal notranslate"><span class="pre">${IB_SO3_PATH}</span></code>,
+<code class="docutils literal notranslate"><span class="pre">${IB_AVZ_PATH}</span></code>, <code class="docutils literal notranslate"><span class="pre">${IB_LINUX_PATH}</span></code> and <code class="docutils literal notranslate"><span class="pre">${IB_ROOTFS_PATH}</span></code> to absolute
+paths — then assembles the <code class="docutils literal notranslate"><span class="pre">.itb</span></code> there with <code class="docutils literal notranslate"><span class="pre">mkimage</span></code> (there is no committed
+<code class="docutils literal notranslate"><span class="pre">target/</span></code> tree):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">.its</span></code> template</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">virt64_so3.its</span></code></p></td>
+<td><p>standalone: SO3 kernel + DTB + ramfs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_avz.its</span></code></p></td>
+<td><p><strong>AVZ ITB</strong>: the AVZ hypervisor binary + its device tree only — the
+guest lives in a <em>separate</em> ITB (see <a class="reference internal" href="#two-itb-boot"><span class="std std-ref">Two-ITB AVZ boot</span></a>). One per
+platform: <code class="docutils literal notranslate"><span class="pre">virt64_avz</span></code>, <code class="docutils literal notranslate"><span class="pre">rpi4_64_avz</span></code>, <code class="docutils literal notranslate"><span class="pre">verdin_imx8mp_avz</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_so3_guest.its</span></code></p></td>
+<td><p><strong>SO3 guest ITB</strong>: guest SO3 kernel + DTB + ramfs, loaded by AVZ.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_linux_guest.its</span></code></p></td>
+<td><p><strong>Linux agency guest ITB</strong>: Linux kernel + guest DTB + initrd, loaded by
+AVZ (<code class="docutils literal notranslate"><span class="pre">meta-bsp/.../linux/files/its/</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_capsule.its</span></code></p></td>
+<td><p>a capsule image (<code class="docutils literal notranslate"><span class="pre">virt64_capsule</span></code>, <code class="docutils literal notranslate"><span class="pre">rpi4_64_capsule</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">virt32_so3.its</span></code> / <code class="docutils literal notranslate"><span class="pre">rpi4_64_so3.its</span></code> / <code class="docutils literal notranslate"><span class="pre">verdin_imx8mp_so3.its</span></code></p></td>
+<td><p>the 32-bit / RPi4 / Verdin standalone variants</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_lvperf.its</span></code></p></td>
+<td><p>the LVGL-benchmark image driven by the <code class="docutils literal notranslate"><span class="pre">docker/</span></code> lvperf containers and
+the CI (<code class="docutils literal notranslate"><span class="pre">virt64_lvperf</span></code>, <code class="docutils literal notranslate"><span class="pre">virt32_lvperf</span></code> — see <a class="reference internal" href="lvgl.html#lvgl"><span class="std std-ref">LVGL — Light and Versatile Embedded Graphics Library</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">do_deploy_boot</span></code> writes the resulting <code class="docutils literal notranslate"><span class="pre">.itb</span></code> from <code class="docutils literal notranslate"><span class="pre">&lt;ctx&gt;/images/</span></code> into the
+FAT (boot) partition of
+<code class="docutils literal notranslate"><span class="pre">filesystem/sdcard.img.&lt;platform&gt;</span></code>. For the ARM-TF chains (<code class="docutils literal notranslate"><span class="pre">atf+uboot</span></code> /
+<code class="docutils literal notranslate"><span class="pre">full</span></code>), <code class="docutils literal notranslate"><span class="pre">__do_platform_boot_chain</span></code> (<code class="docutils literal notranslate"><span class="pre">meta-bsp/.../bsp_virt64.inc</span></code>) also
+builds <code class="docutils literal notranslate"><span class="pre">filesystem/flash0.img</span></code> — <code class="docutils literal notranslate"><span class="pre">BL1</span></code> at offset 0 plus a FIP (<code class="docutils literal notranslate"><span class="pre">fiptool</span></code>)
+bundling <code class="docutils literal notranslate"><span class="pre">BL2</span></code>/<code class="docutils literal notranslate"><span class="pre">BL31</span></code>/U-Boot (and OP-TEE for <code class="docutils literal notranslate"><span class="pre">full</span></code>) at 256 KiB — which
+QEMU loads as <code class="docutils literal notranslate"><span class="pre">pflash</span></code>.</p>
+<section id="two-itb-avz-boot">
+<span id="two-itb-boot"></span><h3><span class="section-number">1.7.1. </span>Two-ITB AVZ boot<a class="headerlink" href="#two-itb-avz-boot" title="Link to this heading"></a></h3>
+<p>When a guest runs on AVZ, the hypervisor and its guest are packaged as <strong>two
+separate FIT images</strong> rather than one: the <strong>AVZ ITB</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_avz.itb</span></code> — the
+hypervisor binary + <code class="docutils literal notranslate"><span class="pre">avz_dt</span></code> only) and a <strong>guest ITB</strong>. The guest is either an
+<strong>SO3</strong> guest (<code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_so3_guest.itb</span></code> — SO3 kernel + DTB + ramfs, from
+<code class="docutils literal notranslate"><span class="pre">bsp-so3</span></code>) or the <strong>Linux agency</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;plat&gt;_linux_guest.itb</span></code> — Linux kernel +
+guest DTB + initrd, from <code class="docutils literal notranslate"><span class="pre">bsp-linux</span></code> with <code class="docutils literal notranslate"><span class="pre">IB_BOOT_CHAIN</span> <span class="pre">=</span> <span class="pre">&quot;full&quot;</span></code>).</p>
+<p>The trigger throughout is the selected ITS ending in <code class="docutils literal notranslate"><span class="pre">_avz</span></code>. <code class="docutils literal notranslate"><span class="pre">do_itb</span></code> then
+also builds the guest ITB, whose name is <em>derived</em> from the AVZ ITS by replacing
+the <code class="docutils literal notranslate"><span class="pre">_avz</span></code> suffix with <code class="docutils literal notranslate"><span class="pre">${IB_GUEST_SUFFIX}</span></code> — <code class="docutils literal notranslate"><span class="pre">_so3_guest</span></code> by default
+(<code class="docutils literal notranslate"><span class="pre">bsp-so3</span></code>), <code class="docutils literal notranslate"><span class="pre">_linux_guest</span></code> for the Linux agency (<code class="docutils literal notranslate"><span class="pre">bsp-linux</span></code>). So
+<code class="docutils literal notranslate"><span class="pre">virt64_avz</span></code> → <code class="docutils literal notranslate"><span class="pre">virt64_so3_guest</span></code> or <code class="docutils literal notranslate"><span class="pre">virt64_linux_guest</span></code>. (Deriving from
+<code class="docutils literal notranslate"><span class="pre">IB_TARGET_ITS</span></code> rather than <code class="docutils literal notranslate"><span class="pre">IB_PLATFORM</span></code> keeps the underscore naming on
+platforms whose <code class="docutils literal notranslate"><span class="pre">IB_PLATFORM</span></code> carries a hyphen, e.g. <code class="docutils literal notranslate"><span class="pre">verdin-imx8mp</span></code>.)</p>
+<p>At deploy time the platform glue stages <strong>both</strong> images plus a per-platform
+<code class="docutils literal notranslate"><span class="pre">uEnv_&lt;plat&gt;_avz.txt</span></code> (or, on verdin, a <code class="docutils literal notranslate"><span class="pre">boot_avz.scr</span></code> boot script). U-Boot
+loads both ITBs to staging addresses and jumps through its <code class="docutils literal notranslate"><span class="pre">guest-boot</span></code> command,
+which enters AVZ with the <strong>AVZ FIT in</strong> <code class="docutils literal notranslate"><span class="pre">x0</span></code> <strong>and the guest ITB in</strong> <code class="docutils literal notranslate"><span class="pre">x1</span></code>;
+AVZ’s <code class="docutils literal notranslate"><span class="pre">loadAgency()</span></code> then loads the guest from <code class="docutils literal notranslate"><span class="pre">x1</span></code> (see <a class="reference internal" href="avz.html#avz"><span class="std std-ref">AVZ Hypervisor</span></a>).
+When the selected ITS is <em>not</em> an <code class="docutils literal notranslate"><span class="pre">_avz</span></code> one (a bare standalone SO3/Linux
+image), the deploy falls back to the single-ITB <code class="docutils literal notranslate"><span class="pre">bootm</span></code> path.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">virt64</span></code> (QEMU) and <code class="docutils literal notranslate"><span class="pre">rpi4_64</span></code> (hardware) two-ITB boots are
+runtime-verified — on the Raspberry Pi 4 with both a Linux agency guest
+and a plain SO3 guest, as well as the full SOO capsule configuration.
+The <code class="docutils literal notranslate"><span class="pre">verdin_imx8mp</span></code> ITS split + <code class="docutils literal notranslate"><span class="pre">guest-boot</span></code> wiring is in place but
+still to be validated on hardware.</p>
+</div>
+</section>
+</section>
+<section id="working-with-fetched-components-updiff">
+<span id="fetched-components"></span><h2><span class="section-number">1.8. </span>Working with fetched components (<code class="docutils literal notranslate"><span class="pre">updiff</span></code>)<a class="headerlink" href="#working-with-fetched-components-updiff" title="Link to this heading"></a></h2>
+<p>U-Boot, QEMU and AVZ are <em>fetched</em> from upstream into the repository root
+(<code class="docutils literal notranslate"><span class="pre">u-boot/</span></code>, <code class="docutils literal notranslate"><span class="pre">qemu/</span></code>, <code class="docutils literal notranslate"><span class="pre">avz/</span></code> — git-ignored) and patched. Local changes are
+kept as a numbered patch series, regenerated with <strong>updiff</strong> rather than edited by
+hand:</p>
+<ol class="arabic simple">
+<li><p>Edit the working tree directly (e.g. <code class="docutils literal notranslate"><span class="pre">qemu/hw/arm/virt.c</span></code>).</p></li>
+<li><p>Build to test (<code class="docutils literal notranslate"><span class="pre">build.sh</span> <span class="pre">-x</span> <span class="pre">qemu</span></code>).</p></li>
+<li><p>Regenerate the patches: <code class="docutils literal notranslate"><span class="pre">updiff.sh</span> <span class="pre">qemu</span></code>.</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">updiff</span></code> (<code class="docutils literal notranslate"><span class="pre">patch.bbclass</span></code>) diffs the pristine upstream snapshot
+(<code class="docutils literal notranslate"><span class="pre">${S}.pristine</span></code>, taken right after fetch) against the working tree and writes
+one git-style patch per changed file into
+<code class="docutils literal notranslate"><span class="pre">build/meta-&lt;c&gt;/recipes-&lt;c&gt;/&lt;c&gt;/files/000N-*.patch</span></code>, consolidating in place and
+regenerating the <code class="docutils literal notranslate"><span class="pre">…-patches.inc</span></code> manifest. Generated trees are excluded via the
+per-recipe <code class="docutils literal notranslate"><span class="pre">IB_UPDIFF_EXCLUDE</span></code> variable (for QEMU: <code class="docutils literal notranslate"><span class="pre">build</span> <span class="pre">subprojects</span>
+<span class="pre">GNUmakefile</span></code>, which keeps the meson/ninja output and the fetched subprojects out
+of the patchset).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The SO3 <strong>kernel</strong> and <strong>user space</strong> are versioned in the repository, so they
+carry <em>no</em> patch series — you simply edit and rebuild them.</p>
+</div>
+</section>
+<section id="user-space-and-toolchains">
+<h2><span class="section-number">1.9. </span>User space and toolchains<a class="headerlink" href="#user-space-and-toolchains" title="Link to this heading"></a></h2>
+<p>The user-space applications are built with <strong>CMake</strong> against the <strong>MUSL</strong> C
+library. The MUSL cross-toolchains (<code class="docutils literal notranslate"><span class="pre">aarch64-linux-musl</span></code> /
+<code class="docutils literal notranslate"><span class="pre">arm-linux-musleabihf</span></code>) are produced by <code class="docutils literal notranslate"><span class="pre">meta-toolchain</span></code> into the bitbake work
+tree — there is no manual toolchain step. See <a class="reference internal" href="user_space.html#user-space"><span class="std std-ref">User Space</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="capsules.html" class="btn btn-neutral float-left" title="5. SO3 Capsules (SOO framework)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="user_guide.html" class="btn btn-neutral float-right" title="2. User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

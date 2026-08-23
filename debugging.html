@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Debugging SO3 &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. Debugging SO3 with JTAG on RPi4" href="so3_jtag_rpi4.html" />
+    <link rel="prev" title="4. Display &amp; Input (QEMU virt)" href="display_input.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_space.html">3. User Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Debugging SO3</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#debug-symbols">5.1. Debug symbols</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#attaching-gdb-to-qemu">5.2. Attaching GDB to QEMU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#useful-breakpoints">5.3. Useful breakpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspecting-an-exception">5.4. Inspecting an exception</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging-avz">5.5. Debugging AVZ</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#semihosting">5.6. Semihosting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#on-real-hardware">5.7. On real hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>Debugging SO3</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debugging-so3">
+<span id="debugging"></span><h1><span class="section-number">5. </span>Debugging SO3<a class="headerlink" href="#debugging-so3" title="Link to this heading"></a></h1>
+<p>Because SO3 is developed primarily on QEMU, the emulator’s built-in <strong>GDB stub</strong>
+is the day-to-day debugging tool. This chapter shows the QEMU/GDB workflow; for
+debugging on real hardware see <a class="reference internal" href="so3_jtag_rpi4.html#so3-jtag-rpi4"><span class="std std-ref">Debugging with JTAG on Raspberry Pi 4</span></a>.</p>
+<section id="debug-symbols">
+<h2><span class="section-number">5.1. </span>Debug symbols<a class="headerlink" href="#debug-symbols" title="Link to this heading"></a></h2>
+<p>The linked kernel <code class="docutils literal notranslate"><span class="pre">so3/so3/so3</span></code> is an ELF file with full symbols (the binary
+packed into the FIT image is the stripped <code class="docutils literal notranslate"><span class="pre">so3/so3/so3.bin</span></code>). Point GDB at the
+ELF to get source-level debugging while the target runs the matching <code class="docutils literal notranslate"><span class="pre">.bin</span></code>.</p>
+</section>
+<section id="attaching-gdb-to-qemu">
+<h2><span class="section-number">5.2. </span>Attaching GDB to QEMU<a class="headerlink" href="#attaching-gdb-to-qemu" title="Link to this heading"></a></h2>
+<p>The launch script already exposes a GDB stub: <code class="docutils literal notranslate"><span class="pre">st.sh</span></code> starts QEMU with
+<code class="docutils literal notranslate"><span class="pre">-gdb</span> <span class="pre">tcp::1234</span></code>. To make QEMU <strong>wait</strong> for the debugger before executing the
+first instruction, pass <code class="docutils literal notranslate"><span class="pre">-S</span></code> through to QEMU (<code class="docutils literal notranslate"><span class="pre">st.sh</span> <span class="pre">-S</span></code>), or invoke
+the patched emulator directly. A minimal headless invocation looks like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>qemu/build/qemu-system-aarch64<span class="w"> </span>-smp<span class="w"> </span><span class="m">4</span><span class="w"> </span>-M<span class="w"> </span>virt<span class="w"> </span>-cpu<span class="w"> </span>cortex-a72<span class="w"> </span>-m<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-kernel<span class="w"> </span>u-boot/u-boot<span class="w"> </span>-display<span class="w"> </span>none<span class="w"> </span>-no-reboot<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-drive<span class="w"> </span><span class="k">if</span><span class="o">=</span>none,file<span class="o">=</span>filesystem/sdcard.img.virt64,id<span class="o">=</span>hd0,format<span class="o">=</span>raw<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-device<span class="w"> </span>virtio-blk-device,drive<span class="o">=</span>hd0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-S<span class="w"> </span>-gdb<span class="w"> </span>tcp::1234
+</pre></div>
+</div>
+<p>(Use the patched <code class="docutils literal notranslate"><span class="pre">qemu/build/qemu-system-aarch64</span></code> — the one Infrabase builds —
+so the SO3 <code class="docutils literal notranslate"><span class="pre">virt</span></code> devices are present; no <code class="docutils literal notranslate"><span class="pre">sudo</span></code> is needed.)</p>
+<p>Then, from the <code class="docutils literal notranslate"><span class="pre">so3/so3</span></code> directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gdb-multiarch<span class="w"> </span>-q<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-ex<span class="w"> </span><span class="s1">'file so3'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-ex<span class="w"> </span><span class="s1">'target remote :1234'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-ex<span class="w"> </span><span class="s1">'break kernel_start'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-ex<span class="w"> </span><span class="s1">'continue'</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use <strong>gdb-multiarch</strong> (or an <code class="docutils literal notranslate"><span class="pre">aarch64</span></code> GDB). The repository ships a small
+<code class="docutils literal notranslate"><span class="pre">gdbinit</span></code> with sensible defaults (for example a bounded backtrace limit).</p>
+</div>
+</section>
+<section id="useful-breakpoints">
+<h2><span class="section-number">5.3. </span>Useful breakpoints<a class="headerlink" href="#useful-breakpoints" title="Link to this heading"></a></h2>
+<p>A few entry points are handy when tracing a boot or a fault:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Symbol</p></th>
+<th class="head"><p>What it marks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kernel_start</span></code></p></td>
+<td><p>start of kernel bring-up</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">memory_init</span></code> / <code class="docutils literal notranslate"><span class="pre">devices_init</span></code></p></td>
+<td><p>memory and device-tree initialisation</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trap_handle</span></code> / <code class="docutils literal notranslate"><span class="pre">trap_handle_error</span></code></p></td>
+<td><p>the synchronous-exception path (faults, syscalls)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">el01_sync_handler</span></code> / <code class="docutils literal notranslate"><span class="pre">syscall_handle</span></code></p></td>
+<td><p>the system-call path</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">create_root_process</span></code> / <code class="docutils literal notranslate"><span class="pre">ret_from_fork</span></code></p></td>
+<td><p>the transition into the first user process</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="inspecting-an-exception">
+<h2><span class="section-number">5.4. </span>Inspecting an exception<a class="headerlink" href="#inspecting-an-exception" title="Link to this heading"></a></h2>
+<p>When a fault is taken, the kernel prints the offending <code class="docutils literal notranslate"><span class="pre">ELR</span></code>, <code class="docutils literal notranslate"><span class="pre">FAR</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ESR</span></code> and stops. To find the faulting instruction in the ELF, add the kernel
+virtual base to the load offset and disassemble:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>aarch64-none-elf-objdump<span class="w"> </span>-d<span class="w"> </span>so3/so3/so3<span class="w"> </span><span class="p">|</span><span class="w"> </span>less<span class="w">    </span><span class="c1"># search for the address</span>
+</pre></div>
+</div>
+<p>The top bits of <code class="docutils literal notranslate"><span class="pre">ESR</span></code> give the exception class (<code class="docutils literal notranslate"><span class="pre">EC</span></code>); a value of <code class="docutils literal notranslate"><span class="pre">0x15</span></code> is
+an <code class="docutils literal notranslate"><span class="pre">SVC</span></code> (system call), <code class="docutils literal notranslate"><span class="pre">0x20</span></code> / <code class="docutils literal notranslate"><span class="pre">0x21</span></code> an instruction abort, <code class="docutils literal notranslate"><span class="pre">0x24</span></code> /
+<code class="docutils literal notranslate"><span class="pre">0x25</span></code> a data abort, and <code class="docutils literal notranslate"><span class="pre">0x00</span></code> an “unknown reason” trap (often an
+instruction that is illegal at the current exception level — a frequent symptom
+when EL2-only code runs at EL1).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>QEMU’s GDB stub cannot always read the AArch64 system registers by name. When
+<code class="docutils literal notranslate"><span class="pre">$elr_el1</span></code> and friends are unavailable, read the <strong>saved exception frame</strong>
+off the stack instead: within <code class="docutils literal notranslate"><span class="pre">struct</span> <span class="pre">cpu_regs</span></code> the offsets are
+<code class="docutils literal notranslate"><span class="pre">OFFSET_PC</span> <span class="pre">=</span> <span class="pre">256</span></code>, <code class="docutils literal notranslate"><span class="pre">OFFSET_PSTATE</span> <span class="pre">=</span> <span class="pre">264</span></code> and <code class="docutils literal notranslate"><span class="pre">OFFSET_SP_USR</span> <span class="pre">=</span> <span class="pre">272</span></code>
+(with <code class="docutils literal notranslate"><span class="pre">S_FRAME_SIZE</span> <span class="pre">=</span> <span class="pre">288</span></code> in the standalone build).</p>
+</div>
+</section>
+<section id="debugging-avz">
+<h2><span class="section-number">5.5. </span>Debugging AVZ<a class="headerlink" href="#debugging-avz" title="Link to this heading"></a></h2>
+<p>For the hypervisor, run <code class="docutils literal notranslate"><span class="pre">st.sh</span></code> with an AVZ ITS selected (it enables
+EL2 automatically) and pass <code class="docutils literal notranslate"><span class="pre">-S</span></code> to wait for the debugger. Load symbols from the
+hypervisor ELF (<code class="docutils literal notranslate"><span class="pre">avz/so3</span></code>) for the EL2 code and from the SO3 guest ELF
+(<code class="docutils literal notranslate"><span class="pre">so3/so3/so3</span></code>) for the EL1 guest. The AVZ console trace (the <em>Loading Guest
+Domain</em> section and the vGIC messages) is usually the quickest way to locate a
+problem before reaching for the debugger.</p>
+</section>
+<section id="semihosting">
+<h2><span class="section-number">5.6. </span>Semihosting<a class="headerlink" href="#semihosting" title="Link to this heading"></a></h2>
+<p>The ARM <strong>semihosting</strong> interface (<code class="docutils literal notranslate"><span class="pre">arch/arm64/semihosting.c</span></code>) is available
+under the emulator and through a JTAG probe, allowing early <code class="docutils literal notranslate"><span class="pre">printf</span></code>-style
+output and host file access before the console driver is up.</p>
+</section>
+<section id="on-real-hardware">
+<h2><span class="section-number">5.7. </span>On real hardware<a class="headerlink" href="#on-real-hardware" title="Link to this heading"></a></h2>
+<p>For JTAG-based debugging on the Raspberry Pi 4 (OpenOCD + GDB over a hardware
+probe), follow the dedicated chapter: <a class="reference internal" href="so3_jtag_rpi4.html#so3-jtag-rpi4"><span class="std std-ref">Debugging SO3 with JTAG on RPi4</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="display_input.html" class="btn btn-neutral float-left" title="4. Display &amp; Input (QEMU virt)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="so3_jtag_rpi4.html" class="btn btn-neutral float-right" title="6. Debugging SO3 with JTAG on RPi4" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

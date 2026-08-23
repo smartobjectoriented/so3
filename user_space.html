@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. User Space &mdash; SO3 Operating System 6.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=a6260544" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=80ea5fc2"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Display &amp; Input (QEMU virt)" href="display_input.html" />
+    <link rel="prev" title="2. User Guide" href="user_guide.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            SO3 Operating System
+              <img src="_static/so3_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Concepts &amp; architecture</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction to SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">2. SO3 Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">3. Kernel Internals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="avz.html">4. AVZ Hypervisor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="capsules.html">5. SO3 Capsules (SOO framework)</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Building &amp; running</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build_system.html">1. Build System</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">2. User Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. User Space</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-musl-c-library">3.1. The MUSL C library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-system-cmake">3.2. Build system (CMake)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#applications">3.3. Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#init-and-the-shell">3.4. Init and the shell</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#root-filesystem">3.5. Root filesystem</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="display_input.html">4. Display &amp; Input (QEMU virt)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">5. Debugging SO3</a></li>
+<li class="toctree-l1"><a class="reference internal" href="so3_jtag_rpi4.html">6. Debugging SO3 with JTAG on RPi4</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations &amp; conventions</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lvgl.html">1. LVGL — Light and Versatile Embedded Graphics Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lwip.html">2. lwIP — Lightweight IP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="micropython.html">3. MicroPython</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">4. Coding conventions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release_process.html">5. Release process</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">SO3 Operating System</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">3. </span>User Space</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="user-space">
+<span id="id1"></span><h1><span class="section-number">3. </span>User Space<a class="headerlink" href="#user-space" title="Link to this heading"></a></h1>
+<p>The SO3 user space is a small, self-contained set of applications built against
+the <strong>MUSL</strong> C library. Everything lives under <code class="docutils literal notranslate"><span class="pre">so3/usr/</span></code>.</p>
+<section id="the-musl-c-library">
+<h2><span class="section-number">3.1. </span>The MUSL C library<a class="headerlink" href="#the-musl-c-library" title="Link to this heading"></a></h2>
+<p>SO3 uses <a class="reference external" href="https://musl.libc.org">MUSL</a> as its libc for user applications — a small, clean and
+static-friendly implementation well suited to embedded systems. Not every libc
+function is enabled; functions are pulled in as the need arises. More complex
+facilities (for example full <code class="docutils literal notranslate"><span class="pre">pthreads</span></code>) are intentionally kept minimal.</p>
+<p>Applications are linked <strong>statically</strong> against MUSL, so each executable is
+self-contained.</p>
+<p><strong>C++</strong> applications are supported too: the programs under
+<code class="docutils literal notranslate"><span class="pre">so3/usr/src/tests/</span></code> are C++ and exercise classes, exceptions and dynamic
+allocation on top of the same toolchain.</p>
+</section>
+<section id="build-system-cmake">
+<h2><span class="section-number">3.2. </span>Build system (CMake)<a class="headerlink" href="#build-system-cmake" title="Link to this heading"></a></h2>
+<p>The user space is built with <strong>CMake</strong> and the MUSL cross toolchain by the
+<code class="docutils literal notranslate"><span class="pre">usr-so3</span></code> recipe (<code class="docutils literal notranslate"><span class="pre">meta-usr</span></code>). The MUSL toolchain (<code class="docutils literal notranslate"><span class="pre">aarch64-linux-musl</span></code> for
+64-bit platforms, <code class="docutils literal notranslate"><span class="pre">arm-linux-musleabihf</span></code> for 32-bit ones) is produced by
+<code class="docutils literal notranslate"><span class="pre">meta-toolchain</span></code>, so there is no manual toolchain step. Build and (re)deploy the
+user space with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>build.sh<span class="w"> </span>-x<span class="w"> </span>usr-so3<span class="w">      </span><span class="c1"># configure + cross-compile (CMake + MUSL)</span>
+deploy.sh<span class="w"> </span>-x<span class="w"> </span>usr-so3<span class="w">     </span><span class="c1"># repopulate so3/rootfs/rootfs.fat with the apps</span>
+deploy.sh<span class="w"> </span>bsp-so3<span class="w">     </span><span class="c1"># repack rootfs into the FIT image + write the boot media</span>
+</pre></div>
+</div>
+<p>The recipe configures and builds under <code class="docutils literal notranslate"><span class="pre">so3/usr/build/</span></code> and gathers the
+deployable, statically-linked <code class="docutils literal notranslate"><span class="pre">*.elf</span></code> binaries for the root filesystem. Adding
+an application means dropping a C file in <code class="docutils literal notranslate"><span class="pre">so3/usr/src/</span></code> and referencing it from
+the relevant <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code>.</p>
+</section>
+<section id="applications">
+<h2><span class="section-number">3.3. </span>Applications<a class="headerlink" href="#applications" title="Link to this heading"></a></h2>
+<p>The standard applications in <code class="docutils literal notranslate"><span class="pre">so3/usr/src/</span></code> include:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Program</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init.elf</span></code></p></td>
+<td><p>the <strong>init</strong> process: reads <code class="docutils literal notranslate"><span class="pre">commands.ini</span></code> and launches the shell</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sh.elf</span></code></p></td>
+<td><p>the interactive <strong>shell</strong> (the <code class="docutils literal notranslate"><span class="pre">so3%</span></code> prompt)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ls</span></code> / <code class="docutils literal notranslate"><span class="pre">more</span></code> / <code class="docutils literal notranslate"><span class="pre">cat</span></code> / <code class="docutils literal notranslate"><span class="pre">touch</span></code> / <code class="docutils literal notranslate"><span class="pre">mkdir</span></code> / <code class="docutils literal notranslate"><span class="pre">rmdir</span></code> / <code class="docutils literal notranslate"><span class="pre">rm</span></code> / <code class="docutils literal notranslate"><span class="pre">mv</span></code> / <code class="docutils literal notranslate"><span class="pre">cp</span></code></p></td>
+<td><p>basic file utilities (<code class="docutils literal notranslate"><span class="pre">ls</span></code> supports <code class="docutils literal notranslate"><span class="pre">-l</span></code>; <code class="docutils literal notranslate"><span class="pre">rm</span></code> supports <code class="docutils literal notranslate"><span class="pre">-r</span></code> / <code class="docutils literal notranslate"><span class="pre">-f</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ping</span></code></p></td>
+<td><p>ICMP ping (exercises the lwIP stack)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time</span></code></p></td>
+<td><p>simple timing utility</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thread_example</span></code> / <code class="docutils literal notranslate"><span class="pre">logs_example</span></code> / <code class="docutils literal notranslate"><span class="pre">mydev_test</span></code></p></td>
+<td><p>API and subsystem demonstrations</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hello-world</span></code> / <code class="docutils literal notranslate"><span class="pre">class-test</span></code> / <code class="docutils literal notranslate"><span class="pre">stdlib-test</span></code> / <code class="docutils literal notranslate"><span class="pre">exception-test</span></code> /
+<code class="docutils literal notranslate"><span class="pre">allocation-test</span></code> / <code class="docutils literal notranslate"><span class="pre">threads-test</span></code> / <code class="docutils literal notranslate"><span class="pre">files-test</span></code></p></td>
+<td><p>the <strong>C++</strong> example and test programs of <code class="docutils literal notranslate"><span class="pre">so3/usr/src/tests/</span></code>, built by
+default (CMake option <code class="docutils literal notranslate"><span class="pre">WITH_TESTS</span></code>, <code class="docutils literal notranslate"><span class="pre">ON</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lvgl_widgets</span></code> / <code class="docutils literal notranslate"><span class="pre">lvgl_demo</span></code> / <code class="docutils literal notranslate"><span class="pre">lvgl_perf</span></code> / <code class="docutils literal notranslate"><span class="pre">lvgl_benchmark</span></code></p></td>
+<td><p>LVGL graphical demos — present only when the <code class="docutils literal notranslate"><span class="pre">:lvgl</span></code> override adds them
+(see <a class="reference internal" href="lvgl.html#lvgl"><span class="std std-ref">LVGL — Light and Versatile Embedded Graphics Library</span></a>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fb_test</span></code></p></td>
+<td><p>minimal framebuffer test, straight to <code class="docutils literal notranslate"><span class="pre">/dev/fb</span></code> (see <a class="reference internal" href="display_input.html#display-input"><span class="std std-ref">Display &amp; Input (QEMU virt)</span></a>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>MicroPython</p></td>
+<td><p>the MicroPython interpreter (ARM64 — see <a class="reference internal" href="micropython.html#micropython"><span class="std std-ref">MicroPython</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>User-space libraries used by the applications live in <code class="docutils literal notranslate"><span class="pre">usr/lib/</span></code> (the LVGL
+graphics library, logging helpers, and so on).</p>
+<p>File timestamps are real: the kernel reads a <strong>PL031 real-time clock</strong> (QEMU
+virt exposes one at <code class="docutils literal notranslate"><span class="pre">0x09010000</span></code>, seeded from the host) so <code class="docutils literal notranslate"><span class="pre">gettimeofday</span></code> /
+<code class="docutils literal notranslate"><span class="pre">clock_gettime(CLOCK_REALTIME)</span></code> return wall-clock time. Newly written files get
+the current time (FatFS <code class="docutils literal notranslate"><span class="pre">get_fattime</span></code>), and <code class="docutils literal notranslate"><span class="pre">touch</span></code> refreshes an existing
+file’s modification time via the <code class="docutils literal notranslate"><span class="pre">utimensat</span></code> syscall.</p>
+</section>
+<section id="init-and-the-shell">
+<h2><span class="section-number">3.4. </span>Init and the shell<a class="headerlink" href="#init-and-the-shell" title="Link to this heading"></a></h2>
+<p>When the kernel hands over to user space, the root process <code class="docutils literal notranslate"><span class="pre">execve()</span></code>s
+<code class="docutils literal notranslate"><span class="pre">init.elf</span></code>. Init reads a small <code class="docutils literal notranslate"><span class="pre">commands.ini</span></code> script and runs it line by
+line; a typical script prints a banner and starts the shell:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>echo SO3 Init Program :)
+shell
+</pre></div>
+</div>
+<p>The shell then presents a prompt showing the current working directory (e.g.
+<code class="docutils literal notranslate"><span class="pre">/</span> <span class="pre">%</span></code> at the root, <code class="docutils literal notranslate"><span class="pre">/dev</span> <span class="pre">%</span></code> after <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">dev</span></code>) and runs commands by forking
+and <code class="docutils literal notranslate"><span class="pre">execve()</span></code>-ing the corresponding <code class="docutils literal notranslate"><span class="pre">.elf</span></code>. A bare command name (no
+<code class="docutils literal notranslate"><span class="pre">/</span></code>) is looked up in the root filesystem — all executables live there and
+there is no <code class="docutils literal notranslate"><span class="pre">PATH</span></code> — while a name containing <code class="docutils literal notranslate"><span class="pre">/</span></code> is resolved against the
+current directory. It supports:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Syntax</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">arg1</span> <span class="pre">arg2</span></code></p></td>
+<td><p>run <code class="docutils literal notranslate"><span class="pre">cmd.elf</span></code> with arguments</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cmd1</span> <span class="pre">|</span> <span class="pre">cmd2</span> <span class="pre">|</span> <span class="pre">cmd3</span></code></p></td>
+<td><p>pipeline (any number of stages)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">&gt;</span> <span class="pre">file</span></code> / <code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">&gt;&gt;</span> <span class="pre">file</span></code></p></td>
+<td><p>redirect stdout (truncate / append)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">&lt;</span> <span class="pre">file</span></code></p></td>
+<td><p>redirect stdin from a file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cmd</span> <span class="pre">&amp;</span></code></p></td>
+<td><p>run in the background (reaped on the next prompt)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">'literal'</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;…$VAR…&quot;</span></code></p></td>
+<td><p>single quotes (literal) / double quotes (with expansion)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">$VAR</span></code> / <code class="docutils literal notranslate"><span class="pre">${VAR}</span></code></p></td>
+<td><p>environment variable expansion</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exit</span></code> / <code class="docutils literal notranslate"><span class="pre">env</span></code> / <code class="docutils literal notranslate"><span class="pre">setenv</span></code> / <code class="docutils literal notranslate"><span class="pre">kill</span></code> / <code class="docutils literal notranslate"><span class="pre">history</span></code> / <code class="docutils literal notranslate"><span class="pre">cd</span></code> / <code class="docutils literal notranslate"><span class="pre">pwd</span></code></p></td>
+<td><p>builtins</p></td>
+</tr>
+</tbody>
+</table>
+<p>Operators (<code class="docutils literal notranslate"><span class="pre">|</span> <span class="pre">&lt;</span> <span class="pre">&gt;</span> <span class="pre">&gt;&gt;</span> <span class="pre">&amp;</span></code>) must be surrounded by whitespace. Built-in
+<code class="docutils literal notranslate"><span class="pre">setenv</span> <span class="pre">NAME</span> <span class="pre">VALUE</span></code> sets a variable (<code class="docutils literal notranslate"><span class="pre">setenv</span> <span class="pre">NAME</span></code> unsets it) and <code class="docutils literal notranslate"><span class="pre">env</span></code>
+lists the environment. <code class="docutils literal notranslate"><span class="pre">cd</span></code> / <code class="docutils literal notranslate"><span class="pre">pwd</span></code> change and print the working directory
+(see the note below).</p>
+<p>When stdin is the console the shell provides <strong>interactive line editing</strong>: a
+<code class="docutils literal notranslate"><span class="pre">HIST_MAX</span></code>-entry command <strong>history</strong> (Up / Down arrows, listed by the
+<code class="docutils literal notranslate"><span class="pre">history</span></code> builtin), <strong>cursor movement</strong> (Left / Right, Home / End) and mid-line
+insert/backspace. It does this by briefly switching
+the console to raw mode (clearing <code class="docutils literal notranslate"><span class="pre">ICANON</span></code>/<code class="docutils literal notranslate"><span class="pre">ECHO</span></code> via the <code class="docutils literal notranslate"><span class="pre">TCSETS</span></code> ioctl
+that <a class="reference internal" href="kernel.html#kernel"><span class="std std-ref">console.c</span></a> implements) for the duration of the line edit,
+then restoring canonical mode so spawned programs see a normal cooked terminal.
+On non-tty input (e.g. <code class="docutils literal notranslate"><span class="pre">init</span></code> feeding <code class="docutils literal notranslate"><span class="pre">commands.ini</span></code>) it falls back to plain
+line reading.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each process has a <strong>current working directory</strong> (<code class="docutils literal notranslate"><span class="pre">pcb-&gt;cwd</span></code>, default
+<code class="docutils literal notranslate"><span class="pre">/</span></code>, inherited across <code class="docutils literal notranslate"><span class="pre">fork()</span></code> and preserved across <code class="docutils literal notranslate"><span class="pre">execve()</span></code>). The
+<code class="docutils literal notranslate"><span class="pre">chdir</span></code> / <code class="docutils literal notranslate"><span class="pre">getcwd</span></code> syscalls back the <code class="docutils literal notranslate"><span class="pre">cd</span></code> / <code class="docutils literal notranslate"><span class="pre">pwd</span></code> builtins, and the
+VFS resolves relative paths (and <code class="docutils literal notranslate"><span class="pre">.</span></code> / <code class="docutils literal notranslate"><span class="pre">..</span></code>) against the cwd before
+handing an absolute path to the filesystem. With the default cwd <code class="docutils literal notranslate"><span class="pre">/</span></code> a bare
+<code class="docutils literal notranslate"><span class="pre">foo</span></code> still resolves to <code class="docutils literal notranslate"><span class="pre">/foo</span></code>, so existing absolute-from-root behaviour
+is unchanged.</p>
+</div>
+</section>
+<section id="root-filesystem">
+<h2><span class="section-number">3.5. </span>Root filesystem<a class="headerlink" href="#root-filesystem" title="Link to this heading"></a></h2>
+<p>The applications are delivered through a root filesystem. In the default
+(ramfs) configuration this is a FAT image, <code class="docutils literal notranslate"><span class="pre">so3/rootfs/rootfs.fat</span></code>, built by the
+<code class="docutils literal notranslate"><span class="pre">rootfs-so3</span></code> recipe (<code class="docutils literal notranslate"><span class="pre">meta-rootfs</span></code>) from the freshly built user binaries.
+<code class="docutils literal notranslate"><span class="pre">deploy.sh</span> <span class="pre">bsp-so3</span></code> packs it into the FIT image and writes it to
+the SD-card (<a class="reference internal" href="user_guide.html#user-guide"><span class="std std-ref">User Guide</span></a>); <code class="docutils literal notranslate"><span class="pre">build.sh</span> <span class="pre">bsp-so3</span></code> does the whole
+build + image in one step. The FAT image can be inspected on the host (e.g. with
+<code class="docutils literal notranslate"><span class="pre">mtools</span></code>) — useful when debugging what actually ended up on the target.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="user_guide.html" class="btn btn-neutral float-left" title="2. User Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="display_input.html" class="btn btn-neutral float-right" title="4. Display &amp; Input (QEMU virt)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014-2026, HEIG-VD - REDS Institute.
+      <span class="lastupdated">Last updated on 23 Aug 2026, 14:52.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
