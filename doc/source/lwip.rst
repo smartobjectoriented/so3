@@ -74,6 +74,17 @@ announced on the console shortly after boot::
    smc911x: detected LAN9118 controller
    IP Network up and running with address 10.0.2.15
 
+Pinging past the slirp gateway (``10.0.2.2``) needs the **host** to let QEMU
+open ICMP sockets, otherwise slirp emulates the echo over UDP and relays back
+the port-unreachable it gets::
+
+   From 192.168.1.1 icmp_seq=1 Destination Port Unreachable
+
+The kernel decides that with ``net.ipv4.ping_group_range``, whose default on
+several distributions is the empty range ``1 0``. Widening it (``sysctl -w
+net.ipv4.ping_group_range="0 2147483647"``) lets slirp forward the echo for
+real. Nothing in SO3 is involved either way.
+
 .. note::
 
    The **RX Status Level** the driver programs into ``FIFO_INT`` must be 0: the
