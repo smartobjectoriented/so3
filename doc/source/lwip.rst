@@ -23,18 +23,57 @@ chapter.
 
 .. note::
 
-   Networking is **opt-in**: it is enabled with ``CONFIG_NET`` and is *off* in
-   the default ``virt64_defconfig``. The smc911x MAC is present on boards such as
-   the ARM Versatile Express; QEMU's ``virt`` machine does not provide one, so a
-   different NIC driver is needed to exercise the stack there.
+   Networking is **opt-in**: ``CONFIG_NET`` plus ``CONFIG_SMC911X``. Both are on
+   in ``virt64_defconfig`` and ``virt64_fb_defconfig``, and off everywhere else —
+   the other platforms have no driver for their own MAC yet.
+
+The NIC on QEMU virt
+====================
+
+QEMU's stock ``virt`` machine offers only virtio-net, which SO3 has no driver
+for. The so3 QEMU patch therefore adds an **SMSC LAN9118** to the machine model,
+next to the PL111/PL050 devices it already adds:
+
+- MMIO base ``0x08804000`` (``VIRT_ETH`` in the ``hw/arm/virt.c`` memmap,
+  ``ethernet@08804000`` in ``dts/virt{32,64}.dts``);
+- interrupt SPI 15 (``irqmap[VIRT_ETH]``, and ``interrupts = <0 15 4>`` in the
+  same DT nodes).
+
+Two details are worth knowing. The MAC is **not** at the ``0x1a000000`` the SO3
+device trees inherited from vexpress-a15: that address is inside the PCIe MMIO
+window, whose gpex alias covers the whole range and shadows anything mapped
+underneath, so the guest read back nothing and never detected the chip. And it
+is only instantiated when the command line fills the legacy on-board NIC slot
+(``-nic``/``-net``); without it the machine is exactly as it was and
+``smc911x_detect_chip()`` simply fails.
 
 Trying it out
 =============
 
-With ``CONFIG_NET`` enabled and a supported NIC, the ``ping`` application
-exercises the stack end to end. Under QEMU, ``st.sh`` attaches a **user-mode
-(slirp)** network device — QEMU itself plays DHCP, DNS and NAT, and forwards host
-port ``2222`` to the guest's port ``22`` — so nothing has to be set up on the host
-and no ``sudo`` is needed. The trade-off is that the guest is NAT'd and not
-reachable from the LAN. (``scripts/qemu-ifup.sh`` / ``qemu-ifdown.sh`` are
+``ping`` exercises the stack end to end::
+
+   / % ping -c 4 10.0.2.2
+   64 bytes from 10.0.2.2: icmp_seq=1 ttl=255 time=0.302979 ms
+
+``st.sh`` attaches two NICs on **user-mode (slirp)** networking — QEMU itself
+plays DHCP, DNS and NAT, so nothing has to be set up on the host and no ``sudo``
+is needed. The LAN9118 (``-nic user,model=lan9118``) is the one SO3 drives; the
+virtio-net device is there for the Linux agency of the AVZ boot chain, and
+carries the host port ``2222`` → guest port ``22`` forward. Each guest ignores
+the NIC it cannot drive. The trade-off of slirp is that the guest is NAT'd and
+not reachable from the LAN. (``scripts/qemu-ifup.sh`` / ``qemu-ifdown.sh`` are
 leftovers from the earlier ``tap``-and-bridge setup and are no longer used.)
+
+The interface comes up by DHCP during ``netif_add()``, so the address is
+announced on the console shortly after boot::
+
+   Network Interface Controller (NIC) found LAN9118
+   smc911x: detected LAN9118 controller
+   IP Network up and running with address 10.0.2.15
+
+.. note::
+
+   One known rough edge: the second echo request of a fresh ``ping`` run is
+   consistently lost (the first is answered, so are all the following ones).
+   The reply never reaches the raw socket; the receive path of
+   ``devices/net/smc911x_lwip.c`` is the suspect.
