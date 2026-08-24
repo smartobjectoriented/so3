@@ -12,6 +12,28 @@
 
 QEMU_AUDIO_DRV="none"
 GDB_PORT_BASE=1234
+SSH_PORT_BASE=2222
+
+# First free TCP port at or above $1, probed on the host network.
+#
+# The instance counter below cannot serve here. It counts QEMU processes with
+# `ps`, and every dbuild.sh container has its own PID namespace: a second
+# container sees none of the first one's processes and would hand out the very
+# same ports — while `docker run --network host` makes both share the host's.
+# Two trees side by side (sye_sol and sye_student, say) then died on
+# "Could not set up host forwarding rule 'tcp::2222-:22'".
+
+free_port()
+{
+	local port=$1
+
+	while (exec 3<>/dev/tcp/127.0.0.1/"$port") 2>/dev/null
+	do
+		port=$((port + 1))
+	done
+
+	printf '%s' "$port"
+}
 
 # Parse our own options (currently just -d) out of the argument list before
 # what's left is forwarded to QEMU as USR_OPTION.
@@ -42,10 +64,12 @@ launch_qemu() {
     # the virtio-net one above.
     QEMU_ETH_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((0x10 + N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
 
-    GDB_PORT=$((${GDB_PORT_BASE} + ${N_QEMU_INSTANCES}))
+    GDB_PORT=$(free_port ${GDB_PORT_BASE})
+    SSH_PORT=$(free_port ${SSH_PORT_BASE})
 
     echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
     echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
+    echo -e "\033[01;36mSSH port: " ${SSH_PORT} "\033[0;37m"
 
     while IFS= read -r line; do
       # Check if the line starts with "IB_PLATFORM"
@@ -90,7 +114,7 @@ launch_qemu() {
     #
     #   * virtio-net for the Linux agency (AVZ boot chain) — it has no
     #     smc911x node in its device tree, and hostfwd puts guest ssh on host
-    #     port 2222;
+    #     port ${SSH_PORT} (2222 unless taken);
     #   * an SMSC LAN9118 for SO3, whose only Ethernet driver is smc911x
     #     (devices/net/smc911x_lwip.c). QEMU's stock 'virt' machine has no
     #     such device; the so3 QEMU patch adds one at 0x08804000 / SPI 15 —
@@ -110,7 +134,8 @@ launch_qemu() {
     # the guest gets 10.0.2.15 immediately and NetworkManager-wait-online
     # succeeds in <1 s instead of timing out at 60 s as it did with tap+host
     # bridge that had no DHCP server. hostfwd exposes guest SSH on host
-    # port 2222 for convenience. Trade-off: guest is NAT'd, no LAN visibility.
+    # port ${SSH_PORT} for convenience. Trade-off: guest is NAT'd, no LAN
+    # visibility.
     # Bonus: no sudo needed (no tap device creation), so QEMU artefacts stay
     # owned by the regular user across runs.
     #
@@ -155,7 +180,7 @@ launch_qemu() {
 		-drive if=none,file=filesystem/sdcard.img.virt64,id=hd0,format=raw,file.locking=off \
 		-m 1024 \
 		${DISPLAY_OPT} \
-		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
 		${ETH_OPT} \
         	-gdb tcp::${GDB_PORT}
@@ -179,7 +204,7 @@ launch_qemu() {
 		-drive if=none,file=filesystem/sdcard.img.virt32,id=hd0,format=raw,file.locking=off \
 		-m 1024 \
 		${DISPLAY_OPT} \
-		-netdev user,id=n1,hostfwd=tcp::2222-:22 \
+		-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 \
 		-device virtio-net-device,netdev=n1,mac=${QEMU_MAC_ADDR} \
 		${ETH_OPT} \
         	-gdb tcp::${GDB_PORT}
