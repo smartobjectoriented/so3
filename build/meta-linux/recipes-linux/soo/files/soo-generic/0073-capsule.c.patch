@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,783 @@
+@@ -0,0 +1,781 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -278,8 +278,6 @@
 +                vbus_suspend_devices(slotID);
 +
 +                do_sync_dom(slotID, DC_SUSPEND);
-+
-+                printk("### state: %d\n", get_S3C_state(slotID));
 +        }
 +
 +        if (!snapshot_bounce) {
