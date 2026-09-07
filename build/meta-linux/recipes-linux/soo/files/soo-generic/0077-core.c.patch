@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,353 @@
+@@ -0,0 +1,368 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -39,6 +39,7 @@
 +#include <soo/guest_api.h>
 +#include <soo/soo.h>
 +#include <soo/capsule.h>
++#include <soo/vbus.h>
 +
 +#define AGENCY_DEV_NAME "soo/core"
 +#define AGENCY_DEV_MAJOR 126
@@ -84,6 +85,20 @@
 +		do_sync_dom(S3C_slotID, DC_SHUTDOWN);
 +
 +		S3C_state = get_S3C_state(S3C_slotID);
++	} else {
++		/* That handshake is also what makes the capsule close its frontends,
++		 * and a backend is removed when its frontend does so. Nobody will:
++		 * tear them down here, or the next capsule to land in this slot finds
++		 * them and vbus_dev_changed() refuses to probe over them.
++		 */
++
++		vbus_remove_devices(S3C_slotID);
++
++		/* Same for the vbstore entries the capsule would have removed
++		 * itself: the next capsule in this slot must not find them.
++		 */
++
++		vbstore_capsule_remove(S3C_slotID);
 +	}
 +
 +	/* Then, final termination of the residual S3C */

@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/vbus.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/vbus.h	2025-08-29 08:46:41.396103436 +0200
-@@ -0,0 +1,336 @@
+@@ -0,0 +1,339 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2016, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -265,10 +265,13 @@
 +
 +extern void vbus_read_otherend_details(struct vbus_device *vdev, char *id_node, char *path_node);
 +extern int vbus_suspend_dev(struct bus_type *bus, unsigned int domID);
++int vbus_remove_dev(struct bus_type *bus, unsigned int domID);
 +extern int vbus_resume_dev(struct bus_type *bus, unsigned int domID);
 +
 +/* Prepare for domain suspend: then resume or cancel the suspend. */
 +int vbus_suspend_devices(unsigned int domID);
++int vbus_remove_devices(unsigned int domID);
++void vbstore_capsule_remove(unsigned int domID);
 +int vbus_resume_devices(unsigned int domID);
 +
 +int vdev_probe(char *node);

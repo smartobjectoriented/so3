@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/vbus/vbus.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/vbus/vbus.c	2025-08-29 08:46:41.395052929 +0200
-@@ -0,0 +1,870 @@
+@@ -0,0 +1,947 @@
 +
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -691,6 +691,83 @@
 +		bus_for_each_dev(bus, NULL, NULL, resume_dev);
 +	else
 +		bus_for_each_dev(bus, NULL, &domID, resume_dev);
++
++	return 0;
++}
++
++/*
++ * Look for a backend still attached to a capsule. The device is reported back
++ * instead of being removed on the spot: device_unregister() must not run from
++ * within the bus walk.
++ */
++struct vb_domain_info {
++	unsigned int domID;
++	struct vbus_device *vdev;
++};
++
++static int find_dev_of_domain(struct device *dev, void *data)
++{
++	struct vb_domain_info *info = (struct vb_domain_info *) data;
++	struct vbus_device *vdev = (struct vbus_device *) to_vbus_device(dev);
++	unsigned int curDomID;
++	char *ptr_item;
++	char item[80];
++
++	/* Node names are shaped as backend/<type>/<domID>/<id>. */
++
++	ptr_item = strchr(vdev->nodename, '/');
++	if (ptr_item == NULL)
++		return 0;
++
++	ptr_item = strchr(ptr_item + 1, '/');
++	if (ptr_item == NULL)
++		return 0;
++
++	if (sscanf(ptr_item + 1, "%d/%s", &curDomID, item) < 1)
++		return 0;
++
++	if (curDomID != info->domID)
++		return 0;
++
++	info->vdev = vdev;
++
++	/* Hold the device until the caller is done removing it, the walk being
++	 * over by then.
++	 */
++
++	get_device(dev);
++
++	return 1;
++}
++
++/*
++ * Remove every backend a capsule leaves behind.
++ *
++ * A backend is normally removed when its frontend switches to Closing, which
++ * the DC_SHUTDOWN handshake drives. A capsule which is suspended, stopped or
++ * already dead cannot answer that handshake, so the agency has to clean up on
++ * its own before the slot is handed over: the next capsule landing there would
++ * otherwise find those nodes, and vbus_dev_changed() refuses to probe a device
++ * which already exists.
++ */
++int vbus_remove_dev(struct bus_type *bus, unsigned int domID)
++{
++	struct vb_domain_info info;
++
++	while (true) {
++		info.domID = domID;
++		info.vdev = NULL;
++
++		bus_for_each_dev(bus, NULL, &info, find_dev_of_domain);
++
++		if (info.vdev == NULL)
++			break;
++
++		DBG("Removing the leftover backend %s\n", info.vdev->nodename);
++
++		device_unregister(&info.vdev->dev);
++		put_device(&info.vdev->dev);
++	}
 +
 +	return 0;
 +}
