@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/vdevback.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/vdevback.h	2025-08-29 08:46:41.396178895 +0200
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,91 @@
 +/*
 + * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -72,6 +72,7 @@
 +
 +void vdevback_init(char *name, vdrvback_t *vdrvback);
 +bool vdevback_processing_begin(struct vbus_device *vdev);
++bool vdevback_processing_try_begin(struct vbus_device *vdev);
 +void vdevback_processing_end(struct vbus_device *vdev);
 +
 +bool vdevfront_is_connected(struct vbus_device *vdev);

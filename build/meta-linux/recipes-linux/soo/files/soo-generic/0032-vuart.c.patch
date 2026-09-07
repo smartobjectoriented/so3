@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vuartback/vuart.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/drivers/vuartback/vuart.c	2025-08-29 08:46:41.395804736 +0200
-@@ -0,0 +1,327 @@
+@@ -0,0 +1,336 @@
 +/*
 + * Copyright (C) 2016-2018 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2016 Baptiste Delporte <bonel@bonel.net>
@@ -191,10 +191,19 @@
 +
 +	console = get_console(domid);
 +
-+	if (!vdevfront_is_connected(console))
++	/* The capsule may have gone while the console focus was still pointing at
++	 * its slot -- a paused capsule is suspended, then shut down.
++	 */
++
++	if (!console || !vdevfront_is_connected(console))
 +		return;
 +
-+	vdevback_processing_begin(console);
++	/* This runs from the serial interrupt: the blocking flavour would wait for
++	 * a frontend which is suspended or already gone, and hang the console.
++	 */
++
++	if (!vdevback_processing_try_begin(console))
++		return;
 +
 +	vuart_priv = dev_get_drvdata(&console->dev);
 +
