@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/uapi/soo.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/uapi/soo.h	2025-08-29 08:46:41.395924678 +0200
-@@ -0,0 +1,537 @@
+@@ -0,0 +1,538 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -400,9 +400,10 @@
 +/* AVZ_WRITE_SNAPSHOT */
 +/*
 + * `snapshot_paddr` points to the agency bounce buffer and is read again at each
-+ * stage. At the INIT stage the buffer holds the snapshot header (payload size +
-+ * domain context); at the CHUNK stage it holds one chunk of capsule memory, at
-+ * its very beginning, and `size` tells AVZ how much of it may be used.
++ * stage. At the INIT and FINALIZE stages the buffer holds the snapshot header
++ * (payload size + domain context), which AVZ reads to restore the capsule; at
++ * the CHUNK stage it holds one chunk of capsule memory, at its very beginning,
++ * and `size` tells AVZ how much of it may be used.
 + */
 +typedef struct {
 +	void *snapshot_paddr;

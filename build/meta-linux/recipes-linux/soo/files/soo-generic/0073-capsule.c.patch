@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,781 @@
+@@ -0,0 +1,804 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -439,7 +439,14 @@
 +         * then reuse for the capsule memory itself.
 +         */
 +
-+        head_len = (snapshot_size < AVZ_STAGE_CHUNK_SIZE ? snapshot_size : AVZ_STAGE_CHUNK_SIZE);
++        /* The size stored at the beginning of a snapshot does not count itself,
++         * so the buffer holds sizeof(uint32_t) more bytes than it says.
++         */
++
++        head_len = snapshot_size + sizeof(snapshot_size);
++
++        if (head_len > AVZ_STAGE_CHUNK_SIZE)
++                head_len = AVZ_STAGE_CHUNK_SIZE;
 +
 +        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
 +                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
@@ -486,7 +493,11 @@
 +                goto out;
 +        }
 +
-+        header_size = snapshot_size - payload_size;
++        /* The header is the size field plus the domain context, the latter being
++         * whatever the snapshot holds beyond the capsule memory itself.
++         */
++
++        header_size = sizeof(snapshot_size) + (snapshot_size - payload_size);
 +
 +        args.u.avz_snapshot_args.offset = 0;
 +
@@ -522,6 +533,18 @@
 +                }
 +
 +                cond_resched();
++        }
++
++        /* AVZ reads the domain context out of the buffer again at the FINALIZE
++         * stage, to restore the EL2 frame of the capsule: put the header back,
++         * the CHUNK stages having filled the buffer with capsule memory since.
++         */
++
++        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
++                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
++                ret = -EFAULT;
++
++                goto out;
 +        }
 +
 +        args.u.avz_snapshot_args.stage = AVZ_STAGE_FINALIZE;

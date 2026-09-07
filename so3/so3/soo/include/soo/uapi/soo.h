@@ -399,9 +399,10 @@ typedef struct {
 /* AVZ_WRITE_SNAPSHOT */
 /*
  * `snapshot_paddr` points to the agency bounce buffer and is read again at each
- * stage. At the INIT stage the buffer holds the snapshot header (payload size +
- * domain context); at the CHUNK stage it holds one chunk of capsule memory, at
- * its very beginning, and `size` tells AVZ how much of it may be used.
+ * stage. At the INIT and FINALIZE stages the buffer holds the snapshot header
+ * (payload size + domain context), which AVZ reads to restore the capsule; at
+ * the CHUNK stage it holds one chunk of capsule memory, at its very beginning,
+ * and `size` tells AVZ how much of it may be used.
  */
 typedef struct {
 	void *snapshot_paddr;
