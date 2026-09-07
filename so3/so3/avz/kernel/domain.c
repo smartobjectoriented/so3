@@ -134,6 +134,12 @@ static void complete_domain_destroy(struct domain *d)
 {
 	sched_destroy_domain(d);
 
+#ifdef CONFIG_SOO
+	/* The grants this domain still holds die with it. */
+
+	gnttab_destroy(d);
+#endif /* CONFIG_SOO */
+
 	/* Remove the root page table */
 	reset_root_pgtable((void *) d->pagetable_l0_vaddr, true);
 
