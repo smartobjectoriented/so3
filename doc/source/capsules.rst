@@ -137,3 +137,81 @@ AVZ provides a low-level **snapshot** primitive — ``AVZ_S3C_READ_SNAPSHOT`` an
 its vbstore state. This is the building block the SOO framework uses to move a
 capsule's execution state; the higher-level orchestration that drives it lives in
 the soo repository, not here.
+
+How a snapshot is moved
+-----------------------
+
+Both hypercalls are **staged**, and the agency drives the stages:
+
+``AVZ_STAGE_INIT``
+   Prepare. Reading, this pauses the capsule and hands the header back — the
+   payload size and the domain context. Writing, this allocates the slot,
+   restores the domain context and sets up the page tables.
+
+``AVZ_STAGE_CHUNK``
+   Move ``AVZ_STAGE_CHUNK_SIZE`` bytes of capsule memory at most, and advance the
+   cursor by what was actually copied. Repeated until the payload is through.
+
+``AVZ_STAGE_FINALIZE``
+   Complete: rebuild the stack, rebind the event channels, resume the capsule.
+
+The chunking is what keeps the calling CPU from spending seconds at EL2 with the
+interrupts off, and it is also what keeps the agency from having to find a
+contiguous region the size of a capsule slot: ``snapshot_paddr`` points at a
+**bounce buffer** of one chunk, reserved once when the soo module initialises,
+while the CMA zone is still free of any movable page which would have to be
+migrated out of the way. The agency copies each chunk to or from user space as
+the stages progress, so the snapshot is never held twice in RAM.
+
+The buffer carries the header at the INIT **and** FINALIZE stages — AVZ reads the
+domain context again to restore the EL2 frame — and one chunk of capsule memory,
+at its very beginning, in between.
+
+.. note::
+
+   The size stored at the beginning of a snapshot does not count itself, while
+   the value AVZ hands back to the agency does. Deriving the header size from the
+   stored value therefore misses ``sizeof(uint32_t)``, and every chunk is then
+   read from the wrong offset — which restores a capsule onto shifted contents.
+
+Snapshotting without resuming
+-----------------------------
+
+A snapshot leaves the capsule living: it is suspended for the time its memory is
+read, then resumed. That is the point of snapshotting a running capsule, and
+``AGENCY_IOCTL_READ_SNAPSHOT`` does exactly that.
+
+A caller which shuts the capsule down right after — pausing it, in an engine
+which stores the snapshot and frees the slot — gets the opposite of what it
+wants: the capsule is woken up only to be killed, and runs for a moment,
+diverging from the snapshot just taken. ``AGENCY_IOCTL_READ_SNAPSHOT_HOLD``
+reaches ``AVZ_STAGE_FINALIZE_HOLD`` instead, which completes the snapshot and
+leaves the capsule suspended.
+
+Releasing what a capsule owns
+-----------------------------
+
+A capsule owns state in three places, and each owner releases its own share.
+Nothing else does it for them, so a capsule which skips one of these steps leaves
+its slot unusable for the next one:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 82
+
+   * - Owner
+     - What it releases
+   * - the capsule
+     - Its frontends, its grants and its vbstore entries, while it is still
+       running — driven by the ``DC_SHUTDOWN`` handshake.
+   * - the agency
+     - The backends bound to that domain, and its vbstore subtrees
+       (``backend/<type>/<domID>``, ``device/<domID>``, ``soo/s3c/<domID>``),
+       when the capsule can no longer answer that handshake.
+   * - AVZ
+     - The grant table of the domain, when the domain is destroyed.
+
+The agency's share is done in ``shutdown_capsule()``, in the branch where the
+handshake is skipped: a capsule which is suspended, stopped, or already killed
+after a fault cannot answer it, and ``do_sync_dom()`` waits for that answer
+without any deadline.
