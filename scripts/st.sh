@@ -33,16 +33,26 @@ USR_OPTION=$1
 # QEMU_BIN is selected per IB_PLATFORM below (qemu-system-aarch64 for
 # virt64, qemu-system-arm for virt32).
 
-N_QEMU_INSTANCES=`ps -A | grep qemu-system | wc -l`
+# One guest at a time. Every instance attaches the same disk image with
+# file.locking=off, so a second one writes into the filesystem the first is
+# already writing to -- silently. Refuse to start rather than let two guests
+# corrupt the image.
+
+RUNNING_QEMU=$(pgrep -f 'qemu-system-[a-z0-9]+ ' | tr '\n' ' ')
+if [ -n "${RUNNING_QEMU}" ]; then
+    printf "Error: a QEMU guest is already running (pid %s).\n" "${RUNNING_QEMU% }" >&2
+    printf "       Quit it first: Ctrl-A x in its console, or kill %s\n" "${RUNNING_QEMU% }" >&2
+    exit 1
+fi
 
 launch_qemu() {
-    QEMU_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
+    QEMU_MAC_ADDR="DE:AD:BE:EF:00:00"
 
     # Second NIC (SO3's LAN9118, see ETH_OPT below) — must not collide with
     # the virtio-net one above.
-    QEMU_ETH_MAC_ADDR="$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((0x10 + N_QEMU_INSTANCES)) $((N_QEMU_INSTANCES)))"
+    QEMU_ETH_MAC_ADDR="DE:AD:BE:EF:10:00"
 
-    GDB_PORT=$((${GDB_PORT_BASE} + ${N_QEMU_INSTANCES}))
+    GDB_PORT=${GDB_PORT_BASE}
 
     echo -e "\033[01;36mMAC addr: " ${QEMU_MAC_ADDR} "\033[0;37m"
     echo -e "\033[01;36mGDB port: " ${GDB_PORT} "\033[0;37m"
