@@ -334,6 +334,14 @@ typedef struct agency_ioctl_args {
 #define AVZ_STAGE_CHUNK 1
 #define AVZ_STAGE_FINALIZE 2
 
+/* Snapshot only: complete without resuming the capsule, which is left
+ * suspended. Taking a snapshot normally leaves the capsule living -- that is
+ * the point of snapshotting a running capsule -- but a caller which is about to
+ * shut it down would otherwise let it run, and diverge from the snapshot it has
+ * just taken, for nothing.
+ */
+#define AVZ_STAGE_FINALIZE_HOLD 3
+
 /* Maximum amount of capsule memory moved in a single AVZ_STAGE_CHUNK call.
  *
  * A snapshot is streamed through a bounce buffer of that size instead of being

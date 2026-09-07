@@ -411,6 +411,17 @@ void read_S3C_snapshot(avz_hyp_t *args)
 		break;
 
 	case AVZ_STAGE_FINALIZE:
+	case AVZ_STAGE_FINALIZE_HOLD:
+
+		/* A snapshot leaves the capsule living: it is suspended for the time
+		 * the memory is read, then resumed. The HOLD variant skips that, for
+		 * an agency which shuts the capsule down right after -- resuming it
+		 * only to kill it would let it run, and diverge from the snapshot
+		 * just taken, for nothing.
+		 */
+
+		if (args->u.avz_snapshot_args.stage == AVZ_STAGE_FINALIZE_HOLD)
+			break;
 
 		if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
 			/* Now, this capsule is suspended and must be resumed by the agency */
