@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,627 @@
+@@ -0,0 +1,651 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -30,6 +30,7 @@
 +#include <linux/init.h>
 +#include <linux/kthread.h>
 +#include <linux/miscdevice.h>
++#include <linux/mm.h>
 +#include <linux/mutex.h>
 +#include <linux/spinlock.h>
 +#include <linux/uaccess.h>
@@ -330,19 +331,42 @@
 +        uint32_t slotID;
 +        S3C_state_t S3C_state;
 +
-+        snapshot_size = *((uint32_t *) buffer);
++        /* The snapshot begins with its own size. The buffer belongs to user space,
++         * hence the copy_from_user() and the sanity check below: a corrupted or
++         * uninitialized buffer must be rejected here instead of being turned into
++         * an absurd allocation request.
++         */
 +
-+        DBG("Retrieving a size of %d bytes.\n", snapshot_size);
++        if (copy_from_user(&snapshot_size, buffer, sizeof(snapshot_size)))
++                return -EFAULT;
++
++        DBG("Retrieving a size of %u bytes.\n", snapshot_size);
++
++        if ((snapshot_size < sizeof(snapshot_size)) ||
++            (snapshot_size > (totalram_pages() << PAGE_SHIFT))) {
++                printk("%s: Invalid snapshot size (%u bytes)\n", __func__, snapshot_size);
++
++                return -EINVAL;
++        }
 +
 +        /*
 +         * Prepare a buffer to store the S3C and additional header information like the snapshot structure.
 +         */
-+        me = dma_alloc_coherent(capsule_dev, snapshot_size, &dma_handle, GFP_KERNEL);
-+        BUG_ON(!me);
++        me = dma_alloc_coherent(capsule_dev, snapshot_size, &dma_handle, GFP_KERNEL | __GFP_NOWARN);
++        if (!me) {
++                printk("%s: Failed to allocate %u bytes for the snapshot\n", __func__, snapshot_size);
++
++                return -ENOMEM;
++        }
 +
 +        /* Copy the snapshot to the user buffer */
 +        ret = copy_from_user(me, buffer, snapshot_size);
-+        BUG_ON(ret);
++        if (ret) {
++                printk("%s: Failed to retrieve the snapshot from user space\n", __func__);
++                dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
++
++                return -EFAULT;
++        }
 +
 +        /* The snapshot is written in stages (issue #287) so that the calling
 +         * CPU gets its interrupts back between two chunks of capsule memory.
