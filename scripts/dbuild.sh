@@ -225,8 +225,9 @@ fi
 # resource, so concurrent builds on one machine contend for them exactly
 # as they do outside a container.
 #
-# --network host: keeps st.sh's slirp port forwards (guest ssh on 2222),
-# the GDB stub and the Sense HAT bridge (4442) reachable from the host
+# --network host: keeps st.sh's slirp port forwards (guest ssh on 2222,
+# or the first free port above it), the GDB stub and the Sense HAT bridge
+# (4442) reachable from the host
 # without publishing ports, and lets the recipes fetch through the host
 # resolver.
 
