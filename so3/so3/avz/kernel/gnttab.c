@@ -105,6 +105,25 @@ gnttab_t *new_gnttab_entry(struct domain *d, domid_t target_domid, addr_t pfn)
 	return gnttab;
 }
 
+/**
+ * @brief Release the whole grant table of a domain.
+ *
+ * A domain revokes its grants one by one, as its frontends close. One which is
+ * destroyed before it gets there -- suspended for a snapshot, crashed, or
+ * killed outright -- leaves them all behind, and the entries would then outlive
+ * the domain they describe: the memory is recycled by the next domain, which
+ * inherits list links pointing into it.
+ */
+void gnttab_destroy(struct domain *d)
+{
+	gnttab_t *cur, *tmp;
+
+	list_for_each_entry_safe(cur, tmp, &d->gnttab, list) {
+		list_del(&cur->list);
+		free(cur);
+	}
+}
+
 void revoke_gnttab_entry(struct domain *d, grant_ref_t ref)
 {
 	gnttab_t *cur;

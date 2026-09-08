@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vdevback.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/drivers/vdevback.c	2025-08-29 08:46:41.395627342 +0200
-@@ -0,0 +1,309 @@
+@@ -0,0 +1,350 @@
 +
 +/*
 + * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -81,6 +81,46 @@
 +}
 +
 +/*
++ * Non-blocking counterpart of vdevback_processing_begin(): it never waits for
++ * the frontend to (re)connect and reports false instead.
++ *
++ * Any caller running in a context which must not sleep -- the console input
++ * path, driven by the serial interrupt -- has to use this one. A capsule being
++ * suspended, snapshotted or shut down leaves its frontend out of the connected
++ * state, and waiting for it there would hang the interrupt.
++ */
++bool vdevback_processing_try_begin(struct vbus_device *vdev)
++{
++	void *priv = dev_get_drvdata(&vdev->dev);
++	vdevback_t *vdevback = (vdevback_t *) priv;
++
++	if (vdev->fe_state != VbusStateConnected)
++		return false;
++
++	if (atomic_read(&vdevback->processing_count) == 0) {
++		atomic_inc(&vdevback->processing_count);
++
++		if (!mutex_trylock(&vdevback->processing_lock)) {
++			atomic_dec(&vdevback->processing_count);
++
++			return false;
++		}
++
++		/* Make sure we are still connected after taking the lock. */
++
++		if (vdev->fe_state != VbusStateConnected) {
++			mutex_unlock(&vdevback->processing_lock);
++			atomic_dec(&vdevback->processing_count);
++
++			return false;
++		}
++	} else
++		atomic_inc(&vdevback->processing_count);
++
++	return true;
++}
++
++/*
 + * Finish a processing section against suspend/close prevention
 + */
 +void vdevback_processing_end(struct vbus_device *vdev) {
@@ -98,11 +138,12 @@
 + * Check if the frontend state and tell whether it is connected.
 + */
 +bool vdevfront_is_connected(struct vbus_device *vdev) {
-+	void *priv = dev_get_drvdata(&vdev->dev);
-+	vdevback_t *vdevback = (vdevback_t *) priv;
++	vdevback_t *vdevback;
 +
 +	if (!vdev)
 +		return false;
++
++	vdevback = (vdevback_t *) dev_get_drvdata(&vdev->dev);
 +
 +	return vdevback->vdevfront_connected;
 +}

@@ -1,4 +1,37 @@
 
+v6.3.1 (7 sep 2026)
+
+Patch release on the 6.3 line, carrying the capsule snapshot rework and the
+networking work which had landed on main since v6.3.0.
+
+	•	Capsule snapshots are streamed through a 4 MB bounce buffer instead of a
+		DMA buffer as large as the whole snapshot. On virt64 that meant 128 MB of
+		physically contiguous memory taken from a 160 MB CMA zone, while the engine
+		held a copy of the same snapshot in user space: the allocation failed and
+		the agency died on a BUG_ON() in an ioctl with the interrupts off. Neither
+		pause nor resume depends on a large contiguous allocation any more, and the
+		snapshot is no longer held twice in RAM. A snapshot can also be taken
+		without resuming the capsule (AVZ_STAGE_FINALIZE_HOLD), for a caller which
+		shuts it down right after.
+
+	•	The capsule lifecycle no longer leaves state behind. Sizes coming from user
+		space are bounded and their allocations report -ENOMEM instead of taking the
+		machine down; a snapshot which fails halfway no longer leaves the capsule
+		suspended for good; the console focus skips a capsule which cannot take the
+		input, and the send path no longer sleeps in the serial interrupt waiting
+		for a frontend that is gone; a capsule which cannot answer the DC_SHUTDOWN
+		handshake no longer leaves its backends registered and its vbstore entries
+		behind, so its slot can be reused; and AVZ frees the grant table of a domain
+		destroyed before it revoked its grants. Validated on virt64 through the
+		EMISO Docker API: six consecutive pause/resume cycles, no BUG(), no oops.
+
+	•	Ethernet on virt32 and virt64: the SMSC LAN9118 the QEMU machine model now
+		provides, the lwIP socket path, and ping reporting what it actually got.
+
+	•	Build system: the developer container gained dbuild.sh conveniences, the
+		TEZI feed is served from the tree, and sudo is probed with a real command so
+		a NOPASSWD sudoers no longer stops a build.
+
 v6.3.0 (12 aug 2026)
 
 Minor release opening the 6.3 line. It carries the developer build container

@@ -47,19 +47,26 @@ static struct dom_context domain_context = { 0 };
 
 /* Maximum amount of domain memory moved in one AVZ_STAGE_CHUNK call.
  * This bounds the time spent at EL2 with IRQs off on the calling CPU
- * (issue #287).
+ * (issue #287). It is shared with the agency, which sizes its snapshot
+ * bounce buffer accordingly.
  */
-#define STAGE_CHUNK_SIZE (4 * SZ_1M)
+#define STAGE_CHUNK_SIZE AVZ_STAGE_CHUNK_SIZE
 
 /**
  * Compute the size of the next chunk to be moved, and advance the cursor.
+ *
+ * @max further bounds the chunk to what the agency buffer can hold; pass 0 when
+ * no agency buffer is involved (the injection clears the slot in place).
  */
-static size_t stage_next_chunk(uint32_t *offset, size_t total)
+static size_t stage_next_chunk(uint32_t *offset, size_t total, size_t max)
 {
 	size_t chunk_size = total - *offset;
 
 	if (chunk_size > STAGE_CHUNK_SIZE)
 		chunk_size = STAGE_CHUNK_SIZE;
+
+	if (max && (chunk_size > max))
+		chunk_size = max;
 
 	*offset += chunk_size;
 
@@ -159,7 +166,7 @@ void inject_capsule(avz_hyp_t *args)
 
 		/* Clear the next chunk of the RAM allocated to this capsule */
 
-		chunk_size = stage_next_chunk(&args->u.avz_inject_capsule_args.offset, memslot[slotID].size);
+		chunk_size = stage_next_chunk(&args->u.avz_inject_capsule_args.offset, memslot[slotID].size, 0);
 
 		memset((void *) __xva(slotID, memslot[slotID].base_paddr + offset), 0, chunk_size);
 
@@ -392,14 +399,29 @@ void read_S3C_snapshot(avz_hyp_t *args)
 			return;
 		}
 
-		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size);
+		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size,
+					      args->u.avz_snapshot_args.size);
 
-		memcpy(snapshot_buffer + payload_offset + offset, (void *) __xva(slotID, memslot[slotID].base_paddr + offset),
-		       chunk_size);
+		/* The chunk is handed over at the beginning of the bounce buffer;
+		 * placing it in the snapshot is up to the agency.
+		 */
+
+		memcpy(snapshot_buffer, (void *) __xva(slotID, memslot[slotID].base_paddr + offset), chunk_size);
 
 		break;
 
 	case AVZ_STAGE_FINALIZE:
+	case AVZ_STAGE_FINALIZE_HOLD:
+
+		/* A snapshot leaves the capsule living: it is suspended for the time
+		 * the memory is read, then resumed. The HOLD variant skips that, for
+		 * an agency which shuts the capsule down right after -- resuming it
+		 * only to kill it would let it run, and diverge from the snapshot
+		 * just taken, for nothing.
+		 */
+
+		if (args->u.avz_snapshot_args.stage == AVZ_STAGE_FINALIZE_HOLD)
+			break;
 
 		if (dom_S3C->avz_shared->dom_desc.u.S3C.state == S3C_state_suspended) {
 			/* Now, this capsule is suspended and must be resumed by the agency */
@@ -560,10 +582,14 @@ void write_S3C_snapshot(avz_hyp_t *args)
 
 		/* Copy the next chunk of the capsule content */
 
-		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size);
+		chunk_size = stage_next_chunk(&args->u.avz_snapshot_args.offset, memslot[slotID].size,
+					      args->u.avz_snapshot_args.size);
 
-		memcpy((void *) __xva(slotID, memslot[slotID].base_paddr + offset), snapshot_buffer + payload_offset + offset,
-		       chunk_size);
+		/* The agency has placed the chunk at the beginning of the bounce
+		 * buffer, whatever its position in the snapshot.
+		 */
+
+		memcpy((void *) __xva(slotID, memslot[slotID].base_paddr + offset), snapshot_buffer, chunk_size);
 
 		return;
 	}

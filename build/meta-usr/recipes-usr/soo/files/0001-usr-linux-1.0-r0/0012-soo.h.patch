@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/micofe/build/tmp/work/usr-linux-1.0-r0/usr-linux-1.0/include/soo/uapi/soo.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./include/soo/uapi/soo.h	2025-10-10 17:28:33.584815499 +0200
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,103 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -89,6 +89,11 @@
 +#define AGENCY_IOCTL_START_CAPSULE              _IOWR('S', 5, agency_ioctl_args_t)
 +#define AGENCY_IOCTL_GET_S3C_ID			_IOWR('S', 6, agency_ioctl_args_t)
 +#define AGENCY_IOCTL_GET_S3C_ID_ARRAY		_IOR('S', 7, agency_ioctl_args_t)
++
++/* Same as AGENCY_IOCTL_READ_SNAPSHOT, but the capsule is left suspended instead
++ * of being resumed: for a caller which shuts it down right after.
++ */
++#define AGENCY_IOCTL_READ_SNAPSHOT_HOLD		_IOWR('S', 8, agency_ioctl_args_t)
 +
 +/* struct agency_ioctl_args used in IOCTLs */
 +typedef struct agency_ioctl_args {

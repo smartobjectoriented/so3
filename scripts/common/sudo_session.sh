@@ -17,13 +17,21 @@
 #   # keep-alive is auto-killed on EXIT/INT/TERM via the installed trap
 
 sudo_session_start() {
-	# Validate the sudo timestamp upfront. With a NOPASSWD sudoers
-	# entry this is a silent no-op; otherwise the user gets a single
+	# Validate the sudo timestamp upfront, so the user gets a single
 	# password prompt right here, BEFORE bitbake starts.
-	if ! sudo -v
+	#
+	# The probe is a real (harmless) command rather than `sudo -v`: the
+	# latter validates the user through the 'validate' pseudo-command,
+	# which a sudoers granting NOPASSWD to commands may still refuse --
+	# and it would then demand an authentication that no privileged task
+	# of the build actually needs.
+	if ! sudo -n true 2>/dev/null
 	then
-		printf "Error: failed to acquire sudo credentials\n" >&2
-		return 1
+		if ! sudo -v
+		then
+			printf "Error: failed to acquire sudo credentials\n" >&2
+			return 1
+		fi
 	fi
 
 	# The keep-alive below refreshes the timestamp every 60 s so that

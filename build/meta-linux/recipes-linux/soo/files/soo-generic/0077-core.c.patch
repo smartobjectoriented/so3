@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,317 @@
+@@ -0,0 +1,368 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -39,6 +39,7 @@
 +#include <soo/guest_api.h>
 +#include <soo/soo.h>
 +#include <soo/capsule.h>
++#include <soo/vbus.h>
 +
 +#define AGENCY_DEV_NAME "soo/core"
 +#define AGENCY_DEV_MAJOR 126
@@ -59,28 +60,50 @@
 +static int shutdown_capsule(unsigned int S3C_slotID)
 +{
 +	avz_hyp_t args;
++	S3C_state_t S3C_state;
 +
 +	/* Nothing to do if the slot does not host any capsule; a DC event
 +	 * sent to an empty slot has no possible recipient.
 +	 */
 +
-+	if (get_S3C_state(S3C_slotID) == S3C_state_dead) {
++	S3C_state = get_S3C_state(S3C_slotID);
++
++	if (S3C_state == S3C_state_dead) {
 +		lprintk("%s: no capsule in slot %d, nothing to shut down.\n", __func__, S3C_slotID);
 +		return -ESRCH;
 +	}
 +
-+	/* Asynchronous termination of the capsule. A crashed capsule (killed
-+	 * by AVZ after a fault) cannot answer the DC_SHUTDOWN handshake
-+	 * anymore: it is reaped directly.
++	/* Asynchronous termination of the capsule, except for the states in which
++	 * it cannot answer the DC_SHUTDOWN handshake: stopped (injected, never
++	 * started), killed (faulted, reaped by AVZ) and suspended (held after a
++	 * snapshot, hence not scheduled any more). do_sync_dom() waits for that
++	 * answer without any deadline, so those are reaped directly.
 +	 */
 +
-+	if ((get_S3C_state(S3C_slotID) != S3C_state_stopped) && (get_S3C_state(S3C_slotID) != S3C_state_killed))
++	if ((S3C_state != S3C_state_stopped) && (S3C_state != S3C_state_killed) &&
++	    (S3C_state != S3C_state_suspended)) {
 +		do_sync_dom(S3C_slotID, DC_SHUTDOWN);
 +
++		S3C_state = get_S3C_state(S3C_slotID);
++	} else {
++		/* That handshake is also what makes the capsule close its frontends,
++		 * and a backend is removed when its frontend does so. Nobody will:
++		 * tear them down here, or the next capsule to land in this slot finds
++		 * them and vbus_dev_changed() refuses to probe over them.
++		 */
++
++		vbus_remove_devices(S3C_slotID);
++
++		/* Same for the vbstore entries the capsule would have removed
++		 * itself: the next capsule in this slot must not find them.
++		 */
++
++		vbstore_capsule_remove(S3C_slotID);
++	}
++
 +	/* Then, final termination of the residual S3C */
-+	if ((get_S3C_state(S3C_slotID) == S3C_state_terminated) ||
-+	    (get_S3C_state(S3C_slotID) == S3C_state_stopped) ||
-+	    (get_S3C_state(S3C_slotID) == S3C_state_killed)) {
++	if ((S3C_state == S3C_state_terminated) || (S3C_state == S3C_state_stopped) ||
++	    (S3C_state == S3C_state_killed) || (S3C_state == S3C_state_suspended)) {
 +		args.cmd = AVZ_KILL_S3C;
 +		args.u.avz_kill_me_args.slotID = S3C_slotID;
 +
@@ -117,15 +140,43 @@
 +		break;
 +
 +	case AGENCY_IOCTL_READ_SNAPSHOT:
-+		read_snapshot(args.slotID, args.buffer, (uint32_t *)&args.value);
++	case AGENCY_IOCTL_READ_SNAPSHOT_HOLD:
++
++		/* A capsule keeps running once it has been snapshotted, unless the
++		 * caller asked to hold it suspended because it shuts it down next.
++		 */
++
++		read_snapshot(args.slotID, args.buffer, (uint32_t *)&args.value,
++			      (cmd == AGENCY_IOCTL_READ_SNAPSHOT));
++
++		/* A size of zero means no snapshot could be read: the caller must
++		 * not store what it was given.
++		 */
++
++		if (args.value == 0)
++			ret = -EIO;
 +		break;
 +
 +	case AGENCY_IOCTL_WRITE_SNAPSHOT:
 +		args.slotID = write_snapshot(args.buffer);
++
++		/* Let the caller see the failure: the snapshot may be rejected
++		 * before any slot gets allocated.
++		 */
++
++		if (args.slotID < 0)
++			ret = args.slotID;
 +		break;
 +
 +	case AGENCY_IOCTL_INJECT_CAPSULE:
 +		args.slotID = inject_capsule(args.buffer, args.value, args.slotID, args.capsuleID);
++
++		/* Let the caller see the failure: no slot could be allocated, or
++		 * the capsule image was rejected before that.
++		 */
++
++		if (args.slotID < 0)
++			ret = args.slotID;
 +		break;
 +
 +	case AGENCY_IOCTL_START_CAPSULE:

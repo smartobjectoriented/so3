@@ -334,6 +334,22 @@ typedef struct agency_ioctl_args {
 #define AVZ_STAGE_CHUNK 1
 #define AVZ_STAGE_FINALIZE 2
 
+/* Snapshot only: complete without resuming the capsule, which is left
+ * suspended. Taking a snapshot normally leaves the capsule living -- that is
+ * the point of snapshotting a running capsule -- but a caller which is about to
+ * shut it down would otherwise let it run, and diverge from the snapshot it has
+ * just taken, for nothing.
+ */
+#define AVZ_STAGE_FINALIZE_HOLD 3
+
+/* Maximum amount of capsule memory moved in a single AVZ_STAGE_CHUNK call.
+ *
+ * A snapshot is streamed through a bounce buffer of that size instead of being
+ * mapped as a whole: the agency has no reason to find several hundreds of
+ * contiguous MB in its CMA zone just to save or restore a capsule.
+ */
+#define AVZ_STAGE_CHUNK_SIZE (4 * 1024 * 1024)
+
 /* AVZ_INJECT_CAPSULE */
 typedef struct {
 	void *itb_paddr;
@@ -381,10 +397,17 @@ typedef struct {
 
 /* AVZ_READ_SNAPSHOT */
 /* AVZ_WRITE_SNAPSHOT */
+/*
+ * `snapshot_paddr` points to the agency bounce buffer and is read again at each
+ * stage. At the INIT and FINALIZE stages the buffer holds the snapshot header
+ * (payload size + domain context), which AVZ reads to restore the capsule; at
+ * the CHUNK stage it holds one chunk of capsule memory, at its very beginning,
+ * and `size` tells AVZ how much of it may be used.
+ */
 typedef struct {
 	void *snapshot_paddr;
 	int32_t slotID;
-	int size;
+	int size; /* INIT: IN/OUT snapshot size / CHUNK: IN bounce buffer size */
 	uint32_t stage; /* IN: AVZ_STAGE_* */
 	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to copy */
 } avz_snapshot_t;

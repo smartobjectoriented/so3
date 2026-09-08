@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/uapi/soo.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/uapi/soo.h	2025-08-29 08:46:41.395924678 +0200
-@@ -0,0 +1,482 @@
+@@ -0,0 +1,538 @@
 +/*
 + * Copyright (C) 2014-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -73,6 +73,13 @@
 +typedef struct gnttab_op gnttab_op_t;
 +
 +void do_gnttab(gnttab_op_t *args);
++
++#define MAX_FBDEV_PFN 8
++typedef struct fbdev_pfns {
++	size_t pfn_count;
++	addr_t pfn[MAX_FBDEV_PFN];
++	size_t page_count[MAX_FBDEV_PFN];
++} fbdev_pfns_t;
 +
 +#define AVZ_SCHEDULER_FLIP 0
 +
@@ -166,6 +173,11 @@
 +#define AGENCY_IOCTL_START_CAPSULE _IOWR('S', 5, agency_ioctl_args_t)
 +#define AGENCY_IOCTL_GET_S3C_ID _IOWR('S', 6, agency_ioctl_args_t)
 +#define AGENCY_IOCTL_GET_S3C_ID_ARRAY _IOR('S', 7, agency_ioctl_args_t)
++
++/* Same as AGENCY_IOCTL_READ_SNAPSHOT, but the capsule is left suspended instead
++ * of being resumed: for a caller which shuts it down right after.
++ */
++#define AGENCY_IOCTL_READ_SNAPSHOT_HOLD _IOWR('S', 8, agency_ioctl_args_t)
 +
 +#define SOO_NAME_SIZE 16
 +
@@ -302,6 +314,9 @@
 +#define AVZ_SET_S3C_STATE		11
 +#define AVZ_GET_DOM_DESC		12
 +#define AVZ_GRANT_TABLE_OP              13
++#define AVZ_FBDEV_SET_PFNS 14
++#define AVZ_FBDEV_CHANGE_FOCUS 15
++#define AVZ_FBDEV_GET_S3C_ADDR 16
 +
 +/* Staged hypercalls.
 + *
@@ -319,6 +334,22 @@
 +#define AVZ_STAGE_INIT 0
 +#define AVZ_STAGE_CHUNK 1
 +#define AVZ_STAGE_FINALIZE 2
++
++/* Snapshot only: complete without resuming the capsule, which is left
++ * suspended. Taking a snapshot normally leaves the capsule living -- that is
++ * the point of snapshotting a running capsule -- but a caller which is about to
++ * shut it down would otherwise let it run, and diverge from the snapshot it has
++ * just taken, for nothing.
++ */
++#define AVZ_STAGE_FINALIZE_HOLD 3
++
++/* Maximum amount of capsule memory moved in a single AVZ_STAGE_CHUNK call.
++ *
++ * A snapshot is streamed through a bounce buffer of that size instead of being
++ * mapped as a whole: the agency has no reason to find several hundreds of
++ * contiguous MB in its CMA zone just to save or restore a capsule.
++ */
++#define AVZ_STAGE_CHUNK_SIZE (4 * 1024 * 1024)
 +
 +/* AVZ_INJECT_CAPSULE */
 +typedef struct {
@@ -367,10 +398,17 @@
 +
 +/* AVZ_READ_SNAPSHOT */
 +/* AVZ_WRITE_SNAPSHOT */
++/*
++ * `snapshot_paddr` points to the agency bounce buffer and is read again at each
++ * stage. At the INIT and FINALIZE stages the buffer holds the snapshot header
++ * (payload size + domain context), which AVZ reads to restore the capsule; at
++ * the CHUNK stage it holds one chunk of capsule memory, at its very beginning,
++ * and `size` tells AVZ how much of it may be used.
++ */
 +typedef struct {
 +	void *snapshot_paddr;
 +	int32_t slotID;
-+	int size;
++	int size; /* INIT: IN/OUT snapshot size / CHUNK: IN bounce buffer size */
 +	uint32_t stage; /* IN: AVZ_STAGE_* */
 +	uint32_t offset; /* CHUNK: IN/OUT byte cursor / INIT: OUT bytes to copy */
 +} avz_snapshot_t;
@@ -384,6 +422,21 @@
 +typedef struct {
 +	gnttab_op_t gnttab_op;
 +} avz_gnttab_t;
++
++/* AVZ_FBDEV_SET_PFNS */
++typedef struct {
++	fbdev_pfns_t fbdev;
++} avz_fbdev_pfns_t;
++
++/* AVZ_FBDEV_CHANGE_FOCUS */
++typedef struct {
++	int new_slotID;
++} avz_fbdev_focus_t;
++
++/* AVZ_FBDEV_GET_S3C_ADDR */
++typedef struct {
++	addr_t paddr;
++} avz_fbdev_addr_t;
 +
 +/*
 + * AVZ hypercall argument
@@ -404,6 +457,9 @@
 +		avz_console_io_t avz_console_io_args;
 +		avz_domctl_t avz_domctl_args;
 +		avz_gnttab_t avz_gnttab_args;
++		avz_fbdev_pfns_t avz_fbdev_pfns_args;
++		avz_fbdev_focus_t avz_fbdev_focus_args;
++		avz_fbdev_addr_t avz_fbdev_addr_args;
 +	} u;
 +} avz_hyp_t;
 +

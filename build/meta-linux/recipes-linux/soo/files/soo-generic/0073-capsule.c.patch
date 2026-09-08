@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,627 @@
+@@ -0,0 +1,804 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -30,6 +30,7 @@
 +#include <linux/init.h>
 +#include <linux/kthread.h>
 +#include <linux/miscdevice.h>
++#include <linux/mm.h>
 +#include <linux/mutex.h>
 +#include <linux/spinlock.h>
 +#include <linux/uaccess.h>
@@ -58,6 +59,16 @@
 +size_t current_size = 0;
 +
 +struct device *capsule_dev = NULL;
++
++/* Bounce buffer used to stream capsule snapshots to and from AVZ, one
++ * AVZ_STAGE_CHUNK_SIZE chunk at a time. It is allocated once, at init time,
++ * while the CMA zone is still pristine: a snapshot no longer requires a
++ * contiguous region of its own size, which the agency could not reliably
++ * obtain any more once its memory had been used (capsule slots are hundreds
++ * of MB, and cma_alloc() has to migrate every movable page out of the way).
++ */
++static void *snapshot_bounce = NULL;
++static dma_addr_t snapshot_bounce_handle;
 +
 +/* Serialize the staged injection hypercall sequence (issue #287). */
 +
@@ -91,15 +102,38 @@
 +        void *me = NULL;
 +        dma_addr_t dma_handle;
 +        avz_hyp_t args;
-+        uint32_t slot_size;
++        uint32_t slot_size, offset;
 +
-+        DBG("Original contents at address: 0x%08x\n with size %d bytes\n", (unsigned long) buffer, size);
++        DBG("Original contents at address: %p\n with size %zu bytes\n", buffer, size);
 +
-+        /* Allocate a contiguous memory region to host the S3C */
-+        me = dma_alloc_coherent(capsule_dev, size, &dma_handle, GFP_KERNEL);
-+        BUG_ON(!me);
++        /* The size comes from user space along with the buffer it describes:
++         * reject anything the agency could not hold anyway, rather than turning
++         * it into an allocation request.
++         */
 +
-+        memcpy(me, buffer, size);
++        if ((size == 0) || (size > (totalram_pages() << PAGE_SHIFT))) {
++                printk("%s: Invalid capsule size (%zu bytes)\n", __func__, size);
++
++                return -EINVAL;
++        }
++
++        /* Allocate a contiguous memory region to host the S3C. AVZ parses the
++         * ITB as a whole, so this one cannot be streamed the way a snapshot is.
++         */
++
++        me = dma_alloc_coherent(capsule_dev, size, &dma_handle, GFP_KERNEL | __GFP_NOWARN);
++        if (!me) {
++                printk("%s: Failed to allocate %zu contiguous bytes for the capsule\n", __func__, size);
++
++                return -ENOMEM;
++        }
++
++        if (copy_from_user(me, buffer, size)) {
++                printk("%s: Failed to retrieve the capsule from user space\n", __func__);
++                dma_free_coherent(capsule_dev, size, me, dma_handle);
++
++                return -EFAULT;
++        }
 +
 +        /* Since the S3C buffer is in the CMA zone and allocated via the
 +         * dma_alloc_cohenrent() function, we cannot use virt_to_phys(). So, we
@@ -136,12 +170,23 @@
 +        args.u.avz_inject_capsule_args.offset = 0;
 +
 +        while (args.u.avz_inject_capsule_args.offset < slot_size) {
++                offset = args.u.avz_inject_capsule_args.offset;
++
 +                args.u.avz_inject_capsule_args.stage = AVZ_STAGE_CHUNK;
 +
 +                avz_hypercall(&args);
 +
 +                if (args.u.avz_inject_capsule_args.slotID < 0)
 +                        goto out;
++
++                /* AVZ advances the cursor by what it actually cleared. */
++
++                if (args.u.avz_inject_capsule_args.offset <= offset) {
++                        printk("%s: no progress at offset %u\n", __func__, offset);
++                        args.u.avz_inject_capsule_args.slotID = -1;
++
++                        goto out;
++                }
 +
 +                cond_resched();
 +        }
@@ -193,12 +238,9 @@
 + * @param slotID
 + * @param buffer pointer to the S3C buffer
 + */
-+void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size) {
++void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size, bool resume) {
 +        avz_hyp_t args;
-+        void *me = NULL;
-+        int ret;
-+        uint32_t payload_size;
-+        dma_addr_t dma_handle;
++        uint32_t payload_size, header_size, offset, chunk_size;
 +        S3C_state_t S3C_state;
 +
 +        /* No snapshot can be taken from a slot which does not host any capsule. */
@@ -236,19 +278,19 @@
 +                vbus_suspend_devices(slotID);
 +
 +                do_sync_dom(slotID, DC_SUSPEND);
-+
-+                printk("### state: %d\n", get_S3C_state(slotID));
 +        }
 +
-+        /*
-+         * Prepare a buffer to store the S3C and additional header information like the snapshot structure.
-+         */
++        if (!snapshot_bounce) {
++                printk("%s: no snapshot bounce buffer available\n", __func__);
++                *size = 0;
 +
-+        me = dma_alloc_coherent(capsule_dev, *size, &dma_handle, GFP_KERNEL);
-+        BUG_ON(!me);
++                return;
++        }
 +
 +        /* The snapshot is read in stages (issue #287) so that the calling CPU
-+         * gets its interrupts back between two chunks of capsule memory.
++         * gets its interrupts back between two chunks of capsule memory. Each
++         * chunk transits through the bounce buffer and is handed over to user
++         * space right away, so the whole snapshot is never held twice in RAM.
 +         */
 +
 +        mutex_lock(&inject_lock);
@@ -256,31 +298,77 @@
 +        args.cmd = AVZ_S3C_READ_SNAPSHOT;
 +
 +        args.u.avz_snapshot_args.slotID = slotID;
-+        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
++        args.u.avz_snapshot_args.snapshot_paddr = (void *) snapshot_bounce_handle;
 +	args.u.avz_snapshot_args.size = *size;
 +        args.u.avz_snapshot_args.stage = AVZ_STAGE_INIT;
 +
 +	avz_hypercall(&args);
 +
 +        if (args.u.avz_snapshot_args.size == 0)
-+                goto out;
++                goto fail;
 +
-+        /* INIT returns the amount of capsule memory to be copied. */
++        /* INIT returns the amount of capsule memory to be copied in <offset>,
++         * the header it just left in the bounce buffer accounting for the rest.
++         */
 +
 +        payload_size = args.u.avz_snapshot_args.offset;
++
++        if ((payload_size >= args.u.avz_snapshot_args.size) ||
++            (args.u.avz_snapshot_args.size - payload_size > AVZ_STAGE_CHUNK_SIZE)) {
++                printk("%s: inconsistent snapshot header (size %d, payload %u)\n", __func__,
++                       args.u.avz_snapshot_args.size, payload_size);
++
++                goto fail;
++        }
++
++        header_size = args.u.avz_snapshot_args.size - payload_size;
++
++        if (copy_to_user(buffer, snapshot_bounce, header_size))
++                goto fail;
 +
 +        args.u.avz_snapshot_args.offset = 0;
 +
 +        while (args.u.avz_snapshot_args.offset < payload_size) {
++                offset = args.u.avz_snapshot_args.offset;
++
 +                args.u.avz_snapshot_args.stage = AVZ_STAGE_CHUNK;
++                args.u.avz_snapshot_args.size = AVZ_STAGE_CHUNK_SIZE;
 +
 +                avz_hypercall(&args);
 +
 +                if (args.u.avz_snapshot_args.size == 0)
-+                        goto out;
++                        goto fail;
++
++                /* AVZ advances the cursor by what it actually copied. */
++
++                chunk_size = args.u.avz_snapshot_args.offset - offset;
++
++                if ((chunk_size == 0) || (chunk_size > AVZ_STAGE_CHUNK_SIZE)) {
++                        printk("%s: invalid chunk of %u bytes at offset %u\n", __func__, chunk_size, offset);
++
++                        goto fail;
++                }
++
++                if (copy_to_user(buffer + header_size + offset, snapshot_bounce, chunk_size))
++                        goto fail;
 +
 +                cond_resched();
 +        }
++
++        /* The capsule is resumed, unless the caller is about to shut it down. */
++
++        args.u.avz_snapshot_args.stage = (resume ? AVZ_STAGE_FINALIZE : AVZ_STAGE_FINALIZE_HOLD);
++
++        avz_hypercall(&args);
++
++        goto out;
++
++fail:
++        *size = 0;
++
++        /* The capsule was suspended before the first stage: bring it back
++         * whatever went wrong, rather than leaving it frozen for good.
++         */
 +
 +        args.u.avz_snapshot_args.stage = AVZ_STAGE_FINALIZE;
 +
@@ -288,12 +376,6 @@
 +
 +out:
 +        mutex_unlock(&inject_lock);
-+
-+        /* Copy the snapshot to the user buffer */
-+        ret = copy_to_user(buffer, me, *size);
-+        BUG_ON(ret);
-+
-+	dma_free_coherent(capsule_dev, *size, me, dma_handle);
 +
 +        S3C_state = get_S3C_state(slotID);
 +
@@ -322,30 +404,60 @@
 + */
 +int write_snapshot(void *buffer) {
 +        avz_hyp_t args;
-+        void *me = NULL;
-+        int ret;
-+        dma_addr_t dma_handle;
-+        uint32_t snapshot_size;
-+        uint32_t payload_size;
++        int ret = 0;
++        uint32_t snapshot_size, header_size, head_len;
++        uint32_t payload_size, offset, chunk_size;
 +        uint32_t slotID;
 +        S3C_state_t S3C_state;
 +
-+        snapshot_size = *((uint32_t *) buffer);
-+
-+        DBG("Retrieving a size of %d bytes.\n", snapshot_size);
-+
-+        /*
-+         * Prepare a buffer to store the S3C and additional header information like the snapshot structure.
++        /* The snapshot begins with its own size. The buffer belongs to user space,
++         * hence the copy_from_user() and the sanity check below: a corrupted or
++         * uninitialized buffer must be rejected here instead of being turned into
++         * an absurd allocation request.
 +         */
-+        me = dma_alloc_coherent(capsule_dev, snapshot_size, &dma_handle, GFP_KERNEL);
-+        BUG_ON(!me);
 +
-+        /* Copy the snapshot to the user buffer */
-+        ret = copy_from_user(me, buffer, snapshot_size);
-+        BUG_ON(ret);
++        if (copy_from_user(&snapshot_size, buffer, sizeof(snapshot_size)))
++                return -EFAULT;
++
++        DBG("Retrieving a size of %u bytes.\n", snapshot_size);
++
++        if ((snapshot_size < sizeof(snapshot_size)) ||
++            (snapshot_size > (totalram_pages() << PAGE_SHIFT))) {
++                printk("%s: Invalid snapshot size (%u bytes)\n", __func__, snapshot_size);
++
++                return -EINVAL;
++        }
++
++        if (!snapshot_bounce) {
++                printk("%s: no snapshot bounce buffer available\n", __func__);
++
++                return -ENOMEM;
++        }
++
++        /* AVZ reads the snapshot header (payload size + domain context) at the
++         * INIT stage: hand it over in the bounce buffer, which the CHUNK stages
++         * then reuse for the capsule memory itself.
++         */
++
++        /* The size stored at the beginning of a snapshot does not count itself,
++         * so the buffer holds sizeof(uint32_t) more bytes than it says.
++         */
++
++        head_len = snapshot_size + sizeof(snapshot_size);
++
++        if (head_len > AVZ_STAGE_CHUNK_SIZE)
++                head_len = AVZ_STAGE_CHUNK_SIZE;
++
++        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
++                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
++
++                return -EFAULT;
++        }
 +
 +        /* The snapshot is written in stages (issue #287) so that the calling
 +         * CPU gets its interrupts back between two chunks of capsule memory.
++         * Each chunk transits through the bounce buffer, so the whole snapshot
++         * is never held twice in RAM.
 +         */
 +
 +        mutex_lock(&inject_lock);
@@ -354,7 +466,7 @@
 +
 +        args.u.avz_snapshot_args.size = snapshot_size;
 +        args.u.avz_snapshot_args.slotID = -1;
-+        args.u.avz_snapshot_args.snapshot_paddr = (void *) dma_handle;
++        args.u.avz_snapshot_args.snapshot_paddr = (void *) snapshot_bounce_handle;
 +        args.u.avz_snapshot_args.stage = AVZ_STAGE_INIT;
 +
 +        DBG("%s: Now asking AVZ to re-implement the snapshot of size %d bytes...\n", __func__, snapshot_size);
@@ -368,21 +480,71 @@
 +        if (args.u.avz_snapshot_args.slotID < 2)
 +                goto out;
 +
-+        /* INIT returns the amount of capsule memory to be copied. */
++        /* INIT returns the amount of capsule memory to be copied in <offset>,
++         * the header accounting for the rest of the snapshot.
++         */
 +
 +        payload_size = args.u.avz_snapshot_args.offset;
++
++        if (payload_size >= snapshot_size) {
++                printk("%s: inconsistent snapshot (size %u, payload %u)\n", __func__, snapshot_size, payload_size);
++                args.u.avz_snapshot_args.slotID = -1;
++
++                goto out;
++        }
++
++        /* The header is the size field plus the domain context, the latter being
++         * whatever the snapshot holds beyond the capsule memory itself.
++         */
++
++        header_size = sizeof(snapshot_size) + (snapshot_size - payload_size);
 +
 +        args.u.avz_snapshot_args.offset = 0;
 +
 +        while (args.u.avz_snapshot_args.offset < payload_size) {
++                offset = args.u.avz_snapshot_args.offset;
++                chunk_size = payload_size - offset;
++
++                if (chunk_size > AVZ_STAGE_CHUNK_SIZE)
++                        chunk_size = AVZ_STAGE_CHUNK_SIZE;
++
++                if (copy_from_user(snapshot_bounce, buffer + header_size + offset, chunk_size)) {
++                        printk("%s: Failed to retrieve the snapshot from user space\n", __func__);
++                        ret = -EFAULT;
++
++                        goto out;
++                }
++
 +                args.u.avz_snapshot_args.stage = AVZ_STAGE_CHUNK;
++                args.u.avz_snapshot_args.size = chunk_size;
 +
 +                avz_hypercall(&args);
 +
 +                if (args.u.avz_snapshot_args.slotID < 2)
 +                        goto out;
 +
++                /* AVZ advances the cursor by what it actually copied. */
++
++                if (args.u.avz_snapshot_args.offset <= offset) {
++                        printk("%s: no progress at offset %u\n", __func__, offset);
++                        args.u.avz_snapshot_args.slotID = -1;
++
++                        goto out;
++                }
++
 +                cond_resched();
++        }
++
++        /* AVZ reads the domain context out of the buffer again at the FINALIZE
++         * stage, to restore the EL2 frame of the capsule: put the header back,
++         * the CHUNK stages having filled the buffer with capsule memory since.
++         */
++
++        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
++                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
++                ret = -EFAULT;
++
++                goto out;
 +        }
 +
 +        args.u.avz_snapshot_args.stage = AVZ_STAGE_FINALIZE;
@@ -392,16 +554,17 @@
 +out:
 +        mutex_unlock(&inject_lock);
 +
++        if (ret)
++                return ret;
++
 +        if (args.u.avz_snapshot_args.slotID < 2) {
 +                printk("%s: No free space...\n", __func__);
-+                dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
++
 +                return -1; /* No free space */
 +        }
 +
 +        slotID = args.u.avz_snapshot_args.slotID;
 +
-+        dma_free_coherent(capsule_dev, snapshot_size, me, dma_handle);
-+     
 +        S3C_state = get_S3C_state(slotID);
 +
 +        if (S3C_state == S3C_state_stopped) {
@@ -622,9 +785,23 @@
 +        capsule_dev = cma_malloc_miscdevice.this_device;
 +        capsule_dev->coherent_dma_mask = DMA_BIT_MASK(64);
 +        capsule_dev->dma_mask = &capsule_dev->coherent_dma_mask;
++
++        /* Reserve the snapshot bounce buffer now, while the CMA zone is still
++         * free of any movable page which would have to be migrated away.
++         */
++
++        snapshot_bounce = dma_alloc_coherent(capsule_dev, AVZ_STAGE_CHUNK_SIZE, &snapshot_bounce_handle, GFP_KERNEL);
++        if (!snapshot_bounce)
++                printk("%s: failed to reserve the %d bytes snapshot bounce buffer\n", __func__,
++                       AVZ_STAGE_CHUNK_SIZE);
 +}
 +
 +void capsule_exit(void) {
++        if (snapshot_bounce) {
++                dma_free_coherent(capsule_dev, AVZ_STAGE_CHUNK_SIZE, snapshot_bounce, snapshot_bounce_handle);
++                snapshot_bounce = NULL;
++        }
++
 +        misc_deregister(&cma_malloc_miscdevice);
 +	capsule_dev = NULL;
 +}
