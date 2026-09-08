@@ -1,6 +1,6 @@
 --- /dev/null	2026-03-20 16:30:38.468300202 +0100
 +++ ./arch/arm64/boot/dts/arm/virt64_guest.dts	2026-03-20 16:55:19.220277261 +0100
-@@ -0,0 +1,425 @@
+@@ -0,0 +1,431 @@
 +/dts-v1/;
 +
 +/ {
@@ -324,11 +324,17 @@
 +		};
 +	};
 +
-+	flash@0 {
-+		bank-width = <0x04>;
-+		reg = <0x00 0x00 0x00 0x4000000 0x00 0x4000000 0x00 0x4000000>;
-+		compatible = "cfi-flash";
-+	};
++	/*
++	 * No flash@0 here, on purpose. The QEMU CFI pflash at address 0
++	 * belongs to the firmware, not to the guest: AVZ's agency_ipamap
++	 * (arch/arm64/virt64/include/mach/ipamap.h) maps nothing below
++	 * 0x08000000, so the region this node describes is simply not
++	 * backed for the guest. Measured on virt64/AVZ with the node
++	 * present and CONFIG_MTD_PHYSMAP_OF=y: the guest probes it and
++	 * gets "physmap-flash 0.flash: map_probe failed" — harmless, but a
++	 * failed probe and a misleading log line on every boot. The bare
++	 * virt64.dts keeps the node, where address 0 really is the pflash.
++	 */
 +
 +	cpus {
 +		#size-cells = <0x00>;
