@@ -4,7 +4,9 @@ config NS16550
 
 config PL011_UART
 	bool "PL011 UART serial interface"
-	depends on VIRT32 || VIRT64
+	# The Pi 5 belongs here too: the BCM2712 debug console is a PL011
+	# (uart10), unlike the Pi 4's mini-UART.
+	depends on VIRT32 || VIRT64 || RPI5_64
 	depends on !SOO_SERIAL
 
 config BCM283x_MU_UART

@@ -14,6 +14,10 @@ menu "Platform"
 			bool "Raspberry Pi 4 64-bit"
 			select GIC_V2
 
+		config RPI5_64
+			bool "Raspberry Pi 5 64-bit"
+			select GIC_V2
+
 		config VERDIN_IMX8MP
 			bool "Toradex Verdin iMX8MP"
 			select GIC
