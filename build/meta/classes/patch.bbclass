@@ -9,6 +9,17 @@ QUILTRCFILE ?= "${STAGING_ETCDIR_NATIVE}/quiltrc"
 PATCH_GIT_USER_NAME ?= "OpenEmbedded"
 PATCH_GIT_USER_EMAIL ?= "oe.patch@oe"
 
+# Where do_diffcompose stages, and do_updiff maintains, the patch series.
+#
+# FILE_DIRNAME is the directory of the .bb, so a recipe whose patches are
+# contributed by a .bbappend in another layer would have them regenerated
+# into the recipe's layer instead of the append's -- silently undoing the
+# split on the first updiff. Such an append sets
+# IB_PATCHDIR := "${THISDIR}" (immediate expansion, so it captures the
+# append's own directory) and owns its series.
+
+IB_PATCHDIR ?= "${FILE_DIRNAME}"
+
 inherit terminal
 
 python () {
@@ -204,7 +215,7 @@ python patch_save_pristine() {
 
 # Infrabase patch generation algorithm
 #
-# Produces per-file patches in ${FILE_DIRNAME}/files/${PF}/ comparing the
+# Produces per-file patches in ${IB_PATCHDIR}/files/${PF}/ comparing the
 # pristine upstream sources (${S}.pristine, saved by patch_save_pristine
 # right after do_unpack) against the local working tree (IB_TARGET). Each
 # staged patch is therefore a self-contained "upstream → final" diff for
@@ -217,7 +228,7 @@ python patch_save_pristine() {
 # this task wrote absolute paths on both sides (e.g. /home/.../<user>/.../),
 # which silently broke as soon as the repository was cloned anywhere else.
 #
-# The staging directory ${FILE_DIRNAME}/files/${PF}/ is wiped and recreated
+# The staging directory ${IB_PATCHDIR}/files/${PF}/ is wiped and recreated
 # on every run so that stale patches from previous invocations do not leak
 # into the new patchset (do_updiff promotes this directory in place into
 # the existing numbered patchset).
@@ -237,7 +248,7 @@ python patch_do_diffcompose() {
             f"do_unpack regenerates the pristine snapshot, then re-run updiff."
         )
     target_dir = d.getVar('IB_TARGET')
-    output_dir = os.path.join(d.getVar('FILE_DIRNAME'), 'files', d.getVar('PF'))
+    output_dir = os.path.join(d.getVar('IB_PATCHDIR'), 'files', d.getVar('PF'))
 
     if os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
@@ -265,6 +276,29 @@ python patch_do_diffcompose() {
         'autoconf.h', 'asm-offsets.h', 'asm-offsets.s',
         'devicetable-offsets.h', 'devicetable-offsets.s',
         'elfconfig.h', 'module.lds',
+        # More of the same, surfaced by a 6.12 kernel: every one of these is
+        # produced by a generator in the tree (a .pl, a .asn1, a shipped
+        # table) and regenerated on the next build, so a patch for one is at
+        # best redundant and at worst applies stale content over the real
+        # generator's output. Named individually rather than by pattern for
+        # *.lds, for the reason given above.
+        'bounds.s', 'utsversion-tmp.h', 'empty_root.dtb.S',
+        'vdso.lds', 'vdso32.lds', 'hyp.lds',
+        'hyp-reloc.S', 'hyp-constants.s', 'hyp_constants.h',
+        'sha256-core.S', 'sha512-core.S',
+        '*.asn1.c', '*.asn1.h',
+        'crc32table.h', 'crc64table.h', 'oid_registry_data.c',
+        'consolemap_deftbl.c', 'defkeymap.c', 'logo_*_clut224.c',
+        'scsi_devinfo_tbl.c',
+        # One per DTS directory, written by 'make dtbs'.
+        'dtbs-list',
+        # New generated files in 6.18: the console's Unicode tables, and
+        # another offsets file in the same family as bounds.s.
+        'ucs_fallback_table.h', 'ucs_recompose_table.h',
+        'ucs_width_table.h', 'rq-offsets.s',
+        # `make savedefconfig` writes this at the tree root; it is an
+        # output, never a source.
+        'defconfig',
         # lex / yacc / bison generated parsers — kconfig, dtc, and any other
         # consumer of flex/bison. Sources are *.l / *.y (kept); outputs are
         # *.lex.c, *.tab.c, *.tab.h (excluded).
@@ -459,7 +493,7 @@ addtask do_updiff
 do_updiff[nostamp] = "1"
 
 # Merge the staged patchset produced by do_diffcompose
-# (${FILE_DIRNAME}/files/${PF}/) into the canonical numbered patchset.
+# (${IB_PATCHDIR}/files/${PF}/) into the canonical numbered patchset.
 #
 # Staged patches are self-contained "pristine → IB_TARGET" diffs (one per
 # source file). do_updiff decides, per file, between three outcomes:
@@ -502,7 +536,7 @@ python do_updiff() {
     import shutil
     import filecmp
 
-    patchdir = d.getVar('FILE_DIRNAME') + '/files/'
+    patchdir = d.getVar('IB_PATCHDIR') + '/files/'
     pf = d.getVar('PF')
     staging = os.path.join(patchdir, pf)
 

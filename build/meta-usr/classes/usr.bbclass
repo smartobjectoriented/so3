@@ -96,6 +96,19 @@ do_configure () {
 
 # Build of user space custom applications
 
+# Two knobs a user space may need, defaulting to the behaviour every tree
+# had before they existed:
+#
+#   IB_USR_CMAKE_ARGS   extra -D flags for the configure step.
+#   IB_USR_MAKE_TARGET  the make target; empty means the default one.
+#
+# They exist so a user space that needs a variation does not have to
+# redefine do_build() wholesale in a bbappend, which would make the append a
+# copy of this function and silently miss any later fix to it.
+
+IB_USR_CMAKE_ARGS ?= ""
+IB_USR_MAKE_TARGET ?= ""
+
 do_build[nostamp] = "1"
 do_build () {
 
@@ -104,9 +117,10 @@ do_build () {
 	 
 	# User space applications
 	cmake -Wno-dev --no-warn-unused-cli -DCMAKE_BUILD_TYPE=${IB_USR_BUILD_TYPE} \
-		-DCMAKE_KERNEL_PATH=${IB_LINUX_PATH} -DCMAKE_TOOLCHAIN_FILE=${IB_TOOLCHAIN_PATH} ..
+		-DCMAKE_KERNEL_PATH=${IB_LINUX_PATH} -DCMAKE_TOOLCHAIN_FILE=${IB_TOOLCHAIN_PATH} \
+		${IB_USR_CMAKE_ARGS} ..
 	 
-	make -j${CORES}
+	make ${IB_USR_MAKE_TARGET} -j${CORES}
 
 	cd ${IB_TARGET}
 
