@@ -292,6 +292,13 @@ python patch_do_diffcompose() {
         'scsi_devinfo_tbl.c',
         # One per DTS directory, written by 'make dtbs'.
         'dtbs-list',
+        # New generated files in 6.18: the console's Unicode tables, and
+        # another offsets file in the same family as bounds.s.
+        'ucs_fallback_table.h', 'ucs_recompose_table.h',
+        'ucs_width_table.h', 'rq-offsets.s',
+        # `make savedefconfig` writes this at the tree root; it is an
+        # output, never a source.
+        'defconfig',
         # lex / yacc / bison generated parsers — kconfig, dtc, and any other
         # consumer of flex/bison. Sources are *.l / *.y (kept); outputs are
         # *.lex.c, *.tab.c, *.tab.h (excluded).
