@@ -299,6 +299,12 @@ python patch_do_diffcompose() {
         # `make savedefconfig` writes this at the tree root; it is an
         # output, never a source.
         'defconfig',
+        # U-Boot's own generated files: the boot logo turned into assembly
+        # and headers, the EFI hello-world stub, the config header kbuild
+        # writes, and the defconfig 'make savedefconfig' leaves behind
+        # under its U-Boot spelling.
+        'u_boot_logo.S', 'bmp_logo.h', 'bmp_logo_data.h',
+        'helloworld_efi.S', 'config.h', 'generated_defconfig',
         # lex / yacc / bison generated parsers — kconfig, dtc, and any other
         # consumer of flex/bison. Sources are *.l / *.y (kept); outputs are
         # *.lex.c, *.tab.c, *.tab.h (excluded).
