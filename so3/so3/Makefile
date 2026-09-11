@@ -380,6 +380,9 @@ endif
 ifeq ($(CONFIG_VIRT64),y)
 TARGET = virt64
 endif
+ifeq ($(CONFIG_RPI5_64),y)
+TARGET = rpi5_64
+endif
 ifeq ($(CONFIG_VERDIN_IMX8MP),y)
 TARGET = verdin-imx8mp
 endif

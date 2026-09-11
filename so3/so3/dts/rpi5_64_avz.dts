@@ -1,0 +1,96 @@
+/*
+ * Copyright (C) 2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+ 
+/dts-v1/;
+
+/ {
+	model = "SO3 RPi5 64-bit";
+	compatible = "brcm,bcm2712";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "arm,cortex-a76";
+	};
+
+	/*
+	 * The VideoCore firmware injects the real memory node at boot, as on
+	 * every Pi; the size below is the 4 GB model and is overridden in
+	 * practice. ATF sits in the first 512 KB (atf@0 in the Linux DT), so
+	 * AVZ must not be placed there.
+	 */
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x00000000 0x1 0x00000000>;
+	};
+
+	mem {
+		compatible = "mem";
+		status = "ok";
+	};
+
+	/*
+	 * BCM2712 GIC-400 (GICv2). The Linux device tree writes these under
+	 * a bus whose ranges add 0x10_00000000, so the frames really are at
+	 * 0x10_7fff9000 and up: dist, cpu, hyp.
+	 */
+	gic:interrupt-controller@107fff9000 {
+		compatible = "intc,gic";
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		reg = <0x10 0x7fff9000 0x0 0x1000
+		       0x10 0x7fffa000 0x0 0x2000
+		       0x10 0x7fffc000 0x0 0x2000>;
+
+		status = "ok";
+	};
+
+	/*
+	 * uart10, the PL011 the Pi 5 exposes on the 40-pin header. This is
+	 * the debug UART, not the RP1-side one: RP1 is behind PCIe and not
+	 * reachable this early.
+	 */
+	serial@107d001000 {
+		compatible = "serial,pl011";
+		reg = <0x10 0x7d001000 0x0 0x200>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 121 4>;
+		status = "ok";
+	};
+
+	/* Periodic timer based on ARM CP15 timer */
+	periodic-timer@0 {
+		compatible = "arm,periodic-timer";
+		reg = <0 0 0 0>;
+		interrupt-parent = <&gic>;
+
+		/* Choose IRQ 10 with VT support or 11 without */
+		interrupts = <1 10 4>;
+		status = "ok";
+	};
+
+	/* Clocksource free-running timer based on ARM CP15 timer */
+	clocksource-timer@0 {
+		compatible = "arm,clocksource-timer";
+		reg = <0 0 0 0>;
+		status = "ok";
+	};
+
+};
