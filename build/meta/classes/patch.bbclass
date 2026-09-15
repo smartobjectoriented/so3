@@ -454,7 +454,15 @@ def patch_identifier(path):
     "+++ b/<path>" header line. Patches produced by do_diffcompose always
     carry git-style a/<rel> b/<rel> labels, so this identifier uniquely
     designates the source file the patch targets, independent of the
-    patch's own filename or sequence number."""
+    patch's own filename or sequence number.
+
+    Older patches in these series were produced by a plain `diff` run from
+    the target directory and carry "+++ ./<rel>" instead, with an absolute
+    path on the "---" side. Both spellings have to normalise to the same
+    identifier: when they do not, EVERY existing patch looks unmatched to
+    do_updiff, which then appends a duplicate for every file in the tree.
+    Seen on a u-boot series: 25190 patches appended onto 33. So the "./"
+    strip below is load-bearing, not cosmetic."""
     src = None
     dst = None
     try:
@@ -473,7 +481,9 @@ def patch_identifier(path):
         if not s or s == '/dev/null':
             continue
         if s.startswith('a/') or s.startswith('b/'):
-            return s[2:]
+            s = s[2:]
+        while s.startswith('./'):
+            s = s[2:]
         return s
     return None
 
@@ -583,6 +593,36 @@ python do_updiff() {
             except ValueError:
                 pass
     next_number = max(used_numbers, default=0) + 1
+
+    # Sanity gate before touching the series.
+    #
+    # do_diffcompose compares the pristine snapshot against IB_TARGET, and
+    # IB_TARGET is a working tree the user may well have run `make` in. The
+    # exclude list above catches the build artefacts we know about, but it
+    # is a blacklist: a tree built with a configuration nobody anticipated,
+    # or an attach stale enough to predate half the series, produces
+    # thousands of "new file" patches, appended one per artefact.
+    #
+    # A legitimate updiff touches a handful of files, so the threshold is
+    # deliberately low: a single `build.sh uboot` was measured leaving 49
+    # artefacts the blacklist does not name. Refuse and say what to do,
+    # rather than writing the series and leaving the user to `git checkout`
+    # their way out.
+    limit = int(d.getVar('IB_UPDIFF_MAX_NEW') or 20)
+    new_count = sum(1 for pid in staging_idx if pid not in target_idx)
+    if new_count > limit:
+        bb.fatal(
+            f"do_updiff: {new_count} files in {d.getVar('IB_TARGET')} have no "
+            f"patch in the series yet (limit {limit}).\n"
+            f"That is what a BUILT tree looks like to do_diffcompose, not a "
+            f"set of edits: build output the exclude list does not name is "
+            f"being mistaken for new source.\n"
+            f"Clean the tree and re-attach it before folding edits back in:\n"
+            f"    rm -f ${{BUILDDIR}}/tmp/stamps/{pf}.do_attach_infrabase\n"
+            f"    IB_FORCE_ATTACH=1 bitbake {d.getVar('PN')} -c attach_infrabase\n"
+            f"then redo the edit and re-run updiff. If the count is genuinely "
+            f"right -- a large import, say -- raise IB_UPDIFF_MAX_NEW."
+        )
 
     kept = consolidated = appended = skipped_chain = 0
 
