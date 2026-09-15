@@ -204,7 +204,16 @@ do_attach_infrabase () {
 	# *added* source files are not tracked by the manifest — the ${IB_TARGET}.back
 	# copy remains the last-resort net for that case.
 	if [ -d "${IB_TARGET}" ] && [ -f "$ib_manifest" ] && [ "${IB_FORCE_ATTACH}" != "1" ]; then
-		ib_dirty=$(cd "${IB_TARGET}" && LC_ALL=C sha256sum -c --quiet "$ib_manifest" 2>/dev/null | sed -n 's/: FAILED.*$//p')
+		# The quilt staging left by do_patch (patches/, series, .pc) is a
+		# build product, not source -- it is regenerated on every patch run
+		# and is gitignored. Recorded in the manifest it made the guard fire
+		# on its own artefacts and refuse a perfectly clean tree. Filtered
+		# here as well as pruned below, so manifests recorded before this
+		# fix stop blocking too. `|| true`: grep exits 1 when it filters
+		# everything away, and bitbake runs shell tasks under `set -e`.
+		ib_dirty=$(cd "${IB_TARGET}" && LC_ALL=C sha256sum -c --quiet "$ib_manifest" 2>/dev/null \
+			| sed -n 's/: FAILED.*$//p' \
+			| grep -vE '(^|/)(\.pc|patches)/' || true)
 		if [ -n "$ib_dirty" ]; then
 			bbwarn "Local modifications detected in ${IB_TARGET}, not captured in the ${PN} patch set:"
 			echo "$ib_dirty" | sed 's|^\./|    |' >&2
@@ -223,7 +232,8 @@ do_attach_infrabase () {
 	cp -r ${S}/. ${IB_TARGET}
 
 	# Record what we just wrote so the next attach can detect local edits.
-	( cd "${IB_TARGET}" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum ) > "$ib_manifest" 2>/dev/null || rm -f "$ib_manifest"
+	( cd "${IB_TARGET}" && find . \( -name .pc -o -name patches \) -prune -o -type f -print0 \
+		| LC_ALL=C sort -z | xargs -0 sha256sum ) > "$ib_manifest" 2>/dev/null || rm -f "$ib_manifest"
 
 	# Record WHICH recipe the tree now belongs to. Several recipes can share
 	# one IB_TARGET -- uboot_2022.04 and uboot_2024.07 both attach to
