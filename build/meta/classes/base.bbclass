@@ -224,7 +224,70 @@ do_attach_infrabase () {
 
 	# Record what we just wrote so the next attach can detect local edits.
 	( cd "${IB_TARGET}" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum ) > "$ib_manifest" 2>/dev/null || rm -f "$ib_manifest"
+
+	# Record WHICH recipe the tree now belongs to. Several recipes can share
+	# one IB_TARGET -- uboot_2022.04 and uboot_2024.07 both attach to
+	# u-boot/ -- and each has its own do_attach_infrabase stamp. Without
+	# this marker, attaching one and then building the other finds a valid
+	# stamp, skips the attach, and compiles the wrong source tree. See
+	# do_check_attach() in this class.
+	echo "${PF}" > "${IB_TARGET}.attach.pf"
 }
+
+# Refuse to build against a tree that belongs to another recipe.
+#
+# IB_TARGET is a path in the source tree, not under tmp/, and more than one
+# recipe can claim it: uboot_2022.04 and uboot_2024.07 both attach to
+# u-boot/, selected by PREFERRED_VERSION per platform. do_attach_infrabase
+# is stamped per recipe, so after building platform A and switching to
+# platform B, B's recipe finds its own stamp from an earlier session, skips
+# the attach, and runs do_configure against A's sources.
+#
+# That fails loudly when the defconfig is missing -- rpi4_64_defconfig in a
+# 2024.07 tree -- and SILENTLY when it is not. A virt64 image was built with
+# U-Boot 2022.04 instead of 2024.07; the two differ in
+# CONFIG_POSITION_INDEPENDENT, so ATF loaded BL33 at 0x60000000 and jumped
+# into a binary linked for 0x0. No output, no error, and a whole secure boot
+# chain to bisect before the cause turned out to be the build system.
+#
+# The marker written by do_attach_infrabase names the recipe that owns the
+# tree. This task is nostamp, so it is the one thing that always runs, and it
+# refuses rather than repairing: re-attaching means deleting a tree the user
+# may have edited, and that decision is theirs. A tree with no marker was
+# attached before markers existed and is adopted silently.
+
+do_check_attach[nostamp] = "1"
+python do_check_attach() {
+    import os
+
+    target = d.getVar('IB_TARGET')
+    pf = d.getVar('PF')
+    if not target or not pf or not os.path.isdir(target):
+        return
+
+    try:
+        with open(target + '.attach.pf') as f:
+            owner = f.read().strip()
+    except OSError:
+        return
+
+    if owner == pf:
+        return
+
+    bb.fatal(
+        "%s is attached to %s, not to %s.\n"
+        "Both recipes share this directory, and each has its own attach "
+        "stamp, so building now would compile the other recipe's sources.\n"
+        "Re-attach before continuing:\n"
+        "    rm -f %s.do_attach_infrabase\n"
+        "    IB_FORCE_ATTACH=1 bitbake %s -c attach_infrabase\n"
+        "Anything you edited in %s that is not in the patch series will be "
+        "lost; the previous tree is kept as %s.back."
+        % (target, owner, pf, d.getVar('STAMP'), d.getVar('PN'), target, target)
+    )
+}
+
+addtask do_check_attach after do_attach_infrabase before do_configure
 
 addtask cleansstate after do_clean
 python do_cleansstate() {
