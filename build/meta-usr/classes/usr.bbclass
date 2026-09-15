@@ -48,7 +48,12 @@ def __retrieve_usr_dir(d):
     # so that it will be possible to handle the fetch of submodules before
     # the execution of attach_infrabase task
 
-    cmd = f"find . -not -path '*/.git/*' -and -not -path '*/patches/*' -and \( -type f -or -type d -empty \) -exec cp -r --parents -t {dst_dir} {{}} +"
+    # -type l matters: without it symbolic links are simply not seen, and
+    # the round-trip through ${S} drops every one of them -- the build then
+    # fails at cmake time on a missing source rather than anywhere
+    # informative. cp -a instead of -r to copy links as links.
+
+    cmd = f"find . -not -path '*/.git/*' -and -not -path '*/patches/*' -and \( -type f -or -type l -or -type d -empty \) -exec cp -a --parents -t {dst_dir} {{}} +"
     result = subprocess.run(cmd, shell=True, check=True, cwd=src_dir)
 
 python retrieve_usr_dir() {
