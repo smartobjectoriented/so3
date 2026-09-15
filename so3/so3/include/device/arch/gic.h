@@ -30,14 +30,17 @@
 #ifndef GIC_H
 #define GIC_H
 
-/* Total number of IRQ sources handled by the controller
- *   0- 15 are SGI interrupts: SGI = Software Generated Interrupts
- *  16- 31 are PPI interrupts: PPI = Private Peripheral Interrupts
- *  32-122 are SPI interrupts: SPI = Shared Peripheral Interrupts
- *  122-127 are unused but declared to fit in GIC multiple of 32 bits structures
+/* IRQ sources handled by the controller:
+ *   0- 15  SGI = Software Generated Interrupts
+ *  16- 31  PPI = Private Peripheral Interrupts
+ *  32-...  SPI = Shared Peripheral Interrupts, as many as the SoC wires
+ *
+ * NR_IRQS is NOT defined here. It used to be, at 160, alongside the one in
+ * <device/irq.h> -- two definitions of the same name that were free to
+ * disagree, and did: raising the irq.h one to cover BCM2711 sized the
+ * irq_desc array correctly while gic.c, which includes this header second,
+ * kept comparing against 160 and dropped every INTID above it.
  */
-
-#define NR_IRQS 160
 
 #define ICC_SRE_EL2_SRE (1 << 0)
 #define ICC_SRE_EL2_ENABLE (1 << 3)

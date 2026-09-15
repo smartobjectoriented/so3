@@ -26,8 +26,15 @@
 
 #include <asm/atomic.h>
 
-/* Maximum physical interrupts than can be managed by SO3 */
-#define NR_IRQS 160
+/* Maximum physical interrupts than can be managed by SO3.
+ *
+ * This bounds the irq_desc array that irq_to_desc() indexes, so it has to
+ * cover the highest INTID the platform can raise, not merely the ones we
+ * bind. BCM2711 goes up to 208 (GIC_SPI 176) and its genet ethernet sits at
+ * 189/190; at 160 the first network interrupt indexed past the array into
+ * .rodata -- see the bound check in gic_handle().
+ */
+#define NR_IRQS 256
 
 DECLARE_PER_CPU(spinlock_t, intc_lock);
 

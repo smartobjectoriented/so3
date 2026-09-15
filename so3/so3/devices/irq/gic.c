@@ -927,6 +927,32 @@ static void gic_handle(void *data)
 		if (irq_nr > 1021)
 			break;
 
+		/* Anything the irq_desc array cannot hold must not reach
+		 * irq_to_desc(): it would index past the end of the array and
+		 * return whatever follows it in memory. On BCM2711 that was
+		 * .rodata, so ->action came back as a string constant (non-NULL)
+		 * and ->irq_ops->handle_high dereferenced ASCII -- an EL2 data
+		 * abort with FAR holding the bytes "Z MB of ", the moment the
+		 * genet ethernet (INTID 189/190) raised its first interrupt
+		 * against NR_IRQS 160.
+		 *
+		 * NR_IRQS now covers BCM2711, but the guard stays: a platform
+		 * whose INTIDs outgrow the array again should lose interrupts
+		 * loudly, not corrupt the dispatch path. Print once -- this runs
+		 * on every occurrence of an interrupt that may well repeat. */
+		if (irq_nr >= NR_IRQS) {
+			static bool warned = false;
+
+			if (!warned) {
+				warned = true;
+				printk("%s: INTID %d >= NR_IRQS (%d): dropping."
+				       " Raise NR_IRQS for this platform.\n",
+				       __func__, irq_nr, NR_IRQS);
+			}
+			gic_eoi_irq(irqstat, true);
+			continue;
+		}
+
 #ifdef CONFIG_AVZ
 		/* MAINT (id 25): drain overflow queue, fully deactivate. */
 		if (irq_nr == IRQ_ARCH_ARM_MAINT) {
