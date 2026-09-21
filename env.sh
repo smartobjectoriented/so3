@@ -27,12 +27,12 @@ PATH="$PWD/scripts:$BUILDDIR/bitbake/bin:$PATH"
 # A product tree declares its own in its env.sh (IB_PRODUCT_LAYERS,
 # IB_OVERLAY_DIR and the IB_OVERLAY_ALIAS_* shorthand).
 #
-# Infrabase declares none, and says so EXPLICITLY rather than leaving the
-# variables alone. They are exported, so a shell that has sourced a product
-# tree's env.sh — or a login profile that sources one — carries that
-# product's values into an infrabase build. IB_OVERLAY_DIR in particular
-# flips regen_boot_chain() from "local.conf decides the chain" to "derive
-# it", which silently overrides the value the user set by hand.
+# SO3 declares none — it has no overlay layers — and says so EXPLICITLY
+# rather than leaving the variables alone. They are exported, so a shell
+# that has sourced another tree's env.sh — or a login profile that sources
+# one — carries that tree's values in. IB_OVERLAY_DIR in particular flips
+# regen_boot_chain() from "local.conf decides the chain" to "derive it",
+# which silently overrides the value the user set by hand.
 
 export IB_PRODUCT_LAYERS=""
 export IB_OVERLAY_DIR=""
@@ -60,15 +60,9 @@ fi
 #                          refusing.
 #   IB_PARTITION_LAYOUT    so init_storage.sh -l can choose the layout for
 #                          the do_fs_init_storage it drives.
-#   ZEPHYR_SDK_INSTALL_DIR Zephyr's CMake resolves its toolchain through the
-#                          SDK layout; without the variable
-#                          FindZephyr-sdk.cmake fails with nothing but a
-#                          find_package error — which is what happens in a
-#                          build container, where the SDK is in the image
-#                          and every other toolchain is found through PATH.
 if test -z "$BB_ENV_PASSTHROUGH_ADDITIONS"
 then
-	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH ZEPHYR_SDK_INSTALL_DIR IB_PARTITION_LAYOUT'
+	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH IB_PARTITION_LAYOUT'
 	export BB_ENV_PASSTHROUGH_ADDITIONS
 fi
 
