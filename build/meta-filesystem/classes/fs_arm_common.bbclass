@@ -8,6 +8,18 @@
 # - p2, ext4, ~rest of IB_ROOTFS_SIZE — rootfs partition (label "rootfs1")
 #       /          — Linux rootfs proper (deployed by rootfs-linux).
 #
+# Which of the two layouts a card gets follows from whether anything boots an
+# image out of a slot. A bootloader in front of the payload is exactly that,
+# so declaring one is declaring the need for slots, and a tree should not have
+# to say both. ?=, so a configuration that wants the other layout — or wants
+# slots without a bootloader — still says so and wins.
+#
+# Read here and not through a ":zephyr" variant: this class is the filesystem
+# recipe's, and that recipe has no "zephyr" in its OVERRIDES. A scoped
+# IB_ZEPHYR_BOOT_APP is invisible from here, which is why the zephyr-dev
+# capsule declares its own unscoped.
+IB_PARTITION_LAYOUT ?= "${@'ab' if d.getVar('IB_ZEPHYR_BOOT_APP') else 'rootfs'}"
+
 # bitbake itself runs as the unprivileged user. Each privileged op
 # (losetup/fdisk/mkfs/mount/umount) goes through utils_sudo (`sudo -n`)
 # and assumes the caller pre-opened a sudo session.
@@ -70,7 +82,48 @@ def __platform_init_storage(d):
 
     # Create the partition layout this way
     # TODO: use sfdisk(8) which is more suitable for scripting
-    fdisk_input = "o\nn\np\n\n\n+128M\nt\nc\na\nn\np\n\n\n+1600M\nw\n"
+    #
+    # p1 sizing: the boot partition holds the ITB(s), and on a Linux BSP an
+    # ITB carries a kernel plus an initramfs — tens of megabytes each. The
+    # AVZ shape needs TWO of them (the hypervisor ITB and the guest ITB), so
+    # the former hardcoded 128 MiB overflowed as soon as IB_HYPERVISOR was
+    # "avz" with the default IB_RAMFS_SOURCE="rootfs". 256 MiB fits both
+    # shapes; p1 + p2 (1600 MiB) still sit inside the default 2 GiB image.
+    #
+    # NOTE: this only applies when the storage is (re)initialised. An image
+    # partitioned by an older tree keeps its 128 MiB p1 — delete
+    # filesystem/sdcard.img.<platform> to have it recreated.
+    boot_size = d.getVar('IB_BOOT_PARTITION_SIZE') or "256M"
+
+    # Two layouts, chosen by the configuration rather than fixed.
+    #
+    #   "rootfs" (default)  p1 boot (FAT) + p2 rootfs (ext4). What every
+    #                       Linux capsule and every bare BSP expects.
+    #
+    #   "ab"                p1 boot (FAT) + p2 and p3, two raw slots. An
+    #                       MCUboot chain keeps its A/B images there, and
+    #                       the capsule that can reload the system lives on
+    #                       p1 — there is no rootfs partition, because the
+    #                       images are whole systems.
+    #
+    # Declared per configuration and not globally on purpose: making p2 raw
+    # for everyone would take the rootfs out from under the fc capsule and
+    # the bare BSPs, which is a far larger change than giving one chain its
+    # slots. An image partitioned for one layout does not become the other
+    # on its own — delete filesystem/sdcard.img.<platform> to re-partition.
+
+    layout = d.getVar('IB_PARTITION_LAYOUT') or "rootfs"
+    slot_size = d.getVar('IB_SLOT_PARTITION_SIZE') or "16M"
+
+    if layout == "ab":
+        fdisk_input = (f"o\nn\np\n\n\n+{boot_size}\nt\nc\na\n"
+                       f"n\np\n\n\n+{slot_size}\n"
+                       f"n\np\n\n\n+{slot_size}\nw\n")
+    elif layout == "rootfs":
+        fdisk_input = f"o\nn\np\n\n\n+{boot_size}\nt\nc\na\nn\np\n\n\n+1600M\nw\n"
+    else:
+        bb.fatal(f"IB_PARTITION_LAYOUT=\"{layout}\" is not a known layout "
+                 "(expected \"rootfs\" or \"ab\")")
     utils_sudo(["fdisk", f"/dev/{devname}"], input=fdisk_input.encode())
 
     print("Waiting ...")
@@ -83,7 +136,17 @@ def __platform_init_storage(d):
         devname += "p"
 
     utils_sudo(["mkfs.fat", "-F32", "-a", "-v", "-n", "boot", f"/dev/{devname}1"])
-    utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"])
+
+    if layout == "ab":
+        # p2 and p3 are raw slots. A filesystem on them would be a filesystem
+        # MCUboot cannot read and would overwrite on the first image it is
+        # given — the slot IS the image, header and all. Zeroed instead, so a
+        # stale image from a previous card cannot look valid.
+        for part in ("2", "3"):
+            utils_sudo(["dd", "if=/dev/zero", f"of=/dev/{devname}{part}",
+                        "bs=1M", "count=1", "conv=fsync"])
+    else:
+        utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"])
 
     if IB_STORAGE_MODE == "soft":
         utils_sudo(["losetup", "-D"])
@@ -249,15 +312,23 @@ def __do_fs_mount(d):
         bb.fatal((f"Could not mount image: {IB_FILESYSTEM_PATH}"
                   f" on /dev/{devname}1 error: {e}"))
 
-    try:
-        utils_sudo(['mount', f'/dev/{devname}2', os.path.join(WORKDIR, 'p2')], check=True)
-        utils_sudo(['chown', f'{uid}:{gid}', os.path.join(WORKDIR, 'p2')], check=True)
+    # p2 is a filesystem in the "rootfs" layout and a raw slot in the "ab"
+    # one, where it holds a signed image a bootloader reads directly and
+    # there is nothing to mount. Writing a slot is dd at the partition's
+    # offset, which is what the capsule deploy does.
+    if (d.getVar('IB_PARTITION_LAYOUT') or "rootfs") != "ab":
+        try:
+            utils_sudo(['mount', f'/dev/{devname}2', os.path.join(WORKDIR, 'p2')], check=True)
+            utils_sudo(['chown', f'{uid}:{gid}', os.path.join(WORKDIR, 'p2')], check=True)
 
-    except Exception as e:
-        bb.fatal((f"Could not mount image: {IB_FILESYSTEM_PATH}"
-                  f" on /dev/{devname}2 error: {e}"))
+        except Exception as e:
+            bb.fatal((f"Could not mount image: {IB_FILESYSTEM_PATH}"
+                      f" on /dev/{devname}2 error: {e}"))
 
-    bb.note(f"Mounted filesystem at: {IB_FILESYSTEM_PATH}/p1,p2")
+        bb.note(f"Mounted filesystem at: {IB_FILESYSTEM_PATH}/p1,p2")
+    else:
+        bb.note(f"Mounted filesystem at: {IB_FILESYSTEM_PATH}/p1 "
+                "(p2/p3 are raw slots, not mounted)")
 
     if os.path.ismount(os.path.join(WORKDIR, 'p1')):
         if os.path.lexists(IB_FILESYSTEM_PATH + "/p1"):
@@ -276,6 +347,15 @@ def __do_fs_umount(d):
     WORKDIR = d.getVar('WORKDIR')
 
     __do_main_umount(d, 1)
-    __do_main_umount(d, 2)
+
+    # p2 is still cleaned up under the "ab" layout even though nothing was
+    # mounted on it: what has to go is the symlink and mount point, which a
+    # card previously partitioned the other way leaves behind. Skipping the
+    # call entirely left ${IB_FILESYSTEM_PATH}/p2 pointing at an unmounted
+    # directory, and rootfs-linux's "does p2 exist" check reads that as a
+    # mounted rootfs.
+    __do_main_umount(d, 2,
+                     expect_mounted=(d.getVar('IB_PARTITION_LAYOUT') or
+                                     "rootfs") != "ab")
 
     utils_sudo(["losetup", "-D"])

@@ -184,8 +184,16 @@ addtask do_deploy_boot
 
 do_clean[depends] = "usr-linux:do_clean rootfs-linux:do_clean linux:do_clean uboot:do_clean"
 python () {
-    if d.getVar('IB_PLATFORM') == 'virt64':
-        d.appendVarFlag('do_clean', 'depends', ' atf:do_clean optee:do_clean avz:do_clean')
+    hyp = d.getVar('IB_HYPERVISOR') or "none"
+    extra = []
+    if d.getVar('IB_CHAIN_HAS_ATF'):
+        extra.append("atf:do_clean")
+    if d.getVar('IB_CHAIN_HAS_OPTEE'):
+        extra.append("optee:do_clean")
+    if hyp == "avz":
+        extra.append("avz:do_clean")
+    if extra:
+        d.appendVarFlag('do_clean', 'depends', ' ' + ' '.join(extra))
 }
 do_clean[nostamp] = "1"
 do_clean () {

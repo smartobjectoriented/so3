@@ -36,7 +36,8 @@ do_configure[depends] += "atf:do_build"
 # wrapped in `if [ "${IB_PLATFORM}" = "verdin-imx8mp" ]` below — virt64
 # and other targets don't touch optee here.
 python () {
-    if d.getVar('IB_PLATFORM') == 'verdin-imx8mp':
+    if (d.getVar('IB_PLATFORM') == 'verdin-imx8mp'
+            and d.getVar('IB_CHAIN_HAS_OPTEE')):
         d.appendVarFlag('do_configure', 'depends', ' optee:do_build')
 }
 
@@ -60,11 +61,20 @@ do_configure () {
 	if [ "${IB_PLATFORM}" = "verdin-imx8mp" ]; then
 
 		cp ${IB_ATF_PATH}/build/imx8mp/release/bl31.bin .
-		# Use raw binary (no OPTE v1 header): ATF BL31-only mode jumps directly
-		# to BL32_BASE so the binary must start with _start, not a header.
-		python3 ${IB_OPTEE_PATH}/scripts/gen_tee_bin.py \
-			--input ${IB_OPTEE_PATH}/out/arm-plat-imx/core/tee.elf \
-			--out_tee_raw_bin ./tee.bin
+
+		if [ -n "${IB_CHAIN_HAS_OPTEE}" ]; then
+			# Use raw binary (no OPTE v1 header): ATF BL31-only mode jumps directly
+			# to BL32_BASE so the binary must start with _start, not a header.
+			python3 ${IB_OPTEE_PATH}/scripts/gen_tee_bin.py \
+				--input ${IB_OPTEE_PATH}/out/arm-plat-imx/core/tee.elf \
+				--out_tee_raw_bin ./tee.bin
+		else
+			# No secure world on this chain. Drop any tee.bin left by a
+			# previous secure-world build: the SPL image rule picks it up
+			# from the working tree, so a stale one would silently be
+			# re-embedded in flash.bin while ATF is built without SPD.
+			rm -f ./tee.bin
+		fi
 
         cp ${IMX8MP_FW_PATH}/lpddr4*_202006.bin .
 	fi
@@ -84,6 +94,19 @@ do_build () {
 	if [ "${IB_PLATFORM}" = "verdin-imx8mp" ]; then
 		BL31="${IB_ATF_PATH}/build/imx8mp/release/bl31.bin"
 		TEE_ELF="${IB_OPTEE_PATH}/out/arm-plat-imx/core/tee.elf"
+
+		# TEE= is only passed on the secure-world chain; on "atf+uboot" the
+		# SPL assembles flash.bin as SPL + BL31 + U-Boot. The chain is folded
+		# into the freshness hash so switching chains always rebuilds
+		# flash.bin — its inputs are otherwise identical on the ATF side.
+		if [ -n "${IB_CHAIN_HAS_OPTEE}" ]; then
+			TEE_ARG="TEE=./tee.bin"
+			HASH_INPUTS="$(sha256sum "$BL31" "$TEE_ELF" 2>/dev/null)"
+		else
+			TEE_ARG=""
+			HASH_INPUTS="$(sha256sum "$BL31" 2>/dev/null)"
+		fi
+
 		HASH_FILE="flash.bin.inputs.sha256"
 		CURRENT_HASH="$(sha256sum "$BL31" "$TEE_ELF" 2>/dev/null | sha256sum | cut -d' ' -f1)"
 		if [ -f flash.bin ] && [ -f "$HASH_FILE" ] && [ "$(cat $HASH_FILE)" = "$CURRENT_HASH" ]; then

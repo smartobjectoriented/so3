@@ -19,6 +19,207 @@ FILESPATH = "${@base_set_filespath(["${FILE_DIRNAME}/${P}", "${FILE_DIRNAME}/${P
 
 THISDIR = "${@os.path.dirname(d.getVar('FILE'))}"
 
+# ---------------------------------------------------------------------------
+# The boot chain
+# ---------------------------------------------------------------------------
+# IB_BOOT_CHAIN names every stage that runs before the payload, in the order
+# it runs, joined by "+":
+#
+#     atf + optee + uboot + avz + mcuboot
+#
+# So "uboot" is U-Boot alone, "atf+optee+uboot+avz" is the edge-m1 capsule
+# chain, "uboot+mcuboot" is U-Boot handing over to MCUboot, and "mcuboot" is
+# MCUboot as the first stage with no U-Boot at all.
+#
+# Ordered, and validated as such: "atf+avz+uboot" is refused, because AVZ is
+# entered by U-Boot's guest-boot and cannot precede it. A stage may appear at
+# most once, "optee" requires "atf", "avz" requires "uboot", and a chain must
+# contain something that can enter a payload.
+#
+# Everything else about the boot shape is DERIVED from it:
+#
+#   IB_HYPERVISOR        "avz" when the chain has it, else "none"
+#   IB_CHAIN_HAS_<STAGE> "1" per stage present, for the recipes that ask
+#   IB_CHAIN_STAGES      the stages, space-separated
+#   IB_TARGET_ITS        gets the platform's _avz bundle when AVZ is in
+#   IB_ZEPHYR_BOOT_APP   "mcuboot" when the chain names it
+#
+# That derivation is the point. The shape used to live in four variables
+# that had to agree by hand, and three separate boot failures came from them
+# disagreeing — a CI cell whose ITS name said one thing and whose deploy said
+# another, and twice a guest ITB carrying a bootloader's payload as though it
+# were bootable on its own. One ordered string cannot disagree with itself.
+#
+# What a platform supports is still declared per platform in
+# build/conf/local.conf, as a set of stages rather than a list of whole
+# chains (IB_BOOT_STAGES_SUPPORTED / IB_BOOT_STAGES_REQUIRED).
+#
+# "full" is accepted as a LEGACY alias for "atf+optee+uboot+avz". It is
+# expanded here, once, so that no recipe, script or .inc has to know about it.
+# Kept so an edge-m1 / so3 tree aligning onto this one does not have to change
+# its local.conf in the same step.
+#
+# Why base.bbclass: IB_BOOT_CHAIN is read from recipes whose OVERRIDES carry
+# no :linux (uboot, atf, optee), so a scoped assignment in local.conf is
+# invisible to them. Normalising per-recipe, in the class every recipe
+# inherits, is the only place that reaches all of them.
+
+def ib_normalize_boot_axes(d):
+    """Parse the chain, derive what follows from it, refuse what cannot work."""
+
+    # The chain is an ORDERED list of the stages that run before the payload,
+    # written in the order they run and joined by "+". This is the whole boot
+    # shape in one value: "what runs, in what order".
+    #
+    # Everything else is derived from it. Before, the shape was spread over
+    # four variables that had to agree — the chain, IB_HYPERVISOR, the "_avz"
+    # suffix on IB_TARGET_ITS and IB_ZEPHYR_BOOT_APP — and three separate
+    # boot failures came from them disagreeing: a CI cell whose ITS name said
+    # one thing and whose deploy said another, and twice a guest ITB carrying
+    # a bootloader's payload as though it were bootable on its own.
+    STAGES = ("atf", "optee", "uboot", "avz", "mcuboot")
+
+    # What each stage requires of the ones before it. A chain is valid when
+    # its stages are a subsequence of STAGES and every requirement is met.
+    REQUIRES = {
+        "optee":   ("atf",),    # OP-TEE is BL32, loaded by ATF's BL2
+        "avz":     ("uboot",),  # AVZ is entered by U-Boot's guest-boot
+    }
+
+    ALIASES = {
+        # The edge-m1 capsule chain, from before the stages were spelled out.
+        # Kept so a tree aligning onto this one need not change local.conf in
+        # the same step.
+        "full": "atf+optee+uboot+avz",
+    }
+
+    chain = (d.getVar('IB_BOOT_CHAIN') or "").strip()
+    plat = d.getVar('IB_PLATFORM') or "<unset>"
+
+    # An empty chain has always meant "bare U-Boot" in this build system.
+    if chain == "":
+        chain = "uboot"
+    chain = ALIASES.get(chain, chain)
+
+    stages = [t for t in chain.split("+") if t]
+
+    unknown = [t for t in stages if t not in STAGES]
+    if unknown:
+        bb.fatal("IB_BOOT_CHAIN=\"%s\": unknown stage%s %s.\n"
+                 "Known stages, in the order they may appear: %s."
+                 % (chain, "" if len(unknown) == 1 else "s",
+                    ", ".join('"%s"' % u for u in unknown), " ".join(STAGES)))
+
+    order = [STAGES.index(t) for t in stages]
+    if order != sorted(order) or len(set(order)) != len(order):
+        bb.fatal("IB_BOOT_CHAIN=\"%s\" is not in boot order.\n"
+                 "Stages run in this order and each appears at most once: %s.\n"
+                 "So \"atf+uboot+avz\", not \"atf+avz+uboot\" — AVZ is started "
+                 "by U-Boot's guest-boot, it does not run before it."
+                 % (chain, " ".join(STAGES)))
+
+    for stage, needs in REQUIRES.items():
+        if stage in stages:
+            missing = [n for n in needs if n not in stages]
+            if missing:
+                bb.fatal("IB_BOOT_CHAIN=\"%s\": \"%s\" needs %s in the chain."
+                         % (chain, stage, " and ".join('"%s"' % m for m in missing)))
+
+    if "uboot" not in stages and "mcuboot" not in stages:
+        bb.fatal("IB_BOOT_CHAIN=\"%s\" has nothing that can enter a payload.\n"
+                 "A chain needs \"uboot\" or \"mcuboot\"." % chain)
+
+    chain = "+".join(stages)
+
+    # Derived, so that nothing has to be kept in step by hand.
+    #
+    # IB_HYPERVISOR stays a variable of its own because that is the question
+    # most readers actually ask ("is there a hypervisor"), and asking it of a
+    # string is worse than asking it of a name.
+    hyp = "avz" if "avz" in stages else "none"
+
+    d.setVar('IB_CHAIN_STAGES', " ".join(stages))
+    for stage in STAGES:
+        d.setVar('IB_CHAIN_HAS_%s' % stage.upper(),
+                 "1" if stage in stages else "")
+
+    # The bootloader that sits between the chain and the payload, when the
+    # chain names one. Overridable: this says WHETHER, a tree may still say
+    # WHICH by setting IB_ZEPHYR_BOOT_APP to something else.
+    if "mcuboot" in stages and not d.getVar('IB_ZEPHYR_BOOT_APP'):
+        d.setVar('IB_ZEPHYR_BOOT_APP', "mcuboot")
+
+    # The AVZ bundle is the same ITB for every OS on a platform — it carries
+    # AVZ and its device tree, and the OS lives in the guest ITB beside it.
+    # So the target is ${IB_PLATFORM}_avz whenever AVZ is in the chain, and
+    # no layer has to declare it. An explicit _avz name still wins, for a
+    # platform whose file is spelled differently.
+    its = d.getVar('IB_TARGET_ITS') or ""
+    if hyp == "avz" and not its.endswith("_avz"):
+        d.setVar('IB_TARGET_ITS', "%s_avz" % plat)
+
+    # Platform capability check. These are facts about the SoC and about
+    # what is available upstream, declared per platform in conf/local.conf;
+    # failing here, at parse time, beats failing in the middle of a firmware
+    # link or — worse — booting a board that then stays silent.
+    #
+    # Declared as a SET OF STAGES, not as a list of whole chains. The chain
+    # is an ordered list, so enumerating the acceptable chains would mean
+    # enumerating every combination of the stages a platform allows — six
+    # for a platform that runs ATF, OP-TEE and AVZ — and forgetting one
+    # refuses a build that works. A stage set says the same thing once, and
+    # says it the way the reason is actually phrased: "rpi4_64 has no OP-TEE
+    # upstream", "virt32 has no EL2".
+    #
+    # IB_BOOT_STAGES_REQUIRED is the other half: a stage the platform cannot
+    # boot WITHOUT. The i.MX8MP boot ROM always installs BL31 before U-Boot,
+    # so "atf" is required there and a bare "uboot" chain does not exist on
+    # that SoC.
+
+    allowed = (d.getVar('IB_BOOT_STAGES_SUPPORTED') or "").split()
+    if allowed:
+        refused = [s for s in stages if s not in allowed]
+        if refused:
+            bb.fatal("Platform \"%s\" cannot run boot stage%s %s "
+                     "(IB_BOOT_CHAIN=\"%s\").\n"
+                     "Supported on this platform: %s.\n"
+                     "See IB_BOOT_STAGES_SUPPORTED in build/conf/local.conf "
+                     "for why."
+                     % (plat, "" if len(refused) == 1 else "s",
+                        ", ".join('"%s"' % r for r in refused), chain,
+                        " ".join(allowed)))
+
+    required = (d.getVar('IB_BOOT_STAGES_REQUIRED') or "").split()
+    missing = [s for s in required if s not in stages]
+    if missing:
+        bb.fatal("Platform \"%s\" cannot boot without %s "
+                 "(IB_BOOT_CHAIN=\"%s\").\n"
+                 "Required on this platform: %s.\n"
+                 "See IB_BOOT_STAGES_REQUIRED in build/conf/local.conf for why."
+                 % (plat, " and ".join('"%s"' % m for m in missing), chain,
+                    " ".join(required)))
+
+    # Write the normalised values back. Any scoped variant still in effect
+    # has to go with them: getVar() resolves overrides, but setVar() writes
+    # the BASE name only — so an `IB_BOOT_CHAIN:linux = "full"` (the shape an
+    # edge-m1 tree carries) would keep winning on the next read and the
+    # expansion above would silently not stick. Dropping the in-effect
+    # variants makes the normalised value the single answer for every reader.
+
+    for var, value in (('IB_BOOT_CHAIN', chain), ('IB_HYPERVISOR', hyp)):
+        for override in (d.getVar('OVERRIDES') or "").split(':'):
+            if override:
+                d.delVar('%s:%s' % (var, override))
+        d.setVar(var, value)
+
+
+# Runs before the anonymous python below (and before any class that
+# inherits base), so every later reader sees the normalised values.
+python () {
+    ib_normalize_boot_axes(d)
+}
+
+
 python () {
     import sys
     import os
@@ -40,6 +241,28 @@ python () {
                 break
         else:
             raise bb.parse.SkipRecipe("incompatible with machine %s (not in COMPATIBLE_PLATFORM)" % d.getVar('IB_PLATFORM'))
+
+    # Boot STAGES this recipe cannot be built behind. Stated as what is
+    # excluded rather than what is allowed, unlike COMPATIBLE_PLATFORM: a
+    # recipe that lists what it supports has to be revisited every time a
+    # stage is added.
+    #
+    # A stage and not a whole chain, because the chain is now an ordered list
+    # — "mcuboot" and "uboot+mcuboot" both put MCUboot in front of the
+    # payload, and a recipe that cannot be MCUboot's payload cannot be it in
+    # either.
+    #
+    # SkipRecipe and not bb.fatal: bitbake parses every recipe in BBFILES
+    # whatever is being built, so a fatal here would stop a build of some
+    # other recipe that is perfectly compatible. Skipped, the recipe is
+    # simply not available, and asking for it by name says so.
+    bad = (d.getVar('INCOMPATIBLE_BOOT_STAGE') or "").split()
+    stages = (d.getVar('IB_CHAIN_STAGES') or "").split()
+    clash = [b for b in bad if b in stages]
+    if clash and not bb.utils.to_boolean(d.getVar('PARSE_ALL_RECIPES', False)):
+        raise bb.parse.SkipRecipe(
+            'cannot be built into a chain containing "%s" '
+            '(INCOMPATIBLE_BOOT_STAGE)' % clash[0])
 
 }
 

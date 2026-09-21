@@ -20,6 +20,23 @@ export BBPATH=$BUILDDIR
 # entries from another tree are still on PATH.
 PATH="$PWD/scripts:$BUILDDIR/bitbake/bin:$PATH"
 
+# --- Product declarations ---------------------------------------------
+#
+# Infrabase's scripts are product-agnostic: they know about a generic set of
+# layers and about "an overlay layer", never about what a product overlays.
+# A product tree declares its own in its env.sh (IB_PRODUCT_LAYERS,
+# IB_OVERLAY_DIR and the IB_OVERLAY_ALIAS_* shorthand).
+#
+# SO3 declares none — it has no overlay layers — and says so EXPLICITLY
+# rather than leaving the variables alone. They are exported, so a shell
+# that has sourced another tree's env.sh — or a login profile that sources
+# one — carries that tree's values in. IB_OVERLAY_DIR in particular flips
+# regen_boot_chain() from "local.conf decides the chain" to "derive it",
+# which silently overrides the value the user set by hand.
+
+export IB_PRODUCT_LAYERS=""
+export IB_OVERLAY_DIR=""
+
 # Specify auxiliary layers for the -x component opt
 export IB_AUX_LAYERS="meta-usr meta-so3 meta-qemu meta-atf"
 
@@ -34,9 +51,18 @@ fi
 # unprivileged so the IB_UNPRIVILEDGED_USER_ID/GROUP_ID variables that
 # used to be needed to chown root-written files back are gone; only
 # build inputs remain.
+#
+# bitbake starts its tasks from a filtered environment, so anything a task
+# needs has to be named here:
+#
+#   IB_FORCE_ATTACH        without it `IB_FORCE_ATTACH=1 build.sh <recipe>`
+#                          stops at the shell and the attach guard keeps
+#                          refusing.
+#   IB_PARTITION_LAYOUT    so init_storage.sh -l can choose the layout for
+#                          the do_fs_init_storage it drives.
 if test -z "$BB_ENV_PASSTHROUGH_ADDITIONS"
 then
-	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH'
+	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH IB_PARTITION_LAYOUT'
 	export BB_ENV_PASSTHROUGH_ADDITIONS
 fi
 
