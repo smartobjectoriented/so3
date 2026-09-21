@@ -34,9 +34,24 @@ fi
 # unprivileged so the IB_UNPRIVILEDGED_USER_ID/GROUP_ID variables that
 # used to be needed to chown root-written files back are gone; only
 # build inputs remain.
+#
+# bitbake starts its tasks from a filtered environment, so anything a task
+# needs has to be named here:
+#
+#   IB_FORCE_ATTACH        without it `IB_FORCE_ATTACH=1 build.sh <recipe>`
+#                          stops at the shell and the attach guard keeps
+#                          refusing.
+#   IB_PARTITION_LAYOUT    so init_storage.sh -l can choose the layout for
+#                          the do_fs_init_storage it drives.
+#   ZEPHYR_SDK_INSTALL_DIR Zephyr's CMake resolves its toolchain through the
+#                          SDK layout; without the variable
+#                          FindZephyr-sdk.cmake fails with nothing but a
+#                          find_package error — which is what happens in a
+#                          build container, where the SDK is in the image
+#                          and every other toolchain is found through PATH.
 if test -z "$BB_ENV_PASSTHROUGH_ADDITIONS"
 then
-	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH'
+	BB_ENV_PASSTHROUGH_ADDITIONS='IB_TOOLCHAIN_PATH IB_ROOT_DIR IB_FORCE_ATTACH ZEPHYR_SDK_INSTALL_DIR IB_PARTITION_LAYOUT'
 	export BB_ENV_PASSTHROUGH_ADDITIONS
 fi
 
