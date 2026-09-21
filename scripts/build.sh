@@ -109,6 +109,21 @@ then
 	esac
 fi
 
+# Regenerate bblayers.conf and auto.conf from the layer set and the boot
+# chain in scripts/common/bblayers.sh. Both files are rewritten only when
+# their content would change, so a tree already current stays quiet and
+# `git status` clean. Without this call the "auto-generated" header on
+# bblayers.conf was a claim nothing honoured, and a layer added to
+# regen_bblayers() never reached a build.
+#
+# The recipe name is passed so a tree with overlay layers can activate the
+# one providing it, and settle the boot chain to match. Infrabase as shipped
+# declares no IB_OVERLAY_DIR, so no overlay is ever selected and local.conf
+# keeps deciding the chain; see regen_boot_chain().
+if ! regen_bblayers_for_recipe "" "$recipename"; then
+	exit 1
+fi
+
 show_env "$recipename"
 
 if test -z "$recipename" && test $dolist -eq 0
