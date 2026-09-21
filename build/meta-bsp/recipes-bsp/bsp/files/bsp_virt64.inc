@@ -118,7 +118,18 @@ def __do_platform_boot_chain(d):
     if has_uboot:
         uboot_entry = __elf_entry(os.path.join(uboot_path, "u-boot"))
 
-    if not has_uboot or (not has_atf and uboot_entry):
+    # Reading a stage off the card needs a machine that does it, which for
+    # QEMU means the bootrom-* properties this tree's virt.c patch adds. A
+    # tree whose QEMU patch has not been regenerated with them sets this to
+    # "0": U-Boot is then handed to QEMU as an ELF, exactly as before, and
+    # only a chain with no U-Boot at all — where there is no other way in —
+    # still goes to the card.
+    #
+    # A variable rather than two versions of this file: the rule is the
+    # same everywhere, it is the emulator underneath that differs.
+    from_card = (d.getVar('IB_FIRST_STAGE_FROM_CARD') or "1") != "0"
+
+    if not has_uboot or (from_card and not has_atf and uboot_entry):
         # The first stage goes on the card, in the raw area ahead of p1, and
         # the machine's boot ROM reads it from there — which is where
         # imx-boot lives on the verdin's eMMC and how its ROM finds it.
