@@ -33,7 +33,7 @@ do_build[nostamp] = "1"
 # only (no --tos-fw), and "uboot" mode never reaches this recipe. So
 # gating on IB_BOOT_CHAIN=="full" avoids unnecessary OP-TEE builds.
 
-do_build[depends] = "${@bb.utils.contains('IB_BOOT_CHAIN', 'full', 'optee:do_build', '', d)}"
+do_build[depends] = "${@'optee:do_build' if d.getVar('IB_CHAIN_HAS_OPTEE') else ''}"
 do_configure[noexec] = "1"
 
 # Where the working directory will be placed in infrabase root dir

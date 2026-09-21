@@ -27,12 +27,13 @@ require files/0001-${PF}-patches.inc
 IB_TARGET = "${IB_UBOOT_PATH}"
 
 # ATF is only needed when the boot chain actually carries it (FIP-loaded
-# U-Boot in atf+uboot / full modes). In "uboot" mode QEMU's -bios loads
-# u-boot.bin directly — no BL31 in the chain, no reason to build ATF.
-# bb.utils.contains_any returns the second arg when IB_BOOT_CHAIN is in
-# the set, else the third arg.
+# U-Boot on the two ATF chains). In "uboot" mode QEMU loads the U-Boot ELF
+# directly — no BL31 in the chain, no reason to build ATF.
+# IB_CHAIN_HAS_ATF is derived from the chain by base.bbclass, so this
+# holds for every chain carrying ATF — including the ones that go on to
+# name AVZ or MCUboot, which a match on the chain string would miss.
 
-do_configure[depends] = "${@bb.utils.contains_any('IB_BOOT_CHAIN', 'atf+uboot full', 'atf:do_build', '', d)}"
+do_configure[depends] = "${@'atf:do_build' if d.getVar('IB_CHAIN_HAS_ATF') else ''}"
 
 do_configure[nostamp] = "1"
 do_configure () {

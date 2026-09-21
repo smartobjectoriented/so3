@@ -24,6 +24,7 @@
 #
 ###################################################################
 
+inherit logging
 inherit utils
 inherit fs_${IB_PLATFORM}
 
@@ -63,10 +64,32 @@ def __do_fs_init_storage(d):
     # to mount/umount more conveniently
     target_link = os.path.join(d.getVar('IB_DIR'), "filesystem/work")
 
-    # Check if the symbolic link already exists
+    # Replace whatever sits at filesystem/work with a fresh symlink.
+    #
+    # islink() alone is not enough. Before the storage work tree moved
+    # under tmp/work, filesystem/work was a REAL directory, and every tree
+    # created back then still carries that (now empty) leftover. os.symlink
+    # then raises FileExistsError and the first do_fs_check after a platform
+    # switch — the one that has to create sdcard.img.<platform> — aborts the
+    # build, having already written the image it just made unreachable.
+    #
+    # An empty directory is exactly that legacy leftover and is safe to
+    # drop. A non-empty one is not: it may still hold the p1/p2 mount points
+    # (possibly mounted) or images from that old layout, so report it and
+    # let the user decide rather than deleting their data. Same for a plain
+    # file sitting in the way.
     if os.path.islink(target_link):
-        # Remove the existing symbolic link
         os.unlink(target_link)
+    elif os.path.isdir(target_link):
+        try:
+            os.rmdir(target_link)
+        except OSError as e:
+            bb.fatal((f"{target_link} is a non-empty directory ({e.strerror}); "
+                      "it is a leftover of the old filesystem layout. Check it "
+                      "holds nothing you need (and that p1/p2 are not mounted), "
+                      "then remove it and build again."))
+    elif os.path.exists(target_link):
+        bb.fatal(f"{target_link} exists and is not a symlink; remove it and build again.")
 
     os.symlink(WORKDIR, target_link)
 
@@ -90,7 +113,11 @@ def __do_fs_check(d):
             __do_fs_init_storage(d)
 
 
-def __do_main_umount(d, partition_number):
+# expect_mounted=False for a partition this layout never mounts: the cleanup
+# below still has to run — a symlink left by a previous layout would make
+# ${IB_FILESYSTEM_PATH}/p<n> look like a mounted filesystem to whoever checks
+# next — but "wasn't mounted" is then the normal state, not a warning.
+def __do_main_umount(d, partition_number, expect_mounted=True):
     import os
 
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
@@ -111,7 +138,7 @@ def __do_main_umount(d, partition_number):
             # Unmount the source directory
             utils_sudo(["umount", directory])
 
-    else:
+    elif expect_mounted:
         bb.warn(f"{directory} wasn't mounted - will remove mount point dir")
 
     # Remove the mountpoint dir (root-owned because mount populated it)

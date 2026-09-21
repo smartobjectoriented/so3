@@ -1,6 +1,7 @@
 # Copyright (c) 2025-2026 EDGEMTech SA
 
 inherit filesystem
+inherit logging
 inherit rootfs
 
 # Class for managing the user space environment
