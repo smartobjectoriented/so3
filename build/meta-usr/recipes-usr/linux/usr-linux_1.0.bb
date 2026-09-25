@@ -44,37 +44,99 @@ do_unpack[depends] += "linux:do_build"
 do_deploy[depends] = "rootfs-linux:do_deploy"
 do_deploy[nostamp] = "1"
 
-# Deploy the usr contents, i.e. the deploy/ dir, in the corresponding partition of the filesystem
+# Deploy the usr contents, i.e. the deploy/ dir, where the running system will
+# find them. That depends on what the kernel boots as its root, and the apps go
+# to ONE place only:
+#
+#   IB_RAMFS_SOURCE = "rootfs" - the embedded ramfs IS rootfs.cpio, so the apps
+#     are baked INTO rootfs.cpio (rsync into the extracted tree, then re-pack).
+#     bsp-linux:do_prepare_initrd pulls this task into the BUILD, before it
+#     gzips rootfs.cpio into the ITB, so here it must not touch the boot media:
+#     it depends on rootfs-linux:do_build instead of rootfs-linux:do_deploy and
+#     runs after do_build (anonymous function below).
+#
+#   any other value (the static "initrd" ramfs, which pivots to p2) - the apps
+#     are copied onto the rootfs partition p2, on top of what
+#     rootfs-linux:do_deploy extracted. bsp-linux:do_deploy pulls this task,
+#     so a full deploy always carries the user space.
+#
+# Unset means "rootfs", the bsp.bbclass default.
+
+def usr_linux_ramfs_is_rootfs(d):
+    return (d.getVar('IB_RAMFS_SOURCE') or "rootfs").strip() == "rootfs"
+
+python () {
+    if usr_linux_ramfs_is_rootfs(d):
+        d.setVarFlag('do_deploy', 'depends', 'rootfs-linux:do_build')
+        bb.build.addtask('do_deploy', None, 'do_build', d)
+}
+
 python do_deploy() {
 
     import os
 
-    __do_fs_mount(d)
-
     IB_USR_PATH = d.getVar('IB_USR_PATH')
+    deploy_src = os.path.join(IB_USR_PATH, "build", "deploy")
+
+    if not os.path.isdir(deploy_src):
+        bb.fatal("The {} does not exist; please build usr first...".format(deploy_src))
+
+    if usr_linux_ramfs_is_rootfs(d):
+        IB_ROOTFS_PATH = d.getVar('IB_ROOTFS_PATH')
+        IB_PLATFORM = d.getVar('IB_PLATFORM')
+
+        if not os.path.isfile(os.path.join(IB_ROOTFS_PATH, "board", IB_PLATFORM, "rootfs.cpio")):
+            bb.fatal("rootfs.cpio is missing; please build rootfs first...")
+
+        # The extracted tree is root-owned (cpio -id), so rsync needs root to
+        # write into it while preserving mode bits and ownership.
+
+        d.setVar('ROOTFS_FILENAME', 'rootfs')
+        __do_rootfs_mount(d)
+        utils_sudo(["rsync", "-a", "--keep-dirlinks",
+                    deploy_src + "/", f"{IB_ROOTFS_PATH}/fs/"], check=True)
+        __do_rootfs_umount(d)
+
+        bb.plain("usr deployed into rootfs.cpio (IB_RAMFS_SOURCE = rootfs)")
+        return
+
+    # Same exception as rootfs-linux:do_deploy: verdin-imx8mp storage goes
+    # through the Tezi / HTTP recovery flow, there is no p2 to mount here.
+
+    if d.getVar('IB_PLATFORM') == "verdin-imx8mp":
+        bb.plain("verdin-imx8mp: rootfs delivered via Tezi/HTTP, skipping usr partition deploy")
+        return
+
     IB_FILESYSTEM_PATH = d.getVar('IB_FILESYSTEM_PATH')
     IB_ROOTFS_PARTITION = d.getVar('IB_ROOTFS_PARTITION')
+    rootfs_dst = os.path.join(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION)
 
-    if not os.path.isdir(os.path.join(IB_USR_PATH, "build", "deploy")):
+    __do_fs_mount(d)
 
-        __do_fs_umount(d)
-        bb.fatal("The {} does not exist; please build usr first...".format(IB_USR_PATH))
-
-    if not os.path.isdir(os.path.join(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION, "root")):
+    if not os.path.isdir(os.path.join(rootfs_dst, "root")):
         __do_fs_umount(d)
         bb.fatal("The root directory is not present in the second partition; please deploy rootfs...")
 
+    # p2 is written by rootfs-linux:do_deploy with `sudo cp -a`, so its tree
+    # is root-owned: the copy needs root too. --keep-dirlinks keeps the
+    # rootfs directory symlinks (e.g. /lib -> usr/lib) instead of replacing
+    # them with real directories. check=True: a failed copy must fail the
+    # deploy, not leave a rootfs silently without the apps.
 
-    os.system("cp -r {}/build/deploy/* {}/{}/".format(IB_USR_PATH, IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION))
-
-    __do_fs_umount(d)
+    try:
+        utils_sudo(["rsync", "-a", "--keep-dirlinks",
+                    deploy_src + "/", rootfs_dst + "/"], check=True)
+    finally:
+        __do_fs_umount(d)
 }
 
-# `after do_build` is required: do_deploy expects ${IB_USR_PATH}/build/deploy/
-# (populated by do_build) to exist. Without explicit ordering, bitbake
-# schedules do_deploy as soon as its declared depends (rootfs-linux:do_deploy)
-# are met — which can be before this recipe's own do_build has run.
-addtask do_deploy after do_build
+# No static `after do_build`: in the p2 case do_deploy is a pure deploy step
+# (edit -> build.sh -> deploy.sh) that copies the already-built build/deploy/
+# and fails clearly when it is missing, instead of dragging usr-linux:do_build
+# (and linux:do_build through do_unpack) into every deploy. The rootfs.cpio
+# case, which runs inside the build, gets its ordering above.
+
+addtask do_deploy
 
 # Build extra components which is not in src/ directory like modules
 do_build:prepend () {
