@@ -93,8 +93,20 @@ python do_deploy() {
 
         d.setVar('ROOTFS_FILENAME', 'rootfs')
         __do_rootfs_mount(d)
-        utils_sudo(["rsync", "-a", "--keep-dirlinks",
-                    deploy_src + "/", f"{IB_ROOTFS_PATH}/fs/"], check=True)
+
+        # A failed copy must not leave the extracted, root-owned tree behind,
+        # as the p2 path below makes sure of for its mount. But not through a
+        # plain finally: __do_rootfs_umount re-packs the tree INTO rootfs.cpio,
+        # and a half-copied user space must not end up there. On failure the
+        # tree is dropped and rootfs.cpio stays as it was; the next deploy
+        # starts over from it.
+        try:
+            utils_sudo(["rsync", "-a", "--keep-dirlinks",
+                        deploy_src + "/", f"{IB_ROOTFS_PATH}/fs/"], check=True)
+        except Exception:
+            utils_sudo(["rm", "-rf", os.path.join(d.getVar('WORKDIR'), "fs")])
+            raise
+
         __do_rootfs_umount(d)
 
         bb.plain("usr deployed into rootfs.cpio (IB_RAMFS_SOURCE = rootfs)")
