@@ -149,7 +149,10 @@ inherit filesystem
 # `deploy.sh -a` without a prior build still pulls them through sstate).
 
 do_deploy_boot_chain[nostamp] = "1"
-do_deploy_boot_chain[depends] = "uboot:do_build"
+# filesystem:do_fs_check because a chain may write its first stage into the
+# raw area of the card (bsp_virt64.inc, IB_FIRST_STAGE_FROM_CARD): on a fresh
+# tree the storage image must exist before, not be created by do_deploy after.
+do_deploy_boot_chain[depends] = "uboot:do_build filesystem:do_fs_check"
 
 python () {
     extra = []

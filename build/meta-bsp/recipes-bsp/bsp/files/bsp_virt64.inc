@@ -104,14 +104,13 @@ def __do_platform_boot_chain(d):
     # the image, not of the chain: a ROM copies bytes to an address and jumps,
     # so the image has to be one that runs from RAM.
     #
-    # MCUboot always is. U-Boot depends on how it was configured, and this
-    # tree builds it two ways (see uboot_2022.04.bb): IB_BOOT_CHAIN="uboot"
-    # with no hypervisor takes upstream qemu_arm64_defconfig, which is
-    # position-independent with a text base of 0 — an image meant to execute
-    # in place from flash, which is why QEMU is handed it as -kernel today and
-    # why -bios would be the other right answer. Every other combination takes
-    # ${IB_PLATFORM}_defconfig, linked at a RAM address, and that one can be
-    # read off the card like any other first stage.
+    # MCUboot always is. U-Boot depends on how it was configured: this tree
+    # always builds ${IB_PLATFORM}_defconfig (see uboot_2022.04.bb), linked at
+    # a RAM address, which can be read off the card like any other first
+    # stage. Infrabase takes upstream qemu_arm64_defconfig on the bare "uboot"
+    # chain instead — position-independent with a text base of 0, an image
+    # meant to execute in place from flash — and the check below keeps such a
+    # U-Boot on -kernel, should a tree build one.
     #
     # The ELF entry point is what says which: zero means "wherever flash is".
     uboot_entry = 0

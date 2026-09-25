@@ -165,7 +165,10 @@ do_install_apps () {
     usr_do_install_file_root "${IB_TARGET}/src/modules/*.ko"
 }
 
-do_clean:append () {
+# usr.bbclass defines do_clean in Python, and a shell :append is pasted
+# verbatim into that Python function, so `-c clean` died on a SyntaxError.
+# The shell stays shell, in its own function, called from a Python append.
+usr_linux_clean () {
 
     rm -f ${TMPDIR}/stamps/usr-linux*
     rm -f ${WORKDIR}/*.patch
@@ -173,4 +176,8 @@ do_clean:append () {
     # The whole IB_TARGET is regenerated from the patch set on every build,
     # so a clean removes it entirely (tree, re-attach backup and manifest).
     rm -rf ${IB_TARGET} ${IB_TARGET}.back ${IB_TARGET}.attach.sha256
+}
+
+python do_clean:append () {
+    bb.build.exec_func('usr_linux_clean', d)
 }
