@@ -23,7 +23,8 @@ do_build[depends] = "${IB_ROOTFS_METHOD}:do_build"
 do_build[depends] += "linux:do_build"
 
 # do_deploy is a pure DEPLOY step: it extracts the already-built rootfs.cpio
-# onto p2; usr-linux:do_deploy then copies the usr apps on top. It must
+# onto p2 (usr apps already inside when IB_RAMFS_SOURCE = "rootfs", copied
+# on top by usr-linux:do_deploy otherwise). It must
 # NOT pull ${IB_ROOTFS_METHOD}:do_build — that would rebuild buildroot on
 # every `deploy.sh`. The workflow is edit -> build.sh (produces rootfs.cpio)
 # -> deploy.sh; a deploy with no prior build fails clearly in

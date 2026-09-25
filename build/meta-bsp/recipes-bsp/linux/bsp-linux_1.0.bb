@@ -148,17 +148,30 @@ addtask do_prepare_initrd before do_itb
 # Deploy everything
 #
 # Deploy is decoupled from the build: it writes the already-built artefacts
-# onto the boot media WITHOUT recompiling. It pulls usr-linux:do_deploy, which
-# itself runs after rootfs-linux:do_deploy: the rootfs is extracted onto p2
-# first, then the usr apps (linux/usr/build/deploy) are copied on top — so a
-# full deploy always carries the user space, whatever rootfs.cpio contains.
+# onto the boot media WITHOUT recompiling. The rootfs is extracted onto p2
+# (rootfs-linux:do_deploy); when p2 is the running root (IB_RAMFS_SOURCE other
+# than "rootfs") it also pulls usr-linux:do_deploy, which copies the usr apps
+# (linux/usr/build/deploy) on top — see the anonymous function below. With
+# the rootfs.cpio ramfs the apps travel inside the ITB instead.
 # It then writes the .itb produced by do_itb during `build.sh -a` onto p1
 # (__do_platform_deploy). It does NOT pull do_build / do_itb / usr-linux:
 # do_build — those belong to `build.sh -a`. Workflow: edit -> build.sh ->
 # deploy.sh. A deploy with no prior build fails clearly (missing rootfs.cpio /
 # usr build/deploy / .itb) rather than silently rebuilding.
 
-do_deploy[depends] = "filesystem:do_fs_check rootfs-linux:do_deploy usr-linux:do_deploy"
+do_deploy[depends] = "filesystem:do_fs_check rootfs-linux:do_deploy"
+
+# usr-linux:do_deploy goes where the running root is (see usr-linux_1.0.bb):
+# with IB_RAMFS_SOURCE = "rootfs" it bakes the apps into rootfs.cpio, so it is
+# part of the BUILD, before do_prepare_initrd gzips that cpio into the ITB;
+# otherwise it copies them onto p2 and is part of the DEPLOY.
+
+python () {
+    if (d.getVar('IB_RAMFS_SOURCE') or "rootfs").strip() == "rootfs":
+        d.appendVarFlag('do_prepare_initrd', 'depends', ' usr-linux:do_deploy')
+    else:
+        d.appendVarFlag('do_deploy', 'depends', ' usr-linux:do_deploy')
+}
 
 do_deploy[nostamp] = "1"
 python do_deploy() {
