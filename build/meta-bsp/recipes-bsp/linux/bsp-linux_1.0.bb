@@ -88,7 +88,7 @@ do_itb () {
 # overwrite the (now meaningful) static initrd.cpio.
 
 do_prepare_initrd[nostamp] = "1"
-do_prepare_initrd[depends] = "usr-linux:do_deploy"
+do_prepare_initrd[depends] = "rootfs-linux:do_build"
 
 python do_prepare_initrd () {
     import hashlib
@@ -148,15 +148,17 @@ addtask do_prepare_initrd before do_itb
 # Deploy everything
 #
 # Deploy is decoupled from the build: it writes the already-built artefacts
-# onto the boot media WITHOUT recompiling. It pulls rootfs-linux:do_deploy
-# (which extracts the final rootfs.cpio — apps baked in at build time — onto
-# p2) and writes the .itb produced by do_itb during `build.sh -a` onto p1
-# (__do_platform_deploy). It does NOT pull do_build / do_itb / usr-linux's
-# rootfs.cpio populate — those belong to `build.sh -a`. Workflow:
-# edit -> build.sh -> deploy.sh. A deploy with no prior build fails clearly
-# (missing rootfs.cpio / .itb) rather than silently rebuilding.
+# onto the boot media WITHOUT recompiling. It pulls usr-linux:do_deploy, which
+# itself runs after rootfs-linux:do_deploy: the rootfs is extracted onto p2
+# first, then the usr apps (linux/usr/build/deploy) are copied on top — so a
+# full deploy always carries the user space, whatever rootfs.cpio contains.
+# It then writes the .itb produced by do_itb during `build.sh -a` onto p1
+# (__do_platform_deploy). It does NOT pull do_build / do_itb / usr-linux:
+# do_build — those belong to `build.sh -a`. Workflow: edit -> build.sh ->
+# deploy.sh. A deploy with no prior build fails clearly (missing rootfs.cpio /
+# usr build/deploy / .itb) rather than silently rebuilding.
 
-do_deploy[depends] = "filesystem:do_fs_check rootfs-linux:do_deploy"
+do_deploy[depends] = "filesystem:do_fs_check rootfs-linux:do_deploy usr-linux:do_deploy"
 
 do_deploy[nostamp] = "1"
 python do_deploy() {
