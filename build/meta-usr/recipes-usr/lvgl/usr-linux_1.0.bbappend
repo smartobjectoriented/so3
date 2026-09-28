@@ -47,10 +47,17 @@ do_install_apps:append () {
     fi
 }
 
-do_clean:append () {
+# usr.bbclass defines do_clean in Python, and a shell :append is pasted
+# verbatim into that Python function, so `-c clean` died on a SyntaxError.
+# The shell stays shell, in its own function, called from a Python append.
+usr_linux_clean_lvgl () {
 
     if echo ":${OVERRIDES}:" | grep -q ":lvgl"; then
         rm -rf ${IB_TARGET}/lib/lv_port_linux
         rm -rf ${WORKDIR}/git
     fi
+}
+
+python do_clean:append () {
+    bb.build.exec_func('usr_linux_clean_lvgl', d)
 }

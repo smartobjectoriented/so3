@@ -119,6 +119,16 @@ fi
 
 set -- -e IB_TREE="$IB_ROOT" -e IB_CWD="$cwd" "$@"
 
+# Forward the per-invocation knobs env.sh lets through to bitbake
+# (BB_ENV_PASSTHROUGH_ADDITIONS) when they are set on the host. Without it
+# `IB_FORCE_ATTACH=1 dbuild.sh build.sh <recipe>` — what the attach guard
+# itself advises — never reached the container, and the guard kept refusing.
+
+for _v in IB_FORCE_ATTACH IB_PARTITION_LAYOUT; do
+	eval "_val=\${$_v:-}"
+	[ -n "$_val" ] && set -- -e "$_v=$_val" "$@"
+done
+
 # Hardware deployment: make any IB_HTTP_DEPLOY_PATH feed directory
 # visible at its own path so `deploy.sh` can publish into it from inside
 # (IB_STORAGE_MODE=http). This serves the verdin-imx8mp TEZI flow; on the

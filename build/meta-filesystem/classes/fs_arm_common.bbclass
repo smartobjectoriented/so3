@@ -27,6 +27,7 @@ IB_PARTITION_LAYOUT ?= "${@'ab' if d.getVar('IB_ZEPHYR_BOOT_APP') else 'rootfs'}
 def __platform_init_storage(d):
     import os
     import subprocess
+    import time
 
     IB_STORAGE_MODE = d.getVar('IB_STORAGE_MODE')
     IB_ROOTFS_SIZE = d.getVar('IB_ROOTFS_SIZE')
@@ -128,14 +129,26 @@ def __platform_init_storage(d):
 
     print("Waiting ...")
 
-    # TODO: use ionotify(7)
-    # Give a chance to the real SD-card to be sync'd
-    time.sleep(2)
-
     if devname[-1].isdigit():
         devname += "p"
 
-    utils_sudo(["mkfs.fat", "-F32", "-a", "-v", "-n", "boot", f"/dev/{devname}1"])
+    # Wait for the partition nodes rather than a fixed delay. They are created
+    # asynchronously by the host's udev, and inside the build container
+    # (dbuild.sh bind-mounts the host /dev) that regularly takes longer than
+    # the 2 s this used to sleep: mkfs then ran on a node that did not exist
+    # yet, failed, and the card was left with an unformatted p1 that only
+    # showed up as a failed mount in the next deploy.
+    parts = ("1", "2", "3") if layout == "ab" else ("1", "2")
+    for _ in range(100):
+        if all(os.path.exists(f"/dev/{devname}{n}") for n in parts):
+            break
+        time.sleep(0.2)
+    else:
+        bb.fatal(f"/dev/{devname}{{{','.join(parts)}}} did not appear after "
+                 "partitioning /dev/" + devname.rstrip("p"))
+
+    utils_sudo(["mkfs.fat", "-F32", "-a", "-v", "-n", "boot", f"/dev/{devname}1"],
+               check=True)
 
     if layout == "ab":
         # p2 and p3 are raw slots. A filesystem on them would be a filesystem
@@ -146,7 +159,7 @@ def __platform_init_storage(d):
             utils_sudo(["dd", "if=/dev/zero", f"of=/dev/{devname}{part}",
                         "bs=1M", "count=1", "conv=fsync"])
     else:
-        utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"])
+        utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"], check=True)
 
     if IB_STORAGE_MODE == "soft":
         utils_sudo(["losetup", "-D"])

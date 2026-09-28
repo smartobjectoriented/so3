@@ -41,11 +41,15 @@ do_configure () {
 	cd ${IB_TARGET}
 
 	# Defconfig selection on virt64:
-	#   - IB_BOOT_CHAIN="uboot" (bare bsp-linux, no ATF):
-	#     upstream qemu_arm64_defconfig — CONFIG_POSITION_INDEPENDENT=y
-	#     and CONFIG_ARCH_QEMU=y, both required for QEMU `-kernel` to
-	#     load the U-Boot ELF at any address. Linux runs at EL1 (no
-	#     secure / no virtualization in QEMU machine).
+	#   - IB_BOOT_CHAIN="uboot" (no ATF): virt64_defconfig too. This tree
+	#     departs from infrabase here, which takes upstream
+	#     qemu_arm64_defconfig for a bare Linux: that U-Boot does not boot
+	#     the SO3 ITB ("Could not find configuration node"), which made the
+	#     default chain unbootable for SO3 standalone, and being
+	#     position-independent with a text base of 0 it can never be read
+	#     off the card by the boot ROM (bsp_virt64.inc). virt64_defconfig
+	#     is linked at a RAM address that QEMU `-kernel` honours, and boots
+	#     both SO3 and Linux.
 	#   - IB_BOOT_CHAIN="atf+uboot" and "full" (capsule) both use
 	#     virt64_defconfig — same FIP-aware U-Boot, the boot chain
 	#     difference lives in ATF (no SPD vs SPD=opteed) and the guest
@@ -64,11 +68,7 @@ do_configure () {
 	# absent and Kconfig dies with "syntax error". A host that happens to
 	# have the 64-bit toolchain installed hides the bug.
 
-	if [ "${IB_PLATFORM}" = "virt64" ] && [ "${IB_BOOT_CHAIN}" = "uboot" ]; then
-		make CROSS_COMPILE=${IB_TOOLCHAIN}- qemu_arm64_defconfig
-	else
-		make CROSS_COMPILE=${IB_TOOLCHAIN}- ${IB_PLATFORM}_defconfig
-	fi
+	make CROSS_COMPILE=${IB_TOOLCHAIN}- ${IB_PLATFORM}_defconfig
 
 	# Specific handling for bbb platform
 	if [ "${IB_PLATFORM}" = "bbb" ]; then
