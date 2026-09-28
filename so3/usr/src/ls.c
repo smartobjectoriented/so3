@@ -117,6 +117,45 @@ static void join_path(char *out, size_t outsz, const char *dir, const char *name
 		snprintf(out, outsz, "%s/%s", dir, name);
 }
 
+/*
+ * Simple wildcard matching: supports '*' (any sequence) and '?' (single char).
+ * Returns 1 if name matches pattern, 0 otherwise.
+ */
+static int wildcard_match(const char *pattern, const char *name)
+{
+	const char *p = pattern;
+	const char *n = name;
+	const char *star_p = NULL; /* position of last '*' in pattern */
+	const char *star_n = NULL; /* position in name where '*' started matching */
+
+	while (*n) {
+		if (*p == '*') {
+			/* Record the '*' position and try to match the rest */
+			star_p = p + 1;
+			star_n = n;
+			p++;
+		} else if (*p == '?' || *p == *n) {
+			/* Match single char or exact char */
+			p++;
+			n++;
+		} else if (star_p) {
+			/* Mismatch after a '*', try advancing in name */
+			p = star_p;
+			star_n++;
+			n = star_n;
+		} else {
+			/* No wildcard to fall back to, no match */
+			return 0;
+		}
+	}
+
+	/* Consume trailing '*' characters */
+	while (*p == '*')
+		p++;
+
+	return *p == '\0';
+}
+
 /* Print one entry in the long format: type, size, mtime, name. */
 static void print_long(const char *dir, struct dirent *e)
 {
@@ -179,14 +218,16 @@ static void print_short(struct dirent *e)
 }
 
 /*
- * ls [-l] [DIR]
+ * ls [-l] [PATTERN] [DIR]
  *
- * Lists the entries of DIR (default: the current directory). With -l, each
- * entry is shown with its type, size and modification time.
+ * Lists the entries of DIR (default: the current directory) that match PATTERN.
+ * With -l, each entry is shown with its type, size and modification time.
+ * PATTERN supports '*' (any sequence) and '?' (single char).
  */
 int main(int argc, char **argv)
 {
 	const char *dir = NULL;
+	const char *pattern = NULL;
 	DIR *stream;
 	struct dirent *entry;
 	int i;
@@ -203,8 +244,12 @@ int main(int argc, char **argv)
 					return 1;
 				}
 			}
-		} else
+		} else if (strchr(argv[i], '*') || strchr(argv[i], '?')) {
+			/* This is a wildcard pattern */
+			pattern = argv[i];
+		} else {
 			dir = argv[i]; /* last DIR wins (single directory) */
+		}
 	}
 
 	if (dir == NULL)
@@ -216,6 +261,14 @@ int main(int argc, char **argv)
 		struct stat st;
 
 		if (stat(dir, &st) == 0) {
+			/* Check if the filename matches the pattern (if any) */
+			const char *name = strrchr(dir, '/');
+			name = name ? name + 1 : dir;
+
+			if (pattern && !wildcard_match(pattern, name)) {
+				return 0; /* No match, nothing to show */
+			}
+
 			if (long_format)
 				print_long_stat(dir, &st);
 			else
@@ -228,6 +281,10 @@ int main(int argc, char **argv)
 	}
 
 	while ((entry = readdir(stream)) != NULL) {
+		/* Apply wildcard filter if pattern is specified */
+		if (pattern && !wildcard_match(pattern, entry->d_name))
+			continue;
+
 		if (long_format)
 			print_long(dir, entry);
 		else
