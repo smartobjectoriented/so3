@@ -26,6 +26,9 @@
 #
 # Copyright (c) 2026 REDS Institute - HEIG-VD
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 set -e
 
 progname=$(basename "$0")
@@ -123,8 +126,10 @@ set -- -e IB_TREE="$IB_ROOT" -e IB_CWD="$cwd" "$@"
 # (BB_ENV_PASSTHROUGH_ADDITIONS) when they are set on the host. Without it
 # `IB_FORCE_ATTACH=1 dbuild.sh build.sh <recipe>` — what the attach guard
 # itself advises — never reached the container, and the guard kept refusing.
+# IB_BANNER_SHOWN too: this script already printed the release banner, so the
+# command it runs in the container must not print it a second time.
 
-for _v in IB_FORCE_ATTACH IB_PARTITION_LAYOUT; do
+for _v in IB_FORCE_ATTACH IB_PARTITION_LAYOUT IB_BANNER_SHOWN; do
 	eval "_val=\${$_v:-}"
 	[ -n "$_val" ] && set -- -e "$_v=$_val" "$@"
 done

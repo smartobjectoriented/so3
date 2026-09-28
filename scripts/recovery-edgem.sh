@@ -5,6 +5,9 @@
 # Launch the EDGE-M1 customized Toradex Easy Installer (auto feed-add).
 # Build the FIT first with: scripts/tezi-custom/build.sh
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 set -e
 DIR=$(cd "$(dirname "$0")/tezi-custom" && pwd)
 if [ ! -f "$DIR/tezi.itb" ]; then
