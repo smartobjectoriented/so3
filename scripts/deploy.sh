@@ -10,6 +10,9 @@
 # Copyright (c) 2014-2026 REDS Institute, HEIG-VD
 # Copyright (c) 2023-2026 EDGEMTech
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 progname=$(basename $0)
 
 # Resolve project root from this script's own location, cd there, and
