@@ -9,6 +9,9 @@
 # Resolve project root from this script's own location, cd there, and
 # source env.sh — prompting the user first if the parent shell points
 # at a different tree. See scripts/common/setup_env.sh for details.
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 . "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/setup_env.sh"
 
 # `umount.sh -i [platform]` repacks the tree extracted by `mount.sh -i`

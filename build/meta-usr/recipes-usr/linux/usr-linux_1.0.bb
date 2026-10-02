@@ -100,8 +100,10 @@ python do_deploy() {
         # and a half-copied user space must not end up there. On failure the
         # tree is dropped and rootfs.cpio stays as it was; the next deploy
         # starts over from it.
+        #
+        # -rlt, not -a: see the p2 copy below.
         try:
-            utils_sudo(["rsync", "-a", "--keep-dirlinks",
+            utils_sudo(["rsync", "-rlt", "--keep-dirlinks",
                         deploy_src + "/", f"{IB_ROOTFS_PATH}/fs/"], check=True)
         except Exception:
             utils_sudo(["rm", "-rf", os.path.join(d.getVar('WORKDIR'), "fs")])
@@ -134,9 +136,15 @@ python do_deploy() {
     # rootfs directory symlinks (e.g. /lib -> usr/lib) instead of replacing
     # them with real directories. check=True: a failed copy must fail the
     # deploy, not leave a rootfs silently without the apps.
+    #
+    # -rlt, not -a: run as root, -a also imposes the build tree's owner and
+    # mode on the directories the rootfs already has -- /, /root, /etc and
+    # /usr end up owned by the builder (/ group-writable) and /root loses
+    # its 0700. Without -o/-p the files are created root-owned with their
+    # source mode, and the existing directories keep theirs.
 
     try:
-        utils_sudo(["rsync", "-a", "--keep-dirlinks",
+        utils_sudo(["rsync", "-rlt", "--keep-dirlinks",
                     deploy_src + "/", rootfs_dst + "/"], check=True)
     finally:
         __do_fs_umount(d)
