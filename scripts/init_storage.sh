@@ -6,6 +6,9 @@
 # — the recipe internally invokes losetup/fdisk/parted/mkfs via
 # `sudo -n` against the timestamp opened here.
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 progname=$(basename "$0")
 
 pr_usage()

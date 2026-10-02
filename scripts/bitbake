@@ -6,6 +6,9 @@
 # Helps catch the case where the wrong env.sh is loaded for the
 # project being worked on.
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 if test -z "$IB_ROOT_DIR" || test -z "$BUILDDIR"; then
 	echo "bitbake wrapper: IB_ROOT_DIR/BUILDDIR not set; source env.sh first." >&2
 	exit 1

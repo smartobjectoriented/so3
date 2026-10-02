@@ -26,6 +26,9 @@
 # leaves a working feed behind with no manual step. It is idempotent and
 # silent when the server is already up.
 
+# Release banner, once per invocation (see scripts/common/banner.sh).
+. "$(cd "$(dirname "$(command -v -- "$0")")" && pwd)/common/banner.sh"
+
 progname=$(basename "$0")
 
 IB_ROOT=$(cd "$(dirname "$(command -v -- "$0")")/.." && pwd -P)
