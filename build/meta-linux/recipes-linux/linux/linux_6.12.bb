@@ -22,6 +22,7 @@ SRC_URI[sha256sum] = "1376ce98485a0c8de4635d0bfb88760924e4a818c0439d830738bb1c69
 FILESPATH:prepend = "${THISDIR}/files/0001-${PF}:"
  
 require files/0001-${PF}-patches.inc
+require linux-deploy.inc
 
 # Where the working directory will be placed in infrabase root dir
 IB_TARGET = "${IB_LINUX_PATH}"
