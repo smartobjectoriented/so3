@@ -189,9 +189,20 @@ addtask do_deploy
 do_deploy_boot[nostamp] = "1"
 do_deploy_boot[depends] = "filesystem:do_fs_check"
 
+# do_deploy_boot is what `deploy.sh linux` runs (linux:do_deploy): it puts a
+# freshly built kernel on p1 without the full deploy. The kernel only reaches
+# the target inside the ITB, so the ITB is repacked here first. Not through
+# `addtask do_itb before do_deploy_boot` as bsp-so3 and bsp-zephyr do: that
+# would pull do_prepare_initrd, hence rootfs-linux:do_build and, with the
+# rootfs.cpio ramfs, usr-linux:do_deploy — a rebuild of the whole user side
+# for a kernel change. exec_func runs the two tasks' bodies without their
+# dependencies; the ITB takes the initrd.cpio.gz the last `build.sh` left.
 python do_deploy_boot() {
 
     bb.plain("Deploy Linux boot (u-boot, itb)")
+
+    bb.build.exec_func('do_render_its', d)
+    bb.build.exec_func('do_itb', d)
 
     __do_deploy_boot(d)
 }
