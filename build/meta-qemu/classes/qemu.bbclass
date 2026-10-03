@@ -11,8 +11,9 @@ qemu_do_configure () {
 	# per IB_PLATFORM), but PRESERVE any other arch already built in a prior
 	# run — otherwise meson would drop it. So building arm-softmmu then
 	# aarch64-softmmu (or vice-versa) keeps both qemu-system-* binaries.
-	# The list is always emitted in the same order, so the same set of
-	# targets gives the same configure line whichever platform is current.
+	#
+	# Fixed order, so the same targets always give the same configure line.
+
 	tlist=""
 	for t in arm-softmmu aarch64-softmmu; do
 		if [ "$t" = "${QEMU_TARGET}" ] || ls build/$t/qemu-system-* >/dev/null 2>&1; then
@@ -20,12 +21,9 @@ qemu_do_configure () {
 		fi
 	done
 
-	# QEMU's configure starts with "rm -rf build" whenever build/ was created
-	# by a previous configure, so running it again throws away every object
-	# and forces a full recompile. Only run it when build/ is missing or the
-	# options changed; otherwise meson/ninja rebuild incrementally on their
-	# own, including when a patch touches a meson.build. The stamp lives in
-	# build/, so it disappears whenever configure recreates the directory.
+	# QEMU's configure wipes build/, so re-running it means a full rebuild.
+	# Only run it when the options changed; meson/ninja handle the rest.
+
 	args="--target-list=$tlist ${QEMU_OPTS}"
 	stamp=build/.ib-configure-args
 
