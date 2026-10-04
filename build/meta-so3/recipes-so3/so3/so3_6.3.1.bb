@@ -51,6 +51,16 @@ do_build () {
 	make
 }
 
+# `deploy.sh so3`: the kernel travels in the ITB, which bsp-so3 repacks and
+# writes onto p1 (bsp-so3:do_deploy_boot). No dependency on do_build —
+# deploy writes what the last `build.sh so3` produced, it does not compile.
+do_deploy[nostamp] = "1"
+do_deploy[depends] = "bsp-so3:do_deploy_boot"
+python do_deploy () {
+    bb.plain("SO3 kernel deployed (ITB on p1)")
+}
+addtask do_deploy
+
 do_clean[nostamp] = "1"
 do_clean () {
 	rm -f ${TMPDIR}/stamps/so3*
