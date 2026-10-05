@@ -34,53 +34,46 @@
 #include <avz/physdev.h>
 #endif
 
+/*
+ * The periodic timer is the EL2 timer under AVZ, the virtual timer otherwise.
+ */
+
+static inline u32 timer_read(enum arch_timer_reg reg)
+{
+#ifdef CONFIG_AVZ
+	return arch_timer_reg_read_el2(reg);
+#else
+	return arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, reg);
+#endif
+}
+
+static inline void timer_write(enum arch_timer_reg reg, u32 val)
+{
+#ifdef CONFIG_AVZ
+	arch_timer_reg_write_el2(reg, val);
+#else
+	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, reg, val);
+#endif
+}
+
 static void next_event(u32 next)
 {
-	unsigned long ctrl;
-
-#ifdef CONFIG_AVZ
-	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
-#else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-#endif
+	u32 ctrl = timer_read(ARCH_TIMER_REG_CTRL);
 
 	ctrl |= ARCH_TIMER_CTRL_ENABLE;
 	ctrl &= ~ARCH_TIMER_CTRL_IT_MASK;
 
-#ifdef CONFIG_AVZ
-	arch_timer_reg_write_el2(ARCH_TIMER_REG_TVAL, next);
-	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
-#else
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_TVAL, next);
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
-#endif
+	timer_write(ARCH_TIMER_REG_TVAL, next);
+	timer_write(ARCH_TIMER_REG_CTRL, ctrl);
 }
 
 static irq_return_t timer_isr(int irq, void *dev)
 {
-	unsigned long ctrl;
-	arm_timer_t *arm_timer;
+	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dev);
 
-	arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dev);
+	if (timer_read(ARCH_TIMER_REG_CTRL) & ARCH_TIMER_CTRL_IT_STAT) {
+		/* Writing TVAL moves the deadline and clears the condition. */
 
-	/* Clear the interrupt */
-
-#ifdef CONFIG_AVZ
-	ctrl = arch_timer_reg_read_el2(ARCH_TIMER_REG_CTRL);
-#else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-#endif
-
-	if (ctrl & ARCH_TIMER_CTRL_IT_STAT) {
-		ctrl |= ARCH_TIMER_CTRL_IT_MASK;
-
-#ifdef CONFIG_AVZ
-		arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, ctrl);
-#else
-		arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
-#endif
-
-		/* Periodic timer */
 		next_event(arm_timer->reload);
 
 #if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
@@ -158,19 +151,9 @@ void secondary_timer_init(void)
 {
 	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata(periodic_timer.dev);
 
-#ifndef CONFIG_AVZ
-	unsigned long ctrl;
-#endif
-
 	/* Shutdown the timer */
 
-#ifdef CONFIG_AVZ
-	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
-#else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
-#endif
+	timer_write(ARCH_TIMER_REG_CTRL, timer_read(ARCH_TIMER_REG_CTRL) & ~ARCH_TIMER_CTRL_ENABLE);
 
 	/* Bind ISR into interrupt controller */
 	irq_unmask(arm_timer->irq_def.irqnr);
@@ -181,9 +164,6 @@ void secondary_timer_init(void)
  */
 static int periodic_timer_init(dev_t *dev, int fdt_offset)
 {
-#ifndef CONFIG_AVZ
-	unsigned long ctrl;
-#endif
 	arm_timer_t *arm_timer;
 
 	periodic_timer.dev = dev;
@@ -204,17 +184,11 @@ static int periodic_timer_init(dev_t *dev, int fdt_offset)
 	periodic_timer.start = periodic_timer_start;
 	periodic_timer.period = NSECS / CONFIG_HZ;
 
-	arm_timer->reload = (uint32_t) (periodic_timer.period / (NSECS / clocksource_timer.rate));
+	arm_timer->reload = clocksource_timer.rate / CONFIG_HZ;
 
 	/* Shutdown the timer */
 
-#ifdef CONFIG_AVZ
-	arch_timer_reg_write_el2(ARCH_TIMER_REG_CTRL, 0);
-#else
-	ctrl = arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL);
-	ctrl &= ~ARCH_TIMER_CTRL_ENABLE;
-	arch_timer_reg_write_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL, ctrl);
-#endif
+	timer_write(ARCH_TIMER_REG_CTRL, timer_read(ARCH_TIMER_REG_CTRL) & ~ARCH_TIMER_CTRL_ENABLE);
 
 	dev_set_drvdata(dev, arm_timer);
 
