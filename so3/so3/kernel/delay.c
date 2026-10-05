@@ -32,7 +32,7 @@ void udelay(u64 us)
 	u64 __delay = 0ull, target;
 
 #warning review the way how to calculate the delay...
-	target = ((us / ((u64) 1000000ull / (u64) 100))) * jiffies_ref;
+	target = ((us / ((u64) 1000000ull / (u64) CONFIG_HZ))) * jiffies_ref;
 
 	while (__delay < target)
 		__delay++;
