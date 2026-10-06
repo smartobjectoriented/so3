@@ -164,7 +164,7 @@ p.edge(load, so, "", ARR + "exitX=0.5;exitY=1;entryX=1;entryY=0.5;")
 rowA = [
     ("memory_init()", "frame table + MMU"),
     ("devices_init()", "FDT probe, GIC,\ntimer, serial"),
-    ("timer_init()\n+ calibrate_delay()", "tick source"),
+    ("timer_init()", "tick source"),
     ("scheduler_init()", "round-robin\n+ local_irq_enable()"),
 ]
 rowB = [

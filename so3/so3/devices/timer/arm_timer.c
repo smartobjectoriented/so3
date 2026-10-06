@@ -163,7 +163,7 @@ void avz_el2_timer_tick(void)
 	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
 	 * must run the periodic path so capsule domains get their
 	 * VIRQ_TIMER event; otherwise a capsule never sees a tick and
-	 * spins forever in calibrate_delay. Without CONFIG_SOO there is
+	 * none of its timers ever fires. Without CONFIG_SOO there is
 	 * no capsule CPU — every CPU runs the agency path. */
 
 #ifdef CONFIG_SOO

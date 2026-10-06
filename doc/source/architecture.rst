@@ -131,8 +131,8 @@ ITBs** — the AVZ ITB (``<plat>_avz``) and the SO3 guest ITB
    configuration U-Boot jumps straight to the SO3 kernel entry
    (``__start`` → ``kernel_start()``) at EL1.
 3. The kernel brings itself up: ``memory_init()`` (frame table + MMU),
-   ``devices_init()`` (device-tree probe, GIC, timer, serial), ``timer_init()``
-   and ``calibrate_delay()``, ``scheduler_init()``, then interrupts are enabled.
+   ``devices_init()`` (device-tree probe, GIC, timer, serial), ``timer_init()``,
+   ``scheduler_init()``, then interrupts are enabled.
 4. ``rest_init()`` runs as the first kernel thread and calls
    ``create_root_process()``, which maps the ``__root_proc`` trampoline at
    ``0x1000`` and enters EL0.

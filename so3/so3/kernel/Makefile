@@ -4,7 +4,6 @@
 obj-y += 	main.o \
 		eabi_compat.o \
 		delay.o \
-		calibrate.o \
 		thread.o \
 		schedule.o \
 		mutex.o  \
