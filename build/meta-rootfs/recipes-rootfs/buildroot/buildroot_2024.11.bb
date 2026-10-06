@@ -31,15 +31,46 @@ IB_TARGET = "${IB_ROOTFS_PATH}/buildroot"
 # host where each user wants their own cache).
 IB_BUILDROOT_DL_DIR ?= "${HOME}/.buildroot-dl"
 
+# Not stamped: the stamp ignores IB_PLATFORM, so a platform switch kept the
+# previous platform's .config. A hash of the platform and its defconfig decides
+# instead, and a platform switch also drops the previous output, since buildroot
+# cannot change architecture in place.
+
+do_configure[nostamp] = "1"
+
+IB_BUILDROOT_DEFCONFIG_GUARD = "${WORKDIR}/buildroot_defconfig.sha256"
+IB_BUILDROOT_PLATFORM = "${IB_ROOTFS_PATH}/.ib_platform"
+
 do_configure () {
 	cd ${IB_TARGET}
 
-	if [ ! -f ${IB_TARGET}/configs/${IB_PLATFORM}_defconfig ]; then
+	defconfig="${IB_TARGET}/configs/${IB_PLATFORM}_defconfig"
+
+	if [ ! -f "$defconfig" ]; then
 		bbfatal "${IB_PLATFORM}_defconfig is missing in buildroot/configs ..."
+	fi
+
+	defconfig_hash=$( { echo "${IB_PLATFORM}"; cat "$defconfig"; } | sha256sum | cut -d' ' -f1)
+
+	if [ -f "${IB_BUILDROOT_DEFCONFIG_GUARD}" ] && \
+	   [ "$(cat ${IB_BUILDROOT_DEFCONFIG_GUARD})" = "$defconfig_hash" ] && \
+	   [ -f "${IB_ROOTFS_PATH}/.config" ]; then
+		bbplain "buildroot: ${IB_PLATFORM}_defconfig unchanged — keeping the existing .config"
+		return 0
+	fi
+
+	if [ "$(cat ${IB_BUILDROOT_PLATFORM} 2>/dev/null)" != "${IB_PLATFORM}" ]; then
+		bbplain "buildroot: platform is now ${IB_PLATFORM}, rebuilding the rootfs from scratch"
+		rm -rf ${IB_ROOTFS_PATH}/build ${IB_ROOTFS_PATH}/target ${IB_ROOTFS_PATH}/host \
+		       ${IB_ROOTFS_PATH}/scripts ${IB_ROOTFS_PATH}/images ${IB_ROOTFS_PATH}/staging
 	fi
 
 	mkdir -p "${IB_BUILDROOT_DL_DIR}"
 	make O=${IB_ROOTFS_PATH} BR2_DL_DIR="${IB_BUILDROOT_DL_DIR}" ${IB_PLATFORM}_defconfig
+
+	# Recorded only after a successful reconfiguration, same as do_build.
+	echo "${IB_PLATFORM}" > "${IB_BUILDROOT_PLATFORM}"
+	echo "$defconfig_hash" > "${IB_BUILDROOT_DEFCONFIG_GUARD}"
 }
 
 do_build[nostamp] = "1"
