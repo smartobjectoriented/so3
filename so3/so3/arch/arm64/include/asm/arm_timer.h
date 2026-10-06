@@ -83,6 +83,17 @@ static inline u32 arch_timer_reg_read_el2(enum arch_timer_reg reg)
 	return 0;
 }
 
+static inline void arch_timer_set_cval_el2(u64 cval)
+{
+	write_sysreg(cval, cnthp_cval_el2);
+	isb();
+}
+
+static inline u64 arch_timer_get_cval_el2(void)
+{
+	return read_sysreg(cnthp_cval_el2);
+}
+
 static inline void arch_timer_reg_write_el0(enum arch_timer_reg reg, u32 val)
 {
 	switch (reg) {
@@ -159,6 +170,24 @@ static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 	BUG();
 
 	return 0;
+}
+
+static inline void arch_timer_set_cval_cp15(int access, u64 cval)
+{
+	if (access == ARCH_TIMER_PHYS_ACCESS)
+		write_sysreg(cval, cntp_cval_el0);
+	else
+		write_sysreg(cval, cntv_cval_el0);
+
+	isb();
+}
+
+static inline u64 arch_timer_get_cval_cp15(int access)
+{
+	if (access == ARCH_TIMER_PHYS_ACCESS)
+		return read_sysreg(cntp_cval_el0);
+
+	return read_sysreg(cntv_cval_el0);
 }
 
 #endif /* CONFIG_AVZ */
