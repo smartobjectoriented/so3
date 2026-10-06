@@ -23,8 +23,9 @@
 #include <timer.h>
 
 /**
- * Active wait based on the jiffy_usec
+ * Active wait on the clocksource counter
  */
+
 void udelay(u64 us);
 
 void sleep(u64 ns);
