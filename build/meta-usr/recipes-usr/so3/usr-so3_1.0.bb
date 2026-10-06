@@ -48,19 +48,6 @@ do_build[depends] += "musl-toolchain:do_build"
 do_build:prepend () {
 	export PATH="${IB_MUSL_TOOLCHAIN_DIR}/${IB_MUSL_TARGET}/bin:$PATH"
 
-	# The cmake build dir caches the toolchain (CMakeCache.txt pins the
-	# compiler), so switching IB_PLATFORM between virt64 and virt32
-	# (aarch64<->arm) would otherwise keep producing wrong-arch user
-	# binaries (e.g. an aarch64 init.elf on a 32-bit kernel -> prefetch
-	# abort at boot). Wipe build/ when the arch changes; same-arch
-	# rebuilds stay incremental. The marker lives at the usr/ root so it
-	# survives the build/ wipe.
-	_arch_marker="${IB_TARGET}/.ib_last_arch"
-	if [ -f "$_arch_marker" ] && [ "$(cat $_arch_marker)" != "${IB_PLAT_CPU}" ]; then
-		echo "SO3 usr arch changed ($(cat $_arch_marker) -> ${IB_PLAT_CPU}); wiping build/"
-		rm -rf ${IB_TARGET}/build
-	fi
-	echo "${IB_PLAT_CPU}" > "$_arch_marker"
 }
 
 # Make sure so3 has been installed correctly to fetch other components if required
