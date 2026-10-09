@@ -52,11 +52,27 @@ do_build[nostamp] = "1"
 
 do_build[depends] += "rootfs-linux:do_attach_infrabase"
 
+# For convenience, images/ also shows the platform's static initrd.cpio next
+# to rootfs.cpio. The link targets the git-tracked source, the file that
+# mount.sh -i / umount.sh -i edit and the next build embeds, so it is never
+# stale. It goes away with images/.
+
+IB_BUILDROOT_SRC_BOARD := "${THISDIR}/../linux/files/board"
+
+buildroot_link_initrd() {
+	if [ -f ${IB_BUILDROOT_SRC_BOARD}/${IB_PLATFORM}/initrd.cpio ]; then
+		ln -sfnr ${IB_BUILDROOT_SRC_BOARD}/${IB_PLATFORM}/initrd.cpio \
+			${IB_ROOTFS_PATH}/images/initrd.cpio
+	fi
+}
+
 do_build () {
 	bbnote "Building buildroot based rootfs..."
 
 	cd ${IB_TARGET}
 	make  O=${IB_ROOTFS_PATH} BR2_DL_DIR="${IB_BUILDROOT_DL_DIR}" --no-print-directory
+
+	buildroot_link_initrd
 }
 
 do_clean[nostamp] = "1"
