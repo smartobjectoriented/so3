@@ -202,8 +202,9 @@ uses ``EOImode = 1`` and the virtual GIC to forward interrupts to guests — see
 :ref:`avz`.
 
 Time is provided by the ARM generic timer (``devices/timer/arm_timer.c``). A
-periodic tick drives the scheduler; ``calibrate_delay()`` (run once during
-bring-up) waits for the first ticks to compute the busy-loop delay constant.
+periodic tick drives the scheduler. Each deadline is the previous one plus a
+period (``CVAL``), so the IRQ latency does not accumulate into the tick, and
+``udelay()`` busy-waits on the counter itself.
 
 Networking
 ==========

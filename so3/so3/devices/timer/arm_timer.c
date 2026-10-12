@@ -56,6 +56,42 @@ static inline void timer_write(enum arch_timer_reg reg, u32 val)
 #endif
 }
 
+static inline u64 timer_get_cval(void)
+{
+#ifdef CONFIG_AVZ
+	return arch_timer_get_cval_el2();
+#else
+	return arch_timer_get_cval_cp15(ARCH_TIMER_VIRT_ACCESS);
+#endif
+}
+
+static inline void timer_set_cval(u64 cval)
+{
+#ifdef CONFIG_AVZ
+	arch_timer_set_cval_el2(cval);
+#else
+	arch_timer_set_cval_cp15(ARCH_TIMER_VIRT_ACCESS, cval);
+#endif
+}
+
+/*
+ * Move the deadline one period after the previous one, not after now:
+ * the IRQ latency then no longer accumulates into the tick. After a
+ * stretch longer than a period with IRQs off, restart from now instead
+ * of replaying every missed tick.
+ */
+
+static void next_period(u32 period)
+{
+	u64 cval = timer_get_cval() + period;
+	u64 now = arch_counter_get_cntvct();
+
+	if (cval <= now)
+		cval = now + period;
+
+	timer_set_cval(cval);
+}
+
 static void next_event(u32 next)
 {
 	u32 ctrl = timer_read(ARCH_TIMER_REG_CTRL);
@@ -72,9 +108,9 @@ static irq_return_t timer_isr(int irq, void *dev)
 	arm_timer_t *arm_timer = (arm_timer_t *) dev_get_drvdata((dev_t *) dev);
 
 	if (timer_read(ARCH_TIMER_REG_CTRL) & ARCH_TIMER_CTRL_IT_STAT) {
-		/* Writing TVAL moves the deadline and clears the condition. */
+		/* Writing CVAL moves the deadline and clears the condition. */
 
-		next_event(arm_timer->reload);
+		next_period(arm_timer->reload);
 
 #if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
 		timer_interrupt(smp_processor_id() == S3C_CPU);
@@ -122,12 +158,12 @@ void avz_el2_timer_tick(void)
 		return;
 
 	/* Re-arm the timer for the next period. */
-	next_event(arm_timer->reload);
+	next_period(arm_timer->reload);
 
 	/* Same CPU predicate as arm_timer_isr: on the capsule CPU the tick
 	 * must run the periodic path so capsule domains get their
 	 * VIRQ_TIMER event; otherwise a capsule never sees a tick and
-	 * spins forever in calibrate_delay. Without CONFIG_SOO there is
+	 * none of its timers ever fires. Without CONFIG_SOO there is
 	 * no capsule CPU — every CPU runs the agency path. */
 
 #ifdef CONFIG_SOO

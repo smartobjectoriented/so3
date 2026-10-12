@@ -82,6 +82,28 @@ static inline u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 	return val;
 }
 
+static inline void arch_timer_set_cval_cp15(int access, u64 cval)
+{
+	if (access == ARCH_TIMER_PHYS_ACCESS)
+		asm volatile("mcrr p15, 2, %Q0, %R0, c14" : : "r"(cval));
+	else
+		asm volatile("mcrr p15, 3, %Q0, %R0, c14" : : "r"(cval));
+
+	isb();
+}
+
+static inline u64 arch_timer_get_cval_cp15(int access)
+{
+	u64 cval;
+
+	if (access == ARCH_TIMER_PHYS_ACCESS)
+		asm volatile("mrrc p15, 2, %Q0, %R0, c14" : "=r"(cval));
+	else
+		asm volatile("mrrc p15, 3, %Q0, %R0, c14" : "=r"(cval));
+
+	return cval;
+}
+
 static inline u32 arch_timer_get_cntfrq(void)
 {
 	u32 val;

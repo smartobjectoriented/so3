@@ -19,7 +19,6 @@
 
 #include <common.h>
 #include <log.h>
-#include <calibrate.h>
 #include <schedule.h>
 #include <memory.h>
 #include <mmc.h>
@@ -123,8 +122,6 @@ void kernel_start(void)
 	boot_stage = BOOT_STAGE_IRQ_ENABLE;
 
 	local_irq_enable();
-
-	calibrate_delay();
 
 	/*
 	 * Perform the rest of bootstrap sequence in a separate thread, so that

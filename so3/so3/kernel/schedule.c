@@ -47,7 +47,6 @@ static sched_policy_t sched_policy;
 static spinlock_t schedule_lock;
 
 volatile u64 jiffies = 0ull;
-volatile u64 jiffies_ref = 0ull;
 
 static volatile bool __sched_preempt = false;
 

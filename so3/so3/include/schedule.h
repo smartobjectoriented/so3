@@ -33,7 +33,6 @@
 #endif /* CONFIG_SCHED_PRIO_DYN */
 
 extern volatile u64 jiffies;
-extern volatile u64 jiffies_ref;
 
 extern struct tcb *tcb_idle;
 

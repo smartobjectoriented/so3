@@ -23,19 +23,20 @@
 #include <softirq.h>
 
 #include <device/irq.h>
+#include <device/timer.h>
 
 /**
- * Wait-free loop based on the jiffy_ref
+ * Busy-wait on the clocksource counter, which every timer driver
+ * provides before the first driver may call udelay().
  */
+
 void udelay(u64 us)
 {
-	u64 __delay = 0ull, target;
+	u64 start = clocksource_timer.read();
+	u64 cycles = us * clocksource_timer.rate / 1000000ull;
 
-#warning review the way how to calculate the delay...
-	target = ((us / ((u64) 1000000ull / (u64) CONFIG_HZ))) * jiffies_ref;
-
-	while (__delay < target)
-		__delay++;
+	while (clocksource_timer.read() - start < cycles)
+		;
 }
 
 /*
