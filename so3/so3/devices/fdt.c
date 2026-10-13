@@ -301,7 +301,6 @@ int fdt_find_or_add_subnode(void *fdt, int parentoffset, const char *name)
 int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *info)
 {
 	int new_offset;
-	const struct fdt_property *prop;
 	int prop_len;
 	const char *compat_str, *node_str;
 	static int depth = 0;
@@ -365,17 +364,12 @@ int get_dev_info(const void *fdt_addr, int offset, const char *compat, void *inf
 
 	strncpy(__info->nodename, node_str, prop_len);
 
-	prop = fdt_get_property(fdt_addr, new_offset, "status", &prop_len);
-
-	if (prop) {
-		if (!strcmp(prop->data, "disabled"))
-			__info->status = STATUS_DISABLED;
-		else if (!strcmp(prop->data, "ok"))
-			__info->status = STATUS_INIT_PENDING;
-	}
-
 	/* We got all required information, the device is ready to be initialized */
-	__info->status = STATUS_INIT_PENDING;
+
+	if (fdt_device_is_available((void *) fdt_addr, new_offset))
+		__info->status = STATUS_INIT_PENDING;
+	else
+		__info->status = STATUS_DISABLED;
 
 	return new_offset;
 }

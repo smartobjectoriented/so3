@@ -80,7 +80,10 @@ void *find_device(const char *compat)
 
 /*
  * Check if a certain node has the property "status" and check for the availability.
- * Only "ok" means a valid device.
+ * "okay" (the DTSpec value) and "ok" (the legacy spelling) both mean a valid device.
+ *
+ * Unlike Linux, a node without status is not available: SO3 only brings up the
+ * devices its device tree explicitly enables.
  */
 bool fdt_device_is_available(void *fdt_addr, int node_offset)
 {
@@ -92,12 +95,9 @@ bool fdt_device_is_available(void *fdt_addr, int node_offset)
 
 	prop = fdt_get_property(fdt_addr, node_offset, "status", &prop_len);
 
-	if (prop) {
-		if (!strcmp(prop->data, "disabled"))
-			return false;
-		else if (!strcmp(prop->data, "ok"))
-			return true;
-	}
+	if (prop)
+		return !strcmp(prop->data, "okay") || !strcmp(prop->data, "ok");
+
 	return false;
 }
 
