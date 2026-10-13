@@ -692,8 +692,11 @@ void gich_init(void)
 
 	if (gicc_ctlr & GICC_CTLR_GRPEN1)
 		vmcr |= GICH_VMCR_ENABLE_GRP0_MASK;
-	if (gicc_ctlr & GICC_CTLR_EOImode)
-		vmcr |= GICH_VMCR_EOI_MODE_MASK;
+
+	/* VEM stays 0: the physical EOImode=1 is EL2's own, and a guest that
+	 * expects EOImode=0 would only drop priority on EOIR and leave the vIRQ
+	 * active forever. Each guest sets its mode when it programs GICV_CTLR,
+	 * but a restored capsule may take a vIRQ before it does. */
 
 	iowrite32(&gic->gich->vmcr, vmcr);
 
@@ -755,8 +758,8 @@ void gich_secondary_init(void)
 	vmcr = (gicc_pmr >> GICV_PMR_PRIORITY_SHIFT) << GICH_VMCR_PRIMASK_SHIFT;
 	if (gicc_ctlr & GICC_CTLR_GRPEN1)
 		vmcr |= GICH_VMCR_ENABLE_GRP0_MASK;
-	if (gicc_ctlr & GICC_CTLR_EOImode)
-		vmcr |= GICH_VMCR_EOI_MODE_MASK;
+
+	/* VEM stays 0, as in gich_init(). */
 
 	iowrite32(&gic->gich->vmcr, vmcr);
 	iowrite32(&gic->gich->hcr, GICH_HCR_EN);
