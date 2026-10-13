@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vsenseledback/vsenseled.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/drivers/vsenseledback/vsenseled.c	2025-08-29 08:46:41.395696210 +0200
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,187 @@
 +/*
 + * Copyright (C) 2021 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -62,7 +62,8 @@
 +	vsenseled_priv_t *vsenseled_priv = dev_get_drvdata(&vdev->dev);
 +	vsenseled_request_t *ring_req;
 +
-+	vdevback_processing_begin(vdev);
++	if (!vdevback_processing_begin(vdev))
++		return IRQ_HANDLED;
 +
 +	while ((ring_req = vsenseled_get_ring_request(&vsenseled_priv->vsenseled.ring)) != NULL)
 +		display_led(ring_req->lednr, ring_req->ledstate);
