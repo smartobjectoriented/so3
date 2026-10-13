@@ -118,6 +118,18 @@ IB_USR_MAKE_TARGET ?= ""
 do_build[nostamp] = "1"
 do_build () {
 
+	# CMakeCache.txt pins the compiler, so an arch switch (virt64 <-> virt32)
+	# would keep building with the previous arch's toolchain. Wipe build/ when
+	# the arch changes or is unknown; the marker sits outside build/ to
+	# survive the wipe.
+
+	_arch_marker="${IB_TARGET}/.ib_last_arch"
+	if [ "$(cat $_arch_marker 2>/dev/null)" != "${IB_PLAT_CPU}" ]; then
+		echo "usr arch is now ${IB_PLAT_CPU}; wiping build/"
+		rm -rf ${IB_TARGET}/build
+	fi
+	echo "${IB_PLAT_CPU}" > "$_arch_marker"
+
 	mkdir -p ${IB_TARGET}/build
 	cd ${IB_TARGET}/build
 	 
