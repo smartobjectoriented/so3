@@ -220,15 +220,6 @@ void perform_task(dc_event_t dc_event)
 
 		vbs_suspend();
 		DBG("vbstore suspended.\n");
-
-		/* Preserve OUR current system time in the shared page so that
-		 * resume_fn can rebase the pending soft timers. It must be
-		 * expressed in the capsule's own time scale: computing the
-		 * resume offset against a time stamped by AVZ (EL2 uptime)
-		 * mixes two unrelated time bases, wraps the timer deadlines
-		 * and leaves TIMER_SOFTIRQ re-pending forever after resume. */
-		avz_shared->current_s_time = NOW();
-
 		break;
 
 	case DC_PRE_SUSPEND:
