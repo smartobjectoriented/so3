@@ -1270,7 +1270,9 @@ SYSCALL_DEFINE6(mmap2, addr_t, start, size_t, length, int, prot, int, flags, int
 
 SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
 {
-	int rc, gfd;
+	int gfd;
+	int (*ioctl)(int fd, unsigned long cmd, unsigned long args);
+
 	mutex_lock(&vfs_lock);
 
 	gfd = vfs_get_gfd(fd);
@@ -1280,15 +1282,13 @@ SYSCALL_DEFINE3(ioctl, int, fd, unsigned long, cmd, unsigned long, args)
 		return -EINVAL;
 	}
 
-	if (open_fds[gfd]->fops->ioctl)
-		rc = open_fds[gfd]->fops->ioctl(fd, cmd, args);
-	else {
-		rc = -EPERM;
-	}
+	ioctl = open_fds[gfd]->fops->ioctl;
 
 	mutex_unlock(&vfs_lock);
 
-	return rc;
+	/* Like read(), an ioctl may block: it must not hold every other file operation meanwhile. */
+
+	return ioctl ? ioctl(fd, cmd, args) : -EPERM;
 }
 
 /*
