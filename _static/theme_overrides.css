@@ -1,0 +1,31 @@
+/* -*- coding: utf-8; mode: css -*-
+ *
+ * Sphinx HTML theme customization: read the doc
+ *
+ */
+
+/* override table no-wrap */
+.wy-table-responsive table td, .wy-table-responsive table th {
+    white-space: normal;
+}
+
+.wy-nav-content {
+max-width: none;
+}
+
+.highlight {
+	max-height:300px;
+	overflow:auto;
+}
+
+/* The SO3 logo is blue + orange, which has poor contrast against the RTD
+ * theme's blue sidebar search area. Sit the logo on a white rounded card so
+ * it stands out clearly. The theme's own ".wy-side-nav-search > a img.logo"
+ * rule forces "background: transparent" at the same specificity, so we match
+ * that selector and use !important to win. */
+.wy-side-nav-search a img.logo,
+.wy-side-nav-search img.logo {
+	background-color: #c5ddf5 !important;   /* light blue card */
+	padding: 8px 14px;
+	border-radius: 8px;
+}
