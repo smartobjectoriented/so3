@@ -149,6 +149,12 @@ typedef enum {
 	DC_TRIGGER_DEV_PROBE,
 	DC_TRIGGER_LOCAL_COOPERATION,
 
+	/* Lifecycle callbacks, see s3c_lifecycle_t */
+	DC_PRE_ACTIVATE,
+	DC_COOPERATE,
+	DC_COOPERATE_CB,
+	DC_COOPERATE_REMOTE,
+
 	DC_EVENT_MAX /* Used to determine the number of DC events */
 } dc_event_t;
 
@@ -235,6 +241,91 @@ typedef struct {
 	} u;
 } dom_desc_t;
 
+/*
+ * Capsule lifecycle, after the SOO patent: the agency calls the capsule at
+ * fixed points of its lifecycle, and the capsule decides.
+ *
+ * - DC_PRE_ACTIVATE: right after a capsule arrives, restored or injected,
+ *   before its application does anything on the device. The capsule checks
+ *   the device suits it; it may erase itself or stay for dissemination only.
+ * - DC_COOPERATE: still before it runs. The capsule gets the list of the
+ *   capsules residing on the device and may cooperate with any of them,
+ *   erase some, or erase itself.
+ * - DC_COOPERATE_CB: in a residing capsule, which receives the data of the
+ *   capsule cooperating with it.
+ * - DC_COOPERATE_REMOTE: in a residing capsule, for a copy of it running on a
+ *   neighbouring device which lacks what this one knows. The capsule exports
+ *   its data; the agency carries it to that device, where the copy gets it as
+ *   a DC_COOPERATE_CB from caller slot S3C_LC_REMOTE. Copies thus share what
+ *   they know without travelling.
+ * - DC_POST_ACTIVATE: the capsule is activated. Its application, held since
+ *   the arrival, runs.
+ *
+ * The area sits in the shared page, so it travels with the snapshot: a
+ * capsule keeps its ID, its summary and its stop_propagate decision from
+ * device to device. Data between capsules goes through two buffers each
+ * capsule keeps in its own memory, copied by AVZ on the agency's request.
+ */
+
+#define S3C_LC_MAX_RESIDENTS 8
+#define S3C_LC_DEVICES_LEN 128
+#define S3C_LC_SUMMARY_LEN 32
+#define S3C_LC_BUF_SIZE (64 * 1024)
+
+/* The caller slot of a copy running on another device: slot 0 is never a capsule */
+#define S3C_LC_REMOTE 0
+
+typedef struct {
+	uint32_t slotID;
+	uint64_t spid;
+	uint64_t capsule_uid;
+} s3c_resident_t;
+
+/* Written by the agency (AVZ_LIFECYCLE_SET or AVZ_LIFECYCLE_COPY) */
+typedef struct {
+	uint64_t device_uid;
+	char devices[S3C_LC_DEVICES_LEN];
+
+	uint32_t nr_residents;
+	s3c_resident_t residents[S3C_LC_MAX_RESIDENTS];
+
+	/* DC_COOPERATE_CB: who cooperates, and the size of its data in the inbox */
+	s3c_resident_t caller;
+	uint32_t inbox_len;
+} s3c_lc_in_t;
+
+/* Decisions of the capsule */
+#define S3C_LC_KILL_SELF (1 << 0)
+#define S3C_LC_SKIP_ACTIVATION (1 << 1)
+#define S3C_LC_STOP_PROPAGATE (1 << 2)
+
+/* Written by the capsule, read by the agency (AVZ_LIFECYCLE_GET) */
+typedef struct {
+	/* Does not change when the capsule is copied */
+	uint64_t capsule_uid;
+
+	uint32_t flags;
+
+	/* Residents to erase, and to cooperate with, by slotID bit */
+	uint32_t kill_mask;
+	uint32_t coop_mask;
+
+	/* Data for the residents cooperated with, in the export buffer */
+	uint32_t export_len;
+
+	/* What the capsule holds, for neighbours to tell whether they lack it */
+	uint8_t summary[S3C_LC_SUMMARY_LEN];
+
+	/* S3C_LC_BUF_SIZE each, physically contiguous, in the capsule's memory */
+	addr_t export_paddr;
+	addr_t inbox_paddr;
+} s3c_lc_out_t;
+
+typedef struct {
+	s3c_lc_in_t in;
+	s3c_lc_out_t out;
+} s3c_lifecycle_t;
+
 struct avz_shared {
 	domid_t domID;
 
@@ -267,6 +358,9 @@ struct avz_shared {
 
 	/* Agency or capsule descriptor */
 	dom_desc_t dom_desc;
+
+	/* Capsule only */
+	s3c_lifecycle_t lifecycle;
 
 	/* Used to store a signature for consistency checking, for example after a snapshot restoration */
 	char signature[4];
@@ -316,6 +410,11 @@ typedef struct agency_ioctl_args {
 #define AVZ_FBDEV_SET_PFNS 14
 #define AVZ_FBDEV_CHANGE_FOCUS 15
 #define AVZ_FBDEV_GET_S3C_ADDR 16
+#define AVZ_LIFECYCLE_SET 17
+#define AVZ_LIFECYCLE_GET 18
+#define AVZ_LIFECYCLE_COPY 19
+#define AVZ_LIFECYCLE_EXPORT 20
+#define AVZ_LIFECYCLE_INBOX 21
 
 /* Staged hypercalls.
  *
@@ -437,6 +536,37 @@ typedef struct {
 	addr_t paddr;
 } avz_fbdev_addr_t;
 
+/* AVZ_LIFECYCLE_SET */
+typedef struct {
+	uint32_t slotID;
+	s3c_lc_in_t in;
+} avz_lifecycle_set_t;
+
+/* AVZ_LIFECYCLE_GET */
+typedef struct {
+	uint32_t slotID;
+	s3c_lc_out_t out;
+} avz_lifecycle_get_t;
+
+/* AVZ_LIFECYCLE_COPY: the export buffer of <src> into the inbox of <dst> */
+typedef struct {
+	uint32_t src_slotID;
+	uint32_t dst_slotID;
+	int len; /* OUT: bytes copied, or -1 */
+} avz_lifecycle_copy_t;
+
+/*
+ * AVZ_LIFECYCLE_EXPORT: the export buffer of <slotID> into the agency buffer
+ * at <paddr>. AVZ_LIFECYCLE_INBOX: <len> bytes of the agency buffer into the
+ * inbox of <slotID>, from <caller>.
+ */
+typedef struct {
+	uint32_t slotID;
+	addr_t paddr;
+	s3c_resident_t caller;
+	int len; /* OUT: bytes copied, or -1 */
+} avz_lifecycle_xfer_t;
+
 /*
  * AVZ hypercall argument
  */
@@ -459,6 +589,10 @@ typedef struct {
 		avz_fbdev_pfns_t avz_fbdev_pfns_args;
 		avz_fbdev_focus_t avz_fbdev_focus_args;
 		avz_fbdev_addr_t avz_fbdev_addr_args;
+		avz_lifecycle_set_t avz_lifecycle_set_args;
+		avz_lifecycle_get_t avz_lifecycle_get_args;
+		avz_lifecycle_copy_t avz_lifecycle_copy_args;
+		avz_lifecycle_xfer_t avz_lifecycle_xfer_args;
 	} u;
 } avz_hyp_t;
 

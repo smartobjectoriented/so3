@@ -8,6 +8,7 @@ obj-y   += hypervisor.o
 obj-y	+= evtchn.o
 obj-y	+= gnttab.o
 obj-y   += soo_guest_activity.o
+obj-y   += lifecycle.o
 obj-y   += soo_id.o
 obj-y   += xmlui.o
 obj-y	+= vbus/ vbstore/ console/ debug/ 

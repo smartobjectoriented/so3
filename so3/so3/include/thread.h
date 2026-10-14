@@ -90,6 +90,9 @@ struct tcb {
 	 * and __sleep(). */
 	bool killed;
 
+	/* The thread last left the CPU by blocking, not by preemption. */
+	bool blocked;
+
 #ifdef CONFIG_IPC_SIGNAL
 	/* Set while the thread sits in an interruptible blocking primitive
 	 * (see wait_for_completion_interruptible()). sys_do_kill() wakes such

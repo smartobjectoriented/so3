@@ -34,6 +34,10 @@
 
 #include <asm/mmu.h>
 
+#ifdef CONFIG_SOO
+#include <soo/lifecycle.h>
+#endif
+
 static struct list_head readyThreads;
 static struct list_head zombieThreads;
 
@@ -52,6 +56,16 @@ volatile u64 jiffies_ref = 0ull;
 static volatile bool __sched_preempt = false;
 
 static timer_t schedule_timer;
+
+/* A thread the capsule holds until its activation is left in the ready list. */
+static inline bool held(tcb_t *tcb)
+{
+#ifdef CONFIG_SOO
+	return lifecycle_held(tcb);
+#else
+	return false;
+#endif
+}
 
 /*
  * The following code (normally disabled) is used for debugging purposes...
@@ -148,6 +162,7 @@ void waiting(void)
 	ASSERT(current()->state == THREAD_STATE_RUNNING);
 
 	current()->state = THREAD_STATE_WAITING;
+	current()->blocked = true;
 
 	schedule();
 
@@ -308,6 +323,9 @@ static tcb_t *next_thread(void)
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
+		if (held(tcb))
+			continue;
+
 		/* First, compare with the running tcb if any... */
 		if (!tcb_to_schedule)
 			tcb_to_schedule = tcb;
@@ -352,6 +370,9 @@ static tcb_t *next_thread(void)
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
 
+		if (held(tcb))
+			continue;
+
 		/* First, compare with the running tcb if any... */
 		if (!tcb_to_schedule)
 			tcb_to_schedule = tcb;
@@ -387,6 +408,9 @@ static tcb_t *next_thread(void)
 	list_for_each_safe(pos, q, &readyThreads) {
 		entry = list_entry(pos, queue_thread_t, list);
 		tcb = entry->tcb;
+
+		if (held(tcb))
+			continue;
 
 		/* A thread is schedulable if it belongs to a live process
 		 * (kernel thread, or a pcb in READY/RUNNING state). In addition,
@@ -467,8 +491,10 @@ void schedule(void)
 		 * The current threads (here prev) can be in different states, not only running; it may be in *waiting* or *zombie*
 		 * depending on the thread activities. Hence, we put it in the ready state ONLY if the thread is in *running*.
 		 */
-		if ((prev != NULL) && (prev->state == THREAD_STATE_RUNNING) && (likely(prev != tcb_idle)))
+		if ((prev != NULL) && (prev->state == THREAD_STATE_RUNNING) && (likely(prev != tcb_idle))) {
+			prev->blocked = false;
 			ready(prev);
+		}
 
 		next->state = THREAD_STATE_RUNNING;
 		set_current(next);

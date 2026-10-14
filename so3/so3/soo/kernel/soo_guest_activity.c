@@ -36,6 +36,7 @@
 #include <soo/vbstore.h>
 #include <soo/soo.h>
 #include <soo/console.h>
+#include <soo/lifecycle.h>
 
 /*
  * Used to keep track of the target domain for a certain (outgoing) dc_event.
@@ -230,8 +231,17 @@ void perform_task(dc_event_t dc_event)
 		do_soo_activity(&args);
 		break;
 
+	case DC_PRE_ACTIVATE:
+	case DC_COOPERATE:
+	case DC_COOPERATE_CB:
+	case DC_COOPERATE_REMOTE:
+		lifecycle_callback(dc_event);
+		break;
+
 	case DC_POST_ACTIVATE:
 		DBG("Post_activate...\n");
+
+		lifecycle_activated();
 
 		args.cmd = CB_POST_ACTIVATE;
 		do_soo_activity(&args);
