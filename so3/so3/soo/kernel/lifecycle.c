@@ -150,9 +150,12 @@ void lifecycle_callback(dc_event_t dc_event)
 {
 	s3c_lc_out_t *out = &lc()->out;
 
-	/* A decision holds for the call it answers; stop_propagate holds for good. */
+	/*
+	 * A decision holds for the call it answers; stop_propagate holds for
+	 * good, and a request to cooperate until a cooperate callback serves it.
+	 */
 
-	out->flags &= S3C_LC_STOP_PROPAGATE;
+	out->flags &= S3C_LC_STOP_PROPAGATE | (dc_event == DC_COOPERATE ? 0 : S3C_LC_COOPERATE);
 	out->kill_mask = 0;
 	out->coop_mask = 0;
 	out->export_len = 0;
@@ -216,6 +219,10 @@ static int soo_ioctl(int fd, unsigned long cmd, unsigned long args)
 
 	case SOO_IOC_STOP_PROPAGATE:
 		out->flags |= S3C_LC_STOP_PROPAGATE;
+		return 0;
+
+	case SOO_IOC_COOPERATE:
+		out->flags |= S3C_LC_COOPERATE;
 		return 0;
 
 	case SOO_IOC_GET_IDS:
