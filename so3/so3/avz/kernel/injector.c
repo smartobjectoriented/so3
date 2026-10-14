@@ -525,6 +525,14 @@ void write_S3C_snapshot(avz_hyp_t *args)
 	domctxt = (struct dom_context *) (snapshot_buffer + sizeof(uint32_t));
 
 	if (args->u.avz_snapshot_args.stage == AVZ_STAGE_INIT) {
+		/* A header that is not a capsule context is refused here, before any slot is taken. */
+
+		if (strncmp(domctxt->avz_shared.signature, SOO_S3C_SIGNATURE, sizeof(domctxt->avz_shared.signature))) {
+			printk("%s: not a capsule snapshot, refused.\n", __func__);
+			args->u.avz_snapshot_args.slotID = -1;
+			return;
+		}
+
 		/* Ask for available slot and perform the reservation */
 
 		LOG_DEBUG("Original size of the snapshot: %d bytes\n", snapshot_size);
