@@ -30,6 +30,7 @@
 #include <asm/mmu.h>
 #include <asm/setup.h>
 
+#include <soo/lifecycle.h>
 #include <soo/hypervisor.h>
 #include <soo/avz.h>
 #include <soo/evtchn.h>
@@ -116,6 +117,8 @@ void post_init_setup(void)
 	LOG_INFO("SOO SO3 capsule booting ...\n");
 
 	soo_guest_activity_init();
+
+	lifecycle_init();
 
 	callbacks_init();
 

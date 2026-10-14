@@ -103,6 +103,54 @@ void shutdown_S3C(unsigned int S3C_slotID)
 	put_S3C_slot(S3C_slotID);
 }
 
+static bool lifecycle_slot_valid(unsigned int slotID)
+{
+	return (slotID >= MEMSLOT_BASE) && (slotID < MAX_DOMAINS) && domains[slotID];
+}
+
+/* A buffer of a capsule, given by its (intermediate) physical address, if it lies within its slot. */
+static void *lifecycle_buf(unsigned int slotID, addr_t ipa, size_t len)
+{
+	if ((ipa < memslot[slotID].ipa_addr) || (len > S3C_LC_BUF_SIZE) ||
+	    (ipa + len > memslot[slotID].ipa_addr + memslot[slotID].size))
+		return NULL;
+
+	return (void *) ipa_to_va(slotID, ipa);
+}
+
+/*
+ * Cooperation data goes from the export buffer of one capsule to the inbox of
+ * another, the copy being done here: the capsules never see each other's
+ * memory, and the agency only names who cooperates with whom.
+ */
+static int lifecycle_copy(unsigned int src_slotID, unsigned int dst_slotID)
+{
+	s3c_lifecycle_t *src, *dst;
+	void *from, *to;
+	uint32_t len;
+
+	if (!lifecycle_slot_valid(src_slotID) || !lifecycle_slot_valid(dst_slotID))
+		return -1;
+
+	src = (s3c_lifecycle_t *) &domains[src_slotID]->avz_shared->lifecycle;
+	dst = (s3c_lifecycle_t *) &domains[dst_slotID]->avz_shared->lifecycle;
+
+	len = src->out.export_len;
+	from = lifecycle_buf(src_slotID, src->out.export_paddr, len);
+	to = lifecycle_buf(dst_slotID, dst->out.inbox_paddr, len);
+	if (!from || !to)
+		return -1;
+
+	memcpy(to, from, len);
+
+	dst->in.caller.slotID = src_slotID;
+	dst->in.caller.spid = domains[src_slotID]->avz_shared->dom_desc.u.S3C.spid;
+	dst->in.caller.capsule_uid = src->out.capsule_uid;
+	dst->in.inbox_len = len;
+
+	return len;
+}
+
 /**
  * Return the descriptor of a domain (agency or capsule).
  * A size of 0 means there is no capsule in the slot.
@@ -221,6 +269,25 @@ void do_avz_hypercall(void *__args)
 		break;
 	}
 
+	case AVZ_LIFECYCLE_SET:
+		if (lifecycle_slot_valid(args->u.avz_lifecycle_set_args.slotID))
+			domains[args->u.avz_lifecycle_set_args.slotID]->avz_shared->lifecycle.in =
+				args->u.avz_lifecycle_set_args.in;
+		break;
+
+	case AVZ_LIFECYCLE_GET:
+		if (lifecycle_slot_valid(args->u.avz_lifecycle_get_args.slotID))
+			args->u.avz_lifecycle_get_args.out =
+				domains[args->u.avz_lifecycle_get_args.slotID]->avz_shared->lifecycle.out;
+		else
+			memset(&args->u.avz_lifecycle_get_args.out, 0, sizeof(s3c_lc_out_t));
+		break;
+
+	case AVZ_LIFECYCLE_COPY:
+		args->u.avz_lifecycle_copy_args.len =
+			lifecycle_copy(args->u.avz_lifecycle_copy_args.src_slotID, args->u.avz_lifecycle_copy_args.dst_slotID);
+		break;
+
 	case AVZ_FBDEV_SET_PFNS:
 		fbdev_set_pfns(&args->u.avz_fbdev_pfns_args.fbdev);
 		break;
@@ -271,6 +338,8 @@ void do_avz_hypercall(void *__args)
 		break;
 
 	case AVZ_KILL_S3C:
+	case AVZ_LIFECYCLE_SET:
+	case AVZ_LIFECYCLE_COPY:
 	case AVZ_GRANT_TABLE_OP:
 	case AVZ_FBDEV_SET_PFNS:
 	case AVZ_FBDEV_CHANGE_FOCUS:

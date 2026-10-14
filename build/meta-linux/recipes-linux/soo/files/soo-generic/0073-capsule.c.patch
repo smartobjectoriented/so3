@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,804 @@
+@@ -0,0 +1,881 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -209,6 +209,21 @@
 + *
 + * @param slotID
 + */
++/*
++ * What a capsule learns of the device it runs on, as the agency user space
++ * describes it (AGENCY_IOCTL_SET_DEVICE_INFO): given to a capsule before it
++ * boots, and with every pre_activate.
++ */
++static s3c_lc_in_t device_info;
++
++void set_device_info(const s3c_lc_in_t *info)
++{
++        memset(&device_info, 0, sizeof(device_info));
++        device_info.device_uid = info->device_uid;
++        memcpy(device_info.devices, info->devices, sizeof(device_info.devices));
++        device_info.devices[sizeof(device_info.devices) - 1] = 0;
++}
++
 +void start_capsule(int slotID) {
 +        avz_hyp_t args;
 +
@@ -216,6 +231,11 @@
 +                lprintk("%s: no stopped capsule in slot %d, nothing to start.\n", __func__, slotID);
 +                return;
 +        }
++
++        args.cmd = AVZ_LIFECYCLE_SET;
++        args.u.avz_lifecycle_set_args.slotID = slotID;
++        args.u.avz_lifecycle_set_args.in = device_info;
++        avz_hypercall(&args);
 +
 +        args.cmd = AVZ_START_CAPSULE;
 +
@@ -241,7 +261,6 @@
 +void read_snapshot(uint32_t slotID, void *buffer, uint32_t *size, bool resume) {
 +        avz_hyp_t args;
 +        uint32_t payload_size, header_size, offset, chunk_size;
-+        S3C_state_t S3C_state;
 +
 +        /* No snapshot can be taken from a slot which does not host any capsule. */
 +
@@ -377,22 +396,8 @@
 +out:
 +        mutex_unlock(&inject_lock);
 +
-+        S3C_state = get_S3C_state(slotID);
-+
-+        if (S3C_state == S3C_state_resuming) {
-+
-+                DBG("Pinging S3C %d for DC_RESUME...\n", slotID);
-+                do_sync_dom(slotID, DC_RESUME);
-+
-+                DBG("Resuming all devices (resuming from backend devices) on domain %d...\n", slotID);
-+                vbus_resume_devices(slotID);
-+
-+                DBG("Pinging S3C %d for DC_POST_ACTIVATE...\n", slotID);
-+                do_sync_dom(slotID, DC_POST_ACTIVATE);
-+
-+                DBG("Putting S3C domid %d in state living...\n", slotID);
-+                set_S3C_state(slotID, S3C_state_living);
-+        }
++        if (get_S3C_state(slotID) == S3C_state_resuming)
++                resume_capsule(slotID);
 +}
 +
 +/**
@@ -402,7 +407,7 @@
 + * @param buffer  Adresse of a buffer of S3C_info_transfert_t
 + * @return slotID in case of success, -1 if no available slot
 + */
-+int write_snapshot(void *buffer) {
++int write_snapshot(void *buffer, bool resume) {
 +        avz_hyp_t args;
 +        int ret = 0;
 +        uint32_t snapshot_size, header_size, head_len;
@@ -448,19 +453,21 @@
 +        if (head_len > AVZ_STAGE_CHUNK_SIZE)
 +                head_len = AVZ_STAGE_CHUNK_SIZE;
 +
-+        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
-+                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
-+
-+                return -EFAULT;
-+        }
-+
 +        /* The snapshot is written in stages (issue #287) so that the calling
 +         * CPU gets its interrupts back between two chunks of capsule memory.
 +         * Each chunk transits through the bounce buffer, so the whole snapshot
-+         * is never held twice in RAM.
++         * is never held twice in RAM. The buffer is shared with snapshot reads
++         * and injections: it is ours only under inject_lock.
 +         */
 +
 +        mutex_lock(&inject_lock);
++
++        if (copy_from_user(snapshot_bounce, buffer, head_len)) {
++                printk("%s: Failed to retrieve the snapshot header from user space\n", __func__);
++                mutex_unlock(&inject_lock);
++
++                return -EFAULT;
++        }
 +
 +        args.cmd = AVZ_S3C_WRITE_SNAPSHOT;
 +
@@ -590,6 +597,18 @@
 +                }
 +        }
 +
++        if (resume)
++                resume_capsule(slotID);
++
++        return slotID;
++}
++
++/*
++ * Activate a restored capsule, once its lifecycle callbacks have run: it gets
++ * its devices back and runs.
++ */
++void resume_capsule(int slotID)
++{
 +        DBG("Pinging S3C %d for DC_RESUME...\n", slotID);
 +        do_sync_dom(slotID, DC_RESUME);
 +
@@ -601,8 +620,66 @@
 +
 +        DBG("Putting S3C domid %d in state living...\n", slotID);
 +        set_S3C_state(slotID, S3C_state_living);
++}
 +
-+        return slotID;
++/*
++ * A capsule answers a lifecycle callback within its own deadline (two seconds
++ * for a user-space handler); this one only covers a capsule that does not
++ * answer at all.
++ */
++#define LIFECYCLE_TIMEOUT_MS 5000
++
++/*
++ * Call a lifecycle callback in a capsule and get its decisions. <in> is set
++ * first, except for DC_COOPERATE_CB, whose input lifecycle_copy() has set.
++ * With DC_NO_EVENT, only read what the capsule last decided.
++ */
++int lifecycle_call(int slotID, dc_event_t dc_event, s3c_lc_in_t *in, s3c_lc_out_t *out)
++{
++        avz_hyp_t args;
++        int ret;
++
++        if (dc_event == DC_NO_EVENT)
++                goto get;
++
++        if (dc_event != DC_COOPERATE_CB) {
++                args.cmd = AVZ_LIFECYCLE_SET;
++                args.u.avz_lifecycle_set_args.slotID = slotID;
++                args.u.avz_lifecycle_set_args.in = *in;
++                avz_hypercall(&args);
++        }
++
++        ret = do_sync_dom_timeout(slotID, dc_event, LIFECYCLE_TIMEOUT_MS);
++
++get:
++        args.cmd = AVZ_LIFECYCLE_GET;
++        args.u.avz_lifecycle_get_args.slotID = slotID;
++        avz_hypercall(&args);
++        *out = args.u.avz_lifecycle_get_args.out;
++
++        /* No answer, no decision: the flags may still hold a previous one. */
++
++        if (ret) {
++                out->flags &= S3C_LC_STOP_PROPAGATE;
++                out->kill_mask = 0;
++                out->coop_mask = 0;
++                out->export_len = 0;
++        }
++
++        return ret;
++}
++
++/* The cooperation data of <src_slotID> into the inbox of <dst_slotID>; the length copied, or -1. */
++int lifecycle_copy(int src_slotID, int dst_slotID)
++{
++        avz_hyp_t args;
++
++        args.cmd = AVZ_LIFECYCLE_COPY;
++        args.u.avz_lifecycle_copy_args.src_slotID = src_slotID;
++        args.u.avz_lifecycle_copy_args.dst_slotID = dst_slotID;
++        avz_hypercall(&args);
++
++        return args.u.avz_lifecycle_copy_args.len;
 +}
 +
 +int get_S3C_state(unsigned int S3C_slotID)

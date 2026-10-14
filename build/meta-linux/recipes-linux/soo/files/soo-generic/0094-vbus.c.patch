@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/vbus/vbus.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/vbus/vbus.c	2025-08-29 08:46:41.395052929 +0200
-@@ -0,0 +1,947 @@
+@@ -0,0 +1,958 @@
 +
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -853,6 +853,17 @@
 +
 +		/* Start the deferred thread */
 +		return IRQ_WAKE_THREAD;
++
++	case DC_PRE_ACTIVATE:
++	case DC_COOPERATE:
++	case DC_COOPERATE_CB:
++
++		/* Only ever an answer to the agency: one coming after its deadline is dropped. */
++		if (atomic_read(&dc_outgoing_domID[dc_event]) != -1)
++			dc_stable(dc_event);
++		else
++			atomic_set(&dc_incoming_domID[dc_event], -1);
++		break;
 +
 +	default:
 +		lprintk("(Agency) %s: something weird happened, directcomm interrupt was triggered with dc_event %d, but no DC event was configured !\n", __func__, dc_event);
