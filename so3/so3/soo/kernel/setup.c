@@ -60,6 +60,10 @@ static void resume_fn(void)
 
 	local_irq_disable();
 
+	/* The application waits for its activation on this device. */
+
+	lifecycle_restored();
+
 	/*
 	 * NOW() resumes from the system time saved in the snapshot, so pending
 	 * timers keep their deadlines: the capsule does not see the time it spent

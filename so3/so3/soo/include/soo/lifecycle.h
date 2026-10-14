@@ -55,7 +55,12 @@ struct soo_ids {
 	char devices[S3C_LC_DEVICES_LEN];
 };
 
+struct tcb;
+
 void lifecycle_init(void);
+bool lifecycle_held(struct tcb *tcb);
+void lifecycle_restored(void);
+void lifecycle_activated(void);
 void lifecycle_callback(dc_event_t dc_event);
 void lifecycle_user(dc_event_t dc_event);
 

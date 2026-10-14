@@ -33,6 +33,9 @@
 #include <memory.h>
 #include <timer.h>
 #include <completion.h>
+#include <softirq.h>
+#include <schedule.h>
+#include <thread.h>
 #include <vfs.h>
 
 #include <asm/arm_timer.h>
@@ -52,6 +55,19 @@ static completion_t request_ready;
 static volatile dc_event_t pending_event;
 static volatile bool answered;
 static bool user_handler;
+static tcb_t *handler_tcb;
+
+/*
+ * From its arrival until its post_activate, the capsule's application is
+ * held: a user thread that blocks is not scheduled again, so nothing new
+ * starts before pre_activate and cooperate have decided. A thread the snapshot
+ * caught in the middle of a step finishes it, and releases what the handler
+ * may need. The handler itself is never held.
+ *
+ * A restored capsule is held from its first instruction; at the first boot,
+ * from the moment its application takes the callbacks over.
+ */
+static bool activated, holding;
 
 static s3c_lifecycle_t *lc(void)
 {
@@ -66,6 +82,12 @@ static s3c_lifecycle_t *lc(void)
 void lifecycle_user(dc_event_t dc_event)
 {
 	u64 deadline;
+
+	/* At the first boot, the application may not have taken the callbacks over yet. */
+
+	deadline = NOW() + LIFECYCLE_USER_DEADLINE;
+	while (!user_handler && !activated && (dc_event == DC_PRE_ACTIVATE) && (NOW() < deadline))
+		msleep(10);
 
 	if (!user_handler)
 		return;
@@ -102,6 +124,25 @@ __attribute__((weak)) void cb_cooperate_cb(s3c_lifecycle_t *lifecycle)
 __attribute__((weak)) void cb_cooperate_remote(s3c_lifecycle_t *lifecycle)
 {
 	lifecycle_user(DC_COOPERATE_REMOTE);
+}
+
+bool lifecycle_held(tcb_t *tcb)
+{
+	return holding && tcb->pcb && tcb->blocked && !tcb->killed && (tcb != handler_tcb);
+}
+
+/* Called first thing after a restore, before any thread runs. */
+void lifecycle_restored(void)
+{
+	holding = true;
+}
+
+/* At post_activate: the application runs. */
+void lifecycle_activated(void)
+{
+	activated = true;
+	holding = false;
+	raise_softirq(SCHEDULE_SOFTIRQ);
 }
 
 /* Called on a lifecycle event from the agency, before it gets its answer. */
@@ -145,6 +186,9 @@ static int soo_ioctl(int fd, unsigned long cmd, unsigned long args)
 	case SOO_IOC_WAIT:
 		cb = (struct soo_callback *) args;
 		user_handler = true;
+		handler_tcb = current();
+		if (!activated)
+			holding = true;
 
 		do {
 			if (wait_for_completion_interruptible(&request_ready))

@@ -245,9 +245,9 @@ typedef struct {
  * Capsule lifecycle, after the SOO patent: the agency calls the capsule at
  * fixed points of its lifecycle, and the capsule decides.
  *
- * - DC_PRE_ACTIVATE: right after a capsule arrives, before it runs. The
- *   capsule checks the device suits it; it may erase itself or stay for
- *   dissemination only.
+ * - DC_PRE_ACTIVATE: right after a capsule arrives, restored or injected,
+ *   before its application does anything on the device. The capsule checks
+ *   the device suits it; it may erase itself or stay for dissemination only.
  * - DC_COOPERATE: still before it runs. The capsule gets the list of the
  *   capsules residing on the device and may cooperate with any of them,
  *   erase some, or erase itself.
@@ -258,6 +258,8 @@ typedef struct {
  *   its data; the agency carries it to that device, where the copy gets it as
  *   a DC_COOPERATE_CB from caller slot S3C_LC_REMOTE. Copies thus share what
  *   they know without travelling.
+ * - DC_POST_ACTIVATE: the capsule is activated. Its application, held since
+ *   the arrival, runs.
  *
  * The area sits in the shared page, so it travels with the snapshot: a
  * capsule keeps its ID, its summary and its stop_propagate decision from

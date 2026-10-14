@@ -638,7 +638,7 @@
 +/*
 + * Call a lifecycle callback in a capsule and get its decisions. <in> is set
 + * first, except for DC_COOPERATE_CB, whose input lifecycle_copy() or
-+ * lifecycle_inbox() has set.
++ * lifecycle_inbox() has set, and for DC_POST_ACTIVATE, which has none.
 + * With DC_NO_EVENT, only read what the capsule last decided.
 + */
 +int lifecycle_call(int slotID, dc_event_t dc_event, s3c_lc_in_t *in, s3c_lc_out_t *out)
@@ -649,7 +649,7 @@
 +        if (dc_event == DC_NO_EVENT)
 +                goto get;
 +
-+        if (dc_event != DC_COOPERATE_CB) {
++        if ((dc_event != DC_COOPERATE_CB) && (dc_event != DC_POST_ACTIVATE)) {
 +                args.cmd = AVZ_LIFECYCLE_SET;
 +                args.u.avz_lifecycle_set_args.slotID = slotID;
 +                args.u.avz_lifecycle_set_args.in = *in;

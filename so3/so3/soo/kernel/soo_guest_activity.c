@@ -241,6 +241,8 @@ void perform_task(dc_event_t dc_event)
 	case DC_POST_ACTIVATE:
 		DBG("Post_activate...\n");
 
+		lifecycle_activated();
+
 		args.cmd = CB_POST_ACTIVATE;
 		do_soo_activity(&args);
 		break;

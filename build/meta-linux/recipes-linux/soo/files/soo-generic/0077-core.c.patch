@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/core.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/core.c	2025-08-30 15:29:26.627707308 +0200
-@@ -0,0 +1,426 @@
+@@ -0,0 +1,427 @@
 +/*
 + * Copyright (C) 2014-2019 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + * Copyright (C) 2017, 2018 Baptiste Delporte <bonel@bonel.net>
@@ -201,7 +201,8 @@
 +		agency_lifecycle_t lc;
 +
 +		if ((args.value != DC_NO_EVENT) && (args.value != DC_PRE_ACTIVATE) && (args.value != DC_COOPERATE) &&
-+		    (args.value != DC_COOPERATE_CB) && (args.value != DC_COOPERATE_REMOTE)) {
++		    (args.value != DC_COOPERATE_CB) && (args.value != DC_COOPERATE_REMOTE) &&
++		    (args.value != DC_POST_ACTIVATE)) {
 +			ret = -EINVAL;
 +			break;
 +		}
