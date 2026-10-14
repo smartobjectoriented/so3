@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vdevback.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/drivers/vdevback.c	2025-08-29 08:46:41.395627342 +0200
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,354 @@
 +
 +/*
 + * Copyright (C) 2020 Daniel Rossier <daniel.rossier@heig-vd.ch>
@@ -53,8 +53,13 @@
 +		return false;
 +
 +	/* Could be still being initialized... */
-+	if (vdev->fe_state != VbusStateConnected)
++	if (vdev->fe_state != VbusStateConnected) {
 +		wait_for_completion(&vdevback->sync);
++
++		/* Woken up by __remove(): the frontend will never connect again. */
++		if (vdev->fe_state == VbusStateClosing)
++			return false;
++	}
 +
 +	if (atomic_read(&vdevback->processing_count) == 0) {
 +		atomic_inc(&vdevback->processing_count);
@@ -62,16 +67,16 @@
 +		mutex_lock(&vdevback->processing_lock);
 +
 +		/* Make sure we are still connected after a lock contention. */
++		if ((vdev->fe_state != VbusStateConnected) && (vdev->fe_state != VbusStateClosing))
++			wait_for_completion(&vdevback->sync);
++
 +		if (vdev->fe_state == VbusStateClosing) {
++			atomic_dec(&vdevback->processing_count);
 +			mutex_unlock(&vdevback->processing_lock);
 +
 +			complete(&vdevback->sync);
 +			return false;
 +		}
-+
-+		if (vdev->fe_state != VbusStateConnected)
-+			wait_for_completion(&vdevback->sync);
-+
 +
 +		BUG_ON(vdev->fe_state != VbusStateConnected);
 +	} else
@@ -178,20 +183,19 @@
 +	vdrvback_t *vdrvback = to_vdrvback(vdev);
 +
 +	/*
-+	 * If a processing is being started, but is locked by the processing_lock mutex,
-+	 * it must be first woken up to go ahead and abort the function call.
++	 * A processing waiting for the frontend to (re)connect must give up: it
++	 * never will. Normally the frontend closes first, but a capsule shut down
++	 * while held after a snapshot never does, so the backend marks it closing
++	 * itself, then wakes every waiter, on the completion and on the lock.
 +	 */
 +
-+	if (atomic_read(&vdevback->processing_count) > 0) {
++	vdev->fe_state = VbusStateClosing;
++	complete_all(&vdevback->sync);
 +
-+		/* Release the possible waiters on the lock so that they can pursue their work */
-+		mutex_unlock(&vdevback->processing_lock);
++	mutex_unlock(&vdevback->processing_lock);
 +
-+		while (atomic_read(&vdevback->processing_count) > 0)
-+			wait_for_completion(&vdevback->sync);
-+
-+	} else
-+		mutex_unlock(&vdevback->processing_lock);
++	while (atomic_read(&vdevback->processing_count) > 0)
++		schedule_timeout_uninterruptible(1);
 +
 +	vdrvback->remove(vdev);
 +}

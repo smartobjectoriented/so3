@@ -1,6 +1,6 @@
 --- /home/jmiceli/Documents/projects/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/drivers/vlogsback/vlogs.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/drivers/vlogsback/vlogs.c	2025-09-15 14:07:26.277477044 +0200
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,199 @@
 +/*
 + * Copyright (C) 2025 Jean-Pierre Miceli <jean-pierre.miceli@heig-vd.ch>
 + *
@@ -57,7 +57,8 @@
 +	vlogs_priv_t *vlogs_priv = dev_get_drvdata(&vdev->dev);
 +	vlogs_request_t *ring_req;
 +
-+	vdevback_processing_begin(vdev);
++	if (!vdevback_processing_begin(vdev))
++		return;
 +
 +	while ((ring_req = vlogs_get_ring_request(&vlogs_priv->vlogs.ring)) != NULL) {
 +		printk("%s", ring_req->msg);
