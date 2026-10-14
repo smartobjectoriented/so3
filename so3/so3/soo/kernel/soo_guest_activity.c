@@ -234,6 +234,7 @@ void perform_task(dc_event_t dc_event)
 	case DC_PRE_ACTIVATE:
 	case DC_COOPERATE:
 	case DC_COOPERATE_CB:
+	case DC_COOPERATE_REMOTE:
 		lifecycle_callback(dc_event);
 		break;
 

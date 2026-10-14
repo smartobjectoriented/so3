@@ -26,7 +26,8 @@
  *
  * SOO_IOC_WAIT blocks until the next callback; SOO_IOC_ANSWER answers it.
  * read() gives the data of the capsule cooperating with us (cooperate_cb),
- * write() sets ours for the capsules we cooperate with (cooperate).
+ * write() sets ours for the capsules we cooperate with (cooperate,
+ * cooperate_remote).
  */
 
 #define SOO_IOC_WAIT 1
@@ -61,5 +62,6 @@ void lifecycle_user(dc_event_t dc_event);
 void cb_pre_activate(s3c_lifecycle_t *lifecycle);
 void cb_cooperate(s3c_lifecycle_t *lifecycle);
 void cb_cooperate_cb(s3c_lifecycle_t *lifecycle);
+void cb_cooperate_remote(s3c_lifecycle_t *lifecycle);
 
 #endif /* SOO_LIFECYCLE_H */

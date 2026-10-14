@@ -151,6 +151,52 @@ static int lifecycle_copy(unsigned int src_slotID, unsigned int dst_slotID)
 	return len;
 }
 
+/*
+ * Cooperation with a copy on another device: the agency carries the data
+ * between devices, through its own buffer of S3C_LC_BUF_SIZE at <paddr>.
+ */
+static int lifecycle_export(unsigned int slotID, addr_t paddr)
+{
+	s3c_lifecycle_t *lc;
+	void *from;
+	uint32_t len;
+
+	if (!lifecycle_slot_valid(slotID))
+		return -1;
+
+	lc = (s3c_lifecycle_t *) &domains[slotID]->avz_shared->lifecycle;
+	len = lc->out.export_len;
+	from = lifecycle_buf(slotID, lc->out.export_paddr, len);
+	if (!from)
+		return -1;
+
+	memcpy((void *) ipa_to_va(MEMSLOT_AGENCY, paddr), from, len);
+
+	return len;
+}
+
+static int lifecycle_inbox(unsigned int slotID, addr_t paddr, s3c_resident_t *caller, int len)
+{
+	s3c_lifecycle_t *lc;
+	void *to;
+
+	if (!lifecycle_slot_valid(slotID) || (len < 0))
+		return -1;
+
+	lc = (s3c_lifecycle_t *) &domains[slotID]->avz_shared->lifecycle;
+	to = lifecycle_buf(slotID, lc->out.inbox_paddr, len);
+	if (!to)
+		return -1;
+
+	memcpy(to, (void *) ipa_to_va(MEMSLOT_AGENCY, paddr), len);
+
+	lc->in.caller = *caller;
+	lc->in.caller.slotID = S3C_LC_REMOTE;
+	lc->in.inbox_len = len;
+
+	return len;
+}
+
 /**
  * Return the descriptor of a domain (agency or capsule).
  * A size of 0 means there is no capsule in the slot.
@@ -288,6 +334,17 @@ void do_avz_hypercall(void *__args)
 			lifecycle_copy(args->u.avz_lifecycle_copy_args.src_slotID, args->u.avz_lifecycle_copy_args.dst_slotID);
 		break;
 
+	case AVZ_LIFECYCLE_EXPORT:
+		args->u.avz_lifecycle_xfer_args.len =
+			lifecycle_export(args->u.avz_lifecycle_xfer_args.slotID, args->u.avz_lifecycle_xfer_args.paddr);
+		break;
+
+	case AVZ_LIFECYCLE_INBOX:
+		args->u.avz_lifecycle_xfer_args.len =
+			lifecycle_inbox(args->u.avz_lifecycle_xfer_args.slotID, args->u.avz_lifecycle_xfer_args.paddr,
+					&args->u.avz_lifecycle_xfer_args.caller, args->u.avz_lifecycle_xfer_args.len);
+		break;
+
 	case AVZ_FBDEV_SET_PFNS:
 		fbdev_set_pfns(&args->u.avz_fbdev_pfns_args.fbdev);
 		break;
@@ -340,6 +397,8 @@ void do_avz_hypercall(void *__args)
 	case AVZ_KILL_S3C:
 	case AVZ_LIFECYCLE_SET:
 	case AVZ_LIFECYCLE_COPY:
+	case AVZ_LIFECYCLE_EXPORT:
+	case AVZ_LIFECYCLE_INBOX:
 	case AVZ_GRANT_TABLE_OP:
 	case AVZ_FBDEV_SET_PFNS:
 	case AVZ_FBDEV_CHANGE_FOCUS:

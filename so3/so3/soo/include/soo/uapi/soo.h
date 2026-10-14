@@ -153,6 +153,7 @@ typedef enum {
 	DC_PRE_ACTIVATE,
 	DC_COOPERATE,
 	DC_COOPERATE_CB,
+	DC_COOPERATE_REMOTE,
 
 	DC_EVENT_MAX /* Used to determine the number of DC events */
 } dc_event_t;
@@ -252,6 +253,11 @@ typedef struct {
  *   erase some, or erase itself.
  * - DC_COOPERATE_CB: in a residing capsule, which receives the data of the
  *   capsule cooperating with it.
+ * - DC_COOPERATE_REMOTE: in a residing capsule, for a copy of it running on a
+ *   neighbouring device which lacks what this one knows. The capsule exports
+ *   its data; the agency carries it to that device, where the copy gets it as
+ *   a DC_COOPERATE_CB from caller slot S3C_LC_REMOTE. Copies thus share what
+ *   they know without travelling.
  *
  * The area sits in the shared page, so it travels with the snapshot: a
  * capsule keeps its ID, its summary and its stop_propagate decision from
@@ -263,6 +269,9 @@ typedef struct {
 #define S3C_LC_DEVICES_LEN 128
 #define S3C_LC_SUMMARY_LEN 32
 #define S3C_LC_BUF_SIZE (64 * 1024)
+
+/* The caller slot of a copy running on another device: slot 0 is never a capsule */
+#define S3C_LC_REMOTE 0
 
 typedef struct {
 	uint32_t slotID;
@@ -402,6 +411,8 @@ typedef struct agency_ioctl_args {
 #define AVZ_LIFECYCLE_SET 17
 #define AVZ_LIFECYCLE_GET 18
 #define AVZ_LIFECYCLE_COPY 19
+#define AVZ_LIFECYCLE_EXPORT 20
+#define AVZ_LIFECYCLE_INBOX 21
 
 /* Staged hypercalls.
  *
@@ -543,6 +554,18 @@ typedef struct {
 } avz_lifecycle_copy_t;
 
 /*
+ * AVZ_LIFECYCLE_EXPORT: the export buffer of <slotID> into the agency buffer
+ * at <paddr>. AVZ_LIFECYCLE_INBOX: <len> bytes of the agency buffer into the
+ * inbox of <slotID>, from <caller>.
+ */
+typedef struct {
+	uint32_t slotID;
+	addr_t paddr;
+	s3c_resident_t caller;
+	int len; /* OUT: bytes copied, or -1 */
+} avz_lifecycle_xfer_t;
+
+/*
  * AVZ hypercall argument
  */
 typedef struct {
@@ -567,6 +590,7 @@ typedef struct {
 		avz_lifecycle_set_t avz_lifecycle_set_args;
 		avz_lifecycle_get_t avz_lifecycle_get_args;
 		avz_lifecycle_copy_t avz_lifecycle_copy_args;
+		avz_lifecycle_xfer_t avz_lifecycle_xfer_args;
 	} u;
 } avz_hyp_t;
 

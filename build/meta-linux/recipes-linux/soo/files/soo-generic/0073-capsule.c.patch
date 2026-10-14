@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/kernel/capsule.c	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/kernel/capsule.c	2025-08-30 15:37:09.704925348 +0200
-@@ -0,0 +1,881 @@
+@@ -0,0 +1,954 @@
 +/*
 + * Copyright (C) 2017-2024 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -73,6 +73,12 @@
 +/* Serialize the staged injection hypercall sequence (issue #287). */
 +
 +static DEFINE_MUTEX(inject_lock);
++
++/* Cooperation data between a capsule and a copy on another device, through AVZ. */
++
++static void *lifecycle_bounce = NULL;
++static dma_addr_t lifecycle_bounce_handle;
++static DEFINE_MUTEX(lifecycle_lock);
 +
 +#define CMA_MALLOC_DEVICE_FILENAME "cma_malloc"
 +
@@ -631,13 +637,14 @@
 +
 +/*
 + * Call a lifecycle callback in a capsule and get its decisions. <in> is set
-+ * first, except for DC_COOPERATE_CB, whose input lifecycle_copy() has set.
++ * first, except for DC_COOPERATE_CB, whose input lifecycle_copy() or
++ * lifecycle_inbox() has set.
 + * With DC_NO_EVENT, only read what the capsule last decided.
 + */
 +int lifecycle_call(int slotID, dc_event_t dc_event, s3c_lc_in_t *in, s3c_lc_out_t *out)
 +{
 +        avz_hyp_t args;
-+        int ret;
++        int ret = 0;
 +
 +        if (dc_event == DC_NO_EVENT)
 +                goto get;
@@ -680,6 +687,63 @@
 +        avz_hypercall(&args);
 +
 +        return args.u.avz_lifecycle_copy_args.len;
++}
++
++/* The cooperation data of <slotID>, for a copy on another device; the length, or -1. */
++int lifecycle_export(int slotID, agency_lifecycle_data_t __user *data)
++{
++        avz_hyp_t args;
++        int len;
++
++        if (!lifecycle_bounce)
++                return -1;
++
++        mutex_lock(&lifecycle_lock);
++
++        args.cmd = AVZ_LIFECYCLE_EXPORT;
++        args.u.avz_lifecycle_xfer_args.slotID = slotID;
++        args.u.avz_lifecycle_xfer_args.paddr = lifecycle_bounce_handle;
++        avz_hypercall(&args);
++
++        len = args.u.avz_lifecycle_xfer_args.len;
++        if ((len >= 0) && (copy_to_user(data->data, lifecycle_bounce, len) || put_user(len, &data->len)))
++                len = -1;
++
++        mutex_unlock(&lifecycle_lock);
++
++        return len;
++}
++
++/* The data of a copy on another device into the inbox of <slotID>, before its DC_COOPERATE_CB. */
++int lifecycle_inbox(int slotID, agency_lifecycle_data_t __user *data)
++{
++        s3c_resident_t caller;
++        avz_hyp_t args;
++        uint32_t len;
++        int ret;
++
++        if (!lifecycle_bounce || get_user(len, &data->len) || (len > S3C_LC_BUF_SIZE) ||
++            copy_from_user(&caller, &data->caller, sizeof(caller)))
++                return -1;
++
++        mutex_lock(&lifecycle_lock);
++
++        if (copy_from_user(lifecycle_bounce, data->data, len)) {
++                mutex_unlock(&lifecycle_lock);
++                return -1;
++        }
++
++        args.cmd = AVZ_LIFECYCLE_INBOX;
++        args.u.avz_lifecycle_xfer_args.slotID = slotID;
++        args.u.avz_lifecycle_xfer_args.paddr = lifecycle_bounce_handle;
++        args.u.avz_lifecycle_xfer_args.caller = caller;
++        args.u.avz_lifecycle_xfer_args.len = len;
++        avz_hypercall(&args);
++        ret = args.u.avz_lifecycle_xfer_args.len;
++
++        mutex_unlock(&lifecycle_lock);
++
++        return ret;
 +}
 +
 +int get_S3C_state(unsigned int S3C_slotID)
@@ -871,9 +935,18 @@
 +        if (!snapshot_bounce)
 +                printk("%s: failed to reserve the %d bytes snapshot bounce buffer\n", __func__,
 +                       AVZ_STAGE_CHUNK_SIZE);
++
++        lifecycle_bounce = dma_alloc_coherent(capsule_dev, S3C_LC_BUF_SIZE, &lifecycle_bounce_handle, GFP_KERNEL);
++        if (!lifecycle_bounce)
++                printk("%s: failed to reserve the lifecycle bounce buffer\n", __func__);
 +}
 +
 +void capsule_exit(void) {
++        if (lifecycle_bounce) {
++                dma_free_coherent(capsule_dev, S3C_LC_BUF_SIZE, lifecycle_bounce, lifecycle_bounce_handle);
++                lifecycle_bounce = NULL;
++        }
++
 +        if (snapshot_bounce) {
 +                dma_free_coherent(capsule_dev, AVZ_STAGE_CHUNK_SIZE, snapshot_bounce, snapshot_bounce_handle);
 +                snapshot_bounce = NULL;

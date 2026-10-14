@@ -60,8 +60,8 @@ static s3c_lifecycle_t *lc(void)
 
 /*
  * Hand a callback over to the user-space handler, if there is one, and wait
- * for its answer. The handler runs before the capsule is activated: its
- * devices, the console included, are not connected yet.
+ * for its answer. At the arrival of the capsule, the handler runs before it
+ * is activated: its devices, the console included, are not connected yet.
  */
 void lifecycle_user(dc_event_t dc_event)
 {
@@ -99,6 +99,11 @@ __attribute__((weak)) void cb_cooperate_cb(s3c_lifecycle_t *lifecycle)
 	lifecycle_user(DC_COOPERATE_CB);
 }
 
+__attribute__((weak)) void cb_cooperate_remote(s3c_lifecycle_t *lifecycle)
+{
+	lifecycle_user(DC_COOPERATE_REMOTE);
+}
+
 /* Called on a lifecycle event from the agency, before it gets its answer. */
 void lifecycle_callback(dc_event_t dc_event)
 {
@@ -120,6 +125,9 @@ void lifecycle_callback(dc_event_t dc_event)
 		break;
 	case DC_COOPERATE_CB:
 		cb_cooperate_cb(lc());
+		break;
+	case DC_COOPERATE_REMOTE:
+		cb_cooperate_remote(lc());
 		break;
 	default:
 		break;

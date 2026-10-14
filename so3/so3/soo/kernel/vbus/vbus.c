@@ -499,6 +499,7 @@ static irq_return_t directcomm_isr(int irq, void *data)
 	case DC_PRE_ACTIVATE:
 	case DC_COOPERATE:
 	case DC_COOPERATE_CB:
+	case DC_COOPERATE_REMOTE:
 
 		/* Check if it is the response to a dc_event. */
 		if (atomic_read(&dc_outgoing_domID[dc_event]) != -1) {

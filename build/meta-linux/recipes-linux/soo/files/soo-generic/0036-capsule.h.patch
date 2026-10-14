@@ -1,6 +1,6 @@
 --- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/soo/include/soo/capsule.h	1970-01-01 01:00:00.000000000 +0100
 +++ ./soo/include/soo/capsule.h	2025-08-30 15:30:27.244692708 +0200
-@@ -0,0 +1,44 @@
+@@ -0,0 +1,46 @@
 +/*
 + * Copyright (C) 2017-2025 Daniel Rossier <daniel.rossier@heig-vd.ch>
 + *
@@ -31,6 +31,8 @@
 +void set_device_info(const s3c_lc_in_t *info);
 +int lifecycle_call(int slotID, dc_event_t dc_event, s3c_lc_in_t *in, s3c_lc_out_t *out);
 +int lifecycle_copy(int src_slotID, int dst_slotID);
++int lifecycle_export(int slotID, agency_lifecycle_data_t __user *data);
++int lifecycle_inbox(int slotID, agency_lifecycle_data_t __user *data);
 +
 +int get_S3C_state(unsigned int S3C_slotID);
 +void set_S3C_state(unsigned int S3C_slotID, S3C_state_t state);
