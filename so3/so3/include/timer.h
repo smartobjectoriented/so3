@@ -118,8 +118,6 @@ extern void kill_timer(struct timer *timer);
  */
 extern void timer_init(void);
 
-extern void apply_timer_offset(u64 offset);
-
 /* Arch-defined function to reprogram timer hardware for new deadline. */
 extern void reprogram_timer(u64 deadline);
 void clocksource_timer_reset(void);

@@ -49,26 +49,26 @@ volatile avz_shared_t *avz_shared;
   */
 static void resume_fn(void)
 {
-	u64 time_offset;
+	/*
+	 * Nothing may run before the clock and the GIC are set up again: we enter
+	 * with the PSTATE of the snapshot, IRQs possibly on. A tick handled now
+	 * would read the counter of this host against the cycle_last of the
+	 * previous one and make the system time jump. avz_sig_terminate() gives
+	 * the interrupted context its own PSTATE back.
+	 */
+
+	local_irq_disable();
+
+	/*
+	 * NOW() resumes from the system time saved in the snapshot, so pending
+	 * timers keep their deadlines: the capsule does not see the time it spent
+	 * hibernated.
+	 */
+
+	clocksource_timer_reset();
 
 	/* Init the local GIC */
 	gic_hw_reset();
-
-	/* Init the timer too */
-	clocksource_timer_reset();
-
-	/* Update the list of all existing timers since the clock reference
-	 * changed across the snapshot/restore.
-	 * Both timestamps are in the capsule's own time scale: current_s_time
-	 * was stored by our DC_SUSPEND handler, and after the snapshot restore
-	 * the restored sys_time plus the clocksource reset above make NOW()
-	 * continue from the suspend point. Clamp for safety — a wrapped
-	 * (negative) offset would corrupt every pending timer deadline. */
-	time_offset = NOW() - avz_shared->current_s_time;
-	if ((int64_t) time_offset < 0)
-		time_offset = 0;
-
-	apply_timer_offset(time_offset);
 
 	raise_softirq(SCHEDULE_SOFTIRQ);
 
