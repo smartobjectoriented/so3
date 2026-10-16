@@ -43,6 +43,18 @@ def __write_boot_conf(d, fs_dir, chain, machine, boot_opt):
         f.write("IB_QEMU_BOOT=\"%s\"\n" % boot_opt)
 
 
+# The QEMU machine of a chain without ATF. AVZ is an EL2 hypervisor, so the
+# machine has to expose EL2: without it AVZ faults on its first EL2
+# system-register access, which surfaces as a synchronous abort and a reset.
+#
+# hyp: IB_HYPERVISOR
+
+def __virt64_machine(hyp):
+    machine = "virt,gic-version=2"
+    if hyp == "avz":
+        machine += ",virtualization=on"
+    return machine
+
 def __do_platform_deploy(d):
     # Both shapes (two-ITB AVZ boot when the ITS ends in "_avz", single-ITB
     # bootm otherwise) are handled generically by __deploy_arm_common.
@@ -176,12 +188,7 @@ def __do_platform_boot_chain(d):
         if os.path.exists(flash_path):
             os.remove(flash_path)
 
-        machine = "virt,gic-version=2"
-        if hyp == "avz":
-            # AVZ is an EL2 hypervisor, so the machine has to expose EL2.
-            # Without it AVZ faults on its first EL2 system-register access,
-            # which surfaces as a synchronous abort and a reset.
-            machine += ",virtualization=on"
+        machine = __virt64_machine(hyp)
         machine += (",bootrom-drive=hd0,bootrom-offset=%d,bootrom-load=%s"
                     % (offset, load))
 
@@ -197,7 +204,7 @@ def __do_platform_boot_chain(d):
         if os.path.exists(flash_path):
             os.remove(flash_path)
 
-        __write_boot_conf(d, fs_dir, chain, "virt,gic-version=2",
+        __write_boot_conf(d, fs_dir, chain, __virt64_machine(hyp),
                           "-kernel u-boot/u-boot")
         return
 
