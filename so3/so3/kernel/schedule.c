@@ -34,7 +34,7 @@
 
 #include <asm/mmu.h>
 
-#ifdef CONFIG_SOO
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
 #include <soo/lifecycle.h>
 #endif
 
@@ -60,7 +60,7 @@ static timer_t schedule_timer;
 /* A thread the capsule holds until its activation is left in the ready list. */
 static inline bool held(tcb_t *tcb)
 {
-#ifdef CONFIG_SOO
+#if defined(CONFIG_SOO) && !defined(CONFIG_AVZ)
 	return lifecycle_held(tcb);
 #else
 	return false;
