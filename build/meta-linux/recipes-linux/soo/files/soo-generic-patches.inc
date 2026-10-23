@@ -128,4 +128,7 @@ SRC_URI:append:soo = "\
     file://0125-Makefile.patch \
     file://0126-vlogs.c.patch \
     file://0127-vlogs.h.patch \
+    file://0128-Makefile.patch \
+    file://0129-vnet.c.patch \
+    file://0130-vnet.h.patch \
 "
