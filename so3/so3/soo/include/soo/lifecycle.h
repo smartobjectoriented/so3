@@ -25,6 +25,7 @@
  * /dev/soo: the capsule's lifecycle as seen from its user space.
  *
  * SOO_IOC_WAIT blocks until the next callback; SOO_IOC_ANSWER answers it.
+ * SOO_IOC_COOPERATE asks the agency for a cooperate callback, at any time.
  * read() gives the data of the capsule cooperating with us (cooperate_cb),
  * write() sets ours for the capsules we cooperate with (cooperate,
  * cooperate_remote).
@@ -35,6 +36,7 @@
 #define SOO_IOC_SET_SUMMARY 3
 #define SOO_IOC_STOP_PROPAGATE 4
 #define SOO_IOC_GET_IDS 5
+#define SOO_IOC_COOPERATE 6
 
 struct soo_callback {
 	dc_event_t event;

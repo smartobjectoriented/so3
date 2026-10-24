@@ -250,7 +250,9 @@ typedef struct {
  *   the device suits it; it may erase itself or stay for dissemination only.
  * - DC_COOPERATE: still before it runs. The capsule gets the list of the
  *   capsules residing on the device and may cooperate with any of them,
- *   erase some, or erase itself.
+ *   erase some, or erase itself. A running capsule gets it again whenever it
+ *   asks for it (S3C_LC_COOPERATE), to cooperate with the residents once
+ *   more.
  * - DC_COOPERATE_CB: in a residing capsule, which receives the data of the
  *   capsule cooperating with it.
  * - DC_COOPERATE_REMOTE: in a residing capsule, for a copy of it running on a
@@ -298,6 +300,9 @@ typedef struct {
 #define S3C_LC_KILL_SELF (1 << 0)
 #define S3C_LC_SKIP_ACTIVATION (1 << 1)
 #define S3C_LC_STOP_PROPAGATE (1 << 2)
+
+/* A running capsule asks for a DC_COOPERATE; it holds until it gets one. */
+#define S3C_LC_COOPERATE (1 << 3)
 
 /* Written by the capsule, read by the agency (AVZ_LIFECYCLE_GET) */
 typedef struct {
