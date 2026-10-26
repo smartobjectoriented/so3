@@ -78,9 +78,17 @@ static int do_futex_wait(uint32_t *futex_w, uint32_t val, const struct timespec 
 
 	spin_lock(&pcb->futex_lock);
 
-	if (list_empty(&futex->f_element)) {
-		list_del(&futex->list);
-		free(futex);
+	/*
+	 * The waker dequeued us, and freed the futex if we were its last
+	 * waiter: the futex is ours to touch only if we are still queued.
+	 */
+
+	if (!list_empty(&f_element.list)) {
+		list_del(&f_element.list);
+		if (list_empty(&futex->f_element)) {
+			list_del(&futex->list);
+			free(futex);
+		}
 	}
 
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
@@ -127,10 +135,17 @@ static int do_futex_wake(uint32_t *futex_w, uint32_t nr_wake)
 		if (idx == nr_wake)
 			break;
 
-		list_del(&f_element->list);
+		list_del_init(&f_element->list);
 		ready(f_element->tcb);
 
 		idx++;
+	}
+
+	/* The last waiter gone, so goes the futex: the waiters woken no longer touch it. */
+
+	if (list_empty(&futex->f_element)) {
+		list_del(&futex->list);
+		free(futex);
 	}
 
 	spin_unlock_irqrestore(&pcb->futex_lock, flags);
