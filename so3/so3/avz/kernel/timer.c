@@ -70,6 +70,10 @@ void timer_interrupt(bool periodic)
 
 						/* Forward to the guest */
 						send_timer_event(domains[i]);
+					else
+
+						/* No tick to wake it: it must not stay parked. */
+						vcpu_unpark(domains[i]);
 				}
 			}
 		}

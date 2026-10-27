@@ -366,6 +366,11 @@ static void evtchn_set_pending(struct domain *d, int evtchn)
 	smp_mb();
 
 	smp_trigger_event(d->processor);
+
+	/* A capsule idle in WFI runs again. */
+
+	smp_mb();
+	vcpu_unpark(d);
 }
 
 void send_guest_virq(struct domain *d, int virq)

@@ -81,6 +81,49 @@ void vcpu_wake(struct domain *d)
 }
 
 /**
+ * Take a capsule idle in WFI off its scheduler, when another one would run:
+ * its CPU goes to that one instead of waiting in the capsule's WFI until its
+ * time slice ends. Its next event puts it back (vcpu_unpark). It stays
+ * runnable for its timer, whose tick is such an event.
+ *
+ * Alone on its CPU, it stays: switching to the idle domain and back at each
+ * event costs more than waiting in its place.
+ *
+ * @param d	the capsule, the current domain
+ * @return true if parked, false if the caller waits for its event in WFI
+ */
+bool vcpu_park(struct domain *d)
+{
+	if (!d->sched->runnable || d->sched->runnable() <= 1)
+		return false;
+
+	d->sched->sleep(d);
+
+	smp_mb();
+	atomic_set(&d->parked, 1);
+	smp_mb();
+
+	/* An event which came meanwhile found it not parked yet. */
+
+	if (d->avz_shared->evtchn_upcall_pending)
+		vcpu_unpark(d);
+
+	return true;
+}
+
+/**
+ * Put a parked capsule back on its scheduler, which its CPU runs at once.
+ * Called with any lock held: the flag alone decides who wakes it.
+ *
+ * @param d	the capsule
+ */
+void vcpu_unpark(struct domain *d)
+{
+	if (atomic_cmpxchg(&d->parked, 1, 0) == 1)
+		d->sched->wake(d);
+}
+
+/**
  * @brief Save the CPU-related parameters which are specific to the domain
  * 	  The TTBRx registers are updated during memory context switch.
  * @param d 

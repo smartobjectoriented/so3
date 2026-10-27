@@ -37,6 +37,7 @@ struct scheduler {
 	void (*init)(void);
 	void (*sleep)(struct domain *);
 	void (*wake)(struct domain *);
+	int (*runnable)(void);
 
 	struct task_slice (*do_schedule)(void);
 

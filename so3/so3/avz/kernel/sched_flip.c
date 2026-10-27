@@ -159,4 +159,5 @@ struct scheduler sched_flip = {
 
 	.sleep = flip_sleep,
 	.wake = flip_wake,
+	.runnable = flip_quant_runnable,
 };

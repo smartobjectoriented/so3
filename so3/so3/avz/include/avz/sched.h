@@ -103,6 +103,8 @@ int sched_init_domain(struct domain *d, unsigned int processor);
 void sched_destroy_domain(struct domain *d);
 
 void vcpu_wake(struct domain *d);
+bool vcpu_park(struct domain *d);
+void vcpu_unpark(struct domain *d);
 void vcpu_sleep_nosync(struct domain *d);
 void vcpu_sleep_sync(struct domain *d);
 
