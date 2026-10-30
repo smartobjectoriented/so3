@@ -542,7 +542,14 @@ __prepare_to_sig_el1_handler:
 	ldr	x0, [sp, #OFFSET_SP_USR]
 	str	x0, [sp, #(OFFSET_SP_USR - S_FRAME_SIZE)]
 
-	ldr	x0, [sp, #OFFSET_PSTATE]
+	/* The handler is kernel code: it runs at EL1, on the kernel stack,
+	 * interrupts masked, whatever the snapshot interrupted. A capsule
+	 * snapshotted at EL0 would otherwise run it as user code, on its
+	 * user stack. The frame below keeps the interrupted PSTATE, which
+	 * the return from the handler restores.
+	 */
+
+	mov	x0, #(PSR_MODE_EL1h | PSR_F_BIT | PSR_I_BIT | PSR_A_BIT | PSR_D_BIT)
 	str	x0, [sp, #(OFFSET_PSTATE - S_FRAME_SIZE)]
 
 	// Build a new stack frame based on the current

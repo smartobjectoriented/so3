@@ -51,11 +51,11 @@ volatile avz_shared_t *avz_shared;
 static void resume_fn(void)
 {
 	/*
-	 * Nothing may run before the clock and the GIC are set up again: we enter
-	 * with the PSTATE of the snapshot, IRQs possibly on. A tick handled now
-	 * would read the counter of this host against the cycle_last of the
-	 * previous one and make the system time jump. avz_sig_terminate() gives
-	 * the interrupted context its own PSTATE back.
+	 * Nothing may run before the clock and the GIC are set up again: AVZ
+	 * enters here at EL1, IRQs masked, whatever the snapshot interrupted. A
+	 * tick handled now would read the counter of this host against the
+	 * cycle_last of the previous one and make the system time jump.
+	 * avz_sig_terminate() gives the interrupted context its own PSTATE back.
 	 */
 
 	local_irq_disable();
