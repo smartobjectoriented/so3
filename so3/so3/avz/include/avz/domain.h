@@ -53,7 +53,12 @@
 #include <timer.h>
 #include <list.h>
 
-#define NR_GRANT_PFN 32
+/*
+ * The grant pages a domain may map. The agency maps those of all its
+ * capsules' frontends, and a vnet frontend alone grants 2 * VNET_PAGES + 1.
+ */
+
+#define NR_GRANT_PFN 128
 
 typedef struct {
 	addr_t pfn;
