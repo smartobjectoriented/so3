@@ -1,0 +1,697 @@
+--- /dev/null
++++ ./soo/drivers/vnetback/vnet.c
+@@ -0,0 +1,694 @@
++/*
++ * Copyright (C) 2026 REDS Institute from HEIG-VD <daniel.rossier@heig-vd.ch>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * vnet backend: the agency's side of the capsule which carries a network
++ * (soonet). The capsule routes; the backend only moves its packets:
++ *
++ * - soonet0, a point-to-point interface for the agency's applications: what
++ *   they send there goes to the capsule, port 0; what the capsule sends to
++ *   port 0 comes up the agency's stack from soonet0.
++ * - the radio: what the capsule sends to a neighbour's uid leaves in a frame
++ *   of ethertype ETH_P_SOONET to that neighbour's MAC, its uid; such a frame
++ *   received goes to the capsule, port the sender's uid.
++ *
++ * soonet0 belongs to the module, not to a capsule: it outlives the capsule's
++ * migrations and versions, so the agency sets it up once. Its radio is named
++ * by writing the interface's name to /sys/class/net/soonet0/radio.
++ *
++ * The packets for the capsule wait in a backlog while its ring is full or it
++ * is snapshotted. A full backlog stops soonet0's queue, so that the agency's
++ * own senders slow down instead of losing packets, and drops what comes from
++ * the radio: soonet0's tx_dropped and rx_dropped count these.
++ */
++
++#if 0
++#define DEBUG
++#endif
++
++#include <linux/etherdevice.h>
++#include <linux/if_arp.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/of.h>
++#include <linux/slab.h>
++
++#include <soo/evtchn.h>
++#include <soo/gnttab.h>
++#include <soo/hypervisor.h>
++#include <soo/vbus.h>
++
++#include <soo/vdevback.h>
++
++#include <soo/dev/vnet.h>
++
++typedef struct {
++	/* Must be the first field */
++	vnet_t vnet;
++
++	struct vbus_device *vdev;
++	void *tx_page[VNET_PAGES];
++	void *rx_page[VNET_PAGES];
++	void *sring;
++
++	/*
++	 * Suspended while the capsule is snapshotted. Set under carrier_lock,
++	 * which every packet given to the capsule holds, so none is in flight
++	 * once it is set.
++	 */
++
++	bool paused;
++
++} vnet_priv_t;
++
++/*
++ * The capsule which carries the network now, the interface and the radio.
++ * The packets given to the capsule come from softirqs (the radio, soonet0):
++ * they never wait, and keep out of vdevback's processing accounting, whose
++ * mutex only a context which may sleep can own.
++ */
++
++static vnet_priv_t *carrier;
++static DEFINE_SPINLOCK(carrier_lock);
++static struct net_device *soonet;
++static struct net_device *radio;
++
++/* Each packet of the backlog keeps its port in its control buffer. */
++
++#define VNET_BACKLOG	128
++#define VNET_PORT(skb)	(*(u64 *) (skb)->cb)
++
++static struct sk_buff_head backlog;
++
++/**
++ * Turn the first six bytes of a MAC address into a uid, as the agency does.
++ *
++ * @param mac	the address
++ * @return the uid
++ */
++
++static u64 mac_uid(const u8 *mac)
++{
++	u64 uid = 0;
++	int i;
++
++	for (i = 0; i < ETH_ALEN; i++)
++		uid = (uid << 8) | mac[i];
++
++	return uid;
++}
++
++/**
++ * Move the backlog into the capsule's ring, as far as it has room, and
++ * reopen soonet0's queue once the backlog drained enough. Called with
++ * carrier_lock held.
++ */
++
++static void vnet_flush(void)
++{
++	vnet_response_t *rsp;
++	vnet_back_ring_t *ring;
++	struct sk_buff *skb;
++	bool any = false;
++
++	if (!carrier || carrier->paused)
++		return;
++
++	ring = &carrier->vnet.ring;
++
++	while (ring->rsp_prod_pvt - READ_ONCE(ring->sring->rsp_cons) < VNET_SLOTS &&
++	       (skb = __skb_dequeue(&backlog))) {
++		memcpy(VNET_SLOT(carrier->rx_page, ring->rsp_prod_pvt), skb->data, skb->len);
++
++		rsp = RING_GET_RESPONSE(ring, ring->rsp_prod_pvt);
++		rsp->port = VNET_PORT(skb);
++		rsp->len = skb->len;
++		ring->rsp_prod_pvt++;
++
++		dev_consume_skb_any(skb);
++		any = true;
++	}
++
++	if (any) {
++		RING_PUSH_RESPONSES(ring);
++		notify_remote_via_virq(carrier->vnet.irq);
++	}
++
++	if (netif_queue_stopped(soonet) && skb_queue_len(&backlog) < VNET_BACKLOG / 2)
++		netif_wake_queue(soonet);
++}
++
++/**
++ * Give the capsule a packet: into its ring, through the backlog. Without a
++ * capsule, or with a full backlog, the packet is dropped.
++ *
++ * @param skb	the packet, linear; the backlog owns it from now on
++ * @param port	0 for the agency's stack, else the uid of the neighbour it came from
++ * @return false if the packet was dropped
++ */
++
++static bool vnet_give(struct sk_buff *skb, u64 port)
++{
++	unsigned long flags;
++	bool done = false;
++
++	spin_lock_irqsave(&carrier_lock, flags);
++
++	if (carrier && skb->len <= VNET_MTU && skb_queue_len(&backlog) < VNET_BACKLOG) {
++		VNET_PORT(skb) = port;
++		__skb_queue_tail(&backlog, skb);
++		done = true;
++
++		if (skb_queue_len(&backlog) >= VNET_BACKLOG)
++			netif_stop_queue(soonet);
++	}
++
++	vnet_flush();
++
++	spin_unlock_irqrestore(&carrier_lock, flags);
++
++	if (!done)
++		dev_kfree_skb_any(skb);
++
++	return done;
++}
++
++/**
++ * The capsule is gone: what waited for it is lost, and soonet0 open again.
++ * Called with carrier_lock held.
++ */
++
++static void vnet_purge(void)
++{
++	struct sk_buff *skb;
++
++	while ((skb = __skb_dequeue(&backlog)))
++		dev_kfree_skb_any(skb);
++
++	netif_wake_queue(soonet);
++}
++
++/**
++ * Send a packet of the capsule to a neighbour, on the radio.
++ *
++ * @param uid	the neighbour's uid, its MAC
++ * @param data	the packet
++ * @param len	its length
++ */
++
++static void vnet_to_radio(u64 uid, const void *data, unsigned int len)
++{
++	struct net_device *dev = READ_ONCE(radio);
++	struct sk_buff *skb;
++	u8 dest[ETH_ALEN];
++	int i;
++
++	if (!dev)
++		return;
++
++	skb = alloc_skb(LL_RESERVED_SPACE(dev) + len, GFP_KERNEL);
++	if (!skb)
++		return;
++
++	skb_reserve(skb, LL_RESERVED_SPACE(dev));
++	skb_put_data(skb, data, len);
++	skb_reset_network_header(skb);
++
++	for (i = ETH_ALEN - 1; i >= 0; i--, uid >>= 8)
++		dest[i] = uid & 0xff;
++
++	skb->dev = dev;
++	skb->protocol = htons(ETH_P_SOONET);
++
++	if (dev_hard_header(skb, dev, ETH_P_SOONET, dest, dev->dev_addr, len) < 0) {
++		kfree_skb(skb);
++		return;
++	}
++
++	dev_queue_xmit(skb);
++}
++
++/**
++ * Hand a packet of the capsule to the agency's stack, from soonet0.
++ *
++ * @param data	the packet
++ * @param len	its length
++ */
++
++static void vnet_to_stack(const void *data, unsigned int len)
++{
++	struct sk_buff *skb;
++
++	if (!len)
++		return;
++
++	skb = netdev_alloc_skb(soonet, len);
++	if (!skb) {
++		soonet->stats.rx_dropped++;
++		return;
++	}
++
++	skb_put_data(skb, data, len);
++	skb_reset_network_header(skb);
++	skb->protocol = (((const u8 *) data)[0] >> 4) == 6 ? htons(ETH_P_IPV6) : htons(ETH_P_IP);
++	skb->dev = soonet;
++
++	soonet->stats.rx_packets++;
++	soonet->stats.rx_bytes += len;
++
++	netif_rx(skb);
++}
++
++/**
++ * Take the packets the capsule wrote, each to the stack or to a neighbour,
++ * and release their slots.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_process(struct vbus_device *vdev)
++{
++	vnet_priv_t *priv = dev_get_drvdata(&vdev->dev);
++	vnet_back_ring_t *ring = &priv->vnet.ring;
++	vnet_request_t *req;
++	unsigned long flags;
++	RING_IDX idx;
++	bool any = false;
++
++	if (!vdevback_processing_begin(vdev))
++		return;
++
++	while ((idx = ring->sring->req_cons) != READ_ONCE(ring->sring->req_prod)) {
++		rmb();
++		req = RING_GET_REQUEST(ring, idx);
++
++		if (req->len <= VNET_MTU) {
++			if (req->port)
++				vnet_to_radio(req->port, VNET_SLOT(priv->tx_page, idx), req->len);
++			else
++				vnet_to_stack(VNET_SLOT(priv->tx_page, idx), req->len);
++		}
++
++		mb();
++		ring->sring->req_cons = idx + 1;
++		any = true;
++	}
++
++	/* A writer may wait for a free slot. */
++
++	if (any)
++		notify_remote_via_virq(priv->vnet.irq);
++
++	/* The capsule took packets of ours meanwhile: room for the backlog. */
++
++	spin_lock_irqsave(&carrier_lock, flags);
++	vnet_flush();
++	spin_unlock_irqrestore(&carrier_lock, flags);
++
++	vdevback_processing_end(vdev);
++}
++
++/**
++ * The capsule wrote packets: all the work in the bottom half.
++ *
++ * @param irq		the interrupt
++ * @param dev_id	the vbus device
++ * @return IRQ_WAKE_THREAD
++ */
++
++static irqreturn_t vnet_interrupt(int irq, void *dev_id)
++{
++	return IRQ_WAKE_THREAD;
++}
++
++/**
++ * Bottom half: take the capsule's packets.
++ *
++ * @param irq		the interrupt
++ * @param dev_id	the vbus device
++ * @return IRQ_HANDLED
++ */
++
++static irqreturn_t vnet_interrupt_bh(int irq, void *dev_id)
++{
++	vnet_process((struct vbus_device *) dev_id);
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * A capsule with a vnet frontend appeared: its state.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_probe(struct vbus_device *vdev)
++{
++	vnet_priv_t *priv;
++
++	priv = kzalloc(sizeof(vnet_priv_t), GFP_ATOMIC);
++	BUG_ON(!priv);
++
++	priv->vdev = vdev;
++
++	dev_set_drvdata(&vdev->dev, priv);
++
++	DBG(VNET_PREFIX "Backend probe: %d\n", vdev->otherend_id);
++}
++
++/**
++ * The capsule granted its ring and pages: map them, bind its event channel,
++ * and take it as the one which carries the network.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_reconfigured(struct vbus_device *vdev)
++{
++	vnet_priv_t *priv = dev_get_drvdata(&vdev->dev);
++	unsigned long ring_ref, ref, flags;
++	unsigned int evtchn;
++	char key[16];
++	int i;
++
++	DBG(VNET_PREFIX "Backend reconfigured: %d\n", vdev->otherend_id);
++
++	vbus_gather(VBT_NIL, vdev->otherend, "ring-ref", "%lu", &ring_ref, "ring-evtchn", "%u", &evtchn, NULL);
++	gnttab_map(vdev->otherend_id, ring_ref, &priv->sring);
++
++	for (i = 0; i < VNET_PAGES; i++) {
++		sprintf(key, "tx-ref-%d", i);
++		vbus_scanf(VBT_NIL, vdev->otherend, key, "%lu", &ref);
++		gnttab_map(vdev->otherend_id, ref, &priv->tx_page[i]);
++
++		sprintf(key, "rx-ref-%d", i);
++		vbus_scanf(VBT_NIL, vdev->otherend, key, "%lu", &ref);
++		gnttab_map(vdev->otherend_id, ref, &priv->rx_page[i]);
++	}
++
++	BACK_RING_INIT(&priv->vnet.ring, (vnet_sring_t *) priv->sring, PAGE_SIZE);
++
++	priv->vnet.irq = bind_interdomain_evtchn_to_virqhandler(vdev->otherend_id, evtchn, vnet_interrupt,
++								vnet_interrupt_bh, 0, VNET_NAME "-backend", vdev);
++
++	spin_lock_irqsave(&carrier_lock, flags);
++	priv->paused = false;
++	carrier = priv;
++	vnet_flush();
++	spin_unlock_irqrestore(&carrier_lock, flags);
++}
++
++/**
++ * The capsule is gone, or moves on: unmap its ring and pages.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_close(struct vbus_device *vdev)
++{
++	vnet_priv_t *priv = dev_get_drvdata(&vdev->dev);
++	unsigned long flags;
++	int i;
++
++	DBG(VNET_PREFIX "Backend close: %d\n", vdev->otherend_id);
++
++	spin_lock_irqsave(&carrier_lock, flags);
++	if (carrier == priv) {
++		carrier = NULL;
++		vnet_purge();
++	}
++	spin_unlock_irqrestore(&carrier_lock, flags);
++
++	unbind_from_virqhandler(priv->vnet.irq, vdev);
++
++	for (i = 0; i < VNET_PAGES; i++) {
++		gnttab_unmap(priv->tx_page[i]);
++		gnttab_unmap(priv->rx_page[i]);
++	}
++
++	gnttab_unmap(priv->sring);
++	priv->sring = NULL;
++}
++
++/**
++ * Free the capsule's state.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_remove(struct vbus_device *vdev)
++{
++	kfree(dev_get_drvdata(&vdev->dev));
++}
++
++/**
++ * The capsule is connected: take what it wrote meanwhile.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_connected(struct vbus_device *vdev)
++{
++	vnet_process(vdev);
++}
++
++/**
++ * The capsule is about to be snapshotted, or goes on after it: stop giving
++ * it packets, or give them again.
++ *
++ * @param vdev		the vbus device
++ * @param paused	true to stop
++ */
++
++static void vnet_pause(struct vbus_device *vdev, bool paused)
++{
++	vnet_priv_t *priv = dev_get_drvdata(&vdev->dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&carrier_lock, flags);
++	priv->paused = paused;
++	vnet_flush();
++	spin_unlock_irqrestore(&carrier_lock, flags);
++}
++
++/**
++ * The capsule is about to be snapshotted.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_suspend(struct vbus_device *vdev)
++{
++	vnet_pause(vdev, true);
++}
++
++/**
++ * The capsule goes on after its snapshot.
++ *
++ * @param vdev	the vbus device
++ */
++
++static void vnet_resume(struct vbus_device *vdev)
++{
++	vnet_pause(vdev, false);
++}
++
++static vdrvback_t vnetdrv = {
++	.probe = vnet_probe,
++	.remove = vnet_remove,
++	.close = vnet_close,
++	.connected = vnet_connected,
++	.reconfigured = vnet_reconfigured,
++	.resume = vnet_resume,
++	.suspend = vnet_suspend
++};
++
++/**
++ * A packet of the agency's stack on soonet0: to the capsule, port 0.
++ *
++ * @param skb	the packet
++ * @param dev	soonet0
++ * @return NETDEV_TX_OK
++ */
++
++static netdev_tx_t vnet_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	unsigned int len = skb->len;
++
++	if (skb_linearize(skb)) {
++		dev_kfree_skb_any(skb);
++		dev->stats.tx_dropped++;
++	} else if (!vnet_give(skb, 0)) {
++		dev->stats.tx_dropped++;
++	} else {
++		dev->stats.tx_packets++;
++		dev->stats.tx_bytes += len;
++	}
++
++	return NETDEV_TX_OK;
++}
++
++static const struct net_device_ops vnet_ops = {
++	.ndo_start_xmit = vnet_xmit,
++};
++
++/**
++ * A frame of the capsule's from a neighbour, on the radio: to the capsule,
++ * port the neighbour's uid.
++ *
++ * @param skb		the frame, its Ethernet header pulled
++ * @param dev		the radio
++ * @param pt		our packet type
++ * @param orig_dev	unused
++ * @return NET_RX_SUCCESS, or NET_RX_DROP
++ */
++
++static int vnet_from_radio(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt,
++			   struct net_device *orig_dev)
++{
++	skb = skb_share_check(skb, GFP_ATOMIC);
++	if (!skb)
++		return NET_RX_DROP;
++
++	if (dev != READ_ONCE(radio) || skb->pkt_type == PACKET_OTHERHOST || skb_linearize(skb)) {
++		kfree_skb(skb);
++		return NET_RX_DROP;
++	}
++
++	if (!vnet_give(skb, mac_uid(eth_hdr(skb)->h_source))) {
++		soonet->stats.rx_dropped++;
++		return NET_RX_DROP;
++	}
++
++	return NET_RX_SUCCESS;
++}
++
++static struct packet_type vnet_packet_type = {
++	.type = cpu_to_be16(ETH_P_SOONET),
++	.func = vnet_from_radio,
++};
++
++/**
++ * Name the radio, the interface the capsule's frames go out on and come in from.
++ *
++ * @param d	soonet0's device
++ * @param attr	the attribute
++ * @param buf	the interface's name
++ * @param count	its length
++ * @return count, or -ENODEV
++ */
++
++static ssize_t radio_store(struct device *d, struct device_attribute *attr, const char *buf, size_t count)
++{
++	char name[IFNAMSIZ];
++	struct net_device *dev, *old;
++
++	strscpy(name, buf, sizeof(name));
++	strim(name);
++
++	dev = dev_get_by_name(&init_net, name);
++	if (!dev)
++		return -ENODEV;
++
++	old = xchg(&radio, dev);
++	if (old)
++		dev_put(old);
++
++	return count;
++}
++
++/**
++ * Tell the radio's name.
++ *
++ * @param d	soonet0's device
++ * @param attr	the attribute
++ * @param buf	where to write it
++ * @return its length
++ */
++
++static ssize_t radio_show(struct device *d, struct device_attribute *attr, char *buf)
++{
++	struct net_device *dev = READ_ONCE(radio);
++
++	return sprintf(buf, "%s\n", dev ? dev->name : "");
++}
++
++static DEVICE_ATTR_RW(radio);
++
++static struct attribute *vnet_attrs[] = {
++	&dev_attr_radio.attr,
++	NULL
++};
++
++static const struct attribute_group vnet_group = {
++	.attrs = vnet_attrs,
++};
++
++/**
++ * Set soonet0 up: a point-to-point interface, IP packets with no link header.
++ *
++ * @param dev	the interface
++ */
++
++static void vnet_setup(struct net_device *dev)
++{
++	dev->netdev_ops = &vnet_ops;
++	dev->type = ARPHRD_NONE;
++	dev->flags = IFF_POINTOPOINT | IFF_NOARP;
++	dev->mtu = VNET_MTU;
++	dev->min_mtu = 68;
++	dev->max_mtu = VNET_MTU;
++	dev->hard_header_len = 0;
++	dev->addr_len = 0;
++	dev->tx_queue_len = 500;
++	dev->needs_free_netdev = true;
++}
++
++/**
++ * Register the backend, soonet0 and the radio's frames, when the agency's
++ * device tree enables vnet.
++ *
++ * @return 0, or an error
++ */
++
++static int vnet_init(void)
++{
++	struct device_node *np;
++	int ret;
++
++	np = of_find_compatible_node(NULL, NULL, "vnet,backend");
++	if (!of_device_is_available(np))
++		return 0;
++
++	skb_queue_head_init(&backlog);
++
++	soonet = alloc_netdev(0, "soonet%d", NET_NAME_UNKNOWN, vnet_setup);
++	if (!soonet)
++		return -ENOMEM;
++
++	soonet->sysfs_groups[0] = &vnet_group;
++
++	ret = register_netdev(soonet);
++	if (ret) {
++		free_netdev(soonet);
++		soonet = NULL;
++		return ret;
++	}
++
++	dev_add_pack(&vnet_packet_type);
++	vdevback_init(VNET_NAME, &vnetdrv);
++
++	return 0;
++}
++
++device_initcall(vnet_init);

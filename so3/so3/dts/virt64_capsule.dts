@@ -129,6 +129,14 @@
 				status = "ok";
 			};
 
+			/* Packets of a capsule which carries a network (soonet):
+			 * enabled by the build in such a capsule only, the agency
+			 * offering the vnet backend. */
+			vnet {
+				compatible = "vnet,frontend";
+				status = "disabled";
+			};
+
 			/* Framebuffer support: disabled — the Linux agency built from
 			 * this repo provides no vfbdev backend (vuart/vlogs only), and
 			 * the capsule BUG()s at vbstore init when the backend node is

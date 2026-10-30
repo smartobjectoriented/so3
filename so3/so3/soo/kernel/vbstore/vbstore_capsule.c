@@ -280,6 +280,12 @@ void vbstore_devices_populate(void)
 		vbstore_dev_init(S3C_domID(), "vlogs", "vlogs,frontend");
 	}
 
+	fdt_node = fdt_find_compatible_node(__fdt_addr, "vnet,frontend");
+	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
+		DBG("%s: init vnet...\n", __func__);
+		vbstore_dev_init(S3C_domID(), "vnet", "vnet,frontend");
+	}
+
 	fdt_node = fdt_find_compatible_node(__fdt_addr, "vfbdev,frontend");
 	if (fdt_device_is_available(__fdt_addr, fdt_node)) {
 		DBG("%s: init vfbdev...\n", __func__);

@@ -1,0 +1,4 @@
+--- /dev/null
++++ ./soo/drivers/vnetback/Makefile
+@@ -0,0 +1,1 @@
++obj-y += vnet.o

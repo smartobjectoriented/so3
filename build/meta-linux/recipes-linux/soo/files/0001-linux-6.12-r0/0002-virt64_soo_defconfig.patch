@@ -1,6 +1,6 @@
---- /home/rossierd/soo/git/micofe/build/tmp/work/linux-6.12-r0/linux-6.12/arch/arm64/configs/virt64_soo_defconfig	1970-01-01 01:00:00.000000000 +0100
-+++ ./arch/arm64/configs/virt64_soo_defconfig	2025-08-29 08:46:39.970708755 +0200
-@@ -0,0 +1,8995 @@
+--- ./arch/arm64/configs/virt64_soo_defconfig
++++ ./arch/arm64/configs/virt64_soo_defconfig
+@@ -0,0 +1,8999 @@
 +#
 +# Automatically generated file; DO NOT EDIT.
 +# Linux/arm64 6.12.0 Kernel Configuration
@@ -1125,10 +1125,11 @@
 +# CONFIG_NETFILTER_NETLINK_QUEUE is not set
 +# CONFIG_NETFILTER_NETLINK_LOG is not set
 +# CONFIG_NETFILTER_NETLINK_OSF is not set
-+# CONFIG_NF_CONNTRACK is not set
++CONFIG_NF_CONNTRACK=y
++CONFIG_NF_NAT=y
 +# CONFIG_NF_LOG_SYSLOG is not set
 +# CONFIG_NF_TABLES is not set
-+# CONFIG_NETFILTER_XTABLES is not set
++CONFIG_NETFILTER_XTABLES=y
 +# end of Core Netfilter Configuration
 +
 +# CONFIG_IP_SET is not set
@@ -1143,7 +1144,9 @@
 +# CONFIG_NF_LOG_ARP is not set
 +# CONFIG_NF_LOG_IPV4 is not set
 +# CONFIG_NF_REJECT_IPV4 is not set
-+# CONFIG_IP_NF_IPTABLES is not set
++CONFIG_IP_NF_IPTABLES=y
++CONFIG_IP_NF_NAT=y
++CONFIG_IP_NF_TARGET_MASQUERADE=y
 +# end of IP: Netfilter Configuration
 +
 +# CONFIG_IP_DCCP is not set
@@ -8994,5 +8997,6 @@
 +# CONFIG_VSENSELED_BACKEND is not set
 +# CONFIG_VSENSEJ_BACKEND is not set
 +CONFIG_VLOGS_BACKEND=y
++CONFIG_VNET_BACKEND=y
 +# end of Smart Object Oriented subsystem
 +# end of SOO Framework and subsystems
