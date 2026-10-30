@@ -19,6 +19,7 @@
 #include <common.h>
 #include <psci.h>
 #include <smp.h>
+#include <softirq.h>
 #include <mmio.h>
 #include <memory.h>
 
@@ -436,6 +437,25 @@ void trap_handle(cpu_regs_t *regs)
 		el0_fpac(regs, esr);
 		break;
 #endif
+
+#if defined(CONFIG_AVZ) && defined(CONFIG_SOO)
+	case ESR_ELx_EC_WFx:
+
+		/*
+		 * A capsule idle in WFI (HCR_EL2.TWI on the capsule CPU) leaves the
+		 * CPU to the others until its next event, rather than holding it
+		 * until its time slice ends; alone, it waits here as it would have.
+		 */
+
+		regs->pc = read_sysreg(elr_el2) + 4;
+		if (vcpu_park(current_domain)) {
+			raise_softirq(SCHEDULE_SOFTIRQ);
+			do_softirq();
+		} else if (!current_domain->avz_shared->evtchn_upcall_pending) {
+			wfi();
+		}
+		break;
+#endif /* CONFIG_AVZ && CONFIG_SOO */
 
 	case ESR_ELx_EC_SYS64: {
 		/* Architectural traps that survive HSTR_EL2=0 — primarily

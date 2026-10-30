@@ -139,6 +139,9 @@ struct domain {
 	bool need_periodic_timer;
 	struct timer oneshot_timer;
 
+	/* Idle in WFI: off its scheduler until its next event (vcpu_park). */
+	atomic_t parked;
+
 	struct scheduler *sched;
 
 	int runstate;
