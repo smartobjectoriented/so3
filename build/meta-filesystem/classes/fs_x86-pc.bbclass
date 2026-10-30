@@ -58,8 +58,13 @@ do_filesystem_platform_init_storage () {
 
 	set -e
 
+	# Only this image's loop devices: -D would detach every one on the
+	# host (see utils_loop_detach in utils.bbclass).
 	if [ "${IB_STORAGE_MODE}" = "soft" ]; then
-    	        sudo -n losetup -D
+		for dev in $(sudo -n losetup --noheadings --output NAME \
+				--associated ${WORKDIR}/sdcard.img.${IB_PLATFORM}); do
+			sudo -n losetup --detach "$dev"
+		done
 	fi
 
 	bbnote "Done! The storage is now initialized"

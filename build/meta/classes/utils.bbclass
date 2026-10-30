@@ -56,3 +56,22 @@ def utils_sudo(cmd, shell=False, **kwargs):
     if shell:
         return subprocess.run(["sudo", "-n", "sh", "-c", cmd], **kwargs)
     return subprocess.run(["sudo", "-n"] + list(cmd), **kwargs)
+
+
+# Detach the loop devices backed by one image file, and only those.
+#
+# Never `losetup -D`: it detaches every loop device on the host, and the CI
+# runner builds several cells at once. One job's -D could free another's
+# device between its partitioning and its mkfs, losetup then handed the
+# number to a third job, and the mkfs landed on that job's card: the first
+# was left with no filesystem on p2, and its deploy failed to mount it.
+#
+# Matched by inode, so a path through filesystem/work works. A device still
+# in use (a partition mounted) is detached by the kernel on its release,
+# as -D did.
+def utils_loop_detach(image):
+    out = utils_sudo(["losetup", "--noheadings", "--output", "NAME",
+                      "--associated", image],
+                     capture_output=True, text=True).stdout
+    for dev in out.split():
+        utils_sudo(["losetup", "--detach", dev])

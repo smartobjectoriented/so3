@@ -56,12 +56,24 @@ do_attach_infrabase () {
 	# git-tracked SOURCE (the static embedded ramfs for IB_RAMFS_SOURCE =
 	# "initrd"), refreshed from files/board on every attach.
 	#
-	# `cp -r .../board/.` refreshes the source config files on top of the
-	# copy but does NOT remove the dest-only productions, so the
+	# The copy refreshes the source config files on top of the working copy
+	# but does NOT remove the dest-only productions (no --delete), so the
 	# do_prepare_initrd content-hash guard (initrd.cpio.gz.srchash +
 	# initrd.cpio.gz) keeps working across builds.
+	#
+	# Productions left under files/board by an older tree must not be
+	# copied forward: a stale rootfs.cpio would replace the fresh one, and
+	# buildroot's guard, which hashes these files as outputs, would then skip
+	# the make that regenerates it. The exclusions mirror buildroot's hash,
+	# except plain initrd.cpio, a source on the "initrd" ramfs boards.
 	mkdir -p ${WORKDIR}/board
-	cp -r ${FILE_DIRNAME}/files/board/. ${WORKDIR}/board
+	rsync -a \
+		--exclude 'rootfs.cpio' \
+		--exclude '*.cpio.gz' \
+		--exclude '*.srchash' \
+		--exclude '*.backup' \
+		--exclude '*.sha256' \
+		${FILE_DIRNAME}/files/board/ ${WORKDIR}/board/
 
 	# Expose the working copy through the historical board symlink so every
 	# consumer keeps referencing ${IB_ROOTFS_PATH}/board/... unchanged.
@@ -101,9 +113,11 @@ python do_deploy () {
     IB_TARGET = d.getVar('IB_TARGET')
     WORKDIR = d.getVar('WORKDIR')
 
-    # Check if the directory exists
+    # Unwind both mounts taken above before failing, or the next build trips
+    # over the leftover loop device and mounts.
     if not os.path.exists("{}/{}".format(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION)):
-        __rootfs_do_umount_rootfs()
+        __do_rootfs_umount(d)
+        __do_fs_umount(d)
         bb.fatal("No {}/{} exists ...".format(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION))
 
     # Read and preserve the current working directory 
