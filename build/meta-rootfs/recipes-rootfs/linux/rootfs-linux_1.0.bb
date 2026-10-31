@@ -120,7 +120,19 @@ python do_deploy () {
         __do_fs_umount(d)
         bb.fatal("No {}/{} exists ...".format(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION))
 
-    # Read and preserve the current working directory 
+    # p2 holds this rootfs and what usr-linux adds on top, both deployed
+    # after it: it is emptied first, or a file the build no longer has would
+    # stay on the card. Only a mounted p2 is emptied, never the directory
+    # under it; lost+found belongs to ext4.
+    p2 = os.path.realpath("{}/{}".format(IB_FILESYSTEM_PATH, IB_ROOTFS_PARTITION))
+    if not os.path.ismount(p2):
+        __do_rootfs_umount(d)
+        __do_fs_umount(d)
+        bb.fatal("{} is not mounted: refusing to deploy the rootfs".format(p2))
+    subprocess.run(["sudo", "find", p2, "-mindepth", "1", "-maxdepth", "1", "!", "-name", "lost+found",
+                    "-exec", "rm", "-rf", "{}", "+"], check=True)
+
+    # Read and preserve the current working directory
     original_cwd = os.getcwd()
     os.chdir("{}/fs".format(WORKDIR))
 
