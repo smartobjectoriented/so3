@@ -101,6 +101,9 @@ ABI. Each entry is a ``sys_xxx()`` function declared with the
 ``SYSCALL_DEFINEn()`` macros. The return value is placed back in ``x0`` and the
 handler ``eret``\ s to EL0.
 
+Which system calls there are, and what they leave out, is in
+:ref:`musl_syscalls`.
+
 .. warning::
 
    The vector table must contain **all 16** architectural slots, correctly
