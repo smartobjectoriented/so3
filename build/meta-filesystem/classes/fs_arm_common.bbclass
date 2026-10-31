@@ -162,7 +162,7 @@ def __platform_init_storage(d):
         utils_sudo(["mkfs.ext4", "-L", "rootfs1", f"/dev/{devname}2"], check=True)
 
     if IB_STORAGE_MODE == "soft":
-        utils_sudo(["losetup", "-D"])
+        utils_loop_detach(store_path)
 
     print("Done! The storage is now initialized")
 
@@ -371,4 +371,7 @@ def __do_fs_umount(d):
                      expect_mounted=(d.getVar('IB_PARTITION_LAYOUT') or
                                      "rootfs") != "ab")
 
-    utils_sudo(["losetup", "-D"])
+    # The image __do_fs_mount attached. A "hard" card has no loop device.
+    if d.getVar('IB_STORAGE_MODE') == "soft":
+        utils_loop_detach(os.path.join(IB_FILESYSTEM_PATH, "work",
+                                       f"sdcard.img.{d.getVar('IB_PLATFORM')}"))

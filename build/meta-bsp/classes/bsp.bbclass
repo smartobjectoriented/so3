@@ -214,8 +214,7 @@ def __do_deploy_boot(d):
     # Unmount even when the platform deploy raises. bitbake does not clean up
     # after a failed task, so a storage left mounted makes the next
     # init_storage or deploy fail for a reason that looks unrelated — the
-    # image is busy, or an old loop device still holds it. Backported from
-    # opencn-ng, which hit exactly that.
+    # image is busy, or an old loop device still holds it.
 
     try:
         __do_platform_deploy(d)
