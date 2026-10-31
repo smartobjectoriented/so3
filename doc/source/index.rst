@@ -19,6 +19,7 @@
    introduction
    architecture
    kernel
+   musl_syscalls
    avz
    capsules
 
