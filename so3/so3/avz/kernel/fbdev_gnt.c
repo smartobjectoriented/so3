@@ -29,6 +29,20 @@ typedef struct {
 
 static fbdev_priv_t priv = {};
 
+/**
+ * Make a change of stage-2 mappings seen by every CPU: a capsule running on
+ * another CPU would otherwise keep writing through the translation it has
+ * cached, to the screen it no longer has.
+ */
+static void __flush_stage2(void)
+{
+	asm volatile("dsb ishst\n"
+		     "tlbi alle1is\n"
+		     "dsb ish\n"
+		     "isb\n"
+		     : : : "memory");
+}
+
 static void __map_fbdev(struct domain *d, const fbdev_pfns_t *pfn_info)
 {
 	size_t i;
@@ -88,6 +102,8 @@ void fbdev_ipamap_domain(struct domain *d, int slotID)
 		__map_fbdev(d, &priv.fbdev_pfns);
 	else
 		__map_fake_fbdev(d, &priv.fbdev_pfns);
+
+	__flush_stage2();
 }
 
 void fbdev_set_pfns(fbdev_pfns_t *fbdev)
@@ -111,6 +127,8 @@ void fbdev_change_focus(int new_slotID)
 	/* Map the new capsule to the framebuffer */
 	if ((new_slotID >= MEMSLOT_BASE) && memslot[new_slotID].busy)
 		__map_fbdev(domains[new_slotID], &priv.fbdev_pfns);
+
+	__flush_stage2();
 
 	priv.current_slotID = new_slotID;
 }
