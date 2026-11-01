@@ -25,8 +25,28 @@
 #include <device/irq.h>
 #include <device/serial.h>
 
+/**
+ * check_lock() - Report who took a lock which cannot be one
+ *
+ * @lock:	the lock about to be taken
+ * @caller:	where it is taken from
+ *
+ * A misaligned lock is a corrupted pointer: the BUG in spin_trylock would
+ * not tell whose.
+ */
+
+static void check_lock(spinlock_t *lock, void *caller)
+{
+	if (((addr_t) &lock->lock) & 0x7) {
+		lprintk("spinlock %p misaligned, taken from %p\n", lock, caller);
+		BUG();
+	}
+}
+
 void spin_lock(spinlock_t *lock)
 {
+	check_lock(lock, __builtin_return_address(0));
+
 	while (unlikely(!spin_trylock(lock))) {
 		while (likely(spin_is_locked(lock))) {
 			cpu_relax();
@@ -36,6 +56,7 @@ void spin_lock(spinlock_t *lock)
 
 void spin_lock_irq(spinlock_t *lock)
 {
+	check_lock(lock, __builtin_return_address(0));
 	local_irq_disable();
 
 	while (unlikely(!spin_trylock(lock))) {
@@ -50,6 +71,7 @@ unsigned long spin_lock_irqsave(spinlock_t *lock)
 {
 	unsigned long flags;
 
+	check_lock(lock, __builtin_return_address(0));
 	flags = local_irq_save();
 
 	while (unlikely(!spin_trylock(lock))) {
