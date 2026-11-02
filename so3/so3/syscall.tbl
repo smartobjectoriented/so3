@@ -77,6 +77,10 @@ recvfrom                recvfrom                NET
 send                    send                    NET
 sendto                  sendto                  NET
 setsockopt              setsockopt              NET
+recvmsg                 recvmsg                 NET
+sendmsg                 sendmsg                 NET
+poll                    poll                    NET
+ppoll                   ppoll                   NET
 brk                     brk                     PROC_ENV
 
 # Only used to suppress warning about setting CLOEXEC flags.
