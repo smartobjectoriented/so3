@@ -74,6 +74,40 @@ struct usr_sockaddr_in {
 	uint8_t sin_zero[8];
 };
 
+/* poll()'s descriptor and events as user space knows them, Linux's, not lwIP's. */
+
+struct usr_pollfd {
+	int fd;
+	short events;
+	short revents;
+};
+
+#define USR_POLLIN 0x001
+#define USR_POLLOUT 0x004
+#define USR_POLLERR 0x008
+#define USR_POLLHUP 0x010
+#define USR_POLLNVAL 0x020
+
+/* recvmsg() and sendmsg()'s header as user space knows it: musl's, padded where lwIP's is not. */
+
+struct usr_msghdr {
+	void *msg_name;
+	socklen_t msg_namelen;
+	struct iovec *msg_iov;
+	int msg_iovlen;
+	void *msg_control;
+	socklen_t msg_controllen;
+#if BITS_PER_LONG == 64
+	int __pad;
+#endif
+	int msg_flags;
+};
+
+struct usr_timespec {
+	long tv_sec;
+	long tv_nsec;
+};
+
 void net_init(void);
 
 SYSCALL_DECLARE(socket, int domain, int type, int protocol);
@@ -87,5 +121,10 @@ SYSCALL_DECLARE(send, int sockfd, const void *dataptr, size_t size, int flags);
 SYSCALL_DECLARE(sendto, int sockfd, const void *dataptr, size_t size, int flags, const struct usr_sockaddr_in *to,
 		socklen_t tolen);
 SYSCALL_DECLARE(setsockopt, int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+SYSCALL_DECLARE(recvmsg, int sockfd, struct usr_msghdr *msg, int flags);
+SYSCALL_DECLARE(sendmsg, int sockfd, const struct usr_msghdr *msg, int flags);
+SYSCALL_DECLARE(poll, struct usr_pollfd *fds, unsigned int nfds, int timeout);
+SYSCALL_DECLARE(ppoll, struct usr_pollfd *fds, unsigned int nfds, const struct usr_timespec *tmo, const void *sigmask,
+		size_t sigsetsize);
 
 #endif /* NET_H */

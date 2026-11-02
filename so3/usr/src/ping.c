@@ -38,6 +38,7 @@
 #include <net/if.h>
 #include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #define PING_PKT_LEN 64
 
@@ -231,6 +232,23 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/* An address, or a name the name server of /etc/resolv.conf resolves. */
+
+	memset(&ping_addr, 0, sizeof(ping_addr));
+	if (inet_pton(AF_INET, destination, &ping_addr.sin_addr) != 1) {
+		struct addrinfo hints = { .ai_family = AF_INET }, *res;
+		int err = getaddrinfo(destination, NULL, &hints, &res);
+
+		if (err) {
+			printf("ping: %s: %s\n", destination, gai_strerror(err));
+			return 1;
+		}
+		ping_addr.sin_addr = ((struct sockaddr_in *) res->ai_addr)->sin_addr;
+		freeaddrinfo(res);
+	}
+	inet_ntop(AF_INET, &ping_addr.sin_addr, ip, sizeof(ip));
+	printf("PING %s (%s)\n", destination, ip);
+
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
 	if (s < 0) {
@@ -245,8 +263,6 @@ int main(int argc, char **argv)
 
 	while (attempt++ < count) {
 		usleep((unsigned) (interval_s * 1000000u));
-
-		inet_pton(AF_INET, destination, &ping_addr.sin_addr);
 
 		ping_addr.sin_family = AF_INET;
 		ping_addr.sin_port = 0; /* ICMP -> no port */
