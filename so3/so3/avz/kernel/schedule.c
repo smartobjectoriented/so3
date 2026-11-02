@@ -113,14 +113,28 @@ bool vcpu_park(struct domain *d)
 
 /**
  * Put a parked capsule back on its scheduler, which its CPU runs at once.
- * Called with any lock held: the flag alone decides who wakes it.
+ * The flag decides who wakes it; a capsule paused meanwhile, its memory
+ * being read for a snapshot, stays off: vcpu_unpause() wakes it.
  *
  * @param d	the capsule
  */
 void vcpu_unpark(struct domain *d)
 {
-	if (atomic_cmpxchg(&d->parked, 1, 0) == 1)
+	bool __already_locked = false;
+
+	if (atomic_cmpxchg(&d->parked, 1, 0) != 1)
+		return;
+
+	if (spin_is_locked(&d->sched->sched_data.schedule_lock))
+		__already_locked = true;
+	else
+		spin_lock(&d->sched->sched_data.schedule_lock);
+
+	if (!atomic_read(&d->pause_count))
 		d->sched->wake(d);
+
+	if (!__already_locked)
+		spin_unlock(&d->sched->sched_data.schedule_lock);
 }
 
 /**
@@ -182,6 +196,10 @@ void vcpu_sleep_nosync(struct domain *d)
 	 * to check for this bit.
 	 */
 	set_bit(_VPF_blocked, &d->pause_flags);
+
+	/* Parked, its next event must not put it back: vcpu_wake() will. */
+
+	atomic_set(&d->parked, 0);
 
 	/* Now, setting the domain to blocked state */
 	if (d->runstate != RUNSTATE_running)
