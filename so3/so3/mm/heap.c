@@ -373,6 +373,13 @@ static void *__malloc(size_t requested, unsigned int alignment)
 #endif
 
 	/*
+	 * A size rounded up to HEAP_ALIGN keeps the chunk which follows aligned too, so that the area
+	 * it gives next needs little padding, none when the chunk header is a multiple of HEAP_ALIGN.
+	 */
+
+	requested = (requested + HEAP_ALIGN - 1) & ~((size_t) HEAP_ALIGN - 1);
+
+	/*
 	* We disable the IRQs to be safe. Using a mutex is dangerous since, a context switch may lead
 	* to a (re-)malloc in a waitqueue.
 	*/
@@ -411,11 +418,11 @@ next_list:
 	victim->req_size = requested;
 
 	/*
-	 * We enforce the address returned to be word-aligned so that if some data which requires word-alignment
-	 * (for example in case of ldrex/strex based monitors) will stay aligned.
+	 * We enforce the address returned to be aligned on HEAP_ALIGN, so that data which requires it
+	 * (for example a spinlock taken with ldaxr/stxr) stays aligned.
 	 */
 
-	alignment = ((alignment == 0) ? sizeof(int) : alignment);
+	alignment = ((alignment == 0) ? HEAP_ALIGN : alignment);
 
 	/* Is a specific alignment requested ? (alignment must be a power of 2) */
 

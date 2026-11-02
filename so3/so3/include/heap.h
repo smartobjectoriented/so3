@@ -30,6 +30,13 @@
 
 #define CHUNK_SIG 0xbeefdead
 
+/*
+ * What malloc() aligns its areas on: the widest exclusive access the kernel makes, a 64-bit
+ * spinlock or atomic, needs 8 bytes on arm64 and on arm32 (ldrexd).
+ */
+
+#define HEAP_ALIGN 8
+
 /* there's a list for each size. The size changes over the process lifetime. */
 struct mem_chunk {
 	/* Chunk signature to help identifying if a chunk has already be free'd or not. */
