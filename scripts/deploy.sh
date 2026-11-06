@@ -38,7 +38,8 @@ pr_help()
 	printf "    -v                        Emit logs during deployment\n"
 	printf "Examples: \n\n"
 	printf "$progname -l                  List all deployable recipes\n"
-	printf "$progname usr-so3             Deploy the SO3 user space into the rootfs\n"
+	printf "$progname usr-so3             Update rootfs.fat only, the ITB is not rebuilt\n"
+	printf "$progname bsp-so3             Rebuild the ITB with rootfs.fat and deploy it\n"
 	printf "$progname -v bsp-so3          Deploy the full SO3 BSP with verbose logs\n"
 }
 
@@ -161,6 +162,16 @@ then
 	if test $res -ne 0
 	then
 		exit 1
+	fi
+
+	# SO3 boots from the ramfs embedded in the ITB, and usr-so3 cannot rebuild
+	# it: bsp-so3 depends on usr-so3, so this note can't live in the recipe,
+	# where a full bsp-so3 deploy would print it too.
+
+	if test "$recipename" = "usr-so3"
+	then
+		printf "\n*** NOTE: *** usr-so3 only updated rootfs.fat. SO3 boots from the copy\n"
+		printf "in the ITB: run '$progname bsp-so3' to rebuild the ITB and deploy it.\n\n"
 	fi
 
 	# Make the freshly published TEZI feed reachable without a manual
