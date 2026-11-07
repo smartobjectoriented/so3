@@ -152,3 +152,10 @@ so3/so3/scripts/kconfig/zconf.tab.c
 *.attach.pf
 __pycache__/
 /scripts.old/
+
+# Left by scripts/tezi-custom/build.sh
+scripts/tezi-custom/recovery/
+scripts/tezi-custom/boot.scr
+scripts/tezi-custom/imx-boot-recoverytezi
+scripts/tezi-custom/imx-boot-sd
+scripts/tezi-custom/overlays.txt

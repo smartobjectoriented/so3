@@ -1,0 +1,20 @@
+
+# EDGE-M1 — auto-register the local image feed once tezi is ready.
+# Default URL injected at build time by scripts/tezi-custom/build.sh
+# (substitutes the host's LAN IP and feed port). Override at runtime via
+# kernel cmdline:
+#   edgem_feed=http://<host-ip>:8080/image_list.json
+(
+    EDGEM_FEED_URL="@EDGEM_FEED_URL@"
+    for p in $(cat /proc/cmdline); do
+        case "$p" in
+            edgem_feed=*) EDGEM_FEED_URL="${p#edgem_feed=}";;
+        esac
+    done
+    for _ in $(seq 1 60); do
+        tezictl status >/dev/null 2>&1 && break
+        sleep 1
+    done
+    tezictl feed-add "$EDGEM_FEED_URL"
+    echo "EDGE-M1: tezictl feed-add $EDGEM_FEED_URL done"
+) >> ${RW_MEMORY_DIR}/${TEZI_LOGFILE} 2>&1 &
