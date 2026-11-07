@@ -408,6 +408,7 @@ do_unpack[postfuncs] = "do_handle_fetch_git"
  
 # Default to the safe behaviour; set IB_FORCE_ATTACH=1 (env or local.conf)
 # to override the dirty-tree guards below.
+
 IB_FORCE_ATTACH ??= "0"
 
 # Edits in ${IB_TARGET} that the patch set does not hold.
@@ -430,6 +431,7 @@ IB_FORCE_ATTACH ??= "0"
 # artefacts and refuse a perfectly clean tree. Filtered here as well as
 # pruned at attach time, so manifests recorded before that fix stop
 # blocking too.
+
 def ib_unfolded_edits(d):
     import os
     import re
@@ -475,6 +477,7 @@ def ib_guard_unfolded_edits(d, action, consequence):
 # do_updiff) would never re-run do_patch/do_attach_infrabase. Each file is also
 # registered as a parse dependency, so editing one invalidates the parse cache
 # and the digest is recomputed. Call it from anonymous python.
+
 def ib_patchset_digest(d):
     import hashlib
 
@@ -497,6 +500,7 @@ def ib_patchset_digest(d):
 # patch, a SRCREV rolled back) finds its old stamp still there, BitBake deems the
 # task current, and the tree is silently left at the newer content. Add it to
 # the task's prefuncs; the stamp for the current key is written after the task.
+
 python ib_drop_stale_stamps() {
     import glob
 
@@ -519,6 +523,7 @@ do_attach_infrabase[prefuncs] += "ib_attach_guard"
 # Opt out with IB_CLEAN_GUARD = "0" in a recipe whose own build rewrites
 # attached files (see usr.bbclass), where the manifest cannot tell an edit
 # from a build step.
+
 IB_CLEAN_GUARD ??= "1"
 
 python ib_clean_guard() {

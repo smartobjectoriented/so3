@@ -208,6 +208,7 @@ python patch_save_pristine() {
 # in its own layer directory must point it there (with :=, so THISDIR is the
 # bbappend's): otherwise updiff never sees the existing patches and builds a
 # second, unused patchset next to the base recipe.
+
 IB_PATCHSET_DIR ??= "${FILE_DIRNAME}/files"
 
 # Stage what was edited in IB_TARGET since do_attach_infrabase, the baseline
@@ -348,6 +349,7 @@ def generate_src_uri(patch_directory, header=None):
                      if p.endswith(".patch"))
     # Keep the existing .inc's leading comment block (its copyright and any
     # notes), so repeated updiff runs don't churn it; standard one otherwise.
+
     src_uri = header or "# Copyright (c) 2025-2026 EDGEMTech SA\n\n"
     src_uri += "SRC_URI += \"\\ \n"
     for patch in patches:
@@ -498,6 +500,7 @@ def ib_refresh_attach_manifest(d, rels):
 
     # sha256sum lines are "<hash>  ./<rel>". A line it escaped (leading
     # backslash, for a name with a newline or backslash) is kept verbatim.
+
     entries = {}
     with open(manifest, 'r', errors='surrogateescape') as f:
         for line in f:
@@ -713,6 +716,7 @@ python do_updiff() {
                  "(run do_diffcompose first?)")
 
     def fail(msg):
+        """Stop on `msg`, leaving the patch sets as they were."""
         shutil.rmtree(staging, ignore_errors=True)
         bb.fatal(f"do_updiff: {msg} Nothing was written.")
 
@@ -748,6 +752,7 @@ python do_updiff() {
 
     # Where new patches go: the last patchset of the series with a plain
     # .inc, else the recipe's own 0001-${PF}/ (created on first use).
+
     append_dir = None
     for entry in reversed(series):
         setdir = os.path.dirname(entry['path'])
@@ -758,6 +763,7 @@ python do_updiff() {
         append_dir = os.path.join(d.getVar('IB_PATCHSET_DIR'), f"0001-{pf}")
 
     def final_of(rel):
+        """Content of `rel` in the tree, None if it is gone."""
         path = os.path.join(target, rel)
         if os.path.isfile(path) and not os.path.islink(path):
             with open(path, 'rb') as f:
@@ -765,6 +771,7 @@ python do_updiff() {
         return None
 
     # First pass: decide everything, write nothing.
+
     kept, rewritten, rewrites, appends = [], [], {}, []
     tmpdir = tempfile.mkdtemp(prefix='updiff-', dir=d.getVar('TMPDIR'))
     try:
