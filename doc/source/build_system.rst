@@ -378,11 +378,13 @@ hand:
 #. Build to test (``build.sh -x qemu``).
 #. Regenerate the patches: ``updiff.sh qemu``.
 
-``updiff`` (``patch.bbclass``) diffs the pristine upstream snapshot
-(``${S}.pristine``, taken right after fetch) against the working tree and writes
-one git-style patch per changed file into
-``build/meta-<c>/recipes-<c>/<c>/files/000N-*.patch``, consolidating in place and
-regenerating the ``…-patches.inc`` manifest. Generated trees are excluded via the
+``updiff`` (``patch.bbclass``) only looks at what changed in the working tree since
+it was attached. Each edited file is folded into its patch, computed by replaying
+the series on the pristine upstream snapshot (``${S}.pristine``, taken right after
+fetch): several patches of one patch set touching a file become one, a patch left
+empty goes away, and a file with no patch gets a new one, in
+``build/meta-<c>/recipes-<c>/<c>/files/000N-*.patch``. If the patches of an edited
+file changed since the attach, ``updiff`` stops and writes nothing. Generated trees are excluded via the
 per-recipe ``IB_UPDIFF_EXCLUDE`` variable (for QEMU: ``build subprojects
 GNUmakefile``, which keeps the meson/ninja output and the fetched subprojects out
 of the patchset).
