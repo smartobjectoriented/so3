@@ -235,7 +235,20 @@ latex_documents = [('index', 'SO3.tex', u'SO3 Documentation', u'HEIG-vD - REDS I
 
 # A dictionary that contains LaTeX snippets that override those Sphinx usually 
 # puts into the generated .tex files.
-latex_elements = { 'babel': '\\usepackage[english]{babel}' }
+#
+# Sphinx titles the table of contents with the first toctree caption, unescaped:
+# the "&" of "Concepts & architecture" would break LaTeX. The cmap package only
+# works with pdflatex.
+
+latex_elements = {
+    'babel': '\\usepackage[english]{babel}',
+    'cmappkg': '',
+    'tableofcontents': '\\renewcommand{\\contentsname}{Contents}\\sphinxtableofcontents',
+}
+
+# pdflatex has no glyph for the box-drawing characters of the diagrams.
+
+latex_engine = 'xelatex'
 
 
 # The name of an image file (relative to this directory) to place at the top of

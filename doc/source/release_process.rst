@@ -149,7 +149,7 @@ documentation version both derive from the release tag at build time
 (``so3/so3/scripts/so3version.sh``, reused by ``doc/source/conf.py``).
 
 Before tagging: check the CI
-***************************
+****************************
 
 The ``Build`` workflow runs on ``main`` **and on every** ``release/**``
 **branch**, so the commit a tag will point at has always been built. Check it
