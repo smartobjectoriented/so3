@@ -7,13 +7,15 @@ configured platform CPU (local.conf) is built."
 LICENSE = "GPLv2 & MIT"
 
 # Release and version
-PR = "r0"
+PR = "r1"
 PV = "1.0"
 
-# musl-cross-make pinned commit (was GIT_COMMIT=3635262 in the old
-# toolchains/build-toolchain.sh).
+# musl-cross-make pinned commit. It selects the musl release (MUSL_VER)
+# and carries the security patches in patches/musl-<ver>/. Bump PR along
+# with SRCREV: stamps are not hashed, only PR makes existing trees refetch.
+
 SRC_URI = "git://github.com/richfelker/musl-cross-make;protocol=https;nobranch=1"
-SRCREV = "3635262e4524c991552789af6f36211a335a77b3"
+SRCREV = "5e8042e63de29f8473fc3b0b831a587ba284e1a8"
 
 # The common config.mak shipped alongside this recipe.
 FILESPATH:prepend = "${THISDIR}/files:"
@@ -28,6 +30,7 @@ SRC_URI += "file://config.mak"
 # (IB_MUSL_TOOLCHAIN_DIR is defined in local.conf).
 IB_TARGET = "${IB_MUSL_TOOLCHAIN_DIR}/musl-cross-make"
 IB_MUSL_OUTPUT = "${IB_MUSL_TOOLCHAIN_DIR}/${IB_MUSL_TARGET}"
+IB_MUSL_STAMP = "${IB_MUSL_OUTPUT}/.ib_srcrev"
 
 do_configure[nostamp] = "1"
 do_configure () {
@@ -42,19 +45,27 @@ do_configure () {
 # do_configure is nostamp (it re-pins TARGET/OUTPUT in config.mak per arch),
 # which forces this do_build to re-run on every build that depends on
 # musl-toolchain:do_build (e.g. `build.sh -x usr-so3`). Guard against that:
-# if the compiler for the current IB_MUSL_TARGET is already installed, skip
-# the (very long) binutils/gcc/musl build. A different arch yields a different
-# IB_MUSL_OUTPUT path, so it still builds; `do_clean` wipes the output to force
-# a rebuild.
+# if the compiler for the current IB_MUSL_TARGET is already installed from
+# this SRCREV, skip the (very long) binutils/gcc/musl build. A different arch
+# yields a different IB_MUSL_OUTPUT path, so it still builds; `do_clean` wipes
+# the output to force a rebuild.
+
 do_build () {
-	if [ -x "${IB_MUSL_OUTPUT}/bin/${IB_MUSL_TARGET}-gcc" ]; then
+	if [ -x "${IB_MUSL_OUTPUT}/bin/${IB_MUSL_TARGET}-gcc" ] && \
+	   [ "$(cat ${IB_MUSL_STAMP} 2>/dev/null)" = "${SRCREV}" ]; then
 		echo "musl cross toolchain '${IB_MUSL_TARGET}' already built — skipping."
 	else
 		echo "Building musl cross toolchain '${IB_MUSL_TARGET}' — this downloads and compiles binutils/gcc/musl, expect a long first build..."
 
 		cd ${IB_TARGET}
+
+		# The per-target build dir links to the sources of the previous musl.
+
+		rm -rf ${IB_MUSL_OUTPUT} build/local/${IB_MUSL_TARGET}
+
 		make -j${CORES}
 		make install
+		echo "${SRCREV}" > ${IB_MUSL_STAMP}
 	fi
 }
 
