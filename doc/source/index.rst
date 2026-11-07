@@ -10,6 +10,10 @@
    :align: center
    :width: 420px
 
+============================================
+Smart Object Oriented (SO3) Operating System
+============================================
+
 .. toctree::
    :maxdepth: 2
    :numbered:
@@ -47,10 +51,6 @@
    micropython
    Coding conventions <coding_conventions>
    release_process
-
-============================================
-Smart Object Oriented (SO3) Operating System
-============================================
 
 SO3 is a compact, lightweight, full-featured and extensible operating system,
 particularly well suited to embedded systems. From a single code base it can be
