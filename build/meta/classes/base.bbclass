@@ -407,42 +407,168 @@ python do_handle_fetch_git() {
 do_unpack[postfuncs] = "do_handle_fetch_git"
  
 # Default to the safe behaviour; set IB_FORCE_ATTACH=1 (env or local.conf)
-# to override the dirty-tree guard below.
+# to override the dirty-tree guards below.
+
 IB_FORCE_ATTACH ??= "0"
+
+# Edits in ${IB_TARGET} that the patch set does not hold.
+#
+# do_attach_infrabase regenerates ${IB_TARGET} from the freshly
+# fetched+patched ${S}. The fetched component trees (avz/, u-boot/,
+# qemu/, ...) are gitignored, so an edit made directly in ${IB_TARGET}
+# that hasn't been folded back into the patch set (via do_updiff) has no
+# version-control safety net -- re-attaching would destroy it. After each
+# attach we record a sha256 manifest of the files we wrote, and do_updiff
+# refreshes the entries it folds in; a file whose hash no longer matches is
+# an edit the patch set does not have. Build artefacts produced by a later
+# `make` are not in the manifest, so a freshly-built tree verifies clean.
+# Newly *added* source files are not tracked until an updiff folds them in --
+# the ${IB_TARGET}.back copy remains the last-resort net for that case.
+#
+# The quilt staging left by do_patch (patches/, series, .pc) is a build
+# product, not source -- it is regenerated on every patch run and is
+# gitignored. Recorded in the manifest it made the guard fire on its own
+# artefacts and refuse a perfectly clean tree. Filtered here as well as
+# pruned at attach time, so manifests recorded before that fix stop
+# blocking too.
+
+def ib_unfolded_edits(d):
+    import os
+    import re
+    import subprocess
+
+    target = d.getVar('IB_TARGET')
+    if not target or not os.path.isdir(target):
+        return []
+    manifest = target + '.attach.sha256'
+    if not os.path.isfile(manifest):
+        return []
+
+    r = subprocess.run(['sha256sum', '-c', '--quiet', manifest], cwd=target,
+                       capture_output=True, text=True,
+                       env=dict(os.environ, LC_ALL='C'))
+    dirty = []
+    for line in r.stdout.splitlines():
+        m = re.match(r'^(.*): FAILED', line)
+        if not m or re.search(r'(^|/)(\.pc|patches)/', m.group(1)):
+            continue
+        path = m.group(1)
+        dirty.append(path[2:] if path.startswith('./') else path)
+    return dirty
+
+def ib_guard_unfolded_edits(d, action, consequence):
+    if d.getVar('IB_FORCE_ATTACH') == '1':
+        return
+    dirty = ib_unfolded_edits(d)
+    if not dirty:
+        return
+    pn = d.getVar('PN')
+    target = d.getVar('IB_TARGET')
+    bb.warn("Local modifications detected in %s, not captured in the %s patch set:\n%s"
+            % (target, pn, '\n'.join('    ' + f for f in dirty)))
+    bb.fatal("Refusing to %s %s (%s). Run './scripts/updiff.sh %s' to fold "
+             "them into the patch set, or set IB_FORCE_ATTACH=1 to discard "
+             "them (the next attach keeps the prior tree in %s.back)."
+             % (action, pn, consequence, pn, target))
+
+# Digest of the local patch set (every file:// entry of SRC_URI), for use as
+# do_patch[stamp-extra-info] by fetched recipes. The stamps of this build system
+# carry no signature hash, so without it a course update to the patch set (or a
+# do_updiff) would never re-run do_patch/do_attach_infrabase. Each file is also
+# registered as a parse dependency, so editing one invalidates the parse cache
+# and the digest is recomputed. Call it from anonymous python.
+
+def ib_patchset_digest(d):
+    import hashlib
+
+    h = hashlib.sha256()
+    for uri in (d.getVar('SRC_URI') or '').split():
+        if not uri.startswith('file://'):
+            continue
+        name = uri[len('file://'):].split(';')[0]
+        path = bb.utils.which(d.getVar('FILESPATH'), name)
+        if not path:
+            continue
+        bb.parse.mark_dependency(d, path)
+        h.update(name.encode())
+        with open(path, 'rb') as f:
+            h.update(f.read())
+    return h.hexdigest()[:16]
+
+# Companion of a stamp-extra-info key: drop this task's stamps for OTHER keys
+# before it runs. Otherwise going back to a key already built once (a reverted
+# patch, a SRCREV rolled back) finds its old stamp still there, BitBake deems the
+# task current, and the tree is silently left at the newer content. Add it to
+# the task's prefuncs; the stamp for the current key is written after the task.
+
+python ib_drop_stale_stamps() {
+    import glob
+
+    task = 'do_' + d.getVar('BB_CURRENTTASK')
+    for st in glob.glob(d.getVar('STAMP') + '.' + task + '.*'):
+        if not st.endswith('.sigdata'):
+            os.remove(st)
+}
+
+python ib_attach_guard() {
+    ib_guard_unfolded_edits(d, 're-attach', 'would overwrite the files above')
+}
+do_attach_infrabase[prefuncs] += "ib_attach_guard"
+
+# The same check, one step earlier. A clean drops the stamps, so the next
+# build re-fetches, re-patches and re-attaches -- and the attach guard then
+# stops that build halfway, after the clean has already been done. Refusing
+# the clean instead leaves the tree exactly as it was and says why.
+#
+# Opt out with IB_CLEAN_GUARD = "0" in a recipe whose own build rewrites
+# attached files (see usr.bbclass), where the manifest cannot tell an edit
+# from a build step.
+
+IB_CLEAN_GUARD ??= "1"
+
+python ib_clean_guard() {
+    if d.getVar('IB_CLEAN_GUARD') != '1':
+        return
+    ib_guard_unfolded_edits(d, 'clean',
+        'the next build would re-attach the tree from the patch set, which '
+        'does not have the files above')
+}
+do_clean[prefuncs] += "ib_clean_guard"
+
+# The patches SRC_URI applies depend on the overrides, and the stamps do not:
+# changing an override leaves the tree as it was built. The series that built
+# the tree is therefore recorded in ${IB_TARGET}.attach.series for do_updiff.
+
+def ib_series_names(d):
+    names = set()
+    for uri in (d.getVar('SRC_URI') or '').split():
+        if uri.startswith('file://'):
+            name = os.path.basename(uri[len('file://'):].split(';')[0])
+            if name.endswith(('.patch', '.diff')):
+                names.add(name)
+    return names
+
+def ib_attached_series(d):
+    try:
+        with open(d.getVar('IB_TARGET') + '.attach.series') as f:
+            return set(f.read().split())
+    except OSError:
+        return None
+
+def ib_record_attached_series(d, names):
+    with open(d.getVar('IB_TARGET') + '.attach.series', 'w') as f:
+        f.writelines(n + '\n' for n in sorted(names))
+
+python ib_attach_series() {
+    if d.getVar('IB_TARGET'):
+        ib_record_attached_series(d, ib_series_names(d))
+}
+do_attach_infrabase[postfuncs] += "ib_attach_series"
 
 do_attach_infrabase () {
 	ib_manifest="${IB_TARGET}.attach.sha256"
 
-	# Guard against silently clobbering local edits.
-	#
-	# do_attach_infrabase regenerates ${IB_TARGET} from the freshly
-	# fetched+patched ${S}. The fetched component trees (avz/, u-boot/,
-	# qemu/, ...) are gitignored, so an edit made directly in ${IB_TARGET}
-	# that hasn't been folded back into the patch set (via do_updiff) has no
-	# version-control safety net — re-attaching would destroy it. After each
-	# attach we record a sha256 manifest of the files we wrote; on the next
-	# attach we verify those files are still untouched and abort if any were
-	# modified or removed. Build artefacts produced by a later `make` are not
-	# in the manifest, so a freshly-built tree still verifies clean. Newly
-	# *added* source files are not tracked by the manifest — the ${IB_TARGET}.back
-	# copy remains the last-resort net for that case.
-	if [ -d "${IB_TARGET}" ] && [ -f "$ib_manifest" ] && [ "${IB_FORCE_ATTACH}" != "1" ]; then
-		# The quilt staging left by do_patch (patches/, series, .pc) is a
-		# build product, not source -- it is regenerated on every patch run
-		# and is gitignored. Recorded in the manifest it made the guard fire
-		# on its own artefacts and refuse a perfectly clean tree. Filtered
-		# here as well as pruned below, so manifests recorded before this
-		# fix stop blocking too. `|| true`: grep exits 1 when it filters
-		# everything away, and bitbake runs shell tasks under `set -e`.
-		ib_dirty=$(cd "${IB_TARGET}" && LC_ALL=C sha256sum -c --quiet "$ib_manifest" 2>/dev/null \
-			| sed -n 's/: FAILED.*$//p' \
-			| grep -vE '(^|/)(\.pc|patches)/' || true)
-		if [ -n "$ib_dirty" ]; then
-			bbwarn "Local modifications detected in ${IB_TARGET}, not captured in the ${PN} patch set:"
-			echo "$ib_dirty" | sed 's|^\./|    |' >&2
-			bbfatal "Refusing to re-attach ${PN} (would overwrite the files above). Run 'bitbake ${PN} -c updiff' to fold them into the patch set, or set IB_FORCE_ATTACH=1 to discard them and re-attach (prior tree is kept in ${IB_TARGET}.back)."
-		fi
-	fi
+	# The dirty-tree check runs before this body, in ib_attach_guard.
 
 	echo "Attaching ${PN} to ${IB_TARGET}"
 

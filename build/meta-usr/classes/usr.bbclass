@@ -6,6 +6,14 @@ inherit rootfs
 
 # Class for managing the user space environment
 
+# The user space is built out of tree in ${IB_TARGET}/build (CMake cache,
+# makefiles, objects, build/deploy): none of it is source, and without this
+# updiff turns every CMake-generated file into a patch. Neither the linux nor
+# the so3 usr tree ships a directory of that name. .ib_last_arch is the arch
+# marker do_build writes, .ib_last_toolchain the one usr-so3 writes.
+
+IB_UPDIFF_EXCLUDE:append = " build .ib_last_arch .ib_last_toolchain"
+
 # Deployment of user space components
 
 usr_do_install_file_root () {
@@ -152,11 +160,19 @@ do_build () {
 
 do_clean[nostamp] = "1"
 addtask do_clean
+
+# The usr build rewrites attached files itself (see the manifest note in
+# do_clean below), so base.bbclass's clean guard would read every build as
+# an unfolded edit and refuse every clean.
+
+IB_CLEAN_GUARD = "0"
+
 # Implemented in Python on purpose: a *shell* task needs ${WORKDIR}/temp to
 # exist so bitbake can create its output fifo there, but do_clean often runs
 # when that dir is absent (fresh tree / already-cleaned), giving
 # "No such file or directory: .../temp/fifo.NNNN". Python tasks create the
 # temp dir themselves and use no fifo, so they are robust here.
+
 python do_clean() {
     import os, shutil
     target = d.getVar('IB_TARGET')
@@ -173,6 +189,7 @@ python do_clean() {
     # A clean is an explicit reset, and the attach still backs the tree up to
     # ${IB_TARGET}.back, so dropping the manifest here is the safe, generic fix —
     # the guard stays fully active for builds that were NOT preceded by a clean.
+    
     try:
         os.remove(target + '.attach.sha256')
     except OSError:
