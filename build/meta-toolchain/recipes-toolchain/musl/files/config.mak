@@ -26,8 +26,7 @@ DL_CMD = wget -c --tries=5 --waitretry=10 --timeout=30 -O
 # helps. Fetch it from the MacPorts distfiles mirror, which carries the exact
 # upstream tarball. musl-cross-make checks every download against
 # hashes/<file>.sha1, so a mirror serving anything else fails the build loudly
-# rather than silently building something different (verified: the mirrored
-# musl-1.2.5.tar.gz matches hashes/musl-1.2.5.tar.gz.sha1).
+# rather than silently building something different.
 MUSL_SITE = https://distfiles.macports.org/musl
 
 BINUTILS_VER = 2.44

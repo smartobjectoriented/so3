@@ -48,6 +48,16 @@ do_build[depends] += "musl-toolchain:do_build"
 do_build:prepend () {
 	export PATH="${IB_MUSL_TOOLCHAIN_DIR}/${IB_MUSL_TARGET}/bin:$PATH"
 
+	# The binaries are static and the build does not track libc.a, so an
+	# incremental build would keep the libc of the previous toolchain.
+
+	_tc_rev="$(cat ${IB_MUSL_TOOLCHAIN_DIR}/${IB_MUSL_TARGET}/.ib_srcrev 2>/dev/null || true)"
+	_tc_marker="${IB_TARGET}/.ib_last_toolchain"
+	if [ "$(cat $_tc_marker 2>/dev/null || true)" != "$_tc_rev" ]; then
+		echo "SO3 usr toolchain changed; wiping build/"
+		rm -rf ${IB_TARGET}/build
+	fi
+	echo "$_tc_rev" > "$_tc_marker"
 }
 
 # Make sure so3 has been installed correctly to fetch other components if required
