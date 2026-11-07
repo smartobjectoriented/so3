@@ -97,9 +97,9 @@ logfile="$runtime_dir/tezi-feed.log"
 # --- helpers ----------------------------------------------------------------
 
 # Host IP as the board sees it: first default route, skipping tunnel-like
-# interfaces so an active VPN does not capture the flashing address. This is
-# the address printed below and handed to the board with `tezictl feed-add`,
-# so a wrong pick sends the board to a host it cannot reach.
+# interfaces so an active VPN does not capture the flashing address. Same
+# selection as scripts/tezi-custom/build.sh, which bakes the URL into the
+# custom TEZI image — the two must agree or the board pulls the wrong host.
 host_ip()
 {
 	ip -4 route show default 2>/dev/null \
