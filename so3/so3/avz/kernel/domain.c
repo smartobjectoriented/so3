@@ -237,7 +237,7 @@ void context_switch(struct domain *prev, struct domain *next)
 	/* Memory barrier /after/ clearing the running flag. */
 	smp_mb();
 
-	spin_unlock(&prev->sched->sched_data.schedule_lock);
+	sched_unlock(&prev->sched->sched_data, true);
 
 	__switch_domain_to(prev, next);
 }

@@ -25,6 +25,8 @@
 
 #include <device/arch/gic.h>
 
+#include <asm/arm_timer.h>
+
 #include <avz/evtchn.h>
 #include <avz/sched.h>
 #include <avz/sched-if.h>
@@ -33,6 +35,64 @@
 DEFINE_PER_CPU(struct domain *, current_domain);
 
 static spinlock_t schedule_lock;
+
+/*
+ * The scheduler lock this CPU holds, if any. A CPU enters a scheduler's paths
+ * holding its lock from an outer one, and must then neither take it again nor
+ * release it under that outer path. Whether the lock is held says nothing
+ * about who holds it: an agency CPU pausing a capsule for a snapshot meets the
+ * capsule CPU inside its scheduler, and each must wait for the other.
+ */
+
+static DEFINE_PER_CPU(spinlock_t *, sched_lock_held);
+static DEFINE_PER_CPU(unsigned long, sched_lock_waited);
+
+/**
+ * Take a scheduler's lock, unless this CPU holds it already.
+ *
+ * @return true when it was taken here, for sched_unlock()
+ */
+bool sched_lock(struct schedule_data *sd)
+{
+	if (this_cpu(sched_lock_held) == &sd->schedule_lock)
+		return false;
+
+	if (spin_is_locked(&sd->schedule_lock))
+		this_cpu(sched_lock_waited)++;
+
+	spin_lock(&sd->schedule_lock);
+	this_cpu(sched_lock_held) = &sd->schedule_lock;
+
+	return true;
+}
+
+/**
+ * Release a scheduler's lock taken by sched_lock() on this CPU; nothing when
+ * it was held from an outer path, or released by a context switch since.
+ */
+void sched_unlock(struct schedule_data *sd, bool taken)
+{
+	if (!taken || (this_cpu(sched_lock_held) != &sd->schedule_lock))
+		return;
+
+	this_cpu(sched_lock_held) = NULL;
+	spin_unlock(&sd->schedule_lock);
+}
+
+/**
+ * How many times a CPU found a scheduler's lock held by another CPU and
+ * waited for it, over all CPUs.
+ */
+unsigned long sched_lock_contended(void)
+{
+	unsigned long n = 0;
+	int i;
+
+	for (i = 0; i < CONFIG_NR_CPUS; i++)
+		n += per_cpu(sched_lock_waited, i);
+
+	return n;
+}
 
 /* Various timer handlers. */
 
@@ -61,12 +121,7 @@ int sched_init_domain(struct domain *d, unsigned int processor)
 
 void vcpu_wake(struct domain *d)
 {
-	bool __already_locked = false;
-
-	if (spin_is_locked(&d->sched->sched_data.schedule_lock))
-		__already_locked = true;
-	else
-		spin_lock(&d->sched->sched_data.schedule_lock);
+	bool taken = sched_lock(&d->sched->sched_data);
 
 	if (d->runstate >= RUNSTATE_blocked) {
 		domain_runstate_change(d, RUNSTATE_runnable);
@@ -76,8 +131,7 @@ void vcpu_wake(struct domain *d)
 		clear_bit(_VPF_blocked, &d->pause_flags);
 	}
 
-	if (!__already_locked)
-		spin_unlock(&d->sched->sched_data.schedule_lock);
+	sched_unlock(&d->sched->sched_data, taken);
 }
 
 /**
@@ -120,21 +174,17 @@ bool vcpu_park(struct domain *d)
  */
 void vcpu_unpark(struct domain *d)
 {
-	bool __already_locked = false;
+	bool taken;
 
 	if (atomic_cmpxchg(&d->parked, 1, 0) != 1)
 		return;
 
-	if (spin_is_locked(&d->sched->sched_data.schedule_lock))
-		__already_locked = true;
-	else
-		spin_lock(&d->sched->sched_data.schedule_lock);
+	taken = sched_lock(&d->sched->sched_data);
 
 	if (!atomic_read(&d->pause_count))
 		d->sched->wake(d);
 
-	if (!__already_locked)
-		spin_unlock(&d->sched->sched_data.schedule_lock);
+	sched_unlock(&d->sched->sched_data, taken);
 }
 
 /**
@@ -181,12 +231,7 @@ void sched_destroy_domain(struct domain *d)
 
 void vcpu_sleep_nosync(struct domain *d)
 {
-	bool __already_locked = false;
-
-	if (spin_is_locked(&d->sched->sched_data.schedule_lock))
-		__already_locked = true;
-	else
-		spin_lock(&d->sched->sched_data.schedule_lock);
+	bool taken = sched_lock(&d->sched->sched_data);
 
 	/*
 	 * Stop associated timers.
@@ -210,19 +255,34 @@ void vcpu_sleep_nosync(struct domain *d)
 
 	d->sched->sleep(d);
 
-	if (!__already_locked)
-		spin_unlock(&d->sched->sched_data.schedule_lock);
+	sched_unlock(&d->sched->sched_data, taken);
 }
 
 /*
- * Set a domain sleeping. The domain state is set to blocked.
+ * Set a domain sleeping. The domain state is set to blocked, and the caller
+ * waits for the domain to leave its CPU, which the sleep asked that CPU to
+ * schedule for. A wait beyond any scheduling tick is a stall: it is told
+ * once, with what each CPU is at, and waited on all the same.
  */
 void vcpu_sleep_sync(struct domain *d)
 {
+	u64 since = arch_counter_get_cntvct();
+	bool told = false;
+
 	vcpu_sleep_nosync(d);
 
-	while (d->is_running)
+	while (d->is_running) {
 		cpu_relax();
+
+		if (!told && (arch_counter_get_cntvct() - since > 2 * (u64) arch_timer_get_cntfrq())) {
+			told = true;
+			printk("%s: CPU%d has waited 2 s for domain %d to leave CPU%d: runstate %d, pause count %d, CPU%d runs domain %d, scheduler lock %s, lock waits %lu\n",
+			       __func__, smp_processor_id(), d->avz_shared->domID, d->processor, d->runstate,
+			       atomic_read(&d->pause_count), d->processor,
+			       per_cpu(current_domain, d->processor) ? per_cpu(current_domain, d->processor)->avz_shared->domID : -1,
+			       spin_is_locked(&d->sched->sched_data.schedule_lock) ? "held" : "free", sched_lock_contended());
+		}
+	}
 }
 
 /*
@@ -267,10 +327,11 @@ static void domain_schedule(void)
 			cpu_do_idle();
 	}
 
-	/* To avoid that another CPU manipulates scheduler data structures */
-	/* Maybe the lock is already acquired from do_sleep() for example */
-	if (!spin_is_locked(&current_domain->sched->sched_data.schedule_lock))
-		spin_lock(&current_domain->sched->sched_data.schedule_lock);
+	/* Against the other CPUs, and not again when an outer path on this CPU
+	 * holds it: the context switch, or the no-op path below, releases it.
+	 */
+
+	sched_lock(&current_domain->sched->sched_data);
 
 	sd = &current_domain->sched->sched_data;
 
@@ -288,7 +349,7 @@ static void domain_schedule(void)
 #endif /* CONFIG_SOO */
 
 	if (unlikely(prev == next)) {
-		spin_unlock(&prev->sched->sched_data.schedule_lock);
+		sched_unlock(&prev->sched->sched_data, true);
 		ASSERT(prev->runstate == RUNSTATE_running);
 
 		return;
