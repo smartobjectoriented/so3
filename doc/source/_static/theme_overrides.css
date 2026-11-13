@@ -29,3 +29,14 @@ max-width: none;
 	padding: 8px 14px;
 	border-radius: 8px;
 }
+
+/* A caption belongs under the middle of its figure, not at its left edge. */
+.rst-content figure,
+.rst-content div.figure {
+	text-align: center;
+}
+
+.rst-content figure figcaption,
+.rst-content div.figure p.caption {
+	text-align: center;
+}
