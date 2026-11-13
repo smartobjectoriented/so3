@@ -1,4 +1,47 @@
 
+v6.4.0 (13 nov 2026)
+
+Minor release opening the 6.4 line. It carries everything which landed on main
+since v6.3.1: the S3C capsule lifecycle and cooperation, a series of AVZ fixes,
+POSIX networking calls, and the build system aligned on Infrabase.
+
+	•	S3C capsules follow the lifecycle of the SOO patent: callbacks at each
+		stage, the application held until the capsule is activated, and
+		cooperation between running copies of a capsule on neighbouring devices.
+		A restored capsule keeps its timers on time, runs its resume handler at
+		EL1, and shutting down a capsule held after a snapshot no longer
+		deadlocks. AVZ refuses a snapshot whose header is not a capsule context
+		and can be built without the capsule lifecycle.
+
+	•	AVZ: NR_IRQS covers the platform's interrupt IDs and has a single
+		definition (the BCM2711 GENET interrupts used to abort at EL2 on the first
+		packet); the physical EOImode is no longer mirrored into the GICv2 VMCR;
+		128 grant pages per domain; the stage-2 TLBs are flushed when the screen
+		changes capsule; an idle capsule leaves the capsule CPU to the others and
+		a paused one stays off the scheduler when an event arrives. A Raspberry
+		Pi 5 (BCM2712) platform skeleton is added; it builds but has not been
+		validated on a board yet.
+
+	•	Kernel: the ARM timer reload is computed from the counter frequency (the
+		Raspberry Pi 4 tick was 2.9 % too long); a futex is freed by its waker,
+		not by the waiters it woke; the VFS lock is no longer held across an
+		ioctl handler; malloc aligns on 8 bytes; a misaligned spinlock names its
+		caller; the device tree accepts status = "okay". Networking gained poll,
+		ppoll, recvmsg, sendmsg and non-blocking sockets, and ping takes a host
+		name. ls filters its listing with '*' and '?' patterns.
+
+	•	Build system, aligned on Infrabase: the boot chain is one ordered value
+		with an overlay axis; the attach/updiff machinery follows Infrabase and
+		refuses BSP recipes; deploy.sh can redeploy just the kernel; the user
+		space goes into rootfs.cpio when it is the ramfs and onto p2 otherwise;
+		buildroot and the user space are rebuilt on a platform switch; QEMU is no
+		longer reconfigured on every build; st.sh picks free ports and runs a
+		single guest; the tezi-custom sources are in the tree.
+
+	•	Documentation: the PDF build works, figures are redrawn with centred
+		captions, and new pages describe what MUSL expects of the kernel and how
+		a snapshot is moved.
+
 v6.3.1 (7 sep 2026)
 
 Patch release on the 6.3 line, carrying the capsule snapshot rework and the
