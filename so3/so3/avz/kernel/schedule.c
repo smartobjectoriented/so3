@@ -54,14 +54,23 @@ static DEFINE_PER_CPU(unsigned long, sched_lock_waited);
  */
 bool sched_lock(struct schedule_data *sd)
 {
+	unsigned long flags;
+
 	if (this_cpu(sched_lock_held) == &sd->schedule_lock)
 		return false;
 
 	if (spin_is_locked(&sd->schedule_lock))
 		this_cpu(sched_lock_waited)++;
 
-	spin_lock(&sd->schedule_lock);
+	/*
+	 * The lock and the mark of its holder change together as seen from
+	 * this CPU's interrupts: the scheduling softirq reads the mark to know
+	 * whether the lock is its own.
+	 */
+
+	flags = spin_lock_irqsave(&sd->schedule_lock);
 	this_cpu(sched_lock_held) = &sd->schedule_lock;
+	local_irq_restore(flags);
 
 	return true;
 }
@@ -72,11 +81,15 @@ bool sched_lock(struct schedule_data *sd)
  */
 void sched_unlock(struct schedule_data *sd, bool taken)
 {
+	unsigned long flags;
+
 	if (!taken || (this_cpu(sched_lock_held) != &sd->schedule_lock))
 		return;
 
+	flags = local_irq_save();
 	this_cpu(sched_lock_held) = NULL;
 	spin_unlock(&sd->schedule_lock);
+	local_irq_restore(flags);
 }
 
 /**
