@@ -3,8 +3,7 @@
 # virt64 (QEMU armv8) platform glue. The ITB and uEnv.txt are copied onto
 # the boot partition (p1) by __deploy_arm_common (bsp_arm_common.inc).
 # __do_platform_boot_chain assembles the optional ATF/OP-TEE firmware
-# (flash0.img) — generic and product-agnostic. Any capsule/OSTree
-# specifics live in a downstream layer, not here.
+# (flash0.img) — generic and product-agnostic.
 
 require bsp_arm_common.inc
 
@@ -119,10 +118,8 @@ def __do_platform_boot_chain(d):
     # MCUboot always is. U-Boot depends on how it was configured: this tree
     # always builds ${IB_PLATFORM}_defconfig (see uboot_2022.04.bb), linked at
     # a RAM address, which can be read off the card like any other first
-    # stage. Infrabase takes upstream qemu_arm64_defconfig on the bare "uboot"
-    # chain instead — position-independent with a text base of 0, an image
-    # meant to execute in place from flash — and the check below keeps such a
-    # U-Boot on -kernel, should a tree build one.
+    # stage. The check below keeps a position-independent U-Boot, with a text
+    # base of 0, on -kernel, should a tree build one.
     #
     # The ELF entry point is what says which: zero means "wherever flash is".
     uboot_entry = 0
@@ -208,8 +205,8 @@ def __do_platform_boot_chain(d):
                           "-kernel u-boot/u-boot")
         return
 
-    # ATF chains: build flash0.img. "atf+uboot" and "full" differ only by
-    # whether the FIP carries the OP-TEE (BL32) entries.
+    # ATF chains: build flash0.img. "atf+uboot" and "atf+optee+uboot"
+    # differ only by whether the FIP carries the OP-TEE (BL32) entries.
     atf_path    = d.getVar('IB_ATF_PATH')
     atf_release = f"{atf_path}/build/qemu/release"
     subprocess.run(['cp', f"{atf_release}/bl31.bin",

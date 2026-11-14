@@ -22,14 +22,24 @@ do_configure[noexec] = "1"
 do_build[depends] = "${IB_ROOTFS_METHOD}:do_build"
 do_build[depends] += "linux:do_build"
 
-# do_deploy is a pure DEPLOY step: it extracts the already-built rootfs.cpio
-# onto p2 (usr apps already inside when IB_RAMFS_SOURCE = "rootfs", copied
-# on top by usr-linux:do_deploy otherwise). It must
-# NOT pull ${IB_ROOTFS_METHOD}:do_build — that would rebuild buildroot on
-# every `deploy.sh`. The workflow is edit -> build.sh (produces rootfs.cpio)
-# -> deploy.sh; a deploy with no prior build fails clearly in
-# __do_rootfs_mount (missing rootfs.cpio) rather than silently rebuilding.
-do_deploy[depends] += "filesystem:do_fs_check"
+# do_deploy extracts rootfs.cpio, copies it onto p2 and repacks it. The usr
+# apps are either already in rootfs.cpio (IB_RAMFS_SOURCE = "rootfs") or
+# copied on top afterwards by usr-linux:do_deploy.
+#
+# It DOES depend on ${IB_ROOTFS_METHOD}:do_build, and that dependency is
+# load-bearing rather than a leftover: nothing else orders this task after
+# the rootfs generator, and usr-linux:do_deploy pulls it into the *build*
+# graph too (usr-linux:do_deploy[depends] = rootfs-linux:do_deploy). Without
+# it, bitbake is free to run this task while buildroot is still writing
+# board/<plat>/rootfs.cpio, and `cpio -id` then reads a truncated archive and
+# aborts with exit status 2 — an intermittent build failure whose message
+# says nothing about a race. It also covers the fresh-checkout case, where
+# there is no cached cpio at all.
+#
+# The cost is one `make` in an already-built buildroot on a standalone
+# deploy (do_build is nostamp), which is a no-op in practice — cheap next to
+# a racy deploy. Do not "simplify" this dependency away.
+do_deploy[depends] += "filesystem:do_fs_check ${IB_ROOTFS_METHOD}:do_build"
 
 do_build[nostamp] = "1"
 do_build () {

@@ -10,6 +10,27 @@
 #     from IB_TARGET_ITS: <its-without-_avz>_so3_guest.itb.
 #   * Single-ITB bootm (any other ITS): the standalone SO3 / Linux image.
 
+# ITBs the previous deploy may have left on p1. The two boot shapes use
+# different names, so switching between them (IB_HYPERVISOR none <-> avz)
+# otherwise accumulates both sets: on a Linux BSP each ITB carries a kernel
+# plus an initramfs and runs to tens of megabytes, so the leftovers alone
+# fill the FAT boot partition and the copy below fails with a bare
+# "cp: returned exit status 1" — or, worse, succeeds against a partially
+# written file. Cleaning first also means p1 always describes exactly one
+# boot shape, which is what someone inspecting the card expects to see.
+
+def __clean_stale_itbs(p1, plat, keep):
+    import os
+
+    for name in (f"{plat}.itb", f"{plat}_avz.itb", f"{plat}_guest.itb"):
+        if name in keep:
+            continue
+        path = os.path.join(p1, name)
+        if os.path.isfile(path):
+            bb.note(f"removing stale {name} from the boot partition")
+            os.remove(path)
+
+
 def __deploy_arm_common(d):
     import os
     import subprocess
@@ -32,6 +53,8 @@ def __deploy_arm_common(d):
             if not os.path.isfile(f):
                 bb.fatal(f + " is missing ...")
 
+        __clean_stale_itbs(p1, plat, keep=(f"{plat}_avz.itb", f"{plat}_guest.itb"))
+
         subprocess.run(['cp', avz_uenv, p1 + "/uEnv.txt"], check=True)
         subprocess.run(['cp', avz_itb, f"{p1}/{plat}_avz.itb"], check=True)
         subprocess.run(['cp', guest_itb, f"{p1}/{plat}_guest.itb"], check=True)
@@ -47,6 +70,8 @@ def __deploy_arm_common(d):
 
     if not os.path.isfile(itb_path):
         bb.fatal(itb_path + " is missing ...")
+
+    __clean_stale_itbs(p1, plat, keep=(f"{plat}.itb",))
 
     # The target ITB loaded by U-boot has the name of the target platform
     subprocess.run(['cp', itb_path, p1 + "/" + plat + ".itb"])

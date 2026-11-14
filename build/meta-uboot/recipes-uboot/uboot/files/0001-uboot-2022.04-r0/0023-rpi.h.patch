@@ -22,7 +22,7 @@
  #define ENV_MEM_LAYOUT_SETTINGS \
  	"fdt_high=" FDT_HIGH "\0" \
  	"initrd_high=" INITRD_HIGH "\0" \
-@@ -168,12 +173,30 @@
+@@ -168,12 +173,35 @@
  
  #include <config_distro_bootcmd.h>
  
@@ -36,9 +36,14 @@
 + * errno 22. It only appeared to work on arm64 because the byte after the file
 + * happened to be NUL. fatload sets ${filesize}, so use it, and state -t rather
 + * than lean on the "defaulting to text format" warning.
++ *
++ * uEnv.txt is only on p1 once an OS has been deployed; with U-Boot alone
++ * there is nothing to import or run, so stay at the prompt.
 + */
 +#define CONFIG_BOOTCOMMAND \
-+            "fatload mmc 0 0x02000000 uEnv.txt; env import -t 0x02000000 ${filesize}; run start\0\0" \
++            "if fatload mmc 0 0x02000000 uEnv.txt; then " \
++                    "env import -t 0x02000000 ${filesize}; run start; " \
++            "else echo No uEnv.txt on the boot partition, no OS to boot; fi\0\0" \
 +            "bootdelay=0\0"
 +
 +

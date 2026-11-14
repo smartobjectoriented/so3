@@ -9,14 +9,22 @@
  #define BOOT_TARGET_DEVICES(func) \
  	BOOT_TARGET_USB(func) \
  	BOOT_TARGET_SCSI(func) \
-@@ -62,6 +64,10 @@
+@@ -62,6 +64,18 @@
  	"kernel_addr_r=0x40400000\0" \
  	"ramdisk_addr_r=0x44000000\0" \
  	BOOTENV
 +#endif /* 0 */
 +
++/*
++ * uEnv.txt is only on p1 once an OS has been deployed; with U-Boot alone
++ * there is nothing to import or run, so stay at the prompt instead of
++ * importing whatever lies at the load address and failing on "run start".
++ * The import takes an explicit format and length, as on rpi (see rpi.h).
++ */
 +#define CONFIG_BOOTCOMMAND \
-+        "load virtio 0 0x40000000 uEnv.txt; env import 0x40000000; run start\0" 
++        "if load virtio 0 0x40000000 uEnv.txt; then " \
++                "env import -t 0x40000000 ${filesize}; run start; " \
++        "else echo No uEnv.txt on the boot partition, no OS to boot; fi\0"
  
  #define CONFIG_SYS_CBSIZE 512
  

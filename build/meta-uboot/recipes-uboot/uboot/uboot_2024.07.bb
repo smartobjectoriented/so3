@@ -29,12 +29,16 @@ IB_TARGET = "${IB_UBOOT_PATH}"
 # Future enhancement with ATF
 do_configure[depends] += "atf:do_build"
 
-# Verdin's do_configure shells out to OP-TEE's gen_tee_bin.py and
-# consumes tee.elf to produce ./tee.bin embedded in flash.bin. Optee
-# must be built (and its source attached at ${IB_OPTEE_PATH}) first.
-# Gated on platform via anonymous python because the optee path is
-# wrapped in `if [ "${IB_PLATFORM}" = "verdin-imx8mp" ]` below — virt64
-# and other targets don't touch optee here.
+# On the secure-world chain, verdin's do_configure shells out to OP-TEE's
+# gen_tee_bin.py and consumes tee.elf to produce ./tee.bin, which the SPL
+# then embeds in flash.bin. OP-TEE must be built (and its source attached at
+# ${IB_OPTEE_PATH}) first.
+#
+# Gated on BOTH platform and chain: the optee path below is wrapped in
+# `if [ "${IB_PLATFORM}" = "verdin-imx8mp" ]` (virt64 assembles its FIP
+# elsewhere, in bsp_virt64.inc), and on "atf+uboot" the iMX8MP boots
+# SPL -> BL31 -> U-Boot with no secure world at all, so pulling OP-TEE in
+# would build a binary nothing consumes.
 python () {
     if (d.getVar('IB_PLATFORM') == 'verdin-imx8mp'
             and d.getVar('IB_CHAIN_HAS_OPTEE')):
@@ -108,11 +112,11 @@ do_build () {
 		fi
 
 		HASH_FILE="flash.bin.inputs.sha256"
-		CURRENT_HASH="$(sha256sum "$BL31" "$TEE_ELF" 2>/dev/null | sha256sum | cut -d' ' -f1)"
+		CURRENT_HASH="$(printf '%s\n%s' "${IB_BOOT_CHAIN}" "$HASH_INPUTS" | sha256sum | cut -d' ' -f1)"
 		if [ -f flash.bin ] && [ -f "$HASH_FILE" ] && [ "$(cat $HASH_FILE)" = "$CURRENT_HASH" ]; then
 			echo "U-Boot flash.bin is up to date, skipping rebuild"
 		else
-			make CROSS_COMPILE=${IB_TOOLCHAIN}- TEE=./tee.bin -j${CORES}
+			make CROSS_COMPILE=${IB_TOOLCHAIN}- $TEE_ARG -j${CORES}
 			echo "$CURRENT_HASH" > "$HASH_FILE"
 		fi
 	else
