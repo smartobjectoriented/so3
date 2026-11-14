@@ -14,6 +14,6 @@
 #
 # Usage: ibversion.sh
 
-IB_VERSION="1.0.0"
+IB_VERSION="1.1.0"
 
 printf '%s\n' "$IB_VERSION"
