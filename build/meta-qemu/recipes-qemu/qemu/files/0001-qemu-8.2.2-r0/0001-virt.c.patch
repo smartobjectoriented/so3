@@ -8,7 +8,16 @@
  #include "sysemu/device_tree.h"
  #include "sysemu/numa.h"
  #include "sysemu/runstate.h"
-@@ -82,6 +83,10 @@
+@@ -68,6 +69,8 @@
+ #include "kvm_arm.h"
+ #include "hw/firmware/smbios.h"
+ #include "qapi/visitor.h"
++#include "sysemu/block-backend.h"
++#include "sysemu/blockdev.h"
+ #include "qapi/qapi-visit-common.h"
+ #include "qapi/qmp/qlist.h"
+ #include "standard-headers/linux/input.h"
+@@ -82,6 +85,10 @@
  #include "hw/char/pl011.h"
  #include "qemu/guest-random.h"
  
@@ -19,7 +28,7 @@
  #define DEFINE_VIRT_MACHINE_LATEST(major, minor, latest) \
      static void virt_##major##_##minor##_class_init(ObjectClass *oc, \
                                                      void *data) \
-@@ -145,6 +150,20 @@
+@@ -145,6 +152,20 @@
      [VIRT_GIC_ITS] =            { 0x08080000, 0x00020000 },
      /* This redistributor space allows up to 2*64kB*123 CPUs */
      [VIRT_GIC_REDIST] =         { 0x080A0000, 0x00F60000 },
@@ -40,7 +49,7 @@
      [VIRT_UART] =               { 0x09000000, 0x00001000 },
      [VIRT_RTC] =                { 0x09010000, 0x00001000 },
      [VIRT_FW_CFG] =             { 0x09020000, 0x00000018 },
-@@ -199,6 +218,12 @@
+@@ -199,6 +220,12 @@
      [VIRT_SECURE_UART] = 8,
      [VIRT_ACPI_GED] = 9,
      [VIRT_MMIO] = 16, /* ...to 16 + NUM_VIRTIO_TRANSPORTS - 1 */
@@ -53,7 +62,88 @@
      [VIRT_GIC_V2M] = 48, /* ...to 48 + NUM_GICV2M_SPIS - 1 */
      [VIRT_SMMU] = 74,    /* ...to 74 + NUM_SMMU_IRQS - 1 */
      [VIRT_PLATFORM_BUS] = 112, /* ...to 112 + PLATFORM_BUS_NUM_IRQS -1 */
-@@ -1487,6 +1512,12 @@
+@@ -1230,6 +1257,80 @@
+     }
+ }
+ 
++/*
++ * Boot ROM emulation.
++ *
++ * A real SoC starts by running a mask ROM that reads the first stage from
++ * whatever medium the board boots from — a raw offset of the eMMC or SD card,
++ * before any partition — and jumps into it. "virt" has no such ROM: QEMU
++ * either maps firmware into flash at address 0 or -kernel-loads an image into
++ * RAM, and in both cases the first stage comes from a host file rather than
++ * from the storage the guest can see.
++ *
++ * This reproduces the ROM's effect rather than the ROM itself, which is what
++ * QEMU already does for the Allwinner SoCs whose ROM boots from SD — see
++ * allwinner_h3_bootrom_setup() in hw/arm/allwinner-h3.c, which this follows.
++ * The bytes come off the drive, so a card carrying its own first stage boots
++ * here exactly as it does on hardware.
++ *
++ * Returns true when a first stage was loaded, in which case the caller starts
++ * the CPU at bootrom_load.
++ */
++static bool virt_bootrom_setup(VirtMachineState *vms)
++{
++    g_autofree uint8_t *buffer = NULL;
++    BlockBackend *blk;
++    int64_t len;
++
++    if (!vms->bootrom_drive) {
++        return false;
++    }
++
++    if (!vms->bootrom_load) {
++        error_report("bootrom-drive needs bootrom-load: the ROM has to be "
++                     "told where to put the first stage");
++        exit(1);
++    }
++
++    blk = blk_by_name(vms->bootrom_drive);
++    if (!blk) {
++        error_report("bootrom-drive=%s: no such drive", vms->bootrom_drive);
++        exit(1);
++    }
++
++    len = blk_getlength(blk);
++    if (len < 0 || (uint64_t)len < vms->bootrom_offset + vms->bootrom_size) {
++        error_report("bootrom-drive=%s: too small to hold %" PRIu64
++                     " bytes at offset %" PRIu64,
++                     vms->bootrom_drive, vms->bootrom_size,
++                     vms->bootrom_offset);
++        exit(1);
++    }
++
++    /*
++     * The drive is declared with if=none and claimed by a -device created
++     * after machine init, so nothing holds permissions on it yet. Take a
++     * read for the length of this function and give it straight back, so
++     * that device can still claim the drive as it expects to.
++     */
++    if (blk_set_perm(blk, BLK_PERM_CONSISTENT_READ, BLK_PERM_ALL, NULL) < 0) {
++        error_report("bootrom-drive=%s: cannot be read", vms->bootrom_drive);
++        exit(1);
++    }
++
++    buffer = g_malloc0(vms->bootrom_size);
++    if (blk_pread(blk, vms->bootrom_offset, vms->bootrom_size, buffer, 0) < 0) {
++        error_report("bootrom-drive=%s: read failed", vms->bootrom_drive);
++        exit(1);
++    }
++
++    blk_set_perm(blk, 0, BLK_PERM_ALL, NULL);
++
++    rom_add_blob("virt.bootrom", buffer, vms->bootrom_size, vms->bootrom_size,
++                 vms->bootrom_load, NULL, NULL, NULL, NULL, false);
++    return true;
++}
++
+ static bool virt_firmware_init(VirtMachineState *vms,
+                                MemoryRegion *sysmem,
+                                MemoryRegion *secure_sysmem)
+@@ -1487,6 +1588,12 @@
      vms->bus = pci->bus;
      if (vms->bus) {
          for (i = 0; i < nb_nics; i++) {
@@ -66,7 +156,7 @@
              pci_nic_init_nofail(&nd_table[i], pci->bus, mc->default_nic, NULL);
          }
      }
-@@ -2022,6 +2053,109 @@
+@@ -2022,6 +2129,109 @@
      }
  }
  
@@ -176,7 +266,15 @@
  static void machvirt_init(MachineState *machine)
  {
      VirtMachineState *vms = VIRT_MACHINE(machine);
-@@ -2287,6 +2421,25 @@
+@@ -2034,6 +2244,7 @@
+     MemoryRegion *secure_tag_sysmem = NULL;
+     int n, virt_max_cpus;
+     bool firmware_loaded;
++    bool bootrom_loaded;
+     bool aarch64 = true;
+     bool has_ged = !vmc->no_ged;
+     unsigned int smp_cpus = machine->smp.cpus;
+@@ -2287,6 +2498,25 @@
  
      create_rtc(vms);
  
@@ -202,7 +300,7 @@
      create_pcie(vms);
  
      if (has_ged && aarch64 && firmware_loaded && virt_is_acpi_enabled(vms)) {
-@@ -2326,6 +2479,51 @@
+@@ -2326,6 +2556,53 @@
                                 vms->fw_cfg, OBJECT(vms));
      }
  
@@ -251,6 +349,152 @@
 +
 +    }
 +
++    bootrom_loaded = virt_bootrom_setup(vms);
++
      vms->bootinfo.ram_size = machine->ram_size;
      vms->bootinfo.board_id = -1;
      vms->bootinfo.loader_start = vms->memmap[VIRT_MEM].base;
+@@ -2335,10 +2612,91 @@
+     vms->bootinfo.psci_conduit = vms->psci_conduit;
+     arm_load_kernel(ARM_CPU(first_cpu), machine, &vms->bootinfo);
+ 
++    /*
++     * Start the CPU in what the ROM loaded.
++     *
++     * do_cpu_reset() sets the PC from bootinfo.entry, but only ever sees
++     * bootinfo at all on the direct -kernel path: arm_setup_direct_kernel_boot()
++     * is what assigns env.boot_info, and arm_setup_firmware_boot() — the path
++     * taken when there is no -kernel — does not. Left alone the CPU comes out
++     * of reset at address 0, which is flash, which in this configuration is
++     * empty. So the wiring is done here rather than in hw/arm/boot.c, where it
++     * would change every board that boots firmware.
++     *
++     * Every CPU gets it, and only the primary acts on it: the secondaries are
++     * start-powered-off whenever PSCI is on, which it is on virt, and they
++     * come up through PSCI CPU_ON at whatever address the guest asks for.
++     */
++    if (bootrom_loaded) {
++        CPUState *cs;
++
++        vms->bootinfo.entry = vms->bootrom_load;
++        vms->bootinfo.is_linux = false;
++
++        for (cs = first_cpu; cs; cs = CPU_NEXT(cs)) {
++            ARM_CPU(cs)->env.boot_info = &vms->bootinfo;
++        }
++    }
++
+     vms->machine_done.notify = virt_machine_done;
+     qemu_add_machine_init_done_notifier(&vms->machine_done);
+ }
+ 
++static char *virt_get_bootrom_drive(Object *obj, Error **errp)
++{
++    return g_strdup(VIRT_MACHINE(obj)->bootrom_drive);
++}
++
++static void virt_set_bootrom_drive(Object *obj, const char *value, Error **errp)
++{
++    VirtMachineState *vms = VIRT_MACHINE(obj);
++
++    g_free(vms->bootrom_drive);
++    vms->bootrom_drive = g_strdup(value);
++}
++
++static void virt_get_bootrom_offset(Object *obj, Visitor *v, const char *name,
++                                    void *opaque, Error **errp)
++{
++    uint64_t value = VIRT_MACHINE(obj)->bootrom_offset;
++
++    visit_type_size(v, name, &value, errp);
++}
++
++static void virt_set_bootrom_offset(Object *obj, Visitor *v, const char *name,
++                                    void *opaque, Error **errp)
++{
++    visit_type_size(v, name, &VIRT_MACHINE(obj)->bootrom_offset, errp);
++}
++
++static void virt_get_bootrom_load(Object *obj, Visitor *v, const char *name,
++                                  void *opaque, Error **errp)
++{
++    uint64_t value = VIRT_MACHINE(obj)->bootrom_load;
++
++    visit_type_size(v, name, &value, errp);
++}
++
++static void virt_set_bootrom_load(Object *obj, Visitor *v, const char *name,
++                                  void *opaque, Error **errp)
++{
++    visit_type_size(v, name, &VIRT_MACHINE(obj)->bootrom_load, errp);
++}
++
++static void virt_get_bootrom_size(Object *obj, Visitor *v, const char *name,
++                                  void *opaque, Error **errp)
++{
++    uint64_t value = VIRT_MACHINE(obj)->bootrom_size;
++
++    visit_type_size(v, name, &value, errp);
++}
++
++static void virt_set_bootrom_size(Object *obj, Visitor *v, const char *name,
++                                  void *opaque, Error **errp)
++{
++    visit_type_size(v, name, &VIRT_MACHINE(obj)->bootrom_size, errp);
++}
++
+ static bool virt_get_secure(Object *obj, Error **errp)
+ {
+     VirtMachineState *vms = VIRT_MACHINE(obj);
+@@ -2985,6 +3343,32 @@
+         NULL, NULL);
+     object_class_property_set_description(oc, "acpi",
+         "Enable ACPI");
++    object_class_property_add_str(oc, "bootrom-drive", virt_get_bootrom_drive,
++                                  virt_set_bootrom_drive);
++    object_class_property_set_description(oc, "bootrom-drive",
++                                          "Read the first stage from this "
++                                          "drive instead of from flash or "
++                                          "-kernel (id of a -drive)");
++    object_class_property_add(oc, "bootrom-offset", "size",
++                              virt_get_bootrom_offset,
++                              virt_set_bootrom_offset, NULL, NULL);
++    object_class_property_set_description(oc, "bootrom-offset",
++                                          "Byte offset of the first stage on "
++                                          "that drive (default 8K)");
++    object_class_property_add(oc, "bootrom-load", "size",
++                              virt_get_bootrom_load,
++                              virt_set_bootrom_load, NULL, NULL);
++    object_class_property_set_description(oc, "bootrom-load",
++                                          "Address the first stage is copied "
++                                          "to and entered at");
++    object_class_property_add(oc, "bootrom-size", "size",
++                              virt_get_bootrom_size,
++                              virt_set_bootrom_size, NULL, NULL);
++    object_class_property_set_description(oc, "bootrom-size",
++                                          "How much to copy; a window that "
++                                          "has to cover the first stage, not "
++                                          "its exact length (default 1M)");
++
+     object_class_property_add_bool(oc, "secure", virt_get_secure,
+                                    virt_set_secure);
+     object_class_property_set_description(oc, "secure",
+@@ -3115,6 +3499,18 @@
+     /* EL2 is also disabled by default, for similar reasons */
+     vms->virt = false;
+ 
++    /*
++     * No boot ROM unless a drive is named: virt keeps booting from flash or
++     * -kernel. 8K is where the Allwinner ROM looks for its first stage and
++     * leaves a partition table room to live above it; the window is a
++     * megabyte because that is the gap a DOS label conventionally leaves
++     * before the first partition.
++     */
++    vms->bootrom_drive = NULL;
++    vms->bootrom_offset = 8 * KiB;
++    vms->bootrom_load = 0;
++    vms->bootrom_size = 1 * MiB;
++
+     /* High memory is enabled by default */
+     vms->highmem = true;
+     vms->highmem_compact = !vmc->no_highmem_compact;

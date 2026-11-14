@@ -14,3 +14,21 @@
      VIRT_SMMU,
      VIRT_UART,
      VIRT_MMIO,
+@@ -148,6 +155,17 @@
+     bool tcg_its;
+     bool virt;
+     bool ras;
++
++    /*
++     * Boot ROM emulation. When bootrom_drive names a drive, the machine
++     * copies bootrom_size bytes from bootrom_offset of that drive to
++     * bootrom_load and starts the CPU there — what a real SoC ROM does with
++     * the medium it boots from. See virt_bootrom_setup().
++     */
++    char *bootrom_drive;
++    uint64_t bootrom_offset;
++    uint64_t bootrom_load;
++    uint64_t bootrom_size;
+     bool mte;
+     bool dtb_randomness;
+     OnOffAuto acpi;
