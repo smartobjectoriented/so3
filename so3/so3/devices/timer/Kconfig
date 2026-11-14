@@ -10,3 +10,7 @@ config ARM_TIMER
 config SOO_TIMER
 	bool "SOO Virtualized timer device"
 	depends on SOO && !AVZ
+
+config I8254
+	bool "x86 PC timers: 8254 PIT tick and TSC clocksource"
+	depends on ARCH_X86_64

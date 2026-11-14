@@ -26,7 +26,7 @@ typedef struct {
 	volatile uint32_t lock;
 } spinlock_t;
 
-#elif CONFIG_ARCH_ARM64
+#elif defined(CONFIG_ARCH_ARM64) || defined(CONFIG_ARCH_X86_64)
 
 /*
  * On Aarch64, the field has to be 64-bit aligned apparently.

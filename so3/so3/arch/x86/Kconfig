@@ -1,0 +1,16 @@
+
+if ARCH_X86_64
+
+menu "Platform"
+
+	choice
+		prompt "Target"
+
+		config PC64
+			bool "Generic QEMU x86_64 PC (i440FX, 8259 PIC, 8254 PIT, COM1)"
+
+	endchoice
+
+endmenu
+
+endif

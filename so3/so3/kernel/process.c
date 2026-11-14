@@ -233,9 +233,9 @@ pcb_t *new_process(void)
 		kernel_panic();
 	}
 
-	/* With AArch32, we have one page table used by TTBR0/1 without
-         * distinction. */
-#ifdef CONFIG_ARCH_ARM32
+	/* With AArch32 and x86, we have one page table used by TTBR0/1
+         * (CR3) without distinction. */
+#if defined(CONFIG_ARCH_ARM32) || defined(CONFIG_ARCH_X86_64)
 	/* Preserve the mapping of kernel regions according to the arch
          * configuration. */
 	pgtable_copy_kernel_area(pcb->pgtable);

@@ -172,6 +172,10 @@ SYSCALL_DECLARE(execve, const char *filename, char **argv, char **envp);
 SYSCALL_DECLARE(fork, void);
 SYSCALL_DECLARE(clone, unsigned long flags, unsigned long newsp, int *parent_tid, unsigned long tls, int *child_tid);
 SYSCALL_DECLARE(exit_group, int exit_status);
+
+#ifdef CONFIG_ARCH_X86_64
+SYSCALL_DECLARE(arch_prctl, int code, unsigned long addr);
+#endif
 SYSCALL_DECLARE(wait4, int pid, uint32_t *wstatus, uint32_t options, void *rusage);
 
 pcb_t *find_proc_by_pid(uint32_t pid);

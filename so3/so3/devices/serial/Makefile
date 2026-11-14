@@ -7,3 +7,4 @@ obj-$(CONFIG_IMX_UART) += imx_uart.o
 obj-$(CONFIG_SOO_SERIAL) += soo_serial.o
 
 
+obj-$(CONFIG_UART_PIO) += uart_pio.o

@@ -1,0 +1,86 @@
+/*
+ * Copyright (C) 2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+/dts-v1/;
+
+/*
+ * QEMU x86_64 PC. The memory size and the root filesystem location are
+ * filled in at boot from the multiboot2 information.
+ */
+
+/ {
+	model = "SO3 x86_64 PC";
+	compatible = "x86,pc64";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		device_type = "cpu";
+		compatible = "x86,pc64";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x0 0x0 0x10000000>;
+	};
+
+	chosen {
+	};
+
+	mem {
+		compatible = "mem";
+		status = "ok";
+	};
+
+	pic: interrupt-controller@20 {
+		compatible = "intel,8259";
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		reg = <0x0 0x20 0x0 0x2 0x0 0xa0 0x0 0x2>;
+		status = "ok";
+	};
+
+	/* COM1, in the I/O port space */
+
+	serial@3f8 {
+		compatible = "x86,uart-pio";
+		reg = <0x0 0x3f8 0x0 0x8>;
+		interrupt-parent = <&pic>;
+		interrupts = <4 0>;
+		status = "ok";
+	};
+
+	/* Periodic tick from the 8254 PIT channel 0 */
+
+	periodic-timer@40 {
+		compatible = "intel,8254";
+		reg = <0x0 0x40 0x0 0x4>;
+		interrupt-parent = <&pic>;
+		interrupts = <0 0>;
+		status = "ok";
+	};
+
+	/* Free-running TSC as clocksource */
+
+	clocksource-timer@0 {
+		compatible = "x86,tsc";
+		reg = <0 0 0 0>;
+		status = "ok";
+	};
+};

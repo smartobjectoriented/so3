@@ -5,3 +5,4 @@ obj-$(CONFIG_ARM_TIMER) += arm_timer.o
 obj-$(CONFIG_SOO_TIMER) += soo_timer.o
 
 
+obj-$(CONFIG_I8254) += i8254.o

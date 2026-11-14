@@ -4,6 +4,7 @@ config KERNEL_VADDR
 	default 0xff000000 if ARM32
 	default 0x100000000000 if AVZ
 	default 0xffff700000000000 if ARM64
+	default 0xffffffff80000000 if ARCH_X86_64
 	
 config HEAP_SIZE_MB
 	int "Size of the heap (MB)"

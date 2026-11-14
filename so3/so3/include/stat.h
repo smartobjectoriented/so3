@@ -20,6 +20,7 @@
 #ifndef STAT_H
 #define STAT_H
 
+#include <generated/autoconf.h>
 #include <types.h>
 
 /* File type bits of st_mode (subset of the POSIX/Linux values). */
@@ -31,6 +32,33 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 
 /* Stat structure copied from Linux include/uapi/asm-generic/stat.h */
+#ifdef CONFIG_ARCH_X86_64
+
+/* Layout of the x86_64 kernel stat structure, as expected by musl */
+
+struct stat {
+	unsigned long st_dev;
+	unsigned long st_ino;
+	unsigned long st_nlink;
+	unsigned int st_mode;
+	unsigned int st_uid;
+	unsigned int st_gid;
+	unsigned int __pad0;
+	unsigned long st_rdev;
+	long st_size;
+	long st_blksize;
+	long st_blocks;
+	long st_atime;
+	unsigned long st_atime_nsec;
+	long st_mtime;
+	unsigned long st_mtime_nsec;
+	long st_ctime;
+	unsigned long st_ctime_nsec;
+	long __unused[3];
+};
+
+#else
+
 struct stat {
 	unsigned long st_dev; /* Device. */
 	unsigned long st_ino; /* File serial number. */
@@ -53,6 +81,8 @@ struct stat {
 	unsigned int __unused4;
 	unsigned int __unused5;
 };
+
+#endif /* !CONFIG_ARCH_X86_64 */
 
 /* This is for ARM32 compatibility as 64bits version of stat will be called.
    Adapted from arch/arm64/include/asm/stat.h on Linux */

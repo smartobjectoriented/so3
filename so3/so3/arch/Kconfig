@@ -7,24 +7,31 @@ choice
 		
 	config ARCH_ARM64
 		bool "ARM 64-bit"
+
+	config ARCH_X86_64
+		bool "x86 64-bit"
 endchoice
 
 config ARCH
-	string "ARM Architecture"
+	string "CPU Architecture"
 	default "arm32" if ARCH_ARM32
 	default "arm64" if ARCH_ARM64
+	default "x86" if ARCH_X86_64
 
 config CROSS_COMPILE
 	string "Cross-compiler"
 	default "arm-none-linux-gnueabihf-" if ARCH_ARM32
 	default "aarch64-none-linux-gnu-" if ARCH_ARM64
+	default "x86_64-linux-gnu-" if ARCH_X86_64
 
 config ARM_TRUSTZONE
 	bool "Using ARM TrustZone with OPTEE-OS"
+	depends on !ARCH_X86_64
 
 
 source "arch/arm32/Kconfig"
 source "arch/arm64/Kconfig"
+source "arch/x86/Kconfig"
 
 
 	
