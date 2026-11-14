@@ -113,6 +113,10 @@ struct tcb {
 	struct list_head joinQueue;
 
 	cpu_regs_t cpu_regs;
+
+#ifdef CONFIG_ARCH_ARM64
+	struct fpsimd_state fpsimd;
+#endif
 };
 typedef struct tcb tcb_t;
 

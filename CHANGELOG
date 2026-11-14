@@ -26,8 +26,12 @@ POSIX networking calls, and the build system aligned on Infrabase.
 		when AVZ took it. A Raspberry Pi 5 (BCM2712) platform skeleton is
 		added; it builds but has not been validated on a board yet.
 
-	•	Kernel: the ARM timer reload is computed from the counter frequency (the
-		Raspberry Pi 4 tick was 2.9 % too long); a futex is freed by its waker,
+	•	Kernel: on arm64 the FP/SIMD registers belong to the thread and to the
+		domain, saved and loaded at each switch, and the kernel no longer uses
+		them (they were shared by all, so that a preempted thread could get
+		another's values back, and one formatting a floating-point number be
+		killed in a loop without end); the ARM timer reload is computed from the
+		counter frequency (the Raspberry Pi 4 tick was 2.9 % too long); a futex is freed by its waker,
 		not by the waiters it woke; the VFS lock is no longer held across an
 		ioctl handler; malloc aligns on 8 bytes; a misaligned spinlock names its
 		caller; the device tree accepts status = "okay". Networking gained poll,

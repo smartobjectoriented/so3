@@ -1093,6 +1093,20 @@ enum trap_return {
 #define GIC_PRIO_IRQOFF			(GIC_PRIO_IRQON & ~0x80)
 #define GIC_PRIO_PSR_I_SET		(1 << 4)
 
+/*
+ * The FP/SIMD state of a thread or of a domain. The kernel does not use these
+ * registers: they stay those of the context which entered it until a switch
+ * saves them here and loads those of the next one.
+ */
+struct fpsimd_state {
+	__uint128_t v[32];
+	u32 fpsr;
+	u32 fpcr;
+};
+
+void fpsimd_save(struct fpsimd_state *state);
+void fpsimd_restore(struct fpsimd_state *state);
+
 /* The structure is packed since we may refer as a linear space
  * addressed by index
  */
@@ -1161,6 +1175,8 @@ typedef struct vcpu {
 	u64 tcr_el1;
 	u64 mair_el1;
 
+	/* FP/SIMD registers of the guest, its kernel and its user space alike */
+	struct fpsimd_state fpsimd;
 } vcpu_t;
 
 void resume_to_guest(void);

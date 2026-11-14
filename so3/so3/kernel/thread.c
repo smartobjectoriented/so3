@@ -419,6 +419,11 @@ tcb_t *thread_create(clone_args_t *args)
 		kernel_panic();
 	}
 
+#ifdef CONFIG_ARCH_ARM64
+	/* A new thread starts with the FP/SIMD state of its creator, as fork() requires. */
+	fpsimd_save(&tcb->fpsimd);
+#endif
+
 	tcb->tid = tid_next++;
 
 	/* We append the tid to the thread name */

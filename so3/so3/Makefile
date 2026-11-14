@@ -354,6 +354,11 @@ endif
 
 ifeq ($(CONFIG_ARCH_ARM64),y)
 KBUILD_CFLAGS	+= -mlittle-endian -DBITS_PER_LONG=64 -fno-allow-store-data-races
+
+# The kernel leaves the FP/SIMD registers to the user space: they hold the
+# state of the thread which entered the kernel, saved at a context switch only.
+
+KBUILD_CFLAGS	+= -mgeneral-regs-only
 KBUILD_AFLAGS   += -mlittle-endian
 endif
 
