@@ -21,9 +21,10 @@ POSIX networking calls, and the build system aligned on Infrabase.
 		a paused one stays off the scheduler when an event arrives; a scheduler's
 		lock has one holder which the other CPUs wait for, taken and released
 		with its holder mark under masked interrupts (an interrupt in between
-		froze the CPU at boot, about one boot in 4200). A Raspberry
-		Pi 5 (BCM2712) platform skeleton is added; it builds but has not been
-		validated on a board yet.
+		froze the CPU at boot, about one boot in 4200); the i.MX UART's
+		interrupt is left to the agency, whose console lost its input on Verdin
+		when AVZ took it. A Raspberry Pi 5 (BCM2712) platform skeleton is
+		added; it builds but has not been validated on a board yet.
 
 	•	Kernel: the ARM timer reload is computed from the counter frequency (the
 		Raspberry Pi 4 tick was 2.9 % too long); a futex is freed by its waker,
