@@ -97,6 +97,7 @@ static char imx_uart_get_byte(bool polling)
 	return 0;
 }
 
+#ifndef CONFIG_AVZ
 static irq_return_t imx_uart_int(int irq, void *dummy)
 {
 	u32 val;
@@ -123,6 +124,7 @@ static irq_return_t imx_uart_int(int irq, void *dummy)
 
 	return IRQ_COMPLETED;
 }
+#endif /* !CONFIG_AVZ */
 
 static void imx_uart_enable_irq(void)
 {
@@ -158,7 +160,15 @@ static int imx_uart_init(dev_t *dev, int fdt_offset)
 
 	fdt_interrupt_node(fdt_offset, &imx_uart.irq_def);
 
+#ifndef CONFIG_AVZ
+	/* As in pl011.c: when AVZ runs as hypervisor, the UART's interrupt
+	 * belongs to the agency guest, its console driver attaches its own
+	 * handler. Bound here, gic_handle's irq_desc->action != NULL branch
+	 * would run imx_uart_int and EOI the interrupt before it ever reaches
+	 * the guest, and imx_uart_int's read of URXD would take the byte from
+	 * it as well. AVZ prints on the UART and reads nothing from it. */
 	irq_bind(imx_uart.irq_def.irqnr, imx_uart_int, NULL, NULL);
+#endif
 
 	serial_ops.enable_irq();
 
