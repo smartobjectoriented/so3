@@ -47,4 +47,14 @@ struct scheduler {
 extern struct scheduler sched_flip;
 extern struct scheduler sched_agency;
 
+/*
+ * The lock of a scheduler is taken by the CPU it schedules and by the agency
+ * CPUs that pause, wake or signal a capsule: sched_lock() takes it unless this
+ * CPU holds it already, and says whether it did, for sched_unlock().
+ */
+
+bool sched_lock(struct schedule_data *sd);
+void sched_unlock(struct schedule_data *sd, bool taken);
+unsigned long sched_lock_contended(void);
+
 #endif /* __SCHED_IF_H__ */

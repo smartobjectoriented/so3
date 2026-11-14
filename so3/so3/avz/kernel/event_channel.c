@@ -377,7 +377,6 @@ void send_guest_virq(struct domain *d, int virq)
 {
 	unsigned long flags;
 	int evtchn;
-	bool __already_locked = false;
 
 	flags = spin_lock_irqsave(&d->virq_lock);
 	evtchn = d->virq_to_evtchn[virq];
@@ -385,19 +384,16 @@ void send_guest_virq(struct domain *d, int virq)
 	if (unlikely(evtchn == 0))
 		goto out;
 
-	if (spin_is_locked(&d->sched->sched_data.schedule_lock))
-		__already_locked = true;
-	else
-		spin_lock(&d->sched->sched_data.schedule_lock);
+	/* Under the event lock alone, as evtchn_send(): the unparking that
+	 * setting the event pending ends with takes the scheduler's lock, so
+	 * that lock comes after the event lock, never before it.
+	 */
 
 	spin_lock(&d->event_lock);
 
 	evtchn_set_pending(d, evtchn);
 
 	spin_unlock(&d->event_lock);
-
-	if (!__already_locked)
-		spin_unlock(&d->sched->sched_data.schedule_lock);
 
 out:
 	spin_unlock_irqrestore(&d->virq_lock, flags);

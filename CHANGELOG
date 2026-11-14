@@ -18,7 +18,10 @@ POSIX networking calls, and the build system aligned on Infrabase.
 		packet); the physical EOImode is no longer mirrored into the GICv2 VMCR;
 		128 grant pages per domain; the stage-2 TLBs are flushed when the screen
 		changes capsule; an idle capsule leaves the capsule CPU to the others and
-		a paused one stays off the scheduler when an event arrives. A Raspberry
+		a paused one stays off the scheduler when an event arrives; a scheduler's
+		lock has one holder which the other CPUs wait for, taken and released
+		with its holder mark under masked interrupts (an interrupt in between
+		froze the CPU at boot, about one boot in 4200). A Raspberry
 		Pi 5 (BCM2712) platform skeleton is added; it builds but has not been
 		validated on a board yet.
 
