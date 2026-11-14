@@ -41,7 +41,7 @@ def do_filesystem_platform_init_storage(d):
 
     print("Linking the storage image", IB_DIR)
 
-    os.makedirs(os.path.join(WORKDIR, "filesystem"), exist_ok=True)
+    os.makedirs(os.path.join(IB_DIR, "filesystem"), exist_ok=True)
 
     target_link = os.path.join(IB_DIR, "filesystem/"+store_filename)
     source_link = os.path.join(WORKDIR, store_filename)

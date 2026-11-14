@@ -63,6 +63,7 @@ def __do_fs_init_storage(d):
     # Finally create a symlink to the workdir to be able
     # to mount/umount more conveniently
     target_link = os.path.join(d.getVar('IB_DIR'), "filesystem/work")
+    os.makedirs(os.path.dirname(target_link), exist_ok=True)
 
     # Replace whatever sits at filesystem/work with a fresh symlink.
     #
