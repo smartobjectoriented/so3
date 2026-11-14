@@ -15,7 +15,7 @@ qemu_do_configure () {
 	# Fixed order, so the same targets always give the same configure line.
 
 	tlist=""
-	for t in arm-softmmu aarch64-softmmu; do
+	for t in arm-softmmu aarch64-softmmu x86_64-softmmu; do
 		if [ "$t" = "${QEMU_TARGET}" ] || ls build/$t/qemu-system-* >/dev/null 2>&1; then
 			tlist="${tlist:+$tlist,}$t"
 		fi

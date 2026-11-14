@@ -47,7 +47,7 @@ pr_help()
 	printf "$progname -x usr-so3                      Build the SO3 user space\n"
 	printf "$progname bsp-so3                         Build the full SO3 BSP\n"
 	printf "$progname -v -c bsp-so3                   Clean and rebuild the BSP, verbose\n\n"
-	printf "On virt32/virt64, a BSP build (bsp-so3/bsp-linux) also builds QEMU when its\n"
+	printf "On virt32/virt64/pc64, a BSP build (bsp-so3/bsp-linux) also builds QEMU when its\n"
 	printf "binary is still missing, so the tree is runnable with st.sh right away.\n"
 	printf "Set IB_BUILD_QEMU=\"0\" in build/conf/local.conf to skip that.\n"
 }
@@ -182,7 +182,7 @@ localconf_get()
 		| tail -1 | awk -F'"' '{print $2}'
 }
 
-# On the QEMU-emulated platforms (virt32/virt64), a full BSP build should yield
+# On the QEMU-emulated platforms (virt32/virt64/pc64), a full BSP build should yield
 # a runnable emulator without a separate `build.sh qemu` step. Build QEMU here
 # when its binary is still missing — a bootstrap only: an already-built emulator
 # is left untouched, so the inner build loop pays nothing and the qemu-hacking
@@ -204,6 +204,7 @@ maybe_bootstrap_qemu()
 	case "$(localconf_get IB_PLATFORM)" in
 		virt64) _qbin="qemu-system-aarch64" ;;
 		virt32) _qbin="qemu-system-arm" ;;
+		pc64) _qbin="qemu-system-x86_64" ;;
 		*)      return 0 ;;
 	esac
 

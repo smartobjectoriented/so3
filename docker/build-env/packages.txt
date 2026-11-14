@@ -150,6 +150,13 @@ gcc-arm-linux-gnueabihf
 g++-arm-linux-gnueabihf
 gcc-arm-none-eabi
 
+# --- x86 PC (pc64) -----------------------------------------------------
+# GRUB for the pc64 disk image: grub-mkimage builds the core image, and
+# boot.img goes into the MBR.
+
+grub-pc-bin
+grub-common
+
 # --- documentation ------------------------------------------------------
 # `dbuild.sh make -C doc html` builds doc/ (Sphinx + the Read the Docs theme),
 # so the doc toolchain lives here too and nothing has to be installed on a

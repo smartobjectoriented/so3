@@ -34,6 +34,7 @@ do_attach_infrabase[noexec] = "1"
 # U-Boot) by the uboot recipe. verdin additionally needs the AVZ hypervisor
 # (bundled by the AVZ+SO3 ITS), so its dependency set is overridden to add it.
 IB_BSP_BUILD_DEPENDS = "usr-so3:do_build uboot:do_build"
+IB_BSP_BUILD_DEPENDS:pc64 = "usr-so3:do_build so3:do_build"
 IB_BSP_BUILD_DEPENDS:verdin-imx8mp = "usr-so3:do_build uboot:do_build avz:do_build"
 do_build[depends] = "${IB_BSP_BUILD_DEPENDS}"
 
