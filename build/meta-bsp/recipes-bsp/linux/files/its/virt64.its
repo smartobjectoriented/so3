@@ -66,7 +66,13 @@
 			type = "ramdisk";
 			arch = "arm64";
 			os = "linux";
-			compression = "gzip";
+			/*
+			 * "none": U-Boot never decompresses ramdisks (the kernel
+			 * unpacks the gzip'd initramfs itself), and declaring a
+			 * compression here is deprecated — it only earns a WARNING
+			 * at boot.
+			 */
+			compression = "none";
 			load = <0x50c00000>;
 		};
 	};

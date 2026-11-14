@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2023 Daniel Rossier <daniel.rossier@heig-vd.ch>
+ * Copyright (C) 2014-2026 Daniel Rossier <daniel.rossier@heig-vd.ch>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,78 +14,73 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
+ * Standalone Linux on the virt32 (armv7) QEMU machine, the 32-bit twin of
+ * virt64.its. This file used to be a third copy of the Linux-on-AVZ ITS
+ * (virt32_avz.its, which remains the AVZ flavour); the naming now matches
+ * the virt64 pair: <plat>.its = standalone Linux, <plat>_avz.its = on AVZ.
  */
 
 /dts-v1/;
 
 / {
-	description = "Linx running on AVZ in virt32 environment";
+	description = "Kernel and rootfs components for virt32 (armv7) environment";
 
 	images {
 
-		avz {
-			description = "AVZ Hypervisor (32-bit) Polymorphic SO3";
-            data = /incbin/("${IB_AVZ_PATH}/so3.bin");
+		linux {
+			description = "Linux kernel";
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm/boot/Image");
 			type = "kernel";
-            os = "linux";
 			arch = "arm";
+			os = "linux";
 			compression = "none";
+
+			/*
+			 * RAM base 0x40000000 + the arm32 0x8000 text offset: a raw
+			 * (uncompressed) 32-bit Image is not relocatable — unlike the
+			 * arm64 Image, whose header lets U-Boot place it, and unlike a
+			 * zImage. Loading it anywhere else hangs right after
+			 * "Starting kernel ...".
+			 */
 			load = <0x40008000>;
 			entry = <0x40008000>;
 		};
 
-		avz_dt {
-			description = "Flattened Device Tree blob";
-			data = /incbin/("${IB_AVZ_PATH}/dts/virt32_avz.dtb");
-			type = "avz_dt";
-			arch = "arm";
-			compression = "none";
-			load = <0x40f00000>;
-		};
-		
-		linux {
-			description = "Linux kernel";
-			data = /incbin/("${IB_LINUX_PATH}/linux/arch/arm/boot/Image");
-			type = "avz";
-			arch = "arm";
-			os = "linux";
-			compression = "none";
-			load = <0x41008000>;
-			entry = <0x41008000>;
-		};
-		 
 		fdt_linux {
 			description = "Linux device tree blob";
-			data = /incbin/("${IB_LINUX_PATH}/linux/arch/arm/boot/dts/virt32.dtb");
+			data = /incbin/("${IB_LINUX_PATH}/arch/arm/boot/dts/arm/${IB_PLATFORM}.dtb");
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";
-			load = <0x5a000000>;
+			load = <0x50000000>;
 		};
 
 		initrd {
 			description = "Initial rootfs (initrd)";
-			data = /incbin/("${IB_ROOTFS_PATH}/board/virt32/initrd.cpio.gz");
+			data = /incbin/("${IB_ROOTFS_PATH}/board/${IB_PLATFORM}/initrd.cpio.gz");
 			type = "ramdisk";
 			arch = "arm";
-			os = "linux";			
+			os = "linux";
+			/*
+			 * "none": U-Boot never decompresses ramdisks (the kernel
+			 * unpacks the gzip'd initramfs itself), and declaring a
+			 * compression here is deprecated — it only earns a WARNING
+			 * at boot.
+			 */
 			compression = "none";
 			load = <0x50c00000>;
 		};
 
 	};
-	
+
 	configurations {
-			default = "conf_linux_avz";
+		default = "conf_linux";
 
-			conf_linux_avz {
-				description = "Linux/AVZ on virt32";
-				kernel = "avz";
-				fdt = "fdt_linux";
-            	loadables = "avz_dt", "linux";
-				ramdisk = "initrd";
-			};
-
+		conf_linux {
+			description = "Linux on virt32";
+			kernel = "linux";
+			fdt = "fdt_linux";
+			ramdisk = "initrd";
+		};
 	};
-
 };
