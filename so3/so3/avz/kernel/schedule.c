@@ -292,7 +292,9 @@ void vcpu_sleep_sync(struct domain *d)
 			printk("%s: CPU%d has waited 2 s for domain %d to leave CPU%d: runstate %d, pause count %d, CPU%d runs domain %d, scheduler lock %s, lock waits %lu\n",
 			       __func__, smp_processor_id(), d->avz_shared->domID, d->processor, d->runstate,
 			       atomic_read(&d->pause_count), d->processor,
-			       per_cpu(current_domain, d->processor) ? per_cpu(current_domain, d->processor)->avz_shared->domID : -1,
+			       per_cpu(current_domain, d->processor) ?
+				       per_cpu(current_domain, d->processor)->avz_shared->domID :
+				       -1,
 			       spin_is_locked(&d->sched->sched_data.schedule_lock) ? "held" : "free", sched_lock_contended());
 		}
 	}
