@@ -70,24 +70,29 @@ python do_handle_fetch_git() {
 # bitbake owns WORKDIR; we only purge the fetched lvgl tree.
 python do_clean:append() {
     import os, shutil, subprocess
-    if 'lvgl' not in (d.getVar('OVERRIDES') or '').split(':'):
+
+    # The tree holds the lvgl series if it was attached with it, whatever the
+    # overrides say now. Any other tree is left alone: a clean keeps local edits.
+
+    series = {os.path.basename(u) for u in (d.getVar('LVGL_PATCHES') or '').split()}
+    if 'lvgl' not in (d.getVar('OVERRIDES') or '').split(':') \
+            and not series & (ib_attached_series(d) or set()):
         return
 
     target = d.getVar('IB_TARGET')
     s = d.getVar('S')
     ib_dir = d.getVar('IB_DIR')
 
-    # Everything the :lvgl override creates in the committed-but-build-mutated
-    # usr/ tree (lib/slv, lib/lvgl, lib/lv_conf.h, the lvgl_*.elf sources and
-    # fillfb.c). do_attach_infrabase mirrors the patched ${S} back into
-    # IB_TARGET, so these end up in BOTH; remove from both so the next :lvgl
-    # build re-applies the creation patches onto a clean base instead of
-    # failing with "already exists" (idempotent :lvgl rebuilds).
+    # Everything the :lvgl override creates or replaces. do_attach_infrabase
+    # mirrors the patched ${S} back into IB_TARGET, so these end up in BOTH.
+
     created = [
         'lib/lvgl', 'lib/slv', 'lib/lv_conf.h', 'src/lib',
         'src/fillfb.c', 'src/lvgl_demo.c', 'src/lvgl_perf.c',
         'src/lvgl_benchmark.c', 'src/lvgl_widgets.c',
     ]
+    cmakelists = ['lib/CMakeLists.txt', 'src/CMakeLists.txt']
+
     for base in (target, s):
         if not base:
             continue
@@ -101,11 +106,32 @@ python do_clean:append() {
                 except OSError:
                     pass
 
-    # The lvgl CMakeLists blocks are added by the :lvgl patches to the tracked
-    # lib/CMakeLists.txt and src/CMakeLists.txt; restore them to the committed
-    # lvgl-free base (git index) so the tree fully matches the base again.
-    if ib_dir and os.path.isdir(os.path.join(ib_dir, '.git')):
-        for rel in ('lib/CMakeLists.txt', 'src/CMakeLists.txt'):
+    # usr/ belongs to the so3 recipe, so its ${S} is the lvgl-free base, some of
+    # these files included. Without a fetched so3, usr/ is under git.
+
+    usr = None
+    try:
+        with open(os.path.dirname(target) + '.attach.pf') as f:
+            pf = f.read().strip()
+        usr = os.path.join(d.getVar('TMPDIR'), 'work', pf, pf.rsplit('-', 1)[0], 'usr')
+    except OSError:
+        pass
+
+    if usr and os.path.isdir(usr):
+        for rel in created + cmakelists:
+            src = os.path.join(usr, rel)
+            dst = os.path.join(target, rel)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, symlinks=True)
+            elif os.path.isfile(src):
+                shutil.copyfile(src, dst)
+    elif ib_dir and os.path.isdir(os.path.join(ib_dir, '.git')):
+        for rel in cmakelists:
             subprocess.run(['git', '-C', ib_dir, 'checkout', '--',
                             os.path.join(target, rel)], check=False)
+
+    try:
+        os.remove(target + '.attach.series')
+    except OSError:
+        pass
 }
