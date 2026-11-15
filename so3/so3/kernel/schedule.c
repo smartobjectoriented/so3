@@ -518,6 +518,13 @@ void schedule(void)
 		__in_interrupt = false;
 		__in_scheduling = false;
 
+#ifdef CONFIG_ARCH_ARM64
+		if (prev)
+			fpsimd_save(&prev->fpsimd);
+
+		fpsimd_restore(&next->fpsimd);
+#endif
+
 		__switch_to(prev, next);
 	}
 	__in_scheduling = false;

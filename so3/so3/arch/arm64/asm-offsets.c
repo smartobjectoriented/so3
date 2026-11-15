@@ -102,6 +102,9 @@ int main(void)
 	BLANK();
 
 	DEFINE(OFFSET_TCB_CPU_REGS, offsetof(tcb_t, cpu_regs));
+
+	DEFINE(OFFSET_FPSIMD_FPSR, offsetof(struct fpsimd_state, fpsr));
+	DEFINE(OFFSET_FPSIMD_FPCR, offsetof(struct fpsimd_state, fpcr));
 	DEFINE(OFFSET_SP_USR, offsetof(cpu_regs_t, sp_usr));
 
 	BLANK();

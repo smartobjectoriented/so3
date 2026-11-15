@@ -213,6 +213,8 @@ void vcpu_save_context(struct domain *d)
 	d->vcpu.ttbr1_el1 = read_sysreg(ttbr1_el1);
 	d->vcpu.tcr_el1 = read_sysreg(tcr_el1);
 	d->vcpu.mair_el1 = read_sysreg(mair_el1);
+
+	fpsimd_save(&d->vcpu.fpsimd);
 }
 
 /**
@@ -229,6 +231,8 @@ void vcpu_restore_context(struct domain *d)
 	write_sysreg(d->vcpu.ttbr1_el1, ttbr1_el1);
 	write_sysreg(d->vcpu.tcr_el1, tcr_el1);
 	write_sysreg(d->vcpu.mair_el1, mair_el1);
+
+	fpsimd_restore(&d->vcpu.fpsimd);
 
 	gic_clear_pending_irqs();
 
