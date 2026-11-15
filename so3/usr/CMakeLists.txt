@@ -44,6 +44,11 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 add_link_options(-N -Wl,--warn-common
 )
 
+elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+
+add_link_options(-N -Wl,--warn-common
+)
+
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")

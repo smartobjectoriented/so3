@@ -17,8 +17,18 @@ config IMX_UART
 	bool "Freescale i.MX UART (fsl,imx6q-uart)"
 	depends on VERDIN_IMX8MP
 
+config UART_PIO
+	bool "16550 UART in the x86 I/O port space"
+	depends on ARCH_X86_64
+
 config UART_LL_PADDR
 	hex "Low-level UART base physical address"
+	depends on !ARCH_X86_64
+
+config UART_LL_PORT
+	hex "Low-level UART I/O port"
+	depends on ARCH_X86_64
+	default 0x3f8
 
 config SOO_SERIAL
 	bool "SOO Virtualized serial device (rely on vuart frontend)"

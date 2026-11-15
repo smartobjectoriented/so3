@@ -58,6 +58,17 @@ getpid                  getpid                  MMU
 execve                  execve                  MMU
 fork                    fork                    MMU
 clone                   clone                   MMU
+# x86_64 only: musl sets the thread pointer (FS base) with it.
+arch_prctl              arch_prctl              ARCH_X86_64
+
+# x86_64 only: legacy path syscalls musl calls instead of the *at ones.
+stat                    stat                    ARCH_X86_64
+lstat                   lstat                   ARCH_X86_64
+mkdir                   mkdir                   ARCH_X86_64
+rmdir                   rmdir                   ARCH_X86_64
+unlink                  unlink                  ARCH_X86_64
+rename                  rename                  ARCH_X86_64
+
 set_tid_address         set_tid_address         MMU
 exit                    exit                    MMU
 exit_group              exit_group              MMU

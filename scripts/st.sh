@@ -56,7 +56,7 @@ done
 set -- "${POSARGS[@]}"
 USR_OPTION=$1
 # QEMU_BIN is selected per IB_PLATFORM below (qemu-system-aarch64 for
-# virt64, qemu-system-arm for virt32).
+# virt64, qemu-system-arm for virt32, qemu-system-x86_64 for pc64).
 
 # One guest at a time. Every instance attaches the same disk image with
 # file.locking=off, so a second one writes into the filesystem the first is
@@ -258,6 +258,24 @@ launch_qemu() {
         	-gdb tcp::${GDB_PORT}
 	fi
 
+
+    if [ "$IB_PLATFORM" == "pc64" ]; then
+    QEMU_BIN="$IB_ROOT_DIR/qemu/build/qemu-system-x86_64"
+    echo Starting on pc64
+    # SO3 on a QEMU PC: GRUB in the MBR of the disk image boots SO3 from p1
+    # (bsp_pc64.inc), on COM1 muxed onto stdio. Single CPU: the x86 port is
+    # uniprocessor. isa-debug-exit lets the root process end QEMU.
+    ${QEMU_BIN} $@ ${USR_OPTION} \
+		-chardev stdio,id=char0,mux=on,signal=off \
+		-mon chardev=char0 \
+		-serial chardev:char0 \
+		-M pc \
+		-drive file=filesystem/sdcard.img.pc64,format=raw,file.locking=off \
+		-m 512 \
+		${DISPLAY_OPT} \
+		-device isa-debug-exit \
+		-gdb tcp::${GDB_PORT}
+	fi
 
     QEMU_RESULT=$?
 }

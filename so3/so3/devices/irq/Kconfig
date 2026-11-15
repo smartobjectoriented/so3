@@ -14,3 +14,7 @@ config GIC_V2
 config GIC_V3
 	bool "GICv3 (native — AVZ EL2 hypervisor path)"
 	depends on GIC
+
+config I8259
+	bool "Intel 8259A PIC pair (x86 PC)"
+	depends on ARCH_X86_64

@@ -27,6 +27,8 @@ THISDIR = "${@os.path.dirname(d.getVar('FILE'))}"
 #
 #     atf + optee + uboot + avz + mcuboot
 #
+# or "grub" alone on x86, where GRUB loads the payload instead of U-Boot.
+#
 # So "uboot" is U-Boot alone, "atf+optee+uboot+avz" is the edge-m1 capsule
 # chain, "uboot+mcuboot" is U-Boot handing over to MCUboot, and "mcuboot" is
 # MCUboot as the first stage with no U-Boot at all.
@@ -77,7 +79,7 @@ def ib_normalize_boot_axes(d):
     # boot failures came from them disagreeing: a CI cell whose ITS name said
     # one thing and whose deploy said another, and twice a guest ITB carrying
     # a bootloader's payload as though it were bootable on its own.
-    STAGES = ("atf", "optee", "uboot", "avz", "mcuboot")
+    STAGES = ("atf", "optee", "grub", "uboot", "avz", "mcuboot")
 
     # What each stage requires of the ones before it. A chain is valid when
     # its stages are a subsequence of STAGES and every requirement is met.
@@ -125,9 +127,14 @@ def ib_normalize_boot_axes(d):
                 bb.fatal("IB_BOOT_CHAIN=\"%s\": \"%s\" needs %s in the chain."
                          % (chain, stage, " and ".join('"%s"' % m for m in missing)))
 
-    if "uboot" not in stages and "mcuboot" not in stages:
+    # GRUB is the x86 counterpart of U-Boot: one or the other, never both.
+
+    if "grub" in stages and len(stages) > 1:
+        bb.fatal("IB_BOOT_CHAIN=\"%s\": \"grub\" runs alone." % chain)
+
+    if "uboot" not in stages and "mcuboot" not in stages and "grub" not in stages:
         bb.fatal("IB_BOOT_CHAIN=\"%s\" has nothing that can enter a payload.\n"
-                 "A chain needs \"uboot\" or \"mcuboot\"." % chain)
+                 "A chain needs \"uboot\", \"mcuboot\" or \"grub\"." % chain)
 
     chain = "+".join(stages)
 

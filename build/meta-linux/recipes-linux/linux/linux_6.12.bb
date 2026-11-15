@@ -44,19 +44,14 @@ do_build () {
 
 	cd ${IB_TARGET}
 
-	if [ "${IB_PLATFORM}" = "x86-qemu" -o "${IB_PLATFORM}" = "x86-pc" ]; then
-		make -j${CORES} bzImage
+	if [ "${IB_PLATFORM}" = "bbb" ]; then
+		make -j${CORES} zImage
 	else
-
-	  if [ "${IB_PLATFORM}" = "bbb" ]; then
-	  	make -j${CORES} zImage
-	  else
-	    make ${IB_KMAKE_ARGS} -j${CORES} Image
-	  fi
-
-	  # Compile the device tree files
-	  make ${IB_KMAKE_ARGS} dtbs
+		make ${IB_KMAKE_ARGS} -j${CORES} Image
 	fi
+
+	# Compile the device tree files
+	make ${IB_KMAKE_ARGS} dtbs
 
 }
 

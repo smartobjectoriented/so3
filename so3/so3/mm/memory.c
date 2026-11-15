@@ -468,8 +468,10 @@ void memory_init(void)
 
 	create_mapping(new_sys_root_pgtable, CONFIG_KERNEL_VADDR, mem_info.phys_base, get_kernel_size(), false);
 
+#ifdef CONFIG_UART_LL_PADDR
 	/* Mapping UART I/O for debugging purposes */
 	create_mapping(new_sys_root_pgtable, CONFIG_UART_LL_PADDR, CONFIG_UART_LL_PADDR, PAGE_SIZE, true);
+#endif
 
 #ifdef CONFIG_AVZ
 

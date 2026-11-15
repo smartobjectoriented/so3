@@ -68,11 +68,11 @@ int get_mem_info(const void *fdt, mem_info_t *info)
 	const struct fdt_property *prop;
 	int prop_len;
 
-#ifdef CONFIG_ARCH_ARM64
+#ifndef CONFIG_ARCH_ARM32
 	volatile unsigned char *ptr;
 	unsigned long val;
 	int i;
-#endif /* CONFIG_ARCH_ARM64 */
+#endif /* !CONFIG_ARCH_ARM32 */
 
 	offset = fdt_path_offset(fdt, "/memory");
 

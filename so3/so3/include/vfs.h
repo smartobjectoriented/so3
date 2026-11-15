@@ -40,13 +40,25 @@
 #define O_DSYNC 010000
 #define O_SYNC 04010000
 #define O_RSYNC 04010000
+/* These four differ between the ARM and the generic (x86_64) Linux ABI. */
+
+#ifdef CONFIG_ARCH_X86_64
+#define O_DIRECTORY 0200000
+#define O_NOFOLLOW 0400000
+#else
 #define O_DIRECTORY 040000
 #define O_NOFOLLOW 0100000
+#endif
 #define O_CLOEXEC 02000000
 
 #define O_ASYNC 020000
+#ifdef CONFIG_ARCH_X86_64
+#define O_DIRECT 040000
+#define O_LARGEFILE 0100000
+#else
 #define O_DIRECT 0200000
 #define O_LARGEFILE 0400000
+#endif
 #define O_NOATIME 01000000
 #define O_PATH 010000000
 #define O_TMPFILE 020040000
@@ -110,6 +122,7 @@
 
 #ifndef __ASSEMBLY__
 
+#include <generated/autoconf.h>
 #include <types.h>
 #include <stat.h>
 #include <dirent.h>
@@ -201,6 +214,15 @@ SYSCALL_DECLARE(mkdirat, int dirfd, const char *path, mode_t mode);
 SYSCALL_DECLARE(unlinkat, int dirfd, const char *path, int flags);
 SYSCALL_DECLARE(renameat, int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
 SYSCALL_DECLARE(renameat2, int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags);
+
+#ifdef CONFIG_ARCH_X86_64
+SYSCALL_DECLARE(stat, const char *path, struct stat *st);
+SYSCALL_DECLARE(lstat, const char *path, struct stat *st);
+SYSCALL_DECLARE(mkdir, const char *path, mode_t mode);
+SYSCALL_DECLARE(rmdir, const char *path);
+SYSCALL_DECLARE(unlink, const char *path);
+SYSCALL_DECLARE(rename, const char *oldpath, const char *newpath);
+#endif
 SYSCALL_DECLARE(utimensat, int dirfd, const char *path, const struct timespec *times, int flags);
 
 /* Special tv_nsec values for utimensat() (matching Linux/musl). */

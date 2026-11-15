@@ -152,10 +152,12 @@ do_deploy_boot_chain[nostamp] = "1"
 # filesystem:do_fs_check because a chain may write its first stage into the
 # raw area of the card (bsp_virt64.inc, IB_FIRST_STAGE_FROM_CARD): on a fresh
 # tree the storage image must exist before, not be created by do_deploy after.
-do_deploy_boot_chain[depends] = "uboot:do_build filesystem:do_fs_check"
+do_deploy_boot_chain[depends] = "filesystem:do_fs_check"
 
 python () {
     extra = []
+    if d.getVar('IB_CHAIN_HAS_UBOOT'):
+        extra.append("uboot:do_build")
     if d.getVar('IB_CHAIN_HAS_ATF'):
         extra.append("atf:do_build")
     if d.getVar('IB_CHAIN_HAS_OPTEE'):

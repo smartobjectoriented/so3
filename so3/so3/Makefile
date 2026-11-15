@@ -317,13 +317,13 @@ KBUILD_CPPFLAGS += -I$(saved-output)include -I$(srctree)/include -I$(srctree)/in
 KBUILD_CPPFLAGS += -fno-builtin -ffreestanding -nostdinc -isystem $(gccincdir)
 
 KBUILD_CFLAGS   := -g  -O0 -fno-common  -Wall -Wstrict-prototypes $(KBUILD_CPPFLAGS)
-KBUILD_CFLAGS	:= -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 \
+KBUILD_CFLAGS	:= -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-dwarf2-cfi-asm -fno-ipa-sra -funwind-tables -fno-delete-null-pointer-checks -Wno-frame-address -Wframe-larger-than=1024 \
 				   -fno-stack-protector -Wno-unused-but-set-variable -Wno-unused-const-variable -fomit-frame-pointer -fno-var-tracking-assignments -g -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-merge-all-constants -fmerge-constants -fno-stack-check -fconserve-stack \
 				   -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -fno-function-sections -fno-data-sections
 
 KBUILD_AFLAGS_KERNEL := -I. -I$(srctree)/.
 KBUILD_CFLAGS_KERNEL := -I. -I$(srctree)/. -I$(srctree)/lib/libfdt
-KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -mlittle-endian -fno-PIE -funwind-tables -Wa,-gdwarf-2
+KBUILD_AFLAGS   := -g -D__ASSEMBLY__ -fno-PIE -funwind-tables -Wa,-gdwarf-2
 
 DEFSYM_FLAGS = \
   --defsym=CONFIG_NR_CPUS=$(CONFIG_NR_CPUS) \
@@ -345,14 +345,27 @@ LDFLAGS += --defsym=LOAD_OFFSET=0x80000
 
 SRCARCH := $(patsubst "%",%,$(CONFIG_ARCH))
 
+LDFLAGS_ARCH := -no-enum-size-warning
+
 ifeq ($(CONFIG_ARCH_ARM32),y)
-KBUILD_CFLAGS	+= -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 
-KBUILD_AFLAGS   += -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
+KBUILD_CFLAGS	+= -mlittle-endian -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a -Uarm -DBITS_PER_LONG=32 
+KBUILD_AFLAGS   += -mlittle-endian -mabi=aapcs -mno-thumb-interwork -mfpu=vfp -funwind-tables -marm -march=armv7-a  -Wa,-gdwarf-2
 endif
 
 ifeq ($(CONFIG_ARCH_ARM64),y)
-KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -fno-allow-store-data-races
-KBUILD_AFLAGS   +=
+KBUILD_CFLAGS	+= -mlittle-endian -DBITS_PER_LONG=64 -fno-allow-store-data-races
+KBUILD_AFLAGS   += -mlittle-endian
+endif
+
+# The kernel lives in the top 2 GB (mcmodel=kernel), and never touches the
+# FPU/SSE registers: they belong to user space and are switched by __switch_to.
+
+ifeq ($(CONFIG_ARCH_X86_64),y)
+KBUILD_CFLAGS	+= -DBITS_PER_LONG=64 -m64 -mcmodel=kernel -mno-red-zone -mgeneral-regs-only \
+		   -mno-mmx -mno-sse -mno-sse2 -mno-3dnow -mno-avx -fno-pic -fcf-protection=none \
+		   -fno-asynchronous-unwind-tables -fno-allow-store-data-races -fno-omit-frame-pointer
+KBUILD_AFLAGS   += -m64
+LDFLAGS_ARCH	:= -z max-page-size=0x1000 -z noexecstack --no-warn-rwx-segments
 endif
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -386,6 +399,9 @@ endif
 ifeq ($(CONFIG_VERDIN_IMX8MP),y)
 TARGET = verdin-imx8mp
 endif
+ifeq ($(CONFIG_PC64),y)
+TARGET = pc64
+endif
 
 
 # The all: target is the default when no target is given on the
@@ -411,7 +427,14 @@ objs-$(CONFIG_SOO) += soo
 endif
 
 libs-y		:= lib
-libs-y 		+= lib/libfdt lib/libroxml
+libs-y 		+= lib/libfdt
+
+# libroxml parses floats, which the x86 kernel cannot use (the FPU belongs
+# to user space); only SOO needs it.
+
+ifneq ($(CONFIG_ARCH_X86_64),y)
+libs-y 		+= lib/libroxml
+endif
 
 so3-dirs	:= $(objs-y) $(libs-y)
 so3-objs	:= $(patsubst %,%/built-in.o, $(objs-y))
@@ -428,7 +451,7 @@ LIBGCC_PATH := $(shell dirname `$(CC) -print-libgcc-file-name`)
 
 quiet_cmd_so3 = LD      $@
 
-cmd_so3 = $(LD) $(DEFSYM_FLAGS) -no-enum-size-warning -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
+cmd_so3 = $(LD) $(DEFSYM_FLAGS) $(LDFLAGS_ARCH) -T $(srctree)/arch/$(SRCARCH)/so3.lds -o $@ $(so3-all) -L $(LIBGCC_PATH) -lgcc
 
 KBUILD_CFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/	
 KBUILD_AFLAGS_KERNEL += -I$(srctree)/arch/$(SRCARCH)/include/ -I$(srctree)/arch/$(SRCARCH)/$(TARGET)/include/

@@ -43,6 +43,7 @@ IB_UPDIFF_EXCLUDE = "build subprojects GNUmakefile"
 
 QEMU_TARGET:virt32 = "arm-softmmu"
 QEMU_TARGET:virt64 = "aarch64-softmmu"
+QEMU_TARGET:pc64 = "x86_64-softmmu"
 QEMU_OPTS = "--enable-slirp --disable-attr --disable-werror --disable-docs --enable-sdl"
 
 do_clean[nostamp] = "1"
